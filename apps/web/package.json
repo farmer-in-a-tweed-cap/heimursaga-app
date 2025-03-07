@@ -9,19 +9,23 @@
     "start": "next start"
   },
   "dependencies": {
+    "@repo/ui": "workspace:*",
     "next": "^14.1.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@repo/ui": "workspace:*"
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "^14.1.1",
+    "@repo/eslint-config": "workspace:*",
+    "@repo/tailwind": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",
     "@types/react-dom": "^18.2.19",
+    "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
-    "@repo/eslint-config": "workspace:*",
-    "@repo/tsconfig": "workspace:*",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
     "typescript": "5.5.4"
   }
 }
