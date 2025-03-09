@@ -56,4 +56,16 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
+
+  * {
+    padding: 0;
+    margin: 0;
+    border: 0;
+  }
+}
+
+@layer components {
+  .app-container {
+    @apply w-full h-auto max-w-full px-4 flex flex-row lg:max-w-7xl lg:px-0 box-border;
+  }
 }

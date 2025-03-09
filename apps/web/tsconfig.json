@@ -3,6 +3,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
+      "@/*": ["./src/*"],
+      "@/components": ["./src/components/index"],
       "@repo/ui/*": ["../../packages/ui/src/*"],
       "@repo/ui": ["./../../packages/ui/src/index"]
     },
