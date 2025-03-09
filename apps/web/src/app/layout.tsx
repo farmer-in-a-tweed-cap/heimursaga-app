@@ -1,4 +1,4 @@
-import "./globals.css";
+import "@repo/ui/globals.css";
 
 export default function RootLayout({
   children,
@@ -7,7 +7,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <div className="w-full min-h-screen bg-brand-primary text-white flex flex-col justify-center items-center">
+          {children}
+        </div>
+      </body>
     </html>
   );
 }
