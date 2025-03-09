@@ -19,7 +19,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         <link rel="icon" href="/favicon.png" sizes="any" />
       </head>
       <body>
-        <div className="w-full min-h-screen bg-neutral-100 text-black flex flex-col justify-start">
+        <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
           <AppHeader />
           <div className="w-full h-auto min-h-screen flex flex-col lg:p-6">
             {children}

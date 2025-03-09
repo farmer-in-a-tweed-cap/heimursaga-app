@@ -1,3 +1,6 @@
 export * from './app-header';
 export * from './app-footer';
 export * from './login-form';
+
+export * from './user-profile-card';
+export * from './user-post-card';

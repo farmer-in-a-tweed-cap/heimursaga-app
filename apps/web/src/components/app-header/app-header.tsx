@@ -6,7 +6,7 @@ import { ROUTER } from '@/router';
 export const AppHeader = () => {
   return (
     <div className="w-full h-[64px] bg-white flex flex-row justify-center items-center">
-      <div className="app-container flex flex-row items-center justify-between">
+      <div className="app-container max-w-full px-6 flex flex-row items-center justify-between">
         <Link href={ROUTER.HOME}>
           <Logo />
         </Link>

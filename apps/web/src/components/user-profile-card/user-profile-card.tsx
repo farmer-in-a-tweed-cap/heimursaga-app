@@ -1,0 +1,48 @@
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+} from '@repo/ui/components';
+
+type Props = {
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+};
+
+export const UserProfileCard: React.FC<Props> = ({
+  username,
+  firstName,
+  lastName,
+}) => (
+  <div className="w-full min-h-[140px] flex flex-col bg-white box-border p-6 rounded-xl drop-shadow-xl">
+    <div className="flex flex-col">
+      <Avatar className="w-[80px] h-[80px]">
+        <AvatarImage src="https://github.com/shadcn.png" />
+        <AvatarFallback>{username}</AvatarFallback>
+      </Avatar>
+      <div className="mt-4 flex flex-col">
+        <span className="font-medium text-3xl">
+          {firstName} {lastName}
+        </span>
+        <span className="text-base font-medium text-gray-500">@{username}</span>
+      </div>
+      <div className="mt-4 flex flex-col gap-1">
+        <span className="text-sm font-medium">US, New York</span>
+        <span className="text-gray-500 text-sm font-medium">
+          Member since April 2023
+        </span>
+      </div>
+      <div className="mt-6">
+        <Button>Follow</Button>
+      </div>
+    </div>
+  </div>
+);
+
+UserProfileCard.defaultProps = {
+  username: '',
+  firstName: '',
+  lastName: '',
+};
