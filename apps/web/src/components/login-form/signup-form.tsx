@@ -13,7 +13,7 @@ import Link from 'next/link';
 
 import { ROUTER } from '@/router';
 
-export const LoginForm = ({
+export const SignupForm = ({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) => {
@@ -21,12 +21,30 @@ export const LoginForm = ({
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Welcome back.</CardTitle>
-          <CardDescription>Log in and start exploring.</CardDescription>
+          <CardTitle className="text-2xl">Sign up.</CardTitle>
+          <CardDescription>Create your free account today.</CardDescription>
         </CardHeader>
         <CardContent>
           <form>
             <div className="flex flex-col gap-6">
+              <div className="grid gap-2">
+                <Label htmlFor="email">First name</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Email address"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Last name</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Email address"
+                  required
+                />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -39,12 +57,6 @@ export const LoginForm = ({
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
                 </div>
                 <Input
                   id="password"
@@ -54,19 +66,16 @@ export const LoginForm = ({
                 />
               </div>
               <Button type="submit" className="w-full">
-                Login
-              </Button>
-              <Button variant="outline" className="w-full" disabled>
-                Login with Google
+                Sign up
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{' '}
+              Already have an account?{' '}
               <Link
-                href={ROUTER.SIGNUP}
+                href={ROUTER.LOGIN}
                 className="underline underline-offset-4"
               >
-                Sign up
+                Log in
               </Link>
             </div>
           </form>
