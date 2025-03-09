@@ -65,7 +65,7 @@ export const SignupForm = ({
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
+              <Button type="submit" className="w-full" loading>
                 Sign up
               </Button>
             </div>
