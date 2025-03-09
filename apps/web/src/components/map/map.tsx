@@ -9,9 +9,11 @@ type Props = {
 };
 
 export const Map: React.FC<Props> = ({ className }) => {
+  const token = MAPBOX_ACCESS_TOKEN;
+
   return (
     <div className={cn(className, 'w-full min-h-[240px]')}>
-      <Mapbox token={MAPBOX_ACCESS_TOKEN || ''} />
+      {token && <Mapbox token={MAPBOX_ACCESS_TOKEN || ''} />}
     </div>
   );
 };
