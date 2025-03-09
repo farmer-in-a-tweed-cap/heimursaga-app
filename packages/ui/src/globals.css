@@ -62,6 +62,10 @@
     margin: 0;
     border: 0;
   }
+
+  .border-input {
+    @apply border border-neutral-300 border-solid;
+  }
 }
 
 @layer components {
