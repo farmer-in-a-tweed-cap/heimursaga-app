@@ -52,7 +52,10 @@ export const UserPostCard: React.FC<Props> = ({
     </div>
     <div className="mt-6 flex flex-row gap-1">
       <Button variant="ghost" size="sm">
-        <HeartIcon size={20} className="text-black fill-black" />
+        <HeartIcon
+          size={20}
+          //  className="text-black fill-black"
+        />
         <span className="hover:underline underline-offset-4">Like</span>
       </Button>
       <Button variant="ghost" size="sm">

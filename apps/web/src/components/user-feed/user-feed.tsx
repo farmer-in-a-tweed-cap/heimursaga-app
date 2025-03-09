@@ -25,7 +25,7 @@ export const UserFeed: React.FC<Props> = () => {
             <TabsTrigger
               key={key}
               value={tab}
-              className="capitalize border-b-2 text-neutral-500 text-base border-solid border-transparent py-2 hover:border-neutral-300 data-[state=active]:border-black data-[state=active]:text-black "
+              className="capitalize border-b-2 text-neutral-500 text-sm border-solid border-transparent py-2 hover:border-neutral-300 data-[state=active]:border-black data-[state=active]:text-black "
             >
               {tab}
             </TabsTrigger>
