@@ -1,4 +1,4 @@
-import { UserPostCard, UserProfileCard } from '@/components';
+import { UserFeed, UserProfileCard } from '@/components';
 
 type PageProps = {
   params: {
@@ -22,13 +22,7 @@ export default function Page({ params }: PageProps) {
           </div>
         </div>
         <div className="basis-full flex flex-col h-auto">
-          <div className="w-full flex flex-col gap-2">
-            {Array(10)
-              .fill(0)
-              .map((post, key) => (
-                <UserPostCard key={key} />
-              ))}
-          </div>
+          <UserFeed />
         </div>
       </div>
     </div>

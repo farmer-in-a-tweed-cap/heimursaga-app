@@ -4,3 +4,4 @@ export * from './login-form';
 
 export * from './user-profile-card';
 export * from './user-post-card';
+export * from './user-feed';
