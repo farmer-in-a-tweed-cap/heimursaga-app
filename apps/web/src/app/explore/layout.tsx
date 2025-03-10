@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-import { RootLayout } from '@/components';
+import { AppLayout, AppMapLayout } from '@/components';
 
 export const metadata: Metadata = {
   title: 'saga',
@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <RootLayout>{children}</RootLayout>;
+  return <AppMapLayout>{children}</AppMapLayout>;
 }
