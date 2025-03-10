@@ -2,6 +2,7 @@
   "version": 2,
   "buildCommand": "turbo run build",
   "outputDirectory": "dist",
+  "installCommand": "pnpm install",
   "builds": [
     {
       "src": "src/main.ts",
