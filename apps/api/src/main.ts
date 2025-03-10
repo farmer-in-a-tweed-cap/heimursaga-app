@@ -2,7 +2,7 @@ import * as dotenv from 'dotenv';
 
 import { getEnv, getEnvFilePath } from '@/lib/utils';
 
-// import env variables from env file
+// import env variables
 dotenv.config({ path: getEnvFilePath() });
 
 import { NestFactory } from '@nestjs/core';
@@ -15,10 +15,15 @@ import {
 import { fastifyCors, FastifyCorsOptions } from '@fastify/cors';
 import { fastifyCookie, FastifyCookieOptions } from '@fastify/cookie';
 import { fastifyMultipart, FastifyMultipartOptions } from '@fastify/multipart';
+import {
+  fastifySecureSession,
+  SecureSessionPluginOptions as FastifySecureSessionOptions,
+} from '@fastify/secure-session';
 import fastifyHelmet, { FastifyHelmetOptions } from '@fastify/helmet';
 
 import { AppModule } from '@/modules/app';
 
+// build the app
 async function main() {
   const ENV = getEnv();
   const IS_PRODUCTION = ENV === 'production';
@@ -29,6 +34,7 @@ async function main() {
   const API_VERSION = 1;
   const API_PREFIX = `v${API_VERSION}`;
   const COOKIE_SECRET = process.env.COOKIE_SECRET;
+  const SESSION_SECRET = process.env.SESSION_SECRET;
   const CORS_ORIGIN = process.env.CORS_ORIGIN.split(';') || [];
 
   // create a fastify adapter
@@ -54,6 +60,18 @@ async function main() {
       path: '/',
     },
   } satisfies FastifyCookieOptions);
+
+  await fastify.register<FastifySecureSessionOptions>(
+    fastifySecureSession as any,
+    {
+      key: Buffer.from(SESSION_SECRET, 'hex'),
+      cookieName: 'sid',
+      cookie: {
+        httpOnly: true,
+        path: '/',
+      },
+    },
+  );
 
   await fastify.register<FastifyMultipartOptions>(
     fastifyMultipart as any,
@@ -85,7 +103,7 @@ async function main() {
   });
 }
 
-// build the app
+// run the app
 main();
 
 // handle exceptions
