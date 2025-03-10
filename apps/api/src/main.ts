@@ -1,9 +1,9 @@
-import * as dotenv from 'dotenv';
+// import * as dotenv from 'dotenv';
 
 import { getEnv, getEnvFilePath } from './lib/utils';
 
 // import env variables
-dotenv.config({ path: getEnvFilePath() });
+// dotenv.config({ path: getEnvFilePath() });
 
 import { NestFactory } from '@nestjs/core';
 import { RequestMethod } from '@nestjs/common';
@@ -46,7 +46,7 @@ async function main() {
     });
 
     // create a fastify instance
-    const fastify = adapter.getInstance();
+    // const fastify = adapter.getInstance();
 
     // set fastify plugins
     // await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
@@ -55,50 +55,52 @@ async function main() {
     //   methods: 'GET,POST,PATCH,PUT,DELETE',
     // } satisfies FastifyCorsOptions);
 
-    await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
-      secret: COOKIE_SECRET,
-      parseOptions: {
-        httpOnly: true,
-        path: '/',
-      },
-    } satisfies FastifyCookieOptions);
+    // await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
+    //   secret: COOKIE_SECRET,
+    //   parseOptions: {
+    //     httpOnly: true,
+    //     path: '/',
+    //   },
+    // } satisfies FastifyCookieOptions);
 
-    await fastify.register<FastifySecureSessionOptions>(
-      fastifySecureSession as any,
-      {
-        key: Buffer.from(SESSION_SECRET, 'hex'),
-        cookieName: 'sid',
-        cookie: {
-          httpOnly: true,
-          path: '/',
-        },
-      },
-    );
+    // await fastify.register<FastifySecureSessionOptions>(
+    //   fastifySecureSession as any,
+    //   {
+    //     key: Buffer.from(SESSION_SECRET, 'hex'),
+    //     cookieName: 'sid',
+    //     cookie: {
+    //       httpOnly: true,
+    //       path: '/',
+    //     },
+    //   },
+    // );
 
-    await fastify.register<FastifyMultipartOptions>(
-      fastifyMultipart as any,
-      {} satisfies FastifyMultipartOptions,
-    );
+    // await fastify.register<FastifyMultipartOptions>(
+    //   fastifyMultipart as any,
+    //   {} satisfies FastifyMultipartOptions,
+    // );
 
     // @todo
     // await fastify.register<FastifyHelmetOptions>(fastifyHelmet as any);
 
     // create an app instance
-    const app = await NestFactory.create<NestFastifyApplication>(
-      AppModule,
-      adapter,
-      { logger: new Logger(), rawBody: true, snapshot: true },
-    );
+    const app = await NestFactory.create<NestFastifyApplication>(AppModule);
+
+    // const app = await NestFactory.create<NestFastifyApplication>(
+    //   AppModule,
+    //   adapter,
+    //   { logger: new Logger(), rawBody: true, snapshot: true },
+    // );
 
     // set a global prefix (e.g. /v1/*)
-    app.setGlobalPrefix(API_PREFIX, {
-      exclude: [
-        {
-          path: '',
-          method: RequestMethod.GET,
-        },
-      ],
-    });
+    // app.setGlobalPrefix(API_PREFIX, {
+    //   exclude: [
+    //     {
+    //       path: '',
+    //       method: RequestMethod.GET,
+    //     },
+    //   ],
+    // });
 
     // run the app
     await app
