@@ -6,6 +6,8 @@ const ENV = {
   DEVELOPMENT: 'development',
 };
 
+export const array = (length: number) => Array.from(Array(length));
+
 export const getEnv = (): string => {
   return process.env.NODE_ENV || ENV.DEVELOPMENT;
 };

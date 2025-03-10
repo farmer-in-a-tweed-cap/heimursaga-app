@@ -36,30 +36,30 @@ model User {
 }
 
 model UserSession {
-  id         Int      @id @default(autoincrement())
-  sid        String   @unique @db.Char(48)
+  id         Int       @id @default(autoincrement())
+  sid        String    @unique @db.Char(48)
   user_id    Int
-  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   expires_at DateTime
-  ip_address String?  @db.VarChar(45)
-  user_agent String?  @db.VarChar(255)
-  device     String?  @db.VarChar(100)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  ip_address String?   @db.VarChar(45)
+  user_agent String?   @db.VarChar(255)
+  device     String?   @db.VarChar(100)
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
 
   @@index([expires_at])
   @@map("user_sessions")
 }
 
 model UserProfile {
-  id         Int      @id @default(autoincrement())
-  first_name String   @db.VarChar(50)
-  last_name  String   @db.VarChar(50)
-  picture    String?  @db.VarChar(200)
-  user       User?    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  user_id    Int      @unique
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id         Int       @id @default(autoincrement())
+  first_name String    @db.VarChar(50)
+  last_name  String    @db.VarChar(50)
+  picture    String?   @db.VarChar(200)
+  user       User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id    Int       @unique
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
 
   @@map("user_profiles")
 }
@@ -81,11 +81,11 @@ model Post {
   title      String?        @db.Char(200)
   content    String         @db.Text
   author     User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
-  author_id  Int            @unique
+  author_id  Int
   likes      PostLike[]     @relation("post_likes")
   bookmarks  PostBookmark[] @relation("post_bookmarks")
-  created_at DateTime       @default(now())
-  updated_at DateTime       @updatedAt
+  created_at DateTime?      @default(now())
+  updated_at DateTime?      @updatedAt
 
   @@map("posts")
 }
@@ -93,9 +93,9 @@ model Post {
 model PostLike {
   post_id    Int
   user_id    Int
-  user       User     @relation("user_post_likes", fields: [user_id], references: [id], onDelete: Cascade)
-  post       Post     @relation("post_likes", fields: [post_id], references: [id], onDelete: Cascade)
-  created_at DateTime @default(now())
+  user       User      @relation("user_post_likes", fields: [user_id], references: [id], onDelete: Cascade)
+  post       Post      @relation("post_likes", fields: [post_id], references: [id], onDelete: Cascade)
+  created_at DateTime? @default(now())
 
   @@id([post_id, user_id])
   @@map("post_likes")
@@ -104,9 +104,9 @@ model PostLike {
 model PostBookmark {
   post_id    Int
   user_id    Int
-  user       User     @relation("user_post_bookmarks", fields: [user_id], references: [id], onDelete: Cascade)
-  post       Post     @relation("post_bookmarks", fields: [post_id], references: [id], onDelete: Cascade)
-  created_at DateTime @default(now())
+  user       User      @relation("user_post_bookmarks", fields: [user_id], references: [id], onDelete: Cascade)
+  post       Post      @relation("post_bookmarks", fields: [post_id], references: [id], onDelete: Cascade)
+  created_at DateTime? @default(now())
 
   @@id([post_id, user_id])
   @@map("post_bookmarks")
