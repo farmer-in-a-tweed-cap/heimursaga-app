@@ -1,0 +1,34 @@
+import * as path from 'node:path';
+
+const ENV = {
+  PRODUCTION: 'production',
+  STAGING: 'staging',
+  DEVELOPMENT: 'development',
+};
+
+export const getEnv = (): string => {
+  return process.env.NODE_ENV || ENV.DEVELOPMENT;
+};
+
+export const getEnvFilePath = (): string => {
+  const env = getEnv();
+
+  let filePath: string;
+
+  switch (env) {
+    case ENV.PRODUCTION:
+      filePath = '.env.production';
+      break;
+    case ENV.STAGING:
+      filePath = '.env.staging';
+      break;
+    case ENV.DEVELOPMENT:
+      filePath = '.env.development';
+      break;
+    default:
+      filePath = '.env.development';
+      break;
+  }
+
+  return path.resolve(filePath);
+};

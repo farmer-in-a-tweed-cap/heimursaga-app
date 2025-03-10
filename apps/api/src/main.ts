@@ -1,3 +1,10 @@
+import * as dotenv from 'dotenv';
+
+import { getEnv, getEnvFilePath } from '@/lib/utils';
+
+// import env variables from env file
+dotenv.config({ path: getEnvFilePath() });
+
 import { NestFactory } from '@nestjs/core';
 import { RequestMethod } from '@nestjs/common';
 import {
@@ -13,15 +20,16 @@ import fastifyHelmet, { FastifyHelmetOptions } from '@fastify/helmet';
 import { AppModule } from '@/modules/app';
 
 async function main() {
-  const NODE_ENV = process.env?.NODE_ENV || 'development';
+  const ENV = getEnv();
+  const IS_PRODUCTION = ENV === 'production';
+  const IS_DEVELOPMENT = ENV === 'development';
+
   const HOST = process.env?.HOST || '0.0.0.0';
   const PORT = parseInt(process.env.PORT) || 5000;
   const API_VERSION = 1;
   const API_PREFIX = `v${API_VERSION}`;
   const COOKIE_SECRET = process.env.COOKIE_SECRET;
-  const CORS_ORIGIN = 'localhost';
-  const IS_PRODUCTION = NODE_ENV === 'production';
-  const IS_DEVELOPMENT = NODE_ENV === 'development';
+  const CORS_ORIGIN = process.env.CORS_ORIGIN.split(';') || [];
 
   // create a fastify adapter
   const adapter = new FastifyAdapter({
@@ -73,7 +81,7 @@ async function main() {
 
   // run the app
   await app.listen(PORT, HOST, () => {
-    console.log('api running');
+    console.log('api running', { env: ENV });
   });
 }
 
