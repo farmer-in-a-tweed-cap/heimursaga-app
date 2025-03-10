@@ -48,11 +48,11 @@ async function main() {
   const fastify = adapter.getInstance();
 
   // set fastify plugins
-  await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
-    origin: CORS_ORIGIN,
-    credentials: true,
-    methods: 'GET,POST,PATCH,PUT,DELETE',
-  } satisfies FastifyCorsOptions);
+  // await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
+  //   origin: CORS_ORIGIN,
+  //   credentials: true,
+  //   methods: 'GET,POST,PATCH,PUT,DELETE',
+  // } satisfies FastifyCorsOptions);
 
   await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
     secret: COOKIE_SECRET,
