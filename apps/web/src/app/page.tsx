@@ -1,9 +1,19 @@
 import { AppLayout } from '@/components';
 
-export default function App() {
+const { API_HOST } = process.env;
+
+export default async function App() {
+  const results = await fetch(`${API_HOST}/test`)
+    .then((response) => response.json())
+    .catch((e) => {
+      console.log(e);
+    });
+
   return (
     <AppLayout>
-      <main className="flex flex-col justify-center items-center gap-4 w-full max-w-l"></main>
+      <main className="flex flex-col justify-center items-center gap-4 w-full max-w-l">
+        {JSON.stringify({ results })}
+      </main>
     </AppLayout>
   );
 }
