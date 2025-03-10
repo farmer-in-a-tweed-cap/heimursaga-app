@@ -26,83 +26,91 @@ import { Logger } from '@/modules/logger';
 
 // build the app
 async function main() {
-  const ENV = getEnv();
-  const IS_PRODUCTION = ENV === 'production';
-  const IS_DEVELOPMENT = ENV === 'development';
+  try {
+    const ENV = getEnv();
+    const IS_PRODUCTION = ENV === 'production';
+    const IS_DEVELOPMENT = ENV === 'development';
 
-  const HOST = process.env?.HOST || '0.0.0.0';
-  const PORT = parseInt(process.env.PORT) || 5000;
-  const API_VERSION = 1;
-  const API_PREFIX = `v${API_VERSION}`;
-  const COOKIE_SECRET = process.env.COOKIE_SECRET;
-  const SESSION_SECRET = process.env.SESSION_SECRET;
-  const CORS_ORIGIN = process.env.CORS_ORIGIN.split(';') || [];
+    const HOST = process.env?.HOST || '0.0.0.0';
+    const PORT = parseInt(process.env.PORT) || 5000;
+    const API_VERSION = 1;
+    const API_PREFIX = `v${API_VERSION}`;
+    const COOKIE_SECRET = process.env.COOKIE_SECRET;
+    const SESSION_SECRET = process.env.SESSION_SECRET;
+    const CORS_ORIGIN = process.env.CORS_ORIGIN.split(';') || [];
 
-  // create a fastify adapter
-  const adapter = new FastifyAdapter({
-    trustProxy: true,
-    bodyLimit: 2 * 1024 * 1024,
-  });
+    // create a fastify adapter
+    const adapter = new FastifyAdapter({
+      trustProxy: true,
+      bodyLimit: 2 * 1024 * 1024,
+    });
 
-  // create a fastify instance
-  const fastify = adapter.getInstance();
+    // create a fastify instance
+    const fastify = adapter.getInstance();
 
-  // set fastify plugins
-  // await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
-  //   origin: CORS_ORIGIN,
-  //   credentials: true,
-  //   methods: 'GET,POST,PATCH,PUT,DELETE',
-  // } satisfies FastifyCorsOptions);
+    // set fastify plugins
+    // await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
+    //   origin: CORS_ORIGIN,
+    //   credentials: true,
+    //   methods: 'GET,POST,PATCH,PUT,DELETE',
+    // } satisfies FastifyCorsOptions);
 
-  await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
-    secret: COOKIE_SECRET,
-    parseOptions: {
-      httpOnly: true,
-      path: '/',
-    },
-  } satisfies FastifyCookieOptions);
-
-  await fastify.register<FastifySecureSessionOptions>(
-    fastifySecureSession as any,
-    {
-      key: Buffer.from(SESSION_SECRET, 'hex'),
-      cookieName: 'sid',
-      cookie: {
+    await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
+      secret: COOKIE_SECRET,
+      parseOptions: {
         httpOnly: true,
         path: '/',
       },
-    },
-  );
+    } satisfies FastifyCookieOptions);
 
-  await fastify.register<FastifyMultipartOptions>(
-    fastifyMultipart as any,
-    {} satisfies FastifyMultipartOptions,
-  );
-
-  // @todo
-  // await fastify.register<FastifyHelmetOptions>(fastifyHelmet as any);
-
-  // create an app instance
-  const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
-    adapter,
-    { logger: new Logger(), rawBody: true, snapshot: true },
-  );
-
-  // set a global prefix (e.g. /v1/*)
-  app.setGlobalPrefix(API_PREFIX, {
-    exclude: [
+    await fastify.register<FastifySecureSessionOptions>(
+      fastifySecureSession as any,
       {
-        path: '',
-        method: RequestMethod.GET,
+        key: Buffer.from(SESSION_SECRET, 'hex'),
+        cookieName: 'sid',
+        cookie: {
+          httpOnly: true,
+          path: '/',
+        },
       },
-    ],
-  });
+    );
 
-  // run the app
-  await app.listen(PORT, HOST, () => {
-    console.log('api running', { env: ENV });
-  });
+    await fastify.register<FastifyMultipartOptions>(
+      fastifyMultipart as any,
+      {} satisfies FastifyMultipartOptions,
+    );
+
+    // @todo
+    // await fastify.register<FastifyHelmetOptions>(fastifyHelmet as any);
+
+    // create an app instance
+    const app = await NestFactory.create<NestFastifyApplication>(
+      AppModule,
+      adapter,
+      { logger: new Logger(), rawBody: true, snapshot: true },
+    );
+
+    // set a global prefix (e.g. /v1/*)
+    app.setGlobalPrefix(API_PREFIX, {
+      exclude: [
+        {
+          path: '',
+          method: RequestMethod.GET,
+        },
+      ],
+    });
+
+    // run the app
+    await app
+      .listen(PORT, HOST, () => {
+        console.log('api running', { env: ENV });
+      })
+      .catch((e) => {
+        console.log('api failed', e);
+      });
+  } catch (e) {
+    console.log('api error', e);
+  }
 }
 
 // run the app
