@@ -5,7 +5,15 @@
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", "public/dist/**"],
       "dependsOn": ["^build"],
-      "env": ["NEXT_PUBLIC_API_HOST", "MAPBOX_ACCESS_TOKEN"]
+      "env": [
+        "NEXT_PUBLIC_API_HOST",
+        "MAPBOX_ACCESS_TOKEN",
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "CORS_ORIGIN",
+        "COOKIE_SECRET",
+        "SESSION_SECRET"
+      ]
     },
     "test": {
       "outputs": ["coverage/**"],
