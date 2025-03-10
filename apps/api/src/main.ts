@@ -30,7 +30,6 @@ async function main() {
     const ENV = getEnv();
     const IS_PRODUCTION = ENV === 'production';
     const IS_DEVELOPMENT = ENV === 'development';
-
     const HOST = process.env?.HOST || '0.0.0.0';
     const PORT = parseInt(process.env.PORT) || 5000;
     const API_VERSION = 1;
@@ -46,39 +45,39 @@ async function main() {
     });
 
     // create a fastify instance
-    // const fastify = adapter.getInstance();
+    const fastify = adapter.getInstance();
 
     // set fastify plugins
-    // await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
-    //   origin: CORS_ORIGIN,
-    //   credentials: true,
-    //   methods: 'GET,POST,PATCH,PUT,DELETE',
-    // } satisfies FastifyCorsOptions);
+    await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
+      origin: CORS_ORIGIN,
+      credentials: true,
+      methods: 'GET,POST,PATCH,PUT,DELETE',
+    } satisfies FastifyCorsOptions);
 
-    // await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
-    //   secret: COOKIE_SECRET,
-    //   parseOptions: {
-    //     httpOnly: true,
-    //     path: '/',
-    //   },
-    // } satisfies FastifyCookieOptions);
+    await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
+      secret: COOKIE_SECRET,
+      parseOptions: {
+        httpOnly: true,
+        path: '/',
+      },
+    } satisfies FastifyCookieOptions);
 
-    // await fastify.register<FastifySecureSessionOptions>(
-    //   fastifySecureSession as any,
-    //   {
-    //     key: Buffer.from(SESSION_SECRET, 'hex'),
-    //     cookieName: 'sid',
-    //     cookie: {
-    //       httpOnly: true,
-    //       path: '/',
-    //     },
-    //   },
-    // );
+    await fastify.register<FastifySecureSessionOptions>(
+      fastifySecureSession as any,
+      {
+        key: Buffer.from(SESSION_SECRET, 'hex'),
+        cookieName: 'sid',
+        cookie: {
+          httpOnly: true,
+          path: '/',
+        },
+      },
+    );
 
-    // await fastify.register<FastifyMultipartOptions>(
-    //   fastifyMultipart as any,
-    //   {} satisfies FastifyMultipartOptions,
-    // );
+    await fastify.register<FastifyMultipartOptions>(
+      fastifyMultipart as any,
+      {} satisfies FastifyMultipartOptions,
+    );
 
     // @todo
     // await fastify.register<FastifyHelmetOptions>(fastifyHelmet as any);
@@ -91,14 +90,14 @@ async function main() {
     );
 
     // set a global prefix (e.g. /v1/*)
-    // app.setGlobalPrefix(API_PREFIX, {
-    //   exclude: [
-    //     {
-    //       path: '',
-    //       method: RequestMethod.GET,
-    //     },
-    //   ],
-    // });
+    app.setGlobalPrefix(API_PREFIX, {
+      exclude: [
+        {
+          path: '',
+          method: RequestMethod.GET,
+        },
+      ],
+    });
 
     // run the app
     await app
