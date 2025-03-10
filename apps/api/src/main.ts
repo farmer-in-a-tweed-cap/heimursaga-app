@@ -22,6 +22,7 @@ import {
 import fastifyHelmet, { FastifyHelmetOptions } from '@fastify/helmet';
 
 import { AppModule } from '@/modules/app';
+import { Logger } from '@/modules/logger';
 
 // build the app
 async function main() {
@@ -84,7 +85,7 @@ async function main() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     adapter,
-    { rawBody: true, snapshot: true },
+    { logger: new Logger(), rawBody: true, snapshot: true },
   );
 
   // set a global prefix (e.g. /v1/*)
