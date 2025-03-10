@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-import { RootLayout } from '@/components';
+import { AppProvider, RootLayout } from '@/components';
 
 export const metadata: Metadata = {
   title: 'saga',
@@ -12,5 +12,9 @@ export const metadata: Metadata = {
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <RootLayout>{children}</RootLayout>;
+  return (
+    <RootLayout>
+      <AppProvider>{children}</AppProvider>
+    </RootLayout>
+  );
 }
