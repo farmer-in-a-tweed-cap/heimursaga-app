@@ -1,7 +1,7 @@
 import { PrismaClient, Post, User, UserProfile } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 
-import { array } from './../src/lib/utils';
+const array = (length: number) => Array.from(Array(length));
 
 const prisma = new PrismaClient();
 

@@ -1,9 +1,9 @@
-// import * as dotenv from 'dotenv';
+import * as dotenv from 'dotenv';
 
 import { getEnv, getEnvFilePath } from './lib/utils';
 
 // import env variables
-// dotenv.config({ path: getEnvFilePath() });
+dotenv.config({ path: getEnvFilePath() });
 
 import { NestFactory } from '@nestjs/core';
 import { RequestMethod } from '@nestjs/common';
