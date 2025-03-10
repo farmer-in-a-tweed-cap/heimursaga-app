@@ -37,7 +37,7 @@ async function main() {
     const API_PREFIX = `v${API_VERSION}`;
     const COOKIE_SECRET = process.env.COOKIE_SECRET;
     const SESSION_SECRET = process.env.SESSION_SECRET;
-    const CORS_ORIGIN = process.env.CORS_ORIGIN.split(';') || [];
+    const CORS_ORIGIN = process.env.CORS_ORIGIN?.split(';') || [];
 
     // create a fastify adapter
     const adapter = new FastifyAdapter({
@@ -84,13 +84,11 @@ async function main() {
     // await fastify.register<FastifyHelmetOptions>(fastifyHelmet as any);
 
     // create an app instance
-    const app = await NestFactory.create<NestFastifyApplication>(AppModule);
-
-    // const app = await NestFactory.create<NestFastifyApplication>(
-    //   AppModule,
-    //   adapter,
-    //   { logger: new Logger(), rawBody: true, snapshot: true },
-    // );
+    const app = await NestFactory.create<NestFastifyApplication>(
+      AppModule,
+      adapter,
+      { logger: new Logger(), rawBody: true, snapshot: true },
+    );
 
     // set a global prefix (e.g. /v1/*)
     // app.setGlobalPrefix(API_PREFIX, {
