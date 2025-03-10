@@ -18,7 +18,12 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:migrate:production": "cross-env NODE_ENV=production npx env-cmd -f ./.env.production prisma migrate deploy --schema=./src/prisma/schema.prisma;",
+    "db:migrate:staging": "cross-env NODE_ENV=staging npx env-cmd -f ./.env.staging prisma migrate deploy --schema=./src/prisma/schema.prisma;",
+    "db:migrate:development": "cross-env NODE_ENV=development npx env-cmd -f ./.env.development prisma migrate dev --skip-seed",
+    "db:seed:staging": "cross-env NODE_ENV=staging npx env-cmd -f ./.env.staging prisma db seed",
+    "db:seed:development": "cross-env NODE_ENV=development npx env-cmd -f ./.env.development prisma db seed"
   },
   "dependencies": {
     "@fastify/cookie": "^7.x",
@@ -47,6 +52,7 @@
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "env-cmd": "^10.1.0",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
@@ -77,5 +83,9 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "prisma": {
+    "schema": "./prisma/schema.prisma",
+    "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} ./prisma/seed.ts"
   }
 }
