@@ -19,7 +19,7 @@ import {
   fastifySecureSession,
   SecureSessionPluginOptions as FastifySecureSessionOptions,
 } from '@fastify/secure-session';
-import fastifyHelmet, { FastifyHelmetOptions } from '@fastify/helmet';
+// import fastifyHelmet, { FastifyHelmetOptions } from '@fastify/helmet';
 
 import { AppModule } from '@/modules/app';
 import { Logger } from '@/modules/logger';
@@ -79,7 +79,8 @@ async function main() {
     {} satisfies FastifyMultipartOptions,
   );
 
-  await fastify.register<FastifyHelmetOptions>(fastifyHelmet as any);
+  // @todo
+  // await fastify.register<FastifyHelmetOptions>(fastifyHelmet as any);
 
   // create an app instance
   const app = await NestFactory.create<NestFastifyApplication>(
