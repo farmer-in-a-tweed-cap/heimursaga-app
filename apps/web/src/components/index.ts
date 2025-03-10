@@ -7,3 +7,6 @@ export * from './user-profile-card';
 export * from './user-post-card';
 export * from './user-feed';
 export * from './map';
+
+export * from './explore-map';
+export * from './explore-sidebar';
