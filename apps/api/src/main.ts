@@ -1,6 +1,6 @@
 import * as dotenv from 'dotenv';
 
-import { getEnv, getEnvFilePath } from '@/lib/utils';
+import { getEnv, getEnvFilePath } from './lib/utils';
 
 // import env variables
 dotenv.config({ path: getEnvFilePath() });
