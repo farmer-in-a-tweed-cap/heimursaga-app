@@ -82,3 +82,11 @@
     @apply w-full h-auto max-w-full px-4 flex flex-row lg:max-w-7xl lg:px-0 box-border;
   }
 }
+
+.map-control-group {
+  @apply bg-transparent flex flex-col gap-2 shadow-none p-4 box-border;
+}
+
+.map-control button {
+  @apply transition-all w-[48px] h-[48px] bg-white drop-shadow flex items-center justify-center rounded-full text-lg cursor-pointer scale-100 active:scale-95 hover:!bg-white hover:!opacity-100;
+}

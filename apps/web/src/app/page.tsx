@@ -5,9 +5,7 @@ const { API_HOST } = process.env;
 export default async function App() {
   const results = await fetch(`${API_HOST}/test`)
     .then((response) => response.json())
-    .catch((e) => {
-      console.log(e);
-    });
+    .catch((e) => null);
 
   return (
     <AppLayout>
