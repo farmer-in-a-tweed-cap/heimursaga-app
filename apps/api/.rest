@@ -29,7 +29,7 @@ content-type: application/json
 
 ### 
 
-# signup
+# signupgit 
 POST http://localhost:5000/v1/auth/signup
 content-type: application/json
 
@@ -40,3 +40,44 @@ content-type: application/json
     "firstName": "john",
     "lastName": "beck"
 }
+
+### 
+
+# posts
+GET http://localhost:5000/v1/posts
+content-type: application/json
+
+### 
+
+# posts/get_by_id
+GET http://localhost:5000/v1/posts/213
+content-type: application/json
+
+### 
+
+# posts/create
+POST http://localhost:5000/v1/posts
+content-type: application/json
+
+{
+    "title": "post44",
+    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout."
+}
+
+### 
+
+# posts/update
+PUT http://localhost:5000/v1/posts/213
+content-type: application/json
+
+{
+    "title": "post!!",
+    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout."
+}
+
+### 
+
+# posts/delete
+DELETE http://localhost:5000/v1/posts/213
+content-type: application/json
+

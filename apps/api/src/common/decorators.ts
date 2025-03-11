@@ -4,6 +4,7 @@ import {
   createParamDecorator,
 } from '@nestjs/common';
 import { SetMetadata } from '@nestjs/common';
+import { Transform } from 'class-transformer';
 
 import { SESSION_KEYS } from '@/common/constants';
 import { IRequest, IUserSession } from '@/common/interfaces';
@@ -43,3 +44,6 @@ export const Session = createParamDecorator(
 
 export const Roles = (...roles: Role[]): CustomDecorator<string> =>
   SetMetadata(ROLES_KEY, roles);
+
+export const ToNumber = () =>
+  Transform(({ value }) => (!value ? 0 : Number(`${value}`)));

@@ -88,6 +88,7 @@ model Post {
   bookmarks  PostBookmark[] @relation("post_bookmarks")
   created_at DateTime?      @default(now())
   updated_at DateTime?      @updatedAt
+  deleted_at DateTime?
 
   @@map("posts")
 }
