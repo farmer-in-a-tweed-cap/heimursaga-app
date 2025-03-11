@@ -1,3 +1,8 @@
+export interface IPostFindByIdPayload {
+  id: number;
+  userId: number;
+}
+
 export interface IPostCreatePayload {
   title: string;
   content: string;
@@ -15,7 +20,12 @@ export interface IPostUpdatePayload {
 
 export interface IPostUpdatePayloadDto extends Partial<IPostUpdatePayload> {}
 
-export interface IPostDeletePayload {
-  id: number;
-  userId: number;
+export interface IPostDeletePayload extends IPostFindByIdPayload {}
+
+export interface IPostLikePayload extends IPostFindByIdPayload {}
+
+export interface IPostLikeResponse {
+  likes: number;
 }
+
+export interface IPostBookmarkPayload extends IPostFindByIdPayload {}

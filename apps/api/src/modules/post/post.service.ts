@@ -14,6 +14,8 @@ import { PrismaService } from '@/modules/prisma';
 import {
   IPostCreatePayload,
   IPostDeletePayload,
+  IPostLikePayload,
+  IPostLikeResponse,
   IPostUpdatePayload,
 } from './post.interface';
 
@@ -37,6 +39,8 @@ export class PostService {
             id: true,
             title: true,
             content: true,
+            likesCount: true,
+            bookmarkCount: true,
             author: {
               select: {
                 profile: {
@@ -56,6 +60,8 @@ export class PostService {
               name: post.author?.profile?.first_name,
               picture: post.author?.profile?.picture,
             },
+            likesCount: post.likesCount,
+            bookmarkCount: post.bookmarkCount,
             createdAt: post.created_at,
           })),
         );
@@ -122,8 +128,6 @@ export class PostService {
           author: { connect: { id: userId } },
         },
       });
-
-      console.log({ post });
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -154,8 +158,6 @@ export class PostService {
         where: { id, author_id: userId },
         data,
       });
-
-      console.log({ post });
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -186,13 +188,80 @@ export class PostService {
         where: { id, author_id: userId, deleted_at: null },
         data: { deleted_at: dateformat().toDate() },
       });
-
-      console.log({ post });
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('post not deleted');
+      throw exception;
+    }
+  }
+
+  async like(payload: IPostLikePayload): Promise<IPostLikeResponse> {
+    try {
+      const { id, userId } = payload;
+
+      if (!id || !userId) throw new ServiceNotFoundException('post not found');
+
+      // check if the post exists
+      const post = await this.prisma.post
+        .findFirstOrThrow({
+          where: { id, deleted_at: null },
+          select: {
+            id: true,
+            likesCount: true,
+          },
+        })
+        .catch(() => null);
+
+      if (!post) throw new ServiceNotFoundException('post not found');
+
+      // check if it is liked already
+      const liked = await this.prisma.postLike.findUnique({
+        where: {
+          post_id_user_id: {
+            post_id: id,
+            user_id: userId,
+          },
+        },
+      });
+
+      if (liked) {
+        // delete the like
+        await this.prisma.postLike.delete({
+          where: {
+            post_id_user_id: {
+              post_id: id,
+              user_id: userId,
+            },
+          },
+        });
+      } else {
+        // create the like
+        await this.prisma.postLike.create({
+          data: {
+            post_id: id,
+            user_id: userId,
+          },
+        });
+      }
+
+      // update the like count
+      const updatedPost = await this.prisma.post.update({
+        where: { id },
+        data: { likesCount: liked ? { decrement: 1 } : { increment: 1 } },
+      });
+
+      const response: IPostLikeResponse = {
+        likes: updatedPost.likesCount,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('post not liked');
       throw exception;
     }
   }

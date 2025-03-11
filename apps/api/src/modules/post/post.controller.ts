@@ -79,4 +79,16 @@ export class PostController {
       userId: session.userId,
     });
   }
+
+  @Post(':id/like')
+  @HttpCode(HttpStatus.OK)
+  async like(
+    @Param() param: ParamNumberIdDto,
+    @Session() session: IUserSession,
+  ) {
+    return await this.postService.like({
+      id: param.id,
+      userId: session.userId,
+    });
+  }
 }

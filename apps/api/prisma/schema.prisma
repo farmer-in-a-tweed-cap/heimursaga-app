@@ -79,16 +79,18 @@ model UserFollow {
 }
 
 model Post {
-  id         Int            @id @default(autoincrement())
-  title      String?        @db.Char(200)
-  content    String         @db.Text
-  author     User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
-  author_id  Int
-  likes      PostLike[]     @relation("post_likes")
-  bookmarks  PostBookmark[] @relation("post_bookmarks")
-  created_at DateTime?      @default(now())
-  updated_at DateTime?      @updatedAt
-  deleted_at DateTime?
+  id            Int            @id @default(autoincrement())
+  title         String?        @db.Char(200)
+  content       String         @db.Text
+  author        User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  author_id     Int
+  likes         PostLike[]     @relation("post_likes")
+  likesCount    Int            @default(0)
+  bookmarks     PostBookmark[] @relation("post_bookmarks")
+  bookmarkCount Int            @default(0)
+  created_at    DateTime?      @default(now())
+  updated_at    DateTime?      @updatedAt
+  deleted_at    DateTime?
 
   @@map("posts")
 }
