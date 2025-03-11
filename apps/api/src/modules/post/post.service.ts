@@ -12,10 +12,12 @@ import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
 import {
+  IPostBookmarkResponse,
   IPostCreatePayload,
   IPostDeletePayload,
   IPostLikePayload,
   IPostLikeResponse,
+  IPostSearchPayload,
   IPostUpdatePayload,
 } from './post.interface';
 
@@ -26,8 +28,9 @@ export class PostService {
     private prisma: PrismaService,
   ) {}
 
-  async search() {
+  async search(payload: IPostSearchPayload) {
     try {
+      const { userId } = payload;
       const where = { deleted_at: null } as Prisma.PostWhereInput;
 
       // search posts
@@ -40,7 +43,7 @@ export class PostService {
             title: true,
             content: true,
             likesCount: true,
-            bookmarkCount: true,
+            bookmarksCount: true,
             author: {
               select: {
                 profile: {
@@ -61,7 +64,7 @@ export class PostService {
               picture: post.author?.profile?.picture,
             },
             likesCount: post.likesCount,
-            bookmarkCount: post.bookmarkCount,
+            bookmarksCount: post.bookmarksCount,
             createdAt: post.created_at,
           })),
         );
@@ -237,7 +240,7 @@ export class PostService {
           },
         });
       } else {
-        // create the like
+        // create a like
         await this.prisma.postLike.create({
           data: {
             post_id: id,
@@ -253,7 +256,7 @@ export class PostService {
       });
 
       const response: IPostLikeResponse = {
-        likes: updatedPost.likesCount,
+        likesCount: updatedPost.likesCount,
       };
 
       return response;
@@ -262,6 +265,75 @@ export class PostService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('post not liked');
+      throw exception;
+    }
+  }
+
+  async bookmark(payload: IPostLikePayload): Promise<IPostBookmarkResponse> {
+    try {
+      const { id, userId } = payload;
+
+      if (!id || !userId) throw new ServiceNotFoundException('post not found');
+
+      // check if the post exists
+      const post = await this.prisma.post
+        .findFirstOrThrow({
+          where: { id, deleted_at: null },
+          select: {
+            id: true,
+            bookmarksCount: true,
+          },
+        })
+        .catch(() => null);
+
+      if (!post) throw new ServiceNotFoundException('post not found');
+
+      // check if it is bookmarked already
+      const liked = await this.prisma.postBookmark.findUnique({
+        where: {
+          post_id_user_id: {
+            post_id: id,
+            user_id: userId,
+          },
+        },
+      });
+
+      if (liked) {
+        // delete the bookmark
+        await this.prisma.postBookmark.delete({
+          where: {
+            post_id_user_id: {
+              post_id: id,
+              user_id: userId,
+            },
+          },
+        });
+      } else {
+        // create a bookmark
+        await this.prisma.postBookmark.create({
+          data: {
+            post_id: id,
+            user_id: userId,
+          },
+        });
+      }
+
+      // update the bookmark count
+      const updatedPost = await this.prisma.post.update({
+        where: { id },
+        data: { bookmarksCount: liked ? { decrement: 1 } : { increment: 1 } },
+      });
+
+      const response: IPostBookmarkResponse = {
+        bookmarksCount: updatedPost.bookmarksCount,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('post not bookmarked');
       throw exception;
     }
   }

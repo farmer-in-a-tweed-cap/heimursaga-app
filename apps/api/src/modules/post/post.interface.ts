@@ -1,3 +1,7 @@
+export interface IPostSearchPayload {
+  userId?: number;
+}
+
 export interface IPostFindByIdPayload {
   id: number;
   userId: number;
@@ -25,7 +29,11 @@ export interface IPostDeletePayload extends IPostFindByIdPayload {}
 export interface IPostLikePayload extends IPostFindByIdPayload {}
 
 export interface IPostLikeResponse {
-  likes: number;
+  likesCount: number;
 }
 
 export interface IPostBookmarkPayload extends IPostFindByIdPayload {}
+
+export interface IPostBookmarkResponse {
+  bookmarksCount: number;
+}

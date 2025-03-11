@@ -88,3 +88,8 @@ PUT http://localhost:5000/v1/posts/213/like
 
 # posts/like
 POST http://localhost:5000/v1/posts/212/like
+
+###
+
+# posts/bookmark
+POST http://localhost:5000/v1/posts/210/bookmark

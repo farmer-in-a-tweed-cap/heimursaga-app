@@ -27,7 +27,7 @@ export class PostController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async search() {
-    return await this.postService.search();
+    return await this.postService.search({});
   }
 
   @Public()
@@ -87,6 +87,18 @@ export class PostController {
     @Session() session: IUserSession,
   ) {
     return await this.postService.like({
+      id: param.id,
+      userId: session.userId,
+    });
+  }
+
+  @Post(':id/bookmark')
+  @HttpCode(HttpStatus.OK)
+  async bookmark(
+    @Param() param: ParamNumberIdDto,
+    @Session() session: IUserSession,
+  ) {
+    return await this.postService.bookmark({
       id: param.id,
       userId: session.userId,
     });
