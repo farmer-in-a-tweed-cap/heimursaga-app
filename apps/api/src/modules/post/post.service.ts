@@ -15,6 +15,7 @@ import {
   IPostBookmarkResponse,
   IPostCreatePayload,
   IPostDeletePayload,
+  IPostFindByIdPayload,
   IPostLikePayload,
   IPostLikeResponse,
   IPostSearchPayload,
@@ -44,6 +45,20 @@ export class PostService {
             content: true,
             likesCount: true,
             bookmarksCount: true,
+            // check if the session user has liked this post
+            likes: userId
+              ? {
+                  where: { user_id: userId },
+                  select: { post_id: true },
+                }
+              : undefined,
+            // check if the session user has bookmarked this post
+            bookmarks: userId
+              ? {
+                  where: { user_id: userId },
+                  select: { post_id: true },
+                }
+              : undefined,
             author: {
               select: {
                 profile: {
@@ -63,6 +78,8 @@ export class PostService {
               name: post.author?.profile?.first_name,
               picture: post.author?.profile?.picture,
             },
+            liked: userId ? post.likes.length > 0 : undefined,
+            bookmarked: userId ? post.bookmarks.length > 0 : undefined,
             likesCount: post.likesCount,
             bookmarksCount: post.bookmarksCount,
             createdAt: post.created_at,
@@ -79,8 +96,10 @@ export class PostService {
     }
   }
 
-  async getById(id: number) {
+  async getById(payload: IPostFindByIdPayload) {
     try {
+      const { id, userId } = payload;
+
       // get the post
       const data = await this.prisma.post
         .findFirstOrThrow({
@@ -89,6 +108,20 @@ export class PostService {
             id: true,
             title: true,
             content: true,
+            // check if the session user has liked this post
+            likes: userId
+              ? {
+                  where: { user_id: userId },
+                  select: { post_id: true },
+                }
+              : undefined,
+            // check if the session user has bookmarked this post
+            bookmarks: userId
+              ? {
+                  where: { user_id: userId },
+                  select: { post_id: true },
+                }
+              : undefined,
             author: {
               select: {
                 profile: {
@@ -103,6 +136,8 @@ export class PostService {
           id: post.id,
           title: post.title,
           content: post.content,
+          liked: userId ? post.likes.length > 0 : undefined,
+          bookmarked: userId ? post.bookmarks.length > 0 : undefined,
           author: {
             name: post.author?.profile?.first_name,
             picture: post.author?.profile?.picture,

@@ -26,16 +26,23 @@ export class PostController {
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
-  async search() {
-    return await this.postService.search({});
+  async search(@Session() session: IUserSession) {
+    return await this.postService.search({ userId: session?.userId });
   }
 
   @Public()
   @Get(':id')
   @HttpCode(HttpStatus.OK)
-  async getById(@Param() param: ParamNumberIdDto) {
+  async getById(
+    @Param() param: ParamNumberIdDto,
+    @Session() session: IUserSession,
+  ) {
     const { id } = param;
-    return await this.postService.getById(id);
+
+    return await this.postService.getById({
+      id,
+      userId: session?.userId,
+    });
   }
 
   @Post()
