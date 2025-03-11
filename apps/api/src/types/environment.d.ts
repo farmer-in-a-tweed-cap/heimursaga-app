@@ -20,6 +20,7 @@ declare global {
       SMTP_PORT: string;
       SMTP_USER: string;
       SMTP_PASSWORD: string;
+      SMTP_EMAIL_FROM: string;
 
       S3_ENDPOINT: string;
       S3_REGION: string;

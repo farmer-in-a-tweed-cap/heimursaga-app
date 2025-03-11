@@ -96,18 +96,12 @@ POST http://localhost:5000/v1/posts/210/bookmark
 
 ###
 
-# upload
-POST http://localhost:5000/v1/upload
+# email
+POST http://localhost:5000/v1/email/b1ab69e2db45272230abce24a8341fae1d7f780e
+content-type: application/json
 
-Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
-
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="file"
-
-title
-------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="image"; filename="picture.jpg"
-Content-Type: image/jpeg
-
-< /Users/morgan/picture.jpg
-------WebKitFormBoundary7MA4YWxkTrZu0gW--
+{
+    "to": "wylsadoo@gmail.com",
+    "subject": "test",
+    "html": "hi, friend"
+}
