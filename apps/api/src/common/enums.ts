@@ -3,3 +3,9 @@ export enum Role {
   PREMIUM_USER = 'premium_user',
   USER = 'user',
 }
+
+export enum UploadedFileType {
+  IMAGE = 'IMAGE',
+  VIDEO = 'VIDEO',
+  DOCUMENT = 'DOCUMENT',
+}

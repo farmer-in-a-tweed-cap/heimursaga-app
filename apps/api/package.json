@@ -27,6 +27,7 @@
     "db:seed:development": "cross-env NODE_ENV=development npx env-cmd -f ./.env.development prisma db seed"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.758.0",
     "@fastify/cookie": "^7.x",
     "@fastify/cors": "^8",
     "@fastify/helmet": "^9.x",
@@ -45,11 +46,13 @@
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
     "fastify": "5",
+    "fastify-multer": "^2.0.3",
     "module-alias": "^2.2.3",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
+    "sharp": "^0.33.5",
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
@@ -59,6 +62,7 @@
     "@nestjs/testing": "^10.0.0",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.2",
+    "@types/multer": "^1.4.12",
     "@types/node": "^20.3.1",
     "@types/supertest": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",

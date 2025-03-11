@@ -70,10 +70,12 @@ export async function app() {
       },
     );
 
-    await fastify.register<FastifyMultipartOptions>(
-      fastifyMultipart as any,
-      {} satisfies FastifyMultipartOptions,
-    );
+    await fastify.register<FastifyMultipartOptions>(fastifyMultipart as any, {
+      limits: {
+        files: 1,
+        fileSize: 2 * 1024 * 1024,
+      },
+    } satisfies FastifyMultipartOptions);
 
     // @todo
     // await fastify.register<FastifyHelmetOptions>(fastifyHelmet as any);

@@ -47,3 +47,9 @@ export const Roles = (...roles: Role[]): CustomDecorator<string> =>
 
 export const ToNumber = () =>
   Transform(({ value }) => (!value ? 0 : Number(`${value}`)));
+
+export const ToBoolean = () =>
+  Transform(
+    ({ value }) =>
+      value === 'true' || value === true || value === 1 || value === '1',
+  );
