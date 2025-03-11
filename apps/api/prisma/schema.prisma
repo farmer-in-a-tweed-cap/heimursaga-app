@@ -41,6 +41,7 @@ model UserSession {
   sid        String    @unique @db.Char(48)
   user_id    Int
   user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  expired    Boolean?  @default(false)
   expires_at DateTime
   ip_address String?   @db.VarChar(45)
   user_agent String?   @db.VarChar(255)

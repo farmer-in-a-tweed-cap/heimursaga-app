@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    "strict": true,
+    "strictNullChecks": false,
     "module": "commonjs",
     "declaration": true,
     "removeComments": true,
@@ -12,11 +14,11 @@
     "outDir": "./dist",
     "incremental": false,
     "skipLibCheck": true,
-    "strictNullChecks": false,
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
+    "useUnknownInCatchVariables": false,
     "paths": {
       "@/*": ["./src/*"]
     }

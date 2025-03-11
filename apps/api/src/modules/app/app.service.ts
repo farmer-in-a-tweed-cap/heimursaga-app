@@ -30,9 +30,11 @@ export class AppService {
             posts.map((post) => ({
               id: post.id,
               title: post.title,
-              author: {
-                name: post.author.profile.first_name,
-              },
+              author: post?.author
+                ? {
+                    name: post?.author?.profile?.first_name,
+                  }
+                : undefined,
               date: post.created_at,
             })),
           ),

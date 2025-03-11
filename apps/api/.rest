@@ -2,3 +2,41 @@
 
 
 GET http://localhost:5000
+
+###
+
+# user
+GET http://localhost:5000/v1/auth/user
+
+###
+
+# login
+POST http://localhost:5000/v1/auth/login
+content-type: application/json
+
+{
+    "email": "me1@example.com",
+    "password": "12345678"
+}
+
+###
+
+# logout
+POST http://localhost:5000/v1/auth/logout
+content-type: application/json
+
+{}
+
+### 
+
+# signup
+POST http://localhost:5000/v1/auth/signup
+content-type: application/json
+
+{
+    "username": "itsme",
+    "email": "me3@example.com",
+    "password": "12345678",
+    "firstName": "john",
+    "lastName": "beck"
+}

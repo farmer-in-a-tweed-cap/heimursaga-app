@@ -1,3 +1,4 @@
+import * as crypto from 'node:crypto';
 import * as path from 'node:path';
 
 const ENV = {
@@ -33,4 +34,15 @@ export const getEnvFilePath = (): string => {
   }
 
   return path.resolve(filePath);
+};
+
+export const hashPassword = (password: string): string => {
+  // @todo: security
+  const salt = '';
+
+  const hash = crypto
+    .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
+    .toString('hex');
+
+  return hash;
 };
