@@ -40,11 +40,12 @@ export class UploadService {
 
       const {
         thumbnail,
-        file: { buffer, mimetype },
+        file: { buffer },
       } = payload;
 
       const bucket = S3_BUCKET;
       const ext = 'webp';
+      const mimetype = 'image/webp';
 
       const hash = crypto.randomBytes(24).toString('hex');
       const keys = {
