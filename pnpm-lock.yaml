@@ -277,6 +277,18 @@ importers:
 
   packages/tsconfig: {}
 
+  packages/types:
+    devDependencies:
+      '@repo/tsconfig':
+        specifier: workspace:*
+        version: link:../tsconfig
+      '@types/node':
+        specifier: ^20.3.1
+        version: 20.11.24
+      typescript:
+        specifier: 5.5.4
+        version: 5.5.4
+
   packages/ui:
     dependencies:
       '@hookform/resolvers':
