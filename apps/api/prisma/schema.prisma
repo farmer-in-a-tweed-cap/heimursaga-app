@@ -1,0 +1,118 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                Int            @id @default(autoincrement())
+  email             String         @unique @db.VarChar(50)
+  username          String         @unique @db.VarChar(50)
+  password          String
+  role              String         @db.VarChar(10)
+  is_premium        Boolean?       @default(false)
+  is_email_verified Boolean?       @default(false)
+  profile           UserProfile?
+  sessions          UserSession[]
+  posts             Post[]
+  post_likes        PostLike[]     @relation("user_post_likes")
+  post_bookmarks    PostBookmark[] @relation("user_post_bookmarks")
+  following         UserFollow[]   @relation("user_follows_follower")
+  followers         UserFollow[]   @relation("user_follows_followee")
+  created_at        DateTime?      @default(now())
+  updated_at        DateTime?      @updatedAt
+
+  @@map("users")
+}
+
+model UserSession {
+  id         Int       @id @default(autoincrement())
+  sid        String    @unique @db.Char(48)
+  user_id    Int
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  expired    Boolean?  @default(false)
+  expires_at DateTime
+  ip_address String?   @db.VarChar(45)
+  user_agent String?   @db.VarChar(255)
+  device     String?   @db.VarChar(100)
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
+
+  @@index([expires_at])
+  @@map("user_sessions")
+}
+
+model UserProfile {
+  id         Int       @id @default(autoincrement())
+  first_name String    @db.VarChar(50)
+  last_name  String    @db.VarChar(50)
+  picture    String?   @db.VarChar(200)
+  user       User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id    Int       @unique
+  created_at DateTime? @default(now())
+  updated_at DateTime? @updatedAt
+
+  @@map("user_profiles")
+}
+
+model UserFollow {
+  id          Int      @id @default(autoincrement())
+  follower_id Int
+  followee_id Int
+  created_at  DateTime @default(now())
+  follower    User     @relation("user_follows_follower", fields: [follower_id], references: [id], onDelete: Cascade)
+  followee    User     @relation("user_follows_followee", fields: [followee_id], references: [id], onDelete: Cascade)
+
+  @@unique([follower_id, followee_id])
+  @@map("user_follows")
+}
+
+model Post {
+  id             Int            @id @default(autoincrement())
+  title          String?        @db.Char(200)
+  content        String         @db.Text
+  author         User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  author_id      Int
+  likes          PostLike[]     @relation("post_likes")
+  likesCount     Int            @default(0)
+  bookmarks      PostBookmark[] @relation("post_bookmarks")
+  bookmarksCount Int            @default(0)
+  created_at     DateTime?      @default(now())
+  updated_at     DateTime?      @updatedAt
+  deleted_at     DateTime?
+
+  @@map("posts")
+}
+
+model PostLike {
+  post_id    Int
+  user_id    Int
+  user       User      @relation("user_post_likes", fields: [user_id], references: [id], onDelete: Cascade)
+  post       Post      @relation("post_likes", fields: [post_id], references: [id], onDelete: Cascade)
+  created_at DateTime? @default(now())
+
+  @@id([post_id, user_id])
+  @@map("post_likes")
+}
+
+model PostBookmark {
+  post_id    Int
+  user_id    Int
+  user       User      @relation("user_post_bookmarks", fields: [user_id], references: [id], onDelete: Cascade)
+  post       Post      @relation("post_bookmarks", fields: [post_id], references: [id], onDelete: Cascade)
+  created_at DateTime? @default(now())
+
+  @@id([post_id, user_id])
+  @@map("post_bookmarks")
+}

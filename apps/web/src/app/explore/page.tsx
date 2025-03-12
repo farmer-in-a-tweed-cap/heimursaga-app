@@ -1,4 +1,4 @@
-import { Map } from '@/components';
+import { ExploreMap } from '@/components';
 
 type PageProps = {
   params: {
@@ -12,7 +12,7 @@ export default function Page({ params }: PageProps) {
   return (
     <div className="w-full flex flex-col justify-start items-center">
       <div className="w-full h-screen">
-        <Map className="h-screen" />
+        <ExploreMap />
       </div>
     </div>
   );

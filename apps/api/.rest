@@ -1,0 +1,107 @@
+# install this vscode plugin first -> https://marketplace.visualstudio.com/items?itemName=humao.rest-client
+
+
+GET http://localhost:5000
+
+###
+
+# user
+GET http://localhost:5000/v1/auth/user
+
+###
+
+# login
+POST http://localhost:5000/v1/auth/login
+content-type: application/json
+
+{
+    "email": "me1@example.com",
+    "password": "12345678"
+}
+
+###
+
+# logout
+POST http://localhost:5000/v1/auth/logout
+content-type: application/json
+
+{}
+
+### 
+
+# signup
+POST http://localhost:5000/v1/auth/signup
+content-type: application/json
+
+{
+    "username": "itsme",
+    "email": "me3@example.com",
+    "password": "12345678",
+    "firstName": "john",
+    "lastName": "beck"
+}
+
+### 
+
+# posts
+GET http://localhost:5000/v1/posts
+content-type: application/json
+
+### 
+
+# posts/get_by_id
+GET http://localhost:5000/v1/posts/21
+
+### 
+
+# posts/create
+POST http://localhost:5000/v1/posts
+content-type: application/json
+
+{
+    "title": "post44",
+    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout."
+}
+
+### 
+
+# posts/update
+PUT http://localhost:5000/v1/posts/213
+content-type: application/json
+
+{
+    "title": "post!!",
+    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout."
+}
+
+### 
+
+# posts/delete
+DELETE http://localhost:5000/v1/posts/213
+
+###
+
+# posts/like
+PUT http://localhost:5000/v1/posts/213/like
+
+###
+
+# posts/like
+POST http://localhost:5000/v1/posts/212/like
+
+###
+
+# posts/bookmark
+POST http://localhost:5000/v1/posts/210/bookmark
+
+###
+
+# email
+POST http://localhost:5000/v1/email/b1ab69e2db45272230abce24a8341fae1d7f780e
+content-type: application/json
+
+{
+    "to": "wylsadoo@gmail.com",
+    "subject": "test",
+    "html": "hi, friend"
+}

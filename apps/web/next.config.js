@@ -1,5 +1,7 @@
 const path = require('path');
 
+const { NEXT_PUBLIC_API_BASE_URL } = process.env;
+
 module.exports = {
   reactStrictMode: true,
   transpilePackages: ['@repo/ui'],
@@ -15,5 +17,14 @@ module.exports = {
         pathname: '/**',
       },
     ],
+  },
+  // proxy requests to backend
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${NEXT_PUBLIC_API_BASE_URL}/:path*`,
+      },
+    ];
   },
 };

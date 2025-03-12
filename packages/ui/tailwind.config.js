@@ -18,6 +18,9 @@ module.exports = {
         secondary: {
           DEFAULT: '#212121',
         },
+        destructive: {
+          DEFAULT: '#CC3300',
+        },
       },
       aspectRatio: {
         '4/3': '4/3',

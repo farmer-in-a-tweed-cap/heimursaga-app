@@ -1,0 +1,293 @@
+import { Injectable } from '@nestjs/common';
+
+import { dateformat } from '@/lib/date-format';
+import { generator } from '@/lib/generator';
+import { hashPassword } from '@/lib/utils';
+
+import { Role } from '@/common/enums';
+import {
+  ServiceBadRequestException,
+  ServiceException,
+  ServiceForbiddenException,
+  ServiceNotFoundException,
+  ServiceUnauthorizedException,
+} from '@/common/exceptions';
+import { IUserSession } from '@/common/interfaces';
+import { Logger } from '@/modules/logger';
+import { PrismaService } from '@/modules/prisma';
+
+import {
+  ILoginQueryPayload,
+  ILoginQueryResponse,
+  ISessionUserQueryResponse,
+  ISignupQueryPayload,
+  IUserSessionCreatePayload,
+} from './auth.interface';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private logger: Logger,
+    private prisma: PrismaService,
+  ) {}
+
+  async getSessionUser(
+    payload: IUserSession,
+  ): Promise<ISessionUserQueryResponse> {
+    try {
+      const { userId } = payload;
+      if (!userId) throw new ServiceNotFoundException('user not found');
+
+      // get the user
+      const user = await this.prisma.user.findFirstOrThrow({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+          role: true,
+          username: true,
+          email: true,
+          is_email_verified: true,
+          is_premium: true,
+          profile: {
+            select: {
+              first_name: true,
+              last_name: true,
+              picture: true,
+            },
+          },
+        },
+      });
+      if (!user) throw new ServiceForbiddenException('user not found');
+
+      const {
+        email,
+        role,
+        username,
+        is_email_verified: isEmailVerified,
+        is_premium: isPremium,
+      } = user;
+      const {
+        first_name: firstName,
+        last_name: lastName,
+        picture,
+      } = user?.profile || {};
+
+      const response: ISessionUserQueryResponse = {
+        email,
+        username,
+        role,
+        firstName,
+        lastName,
+        picture,
+        isEmailVerified,
+        isPremium,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('user not found');
+      throw exception;
+    }
+  }
+
+  async login(payload: ILoginQueryPayload): Promise<ILoginQueryResponse> {
+    try {
+      const { email, session } = payload;
+      const { sid, ip, userAgent } = session || {};
+
+      const password = hashPassword(payload.password);
+
+      // @todo
+      // const method: 'username' | 'email' | 'unknown' = email
+      //   ? 'email'
+      //   : username
+      //     ? 'username'
+      //     : 'unknown';
+
+      // validate the user
+      const user = await this.prisma.user
+        .findFirstOrThrow({ where: { email, password } })
+        .catch(() => null);
+      if (!user) throw new ServiceBadRequestException('bad email or password');
+
+      // create a session
+      const userSession = await this.createSession({
+        sid,
+        userId: user.id,
+        ip,
+        userAgent,
+      });
+
+      // @todo
+      // trigger the login event
+
+      const response: ILoginQueryResponse = {
+        session: userSession,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('log in failed');
+      throw exception;
+    }
+  }
+
+  async signup(payload: ISignupQueryPayload): Promise<void> {
+    try {
+      const { firstName, lastName } = payload;
+
+      // format email and username
+      const username = payload.username.trim().toLowerCase();
+      const email = payload.email.trim().toLowerCase();
+
+      // hash password
+      const password = hashPassword(payload.password);
+
+      // check if the email is available
+      const isEmailAvailable = await this.prisma.user
+        .count({ where: { email } })
+        .then((count) => count <= 0);
+      if (!isEmailAvailable)
+        throw new ServiceForbiddenException('email already in use');
+
+      // check if the username is available
+      const isUsernameAvailable = await this.prisma.user
+        .count({ where: { username } })
+        .then((count) => count <= 0);
+      if (!isUsernameAvailable)
+        throw new ServiceForbiddenException('username already in use');
+
+      // create a user
+      const user = await this.prisma.user.create({
+        data: {
+          email,
+          username,
+          role: Role.USER,
+          password,
+          profile: {
+            create: { first_name: firstName, last_name: lastName, picture: '' },
+          },
+        },
+        select: {
+          id: true,
+          email: true,
+        },
+      });
+
+      // @todo
+      // trigger the sign up event
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('sign up failed');
+      throw exception;
+    }
+  }
+
+  async logout(payload: IUserSession): Promise<void> {
+    try {
+      const { sid } = payload;
+
+      // invalidate the session
+      await this.prisma.userSession
+        .updateMany({
+          where: { sid },
+          data: { expired: true, expires_at: dateformat().toDate() },
+        })
+        .catch((e) => {
+          throw new ServiceForbiddenException('session not found');
+        });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('session not found');
+      throw exception;
+    }
+  }
+
+  async createSession(payload: IUserSessionCreatePayload) {
+    try {
+      const { ip, userAgent, userId, sid } = payload || {};
+
+      // validate the session
+      const session = await this.validateSession({ sid });
+      if (session)
+        throw new ServiceBadRequestException('session already exists');
+
+      const sessionId = sid ? sid : generator.sessionId();
+      const expiredAt = dateformat().add(168, 'h').toDate();
+
+      // create a session
+      await this.prisma.userSession.create({
+        data: {
+          sid: sessionId,
+          expires_at: expiredAt,
+          ip_address: ip,
+          user_agent: userAgent,
+          user_id: userId,
+        },
+      });
+
+      const response = {
+        sid: sessionId,
+        expiredAt,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('session not created');
+      throw exception;
+    }
+  }
+
+  async validateSession(payload: { sid: string }): Promise<{
+    sid: string;
+    userId: number;
+    role: Role;
+  } | null> {
+    try {
+      const { sid } = payload;
+
+      if (!sid) throw new ServiceUnauthorizedException();
+
+      // check the session
+      const session = await this.prisma.userSession.findFirstOrThrow({
+        where: { sid },
+        select: {
+          id: true,
+          sid: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              role: true,
+            },
+          },
+        },
+      });
+
+      const response = {
+        sid: session.sid,
+        role: session.user.role as Role,
+        userId: session.user.id,
+      };
+
+      return response;
+    } catch (e) {
+      return null;
+    }
+  }
+}

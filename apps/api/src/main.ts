@@ -1,18 +1,16 @@
-import { NestFactory } from '@nestjs/core';
+import * as dotenv from 'dotenv';
 
-import { AppModule } from './modules/app';
+import { getEnvFilePath } from '@/lib/utils';
 
-const HOST = process.env.HOST || '0.0.0.0';
-const PORT = process.env.PORT || 5000;
+import { app } from './app';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  await app.listen(PORT, HOST, () => {
-    console.log('api server running');
-  });
-}
-bootstrap();
+// import env variables
+dotenv.config({ path: getEnvFilePath() });
 
+// run the app
+app();
+
+// handle exceptions
 process.on('uncaughtException', (e) => {
   console.log('uncaughtException', e);
 });

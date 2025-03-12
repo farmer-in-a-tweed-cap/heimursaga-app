@@ -1,7 +1,5 @@
 import { AppFooter, AppHeader } from '@/components';
 
-import { RootLayout } from './root-layout';
-
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">

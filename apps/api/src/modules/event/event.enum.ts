@@ -1,0 +1,5 @@
+export const EVENTS = {
+  LOGIN: 'login',
+  SIGNUP: 'signup',
+  SEND_EMAIL: 'send_email',
+};
