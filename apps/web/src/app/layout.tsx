@@ -1,6 +1,8 @@
+import '@repo/ui/globals.css';
 import { Metadata } from 'next';
+import Head from 'next/head';
 
-import { AppProvider, RootLayout } from '@/components';
+import { AppProvider } from '@/components';
 
 export const metadata: Metadata = {
   title: 'saga',
@@ -13,8 +15,13 @@ export const metadata: Metadata = {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <RootLayout>
-      <AppProvider>{children}</AppProvider>
-    </RootLayout>
+    <html lang="en">
+      <Head>
+        <link rel="icon" href="/favicon.png" sizes="any" />
+      </Head>
+      <body>
+        <AppProvider>{children}</AppProvider>
+      </body>
+    </html>
   );
 }

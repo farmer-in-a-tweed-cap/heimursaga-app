@@ -1,17 +1,30 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
+
+import { QUERY_KEYS, fetchPosts } from '@/lib/api';
+
 import { AppLayout } from '@/components';
 
-const { API_HOST } = process.env;
-
 export default async function App() {
-  const results = await fetch(`${API_HOST}/test`)
-    .then((response) => response.json())
-    .catch((e) => null);
+  const client = new QueryClient();
+
+  await client.prefetchQuery({
+    queryKey: [QUERY_KEYS.POSTS],
+    queryFn: fetchPosts,
+  });
+
+  const dehydratedState = dehydrate(client);
 
   return (
     <AppLayout>
-      <main className="flex flex-col justify-center items-center gap-4 w-full max-w-l">
-        {JSON.stringify({ results })}
-      </main>
+      <HydrationBoundary state={dehydratedState}>
+        <main className="flex flex-col justify-center items-center gap-4 w-full max-w-l">
+          {JSON.stringify({ state: dehydratedState })}
+        </main>
+      </HydrationBoundary>
     </AppLayout>
   );
 }
