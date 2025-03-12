@@ -36,7 +36,7 @@ export class UploadService {
 
   async upload(payload: IUploadMediaPayload): Promise<IUploadMediaResponse> {
     try {
-      const { S3_BUCKET } = process.env;
+      const { S3_ENDPOINT, S3_BUCKET } = process.env;
 
       const {
         thumbnail,
@@ -108,11 +108,9 @@ export class UploadService {
         ),
       );
 
-      console.log({ s });
-
       const response: IUploadMediaResponse = {
-        original: paths.original,
-        thumbnail: paths.thumbnail,
+        original: `${S3_ENDPOINT}/${paths.original}`,
+        thumbnail: `${S3_ENDPOINT}/${paths.thumbnail}`,
       };
 
       return response;

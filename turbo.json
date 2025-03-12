@@ -6,9 +6,9 @@
       "outputs": ["dist/**", ".next/**", "!.next/cache/**", "public/dist/**"],
       "dependsOn": ["^build"],
       "env": [
-        "NEXT_PUBLIC_API_HOST",
+        "NEXT_PUBLIC_APP_BASE_URL",
+        "NEXT_PUBLIC_API_BASE_URL",
         "MAPBOX_ACCESS_TOKEN",
-        "API_BASE_URL",
         "DATABASE_URL",
         "DIRECT_URL",
         "CORS_ORIGIN",

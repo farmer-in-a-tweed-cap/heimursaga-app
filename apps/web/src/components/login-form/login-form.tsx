@@ -18,11 +18,13 @@ import {
   Label,
 } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { loginMutation } from '@/lib/actions';
 import { fieldmsg } from '@/lib/utils';
 
 import { ROUTER } from '@/router';
@@ -47,16 +49,21 @@ export const LoginForm = ({
 }: React.ComponentPropsWithoutRef<'div'>) => {
   const [loading, setLoading] = useState<boolean>(false);
 
+  const mutation = useMutation(loginMutation);
+
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      email: 'me@example.com',
+      email: 'me2@example.com',
       password: '12345678',
     },
   });
 
   const handleSubmit = form.handleSubmit((values: z.infer<typeof schema>) => {
     setLoading(true);
+
+    mutation.mutate({ email: 'me1@example.com', password: '12345678' });
+
     console.log(values);
     setTimeout(() => {
       setLoading(false);

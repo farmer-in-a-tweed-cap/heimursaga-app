@@ -31,7 +31,7 @@ export async function app() {
     const API_PREFIX = `v${API_VERSION}`;
     const COOKIE_SECRET = process.env.COOKIE_SECRET;
     const SESSION_SECRET = process.env.SESSION_SECRET;
-    const CORS_ORIGIN = process.env.CORS_ORIGIN?.split(';') || [];
+    const CORS_ORIGIN = process.env.CORS_ORIGIN;
     const DISABLE_ERROR_MESSAGES = IS_PRODUCTION;
 
     // create a fastify adapter
@@ -45,9 +45,9 @@ export async function app() {
 
     // set fastify plugins
     await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
-      origin: CORS_ORIGIN,
+      origin: CORS_ORIGIN?.split(';') || [],
       credentials: true,
-      methods: 'GET,POST,PATCH,PUT,DELETE',
+      methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     } satisfies FastifyCorsOptions);
 
     await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
@@ -55,6 +55,9 @@ export async function app() {
       parseOptions: {
         httpOnly: true,
         path: '/',
+        maxAge: 3600,
+        secure: IS_PRODUCTION,
+        // sameSite: 'strict',
       },
     } satisfies FastifyCookieOptions);
 

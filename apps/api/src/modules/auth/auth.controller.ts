@@ -25,6 +25,10 @@ export class AuthController {
   @Get('user')
   @HttpCode(HttpStatus.OK)
   async getSessionUser(@Session() session: IUserSession) {
+    console.log('user', {
+      session,
+    });
+
     return await this.authService.getSessionUser(session);
   }
 
