@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { COOKIE_KEYS, SESSION_KEYS } from '@/common/constants';
+import { SESSION_KEYS } from '@/common/constants';
 import { Public, Session } from '@/common/decorators';
 import { IRequest, IResponse, IUserSession } from '@/common/interfaces';
 
@@ -49,22 +49,10 @@ export class AuthController {
   @Public()
   @Post('signup')
   @HttpCode(HttpStatus.OK)
-  async signup(
-    @Req() req: IRequest,
-    @Res() res: IResponse,
-    @Body() body: SignupPayloadDto,
-    // @Session() session: IUserSession,
-  ) {
-    // @todo
-
-    await this.authService.signup({
+  async signup(@Body() body: SignupPayloadDto) {
+    return this.authService.signup({
       ...body,
-      // session,
     });
-
-    // @todo
-    req.session.set(SESSION_KEYS.SID, 'user.session.sid');
-    res.send();
   }
 
   @Post('logout')

@@ -80,7 +80,7 @@ export const SignupForm = ({
     defaultValues: {
       firstName: 'jack',
       lastName: 'nicholson',
-      username: 'nicholson',
+      username: 'jackyboy',
       email: 'me@example.com',
       password: '12345678',
     },
@@ -145,6 +145,21 @@ export const SignupForm = ({
                             required
                             {...field}
                           />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading} required {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
