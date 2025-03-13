@@ -64,7 +64,6 @@ export const MapDialog: React.FC<Props> = ({
 
   const handleMapMove = (data: { lat: number; lon: number; alt: number }) => {
     const { lat, lon, alt } = data;
-    console.log('move', data);
 
     setMap((map) => ({
       ...map,

@@ -1,15 +1,57 @@
 'use client';
 
-import { Button, Dialog, DialogTrigger } from '@repo/ui/components';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Button,
+  Dialog,
+  DialogTrigger,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  Input,
+  Textarea,
+} from '@repo/ui/components';
+import { Link } from 'lucide-react';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+
+import { fieldmsg } from '@/lib/utils';
 
 import { MapDialog } from '@/components/dialog';
 
 import { Map } from '@/components';
 import { useMapbox } from '@/hooks/use-mapbox';
+import { ROUTER } from '@/router';
+
+const schema = z.object({
+  title: z
+    .string()
+    .nonempty(fieldmsg.required('title'))
+    .min(10, fieldmsg.min('title', 10))
+    .max(50, fieldmsg.max('title', 50)),
+  content: z
+    .string()
+    .nonempty(fieldmsg.required('content'))
+    .min(2, fieldmsg.min('content', 25))
+    .max(3000, fieldmsg.max('content', 3000)),
+});
 
 export const PostCreateForm = () => {
   const mapbox = useMapbox();
+
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      title: '',
+      content: '',
+    },
+  });
+
+  const [loading, setLoading] = useState<boolean>(false);
 
   const [location, setLocation] = useState<{
     lat: number;
@@ -35,7 +77,6 @@ export const PostCreateForm = () => {
     };
   }) => {
     const { lat, lon, alt, marker } = location;
-    console.log('location:', { lat, lon, alt, marker });
 
     setLocation((location) => ({
       ...location,
@@ -46,8 +87,22 @@ export const PostCreateForm = () => {
     }));
   };
 
+  const handleSubmit = form.handleSubmit(
+    async (values: z.infer<typeof schema>) => {
+      setLoading(true);
+
+      console.log(values);
+
+      // await mutation.mutate(values);
+
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
+    },
+  );
+
   return (
-    <div className="mt-4 flex flex-col">
+    <div className="flex flex-col">
       <div className="flex flex-col gap-4">
         <div>
           <Dialog>
@@ -87,6 +142,58 @@ export const PostCreateForm = () => {
               onSubmit={handleLocationChange}
             />
           </Dialog>
+        </div>
+        <div className="mt-4">
+          <Form {...form}>
+            <form onSubmit={handleSubmit}>
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Title</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading} required {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="content"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Content</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            className="min-h-[180px]"
+                            disabled={loading}
+                            required
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div>
+                  <Button
+                    type="submit"
+                    className="min-w-[180px]"
+                    loading={loading}
+                  >
+                    Post
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Form>
         </div>
       </div>
     </div>

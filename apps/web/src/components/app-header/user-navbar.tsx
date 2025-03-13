@@ -28,31 +28,34 @@ export const UserNavbar = () => {
     },
   });
 
+  const handleCreatePostClick = () => {
+    redirect(ROUTER.POSTS.CREATE);
+  };
+
   const handleLogout = () => {
     logoutMutation.mutate();
   };
 
   const { username, picture = '', firstName = '' } = session || {};
 
-  return (
-    <div className="flex flex-row items-center">
-      {session ? (
-        <div className="flex flex-row items-center gap-2">
-          <Link href={`${ROUTER.MEMBERS}/${username}`}>
-            <Avatar>
-              <AvatarImage src={picture} />
-              <AvatarFallback>{firstName.slice(0, 1)}</AvatarFallback>
-            </Avatar>
-          </Link>
-          <Button variant="ghost" onClick={handleLogout}>
-            <LogOut />
-          </Button>
-        </div>
-      ) : (
-        <Link href={ROUTER.LOGIN}>
-          <Button>Log in</Button>
+  return session ? (
+    <div className="flex flex-row items-center gap-10">
+      <Button onClick={handleCreatePostClick}>Create post</Button>
+      <div className="flex flex-row items-center gap-2">
+        <Link href={`${ROUTER.MEMBERS}/${username}`}>
+          <Avatar>
+            <AvatarImage src={picture} />
+            <AvatarFallback>{firstName.slice(0, 1)}</AvatarFallback>
+          </Avatar>
         </Link>
-      )}
+        <Button variant="ghost" onClick={handleLogout}>
+          <LogOut />
+        </Button>
+      </div>
     </div>
+  ) : (
+    <Link href={ROUTER.LOGIN}>
+      <Button>Log in</Button>
+    </Link>
   );
 };

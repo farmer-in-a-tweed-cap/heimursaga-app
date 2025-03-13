@@ -44,7 +44,6 @@ export const Map: React.FC<Props> = ({
     if (!mapboxRef.current || !mapReady) return;
 
     const { lat, lon, alt } = coordinates;
-    console.log('useEffect triggered - coordinates change:', { lat, lon, alt });
 
     if (disabled) {
       mapboxRef.current.setCenter([lon, lat]);
@@ -55,6 +54,12 @@ export const Map: React.FC<Props> = ({
   useEffect(() => {
     if (!mapboxRef.current || !mapReady || !marker) return;
 
+    // remove existing marker if it exists
+    if (markerRef.current) {
+      markerRef.current.remove();
+    }
+
+    // create a marker
     const { lat, lon } = marker;
     markerRef.current = new mapboxgl.Marker({
       color: '#212121',
@@ -110,6 +115,12 @@ export const Map: React.FC<Props> = ({
     mapboxRef.current = new mapboxgl.Map(mapboxConfig);
 
     if (marker) {
+      // remove existing marker if it exists
+      if (markerRef.current) {
+        markerRef.current.remove();
+      }
+
+      // create a marker
       const { lat, lon } = marker;
       markerRef.current = new mapboxgl.Marker({
         color: '#212121',
@@ -130,23 +141,24 @@ export const Map: React.FC<Props> = ({
         mapboxRef.current.getCanvas().style.cursor = cursor;
       }
 
+      // @remove
       // add demo geojson data
-      mapboxRef.current.addSource('earthquakes', {
-        type: 'geojson',
-        data: 'https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson',
-      });
+      // mapboxRef.current.addSource('earthquakes', {
+      //   type: 'geojson',
+      //   data: 'https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson',
+      // });
 
-      mapboxRef.current.addLayer({
-        id: 'earthquakes-layer',
-        type: 'circle',
-        source: 'earthquakes',
-        paint: {
-          'circle-radius': 5,
-          'circle-stroke-width': 0,
-          'circle-color': 'red',
-          'circle-stroke-color': 'white',
-        },
-      });
+      // mapboxRef.current.addLayer({
+      //   id: 'earthquakes-layer',
+      //   type: 'circle',
+      //   source: 'earthquakes',
+      //   paint: {
+      //     'circle-radius': 5,
+      //     'circle-stroke-width': 0,
+      //     'circle-color': 'red',
+      //     'circle-stroke-color': 'white',
+      //   },
+      // });
 
       if (controls) {
         // @todo: customize controls
@@ -165,7 +177,7 @@ export const Map: React.FC<Props> = ({
           markerRef.current.remove();
         }
 
-        // create new marker
+        // create a new marker
         markerRef.current = new mapboxgl.Marker({
           color: '#212121',
           scale: 0.75,
@@ -189,21 +201,6 @@ export const Map: React.FC<Props> = ({
           onMove({ lat, lon, alt });
         });
       }
-
-      // update on move
-      // mapboxRef.current.on('moveend', () => {
-      //   if (!mapboxRef.current) return;
-
-      //   const { lng: lon, lat } = mapboxRef.current.getCenter();
-      //   const zoom = mapboxRef.current.getZoom();
-
-      //   setCoordinates((coordinates) => ({
-      //     ...coordinates,
-      //     lat,
-      //     lon,
-      //     alt: zoom,
-      //   }));
-      // });
     }
 
     // @todo
