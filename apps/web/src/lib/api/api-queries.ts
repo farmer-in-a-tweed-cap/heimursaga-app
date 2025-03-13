@@ -1,9 +1,10 @@
-import { apiClient } from './api-client';
 import {
   ILoginQueryPayload,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
-} from './api-types';
+} from '../../types/api-types';
+
+import { apiClient } from './api-client';
 
 export const QUERY_KEYS = {
   LOGIN: 'login',
@@ -31,7 +32,7 @@ export const signupMutation = createMutation<ISignupQueryPayload, void>(
   apiClient.signup,
 );
 
-export const logoutMutation = createMutation<void, void>(apiClient.logout);
+// export const logoutMutation = createMutation<void, void>(()=>apiClient.logout);
 
 export const getSessionQuery = createQuery<ISessionUserQueryResponse>(
   QUERY_KEYS.GET_SESSION,

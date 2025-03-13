@@ -9,18 +9,22 @@ type Props = {
   username?: string;
   firstName?: string;
   lastName?: string;
+  picture?: string;
 };
 
 export const UserProfileCard: React.FC<Props> = ({
-  username,
-  firstName,
-  lastName,
+  username = '',
+  firstName = '',
+  lastName = '',
+  picture = '',
 }) => (
   <div className="w-full min-h-[140px] flex flex-col bg-white box-border p-6 rounded-xl drop-shadow-xl">
     <div className="flex flex-col">
       <Avatar className="w-[80px] h-[80px]">
-        <AvatarImage src="https://github.com/shadcn.png" />
-        <AvatarFallback>{username}</AvatarFallback>
+        <AvatarImage src={picture} />
+        <AvatarFallback className="text-base">
+          {firstName.slice(0, 1)}
+        </AvatarFallback>
       </Avatar>
       <div className="mt-4 flex flex-col">
         <span className="font-medium text-3xl">
@@ -40,9 +44,3 @@ export const UserProfileCard: React.FC<Props> = ({
     </div>
   </div>
 );
-
-UserProfileCard.defaultProps = {
-  username: '',
-  firstName: '',
-  lastName: '',
-};

@@ -9,3 +9,7 @@ export const fieldmsg = {
   nonempty: (field: string) => `${field} cannot be empty`,
   email: () => `invalid email format`,
 };
+
+export const redirect = (href: string) => {
+  window.location.href = href;
+};

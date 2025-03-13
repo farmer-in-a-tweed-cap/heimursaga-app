@@ -39,7 +39,11 @@ export const UserFeed: React.FC<Props> = () => {
             .map((post, key) => (
               <UserPostCard
                 key={key}
-                username="mick"
+                author={{
+                  firstName: 'jack',
+                  username: 'jackyboy',
+                  picture: '',
+                }}
                 date="Feb 15"
                 thumbnail="https://images.alltrails.com/eyJidWNrZXQiOiJhc3NldHMuYWxsdHJhaWxzLmNvbSIsImtleSI6InVwbG9hZHMvcGhvdG8vaW1hZ2UvOTM1MDAwMTEvMjQzMDZhODk1Mzg3YjUyYTcxZTdiYTUyOWQyMDEyN2QuanBnIiwiZWRpdHMiOnsidG9Gb3JtYXQiOiJqcGVnIiwicmVzaXplIjp7IndpZHRoIjoyMDQ4LCJoZWlnaHQiOjIwNDgsImZpdCI6Imluc2lkZSJ9LCJyb3RhdGUiOm51bGwsImpwZWciOnsidHJlbGxpc1F1YW50aXNhdGlvbiI6dHJ1ZSwib3ZlcnNob290RGVyaW5naW5nIjp0cnVlLCJvcHRpbWlzZVNjYW5zIjp0cnVlLCJxdWFudGlzYXRpb25UYWJsZSI6M319fQ=="
                 content={`[f] We got to the MacRitchie Reservoir by taking the train to Caldecott and
@@ -57,7 +61,11 @@ export const UserFeed: React.FC<Props> = () => {
             .map((post, key) => (
               <UserPostCard
                 key={key}
-                username="mick"
+                author={{
+                  firstName: 'jack',
+                  username: 'jackyboy',
+                  picture: '',
+                }}
                 date="Feb 15"
                 thumbnail="https://images.alltrails.com/eyJidWNrZXQiOiJhc3NldHMuYWxsdHJhaWxzLmNvbSIsImtleSI6InVwbG9hZHMvcGhvdG8vaW1hZ2UvOTM1MDAwMTEvMjQzMDZhODk1Mzg3YjUyYTcxZTdiYTUyOWQyMDEyN2QuanBnIiwiZWRpdHMiOnsidG9Gb3JtYXQiOiJqcGVnIiwicmVzaXplIjp7IndpZHRoIjoyMDQ4LCJoZWlnaHQiOjIwNDgsImZpdCI6Imluc2lkZSJ9LCJyb3RhdGUiOm51bGwsImpwZWciOnsidHJlbGxpc1F1YW50aXNhdGlvbiI6dHJ1ZSwib3ZlcnNob290RGVyaW5naW5nIjp0cnVlLCJvcHRpbWlzZVNjYW5zIjp0cnVlLCJxdWFudGlzYXRpb25UYWJsZSI6M319fQ=="
                 content={`[b]We got to the MacRitchie Reservoir by taking the train to Caldecott and
@@ -79,5 +87,3 @@ export const UserFeed: React.FC<Props> = () => {
     </Tabs>
   );
 };
-
-UserFeed.defaultProps = {};

@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { SESSION_KEYS } from '@/common/constants';
+import { COOKIE_KEYS, SESSION_KEYS } from '@/common/constants';
 import { Public, Session } from '@/common/decorators';
 import { IRequest, IResponse, IUserSession } from '@/common/interfaces';
 
@@ -25,10 +25,6 @@ export class AuthController {
   @Get('user')
   @HttpCode(HttpStatus.OK)
   async getSessionUser(@Session() session: IUserSession) {
-    console.log('user', {
-      session,
-    });
-
     return await this.authService.getSessionUser(session);
   }
 
@@ -81,6 +77,7 @@ export class AuthController {
     try {
       await this.authService.logout(session);
     } finally {
+      // clear the session
       req.session.delete();
       res.send();
     }

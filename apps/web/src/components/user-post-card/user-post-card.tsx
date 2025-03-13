@@ -9,14 +9,18 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 type Props = {
-  username?: string;
   date?: string;
   content?: string;
   thumbnail?: string;
+  author?: { picture?: string; username?: string; firstName?: string };
 };
 
 export const UserPostCard: React.FC<Props> = ({
-  username,
+  author = {
+    firstName: '',
+    picture: '',
+    username: '',
+  },
   date,
   content,
   thumbnail,
@@ -26,13 +30,13 @@ export const UserPostCard: React.FC<Props> = ({
       <div className="flex flex-row justify-start items-center gap-3">
         <Link href="#">
           <Avatar className="w-[40px] h-[40px]">
-            <AvatarImage src="https://github.com/shadcn.png" />
-            <AvatarFallback>{username}</AvatarFallback>
+            <AvatarImage src={author?.picture} />
+            <AvatarFallback>{author?.firstName?.slice(0, 1)}</AvatarFallback>
           </Avatar>
         </Link>
         <div className="flex flex-col items-start justify-center">
           <Link href="#">
-            <span className="text-sm font-semibold">{username}</span>
+            <span className="text-sm font-semibold">{author?.firstName}</span>
           </Link>
           <span className="text-xs text-gray-500">{date}</span>
         </div>

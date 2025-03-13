@@ -50,25 +50,29 @@ export async function app() {
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     } satisfies FastifyCorsOptions);
 
-    await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
-      secret: COOKIE_SECRET,
-      parseOptions: {
-        httpOnly: true,
-        path: '/',
-        maxAge: 3600,
-        secure: IS_PRODUCTION,
-        // sameSite: 'strict',
-      },
-    } satisfies FastifyCookieOptions);
+    // @todo: remove cookie plugin
+    // await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
+    //   secret: COOKIE_SECRET,
+    //   parseOptions: {
+    //     httpOnly: true,
+    //     path: '/',
+    //     maxAge: 3600,
+    //     secure: IS_PRODUCTION,
+    //     // sameSite: 'strict',
+    //   },
+    // } satisfies FastifyCookieOptions);
 
     await fastify.register<FastifySecureSessionOptions>(
       fastifySecureSession as any,
       {
         key: Buffer.from(SESSION_SECRET, 'hex'),
+        sessionName: 'session',
         cookieName: 'sid',
         cookie: {
           httpOnly: true,
           path: '/',
+          maxAge: 3600,
+          secure: IS_PRODUCTION,
         },
       },
     );

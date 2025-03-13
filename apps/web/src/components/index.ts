@@ -1,5 +1,5 @@
 export * from './layout';
-export * from './app-provider';
+export * from './provider';
 export * from './app-header';
 export * from './app-footer';
 export * from './login-form';

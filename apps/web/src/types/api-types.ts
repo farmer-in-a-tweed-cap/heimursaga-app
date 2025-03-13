@@ -11,7 +11,7 @@ export interface ISignupQueryPayload {
   lastName: string;
 }
 
-export interface ISessionUserQueryResponse {
+export interface ISessionUser {
   role: string;
   username: string;
   email: string;
@@ -21,3 +21,5 @@ export interface ISessionUserQueryResponse {
   isEmailVerified: boolean;
   isPremium: boolean;
 }
+
+export interface ISessionUserQueryResponse extends ISessionUser {}

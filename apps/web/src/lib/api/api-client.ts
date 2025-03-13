@@ -1,9 +1,10 @@
-import { API_ROUTER, Api } from './api';
 import {
   ILoginQueryPayload,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
-} from './api-types';
+} from '../../types/api-types';
+
+import { API_ROUTER, Api } from './api';
 
 const baseUrl = `${process.env.NEXT_PUBLIC_APP_BASE_URL}/api`;
 
@@ -28,10 +29,11 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-  logout: async () =>
+  logout: async ({ cookie }: { cookie: string }) =>
     api.request<void>(API_ROUTER.LOGOUT, {
       method: 'POST',
       body: JSON.stringify({}),
+      cookie,
     }),
   getSession: async ({ cookie }: { cookie: string }) =>
     api.request<ISessionUserQueryResponse>(API_ROUTER.GET_SESSION_USER, {

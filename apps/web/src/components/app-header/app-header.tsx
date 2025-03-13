@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { APP_HEADER_HEIGHT } from '@/constants';
 import { ROUTER } from '@/router';
 
+import { UserNavbar } from './user-navbar';
+
 const data = {
   menu: [
     { href: ROUTER.EXPLORE, label: 'Explore' },
@@ -38,9 +40,7 @@ export const AppHeader = () => {
               ))}
             </div>
           </nav>
-          <Link href={ROUTER.LOGIN}>
-            <Button>Log in</Button>
-          </Link>
+          <UserNavbar />
         </div>
       </div>
     </div>

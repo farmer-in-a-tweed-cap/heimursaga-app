@@ -69,11 +69,10 @@ export class Api {
       credentials: 'include',
     });
 
-    const body: ApiResponse<R> = await response.json().catch(() => ({}));
+    const body: R = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const { message } = body || {};
-
+      const { message } = (body as ApiResponse<R>) || {};
       throw new Error(message);
     }
 

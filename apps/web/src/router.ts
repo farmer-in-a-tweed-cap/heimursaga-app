@@ -3,4 +3,8 @@ export const ROUTER = {
   LOGIN: '/login',
   SIGNUP: '/signup',
   EXPLORE: '/explore',
+  DASHBOARD: {
+    HOME: '/dashboard',
+  },
+  MEMBERS: '/members',
 };

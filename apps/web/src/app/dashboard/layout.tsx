@@ -1,13 +1,12 @@
-import '@repo/ui/globals.css';
 import { Metadata } from 'next';
-import { AppProps } from 'next/app';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 import { apiClient } from '@/lib/api';
 
-import { AppProvider } from '@/components';
+import { AppMapLayout } from '@/components';
 import { SessionProvider } from '@/contexts';
-import { AppPropsWithLayout } from '@/types';
+import { ROUTER } from '@/router';
 
 export const metadata: Metadata = {
   title: 'saga',
@@ -18,7 +17,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default async function Layout({
   children,
 }: {
   children: React.ReactNode;
@@ -26,17 +25,13 @@ export default async function RootLayout({
   const cookie = cookies().toString();
   const session = await apiClient.getSession({ cookie }).catch(() => null);
 
-  // if (!session) {
-  //   return redirect(ROUTER.LOGIN);
-  // }
+  if (!session) {
+    return redirect(ROUTER.LOGIN);
+  }
 
   return (
-    <html lang="en">
-      <body>
-        <AppProvider>
-          <SessionProvider state={session}>{children}</SessionProvider>
-        </AppProvider>
-      </body>
-    </html>
+    <SessionProvider state={session}>
+      <AppMapLayout>{children}</AppMapLayout>
+    </SessionProvider>
   );
 }
