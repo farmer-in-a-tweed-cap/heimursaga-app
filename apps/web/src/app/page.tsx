@@ -5,42 +5,41 @@ import {
 } from '@tanstack/react-query';
 import { cookies } from 'next/headers';
 
-import {
-  ISessionUserQueryResponse,
-  getSessionUserSSRQuery,
-} from '@/lib/actions';
+import { ISessionUserQueryResponse, QUERY_KEYS, apiClient } from '@/lib/api';
+
+import { LogoutButton } from '@/components/button';
 
 import { AppLayout } from '@/components';
 
 export default async function App() {
   const cookie = cookies().toString();
 
-  const client = new QueryClient();
+  const queryClient = new QueryClient();
 
-  const state = dehydrate(client);
-
-  await client.prefetchQuery({
-    queryKey: getSessionUserSSRQuery.queryKey,
-    queryFn: () => getSessionUserSSRQuery.queryFn({ cookie }),
+  await queryClient.prefetchQuery({
+    queryKey: [QUERY_KEYS.GET_SESSION],
+    queryFn: () => apiClient.getSession({ cookie }),
   });
 
-  const user = client.getQueryData<ISessionUserQueryResponse>(
-    getSessionUserSSRQuery.queryKey,
-  );
+  const state = dehydrate(queryClient);
+
+  const session = queryClient.getQueryData<ISessionUserQueryResponse>([
+    QUERY_KEYS.GET_SESSION,
+  ]);
 
   return (
     <AppLayout>
       <HydrationBoundary state={state}>
         <main className="flex flex-col justify-center items-center gap-4 w-full max-w-l">
           <div className="w-[500px] p-4 whitespace-pre-line break-words text-xs">
-            {JSON.stringify({ user })}
+            {JSON.stringify({ session })}
           </div>
-          {/* {user && (
+          {session && (
             <div>
               <LogoutButton />
             </div>
-          )} */}
-        </main>
+          )}
+        </main>{' '}
       </HydrationBoundary>
     </AppLayout>
   );

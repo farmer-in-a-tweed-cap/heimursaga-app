@@ -24,7 +24,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { loginMutation } from '@/lib/actions';
+import { loginMutation } from '@/lib/api';
 import { fieldmsg } from '@/lib/utils';
 
 import { ROUTER } from '@/router';

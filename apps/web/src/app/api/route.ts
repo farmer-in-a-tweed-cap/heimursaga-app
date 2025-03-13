@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { API_ROUTER, api } from '@/lib/api';
+import { API_ROUTER, api } from '@/lib/api/api';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
