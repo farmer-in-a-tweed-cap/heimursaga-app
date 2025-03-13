@@ -1,4 +1,3 @@
-import { FastifyCookieOptions, fastifyCookie } from '@fastify/cookie';
 import { FastifyCorsOptions, fastifyCors } from '@fastify/cors';
 import { FastifyMultipartOptions, fastifyMultipart } from '@fastify/multipart';
 import {
@@ -49,18 +48,6 @@ export async function app() {
       credentials: true,
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     } satisfies FastifyCorsOptions);
-
-    // @todo: remove cookie plugin
-    // await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
-    //   secret: COOKIE_SECRET,
-    //   parseOptions: {
-    //     httpOnly: true,
-    //     path: '/',
-    //     maxAge: 3600,
-    //     secure: IS_PRODUCTION,
-    //     // sameSite: 'strict',
-    //   },
-    // } satisfies FastifyCookieOptions);
 
     await fastify.register<FastifySecureSessionOptions>(
       fastifySecureSession as any,

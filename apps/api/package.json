@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
-    "@fastify/cookie": "^7.x",
     "@fastify/cors": "^8",
     "@fastify/helmet": "^9.x",
     "@fastify/multipart": "^7.x",
