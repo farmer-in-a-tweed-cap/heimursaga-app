@@ -18,12 +18,14 @@ import {
   Label,
 } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
+import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { fieldmsg } from '@/lib/utils';
+import { signupMutation } from '@/lib/api';
+import { fieldmsg, redirect } from '@/lib/utils';
 
 import { ROUTER } from '@/router';
 
@@ -62,6 +64,17 @@ export const SignupForm = ({
 }: React.ComponentPropsWithoutRef<'div'>) => {
   const [loading, setLoading] = useState<boolean>(false);
 
+  const mutation = useMutation({
+    mutationFn: signupMutation.mutationFn,
+    onSuccess: () => {
+      console.log('success!');
+      redirect(ROUTER.LOGIN);
+    },
+    onError: (e) => {
+      console.log('error', e);
+    },
+  });
+
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -73,13 +86,19 @@ export const SignupForm = ({
     },
   });
 
-  const handleSubmit = form.handleSubmit((values: z.infer<typeof schema>) => {
-    setLoading(true);
-    console.log(values);
-    setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-  });
+  const handleSubmit = form.handleSubmit(
+    async (values: z.infer<typeof schema>) => {
+      setLoading(true);
+
+      console.log(values);
+
+      await mutation.mutate(values);
+
+      setTimeout(() => {
+        setLoading(false);
+      }, 500);
+    },
+  );
 
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>

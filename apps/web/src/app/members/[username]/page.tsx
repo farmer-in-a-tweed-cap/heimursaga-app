@@ -7,8 +7,6 @@ type PageProps = {
 };
 
 export default function Page({ params }: PageProps) {
-  const { username } = params;
-
   return (
     <AppLayout>
       <div className="w-full flex flex-col justify-start items-center">
@@ -16,9 +14,9 @@ export default function Page({ params }: PageProps) {
           <div className="w-full max-w-[320px]">
             <div className="sticky top-6">
               <UserProfileCard
-                username={username}
-                firstName="mark"
-                lastName="johnson"
+                username="username"
+                firstName="jack"
+                lastName="torrance"
               />
             </div>
           </div>

@@ -2,7 +2,7 @@ export * from './layout';
 export * from './provider';
 export * from './app-header';
 export * from './app-footer';
-export * from './login-form';
+export * from './form';
 export * from './user-profile-card';
 export * from './user-post-card';
 export * from './user-feed';
