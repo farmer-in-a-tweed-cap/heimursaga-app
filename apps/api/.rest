@@ -30,12 +30,12 @@ content-type: application/json
 ### 
 
 # signup
-POST http://localhost:5000/v1/auth/signup
+POST https://heimursaga.vercel.app/auth/signup
 content-type: application/json
 
 {
     "username": "itsme",
-    "email": "me3@example.com",
+    "email": "me2@example.com",
     "password": "12345678",
     "firstName": "john",
     "lastName": "beck"

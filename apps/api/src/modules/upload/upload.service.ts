@@ -39,14 +39,14 @@ export class UploadService {
       const { S3_ENDPOINT, S3_BUCKET } = process.env;
 
       const {
-        thumbnail,
+        thumbnail = true,
         file: { buffer },
       } = payload;
 
+      // generate metadata
       const bucket = S3_BUCKET;
       const ext = 'webp';
       const mimetype = 'image/webp';
-
       const hash = crypto.randomBytes(24).toString('hex');
       const keys = {
         original: `${hash}.${ext}`,
@@ -56,14 +56,6 @@ export class UploadService {
         original: `${bucket}/${keys.original}`,
         thumbnail: `${bucket}/${keys.thumbnail}`,
       };
-
-      console.log({
-        hash,
-        keys,
-        paths,
-        bucket,
-        mimetype,
-      });
 
       // convert to webp and resize
       const buffers = {
@@ -92,10 +84,8 @@ export class UploadService {
           : undefined,
       ].filter((upload) => upload);
 
-      console.log({ uploads, paths, keys });
-
-      // upload the files
-      const s = await Promise.all(
+      // upload the files to s3
+      await Promise.all(
         uploads.map(({ key }) =>
           this.s3.send(
             new PutObjectCommand({
@@ -108,9 +98,28 @@ export class UploadService {
         ),
       );
 
-      const response: IUploadMediaResponse = {
+      const urls = {
         original: `${S3_ENDPOINT}/${paths.original}`,
         thumbnail: `${S3_ENDPOINT}/${paths.thumbnail}`,
+      };
+
+      // save the upload to the database
+      await this.prisma.upload
+        .create({
+          data: {
+            file_type: 'image',
+            original: paths.original,
+            thumbnail: paths.thumbnail,
+          },
+        })
+        .catch((e) => {
+          this.logger.error(e);
+        });
+
+      // return original and thumbnail files
+      const response: IUploadMediaResponse = {
+        original: urls.original,
+        thumbnail: urls.thumbnail,
       };
 
       return response;
