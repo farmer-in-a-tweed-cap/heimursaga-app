@@ -39,7 +39,7 @@ model User {
 
 model UserSession {
   id         Int       @id @default(autoincrement())
-  sid        String    @unique @db.Char(48)
+  sid        String    @unique @db.VarChar(48)
   user_id    Int
   user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
   expired    Boolean?  @default(false)
@@ -82,14 +82,14 @@ model UserFollow {
 model Post {
   id             Int            @id @default(autoincrement())
   // @todo
-  public_id      String?        @db.Char(14)
-  title          String?        @db.Char(200)
+  public_id      String?        @db.VarChar(14)
+  title          String?        @db.VarChar(200)
   content        String         @db.Text
   public         Boolean?       @default(false)
   draft          Boolean?       @default(false)
   lat            Float?
   lon            Float?
-  place          String?        @db.Char(250)
+  place          String?        @db.VarChar(250)
   date           DateTime?      @default(now())
   author         User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
   author_id      Int
@@ -129,7 +129,7 @@ model PostBookmark {
 
 model Upload {
   id         Int       @id @default(autoincrement())
-  file_type  String    @default("image") @db.Char(10)
+  file_type  String    @default("image") @db.VarChar(10)
   original   String    @db.VarChar(250)
   thumbnail  String?   @db.VarChar(250)
   user_id    Int?
