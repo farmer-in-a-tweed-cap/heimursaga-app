@@ -78,12 +78,16 @@ export const PostCard: React.FC<Props> = ({
         />
       </div>
     )}
-    <div className="mt-6 flex flex-col gap-2">
-      <span className="text-base font-medium">{title}</span>
-      <p className="text-base font-normal text-neutral-700">
-        {content ? (content.length < 140 ? content : `${content}..`) : ''}
-      </p>
-    </div>
+
+    <Link href={id ? ROUTER.POSTS.DETAIL(id) : '#'}>
+      <div className="mt-6 flex flex-col gap-2">
+        <span className="text-base font-medium">{title}</span>
+        <p className="text-base font-normal text-neutral-700">
+          {content ? (content.length < 140 ? content : `${content}..`) : ''}
+        </p>
+      </div>
+    </Link>
+
     {coordinates && (
       <div className="mt-6">
         <MapPreview

@@ -15,7 +15,13 @@ export default async function Page({ params }: PageProps<{ post_id: string }>) {
 
   const postQuery = await apiClient.getPostById({ postId }, { cookie });
 
-  const { title, content, lat = 0, lon = 0 } = postQuery.data || {};
+  const {
+    title,
+    content,
+    lat = 0,
+    lon = 0,
+    public: isPublic,
+  } = postQuery.data || {};
 
   return (
     <AppLayout>
@@ -32,6 +38,7 @@ export default async function Page({ params }: PageProps<{ post_id: string }>) {
                 content,
                 lat,
                 lon,
+                public: isPublic,
               }}
             />
           </CardContent>

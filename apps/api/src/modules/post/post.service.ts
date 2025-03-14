@@ -35,6 +35,7 @@ export class PostService {
       const { userId } = payload;
       const where = {
         public_id: { not: null },
+        public: true,
         deleted_at: null,
       } as Prisma.PostWhereInput;
 
@@ -227,6 +228,8 @@ export class PostService {
             public_id: true,
             title: true,
             content: true,
+            public: true,
+            draft: true,
             lat: true,
             lon: true,
             place: true,
@@ -270,6 +273,7 @@ export class PostService {
           bookmarked: userId ? post.bookmarks.length > 0 : undefined,
           likesCount: post.likesCount,
           bookmarksCount: post.bookmarksCount,
+          public: post.public,
           author: {
             id: post.author?.id,
             name: post.author?.profile?.first_name,
@@ -278,8 +282,6 @@ export class PostService {
           createdByMe: userId ? userId === post.author?.id : undefined,
           createdAt: post.created_at,
         }));
-
-      // console.log({ data, userId, authorId: data.author.id });
 
       return data;
     } catch (e) {

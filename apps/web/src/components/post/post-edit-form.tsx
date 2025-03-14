@@ -12,6 +12,7 @@ import {
   FormLabel,
   FormMessage,
   Input,
+  Switch,
   Textarea,
 } from '@repo/ui/components';
 import { useMutation } from '@tanstack/react-query';
@@ -48,6 +49,7 @@ type Props = {
     content?: string;
     lat?: number;
     lon?: number;
+    public?: boolean;
   };
 };
 
@@ -61,6 +63,11 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
       content: defaultValues?.content,
     },
   });
+
+  const [visibility, setVisibility] = useState<{
+    loading: boolean;
+    public: boolean;
+  }>({ public: defaultValues?.public || false, loading: false });
 
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -85,14 +92,16 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
   const mutation = useMutation({
     mutationFn: postUpdateMutation.mutationFn,
     onSuccess: (response) => {
-      console.log('s', response);
-
       setLoading(false);
+      setVisibility((state) => ({ ...state, loading: false }));
     },
     onError: (e) => {
-      console.log('e', e);
-
       setLoading(false);
+      setVisibility((state) => ({
+        ...state,
+        loading: false,
+        public: !state.public,
+      }));
     },
   });
 
@@ -114,6 +123,15 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
       alt,
       marker,
     }));
+  };
+
+  const handleVisibilityUpdate = (checked: boolean) => {
+    setVisibility((state) => ({ ...state, loading: true, public: checked }));
+
+    mutation.mutate({
+      postId,
+      data: { public: checked },
+    });
   };
 
   const handleSubmit = form.handleSubmit(
@@ -211,7 +229,18 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
                     )}
                   />
                 </div>
-                <div>
+                <FormControl>
+                  <FormItem>
+                    <FormLabel>Public</FormLabel>
+                    <Switch
+                      checked={visibility.public}
+                      aria-readonly
+                      disabled={visibility.loading}
+                      onCheckedChange={handleVisibilityUpdate}
+                    />
+                  </FormItem>
+                </FormControl>
+                <div className="mt-4">
                   <Button
                     type="submit"
                     className="min-w-[140px]"

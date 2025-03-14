@@ -55,11 +55,36 @@ export class PostCreatePayloadDto implements IPostCreatePayloadDto {
 export class PostUpdatePayloadDto implements IPostUpdatePayloadDto {
   @ApiProperty({ required: false })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   title: string;
 
   @ApiProperty({ required: false })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   content: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lat: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lon: number;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  public: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  draft: boolean;
+
+  @ApiProperty({ required: false })
+  @IsDate()
+  @IsOptional()
+  date: Date;
 }
