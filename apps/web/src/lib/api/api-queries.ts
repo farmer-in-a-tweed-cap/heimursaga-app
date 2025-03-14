@@ -14,7 +14,10 @@ export const QUERY_KEYS = {
   GET_SESSION: 'get_session',
 };
 
-const createQuery = <T = any>(queryKey: string, queryFn: () => Promise<T>) => {
+const createQuery = <T = any>(
+  queryKey: string[],
+  queryFn: () => Promise<T>,
+) => {
   return { queryKey: [queryKey], queryFn };
 };
 
@@ -25,18 +28,13 @@ const createMutation = <T = any, R = any>(
 };
 
 export const loginMutation = createMutation<ILoginQueryPayload, void>(
-  apiClient.login,
+  (payload: ILoginQueryPayload) =>
+    apiClient.login(payload).then(({ data }) => data),
 );
 
 export const signupMutation = createMutation<ISignupQueryPayload, void>(
-  apiClient.signup,
+  (payload: ISignupQueryPayload) =>
+    apiClient.signup(payload).then(({ data }) => data),
 );
 
-// export const logoutMutation = createMutation<void, void>(()=>apiClient.logout);
-
-export const getSessionQuery = createQuery<ISessionUserQueryResponse>(
-  QUERY_KEYS.GET_SESSION,
-  () => apiClient.getSession({ cookie: '' }),
-);
-
-export const fetchPostsQuery = createQuery(QUERY_KEYS.POSTS, apiClient.test);
+export const getPostById = createQuery([QUERY_KEYS.POSTS], apiClient.test);

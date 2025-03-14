@@ -113,11 +113,15 @@ export class PostService {
       // get the post
       const data = await this.prisma.post
         .findFirstOrThrow({
-          where: { public_id: publicId, deleted_at: null },
+          where: { public_id: publicId },
           select: {
-            id: true,
+            public_id: true,
             title: true,
             content: true,
+            lat: true,
+            lon: true,
+            place: true,
+            date: true,
             // check if the session user has liked this post
             likes: userId
               ? {
@@ -143,9 +147,13 @@ export class PostService {
           },
         })
         .then((post) => ({
-          id: post.id,
+          id: post.public_id,
           title: post.title,
           content: post.content,
+          lat: post.lat,
+          lon: post.lon,
+          place: post.place,
+          date: post.date,
           liked: userId ? post.likes.length > 0 : undefined,
           bookmarked: userId ? post.bookmarks.length > 0 : undefined,
           author: {

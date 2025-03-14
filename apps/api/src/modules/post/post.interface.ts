@@ -7,6 +7,19 @@ export interface IPostFindByIdPayload {
   userId: number;
 }
 
+export interface IPostDetail {
+  id: string;
+  title: string;
+  content: string;
+  userId: number;
+  lat: number;
+  lon: number;
+  public: boolean;
+  draft: boolean;
+  place?: string;
+  date?: Date;
+}
+
 export interface IPostCreatePayload {
   title: string;
   content: string;

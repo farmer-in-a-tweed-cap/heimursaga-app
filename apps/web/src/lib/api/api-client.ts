@@ -1,8 +1,11 @@
 import {
   ILoginQueryPayload,
+  IPostCreatePayload,
+  IPostDetail,
+  IPostFindByIdPayload,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
-} from '../../types/api-types';
+} from '@/types/api-types';
 
 import { API_ROUTER, Api } from './api';
 
@@ -38,5 +41,12 @@ export const apiClient = {
   getSession: async ({ cookie }: { cookie: string }) =>
     api.request<ISessionUserQueryResponse>(API_ROUTER.GET_SESSION_USER, {
       cookie,
+    }),
+  getPostById: async ({ postId }: IPostFindByIdPayload) =>
+    api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(postId)),
+  createPost: async (body: IPostCreatePayload) =>
+    api.request<void>(API_ROUTER.POSTS.CREATE, {
+      method: 'POST',
+      body: JSON.stringify(body),
     }),
 };

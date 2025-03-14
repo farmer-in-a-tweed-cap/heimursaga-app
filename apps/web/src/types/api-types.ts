@@ -23,3 +23,31 @@ export interface ISessionUser {
 }
 
 export interface ISessionUserQueryResponse extends ISessionUser {}
+
+export interface IPostFindByIdPayload {
+  postId: string;
+}
+
+export interface IPostDetail {
+  id: string;
+  title: string;
+  content: string;
+  userId: number;
+  lat: number;
+  lon: number;
+  public: boolean;
+  draft: boolean;
+  place?: string;
+  date?: Date;
+}
+
+export interface IPostCreatePayload {
+  title: string;
+  content: string;
+  lat?: number;
+  lon?: number;
+  public?: boolean;
+  draft?: boolean;
+  place?: string;
+  date?: Date;
+}

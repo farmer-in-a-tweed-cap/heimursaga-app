@@ -50,7 +50,7 @@ content-type: application/json
 ### 
 
 # posts/get_by_id
-GET http://localhost:5000/v1/posts/21
+GET http://localhost:5000/v1/posts/kR4q_pLybCk1gt
 
 ### 
 
@@ -61,8 +61,8 @@ content-type: application/json
 {
     "title": "post44",
     "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.",
-    "lat": 49.625418557823544,
-    "lon": 15.022460937499499,
+    "lat": 49.626073706583185,
+    "lon":15.467494674372233,
     "public": true,
     "draft": false
 }

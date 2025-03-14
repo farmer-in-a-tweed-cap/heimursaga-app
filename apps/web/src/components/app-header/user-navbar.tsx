@@ -13,8 +13,6 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api';
 import { redirect } from '@/lib/utils';
 
-import { logout } from '@/app/actions';
-
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 

@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api';
 
 import { AppFooter, AppHeader, ReactQueryProvider } from '@/components';
 import { AppProvider, IAppContextState, SessionProvider } from '@/contexts';
+import { ISessionUserQueryResponse } from '@/types';
 
 export const metadata: Metadata = {
   title: 'saga',
@@ -43,9 +44,12 @@ export default async function RootLayout({ children }: Props) {
 
 export const AuthLayout = async ({ children }: Props) => {
   const cookie = cookies().toString();
-  const session = await apiClient.getSession({ cookie }).catch(() => null);
 
-  return <SessionProvider state={session}>{children}</SessionProvider>;
+  const sessionQuery = await apiClient.getSession({ cookie });
+
+  return (
+    <SessionProvider state={sessionQuery.data}>{children}</SessionProvider>
+  );
 };
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {

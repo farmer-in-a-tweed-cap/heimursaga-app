@@ -46,8 +46,9 @@ export const PostCreateForm = () => {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      title: '',
-      content: '',
+      title: 'It is a long established fact',
+      content:
+        "Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).",
     },
   });
 
@@ -91,7 +92,13 @@ export const PostCreateForm = () => {
     async (values: z.infer<typeof schema>) => {
       setLoading(true);
 
-      console.log(values);
+      const { lat, lon } = location;
+
+      console.log({
+        ...values,
+        lat,
+        lon,
+      });
 
       // await mutation.mutate(values);
 

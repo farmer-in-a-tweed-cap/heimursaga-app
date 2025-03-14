@@ -4,6 +4,10 @@ export const API_ROUTER = {
   SIGNUP: 'auth/signup',
   LOGOUT: 'auth/logout',
   GET_SESSION_USER: 'auth/user',
+  POSTS: {
+    GET_BY_ID: (id: string) => `posts/${id}`,
+    CREATE: 'posts',
+  },
 };
 
 type ApiConfig = {
@@ -11,11 +15,11 @@ type ApiConfig = {
   headers?: HeadersInit;
 };
 
-type ApiResponse<T> = T & {
+type ApiResponse<T = any> = {
+  success: boolean;
   status?: number;
-  url?: string;
+  data?: T;
   message?: string;
-  error?: boolean;
 };
 
 export class Api {
@@ -35,7 +39,7 @@ export class Api {
       parseJson?: boolean;
       cookie?: string;
     },
-  ) {
+  ): Promise<ApiResponse<R>> {
     const { baseUrl, headers: globalHeaders } = this;
     const { cookie, ...options } = config || {};
 
@@ -69,12 +73,22 @@ export class Api {
       credentials: 'include',
     });
 
-    const body: R = await response.json().catch(() => ({}));
+    const json = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const { message } = (body as ApiResponse<R>) || {};
-      throw new Error(message);
+      const { message, status } = (json as ApiResponse) || {};
+
+      return {
+        success: false,
+        status,
+        message,
+      } satisfies ApiResponse<R>;
     }
+
+    const body: ApiResponse<R> = {
+      success: true,
+      data: json,
+    };
 
     return body;
   }

@@ -5,7 +5,7 @@ import { ReactNode, createContext, useState } from 'react';
 import { ISessionUser } from '@/types';
 
 interface SessionContextType {
-  session: ISessionUser | null;
+  session?: ISessionUser;
 }
 
 export const SessionContext = createContext<SessionContextType | undefined>(
@@ -16,7 +16,7 @@ export function SessionProvider({
   state,
   children,
 }: {
-  state: ISessionUser | null;
+  state?: ISessionUser;
   children: ReactNode;
 }) {
   return (
