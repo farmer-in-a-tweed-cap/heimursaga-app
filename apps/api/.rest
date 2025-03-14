@@ -115,3 +115,9 @@ content-type: application/json
     "subject": "test",
     "html": "hi, friend"
 }
+
+
+###
+
+# users/username
+GET http://localhost:5000/v1/users/jackyboye

@@ -5,3 +5,9 @@ export class ParamPublicIdDto {
   @IsNotEmpty()
   id: string;
 }
+
+export class ParamUsernameDto {
+  @IsString()
+  @IsNotEmpty()
+  username: string;
+}

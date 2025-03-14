@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { nanoid } from 'nanoid';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
@@ -192,20 +191,6 @@ export class PostService {
         data,
         geojson: {
           type: 'FeatureCollection',
-          // features: [
-          //   {
-          //     type: 'Feature',
-          //     geometry: { type: 'Point', coordinates: [-75.343, 39.984] },
-          //   },
-          //   {
-          //     type: 'Feature',
-          //     geometry: { type: 'Point', coordinates: [-75.833, 39.284] },
-          //   },
-          //   {
-          //     type: 'Feature',
-          //     geometry: { type: 'Point', coordinates: [-75.534, 39.123] },
-          //   },
-          // ],
           features: data.map(({ id, title, lat, lon }) => ({
             type: 'Feature',
             geometry: {
@@ -217,32 +202,6 @@ export class PostService {
               title,
             },
           })),
-          // [
-          //   {
-          //     type: 'Feature',
-          //     geometry: { type: 'Point', coordinates: [-75.343, 39.984] },
-          // properties: {
-          //   // name: 'Location A',
-          //   // category: 'Store',
-          // },
-          //   },
-          //   {
-          //     type: 'Feature',
-          //     geometry: { type: 'Point', coordinates: [-75.833, 39.284] },
-          //     properties: {
-          //       // name: 'Location B',
-          //       // category: 'House',
-          //     },
-          //   },
-          //   {
-          //     type: 'Feature',
-          //     geometry: { type: 'Point', coordinates: [-75.534, 39.123] },
-          //     properties: {
-          //       // name: 'Location C',
-          //       // category: 'Office',
-          //     },
-          //   },
-          // ],
         },
       };
 
