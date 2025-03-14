@@ -38,14 +38,40 @@ export const ExploreMap: React.FC<Props> = () => {
     alt: params.alt ? parseFloat(params.alt) : MAP_DEFAULT_COORDINATES.ALT,
   };
 
-  useEffect(() => {
-    if (!params.lat || !params.lon) {
-      const s = new URLSearchParams(searchParams.toString());
-      s.set('lat', `${MAP_DEFAULT_COORDINATES.LAT}`);
-      s.set('lon', `${MAP_DEFAULT_COORDINATES.LON}`);
-      s.set('alt', `${MAP_DEFAULT_COORDINATES.ALT}`);
+  const updateSearchParams = (params: {
+    lat: number;
+    lon: number;
+    alt: number;
+  }) => {
+    const { lat, lon, alt } = params;
 
-      router.push(`${pathname}?${s.toString()}`, { scroll: false });
+    const s = new URLSearchParams(searchParams.toString());
+
+    s.set('lat', `${lat}`);
+    s.set('lon', `${lon}`);
+    s.set('alt', `${alt}`);
+
+    router.push(`${pathname}?${s.toString()}`, { scroll: false });
+  };
+
+  const handleMapMove = (coordinates: {
+    lat: number;
+    lon: number;
+    alt: number;
+  }) => {
+    const { lat, lon, alt } = coordinates;
+    updateSearchParams({ lat, lon, alt });
+  };
+
+  useEffect(() => {
+    const { lat, lon, alt } = params;
+
+    if (!lat || !lon || !alt) {
+      updateSearchParams({
+        lat: MAP_DEFAULT_COORDINATES.LAT,
+        lon: MAP_DEFAULT_COORDINATES.LON,
+        alt: MAP_DEFAULT_COORDINATES.ALT,
+      });
     }
   }, []);
 
@@ -71,6 +97,7 @@ export const ExploreMap: React.FC<Props> = () => {
                   }
                 : undefined
             }
+            onMove={handleMapMove}
           />
         )}
       </div>
