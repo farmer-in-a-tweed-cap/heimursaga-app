@@ -37,6 +37,10 @@ export interface IPostDetail {
   lon: number;
   public: boolean;
   draft: boolean;
+  liked?: boolean;
+  bookmarked?: boolean;
+  likesCount?: boolean;
+  bookmarksCount?: boolean;
   place?: string;
   date?: Date;
 }
@@ -50,4 +54,8 @@ export interface IPostCreatePayload {
   draft?: boolean;
   place?: string;
   date?: Date;
+}
+
+export interface IPostCreateResponse {
+  id: string;
 }

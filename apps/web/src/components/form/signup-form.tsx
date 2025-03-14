@@ -67,11 +67,11 @@ export const SignupForm = ({
   const mutation = useMutation({
     mutationFn: signupMutation.mutationFn,
     onSuccess: () => {
-      console.log('success!');
+      // redirect to login page
       redirect(ROUTER.LOGIN);
     },
     onError: (e) => {
-      console.log('error', e);
+      setLoading(false);
     },
   });
 
@@ -90,13 +90,7 @@ export const SignupForm = ({
     async (values: z.infer<typeof schema>) => {
       setLoading(true);
 
-      console.log(values);
-
-      await mutation.mutate(values);
-
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
+      mutation.mutate(values);
     },
   );
 

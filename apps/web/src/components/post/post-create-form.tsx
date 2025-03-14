@@ -14,12 +14,14 @@ import {
   Input,
   Textarea,
 } from '@repo/ui/components';
+import { useMutation } from '@tanstack/react-query';
 import { Link } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { fieldmsg } from '@/lib/utils';
+import { postCreateMutation } from '@/lib/api';
+import { fieldmsg, redirect } from '@/lib/utils';
 
 import { MapDialog } from '@/components/dialog';
 
@@ -68,6 +70,19 @@ export const PostCreateForm = () => {
     alt: 5,
   });
 
+  const mutation = useMutation({
+    mutationFn: postCreateMutation.mutationFn,
+    onSuccess: (response) => {
+      const { id } = response;
+
+      // redirect to post detail page
+      redirect(ROUTER.POSTS.DETAIL(id));
+    },
+    onError: (e) => {
+      setLoading(false);
+    },
+  });
+
   const handleLocationChange = (location: {
     lat: number;
     lon: number;
@@ -94,24 +109,17 @@ export const PostCreateForm = () => {
 
       const { lat, lon } = location;
 
-      console.log({
+      await mutation.mutate({
         ...values,
         lat,
         lon,
       });
-
-      // await mutation.mutate(values);
-
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
     },
   );
 
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-4">
-        {JSON.stringify({ location })}
         <div>
           <Dialog>
             <DialogTrigger asChild>

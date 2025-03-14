@@ -78,6 +78,8 @@ export const MapDialog: React.FC<Props> = ({
 
     setMap((map) => ({
       ...map,
+      lat,
+      lon,
       marker: {
         lat,
         lon,

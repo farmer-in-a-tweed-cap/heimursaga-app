@@ -122,6 +122,8 @@ export class PostService {
             lon: true,
             place: true,
             date: true,
+            likesCount: true,
+            bookmarksCount: true,
             // check if the session user has liked this post
             likes: userId
               ? {
@@ -156,6 +158,8 @@ export class PostService {
           date: post.date,
           liked: userId ? post.likes.length > 0 : undefined,
           bookmarked: userId ? post.bookmarks.length > 0 : undefined,
+          likesCount: post.likesCount,
+          bookmarksCount: post.bookmarksCount,
           author: {
             name: post.author?.profile?.first_name,
             picture: post.author?.profile?.picture,
@@ -173,7 +177,7 @@ export class PostService {
     }
   }
 
-  async create(payload: IPostCreatePayload): Promise<void> {
+  async create(payload: IPostCreatePayload) {
     try {
       const { userId, ...data } = payload;
 
@@ -186,7 +190,14 @@ export class PostService {
           public_id: publicId,
           author: { connect: { id: userId } },
         },
+        select: {
+          public_id: true,
+        },
       });
+
+      return {
+        id: post.public_id,
+      };
     } catch (e) {
       this.logger.error(e);
       const exception = e.status

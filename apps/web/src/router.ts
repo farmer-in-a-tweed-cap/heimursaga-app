@@ -7,6 +7,7 @@ export const ROUTER = {
     HOME: '/dashboard',
   },
   POSTS: {
+    DETAIL: (id: string) => `/posts/${id}`,
     CREATE: '/posts/create',
   },
   MEMBERS: '/members',

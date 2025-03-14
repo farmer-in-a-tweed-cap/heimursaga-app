@@ -1,6 +1,7 @@
 import {
   ILoginQueryPayload,
   IPostCreatePayload,
+  IPostCreateResponse,
   IPostDetail,
   IPostFindByIdPayload,
   ISessionUserQueryResponse,
@@ -45,7 +46,7 @@ export const apiClient = {
   getPostById: async ({ postId }: IPostFindByIdPayload) =>
     api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(postId)),
   createPost: async (body: IPostCreatePayload) =>
-    api.request<void>(API_ROUTER.POSTS.CREATE, {
+    api.request<IPostCreateResponse>(API_ROUTER.POSTS.CREATE, {
       method: 'POST',
       body: JSON.stringify(body),
     }),

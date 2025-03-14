@@ -1,8 +1,10 @@
 import {
   ILoginQueryPayload,
+  IPostCreatePayload,
+  IPostCreateResponse,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
-} from '../../types/api-types';
+} from '@/types/api-types';
 
 import { apiClient } from './api-client';
 
@@ -37,4 +39,9 @@ export const signupMutation = createMutation<ISignupQueryPayload, void>(
     apiClient.signup(payload).then(({ data }) => data),
 );
 
-export const getPostById = createQuery([QUERY_KEYS.POSTS], apiClient.test);
+export const postCreateMutation = createMutation<
+  IPostCreatePayload,
+  IPostCreateResponse
+>((payload: IPostCreatePayload) =>
+  apiClient.createPost(payload).then(({ data }) => data as IPostCreateResponse),
+);
