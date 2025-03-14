@@ -301,6 +301,8 @@ export class PostService {
       const post = await this.prisma.post.create({
         data: {
           ...data,
+          public: true,
+          draft: false,
           public_id: publicId,
           author: { connect: { id: userId } },
         },
