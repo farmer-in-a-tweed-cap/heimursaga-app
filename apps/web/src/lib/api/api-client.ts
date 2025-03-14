@@ -9,6 +9,7 @@ import {
   IPostUpdatePayload,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
+  IUserPostsQueryResponse,
   IUserProfileDetail,
 } from '@/types/api-types';
 
@@ -79,6 +80,14 @@ export const apiClient = {
   ) =>
     api.request<IUserProfileDetail>(
       API_ROUTER.USERS.GET_BY_USERNAME(username),
+      config,
+    ),
+  getUserPosts: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<IUserPostsQueryResponse>(
+      API_ROUTER.USERS.GET_POSTS(username),
       config,
     ),
 };

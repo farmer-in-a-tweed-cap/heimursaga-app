@@ -6,6 +6,7 @@ export const API_ROUTER = {
   GET_SESSION_USER: 'auth/user',
   USERS: {
     GET_BY_USERNAME: (username: string) => `/users/${username}`,
+    GET_POSTS: (username: string) => `/users/${username}/posts`,
   },
   POSTS: {
     QUERY: '/posts',

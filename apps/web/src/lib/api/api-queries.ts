@@ -5,8 +5,8 @@ import {
   IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
-  ISessionUserQueryResponse,
   ISignupQueryPayload,
+  IUserPostsQueryResponse,
 } from '@/types/api-types';
 
 import { apiClient } from './api-client';
@@ -16,14 +16,15 @@ export const QUERY_KEYS = {
   SIGNUP: 'signup',
   POSTS: 'posts',
   GET_POSTS: 'get_posts',
+  GET_USER_POSTS: 'get_user_posts',
   QUERY_POST_MAP: 'query_post_map',
   GET_SESSION_USER: 'get_session_user',
   GET_SESSION: 'get_session',
 };
 
-const createQuery = <T = any, R = any>(
+const createQuery = <T = undefined, R = any>(
   queryKey: string[],
-  queryFn: (query?: T) => Promise<R>,
+  queryFn: (query: T) => Promise<R>,
 ) => {
   return { queryKey: [queryKey], queryFn };
 };
@@ -65,7 +66,7 @@ export const getPostsQuery = createQuery<any, IPostQueryResponse>(
     }),
 );
 
-export const queryPostMapQuery = createQuery<any, IPostQueryMapResponse>(
+export const queryPostMapQuery = createQuery<void, IPostQueryMapResponse>(
   [QUERY_KEYS.GET_POSTS],
   (query) =>
     apiClient.queryPostsMap(query).then(({ success, message, data }) => {
@@ -95,4 +96,16 @@ export const postUpdateMutation = createMutation<IPostUpdatePayload, void>(
         throw new Error(message);
       }
     }),
+);
+
+export const getUserPostsQuery = createQuery<
+  { username: string },
+  IUserPostsQueryResponse
+>([QUERY_KEYS.GET_POSTS], ({ username }) =>
+  apiClient.getUserPosts({ username }).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as IUserPostsQueryResponse;
+  }),
 );

@@ -97,3 +97,8 @@ export interface IUserProfileDetail {
   memberDate?: Date;
   you?: boolean;
 }
+
+export interface IUserPostsQueryResponse {
+  results: number;
+  data: IPostDetail[];
+}

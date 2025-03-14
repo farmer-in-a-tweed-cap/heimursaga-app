@@ -11,11 +11,11 @@ export interface IPostDetail {
   id: string;
   title: string;
   content: string;
-  userId: number;
+  userId?: number;
   lat: number;
   lon: number;
-  public: boolean;
-  draft: boolean;
+  public?: boolean;
+  draft?: boolean;
   place?: string;
   date?: Date;
 }

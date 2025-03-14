@@ -34,7 +34,7 @@ export default async function Page({ params }: PageProps) {
               </div>
             </div>
             <div className="basis-full flex flex-col h-auto">
-              <UserFeed />
+              <UserFeed username={username} />
             </div>
           </div>
         </div>

@@ -1,3 +1,5 @@
+import { IPostDetail } from '@/modules/post';
+
 export interface IUserProfileDetail {
   username: string;
   picture: string;
@@ -5,4 +7,9 @@ export interface IUserProfileDetail {
   lastName: string;
   memberDate?: Date;
   you?: boolean;
+}
+
+export interface IUserPostsQueryResponse {
+  results: number;
+  data: IPostDetail[];
 }

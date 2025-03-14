@@ -34,4 +34,20 @@ export class UserController {
       userId: session.userId,
     });
   }
+
+  @Public()
+  @Get(':username/posts')
+  @HttpCode(HttpStatus.OK)
+  async getPosts(
+    @Req() req: IRequest,
+    @Param() param: ParamUsernameDto,
+    @Session() session: ISession,
+  ) {
+    const { username } = param;
+
+    return await this.userService.getPosts({
+      username,
+      userId: session.userId,
+    });
+  }
 }

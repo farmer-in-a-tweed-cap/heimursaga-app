@@ -121,3 +121,8 @@ content-type: application/json
 
 # users/username
 GET http://localhost:5000/v1/users/jackyboye
+
+###
+
+# users/username/posts
+GET http://localhost:5000/v1/users/jackyboye/posts
