@@ -30,18 +30,33 @@ const createMutation = <T = any, R = any>(
 };
 
 export const loginMutation = createMutation<ILoginQueryPayload, void>(
-  (payload: ILoginQueryPayload) =>
-    apiClient.login(payload).then(({ data }) => data),
+  (payload) =>
+    apiClient.login(payload).then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data;
+    }),
 );
 
 export const signupMutation = createMutation<ISignupQueryPayload, void>(
-  (payload: ISignupQueryPayload) =>
-    apiClient.signup(payload).then(({ data }) => data),
+  (payload) =>
+    apiClient.signup(payload).then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data;
+    }),
 );
 
 export const postCreateMutation = createMutation<
   IPostCreatePayload,
   IPostCreateResponse
->((payload: IPostCreatePayload) =>
-  apiClient.createPost(payload).then(({ data }) => data as IPostCreateResponse),
+>((payload) =>
+  apiClient.createPost(payload).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as IPostCreateResponse;
+  }),
 );

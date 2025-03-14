@@ -15,12 +15,12 @@ type ApiConfig = {
   headers?: HeadersInit;
 };
 
-type ApiResponse<T = any> = {
+export interface IApiResponse<T = any> {
   success: boolean;
   status?: number;
   data?: T;
   message?: string;
-};
+}
 
 export class Api {
   public baseUrl: string;
@@ -39,7 +39,7 @@ export class Api {
       parseJson?: boolean;
       cookie?: string;
     },
-  ): Promise<ApiResponse<R>> {
+  ): Promise<IApiResponse<R>> {
     const { baseUrl, headers: globalHeaders } = this;
     const { cookie, ...options } = config || {};
 
@@ -76,16 +76,16 @@ export class Api {
     const json = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      const { message, status } = (json as ApiResponse) || {};
+      const { message, status } = (json as IApiResponse) || {};
 
       return {
         success: false,
         status,
         message,
-      } satisfies ApiResponse<R>;
+      } satisfies IApiResponse<R>;
     }
 
-    const body: ApiResponse<R> = {
+    const body: IApiResponse<R> = {
       success: true,
       data: json,
     };

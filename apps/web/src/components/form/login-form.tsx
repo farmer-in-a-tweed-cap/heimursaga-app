@@ -56,6 +56,7 @@ export const LoginForm = ({
       redirect(ROUTER.HOME);
     },
     onError: (e) => {
+      console.log(e);
       setLoading(false);
     },
   });
@@ -71,7 +72,6 @@ export const LoginForm = ({
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       setLoading(true);
-
       mutation.mutate(values);
     },
   );

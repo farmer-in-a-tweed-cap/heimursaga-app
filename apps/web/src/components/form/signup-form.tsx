@@ -71,6 +71,7 @@ export const SignupForm = ({
       redirect(ROUTER.LOGIN);
     },
     onError: (e) => {
+      console.log('error', e);
       setLoading(false);
     },
   });
