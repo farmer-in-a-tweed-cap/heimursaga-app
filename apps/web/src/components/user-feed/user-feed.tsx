@@ -9,7 +9,7 @@ import {
 } from '@repo/ui/components';
 import { useState } from 'react';
 
-import { UserPostCard } from '@/components';
+import { PostCard } from '@/components';
 
 type Props = {};
 
@@ -45,7 +45,7 @@ export const UserFeed: React.FC<Props> = () => {
           {Array(10)
             .fill(0)
             .map((post, key) => (
-              <UserPostCard
+              <PostCard
                 key={key}
                 author={{
                   firstName: 'jack',
@@ -67,7 +67,7 @@ export const UserFeed: React.FC<Props> = () => {
           {Array(10)
             .fill(0)
             .map((post, key) => (
-              <UserPostCard
+              <PostCard
                 key={key}
                 author={{
                   firstName: 'jack',

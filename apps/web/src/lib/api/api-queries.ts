@@ -2,6 +2,7 @@ import {
   ILoginQueryPayload,
   IPostCreatePayload,
   IPostCreateResponse,
+  IPostQueryResponse,
   IPostUpdatePayload,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
@@ -13,13 +14,14 @@ export const QUERY_KEYS = {
   LOGIN: 'login',
   SIGNUP: 'signup',
   POSTS: 'posts',
+  GET_POSTS: 'get_posts',
   GET_SESSION_USER: 'get_session_user',
   GET_SESSION: 'get_session',
 };
 
-const createQuery = <T = any>(
+const createQuery = <T = any, R = any>(
   queryKey: string[],
-  queryFn: () => Promise<T>,
+  queryFn: (query?: T) => Promise<R>,
 ) => {
   return { queryKey: [queryKey], queryFn };
 };
@@ -47,6 +49,17 @@ export const signupMutation = createMutation<ISignupQueryPayload, void>(
         throw new Error(message);
       }
       return data;
+    }),
+);
+
+export const getPostsQuery = createQuery<any, IPostQueryResponse>(
+  [QUERY_KEYS.GET_POSTS],
+  (query) =>
+    apiClient.getPosts(query).then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IPostQueryResponse;
     }),
 );
 

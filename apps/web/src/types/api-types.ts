@@ -28,11 +28,15 @@ export interface IPostFindByIdPayload {
   postId: string;
 }
 
+export interface IPostQueryResponse {
+  data: IPostDetail[];
+  results: number;
+}
+
 export interface IPostDetail {
   id: string;
   title: string;
   content: string;
-  userId: number;
   lat: number;
   lon: number;
   public: boolean;
@@ -44,6 +48,11 @@ export interface IPostDetail {
   place?: string;
   date?: Date;
   createdByMe?: boolean;
+  author: {
+    username: string;
+    name: string;
+    picture: string;
+  };
 }
 
 export interface IPostCreatePayload {

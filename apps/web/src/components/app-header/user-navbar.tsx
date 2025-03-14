@@ -38,17 +38,23 @@ export const UserNavbar = () => {
 
   return session ? (
     <div className="flex flex-row items-center gap-10">
-      <Button onClick={handleCreatePostClick}>Create post</Button>
+      <Button className="hidden lg:flex" onClick={handleCreatePostClick}>
+        Create post
+      </Button>
       <div className="flex flex-row items-center gap-2">
-        <Link href={`${ROUTER.MEMBERS}/${username}`}>
+        <Link href={username ? ROUTER.MEMBERS.MEMBER(username) : '#'}>
           <Avatar>
             <AvatarImage src={picture} />
             <AvatarFallback>{firstName.slice(0, 1)}</AvatarFallback>
           </Avatar>
         </Link>
-        <Button variant="ghost" onClick={handleLogout}>
+        {/* <Button
+          className="hidden lg:flex"
+          variant="ghost"
+          onClick={handleLogout}
+        >
           <LogOut />
-        </Button>
+        </Button> */}
       </div>
     </div>
   ) : (

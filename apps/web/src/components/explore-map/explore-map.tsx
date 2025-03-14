@@ -1,13 +1,29 @@
-import { ExploreSidebar, Map } from '@/components';
+'use client';
 
-const MAPBOX_ACCESS_TOKEN = process.env.MAPBOX_ACCESS_TOKEN;
+import { useQuery } from '@tanstack/react-query';
+
+import { getPostsQuery } from '@/lib/api';
+
+import { ExploreSidebar, Map } from '@/components';
+import { useMapbox } from '@/hooks';
 
 type Props = {
   className?: string;
 };
 
 export const ExploreMap: React.FC<Props> = () => {
-  const token = MAPBOX_ACCESS_TOKEN;
+  const mapbox = useMapbox();
+
+  const postQuery = useQuery({
+    queryKey: getPostsQuery.queryKey,
+    queryFn: () => getPostsQuery.queryFn(),
+  });
+
+  const sources = postQuery.data
+    ? postQuery.data?.data
+        ?.filter((post) => post.id && post.lat && post.lon)
+        .map(({ id, lat, lon }) => ({ id, lat, lon }))
+    : [];
 
   return (
     <div className="relative h-full">
@@ -15,7 +31,7 @@ export const ExploreMap: React.FC<Props> = () => {
         <ExploreSidebar />
       </div>
       <div className="relative w-full h-full z-10">
-        {token && <Map token={MAPBOX_ACCESS_TOKEN || ''} />}
+        {mapbox.token && <Map token={mapbox.token} sources={sources} />}
       </div>
     </div>
   );

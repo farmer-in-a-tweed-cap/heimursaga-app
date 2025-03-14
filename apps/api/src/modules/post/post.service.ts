@@ -34,7 +34,10 @@ export class PostService {
   async search(payload: IPostSearchPayload) {
     try {
       const { userId } = payload;
-      const where = { deleted_at: null } as Prisma.PostWhereInput;
+      const where = {
+        public_id: { not: null },
+        deleted_at: null,
+      } as Prisma.PostWhereInput;
 
       // search posts
       const results = await this.prisma.post.count({ where });
@@ -67,6 +70,7 @@ export class PostService {
               : undefined,
             author: {
               select: {
+                username: true,
                 profile: {
                   select: { first_name: true, picture: true },
                 },
@@ -78,13 +82,15 @@ export class PostService {
         })
         .then((posts) =>
           posts.map((post) => ({
-            public_id: post.public_id,
+            id: post.public_id,
             lat: post.lat,
             lon: post.lon,
             place: post.place,
             date: post.date,
             title: post.title,
+            content: post.content.slice(0, 140),
             author: {
+              username: post.author?.username,
               name: post.author?.profile?.first_name,
               picture: post.author?.profile?.picture,
             },
