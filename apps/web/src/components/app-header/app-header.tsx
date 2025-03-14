@@ -1,5 +1,6 @@
-import { Button, Logo } from '@repo/ui/components';
+import { Button, Logo, LogoCompact } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
+import Image from 'next/image';
 import Link from 'next/link';
 
 import { APP_HEADER_HEIGHT } from '@/constants';
@@ -19,13 +20,15 @@ export const AppHeader = () => {
   return (
     <div
       className={cn(
-        'w-full bg-white flex flex-row justify-center items-center',
+        'w-full bg-white flex flex-row justify-center items-center drop-shadow-sm',
         `h-[${APP_HEADER_HEIGHT}px]`,
       )}
     >
       <div className="app-container max-w-full px-6 flex flex-row items-center justify-between">
         <Link href={ROUTER.HOME}>
-          <Logo />
+          <div className="w-[140px] border-2 border-red-300">
+            <Image src="/logo.svg" width={140} height={100} alt="" />
+          </div>
         </Link>
         <div className="flex flex-row items-center gap-14">
           <nav>
