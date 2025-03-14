@@ -28,7 +28,6 @@ export async function app() {
     const PORT = parseInt(process.env.PORT) || 5000;
     const API_VERSION = 1;
     const API_PREFIX = `v${API_VERSION}`;
-    const COOKIE_SECRET = process.env.COOKIE_SECRET;
     const SESSION_SECRET = process.env.SESSION_SECRET;
     const CORS_ORIGIN = process.env.CORS_ORIGIN;
     const DISABLE_ERROR_MESSAGES = IS_PRODUCTION;
@@ -58,7 +57,7 @@ export async function app() {
         cookie: {
           httpOnly: true,
           path: '/',
-          maxAge: 3600,
+          maxAge: 60 * 60 * 24,
           secure: IS_PRODUCTION,
         },
       },
