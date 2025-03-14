@@ -1,4 +1,5 @@
-import { AppLayout, UserFeed, UserProfileCard } from '@/components';
+import { UserFeed, UserProfileCard } from '@/components';
+import { AppLayout } from '@/layouts';
 
 type PageProps = {
   params: {

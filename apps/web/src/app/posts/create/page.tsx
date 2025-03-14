@@ -1,6 +1,6 @@
 import { PostCreateForm } from '@/components/post';
 
-import { AppLayout } from '@/components';
+import { AppLayout } from '@/layouts';
 
 export default async function Page() {
   return (

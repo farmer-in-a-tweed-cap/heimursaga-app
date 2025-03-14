@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-import { AppLayout, AppMapLayout } from '@/components';
+import { AppMapLayout } from '@/layouts';
 
 export const metadata: Metadata = {
   title: 'saga',

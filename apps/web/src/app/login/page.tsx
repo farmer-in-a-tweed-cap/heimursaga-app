@@ -1,7 +1,7 @@
 import { LogoBrandDark } from '@repo/ui/components';
-import { cookies } from 'next/headers';
 
-import { AppLayout, LoginForm } from '@/components';
+import { LoginForm } from '@/components';
+import { AppLayout } from '@/layouts';
 
 export default async function Page() {
   return (

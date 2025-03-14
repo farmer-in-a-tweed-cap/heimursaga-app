@@ -1,6 +1,7 @@
 import { LogoBrandDark } from '@repo/ui/components';
 
-import { AppLayout, SignupForm } from '@/components';
+import { SignupForm } from '@/components';
+import { AppLayout } from '@/layouts';
 
 export default function Page() {
   return (

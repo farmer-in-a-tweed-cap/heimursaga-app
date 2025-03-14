@@ -4,8 +4,8 @@ import { redirect } from 'next/navigation';
 
 import { apiClient } from '@/lib/api';
 
-import { AppMapLayout } from '@/components';
 import { SessionProvider } from '@/contexts';
+import { AppMapLayout } from '@/layouts';
 import { ROUTER } from '@/router';
 
 export const metadata: Metadata = {

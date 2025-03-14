@@ -1,16 +1,12 @@
 import '@repo/ui/globals.css';
+import { cn } from '@repo/ui/lib/utils';
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
 
-import { ReactQueryProvider } from '@/components';
-import {
-  AppContext,
-  AppProvider,
-  IAppContextState,
-  SessionProvider,
-} from '@/contexts';
+import { AppFooter, AppHeader, ReactQueryProvider } from '@/components';
+import { AppProvider, IAppContextState, SessionProvider } from '@/contexts';
 
 export const metadata: Metadata = {
   title: 'saga',
@@ -23,33 +19,66 @@ export const metadata: Metadata = {
 
 const { MAPBOX_ACCESS_TOKEN } = process.env;
 
-export default async function RootLayout({
-  children,
-}: {
+type Props = {
   children: React.ReactNode;
-}) {
-  const cookie = cookies().toString();
-  const session = await apiClient.getSession({ cookie }).catch(() => null);
+};
 
+export default async function RootLayout({ children }: Props) {
   const state: IAppContextState = {
     mapbox: {
       token: MAPBOX_ACCESS_TOKEN as string,
     },
   };
 
-  // if (!session) {
-  //   return redirect(ROUTER.LOGIN);
-  // }
-
   return (
     <html lang="en">
       <body>
         <AppProvider state={state}>
-          <ReactQueryProvider>
-            <SessionProvider state={session}>{children}</SessionProvider>
-          </ReactQueryProvider>
+          <ReactQueryProvider>{children}</ReactQueryProvider>
         </AppProvider>
       </body>
     </html>
   );
 }
+
+export const AuthLayout = async ({ children }: Props) => {
+  const cookie = cookies().toString();
+  const session = await apiClient.getSession({ cookie }).catch(() => null);
+
+  return <SessionProvider state={session}>{children}</SessionProvider>;
+};
+
+export const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <AuthLayout>
+      <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
+        <AppHeader />
+        <div className="w-full h-auto min-h-screen flex flex-col py-6 items-center justify-start">
+          {children}
+        </div>
+        <AppFooter />
+      </div>
+    </AuthLayout>
+  );
+};
+
+export const AppMapLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <AuthLayout>
+      <div className="relative w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
+        <div className={cn('z-20 absolute top-0 left-0 right-0 h-[64px]')}>
+          <AppHeader />
+        </div>
+        <div
+          className={cn(
+            'z-10 relative w-full h-[100vh] box-border flex flex-row',
+            `pt-[64px]`,
+          )}
+        >
+          {children}
+        </div>
+        <AppFooter />
+      </div>
+    </AuthLayout>
+  );
+};

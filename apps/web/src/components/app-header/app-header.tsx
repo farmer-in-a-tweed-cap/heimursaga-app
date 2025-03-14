@@ -1,10 +1,8 @@
-import { Button, Logo, LogoCompact } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { APP_HEADER_HEIGHT } from '@/constants';
-import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
 import { UserNavbar } from './user-navbar';

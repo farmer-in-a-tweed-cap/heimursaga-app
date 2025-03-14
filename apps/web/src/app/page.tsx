@@ -1,4 +1,4 @@
-import { AppLayout } from '@/components';
+import { AppLayout } from '@/layouts';
 
 export default async function App() {
   return (
