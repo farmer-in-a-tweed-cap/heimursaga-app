@@ -81,14 +81,23 @@ model UserFollow {
 
 model Post {
   id             Int            @id @default(autoincrement())
+  // @todo
+  public_id      String?        @db.Char(14)
   title          String?        @db.Char(200)
   content        String         @db.Text
+  public         Boolean?       @default(false)
+  draft          Boolean?       @default(false)
+  lat            Float?
+  lon            Float?
+  place          String?        @db.Char(250)
+  date           DateTime?      @default(now())
   author         User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
   author_id      Int
   likes          PostLike[]     @relation("post_likes")
   likesCount     Int            @default(0)
   bookmarks      PostBookmark[] @relation("post_bookmarks")
   bookmarksCount Int            @default(0)
+  uploads        Upload[]
   created_at     DateTime?      @default(now())
   updated_at     DateTime?      @updatedAt
   deleted_at     DateTime?
@@ -125,6 +134,8 @@ model Upload {
   thumbnail  String?   @db.VarChar(250)
   user_id    Int?
   user       User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  post_id    Int?
+  post       Post?     @relation(fields: [post_id], references: [id], onDelete: Cascade)
   created_at DateTime? @default(now())
   updated_at DateTime? @updatedAt
 

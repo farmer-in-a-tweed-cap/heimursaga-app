@@ -12,7 +12,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public, Session } from '@/common/decorators';
-import { ParamNumberIdDto } from '@/common/dto';
+import { ParamPublicIdDto } from '@/common/dto';
 import { IUserSession } from '@/common/interfaces';
 
 import { PostCreatePayloadDto, PostUpdatePayloadDto } from './post.dto';
@@ -34,13 +34,13 @@ export class PostController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getById(
-    @Param() param: ParamNumberIdDto,
+    @Param() param: ParamPublicIdDto,
     @Session() session: IUserSession,
   ) {
     const { id } = param;
 
     return await this.postService.getById({
-      id,
+      publicId: id,
       userId: session?.userId,
     });
   }
@@ -60,15 +60,13 @@ export class PostController {
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async update(
-    @Param() param: ParamNumberIdDto,
+    @Param() param: ParamPublicIdDto,
     @Body() body: PostUpdatePayloadDto,
     @Session() session: IUserSession,
   ) {
-    console.log('delete', { ...param, ...body });
-
     return await this.postService.update({
       ...body,
-      id: param.id,
+      publicId: param.id,
       userId: session.userId,
     });
   }
@@ -76,13 +74,11 @@ export class PostController {
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async delete(
-    @Param() param: ParamNumberIdDto,
+    @Param() param: ParamPublicIdDto,
     @Session() session: IUserSession,
   ) {
-    console.log('delete', param);
-
     return await this.postService.delete({
-      id: param.id,
+      publicId: param.id,
       userId: session.userId,
     });
   }
@@ -90,11 +86,11 @@ export class PostController {
   @Post(':id/like')
   @HttpCode(HttpStatus.OK)
   async like(
-    @Param() param: ParamNumberIdDto,
+    @Param() param: ParamPublicIdDto,
     @Session() session: IUserSession,
   ) {
     return await this.postService.like({
-      id: param.id,
+      publicId: param.id,
       userId: session.userId,
     });
   }
@@ -102,11 +98,11 @@ export class PostController {
   @Post(':id/bookmark')
   @HttpCode(HttpStatus.OK)
   async bookmark(
-    @Param() param: ParamNumberIdDto,
+    @Param() param: ParamPublicIdDto,
     @Session() session: IUserSession,
   ) {
     return await this.postService.bookmark({
-      id: param.id,
+      publicId: param.id,
       userId: session.userId,
     });
   }

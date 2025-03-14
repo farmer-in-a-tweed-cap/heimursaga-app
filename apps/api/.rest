@@ -60,7 +60,11 @@ content-type: application/json
 
 {
     "title": "post44",
-    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout."
+    "content": "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout.",
+    "lat": 49.625418557823544,
+    "lon": 15.022460937499499,
+    "public": true,
+    "draft": false
 }
 
 ### 
