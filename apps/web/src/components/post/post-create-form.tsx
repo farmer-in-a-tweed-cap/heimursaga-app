@@ -25,7 +25,7 @@ import { fieldmsg, redirect } from '@/lib/utils';
 
 import { MapDialog } from '@/components/dialog';
 
-import { Map } from '@/components';
+import { Map, MapPreviewOverlay } from '@/components';
 import { useMapbox } from '@/hooks/use-mapbox';
 import { ROUTER } from '@/router';
 
@@ -48,9 +48,8 @@ export const PostCreateForm = () => {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      title: 'It is a long established fact',
-      content:
-        "Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).",
+      title: '',
+      content: '',
     },
   });
 
@@ -125,12 +124,7 @@ export const PostCreateForm = () => {
             <DialogTrigger asChild>
               {mapbox.token && (
                 <div className="relative w-full aspect-5/2 rounded-xl overflow-hidden">
-                  <div className="absolute z-20 transition-all inset-0 w-full h-full flex flex-row justify-center items-center opacity-0 cursor-pointer hover:opacity-100">
-                    <div className="absolute z-10 inset-0 bg-gray-200 opacity-50"></div>
-                    <Button variant="outline" className="z-20">
-                      Open map
-                    </Button>
-                  </div>
+                  <MapPreviewOverlay />
                   <Map
                     token={mapbox.token}
                     marker={location.marker}

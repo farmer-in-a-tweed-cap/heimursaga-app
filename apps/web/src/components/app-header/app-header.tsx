@@ -9,7 +9,7 @@ import { UserNavbar } from './user-navbar';
 
 const data = {
   menu: [
-    { href: ROUTER.EXPLORE, label: 'Explore' },
+    { href: ROUTER.EXPLORE.HOME, label: 'Explore' },
     { href: ROUTER.HOME, label: 'Upgrade' },
   ],
 };

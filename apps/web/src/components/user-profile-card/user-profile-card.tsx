@@ -3,6 +3,7 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
+  Card,
 } from '@repo/ui/components';
 
 type Props = {
@@ -18,7 +19,7 @@ export const UserProfileCard: React.FC<Props> = ({
   lastName = '',
   picture = '',
 }) => (
-  <div className="w-full min-h-[140px] flex flex-col bg-white box-border p-6 rounded-xl drop-shadow-xl">
+  <Card className="w-full min-h-[140px] flex flex-col box-border p-6">
     <div className="flex flex-col">
       <Avatar className="w-[80px] h-[80px]">
         <AvatarImage src={picture} />
@@ -42,5 +43,5 @@ export const UserProfileCard: React.FC<Props> = ({
         <Button>Follow</Button>
       </div>
     </div>
-  </div>
+  </Card>
 );

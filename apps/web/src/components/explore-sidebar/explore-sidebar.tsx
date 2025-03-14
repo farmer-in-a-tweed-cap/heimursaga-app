@@ -1,3 +1,5 @@
+import { Card } from '@repo/ui/components';
+
 import { array } from '@/lib/utils';
 
 const data = {
@@ -10,7 +12,7 @@ const data = {
 
 export const ExploreSidebar = () => {
   return (
-    <div className="bg-white w-full h-full rounded-2xl box-border p-6 flex flex-col">
+    <Card className="w-full h-full box-border p-6 flex flex-col">
       <div className="flex flex-col">
         <span className="text-xl font-medium">Explore</span>
         <span className="pt-3 text-sm font-normal text-gray-800">
@@ -27,6 +29,6 @@ export const ExploreSidebar = () => {
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 };

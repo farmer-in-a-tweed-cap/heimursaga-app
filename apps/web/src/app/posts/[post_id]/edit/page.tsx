@@ -1,4 +1,4 @@
-import { Button } from '@repo/ui/components';
+import { Button, Card, CardContent, CardHeader } from '@repo/ui/components';
 import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
@@ -19,19 +19,23 @@ export default async function Page({ params }: PageProps<{ post_id: string }>) {
 
   return (
     <AppLayout>
-      <div className="w-full max-w-3xl bg-white p-6 rounded-xl">
-        <h2 className="text-xl font-medium">Edit post</h2>
-        <div className="mt-6">
-          <PostEditForm
-            postId={postId}
-            defaultValues={{
-              title,
-              content,
-              lat,
-              lon,
-            }}
-          />
-        </div>
+      <div className="w-full max-w-3xl">
+        <Card>
+          <CardHeader>
+            <h2 className="text-xl font-medium">Edit post</h2>
+          </CardHeader>
+          <CardContent>
+            <PostEditForm
+              postId={postId}
+              defaultValues={{
+                title,
+                content,
+                lat,
+                lon,
+              }}
+            />
+          </CardContent>
+        </Card>
       </div>
     </AppLayout>
   );

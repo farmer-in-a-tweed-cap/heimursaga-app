@@ -25,7 +25,7 @@ export default function Page({ params }: PageProps) {
             <UserFeed />
           </div>
         </div>
-      </div>{' '}
+      </div>
     </AppLayout>
   );
 }

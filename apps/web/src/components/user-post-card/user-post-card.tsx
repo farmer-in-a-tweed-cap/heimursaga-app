@@ -3,6 +3,7 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
+  Card,
 } from '@repo/ui/components';
 import { Bookmark, HeartIcon } from 'lucide-react';
 import Image from 'next/image';
@@ -25,7 +26,7 @@ export const UserPostCard: React.FC<Props> = ({
   content,
   thumbnail,
 }) => (
-  <div className="w-full min-h-[140px] bg-white box-border p-6 rounded-xl flex flex-col">
+  <Card className="w-full min-h-[140px] box-border p-6 flex flex-col">
     <div className="flex flex-row justify-between items-center">
       <div className="flex flex-row justify-start items-center gap-3">
         <Link href="#">
@@ -67,5 +68,5 @@ export const UserPostCard: React.FC<Props> = ({
         <span className="hover:underline underline-offset-4">Bookmark</span>
       </Button>
     </div>
-  </div>
+  </Card>
 );

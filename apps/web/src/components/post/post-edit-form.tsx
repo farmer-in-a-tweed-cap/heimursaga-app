@@ -24,7 +24,7 @@ import { fieldmsg } from '@/lib/utils';
 
 import { MapDialog } from '@/components/dialog';
 
-import { Map } from '@/components';
+import { Map, MapPreviewOverlay } from '@/components';
 import { MAP_DEFAULT_COORDINATES } from '@/constants';
 import { useMapbox } from '@/hooks/use-mapbox';
 
@@ -143,12 +143,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
             <DialogTrigger asChild>
               {mapbox.token && (
                 <div className="relative w-full aspect-5/2 rounded-xl overflow-hidden">
-                  <div className="absolute z-20 transition-all inset-0 w-full h-full flex flex-row justify-center items-center opacity-0 cursor-pointer hover:opacity-100">
-                    <div className="absolute z-10 inset-0 bg-gray-200 opacity-50"></div>
-                    <Button variant="outline" className="z-20">
-                      Open map
-                    </Button>
-                  </div>
+                  <MapPreviewOverlay />
                   <Map
                     token={mapbox.token}
                     marker={location.marker}
