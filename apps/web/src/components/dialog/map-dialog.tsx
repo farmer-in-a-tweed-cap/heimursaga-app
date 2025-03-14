@@ -112,7 +112,7 @@ export const MapDialog: React.FC<Props> = ({
               lon: coordinates.lon,
               alt: coordinates.alt,
             }}
-            sources={[]}
+            markerEnabled={true}
             onMove={handleMapMove}
             onMarkerChange={handleMarkerChange}
           />

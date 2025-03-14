@@ -133,10 +133,10 @@ export const PostCreateForm = () => {
                       lon: location.lon,
                       alt: location.alt,
                     }}
-                    sources={[]}
                     cursor="pointer"
                     controls={false}
                     disabled={true}
+                    markerEnabled={true}
                     className="z-10"
                   />
                 </div>

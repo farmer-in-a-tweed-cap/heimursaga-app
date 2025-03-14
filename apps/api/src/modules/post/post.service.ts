@@ -112,6 +112,150 @@ export class PostService {
     }
   }
 
+  async queryMap(payload: IPostSearchPayload) {
+    try {
+      const { userId } = payload;
+      const where = {
+        public_id: { not: null },
+        lat: { not: null },
+        lon: { not: null },
+        public: true,
+        draft: false,
+        deleted_at: null,
+      } as Prisma.PostWhereInput;
+
+      // search posts
+      const results = await this.prisma.post.count({ where });
+      const data = await this.prisma.post
+        .findMany({
+          where,
+          select: {
+            public_id: true,
+            title: true,
+            content: true,
+            lat: true,
+            lon: true,
+            place: true,
+            date: true,
+            likesCount: true,
+            bookmarksCount: true,
+            // check if the session user has liked this post
+            likes: userId
+              ? {
+                  where: { user_id: userId },
+                  select: { post_id: true },
+                }
+              : undefined,
+            // check if the session user has bookmarked this post
+            bookmarks: userId
+              ? {
+                  where: { user_id: userId },
+                  select: { post_id: true },
+                }
+              : undefined,
+            author: {
+              select: {
+                username: true,
+                profile: {
+                  select: { first_name: true, picture: true },
+                },
+              },
+            },
+            created_at: true,
+          },
+          orderBy: [{ id: 'desc' }],
+        })
+        .then((posts) =>
+          posts.map((post) => ({
+            id: post.public_id,
+            lat: post.lat,
+            lon: post.lon,
+            place: post.place,
+            date: post.date,
+            title: post.title,
+            content: post.content.slice(0, 140),
+            author: {
+              username: post.author?.username,
+              name: post.author?.profile?.first_name,
+              picture: post.author?.profile?.picture,
+            },
+            liked: userId ? post.likes.length > 0 : undefined,
+            bookmarked: userId ? post.bookmarks.length > 0 : undefined,
+            likesCount: post.likesCount,
+            bookmarksCount: post.bookmarksCount,
+            createdAt: post.created_at,
+          })),
+        );
+
+      const response = {
+        results,
+        data,
+        geojson: {
+          type: 'FeatureCollection',
+          // features: [
+          //   {
+          //     type: 'Feature',
+          //     geometry: { type: 'Point', coordinates: [-75.343, 39.984] },
+          //   },
+          //   {
+          //     type: 'Feature',
+          //     geometry: { type: 'Point', coordinates: [-75.833, 39.284] },
+          //   },
+          //   {
+          //     type: 'Feature',
+          //     geometry: { type: 'Point', coordinates: [-75.534, 39.123] },
+          //   },
+          // ],
+          features: data.map(({ id, title, lat, lon }) => ({
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [Number(lon.toFixed(4)), Number(lat.toFixed(4))],
+            },
+            properties: {
+              id,
+              title,
+            },
+          })),
+          // [
+          //   {
+          //     type: 'Feature',
+          //     geometry: { type: 'Point', coordinates: [-75.343, 39.984] },
+          // properties: {
+          //   // name: 'Location A',
+          //   // category: 'Store',
+          // },
+          //   },
+          //   {
+          //     type: 'Feature',
+          //     geometry: { type: 'Point', coordinates: [-75.833, 39.284] },
+          //     properties: {
+          //       // name: 'Location B',
+          //       // category: 'House',
+          //     },
+          //   },
+          //   {
+          //     type: 'Feature',
+          //     geometry: { type: 'Point', coordinates: [-75.534, 39.123] },
+          //     properties: {
+          //       // name: 'Location C',
+          //       // category: 'Office',
+          //     },
+          //   },
+          // ],
+        },
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('post not created');
+      throw exception;
+    }
+  }
+
   async getById(payload: IPostFindByIdPayload) {
     try {
       const { publicId, userId } = payload;

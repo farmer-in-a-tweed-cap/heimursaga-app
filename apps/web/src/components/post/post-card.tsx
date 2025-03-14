@@ -40,7 +40,7 @@ export const PostCard: React.FC<Props> = ({
   date = new Date(),
   coordinates,
 }) => (
-  <Card className="w-full min-h-[140px] box-border p-6 flex flex-col">
+  <Card className="w-full h-auto box-border p-6 flex flex-col">
     <div className="flex flex-row justify-between items-center">
       <div className="flex flex-row justify-start items-center gap-3">
         <Link
@@ -92,7 +92,6 @@ export const PostCard: React.FC<Props> = ({
         />
       </div>
     )}
-
     <div className="mt-6 flex flex-row gap-1">
       <Button variant="ghost" size="sm">
         <HeartIcon

@@ -50,16 +50,20 @@ export const MapPreview: React.FC<Props> = ({
 };
 
 export const MapPreviewOverlay = ({
-  href = '#',
+  href,
   onClick = () => {},
 }: {
   href?: string;
   onClick?: () => void;
 }) => (
   <div className="absolute z-20 transition-all inset-0 w-full h-full flex flex-row justify-center items-center opacity-0 cursor-pointer hover:opacity-100">
-    <Link href={href}>
+    {href ? (
+      <Link href={href}>
+        <div className="absolute z-10 inset-0 bg-gray-200 opacity-50"></div>
+      </Link>
+    ) : (
       <div className="absolute z-10 inset-0 bg-gray-200 opacity-50"></div>
-    </Link>
+    )}
     {href ? (
       <Button variant="outline" className="z-20">
         <Link href={href}>Open map </Link>

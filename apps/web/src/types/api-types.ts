@@ -28,6 +28,12 @@ export interface IPostFindByIdPayload {
   postId: string;
 }
 
+export interface IPostQueryMapResponse {
+  results: number;
+  data: IPostDetail[];
+  geojson: any;
+}
+
 export interface IPostQueryResponse {
   data: IPostDetail[];
   results: number;

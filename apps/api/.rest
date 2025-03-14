@@ -47,6 +47,12 @@ content-type: application/json
 GET http://localhost:5000/v1/posts
 content-type: application/json
 
+###
+
+# posts / map
+GET http://localhost:5000/v1/posts/map
+content-type: application/json
+
 ### 
 
 # posts/get_by_id

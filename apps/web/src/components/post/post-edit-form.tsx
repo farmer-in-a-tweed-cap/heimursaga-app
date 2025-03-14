@@ -152,10 +152,10 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
                       lon: location.lon,
                       alt: location.alt,
                     }}
-                    sources={[]}
                     cursor="pointer"
                     controls={false}
                     disabled={true}
+                    markerEnabled={true}
                     className="z-10"
                   />
                 </div>

@@ -6,6 +6,7 @@ export const API_ROUTER = {
   GET_SESSION_USER: 'auth/user',
   POSTS: {
     QUERY: '/posts',
+    QUERY_MAP: '/posts/map',
     GET_BY_ID: (id: string) => `posts/${id}`,
     CREATE: 'posts',
     UPDATE: (id: string) => `posts/${id}`,

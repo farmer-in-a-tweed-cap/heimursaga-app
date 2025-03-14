@@ -1,32 +1,33 @@
-import { Card } from '@repo/ui/components';
+import { PostCard } from '../post';
+import { Card, Skeleton } from '@repo/ui/components';
 
-import { array } from '@/lib/utils';
+import { IPostDetail } from '@/types';
 
-const data = {
-  posts: array(100).map(() => ({
-    title: 'entry',
-    content: 'It is a long established fact that a reader will be distracted..',
-    author: 'john',
-  })),
-};
-
-export const ExploreSidebar = () => {
+export const ExploreSidebar = ({
+  loading = false,
+  results = 0,
+  posts = [],
+}: {
+  loading?: boolean;
+  results?: number;
+  posts?: IPostDetail[];
+}) => {
   return (
     <Card className="w-full h-full box-border p-6 flex flex-col">
-      <div className="flex flex-col">
+      <div className="flex flex-col gap-3">
         <span className="text-xl font-medium">Explore</span>
-        <span className="pt-3 text-sm font-normal text-gray-800">
-          {data.posts.length} entries found
-        </span>
+
+        {loading ? (
+          <Skeleton className="w-[100px] h-[16px] rounded-full" />
+        ) : (
+          <span className="h-[16px] text-sm font-normal text-gray-800">
+            {results} entries found
+          </span>
+        )}
       </div>
-      <div className="mt-8 flex flex-col gap-2 overflow-y-scroll no-scrollbar">
-        {data.posts.map(({ title, content, author }, key) => (
-          <div key={key} className="bg-gray-50 p-4 box-border">
-            <span className="text-base font-medium">
-              {title} #{key + 1}
-            </span>
-            <p className="pt-3 font-normal text-gray-800">{content}</p>
-          </div>
+      <div className="mt-8 flex flex-col gap-4 overflow-y-scroll no-scrollbar">
+        {posts.map(({ title, content, author }, key) => (
+          <PostCard key={key} {...{ title, content, author }} />
         ))}
       </div>
     </Card>

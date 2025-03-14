@@ -4,6 +4,7 @@ import {
   IPostCreateResponse,
   IPostDetail,
   IPostFindByIdPayload,
+  IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
   ISessionUserQueryResponse,
@@ -51,6 +52,8 @@ export const apiClient = {
     }),
   getPosts: async (query: any, config?: RequestConfig) =>
     api.request<IPostQueryResponse>(API_ROUTER.POSTS.QUERY, config),
+  queryPostsMap: async (query: any, config?: RequestConfig) =>
+    api.request<IPostQueryMapResponse>(API_ROUTER.POSTS.QUERY_MAP, config),
   getPostById: async (
     { postId }: IPostFindByIdPayload,
     { cookie }: RequestConfig,

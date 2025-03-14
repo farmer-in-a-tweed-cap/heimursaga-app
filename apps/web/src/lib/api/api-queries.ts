@@ -2,6 +2,7 @@ import {
   ILoginQueryPayload,
   IPostCreatePayload,
   IPostCreateResponse,
+  IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
   ISessionUserQueryResponse,
@@ -15,6 +16,7 @@ export const QUERY_KEYS = {
   SIGNUP: 'signup',
   POSTS: 'posts',
   GET_POSTS: 'get_posts',
+  QUERY_POST_MAP: 'query_post_map',
   GET_SESSION_USER: 'get_session_user',
   GET_SESSION: 'get_session',
 };
@@ -60,6 +62,17 @@ export const getPostsQuery = createQuery<any, IPostQueryResponse>(
         throw new Error(message);
       }
       return data as IPostQueryResponse;
+    }),
+);
+
+export const queryPostMapQuery = createQuery<any, IPostQueryMapResponse>(
+  [QUERY_KEYS.GET_POSTS],
+  (query) =>
+    apiClient.queryPostsMap(query).then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IPostQueryMapResponse;
     }),
 );
 
