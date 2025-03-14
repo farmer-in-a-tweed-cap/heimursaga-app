@@ -4,6 +4,7 @@ import {
   IPostCreateResponse,
   IPostDetail,
   IPostFindByIdPayload,
+  IPostUpdatePayload,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
 } from '@/types/api-types';
@@ -20,6 +21,10 @@ const api = new Api({
   },
 });
 
+type RequestConfig = {
+  cookie?: string;
+};
+
 export const apiClient = {
   test: async () =>
     api.request<{ data: any[]; results: number }>(API_ROUTER.TEST),
@@ -33,21 +38,32 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-  logout: async ({ cookie }: { cookie: string }) =>
+  logout: async ({ cookie }: RequestConfig) =>
     api.request<void>(API_ROUTER.LOGOUT, {
       method: 'POST',
       body: JSON.stringify({}),
       cookie,
     }),
-  getSession: async ({ cookie }: { cookie: string }) =>
+  getSession: async ({ cookie }: RequestConfig) =>
     api.request<ISessionUserQueryResponse>(API_ROUTER.GET_SESSION_USER, {
       cookie,
     }),
-  getPostById: async ({ postId }: IPostFindByIdPayload) =>
-    api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(postId)),
+  getPostById: async (
+    { postId }: IPostFindByIdPayload,
+    { cookie }: RequestConfig,
+  ) => api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(postId), { cookie }),
   createPost: async (body: IPostCreatePayload) =>
     api.request<IPostCreateResponse>(API_ROUTER.POSTS.CREATE, {
       method: 'POST',
       body: JSON.stringify(body),
+    }),
+  updatePost: async (
+    { postId, data }: IPostUpdatePayload,
+    config?: RequestConfig,
+  ) =>
+    api.request<IPostUpdatePayload>(API_ROUTER.POSTS.UPDATE(postId), {
+      method: 'PUT',
+      body: JSON.stringify(data),
+      cookie: config ? config.cookie : undefined,
     }),
 };

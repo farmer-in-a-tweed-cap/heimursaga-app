@@ -15,19 +15,18 @@ import {
   Textarea,
 } from '@repo/ui/components';
 import { useMutation } from '@tanstack/react-query';
-import { Link } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { postCreateMutation } from '@/lib/api';
-import { fieldmsg, redirect } from '@/lib/utils';
+import { postUpdateMutation } from '@/lib/api';
+import { fieldmsg } from '@/lib/utils';
 
 import { MapDialog } from '@/components/dialog';
 
 import { Map } from '@/components';
+import { MAP_DEFAULT_COORDINATES } from '@/constants';
 import { useMapbox } from '@/hooks/use-mapbox';
-import { ROUTER } from '@/router';
 
 const schema = z.object({
   title: z
@@ -42,15 +41,24 @@ const schema = z.object({
     .max(3000, fieldmsg.max('content', 3000)),
 });
 
-export const PostCreateForm = () => {
+type Props = {
+  postId: string;
+  defaultValues?: {
+    title?: string;
+    content?: string;
+    lat?: number;
+    lon?: number;
+  };
+};
+
+export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
   const mapbox = useMapbox();
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      title: 'It is a long established fact',
-      content:
-        "Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).",
+      title: defaultValues?.title,
+      content: defaultValues?.content,
     },
   });
 
@@ -65,20 +73,25 @@ export const PostCreateForm = () => {
       lon: number;
     };
   }>({
-    lat: 48,
-    lon: 17,
-    alt: 5,
+    lat: defaultValues?.lat || MAP_DEFAULT_COORDINATES.LAT,
+    lon: defaultValues?.lon || MAP_DEFAULT_COORDINATES.LON,
+    alt: MAP_DEFAULT_COORDINATES.ALT,
+    marker: {
+      lat: defaultValues?.lat || MAP_DEFAULT_COORDINATES.LAT,
+      lon: defaultValues?.lon || MAP_DEFAULT_COORDINATES.LON,
+    },
   });
 
   const mutation = useMutation({
-    mutationFn: postCreateMutation.mutationFn,
+    mutationFn: postUpdateMutation.mutationFn,
     onSuccess: (response) => {
-      const { id } = response;
+      console.log('s', response);
 
-      // redirect to post detail page
-      redirect(ROUTER.POSTS.DETAIL(id));
+      setLoading(false);
     },
     onError: (e) => {
+      console.log('e', e);
+
       setLoading(false);
     },
   });
@@ -105,14 +118,19 @@ export const PostCreateForm = () => {
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
+      if (!postId) return;
+
       setLoading(true);
 
       const { lat, lon } = location;
 
-      await mutation.mutate({
-        ...values,
-        lat,
-        lon,
+      mutation.mutate({
+        postId,
+        data: {
+          ...values,
+          lat,
+          lon,
+        },
       });
     },
   );
@@ -204,7 +222,7 @@ export const PostCreateForm = () => {
                     className="min-w-[140px]"
                     loading={loading}
                   >
-                    Post
+                    Save
                   </Button>
                 </div>
               </div>

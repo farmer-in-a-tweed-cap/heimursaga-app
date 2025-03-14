@@ -28,31 +28,26 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
       const req = context.switchToHttp().getRequest<IRequest>();
-
-      const sid = req.session.get(SESSION_KEYS.SID) as string;
-
-      if (!sid) {
-        req.session.set(SESSION_KEYS.SID, generator.sessionId());
-      }
-
       const isRoutePublic = !!this.reflector.getAllAndOverride<boolean>(
         PUBLIC_ROUTE_KEY,
         [context.getHandler(), context.getClass()],
       );
 
-      // Validate the session
+      // validate session id
+      const sid = req.session.get(SESSION_KEYS.SID);
+      if (!sid) {
+        req.session.set(SESSION_KEYS.SID, generator.sessionId());
+      }
+
+      // validate session
       const session = await this.authService.validateSession({ sid });
 
       if (session) {
-        req.user = {
-          userId: session.userId,
-          role: session.role,
-        };
-
         req.session.set(SESSION_KEYS.USER_ID, session.userId);
+        req.session.set(SESSION_KEYS.USER_ROLE, session.role);
       }
 
-      // Check if the route is public
+      // check if route is public
       switch (isRoutePublic) {
         case true:
           return true;

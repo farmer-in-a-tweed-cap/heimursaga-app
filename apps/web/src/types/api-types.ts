@@ -43,6 +43,7 @@ export interface IPostDetail {
   bookmarksCount?: boolean;
   place?: string;
   date?: Date;
+  createdByMe?: boolean;
 }
 
 export interface IPostCreatePayload {
@@ -58,4 +59,18 @@ export interface IPostCreatePayload {
 
 export interface IPostCreateResponse {
   id: string;
+}
+
+export interface IPostUpdatePayload {
+  postId: string;
+  data: {
+    title?: string;
+    content?: string;
+    lat?: number;
+    lon?: number;
+    public?: boolean;
+    draft?: boolean;
+    place?: string;
+    date?: Date;
+  };
 }

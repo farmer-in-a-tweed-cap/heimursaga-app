@@ -12,7 +12,7 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { Public } from '@/common/decorators';
 import { FileInterceptor } from '@/common/interceptors';
-import { IUserSession } from '@/common/interfaces';
+import { ISession } from '@/common/interfaces';
 
 import { UploadMediaQueryDto } from './upload.dto';
 import { IUploadedFile } from './upload.interface';
@@ -37,7 +37,7 @@ export class UploadController {
   async upload(
     @Query() query: UploadMediaQueryDto,
     @UploadedFile() file: IUploadedFile,
-    @Session() session: IUserSession,
+    @Session() session: ISession,
   ) {
     return this.uploadService.upload({ file, userId: session?.userId });
   }

@@ -8,11 +8,12 @@ export interface IRequest extends FastifyRequest {
 
 export interface IResponse extends FastifyReply {}
 
-export interface IUserSession {
+export interface ISession {
   sid: string;
   userId?: number;
-  ip: string;
-  userAgent: string;
+  userRole?: string;
+  ip?: string;
+  userAgent?: string;
 }
 
 export interface ISessionUser {

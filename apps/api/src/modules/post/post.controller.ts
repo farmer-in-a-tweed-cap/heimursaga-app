@@ -8,12 +8,13 @@ import {
   Param,
   Post,
   Put,
+  Req,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public, Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
-import { IUserSession } from '@/common/interfaces';
+import { IRequest, ISession } from '@/common/interfaces';
 
 import { PostCreatePayloadDto, PostUpdatePayloadDto } from './post.dto';
 import { PostService } from './post.service';
@@ -26,7 +27,7 @@ export class PostController {
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
-  async search(@Session() session: IUserSession) {
+  async search(@Session() session: ISession) {
     return await this.postService.search({ userId: session?.userId });
   }
 
@@ -34,8 +35,9 @@ export class PostController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getById(
+    @Req() req: IRequest,
     @Param() param: ParamPublicIdDto,
-    @Session() session: IUserSession,
+    @Session() session: ISession,
   ) {
     const { id } = param;
 
@@ -49,7 +51,7 @@ export class PostController {
   @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() body: PostCreatePayloadDto,
-    @Session() session: IUserSession,
+    @Session() session: ISession,
   ) {
     return await this.postService.create({
       ...body,
@@ -62,7 +64,7 @@ export class PostController {
   async update(
     @Param() param: ParamPublicIdDto,
     @Body() body: PostUpdatePayloadDto,
-    @Session() session: IUserSession,
+    @Session() session: ISession,
   ) {
     return await this.postService.update({
       ...body,
@@ -73,10 +75,7 @@ export class PostController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async delete(
-    @Param() param: ParamPublicIdDto,
-    @Session() session: IUserSession,
-  ) {
+  async delete(@Param() param: ParamPublicIdDto, @Session() session: ISession) {
     return await this.postService.delete({
       publicId: param.id,
       userId: session.userId,
@@ -85,10 +84,7 @@ export class PostController {
 
   @Post(':id/like')
   @HttpCode(HttpStatus.OK)
-  async like(
-    @Param() param: ParamPublicIdDto,
-    @Session() session: IUserSession,
-  ) {
+  async like(@Param() param: ParamPublicIdDto, @Session() session: ISession) {
     return await this.postService.like({
       publicId: param.id,
       userId: session.userId,
@@ -99,7 +95,7 @@ export class PostController {
   @HttpCode(HttpStatus.OK)
   async bookmark(
     @Param() param: ParamPublicIdDto,
-    @Session() session: IUserSession,
+    @Session() session: ISession,
   ) {
     return await this.postService.bookmark({
       publicId: param.id,

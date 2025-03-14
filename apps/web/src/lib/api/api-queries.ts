@@ -2,6 +2,7 @@ import {
   ILoginQueryPayload,
   IPostCreatePayload,
   IPostCreateResponse,
+  IPostUpdatePayload,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
 } from '@/types/api-types';
@@ -59,4 +60,13 @@ export const postCreateMutation = createMutation<
     }
     return data as IPostCreateResponse;
   }),
+);
+
+export const postUpdateMutation = createMutation<IPostUpdatePayload, void>(
+  (payload) =>
+    apiClient.updatePost(payload).then(({ success, message }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+    }),
 );

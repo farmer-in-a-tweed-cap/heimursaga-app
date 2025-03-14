@@ -140,6 +140,7 @@ export class PostService {
               : undefined,
             author: {
               select: {
+                id: true,
                 profile: {
                   select: { first_name: true, picture: true },
                 },
@@ -161,11 +162,15 @@ export class PostService {
           likesCount: post.likesCount,
           bookmarksCount: post.bookmarksCount,
           author: {
+            id: post.author?.id,
             name: post.author?.profile?.first_name,
             picture: post.author?.profile?.picture,
           },
+          createdByMe: userId ? userId === post.author?.id : undefined,
           createdAt: post.created_at,
         }));
+
+      // console.log({ data, userId, authorId: data.author.id });
 
       return data;
     } catch (e) {

@@ -1,4 +1,4 @@
-import { IUserSession } from '@/common/interfaces';
+import { ISession } from '@/common/interfaces';
 
 export interface ISessionUserQueryResponse {
   role: string;
@@ -11,7 +11,7 @@ export interface ISessionUserQueryResponse {
   isPremium: boolean;
 }
 
-export interface IUserSessionCreatePayload {
+export interface ISessionCreatePayload {
   userId: number;
   sid?: string;
   ip?: string;
@@ -21,7 +21,7 @@ export interface IUserSessionCreatePayload {
 export interface ILoginQueryPayload {
   email?: string;
   password: string;
-  session?: IUserSession;
+  session?: ISession;
 }
 
 export interface ILoginQueryPayloadDto {

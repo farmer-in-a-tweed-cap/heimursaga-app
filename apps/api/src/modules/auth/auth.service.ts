@@ -12,16 +12,16 @@ import {
   ServiceNotFoundException,
   ServiceUnauthorizedException,
 } from '@/common/exceptions';
-import { IUserSession } from '@/common/interfaces';
+import { ISession } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
 import {
   ILoginQueryPayload,
   ILoginQueryResponse,
+  ISessionCreatePayload,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
-  IUserSessionCreatePayload,
 } from './auth.interface';
 
 @Injectable()
@@ -31,9 +31,7 @@ export class AuthService {
     private prisma: PrismaService,
   ) {}
 
-  async getSessionUser(
-    payload: IUserSession,
-  ): Promise<ISessionUserQueryResponse> {
+  async getSessionUser(payload: ISession): Promise<ISessionUserQueryResponse> {
     try {
       const { userId } = payload;
       if (!userId) throw new ServiceNotFoundException('user not found');
@@ -193,7 +191,7 @@ export class AuthService {
     }
   }
 
-  async logout(payload: IUserSession): Promise<void> {
+  async logout(payload: ISession): Promise<void> {
     try {
       const { sid } = payload;
 
@@ -215,7 +213,7 @@ export class AuthService {
     }
   }
 
-  async createSession(payload: IUserSessionCreatePayload) {
+  async createSession(payload: ISessionCreatePayload) {
     try {
       const { ip, userAgent, userId, sid } = payload || {};
 

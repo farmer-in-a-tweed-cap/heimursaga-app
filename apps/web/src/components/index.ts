@@ -10,3 +10,4 @@ export * from './dialog';
 
 export * from './explore-map';
 export * from './explore-sidebar';
+export * from './post';
