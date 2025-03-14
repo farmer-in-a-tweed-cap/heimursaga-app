@@ -20,14 +20,21 @@ export class UserService {
     private prisma: PrismaService,
   ) {}
 
-  async getByUsername({ username }: { username: string }) {
+  async getByUsername({
+    username,
+    userId,
+  }: {
+    username: string;
+    userId: number;
+  }) {
     try {
       if (!username) throw new ServiceNotFoundException('user not found');
 
       // get the user
-      const data = await this.prisma.user.findFirstOrThrow({
+      const user = await this.prisma.user.findFirstOrThrow({
         where: { username },
         select: {
+          id: true,
           username: true,
           profile: {
             select: { first_name: true, last_name: true, picture: true },
@@ -36,12 +43,19 @@ export class UserService {
         },
       });
 
+      console.log({
+        userId,
+        i: user.id,
+        you: userId ? userId === user.id : false,
+      });
+
       const response: IUserProfileDetail = {
-        username: data.username,
-        picture: data.profile.picture,
-        firstName: data.profile.first_name,
-        lastName: data.profile.last_name,
-        memberDate: data.created_at,
+        username: user.username,
+        picture: user.profile.picture,
+        firstName: user.profile.first_name,
+        lastName: user.profile.last_name,
+        memberDate: user.created_at,
+        you: userId ? userId === user.id : false,
       };
 
       return response;

@@ -4,4 +4,5 @@ export interface IUserProfileDetail {
   firstName: string;
   lastName: string;
   memberDate?: Date;
+  you?: boolean;
 }

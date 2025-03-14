@@ -4,6 +4,9 @@ export const API_ROUTER = {
   SIGNUP: 'auth/signup',
   LOGOUT: 'auth/logout',
   GET_SESSION_USER: 'auth/user',
+  USERS: {
+    GET_BY_USERNAME: (username: string) => `/users/${username}`,
+  },
   POSTS: {
     QUERY: '/posts',
     QUERY_MAP: '/posts/map',

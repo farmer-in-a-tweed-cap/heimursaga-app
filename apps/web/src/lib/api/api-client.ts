@@ -9,6 +9,7 @@ import {
   IPostUpdatePayload,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
+  IUserProfileDetail,
 } from '@/types/api-types';
 
 import { API_ROUTER, Api } from './api';
@@ -72,4 +73,12 @@ export const apiClient = {
       body: JSON.stringify(data),
       cookie: config ? config.cookie : undefined,
     }),
+  getUserByUsername: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<IUserProfileDetail>(
+      API_ROUTER.USERS.GET_BY_USERNAME(username),
+      config,
+    ),
 };

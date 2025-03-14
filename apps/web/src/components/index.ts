@@ -6,7 +6,7 @@ export * from './user-profile-card';
 export * from './user-feed';
 export * from './map';
 export * from './dialog';
-
 export * from './explore-map';
 export * from './explore-sidebar';
 export * from './post';
+export * from './page';

@@ -31,6 +31,7 @@ export class UserController {
 
     return await this.userService.getByUsername({
       username,
+      userId: session.userId,
     });
   }
 }

@@ -11,6 +11,8 @@ type Props = {
   firstName?: string;
   lastName?: string;
   picture?: string;
+  memberDate?: Date;
+  me?: boolean;
 };
 
 export const UserProfileCard: React.FC<Props> = ({
@@ -18,6 +20,7 @@ export const UserProfileCard: React.FC<Props> = ({
   firstName = '',
   lastName = '',
   picture = '',
+  me = false,
 }) => (
   <Card className="w-full min-h-[140px] flex flex-col box-border p-6">
     <div className="flex flex-col">
@@ -27,20 +30,24 @@ export const UserProfileCard: React.FC<Props> = ({
           {firstName.slice(0, 1)}
         </AvatarFallback>
       </Avatar>
-      <div className="mt-4 flex flex-col">
-        <span className="font-medium text-3xl">
+      <div className="mt-4 flex flex-col gap-1">
+        <span className="font-medium text-2xl">
           {firstName} {lastName}
         </span>
-        <span className="text-base font-medium text-gray-500">@{username}</span>
+        <span className="text-sm font-medium text-gray-500">@{username}</span>
       </div>
-      <div className="mt-4 flex flex-col gap-1">
+      {/* <div className="mt-4 flex flex-col gap-1">
         <span className="text-sm font-medium">US, New York</span>
         <span className="text-gray-500 text-sm font-medium">
           Member since April 2023
         </span>
-      </div>
+      </div> */}
       <div className="mt-6">
-        <Button>Follow</Button>
+        {me ? (
+          <Button variant="outline">Edit profile</Button>
+        ) : (
+          <Button>Follow</Button>
+        )}
       </div>
     </div>
   </Card>
