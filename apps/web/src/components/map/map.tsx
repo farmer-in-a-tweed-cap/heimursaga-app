@@ -1,8 +1,7 @@
 'use client';
 
 import { cn } from '@repo/ui/lib/utils';
-import { GeoJsonObject } from 'geojson';
-import mapboxgl, { GeoJSONFeature, MapOptions, Marker } from 'mapbox-gl';
+import mapboxgl, { MapOptions, Marker } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useEffect, useRef, useState } from 'react';
 
@@ -52,9 +51,13 @@ type Props = {
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
 
-const MAP_SOURCE = {
-  ID: 'markers',
-  LAYER_ID: 'markers-layer',
+const MAP_SOURCES = {
+  MARKERS: 'markers',
+};
+
+const MAP_LAYERS = {
+  MARKERS: 'markers',
+  CLUSTERS: 'clusters',
 };
 
 const BRAND_COLOR = '#AA6C46';
@@ -80,7 +83,6 @@ export const Map: React.FC<Props> = ({
   onMarkerChange,
 }) => {
   const [mapReady, setMapReady] = useState(false);
-  const [sourceAdded, setSourceAdded] = useState<boolean>(false);
 
   const [map, setMap] = useState<{
     bounds: {
@@ -107,7 +109,7 @@ export const Map: React.FC<Props> = ({
     const { geojson } = sources;
 
     const source = mapboxRef.current.getSource(
-      MAP_SOURCE.ID,
+      MAP_SOURCES.MARKERS,
     ) as mapboxgl.GeoJSONSource;
 
     source.setData(geojson);
@@ -226,26 +228,32 @@ export const Map: React.FC<Props> = ({
         });
       }
 
+      // source config
+      const sourceConfig: mapboxgl.SourceSpecification = {
+        type: 'geojson',
+        // @todo: add clusters
+      };
+
       // add sources
       if (sources) {
         const { geojson } = sources;
 
-        mapboxRef.current.addSource(MAP_SOURCE.ID, {
-          type: 'geojson',
+        mapboxRef.current.addSource(MAP_SOURCES.MARKERS, {
+          ...sourceConfig,
           data: geojson,
         });
       } else {
-        mapboxRef.current.addSource(MAP_SOURCE.ID, {
-          type: 'geojson',
+        mapboxRef.current.addSource(MAP_SOURCES.MARKERS, {
+          ...sourceConfig,
           data: { type: 'FeatureCollection', features: [] },
         });
       }
 
       // add circle layer with dynamic size
       mapboxRef.current.addLayer({
-        id: MAP_SOURCE.LAYER_ID,
+        id: MAP_LAYERS.MARKERS,
         type: 'circle',
-        source: MAP_SOURCE.ID,
+        source: MAP_SOURCES.MARKERS,
         paint: {
           'circle-radius': [
             'interpolate',
@@ -307,7 +315,7 @@ export const Map: React.FC<Props> = ({
       });
 
       // on popup click
-      mapboxRef.current!.on('click', MAP_SOURCE.LAYER_ID, (e) => {
+      mapboxRef.current!.on('click', MAP_LAYERS.MARKERS, (e) => {
         if (!mapboxRef.current) return;
 
         const id = e?.features?.[0]?.properties?.id;
@@ -318,7 +326,7 @@ export const Map: React.FC<Props> = ({
       });
 
       // on popoup hover
-      mapboxRef.current!.on('mouseover', MAP_SOURCE.LAYER_ID, (e) => {
+      mapboxRef.current!.on('mouseover', MAP_LAYERS.MARKERS, (e) => {
         if (
           !mapboxRef.current ||
           !mapboxPopupRef.current ||
@@ -342,11 +350,11 @@ export const Map: React.FC<Props> = ({
         // set custom popup
         const popupContent = `
           <div class="map-popup">
-            <div class="flex flex-col justify-start">
+            <div class="flex flex-col justify-start gap-0">
               <span class="text-sm font-medium">${title}</span>
               <span class="text-[0.625rem] font-normal text-gray-800">${dateformat(date).format('MMM DD')}</span>
             </div>
-            <div class="mt-2">
+            <div class="">
               <p class="text-xs font-normal">${content ? (content.length < 80 ? content : `${content.slice(0, 80)}..`) : ''}</p>
             </div>
           </div>
@@ -358,7 +366,7 @@ export const Map: React.FC<Props> = ({
           .addTo(mapboxRef.current!);
       });
 
-      mapboxRef.current!.on('mouseleave', MAP_SOURCE.LAYER_ID, () => {
+      mapboxRef.current!.on('mouseleave', MAP_LAYERS.MARKERS, () => {
         if (!mapboxPopupRef.current) return;
 
         // reset cursor

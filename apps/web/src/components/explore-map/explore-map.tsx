@@ -5,8 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
-import { QUERY_KEYS, apiClient, searchQuery } from '@/lib/api';
-import { debounce, sleep } from '@/lib/utils';
+import { QUERY_KEYS, searchQuery } from '@/lib/api';
 
 import {
   ExploreSidebar,
@@ -16,11 +15,13 @@ import {
 } from '@/components';
 import { MAP_DEFAULT_COORDINATES } from '@/constants';
 import { useMapbox } from '@/hooks';
-import { ISearchQueryPayload, ISearchQueryResponse } from '@/types';
+import { ISearchQueryResponse } from '@/types';
 
 type Props = {
   className?: string;
 };
+
+const SEARCH_DEBOUNCE_INTERVAL = 500;
 
 export const ExploreMap: React.FC<Props> = () => {
   const router = useRouter();
@@ -43,7 +44,9 @@ export const ExploreMap: React.FC<Props> = () => {
       ne: { lat: number; lon: number };
     };
   }>();
-  const [searchState] = useDebounce(_searchState, 1000, { leading: true });
+  const [searchState] = useDebounce(_searchState, SEARCH_DEBOUNCE_INTERVAL, {
+    leading: true,
+  });
 
   const searchQueryQuery = useQuery<ISearchQueryResponse, Error>({
     queryKey: [
@@ -85,33 +88,6 @@ export const ExploreMap: React.FC<Props> = () => {
 
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
   };
-
-  const search = debounce<{
-    bounds: {
-      sw: { lat: number; lon: number };
-      ne: { lat: number; lon: number };
-    };
-  }>(async ({ bounds }) => {
-    setLoading(true);
-
-    const response = await apiClient.search({
-      location: {
-        bounds,
-      },
-    });
-
-    if (response) {
-      console.log('search', {
-        bounds,
-        results: response.data?.results || 0,
-        data: response.data?.data || [],
-      });
-    }
-
-    await sleep(500);
-
-    setLoading(false);
-  }, 500);
 
   const handleMapLoad: MapOnLoadHandler = (value) => {
     const { bounds } = value;
@@ -165,12 +141,8 @@ export const ExploreMap: React.FC<Props> = () => {
   return (
     <div className="relative h-full">
       <div className="absolute top-0 left-0 bottom-0 z-20 w-[490px] h-full p-5">
-        {/* <div className="w-full h-full bg-white text-xs break-words whitespace-pre-line">
-          {JSON.stringify({ q: searcQueryQuery.data })}
-        </div> */}
-
         <ExploreSidebar
-          loading={loading}
+          loading={searchQueryQuery.isFetching}
           results={searchQueryQuery.data?.results}
           posts={searchQueryQuery.data?.data}
         />

@@ -12,18 +12,21 @@ import {
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import { getEnv } from '@/lib/utils';
+import { getEnv, sleep } from '@/lib/utils';
 
 import { HttpExceptionFilter } from '@/common/exception-filters';
 import { ServiceExceptionInterceptor } from '@/common/interceptors';
 import { AppModule } from '@/modules/app';
 import { Logger } from '@/modules/logger';
 
+import { IRequest, IResponse } from './common/interfaces';
+
 // build the app
 export async function app() {
   try {
     const ENV = getEnv();
     const IS_PRODUCTION = ENV === 'production';
+    const IS_DEVELOPMENT = ENV === 'development';
     const HOST = process.env?.HOST || '0.0.0.0';
     const PORT = parseInt(process.env.PORT) || 5000;
     const API_VERSION = 1;
@@ -99,6 +102,11 @@ export async function app() {
         disableErrorMessages: DISABLE_ERROR_MESSAGES,
       }),
     );
+
+    app.use(async (req: IRequest, res: IResponse, next: () => void) => {
+      if (IS_DEVELOPMENT) await sleep(500);
+      next();
+    });
 
     // swagger
     const config = new DocumentBuilder()

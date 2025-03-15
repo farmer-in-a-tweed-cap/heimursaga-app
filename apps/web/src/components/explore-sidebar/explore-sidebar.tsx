@@ -1,6 +1,7 @@
-import { PostCard } from '../post';
+import { PostCard, PostCardLink } from '../post';
 import { Card, Skeleton } from '@repo/ui/components';
 
+import { ROUTER } from '@/router';
 import { IPostDetail } from '@/types';
 
 export const ExploreSidebar = ({
@@ -26,8 +27,22 @@ export const ExploreSidebar = ({
         )}
       </div>
       <div className="mt-8 flex flex-col gap-4 overflow-y-scroll no-scrollbar">
-        {posts.map(({ title, content, author }, key) => (
-          <PostCard key={key} {...{ title, content, author }} />
+        {posts.map(({ id, title, content, author }, key) => (
+          <PostCardLink
+            key={key}
+            href={ROUTER.POSTS.DETAIL(id)}
+            target="_blank"
+            {...{
+              id,
+              title,
+              content,
+              author,
+              actions: {
+                like: false,
+                bookmark: false,
+              },
+            }}
+          />
         ))}
       </div>
     </Card>
