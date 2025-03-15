@@ -2,11 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { queryPostMapQuery } from '@/lib/api';
+import { debounce, sleep } from '@/lib/utils';
 
-import { ExploreSidebar, Map } from '@/components';
+import { ExploreSidebar, Map, MapOnMoveHandler } from '@/components';
 import { MAP_DEFAULT_COORDINATES } from '@/constants';
 import { useMapbox } from '@/hooks';
 
@@ -26,6 +27,8 @@ export const ExploreMap: React.FC<Props> = () => {
   };
 
   const mapbox = useMapbox();
+
+  const [loading, setLoading] = useState<boolean>(false);
 
   const postMapQuery = useQuery({
     queryKey: queryPostMapQuery.queryKey,
@@ -54,12 +57,28 @@ export const ExploreMap: React.FC<Props> = () => {
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
   };
 
-  const handleMapMove = (coordinates: {
-    lat: number;
-    lon: number;
-    alt: number;
-  }) => {
-    const { lat, lon, alt } = coordinates;
+  const search = debounce<{
+    sw: { lat: number; lon: number };
+    ne: { lat: number; lon: number };
+  }>(async (data) => {
+    setLoading(true);
+
+    console.log('search', data);
+
+    await sleep(500);
+
+    setLoading(false);
+  }, 500);
+
+  const handleMapMove: MapOnMoveHandler = (value) => {
+    const { lat, lon, alt, bounds } = value;
+
+    // request search
+    if (bounds) {
+      search({ sw: bounds.sw, ne: bounds.ne });
+    }
+
+    // update search params
     updateSearchParams({ lat, lon, alt });
   };
 
@@ -79,7 +98,7 @@ export const ExploreMap: React.FC<Props> = () => {
     <div className="relative h-full">
       <div className="absolute top-0 left-0 bottom-0 z-20 w-[490px] h-full p-5">
         <ExploreSidebar
-          loading={postMapQuery.isLoading}
+          loading={loading}
           results={postMapQuery.data?.results}
           posts={postMapQuery.data?.data}
         />

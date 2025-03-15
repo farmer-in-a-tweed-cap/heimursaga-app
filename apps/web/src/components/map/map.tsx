@@ -9,6 +9,18 @@ import { MAPBOX_STYLE } from '@/constants';
 
 import { MapNavigationControl } from './map-control';
 
+export type MapOnMoveHandlerValue = {
+  lat: number;
+  lon: number;
+  alt: number;
+  bounds?: {
+    ne: { lat: number; lon: number };
+    sw: { lat: number; lon: number };
+  };
+};
+
+export type MapOnMoveHandler = (data: MapOnMoveHandlerValue) => void;
+
 type Props = {
   token: string;
   sources?: {
@@ -22,7 +34,7 @@ type Props = {
   controls?: boolean;
   disabled?: boolean;
   markerEnabled?: boolean;
-  onMove?: (data: { lat: number; lon: number; alt: number }) => void;
+  onMove?: MapOnMoveHandler;
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
 
@@ -51,6 +63,18 @@ export const Map: React.FC<Props> = ({
 }) => {
   const [mapReady, setMapReady] = useState(false);
   const [sourceAdded, setSourceAdded] = useState<boolean>(false);
+
+  const [map, setMap] = useState<{
+    bounds: {
+      ne: { lat: number; lon: number };
+      sw: { lat: number; lon: number };
+    };
+  }>({
+    bounds: {
+      ne: { lat: 0, lon: 0 },
+      sw: { lat: 0, lon: 0 },
+    },
+  });
 
   const mapboxRef = useRef<mapboxgl.Map | null>(null);
   const mapboxContainerRef = useRef<any>(null);
@@ -231,14 +255,64 @@ export const Map: React.FC<Props> = ({
       });
 
       // update on move
-      if (onMove) {
-        mapboxRef.current.on('moveend', () => {
-          if (!mapboxRef.current) return;
-          const { lng: lon, lat } = mapboxRef.current.getCenter();
-          const alt = mapboxRef.current.getZoom();
-          onMove({ lat, lon, alt });
-        });
-      }
+      mapboxRef.current.on('moveend', () => {
+        if (!mapboxRef.current) return;
+
+        // get coordinates
+        const { lng: lon, lat } = mapboxRef.current.getCenter();
+        const alt = mapboxRef.current.getZoom();
+
+        // get bounds
+        const bounds = mapboxRef.current.getBounds();
+        const ne = bounds?.getNorthEast(); // northeast corner
+        const sw = bounds?.getSouthWest(); // southwest corner
+
+        // update state
+        if (onMove) {
+          onMove({
+            lat,
+            lon,
+            alt,
+            bounds:
+              ne && sw
+                ? {
+                    ne: { lat: ne.lat, lon: ne.lng },
+                    sw: { lat: sw.lat, lon: sw.lng },
+                  }
+                : undefined,
+          });
+        }
+      });
+
+      // update on zoom
+      mapboxRef.current.on('zoomend', (e) => {
+        if (!mapboxRef.current) return;
+
+        // get coordinates
+        const { lng: lon, lat } = mapboxRef.current.getCenter();
+        const alt = mapboxRef.current.getZoom();
+
+        // get bounds
+        const bounds = mapboxRef.current.getBounds();
+        const ne = bounds?.getNorthEast(); // northeast corner
+        const sw = bounds?.getSouthWest(); // southwest corner
+
+        // update state
+        if (onMove) {
+          onMove({
+            lat,
+            lon,
+            alt,
+            bounds:
+              ne && sw
+                ? {
+                    ne: { lat: ne.lat, lon: ne.lng },
+                    sw: { lat: sw.lat, lon: sw.lng },
+                  }
+                : undefined,
+          });
+        }
+      });
     }
 
     // @todo
@@ -257,7 +331,7 @@ export const Map: React.FC<Props> = ({
   return (
     <div className="relative w-full h-full">
       <div className="z-20 text-[8px] absolute bottom-2 right-2 bg-white text-black p-2">
-        {JSON.stringify({ sources: sources?.results || 0 })}
+        {JSON.stringify({ sources: sources?.results || 0, map })}
       </div>
       <div
         id="map-container"
