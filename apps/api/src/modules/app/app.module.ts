@@ -7,6 +7,7 @@ import { EventModule } from '@/modules/event';
 import { LoggerModule } from '@/modules/logger';
 import { PostModule } from '@/modules/post';
 import { PrismaModule } from '@/modules/prisma';
+import { SearchModule } from '@/modules/search';
 import { UploadModule } from '@/modules/upload';
 import { UserModule } from '@/modules/user';
 
@@ -28,6 +29,7 @@ import { AppService } from './app.service';
     PostModule,
     UploadModule,
     UserModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],
