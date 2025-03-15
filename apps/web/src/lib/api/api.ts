@@ -4,6 +4,7 @@ export const API_ROUTER = {
   SIGNUP: 'auth/signup',
   LOGOUT: 'auth/logout',
   GET_SESSION_USER: 'auth/user',
+  SEARCH: '/search',
   USERS: {
     GET_BY_USERNAME: (username: string) => `/users/${username}`,
     GET_POSTS: (username: string) => `/users/${username}/posts`,
@@ -50,7 +51,10 @@ export class Api {
     const { baseUrl, headers: globalHeaders } = this;
     const { cookie, ...options } = config || {};
 
-    const url = `${baseUrl}/${path}`;
+    const url = new URL(
+      path.startsWith('/') ? path.slice(1, path.length) : path,
+      baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`,
+    ).toString();
 
     let headers: HeadersInit = {} as HeadersInit;
 

@@ -5,6 +5,8 @@ import {
   IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
+  ISearchQueryPayload,
+  ISearchQueryResponse,
   ISignupQueryPayload,
   IUserPostsQueryResponse,
 } from '@/types/api-types';
@@ -20,6 +22,7 @@ export const QUERY_KEYS = {
   QUERY_POST_MAP: 'query_post_map',
   GET_SESSION_USER: 'get_session_user',
   GET_SESSION: 'get_session',
+  SEARCH: 'search',
 };
 
 const createQuery = <T = undefined, R = any>(
@@ -107,5 +110,17 @@ export const getUserPostsQuery = createQuery<
       throw new Error(message);
     }
     return data as IUserPostsQueryResponse;
+  }),
+);
+
+export const searchQuery = createQuery<
+  ISearchQueryPayload,
+  ISearchQueryResponse
+>([QUERY_KEYS.SEARCH], (query) =>
+  apiClient.search(query).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as ISearchQueryResponse;
   }),
 );

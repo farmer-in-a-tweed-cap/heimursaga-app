@@ -7,6 +7,8 @@ import {
   IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
+  ISearchQueryPayload,
+  ISearchQueryResponse,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
   IUserPostsQueryResponse,
@@ -90,4 +92,10 @@ export const apiClient = {
       API_ROUTER.USERS.GET_POSTS(username),
       config,
     ),
+  search: async (query: ISearchQueryPayload, config?: RequestConfig) =>
+    api.request<ISearchQueryResponse>(API_ROUTER.SEARCH, {
+      method: 'POST',
+      body: JSON.stringify(query),
+      cookie: config ? config.cookie : undefined,
+    }),
 };

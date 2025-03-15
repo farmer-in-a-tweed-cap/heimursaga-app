@@ -3,13 +3,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useDebounce } from 'use-debounce';
 
-import { queryPostMapQuery } from '@/lib/api';
+import { QUERY_KEYS, apiClient, searchQuery } from '@/lib/api';
 import { debounce, sleep } from '@/lib/utils';
 
-import { ExploreSidebar, Map, MapOnMoveHandler } from '@/components';
+import {
+  ExploreSidebar,
+  Map,
+  MapOnLoadHandler,
+  MapOnMoveHandler,
+} from '@/components';
 import { MAP_DEFAULT_COORDINATES } from '@/constants';
 import { useMapbox } from '@/hooks';
+import { ISearchQueryPayload, ISearchQueryResponse } from '@/types';
 
 type Props = {
   className?: string;
@@ -30,9 +37,31 @@ export const ExploreMap: React.FC<Props> = () => {
 
   const [loading, setLoading] = useState<boolean>(false);
 
-  const postMapQuery = useQuery({
-    queryKey: queryPostMapQuery.queryKey,
-    queryFn: () => queryPostMapQuery.queryFn(),
+  const [_searchState, setSearchState] = useState<{
+    bounds: {
+      sw: { lat: number; lon: number };
+      ne: { lat: number; lon: number };
+    };
+  }>();
+  const [searchState] = useDebounce(_searchState, 1000, { leading: true });
+
+  const searchQueryQuery = useQuery<ISearchQueryResponse, Error>({
+    queryKey: [
+      QUERY_KEYS.SEARCH,
+      searchState?.bounds.ne.lat,
+      searchState?.bounds.ne.lon,
+      searchState?.bounds.sw.lat,
+      searchState?.bounds.sw.lon,
+    ],
+    queryFn: async () =>
+      searchQuery.queryFn({ location: { bounds: searchState?.bounds } }),
+    enabled: [
+      searchState?.bounds.ne.lat,
+      searchState?.bounds.ne.lon,
+      searchState?.bounds.sw.lat,
+      searchState?.bounds.sw.lon,
+    ].every((param) => !!param),
+    retry: 0,
   });
 
   const coordinates = {
@@ -58,24 +87,63 @@ export const ExploreMap: React.FC<Props> = () => {
   };
 
   const search = debounce<{
-    sw: { lat: number; lon: number };
-    ne: { lat: number; lon: number };
-  }>(async (data) => {
+    bounds: {
+      sw: { lat: number; lon: number };
+      ne: { lat: number; lon: number };
+    };
+  }>(async ({ bounds }) => {
     setLoading(true);
 
-    console.log('search', data);
+    const response = await apiClient.search({
+      location: {
+        bounds,
+      },
+    });
+
+    if (response) {
+      console.log('search', {
+        bounds,
+        results: response.data?.results || 0,
+        data: response.data?.data || [],
+      });
+    }
 
     await sleep(500);
 
     setLoading(false);
   }, 500);
 
+  const handleMapLoad: MapOnLoadHandler = (value) => {
+    const { bounds } = value;
+
+    console.log('mapload');
+
+    // update query
+    if (bounds) {
+      setSearchState((state) => ({
+        ...state,
+        bounds: {
+          sw: bounds.sw,
+          ne: bounds.ne,
+        },
+      }));
+    }
+  };
+
   const handleMapMove: MapOnMoveHandler = (value) => {
     const { lat, lon, alt, bounds } = value;
 
-    // request search
+    console.log('mapmove');
+
+    // update query
     if (bounds) {
-      search({ sw: bounds.sw, ne: bounds.ne });
+      setSearchState((state) => ({
+        ...state,
+        bounds: {
+          sw: bounds.sw,
+          ne: bounds.ne,
+        },
+      }));
     }
 
     // update search params
@@ -85,7 +153,7 @@ export const ExploreMap: React.FC<Props> = () => {
   useEffect(() => {
     const { lat, lon, alt } = params;
 
-    if (!lat || !lon || !alt) {
+    if (lat && lon && alt) {
       updateSearchParams({
         lat: MAP_DEFAULT_COORDINATES.LAT,
         lon: MAP_DEFAULT_COORDINATES.LON,
@@ -97,10 +165,14 @@ export const ExploreMap: React.FC<Props> = () => {
   return (
     <div className="relative h-full">
       <div className="absolute top-0 left-0 bottom-0 z-20 w-[490px] h-full p-5">
+        {/* <div className="w-full h-full bg-white text-xs break-words whitespace-pre-line">
+          {JSON.stringify({ q: searcQueryQuery.data })}
+        </div> */}
+
         <ExploreSidebar
           loading={loading}
-          results={postMapQuery.data?.results}
-          posts={postMapQuery.data?.data}
+          results={searchQueryQuery.data?.results}
+          posts={searchQueryQuery.data?.data}
         />
       </div>
       <div className="relative w-full h-full z-10">
@@ -109,13 +181,14 @@ export const ExploreMap: React.FC<Props> = () => {
             token={mapbox.token}
             coordinates={coordinates}
             sources={
-              postMapQuery.isSuccess
+              searchQueryQuery.isSuccess
                 ? {
-                    results: postMapQuery.data.results,
-                    geojson: postMapQuery.data.geojson,
+                    results: searchQueryQuery.data.results,
+                    geojson: searchQueryQuery.data.geojson,
                   }
                 : undefined
             }
+            onLoad={handleMapLoad}
             onMove={handleMapMove}
           />
         )}

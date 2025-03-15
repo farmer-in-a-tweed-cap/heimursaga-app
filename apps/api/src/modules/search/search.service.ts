@@ -21,7 +21,7 @@ export class SearchService {
     try {
       const { userId, location } = payload;
 
-      console.log('search', payload);
+      console.log('search');
 
       let where = {
         public_id: { not: null },
@@ -51,13 +51,6 @@ export class SearchService {
         const maxLat = ne.lat;
         const minLon = sw.lon;
         const maxLon = ne.lon;
-
-        console.log({
-          minLat,
-          maxLat,
-          minLon,
-          maxLon,
-        });
 
         where = {
           ...where,
@@ -97,21 +90,27 @@ export class SearchService {
             place: search.place,
             date: search.date,
             title: search.title,
-            // content: search.content.slice(0, 140),
             author: {
               username: search.author?.username,
               name: search.author?.profile?.first_name,
               picture: search.author?.profile?.picture,
             },
-            // liked: userId ? search.likes.length > 0 : undefined,
-            // bookmarked: userId ? search.bookmarks.length > 0 : undefined,
-            // likesCount: search.likesCount,
-            // bookmarksCount: search.bookmarksCount,
-            // createdAt: search.created_at,
           })),
         );
 
-      return { results, data };
+      const geojson = {
+        type: 'FeatureCollection',
+        features: data.map(({ id, title, lon, lat }) => ({
+          type: 'Feature',
+          properties: {
+            id,
+            title,
+          },
+          geometry: { type: 'Point', coordinates: [lon, lat, 0.0] },
+        })),
+      };
+
+      return { results, data, geojson };
     } catch (e) {
       this.logger.error(e);
       const exception = e.status

@@ -16,7 +16,7 @@ export const redirect = (href: string) => {
 
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export const debounce = <T = any>(fn: (args: T) => void, ms = 300) => {
+export const debounce = <T = any, R = void>(fn: (args: T) => R, ms = 300) => {
   let timeoutId: ReturnType<typeof setTimeout>;
   return function (this: any, args: T) {
     clearTimeout(timeoutId);

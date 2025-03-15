@@ -5,6 +5,25 @@ export interface ISearchQueryPayload {
   userId?: number;
 }
 
+export interface ISearchQueryResponse {
+  results: number;
+  data: {
+    id: string;
+    title: string;
+    date: Date;
+    lat: number;
+    lon: number;
+  }[];
+  geojson?: {
+    type: 'FeatureCollection';
+    features: {
+      type: 'Feature';
+      properties: Record<string, string | number | boolean>[];
+      geometry: { type: 'Point'; coordinates: [number, number, number] };
+    };
+  };
+}
+
 export interface ISearchQueryLocation {
   bounds?: ISearchQueryLocationBounds;
 }

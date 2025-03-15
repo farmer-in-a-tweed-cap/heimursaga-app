@@ -1,13 +1,23 @@
 'use client';
 
 import { cn } from '@repo/ui/lib/utils';
-import mapboxgl, { MapOptions, Marker } from 'mapbox-gl';
+import { GeoJsonObject } from 'geojson';
+import mapboxgl, { GeoJSONFeature, MapOptions, Marker } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useEffect, useRef, useState } from 'react';
 
 import { MAPBOX_STYLE } from '@/constants';
 
 import { MapNavigationControl } from './map-control';
+
+export type MapOnLoadHandler = (data: MapOnLoadHandlerValue) => void;
+
+export type MapOnLoadHandlerValue = {
+  bounds?: {
+    ne: { lat: number; lon: number };
+    sw: { lat: number; lon: number };
+  };
+};
 
 export type MapOnMoveHandlerValue = {
   lat: number;
@@ -34,6 +44,7 @@ type Props = {
   controls?: boolean;
   disabled?: boolean;
   markerEnabled?: boolean;
+  onLoad?: MapOnLoadHandler;
   onMove?: MapOnMoveHandler;
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
@@ -58,6 +69,7 @@ export const Map: React.FC<Props> = ({
   controls = true,
   markerEnabled = false,
   disabled = false,
+  onLoad,
   onMove,
   onMarkerChange,
 }) => {
@@ -80,18 +92,19 @@ export const Map: React.FC<Props> = ({
   const mapboxContainerRef = useRef<any>(null);
   const markerRef = useRef<Marker | null>(null);
 
-  // @todo
-  // useEffect(() => {
-  //   if (!mapboxRef.current || !mapReady || !sources) return;
+  useEffect(() => {
+    if (!mapboxRef.current || !mapReady || !sources) return;
 
-  //   const { geojson } = sources;
+    console.log('map:sources');
 
-  //   const source = mapboxRef.current.getSource(
-  //     MAP_SOURCE,
-  //   ) as mapboxgl.GeoJSONSource;
+    const { geojson } = sources;
 
-  //   source.setData(geojson);
-  // }, [sources]);
+    const source = mapboxRef.current.getSource(
+      MAP_SOURCE,
+    ) as mapboxgl.GeoJSONSource;
+
+    source.setData(geojson);
+  }, [sources]);
 
   useEffect(() => {
     if (!mapboxRef.current || !mapReady) return;
@@ -121,6 +134,8 @@ export const Map: React.FC<Props> = ({
 
   useEffect(() => {
     if (!mapboxContainerRef.current || !token) return;
+
+    console.log('map:render');
 
     // initiate mapbox
     mapboxgl.accessToken = token;
@@ -182,49 +197,71 @@ export const Map: React.FC<Props> = ({
 
       setMapReady(true);
 
-      // set sources
-      mapboxRef.current.addSource(MAP_SOURCE, {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      });
+      // get coordinates
+      const { lng: lon, lat } = mapboxRef.current.getCenter();
+      const alt = mapboxRef.current.getZoom();
 
-      if (sources) {
-        const { geojson } = sources;
+      // get bounds
+      const bounds = mapboxRef.current.getBounds();
+      const ne = bounds?.getNorthEast(); // northeast corner
+      const sw = bounds?.getSouthWest(); // southwest corner
 
-        const source = mapboxRef.current.getSource(
-          MAP_SOURCE,
-        ) as mapboxgl.GeoJSONSource;
-
-        source.setData(geojson);
-
-        mapboxRef.current.addLayer({
-          id: 'posts-layer',
-          type: 'circle',
-          source: MAP_SOURCE,
-          paint: {
-            'circle-radius': 5,
-            // : [
-            //   'interpolate',
-            //   ['linear'],
-            //   ['zoom'],
-            //   5,
-            //   4,
-            //   10,
-            //   8,
-            //   15,
-            //   12,
-            // ],
-            'circle-stroke-width': 1,
-            'circle-color': BRAND_COLOR,
-            'circle-stroke-color': '#ffffff',
-          },
+      // set initial props
+      if (onLoad) {
+        onLoad({
+          bounds:
+            ne && sw
+              ? {
+                  ne: { lat: ne.lat, lon: ne.lng },
+                  sw: { lat: sw.lat, lon: sw.lng },
+                }
+              : undefined,
         });
       }
 
+      // set sources
+      if (sources) {
+        const { geojson } = sources;
+
+        mapboxRef.current.addSource(MAP_SOURCE, {
+          type: 'geojson',
+          data: geojson,
+        });
+      } else {
+        mapboxRef.current.addSource(MAP_SOURCE, {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        });
+      }
+
+      // set pointers
+      mapboxRef.current.addLayer({
+        id: 'posts-layer',
+        type: 'circle',
+        source: MAP_SOURCE,
+        paint: {
+          'circle-radius': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            // dynamic point sizes ([zoom, radius])
+            ...[5, 4],
+            ...[8, 12],
+            ...[12, 12],
+            ...[15, 12],
+          ],
+          'circle-stroke-width': 1,
+          'circle-color': BRAND_COLOR,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // set cursor
       if (cursor) {
         mapboxRef.current.getCanvas().style.cursor = cursor;
       }
 
+      // set controls
       if (controls) {
         mapboxRef.current.addControl(new MapNavigationControl(), 'top-right');
       }
@@ -331,7 +368,7 @@ export const Map: React.FC<Props> = ({
   return (
     <div className="relative w-full h-full">
       <div className="z-20 text-[8px] absolute bottom-2 right-2 bg-white text-black p-2">
-        {JSON.stringify({ sources: sources?.results || 0, map })}
+        {JSON.stringify({ sources: sources?.results || 0 })}
       </div>
       <div
         id="map-container"

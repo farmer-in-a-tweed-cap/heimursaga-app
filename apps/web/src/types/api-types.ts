@@ -42,11 +42,11 @@ export interface IPostQueryResponse {
 export interface IPostDetail {
   id: string;
   title: string;
-  content: string;
+  content?: string;
   lat: number;
   lon: number;
-  public: boolean;
-  draft: boolean;
+  public?: boolean;
+  draft?: boolean;
   liked?: boolean;
   bookmarked?: boolean;
   likesCount?: boolean;
@@ -54,7 +54,7 @@ export interface IPostDetail {
   place?: string;
   date?: Date;
   createdByMe?: boolean;
-  author: {
+  author?: {
     username: string;
     name: string;
     picture: string;
@@ -101,4 +101,44 @@ export interface IUserProfileDetail {
 export interface IUserPostsQueryResponse {
   results: number;
   data: IPostDetail[];
+}
+
+export interface ISearchQueryPayload {
+  location?: ISearchQueryLocation;
+  limit?: number;
+  page?: number;
+  userId?: number;
+}
+
+export interface ISearchQueryResponse {
+  results: number;
+  data: {
+    id: string;
+    title: string;
+    date: Date;
+    lat: number;
+    lon: number;
+  }[];
+  geojson?: {
+    type: 'FeatureCollection';
+    features: {
+      type: 'Feature';
+      properties: Record<string, string | number | boolean>[];
+      geometry: { type: 'Point'; coordinates: [number, number, number] };
+    };
+  };
+}
+
+export interface ISearchQueryLocation {
+  bounds?: ISearchQueryLocationBounds;
+}
+
+export interface ISearchQueryLocationBounds {
+  ne: ISearchQueryLocationBound;
+  sw: ISearchQueryLocationBound;
+}
+
+export interface ISearchQueryLocationBound {
+  lat: number;
+  lon: number;
 }
