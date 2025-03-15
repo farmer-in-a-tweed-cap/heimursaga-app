@@ -6,7 +6,10 @@ import mapboxgl, { GeoJSONFeature, MapOptions, Marker } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useEffect, useRef, useState } from 'react';
 
+import { dateformat } from '@/lib/date-format';
+
 import { MAPBOX_STYLE } from '@/constants';
+import { ROUTER } from '@/router';
 
 import { MapNavigationControl } from './map-control';
 
@@ -49,7 +52,10 @@ type Props = {
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
 
-const MAP_SOURCE = 'source';
+const MAP_SOURCE = {
+  ID: 'markers',
+  LAYER_ID: 'markers-layer',
+};
 
 const BRAND_COLOR = '#AA6C46';
 
@@ -90,6 +96,7 @@ export const Map: React.FC<Props> = ({
 
   const mapboxRef = useRef<mapboxgl.Map | null>(null);
   const mapboxContainerRef = useRef<any>(null);
+  const mapboxPopupRef = useRef<mapboxgl.Popup | null>(null);
   const markerRef = useRef<Marker | null>(null);
 
   useEffect(() => {
@@ -100,7 +107,7 @@ export const Map: React.FC<Props> = ({
     const { geojson } = sources;
 
     const source = mapboxRef.current.getSource(
-      MAP_SOURCE,
+      MAP_SOURCE.ID,
     ) as mapboxgl.GeoJSONSource;
 
     source.setData(geojson);
@@ -219,33 +226,33 @@ export const Map: React.FC<Props> = ({
         });
       }
 
-      // set sources
+      // add sources
       if (sources) {
         const { geojson } = sources;
 
-        mapboxRef.current.addSource(MAP_SOURCE, {
+        mapboxRef.current.addSource(MAP_SOURCE.ID, {
           type: 'geojson',
           data: geojson,
         });
       } else {
-        mapboxRef.current.addSource(MAP_SOURCE, {
+        mapboxRef.current.addSource(MAP_SOURCE.ID, {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: [] },
         });
       }
 
-      // set pointers
+      // add circle layer with dynamic size
       mapboxRef.current.addLayer({
-        id: 'posts-layer',
+        id: MAP_SOURCE.LAYER_ID,
         type: 'circle',
-        source: MAP_SOURCE,
+        source: MAP_SOURCE.ID,
         paint: {
           'circle-radius': [
             'interpolate',
             ['linear'],
             ['zoom'],
             // dynamic point sizes ([zoom, radius])
-            ...[5, 4],
+            ...[5, 5],
             ...[8, 12],
             ...[12, 12],
             ...[15, 12],
@@ -289,6 +296,76 @@ export const Map: React.FC<Props> = ({
             onMarkerChange({ lat, lon });
           }
         }
+      });
+
+      // set popup
+      mapboxPopupRef.current = new mapboxgl.Popup({
+        closeOnMove: true,
+        closeButton: false,
+        anchor: 'top',
+        offset: 15,
+      });
+
+      // on popup click
+      mapboxRef.current!.on('click', MAP_SOURCE.LAYER_ID, (e) => {
+        if (!mapboxRef.current) return;
+
+        const id = e?.features?.[0]?.properties?.id;
+
+        if (id) {
+          window.open(ROUTER.POSTS.DETAIL(id), '_blank');
+        }
+      });
+
+      // on popoup hover
+      mapboxRef.current!.on('mouseover', MAP_SOURCE.LAYER_ID, (e) => {
+        if (
+          !mapboxRef.current ||
+          !mapboxPopupRef.current ||
+          !e.features ||
+          !e.features?.length
+        )
+          return;
+
+        // set cursor
+        mapboxRef.current!.getCanvas().style.cursor = 'pointer';
+
+        const feature = e.features[0];
+        const coordinates = (feature.geometry as any).coordinates.slice();
+        const { title, id, content, date } = feature.properties as {
+          title: string;
+          id: string;
+          content: string;
+          date: string;
+        };
+
+        // set custom popup
+        const popupContent = `
+          <div class="map-popup">
+            <div class="flex flex-col justify-start">
+              <span class="text-sm font-medium">${title}</span>
+              <span class="text-[0.625rem] font-normal text-gray-800">${dateformat(date).format('MMM DD')}</span>
+            </div>
+            <div class="mt-2">
+              <p class="text-xs font-normal">${content ? (content.length < 80 ? content : `${content.slice(0, 80)}..`) : ''}</p>
+            </div>
+          </div>
+        `;
+
+        mapboxPopupRef
+          .current!.setLngLat([coordinates[0], coordinates[1]])
+          .setHTML(popupContent)
+          .addTo(mapboxRef.current!);
+      });
+
+      mapboxRef.current!.on('mouseleave', MAP_SOURCE.LAYER_ID, () => {
+        if (!mapboxPopupRef.current) return;
+
+        // reset cursor
+        mapboxRef.current!.getCanvas().style.cursor = '';
+
+        // remove popup
+        mapboxPopupRef.current.remove();
       });
 
       // update on move

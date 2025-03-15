@@ -25,6 +25,9 @@ module.exports = {
           DEFAULT: '#CC3300',
         },
       },
+      fontSize: {
+        xxs: '0.625rem',
+      },
       aspectRatio: {
         '4/3': '4/3',
         '5/2': '5/2',

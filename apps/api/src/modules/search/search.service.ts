@@ -8,7 +8,7 @@ import {
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
-import { ISearchQueryPayload } from './search.interface';
+import { ISearchQueryPayload, ISearchQueryResponse } from './search.interface';
 
 @Injectable()
 export class SearchService {
@@ -20,8 +20,6 @@ export class SearchService {
   async search(payload: ISearchQueryPayload) {
     try {
       const { userId, location } = payload;
-
-      console.log('search');
 
       let where = {
         public_id: { not: null },
@@ -35,6 +33,7 @@ export class SearchService {
         lat: true,
         lon: true,
         place: true,
+        content: true,
         date: true,
         likesCount: true,
         bookmarksCount: true,
@@ -90,6 +89,7 @@ export class SearchService {
             place: search.place,
             date: search.date,
             title: search.title,
+            content: search.content?.slice(0, 140),
             author: {
               username: search.author?.username,
               name: search.author?.profile?.first_name,
@@ -100,17 +100,28 @@ export class SearchService {
 
       const geojson = {
         type: 'FeatureCollection',
-        features: data.map(({ id, title, lon, lat }) => ({
+        features: data.map(({ id, title, content, date, lon, lat }) => ({
           type: 'Feature',
           properties: {
             id,
             title,
+            content,
+            date,
           },
-          geometry: { type: 'Point', coordinates: [lon, lat, 0.0] },
+          geometry: {
+            type: 'Point',
+            coordinates: [lon, lat, 0.0] as [number, number, number],
+          },
         })),
       };
 
-      return { results, data, geojson };
+      const response: ISearchQueryResponse = {
+        results,
+        data,
+        geojson,
+      };
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status

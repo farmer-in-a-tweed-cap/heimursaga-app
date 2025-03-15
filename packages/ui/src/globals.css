@@ -87,6 +87,36 @@
   }
 }
 
+.map-popup {
+  @apply w-[280px] bg-white p-4 text-black rounded-xl shadow text-sm flex flex-col justify-start items-start gap-2;
+}
+
+.map-popup-title {
+  @apply font-medium;
+}
+
+.map-popup-date {
+  @apply text-sm font-normal text-neutral-700;
+}
+
+.map-popup-content {
+  @apply font-normal;
+}
+
+.mapboxgl-popup {
+}
+
+.mapboxgl-popup-content {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.mapboxgl-popup-tip {
+  @apply !hidden;
+}
+
 .map-control-group {
   @apply bg-transparent flex flex-col gap-2 shadow-none p-4 box-border;
 }

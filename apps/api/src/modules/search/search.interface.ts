@@ -10,17 +10,18 @@ export interface ISearchQueryResponse {
   data: {
     id: string;
     title: string;
+    content: string;
     date: Date;
     lat: number;
     lon: number;
   }[];
   geojson?: {
-    type: 'FeatureCollection';
+    type: string;
     features: {
-      type: 'Feature';
-      properties: Record<string, string | number | boolean>[];
-      geometry: { type: 'Point'; coordinates: [number, number, number] };
-    };
+      type: string;
+      properties: Record<string, string | number | boolean | Date>;
+      geometry: { type: string; coordinates: [number, number, number] };
+    }[];
   };
 }
 
