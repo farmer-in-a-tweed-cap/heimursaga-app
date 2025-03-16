@@ -11,6 +11,8 @@ import {
   ISearchQueryResponse,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
+  IUserFollowersQueryResponse,
+  IUserFollowingQueryResponse,
   IUserPostsQueryResponse,
   IUserProfileDetail,
 } from '@/types/api-types';
@@ -96,14 +98,59 @@ export const apiClient = {
       body: JSON.stringify(query),
       cookie: config ? config.cookie : undefined,
     }),
-  likePost: async ({ postId }: { postId: string }) =>
+  likePost: async ({ postId }: { postId: string }, config?: RequestConfig) =>
     api.request<{ likesCount: number }>(API_ROUTER.POSTS.LIKE(postId), {
       method: 'POST',
       body: JSON.stringify({}),
+      cookie: config ? config.cookie : undefined,
     }),
-  bookmarkPost: async ({ postId }: { postId: string }) =>
+  bookmarkPost: async (
+    { postId }: { postId: string },
+    config?: RequestConfig,
+  ) =>
     api.request<{ bookmarksCount: number }>(API_ROUTER.POSTS.BOOKMARK(postId), {
       method: 'POST',
       body: JSON.stringify({}),
+      cookie: config ? config.cookie : undefined,
+    }),
+  getUserFollowers: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<IUserFollowersQueryResponse>(
+      API_ROUTER.USERS.FOLLOWERS(username),
+      {
+        method: 'GET',
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
+  getUserFollowing: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<IUserFollowingQueryResponse>(
+      API_ROUTER.USERS.FOLLOWING(username),
+      {
+        method: 'GET',
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
+  followUser: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.USERS.FOLLOW(username), {
+      method: 'POST',
+      body: JSON.stringify({}),
+      cookie: config ? config.cookie : undefined,
+    }),
+  unfollowUser: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.USERS.UNFOLLOW(username), {
+      method: 'POST',
+      body: JSON.stringify({}),
+      cookie: config ? config.cookie : undefined,
     }),
 };

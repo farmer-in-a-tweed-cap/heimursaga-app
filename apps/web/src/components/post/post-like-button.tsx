@@ -7,6 +7,8 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { postLikeMutation } from '@/lib/api';
 
+import { DEBOUNCE_TIMEOUT } from '@/constants';
+
 type Props = {
   postId?: string;
   liked?: boolean;
@@ -52,7 +54,7 @@ export const PostLikeButton: React.FC<Props> = ({
     ({ postId }: { postId: string }) => {
       mutation.mutate({ postId });
     },
-    250,
+    DEBOUNCE_TIMEOUT,
   );
 
   const handleClick = () => {

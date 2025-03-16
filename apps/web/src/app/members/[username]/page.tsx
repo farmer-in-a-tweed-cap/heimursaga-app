@@ -29,6 +29,7 @@ export default async function Page({ params }: PageProps) {
                   username={user?.username}
                   firstName={user?.firstName}
                   lastName={user?.lastName}
+                  followed={user?.followed}
                   me={user?.you}
                 />
               </div>

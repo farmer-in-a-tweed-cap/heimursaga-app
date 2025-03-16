@@ -8,6 +8,8 @@ import {
   ISearchQueryPayload,
   ISearchQueryResponse,
   ISignupQueryPayload,
+  IUserFollowersQueryResponse,
+  IUserFollowingQueryResponse,
   IUserPostsQueryResponse,
 } from '@/types/api-types';
 
@@ -23,6 +25,8 @@ export const QUERY_KEYS = {
   GET_SESSION_USER: 'get_session_user',
   GET_SESSION: 'get_session',
   SEARCH: 'search',
+  USER_FOLLOWERS: 'user_followers',
+  USER_FOLLOWING: 'user_following',
 };
 
 const createQuery = <T = undefined, R = any>(
@@ -149,4 +153,50 @@ export const postBookmarkMutation = createMutation<
 
     return data as { bookmarksCount: number };
   }),
+);
+
+export const getUserFollowersQuery = createQuery<
+  { username: string },
+  IUserFollowersQueryResponse
+>([QUERY_KEYS.SEARCH], ({ username }) =>
+  apiClient
+    .getUserFollowers({ username })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IUserFollowersQueryResponse;
+    }),
+);
+
+export const getUserFollowingQuery = createQuery<
+  { username: string },
+  IUserFollowingQueryResponse
+>([QUERY_KEYS.SEARCH], ({ username }) =>
+  apiClient
+    .getUserFollowing({ username })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IUserFollowingQueryResponse;
+    }),
+);
+
+export const followUserMutation = createMutation<{ username: string }, void>(
+  ({ username }) =>
+    apiClient.followUser({ username }).then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+    }),
+);
+
+export const unfollowUserMutation = createMutation<{ username: string }, void>(
+  ({ username }) =>
+    apiClient.unfollowUser({ username }).then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+    }),
 );

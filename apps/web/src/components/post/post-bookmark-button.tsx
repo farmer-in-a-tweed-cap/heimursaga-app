@@ -7,6 +7,8 @@ import { useDebouncedCallback } from 'use-debounce';
 
 import { postBookmarkMutation } from '@/lib/api';
 
+import { DEBOUNCE_TIMEOUT } from '@/constants';
+
 type Props = {
   postId?: string;
   bookmarked?: boolean;
@@ -59,7 +61,7 @@ export const PostBookmarkButton: React.FC<Props> = ({
 
       mutation.mutate({ postId });
     },
-    250,
+    DEBOUNCE_TIMEOUT,
   );
 
   const handleClick = () => {

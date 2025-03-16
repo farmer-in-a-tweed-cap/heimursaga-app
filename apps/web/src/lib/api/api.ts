@@ -8,6 +8,10 @@ export const API_ROUTER = {
   USERS: {
     GET_BY_USERNAME: (username: string) => `/users/${username}`,
     GET_POSTS: (username: string) => `/users/${username}/posts`,
+    FOLLOWERS: (username: string) => `/users/${username}/followers`,
+    FOLLOWING: (username: string) => `/users/${username}/following`,
+    FOLLOW: (username: string) => `/users/${username}/follow`,
+    UNFOLLOW: (username: string) => `/users/${username}/unfollow`,
   },
   POSTS: {
     QUERY: '/posts',

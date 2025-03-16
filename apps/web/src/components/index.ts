@@ -11,3 +11,4 @@ export * from './explore-sidebar';
 export * from './post';
 export * from './page';
 export * from './button';
+export * from './user';

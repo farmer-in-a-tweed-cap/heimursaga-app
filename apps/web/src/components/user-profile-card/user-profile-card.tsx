@@ -6,6 +6,8 @@ import {
   Card,
 } from '@repo/ui/components';
 
+import { UserFollowButton } from '@/components';
+
 type Props = {
   username?: string;
   firstName?: string;
@@ -13,6 +15,7 @@ type Props = {
   picture?: string;
   memberDate?: Date;
   me?: boolean;
+  followed?: boolean;
 };
 
 export const UserProfileCard: React.FC<Props> = ({
@@ -21,6 +24,7 @@ export const UserProfileCard: React.FC<Props> = ({
   lastName = '',
   picture = '',
   me = false,
+  followed = false,
 }) => (
   <Card className="w-full min-h-[140px] flex flex-col box-border p-6">
     <div className="flex flex-col">
@@ -46,7 +50,7 @@ export const UserProfileCard: React.FC<Props> = ({
         {me ? (
           <Button variant="outline">Edit profile</Button>
         ) : (
-          <Button>Follow</Button>
+          <UserFollowButton username={username} followed={followed} />
         )}
       </div>
     </div>

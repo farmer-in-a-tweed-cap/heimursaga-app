@@ -89,12 +89,14 @@ export interface IPostUpdatePayload {
     date?: Date;
   };
 }
+
 export interface IUserProfileDetail {
   username: string;
   picture: string;
   firstName: string;
   lastName: string;
   memberDate?: Date;
+  followed?: boolean;
   you?: boolean;
 }
 
@@ -141,4 +143,21 @@ export interface ISearchQueryLocationBounds {
 export interface ISearchQueryLocationBound {
   lat: number;
   lon: number;
+}
+
+export interface IUserDetail {
+  username: string;
+  firstName: string;
+  lastName: string;
+  picture: string;
+}
+
+export interface IUserFollowersQueryResponse {
+  results: number;
+  data: IUserDetail[];
+}
+
+export interface IUserFollowingQueryResponse {
+  results: number;
+  data: IUserDetail[];
 }

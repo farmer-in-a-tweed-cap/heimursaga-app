@@ -42,6 +42,12 @@ export class UserService {
           profile: {
             select: { first_name: true, last_name: true, picture: true },
           },
+          followers: userId
+            ? {
+                where: { follower_id: userId },
+                select: { follower_id: true },
+              }
+            : undefined,
           created_at: true,
         },
       });
@@ -52,6 +58,7 @@ export class UserService {
         firstName: user.profile.first_name,
         lastName: user.profile.last_name,
         memberDate: user.created_at,
+        followed: userId ? user.followers.length > 0 : false,
         you: userId ? userId === user.id : false,
       };
 

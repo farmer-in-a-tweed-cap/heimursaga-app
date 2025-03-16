@@ -6,6 +6,7 @@ export interface IUserProfileDetail {
   firstName: string;
   lastName: string;
   memberDate?: Date;
+  followed?: boolean;
   you?: boolean;
 }
 
