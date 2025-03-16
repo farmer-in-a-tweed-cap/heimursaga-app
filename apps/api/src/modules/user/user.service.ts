@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import {
   ServiceBadRequestException,
   ServiceException,
+  ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import { Logger } from '@/modules/logger';
@@ -76,60 +77,56 @@ export class UserService {
     try {
       if (!username) throw new ServiceNotFoundException('user not found');
 
-      const results = await this.prisma.post.count({
-        where: {
-          draft: false,
-          public: true,
-          deleted_at: null,
-          lat: { not: null },
-          lon: { not: null },
-          author: { username },
-        },
-      });
-      const data = await this.prisma.post.findMany({
-        where: {
-          draft: false,
-          public: true,
-          deleted_at: null,
-          lat: { not: null },
-          lon: { not: null },
-          author: { username },
-        },
-        select: {
-          public_id: true,
-          title: true,
-          content: true,
-          lat: true,
-          lon: true,
-          date: true,
-          place: true,
-          created_at: true,
-          likes_count: true,
-          bookmarks_count: true,
-          // check if the session user has liked this post
-          likes: userId
-            ? {
-                where: { user_id: userId },
-                select: { post_id: true },
-              }
-            : undefined,
-          // check if the session user has bookmarked this post
-          bookmarks: userId
-            ? {
-                where: { user_id: userId },
-                select: { post_id: true },
-              }
-            : undefined,
-          author: {
-            select: {
-              id: true,
-              username: true,
-              profile: {
-                select: { first_name: true, last_name: true, picture: true },
-              },
+      let where = {
+        draft: false,
+        public: true,
+        deleted_at: null,
+        lat: { not: null },
+        lon: { not: null },
+        author: { username },
+      } as Prisma.PostWhereInput;
+
+      let select = {
+        public_id: true,
+        title: true,
+        content: true,
+        lat: true,
+        lon: true,
+        date: true,
+        place: true,
+        created_at: true,
+        likes_count: true,
+        bookmarks_count: true,
+        likes: userId
+          ? {
+              where: { user_id: userId },
+              select: { post_id: true },
+            }
+          : undefined,
+        bookmarks: userId
+          ? {
+              where: { user_id: userId },
+              select: { post_id: true },
+            }
+          : undefined,
+        author: {
+          select: {
+            id: true,
+            username: true,
+            profile: {
+              select: { first_name: true, last_name: true, picture: true },
             },
           },
         },
+      };
+
+      // fetch results
+      const results = await this.prisma.post.count({
+        where,
+      });
+      const data = await this.prisma.post.findMany({
+        where,
+        select,
       });
 
       const response: IUserPostsQueryResponse = {
@@ -154,7 +151,7 @@ export class UserService {
             lat,
             lon,
             author: {
-              name: author?.profile?.first_name,
+              name: author.profile?.first_name,
               username: author?.username,
               picture: author?.profile?.picture,
             },
@@ -173,7 +170,7 @@ export class UserService {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('user not found');
+        : new ServiceNotFoundException('posts not found');
       throw exception;
     }
   }
@@ -438,6 +435,150 @@ export class UserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceBadRequestException('user not followed');
+      throw exception;
+    }
+  }
+}
+
+@Injectable()
+export class SessionUserService {
+  constructor(
+    private logger: Logger,
+    private prisma: PrismaService,
+  ) {}
+
+  async getPosts({
+    userId,
+    context,
+  }: {
+    userId: number;
+    context: 'feed' | 'bookmarks' | 'drafts';
+  }) {
+    try {
+      if (!userId) throw new ServiceForbiddenException();
+
+      let where = {
+        deleted_at: null,
+        lat: { not: null },
+        lon: { not: null },
+      } as Prisma.PostWhereInput;
+
+      let select = {
+        public_id: true,
+        title: true,
+        content: true,
+        lat: true,
+        lon: true,
+        date: true,
+        place: true,
+        created_at: true,
+        likes_count: true,
+        bookmarks_count: true,
+        likes: userId
+          ? {
+              where: { user_id: userId },
+              select: { post_id: true },
+            }
+          : undefined,
+        bookmarks: userId
+          ? {
+              where: { user_id: userId },
+              select: { post_id: true },
+            }
+          : undefined,
+        author: {
+          select: {
+            id: true,
+            username: true,
+            profile: {
+              select: { first_name: true, last_name: true, picture: true },
+            },
+          },
+        },
+      };
+
+      // filter based on context
+      switch (context) {
+        case 'feed':
+          where = {
+            ...where,
+            public: true,
+            draft: false,
+            author: { id: userId },
+          };
+          break;
+        case 'bookmarks':
+          where = {
+            ...where,
+            public: true,
+            draft: false,
+            bookmarks: {
+              some: {
+                user_id: userId,
+              },
+            },
+          };
+          break;
+        case 'drafts':
+          where = {
+            ...where,
+            public: false,
+            // draft: true,
+            author: { id: userId },
+          };
+          break;
+      }
+
+      // fetch results
+      const results = await this.prisma.post.count({
+        where,
+      });
+      const data = await this.prisma.post.findMany({
+        where,
+        select,
+      });
+
+      const response: IUserPostsQueryResponse = {
+        data: data.map(
+          ({
+            public_id: id,
+            title,
+            created_at: date,
+            content,
+            lat,
+            lon,
+            author,
+            likes,
+            likes_count,
+            bookmarks,
+            bookmarks_count,
+          }) => ({
+            id,
+            title,
+            date,
+            content,
+            lat,
+            lon,
+            author: {
+              name: author.profile?.first_name,
+              username: author?.username,
+              picture: author?.profile?.picture,
+            },
+            liked: userId ? likes.length > 0 : false,
+            bookmarked: userId ? bookmarks.length > 0 : false,
+            likesCount: likes_count,
+            bookmarksCount: bookmarks_count,
+          }),
+        ),
+        results,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('posts not found');
       throw exception;
     }
   }

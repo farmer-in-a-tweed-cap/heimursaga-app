@@ -13,7 +13,7 @@ import { Public, Session } from '@/common/decorators';
 import { ParamUsernameDto } from '@/common/dto';
 import { IRequest, ISession } from '@/common/interfaces';
 
-import { UserService } from './user.service';
+import { SessionUserService, UserService } from './user.service';
 
 @ApiTags('users')
 @Controller('users')
@@ -102,6 +102,39 @@ export class UserController {
     return await this.userService.unfollow({
       username,
       userId: session.userId,
+    });
+  }
+}
+
+@ApiTags('user')
+@Controller('user')
+export class SessionUserController {
+  constructor(private sessionUserService: SessionUserService) {}
+
+  @Get('posts')
+  @HttpCode(HttpStatus.OK)
+  async getPosts(@Session() session: ISession) {
+    return await this.sessionUserService.getPosts({
+      userId: session.userId,
+      context: 'feed',
+    });
+  }
+
+  @Get('bookmarks')
+  @HttpCode(HttpStatus.OK)
+  async getBookmarks(@Session() session: ISession) {
+    return await this.sessionUserService.getPosts({
+      userId: session.userId,
+      context: 'bookmarks',
+    });
+  }
+
+  @Get('drafts')
+  @HttpCode(HttpStatus.OK)
+  async getDrafts(@Session() session: ISession) {
+    return await this.sessionUserService.getPosts({
+      userId: session.userId,
+      context: 'drafts',
     });
   }
 }

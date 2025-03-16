@@ -118,25 +118,18 @@ content-type: application/json
 
 ###
 
-# users/username
+# users/:username
 GET http://localhost:5000/v1/users/jackyboye
 
 ###
 
-# users/username/posts
+# users/:username/posts
 GET http://localhost:5000/v1/users/jackyboye/posts
 
 ###
 
-# email
-POST http://localhost:5000/v1/search
-content-type: application/json
-
-{
-    "to": "wylsadoo@gmail.com",
-    "subject": "test",
-    "html": "hi, friend"
-}
+# users/:username/bookmarks
+GET http://localhost:5000/v1/users/nicholson/bookmarks
 
 ###
 # users/:username/follow
