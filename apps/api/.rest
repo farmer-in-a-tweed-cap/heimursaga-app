@@ -137,3 +137,24 @@ content-type: application/json
     "subject": "test",
     "html": "hi, friend"
 }
+
+###
+# users/:username/follow
+POST http://localhost:5000/v1/users/jackyboy/follow
+
+###
+# users/:username/unfollow
+POST http://localhost:5000/v1/users/jackyboy/unfollow
+
+###
+
+# users/:username/followers
+GET http://localhost:5000/v1/users/jackyboy/followers
+
+###
+
+# users/:username/following
+GET http://localhost:5000/v1/users/itsme/following
+
+
+

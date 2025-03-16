@@ -1,13 +1,20 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import {
+  ServiceBadRequestException,
   ServiceException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
-import { IUserPostsQueryResponse, IUserProfileDetail } from './user.interface';
+import {
+  IUserFollowersQueryResponse,
+  IUserFollowingQueryResponse,
+  IUserPostsQueryResponse,
+  IUserProfileDetail,
+} from './user.interface';
 
 @Injectable()
 export class UserService {
@@ -134,6 +141,269 @@ export class UserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('user not found');
+      throw exception;
+    }
+  }
+
+  async getFollowers({
+    username,
+    userId,
+  }: {
+    username: string;
+    userId: number;
+  }): Promise<IUserFollowersQueryResponse> {
+    try {
+      if (!username) throw new ServiceNotFoundException('user not found');
+
+      // check if the user exists
+      const user = await this.prisma.user
+        .findFirstOrThrow({ where: { username }, select: { id: true } })
+        .catch(() => null);
+      if (!user) throw new ServiceNotFoundException('user not found');
+
+      const where = {
+        followee_id: user.id,
+      } as Prisma.UserFollowWhereInput;
+
+      const results = await this.prisma.userFollow.count({
+        where,
+      });
+      const data = await this.prisma.userFollow.findMany({
+        where,
+        select: {
+          follower: {
+            select: {
+              username: true,
+              profile: {
+                select: {
+                  first_name: true,
+                  picture: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const response: IUserFollowersQueryResponse = {
+        data: data.map(({ follower: { username, profile } }) => ({
+          username,
+          firstName: profile.first_name,
+          lastName: profile.first_name,
+          picture: profile.picture,
+        })),
+        results,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('user not found');
+      throw exception;
+    }
+  }
+
+  async getFollowing({
+    username,
+    userId,
+  }: {
+    username: string;
+    userId: number;
+  }): Promise<IUserFollowingQueryResponse> {
+    try {
+      if (!username) throw new ServiceNotFoundException('user not found');
+
+      // check if the user exists
+      const user = await this.prisma.user
+        .findFirstOrThrow({ where: { username }, select: { id: true } })
+        .catch(() => null);
+      if (!user) throw new ServiceNotFoundException('user not found');
+
+      const where = {
+        follower_id: user.id,
+      } as Prisma.UserFollowWhereInput;
+
+      const results = await this.prisma.userFollow.count({
+        where,
+      });
+      const data = await this.prisma.userFollow.findMany({
+        where,
+        select: {
+          followee: {
+            select: {
+              username: true,
+              profile: {
+                select: {
+                  first_name: true,
+                  picture: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      const response: IUserFollowersQueryResponse = {
+        data: data.map(({ followee: { username, profile } }) => ({
+          username,
+          firstName: profile.first_name,
+          lastName: profile.first_name,
+          picture: profile.picture,
+        })),
+        results,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('user not found');
+      throw exception;
+    }
+  }
+
+  async follow({
+    username,
+    userId,
+  }: {
+    username: string;
+    userId: number;
+  }): Promise<void> {
+    try {
+      if (!username) throw new ServiceNotFoundException('user not found');
+      if (!userId) throw new ServiceBadRequestException('user is not followed');
+
+      // check if the user exists
+      const user = await this.prisma.user
+        .findFirstOrThrow({ where: { username }, select: { id: true } })
+        .catch(() => null);
+      if (!user) throw new ServiceNotFoundException('user not found');
+
+      const followerId = userId;
+      const followeeId = user.id;
+
+      // check if the user is followed already
+      const followed = await this.prisma.userFollow
+        .findFirstOrThrow({
+          where: {
+            followee_id: followeeId,
+            follower_id: followerId,
+          },
+        })
+        .then(() => true)
+        .catch(() => false);
+      if (followed)
+        throw new ServiceBadRequestException('user is already followed');
+
+      if (!followerId || !followeeId)
+        throw new ServiceBadRequestException('user is not followed');
+
+      // follow the user
+      await this.prisma.$transaction(async (tx) => {
+        // create a follow
+        await tx.userFollow.create({
+          data: {
+            follower_id: followerId,
+            followee_id: followeeId,
+          },
+        });
+
+        // update the user follower count
+        await tx.user.update({
+          where: { id: followeeId },
+          data: {
+            followers_count: { increment: 1 },
+          },
+        });
+
+        // update the user following count
+        await tx.user.update({
+          where: { id: followerId },
+          data: {
+            following_count: { increment: 1 },
+          },
+        });
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceBadRequestException('user not followed');
+      throw exception;
+    }
+  }
+
+  async unfollow({
+    username,
+    userId,
+  }: {
+    username: string;
+    userId: number;
+  }): Promise<void> {
+    try {
+      if (!username) throw new ServiceNotFoundException('user not found');
+      if (!userId)
+        throw new ServiceBadRequestException('user is not unfollowed');
+
+      // check if the user exists
+      const user = await this.prisma.user
+        .findFirstOrThrow({ where: { username }, select: { id: true } })
+        .catch(() => null);
+      if (!user) throw new ServiceNotFoundException('user not found');
+
+      const followerId = userId;
+      const followeeId = user.id;
+
+      // check if the user is followed already
+      const followed = await this.prisma.userFollow
+        .findFirstOrThrow({
+          where: {
+            followee_id: followeeId,
+            follower_id: followerId,
+          },
+        })
+        .then(() => true)
+        .catch(() => false);
+      if (!followed)
+        throw new ServiceBadRequestException('user is not followed');
+
+      if (!followerId || !followeeId)
+        throw new ServiceBadRequestException('user is not unfollowed');
+
+      // follow the user
+      await this.prisma.$transaction(async (tx) => {
+        // create a follow
+        await tx.userFollow.deleteMany({
+          where: {
+            follower_id: followerId,
+            followee_id: followeeId,
+          },
+        });
+
+        // update the user follower count
+        await tx.user.update({
+          where: { id: followeeId },
+          data: {
+            followers_count: { decrement: 1 },
+          },
+        });
+
+        // update the user following count
+        await tx.user.update({
+          where: { id: followerId },
+          data: {
+            following_count: { decrement: 1 },
+          },
+        });
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceBadRequestException('user not followed');
       throw exception;
     }
   }

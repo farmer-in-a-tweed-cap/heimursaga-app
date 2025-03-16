@@ -52,8 +52,8 @@ export class PostService {
             lon: true,
             place: true,
             date: true,
-            likesCount: true,
-            bookmarksCount: true,
+            likes_count: true,
+            bookmarks_count: true,
             // check if the session user has liked this post
             likes: userId
               ? {
@@ -96,8 +96,8 @@ export class PostService {
             },
             liked: userId ? post.likes.length > 0 : false,
             bookmarked: userId ? post.bookmarks.length > 0 : false,
-            likesCount: post.likesCount,
-            bookmarksCount: post.bookmarksCount,
+            likesCount: post.likes_count,
+            bookmarksCount: post.bookmarks_count,
             createdAt: post.created_at,
           })),
         );
@@ -137,8 +137,8 @@ export class PostService {
             lon: true,
             place: true,
             date: true,
-            likesCount: true,
-            bookmarksCount: true,
+            likes_count: true,
+            bookmarks_count: true,
             // check if the session user has liked this post
             likes: userId
               ? {
@@ -181,8 +181,8 @@ export class PostService {
             },
             liked: userId ? post.likes.length > 0 : undefined,
             bookmarked: userId ? post.bookmarks.length > 0 : undefined,
-            likesCount: post.likesCount,
-            bookmarksCount: post.bookmarksCount,
+            likesCount: post.likes_count,
+            bookmarksCount: post.bookmarks_count,
             createdAt: post.created_at,
           })),
         );
@@ -234,8 +234,8 @@ export class PostService {
             lon: true,
             place: true,
             date: true,
-            likesCount: true,
-            bookmarksCount: true,
+            likes_count: true,
+            bookmarks_count: true,
             // check if the session user has liked this post
             likes: userId
               ? {
@@ -271,8 +271,8 @@ export class PostService {
           date: post.date,
           liked: userId ? post.likes.length > 0 : undefined,
           bookmarked: userId ? post.bookmarks.length > 0 : undefined,
-          likesCount: post.likesCount,
-          bookmarksCount: post.bookmarksCount,
+          likesCount: post.likes_count,
+          bookmarksCount: post.bookmarks_count,
           public: post.public,
           author: {
             id: post.author?.id,
@@ -394,19 +394,16 @@ export class PostService {
       if (!publicId || !userId)
         throw new ServiceNotFoundException('post not found');
 
-      console.log('post like');
-
       // check if the post exists
       const post = await this.prisma.post
         .findFirstOrThrow({
           where: { public_id: publicId, deleted_at: null },
           select: {
             id: true,
-            likesCount: true,
+            likes_count: true,
           },
         })
         .catch(() => null);
-
       if (!post) throw new ServiceNotFoundException('post not found');
 
       // check if it is liked already
@@ -419,13 +416,8 @@ export class PostService {
         },
       });
 
-      console.log({ liked });
-
       if (liked) {
         // delete the like
-
-        console.log('delete like');
-
         await this.prisma.postLike.delete({
           where: {
             post_id_user_id: {
@@ -436,8 +428,6 @@ export class PostService {
         });
       } else {
         // create a like
-        console.log('create like');
-
         await this.prisma.postLike.create({
           data: {
             post_id: post.id,
@@ -447,19 +437,14 @@ export class PostService {
       }
 
       // update the like count
-      console.log('update like count');
-      console.log({ likesCount: liked ? { decrement: 1 } : { increment: 1 } });
-
       const updatedPost = await this.prisma.post.update({
         where: { id: post.id },
-        data: { likesCount: liked ? { decrement: 1 } : { increment: 1 } },
+        data: { likes_count: liked ? { decrement: 1 } : { increment: 1 } },
       });
 
       const response: IPostLikeResponse = {
-        likesCount: updatedPost.likesCount,
+        likesCount: updatedPost.likes_count,
       };
-
-      console.log({ response });
 
       return response;
     } catch (e) {
@@ -484,7 +469,7 @@ export class PostService {
           where: { public_id: publicId, deleted_at: null },
           select: {
             id: true,
-            bookmarksCount: true,
+            bookmarks_count: true,
           },
         })
         .catch(() => null);
@@ -492,7 +477,7 @@ export class PostService {
       if (!post) throw new ServiceNotFoundException('post not found');
 
       // check if it is bookmarked already
-      const liked = await this.prisma.postBookmark.findUnique({
+      const bookmarked = await this.prisma.postBookmark.findUnique({
         where: {
           post_id_user_id: {
             post_id: post.id,
@@ -501,7 +486,7 @@ export class PostService {
         },
       });
 
-      if (liked) {
+      if (bookmarked) {
         // delete the bookmark
         await this.prisma.postBookmark.delete({
           where: {
@@ -521,14 +506,24 @@ export class PostService {
         });
       }
 
+      // update the user bookmark count
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          bookmarks_count: bookmarked ? { decrement: 1 } : { increment: 1 },
+        },
+      });
+
       // update the bookmark count
       const updatedPost = await this.prisma.post.update({
         where: { id: post.id },
-        data: { bookmarksCount: liked ? { decrement: 1 } : { increment: 1 } },
+        data: {
+          bookmarks_count: bookmarked ? { decrement: 1 } : { increment: 1 },
+        },
       });
 
       const response: IPostBookmarkResponse = {
-        bookmarksCount: updatedPost.bookmarksCount,
+        bookmarksCount: updatedPost.bookmarks_count,
       };
 
       return response;

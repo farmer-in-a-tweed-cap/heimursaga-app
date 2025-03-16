@@ -13,3 +13,20 @@ export interface IUserPostsQueryResponse {
   results: number;
   data: IPostDetail[];
 }
+
+export interface IUserDetail {
+  username: string;
+  firstName: string;
+  lastName: string;
+  picture: string;
+}
+
+export interface IUserFollowersQueryResponse {
+  results: number;
+  data: IUserDetail[];
+}
+
+export interface IUserFollowingQueryResponse {
+  results: number;
+  data: IUserDetail[];
+}

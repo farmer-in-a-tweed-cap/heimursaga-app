@@ -70,22 +70,13 @@ export const PostCard: React.FC<PostCardProps> = ({
               <AvatarFallback>{author?.name?.slice(0, 1)}</AvatarFallback>
             </Avatar>
             <div className="flex flex-col items-start justify-center">
-              <Link
-                href={
-                  author?.username
-                    ? ROUTER.MEMBERS.MEMBER(author?.username)
-                    : '#'
-                }
-              >
-                <span className="text-sm font-semibold">{author?.name}</span>
-              </Link>
+              <span className="text-sm font-semibold">{author?.name}</span>
               <span className="text-xs text-gray-500">
                 {dateformat(date).format('MMM DD')}
               </span>
             </div>
           </div>
         </Link>
-
         {actions?.bookmark && (
           <div className="z-20">
             <PostBookmarkButton

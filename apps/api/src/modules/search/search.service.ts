@@ -35,8 +35,8 @@ export class SearchService {
         place: true,
         content: true,
         date: true,
-        likesCount: true,
-        bookmarksCount: true,
+        likes_count: true,
+        bookmarks_count: true,
         created_at: true,
       } as Prisma.PostSelect;
 
