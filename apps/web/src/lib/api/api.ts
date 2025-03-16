@@ -11,10 +11,11 @@ export const API_ROUTER = {
   },
   POSTS: {
     QUERY: '/posts',
-    QUERY_MAP: '/posts/map',
     GET_BY_ID: (id: string) => `posts/${id}`,
     CREATE: 'posts',
     UPDATE: (id: string) => `posts/${id}`,
+    LIKE: (id: string) => `posts/${id}/like`,
+    BOOKMARK: (id: string) => `posts/${id}/bookmark`,
   },
 };
 

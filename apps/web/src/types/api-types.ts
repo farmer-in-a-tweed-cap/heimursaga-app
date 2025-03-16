@@ -49,7 +49,7 @@ export interface IPostDetail {
   draft?: boolean;
   liked?: boolean;
   bookmarked?: boolean;
-  likesCount?: boolean;
+  likesCount?: number;
   bookmarksCount?: boolean;
   place?: string;
   date?: Date;

@@ -10,14 +10,23 @@ export interface IPostFindByIdPayload {
 export interface IPostDetail {
   id: string;
   title: string;
-  content: string;
-  userId?: number;
+  content?: string;
   lat: number;
   lon: number;
   public?: boolean;
   draft?: boolean;
+  liked?: boolean;
+  bookmarked?: boolean;
+  likesCount?: number;
+  bookmarksCount?: boolean;
   place?: string;
   date?: Date;
+  createdByMe?: boolean;
+  author?: {
+    username: string;
+    name: string;
+    picture: string;
+  };
 }
 
 export interface IPostCreatePayload {

@@ -56,8 +56,6 @@ export const apiClient = {
     }),
   getPosts: async (query: any, config?: RequestConfig) =>
     api.request<IPostQueryResponse>(API_ROUTER.POSTS.QUERY, config),
-  queryPostsMap: async (query: any, config?: RequestConfig) =>
-    api.request<IPostQueryMapResponse>(API_ROUTER.POSTS.QUERY_MAP, config),
   getPostById: async (
     { postId }: IPostFindByIdPayload,
     { cookie }: RequestConfig,
@@ -97,5 +95,15 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(query),
       cookie: config ? config.cookie : undefined,
+    }),
+  likePost: async ({ postId }: { postId: string }) =>
+    api.request<{ likesCount: number }>(API_ROUTER.POSTS.LIKE(postId), {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  bookmarkPost: async ({ postId }: { postId: string }) =>
+    api.request<void>(API_ROUTER.POSTS.BOOKMARK(postId), {
+      method: 'POST',
+      body: JSON.stringify({}),
     }),
 };

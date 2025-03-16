@@ -94,8 +94,8 @@ export class PostService {
               name: post.author?.profile?.first_name,
               picture: post.author?.profile?.picture,
             },
-            liked: userId ? post.likes.length > 0 : undefined,
-            bookmarked: userId ? post.bookmarks.length > 0 : undefined,
+            liked: userId ? post.likes.length > 0 : false,
+            bookmarked: userId ? post.bookmarks.length > 0 : false,
             likesCount: post.likesCount,
             bookmarksCount: post.bookmarksCount,
             createdAt: post.created_at,
@@ -394,6 +394,8 @@ export class PostService {
       if (!publicId || !userId)
         throw new ServiceNotFoundException('post not found');
 
+      console.log('post like');
+
       // check if the post exists
       const post = await this.prisma.post
         .findFirstOrThrow({
@@ -417,8 +419,13 @@ export class PostService {
         },
       });
 
+      console.log({ liked });
+
       if (liked) {
         // delete the like
+
+        console.log('delete like');
+
         await this.prisma.postLike.delete({
           where: {
             post_id_user_id: {
@@ -429,6 +436,8 @@ export class PostService {
         });
       } else {
         // create a like
+        console.log('create like');
+
         await this.prisma.postLike.create({
           data: {
             post_id: post.id,
@@ -438,6 +447,9 @@ export class PostService {
       }
 
       // update the like count
+      console.log('update like count');
+      console.log({ likesCount: liked ? { decrement: 1 } : { increment: 1 } });
+
       const updatedPost = await this.prisma.post.update({
         where: { id: post.id },
         data: { likesCount: liked ? { decrement: 1 } : { increment: 1 } },
@@ -446,6 +458,8 @@ export class PostService {
       const response: IPostLikeResponse = {
         likesCount: updatedPost.likesCount,
       };
+
+      console.log({ response });
 
       return response;
     } catch (e) {

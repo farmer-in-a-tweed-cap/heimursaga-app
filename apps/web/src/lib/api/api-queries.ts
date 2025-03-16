@@ -72,7 +72,7 @@ export const getPostsQuery = createQuery<any, IPostQueryResponse>(
 export const queryPostMapQuery = createQuery<void, IPostQueryMapResponse>(
   [QUERY_KEYS.GET_POSTS],
   (query) =>
-    apiClient.queryPostsMap(query).then(({ success, message, data }) => {
+    apiClient.getPosts(query).then(({ success, message, data }) => {
       if (!success) {
         throw new Error(message);
       }
@@ -122,5 +122,18 @@ export const searchQuery = createQuery<
       throw new Error(message);
     }
     return data as ISearchQueryResponse;
+  }),
+);
+
+export const postLikeMutation = createMutation<
+  { postId: string },
+  { likesCount: number }
+>(({ postId }) =>
+  apiClient.likePost({ postId }).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+
+    return data as { likesCount: number };
   }),
 );

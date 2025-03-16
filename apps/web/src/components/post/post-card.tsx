@@ -1,18 +1,14 @@
 import { MapPreview } from '../map';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Button,
-  Card,
-} from '@repo/ui/components';
-import { Bookmark, HeartIcon } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage, Card } from '@repo/ui/components';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { dateformat } from '@/lib/date-format';
 
 import { ROUTER } from '@/router';
+
+import { PostBookmarkButton } from './post-bookmark-button';
+import { PostLikeButton } from './post-like-button';
 
 export type PostCardProps = {
   href?: string;
@@ -30,6 +26,8 @@ export type PostCardProps = {
     like?: boolean;
     bookmark?: boolean;
   };
+  liked?: boolean;
+  likesCount?: number;
 };
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -44,14 +42,14 @@ export const PostCard: React.FC<PostCardProps> = ({
   },
   date = new Date(),
   coordinates,
+  liked = false,
+  likesCount = 0,
   actions = {
     like: true,
     bookmark: true,
   },
 }) => {
-  const isAction = [actions?.like, actions?.bookmark].some(
-    (action) => !!action,
-  );
+  const postActions = [actions?.like, actions?.bookmark].some((key) => !!key);
 
   return (
     <Card className="relative w-full h-auto box-border p-6 flex flex-col">
@@ -80,6 +78,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             </span>
           </div>
         </div>
+        <PostBookmarkButton postId={id} bookmarked={false} />
       </div>
       {thumbnail && (
         <div className="mt-6 w-full aspect-5/2 overflow-hidden rounded-xl">
@@ -109,24 +108,10 @@ export const PostCard: React.FC<PostCardProps> = ({
           />
         </div>
       )}
-      {isAction && (
+      {postActions && (
         <div className="mt-6 flex flex-row gap-1">
           {actions?.like && (
-            <Button variant="ghost" size="sm">
-              <HeartIcon
-                size={18}
-                //  className="text-black fill-black"
-              />
-              <span className="hover:underline underline-offset-4">Like</span>
-            </Button>
-          )}
-          {actions?.bookmark && (
-            <Button variant="ghost" size="sm">
-              <Bookmark size={18} />
-              <span className="hover:underline underline-offset-4">
-                Bookmark
-              </span>
-            </Button>
+            <PostLikeButton postId={id} likesCount={likesCount} liked={liked} />
           )}
         </div>
       )}

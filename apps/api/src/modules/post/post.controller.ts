@@ -32,13 +32,6 @@ export class PostController {
   }
 
   @Public()
-  @Get('map')
-  @HttpCode(HttpStatus.OK)
-  async queryMap(@Session() session: ISession) {
-    return await this.postService.queryMap({ userId: session?.userId });
-  }
-
-  @Public()
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getById(

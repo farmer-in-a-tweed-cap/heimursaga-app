@@ -116,7 +116,6 @@ content-type: application/json
     "html": "hi, friend"
 }
 
-
 ###
 
 # users/username
@@ -126,3 +125,15 @@ GET http://localhost:5000/v1/users/jackyboye
 
 # users/username/posts
 GET http://localhost:5000/v1/users/jackyboye/posts
+
+###
+
+# email
+POST http://localhost:5000/v1/search
+content-type: application/json
+
+{
+    "to": "wylsadoo@gmail.com",
+    "subject": "test",
+    "html": "hi, friend"
+}
