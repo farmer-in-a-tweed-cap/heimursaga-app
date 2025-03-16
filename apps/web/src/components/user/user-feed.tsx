@@ -16,6 +16,7 @@ import {
 import { useState } from 'react';
 
 import { UserFollowingFeed, UserPostsFeed } from '@/components';
+import { useSession } from '@/hooks';
 
 import { UserFollowersFeed } from './user-followers-feed';
 
@@ -25,40 +26,53 @@ type Props = {
 
 const tabs: Record<
   'feed' | 'bookmarks' | 'followers' | 'following',
-  { path: string; key: string }
+  { path: string; key: string; private: boolean }
 > = {
   feed: {
     path: '',
     key: 'feed',
+    private: false,
   },
   bookmarks: {
     path: 'bookmarks',
     key: 'bookmarks',
+    private: true,
   },
   followers: {
     path: 'followers',
     key: 'followers',
+    private: false,
   },
   following: {
     path: 'following',
     key: 'following',
+    private: false,
   },
 };
 
 export const UserFeed: React.FC<Props> = ({ username }) => {
-  const p = useParams();
-
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const session = useSession();
+
+  const you = session?.username === username;
 
   const defaultTab = searchParams.get('v') || tabs.feed.key;
 
   const [{ tab }, setState] = useState<{ tab: string }>({ tab: defaultTab });
 
-  const handleTabChange = (tab: string) => {
-    console.log('tab change', tab);
+  const tabsVisible = you
+    ? [
+        tabs.feed.key,
+        tabs.followers.key,
+        tabs.following.key,
+        tabs.bookmarks.key,
+      ]
+    : [tabs.feed.key, tabs.followers.key, tabs.following.key];
 
+  const handleTabChange = (tab: string) => {
     const s = new URLSearchParams(searchParams.toString());
 
     s.set('v', `${tab}`);
@@ -72,18 +86,16 @@ export const UserFeed: React.FC<Props> = ({ username }) => {
     <Tabs defaultValue={tab} className="w-full flex flex-col gap-1">
       <TabsList asChild>
         <Card className="bg-white flex flex-row justify-start gap-5 py-3 px-5">
-          {[tabs.feed.key, tabs.followers.key, tabs.following.key].map(
-            (tab, key) => (
-              <TabsTrigger
-                key={key}
-                value={tab}
-                className="capitalize border-b-2 text-neutral-500 text-sm border-solid border-transparent py-2 hover:border-neutral-300 data-[state=active]:border-black data-[state=active]:text-black "
-                onClick={() => handleTabChange(tab)}
-              >
-                {tab}
-              </TabsTrigger>
-            ),
-          )}
+          {tabsVisible.map((tab, key) => (
+            <TabsTrigger
+              key={key}
+              value={tab}
+              className="capitalize border-b-2 text-neutral-500 text-sm border-solid border-transparent py-2 hover:border-neutral-300 data-[state=active]:border-black data-[state=active]:text-black "
+              onClick={() => handleTabChange(tab)}
+            >
+              {tab}
+            </TabsTrigger>
+          ))}
         </Card>
       </TabsList>
       <TabsContent value={tabs.feed.key}>
