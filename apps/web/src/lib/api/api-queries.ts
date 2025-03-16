@@ -158,7 +158,7 @@ export const postBookmarkMutation = createMutation<
 export const getUserFollowersQuery = createQuery<
   { username: string },
   IUserFollowersQueryResponse
->([QUERY_KEYS.SEARCH], ({ username }) =>
+>([QUERY_KEYS.USER_FOLLOWERS], ({ username }) =>
   apiClient
     .getUserFollowers({ username })
     .then(({ success, message, data }) => {
@@ -172,7 +172,7 @@ export const getUserFollowersQuery = createQuery<
 export const getUserFollowingQuery = createQuery<
   { username: string },
   IUserFollowingQueryResponse
->([QUERY_KEYS.SEARCH], ({ username }) =>
+>([QUERY_KEYS.USER_FOLLOWING], ({ username }) =>
   apiClient
     .getUserFollowing({ username })
     .then(({ success, message, data }) => {

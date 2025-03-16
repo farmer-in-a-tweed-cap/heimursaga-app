@@ -104,8 +104,25 @@ export class UserService {
           date: true,
           place: true,
           created_at: true,
+          likes_count: true,
+          bookmarks_count: true,
+          // check if the session user has liked this post
+          likes: userId
+            ? {
+                where: { user_id: userId },
+                select: { post_id: true },
+              }
+            : undefined,
+          // check if the session user has bookmarked this post
+          bookmarks: userId
+            ? {
+                where: { user_id: userId },
+                select: { post_id: true },
+              }
+            : undefined,
           author: {
             select: {
+              id: true,
               username: true,
               profile: {
                 select: { first_name: true, last_name: true, picture: true },
@@ -125,6 +142,10 @@ export class UserService {
             lat,
             lon,
             author,
+            likes,
+            likes_count,
+            bookmarks,
+            bookmarks_count,
           }) => ({
             id,
             title,
@@ -137,6 +158,11 @@ export class UserService {
               username: author?.username,
               picture: author?.profile?.picture,
             },
+            liked: userId ? likes.length > 0 : false,
+            bookmarked: userId ? bookmarks.length > 0 : false,
+            likesCount: likes_count,
+            bookmarksCount: bookmarks_count,
+            you: userId ? userId === author.id : false,
           }),
         ),
         results,

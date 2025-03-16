@@ -15,7 +15,7 @@ import {
 } from 'next/navigation';
 import { useState } from 'react';
 
-import { UserPostFeed } from '@/components';
+import { UserFollowingFeed, UserPostsFeed } from '@/components';
 
 import { UserFollowersFeed } from './user-followers-feed';
 
@@ -87,7 +87,7 @@ export const UserFeed: React.FC<Props> = ({ username }) => {
         </Card>
       </TabsList>
       <TabsContent value={tabs.feed.key}>
-        <UserPostFeed username={username} />
+        <UserPostsFeed username={username} />
       </TabsContent>
       <TabsContent value={tabs.bookmarks.key}>
         <div className="w-full flex flex-col gap-2 px-4">bookmarks</div>
@@ -96,7 +96,7 @@ export const UserFeed: React.FC<Props> = ({ username }) => {
         <UserFollowersFeed username={username} />
       </TabsContent>
       <TabsContent value={tabs.following.key}>
-        <div className="w-full flex flex-col gap-2 px-4">following</div>
+        <UserFollowingFeed username={username} />
       </TabsContent>
     </Tabs>
   );

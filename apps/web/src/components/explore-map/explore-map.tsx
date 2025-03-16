@@ -36,8 +36,6 @@ export const ExploreMap: React.FC<Props> = () => {
 
   const mapbox = useMapbox();
 
-  const [loading, setLoading] = useState<boolean>(false);
-
   const [_searchState, setSearchState] = useState<{
     bounds: {
       sw: { lat: number; lon: number };
@@ -74,17 +72,25 @@ export const ExploreMap: React.FC<Props> = () => {
   };
 
   const updateSearchParams = (params: {
-    lat: number;
-    lon: number;
-    alt: number;
+    lat?: number;
+    lon?: number;
+    alt?: number;
   }) => {
     const { lat, lon, alt } = params;
 
     const s = new URLSearchParams(searchParams.toString());
 
-    s.set('lat', `${lat}`);
-    s.set('lon', `${lon}`);
-    s.set('alt', `${alt}`);
+    if (lat) {
+      s.set('lat', `${lat}`);
+    }
+
+    if (lon) {
+      s.set('lon', `${lon}`);
+    }
+
+    if (alt) {
+      s.set('alt', `${alt}`);
+    }
 
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
   };
@@ -129,12 +135,21 @@ export const ExploreMap: React.FC<Props> = () => {
   useEffect(() => {
     const { lat, lon, alt } = params;
 
-    if (lat && lon && alt) {
+    const coordinateSet = lat && lon;
+
+    // set default coordinates
+    if (!coordinateSet) {
       updateSearchParams({
         lat: MAP_DEFAULT_COORDINATES.LAT,
         lon: MAP_DEFAULT_COORDINATES.LON,
         alt: MAP_DEFAULT_COORDINATES.ALT,
       });
+    } else {
+      if (!alt) {
+        updateSearchParams({
+          alt: MAP_DEFAULT_COORDINATES.ALT,
+        });
+      }
     }
   }, []);
 

@@ -108,7 +108,11 @@ export const PostCard: React.FC<PostCardProps> = ({
       {coordinates && (
         <div className="mt-6">
           <MapPreview
-            href={id ? ROUTER.EXPLORE.POST(id) : '#'}
+            href={
+              id
+                ? `${ROUTER.EXPLORE.HOME}?lat=${coordinates.lat}&lon=${coordinates.lon}&alt=12`
+                : '#'
+            }
             coordinates={{ lat: coordinates.lat, lon: coordinates.lon }}
           />
         </div>

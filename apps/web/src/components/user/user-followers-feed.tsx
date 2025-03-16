@@ -47,6 +47,6 @@ export const UserFollowersFeed: React.FC<Props> = ({ username }) => {
       <>no followers</>
     );
   } else {
-    return <>no posts</>;
+    return <>no followers</>;
   }
 };

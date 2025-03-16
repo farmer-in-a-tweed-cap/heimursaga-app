@@ -10,10 +10,10 @@ type Props = {
   username?: string;
 };
 
-export const UserPostFeed: React.FC<Props> = ({ username }) => {
+export const UserPostsFeed: React.FC<Props> = ({ username }) => {
   if (username) {
     const userPostsQuery = useQuery({
-      queryKey: getUserPostsQuery.queryKey,
+      queryKey: [getUserPostsQuery.queryKey, username],
       queryFn: () => getUserPostsQuery.queryFn({ username }),
     });
 
@@ -27,22 +27,19 @@ export const UserPostFeed: React.FC<Props> = ({ username }) => {
         <>no posts</>
       ) : (
         <div className="w-full flex flex-col gap-2">
-          {posts.map((post, key) => (
+          {posts.map(({ author, ...post }, key) => (
             <PostCard
               key={key}
-              id={post.id}
+              {...post}
               author={{
-                name: post.author?.name,
-                username: post.author?.username,
-                picture: post.author?.picture,
+                name: author?.name,
+                username: author?.username,
+                picture: author?.picture,
               }}
               coordinates={{
                 lat: post.lat,
                 lon: post.lon,
               }}
-              title={post.title}
-              content={post.content}
-              date={post.date}
             />
           ))}
         </div>
