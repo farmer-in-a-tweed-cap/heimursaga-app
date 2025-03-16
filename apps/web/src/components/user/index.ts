@@ -6,3 +6,4 @@ export * from './user-card';
 export * from './user-followers-feed';
 export * from './user-following-feed';
 export * from './user-bookmarks-feed';
+export * from './user-drafts-feed';

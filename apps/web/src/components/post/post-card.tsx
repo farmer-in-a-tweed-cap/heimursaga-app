@@ -1,7 +1,14 @@
 import { MapPreview } from '../map';
-import { Avatar, AvatarFallback, AvatarImage, Card } from '@repo/ui/components';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+  Card,
+} from '@repo/ui/components';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { dateformat } from '@/lib/date-format';
 
@@ -25,6 +32,7 @@ export type PostCardProps = {
   actions?: {
     like?: boolean;
     bookmark?: boolean;
+    edit?: boolean;
   };
   bookmarked?: boolean;
   bookmarksCount?: number;
@@ -52,8 +60,15 @@ export const PostCard: React.FC<PostCardProps> = ({
   actions = {
     like: true,
     bookmark: true,
+    edit: false,
   },
 }) => {
+  const router = useRouter();
+
+  const handleEdit = () => {
+    if (!id) return;
+    router.push(ROUTER.POSTS.EDIT(id));
+  };
   return (
     <Card className="relative w-full h-auto box-border p-6 flex flex-col shadow-none border border-solid border-gray-200">
       {href && <Link href={href} className="z-10 absolute inset-0"></Link>}
@@ -77,16 +92,21 @@ export const PostCard: React.FC<PostCardProps> = ({
             </div>
           </div>
         </Link>
-        {actions?.bookmark && (
-          <div className="z-20">
+        <div className="z-20 flex flex-row items-center gap-2">
+          {actions?.bookmark && (
             <PostBookmarkButton
               postId={id}
               bookmarked={bookmarked}
               bookmarksCount={bookmarksCount}
               disableCount={true}
             />
-          </div>
-        )}
+          )}
+          {actions?.edit && (
+            <Button variant="outline" onClick={handleEdit}>
+              Edit
+            </Button>
+          )}
+        </div>
       </div>
       {thumbnail && (
         <div className="mt-6 w-full aspect-5/2 overflow-hidden rounded-xl">

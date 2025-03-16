@@ -22,6 +22,7 @@ import {
 } from '@/components';
 import { useSession } from '@/hooks';
 
+import { UserDraftsFeed } from './user-drafts-feed';
 import { UserFollowersFeed } from './user-followers-feed';
 
 type Props = {
@@ -34,7 +35,7 @@ const tabs: Record<
 > = {
   feed: {
     path: '',
-    key: 'feed',
+    key: 'posts',
   },
   followers: {
     path: 'followers',
@@ -114,6 +115,9 @@ export const UserFeed: React.FC<Props> = ({ username }) => {
       </TabsContent>
       <TabsContent value={tabs.bookmarks.key}>
         <UserBookmarksFeed />
+      </TabsContent>
+      <TabsContent value={tabs.drafts.key}>
+        <UserDraftsFeed />
       </TabsContent>
     </Tabs>
   );
