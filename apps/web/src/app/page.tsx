@@ -13,7 +13,7 @@ export default async function App() {
 
   return (
     <AppLayout>
-      <main className="flex flex-col justify-center items-center gap-4 w-full max-w-2xl px-4 lg:px-0">
+      <main className="flex flex-col justify-center items-center gap-2 w-full max-w-3xl px-4 lg:px-0">
         <PostFeed loading={false} posts={posts} />
       </main>
     </AppLayout>

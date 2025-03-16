@@ -8,13 +8,13 @@ import {
 } from '@repo/ui/components';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 import { dateformat } from '@/lib/date-format';
 
 import { ROUTER } from '@/router';
 
 import { PostBookmarkButton } from './post-bookmark-button';
+import { PostEditButton } from './post-edit-button';
 import { PostLikeButton } from './post-like-button';
 
 export type PostCardProps = {
@@ -63,12 +63,6 @@ export const PostCard: React.FC<PostCardProps> = ({
     edit: false,
   },
 }) => {
-  const router = useRouter();
-
-  const handleEdit = () => {
-    if (!id) return;
-    router.push(ROUTER.POSTS.EDIT(id));
-  };
   return (
     <Card className="relative w-full h-auto box-border p-6 flex flex-col shadow-none border border-solid border-gray-200">
       {href && <Link href={href} className="z-10 absolute inset-0"></Link>}
@@ -101,11 +95,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               disableCount={true}
             />
           )}
-          {actions?.edit && (
-            <Button variant="outline" onClick={handleEdit}>
-              Edit
-            </Button>
-          )}
+          {actions?.edit && <PostEditButton postId={id} />}
         </div>
       </div>
       {thumbnail && (

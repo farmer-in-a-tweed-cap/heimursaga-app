@@ -39,6 +39,8 @@ export class PostService {
         deleted_at: null,
       } as Prisma.PostWhereInput;
 
+      const take = 20;
+
       // search posts
       const results = await this.prisma.post.count({ where });
       const data = await this.prisma.post
@@ -78,6 +80,7 @@ export class PostService {
             },
             created_at: true,
           },
+          take,
           orderBy: [{ id: 'desc' }],
         })
         .then((posts) =>
@@ -103,110 +106,6 @@ export class PostService {
         );
 
       return { results, data };
-    } catch (e) {
-      this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('post not created');
-      throw exception;
-    }
-  }
-
-  async queryMap(payload: IPostSearchPayload) {
-    try {
-      const { userId } = payload;
-      const where = {
-        public_id: { not: null },
-        lat: { not: null },
-        lon: { not: null },
-        public: true,
-        draft: false,
-        deleted_at: null,
-      } as Prisma.PostWhereInput;
-
-      // search posts
-      const results = await this.prisma.post.count({ where });
-      const data = await this.prisma.post
-        .findMany({
-          where,
-          select: {
-            public_id: true,
-            title: true,
-            content: true,
-            lat: true,
-            lon: true,
-            place: true,
-            date: true,
-            likes_count: true,
-            bookmarks_count: true,
-            // check if the session user has liked this post
-            likes: userId
-              ? {
-                  where: { user_id: userId },
-                  select: { post_id: true },
-                }
-              : undefined,
-            // check if the session user has bookmarked this post
-            bookmarks: userId
-              ? {
-                  where: { user_id: userId },
-                  select: { post_id: true },
-                }
-              : undefined,
-            author: {
-              select: {
-                username: true,
-                profile: {
-                  select: { first_name: true, picture: true },
-                },
-              },
-            },
-            created_at: true,
-          },
-          orderBy: [{ id: 'desc' }],
-        })
-        .then((posts) =>
-          posts.map((post) => ({
-            id: post.public_id,
-            lat: post.lat,
-            lon: post.lon,
-            place: post.place,
-            date: post.date,
-            title: post.title,
-            content: post.content.slice(0, 140),
-            author: {
-              username: post.author?.username,
-              name: post.author?.profile?.first_name,
-              picture: post.author?.profile?.picture,
-            },
-            liked: userId ? post.likes.length > 0 : undefined,
-            bookmarked: userId ? post.bookmarks.length > 0 : undefined,
-            likesCount: post.likes_count,
-            bookmarksCount: post.bookmarks_count,
-            createdAt: post.created_at,
-          })),
-        );
-
-      const response = {
-        results,
-        data,
-        geojson: {
-          type: 'FeatureCollection',
-          features: data.map(({ id, title, lat, lon }) => ({
-            type: 'Feature',
-            geometry: {
-              type: 'Point',
-              coordinates: [Number(lon.toFixed(4)), Number(lat.toFixed(4))],
-            },
-            properties: {
-              id,
-              title,
-            },
-          })),
-        },
-      };
-
-      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -253,6 +152,7 @@ export class PostService {
             author: {
               select: {
                 id: true,
+                username: true,
                 profile: {
                   select: { first_name: true, picture: true },
                 },
@@ -276,6 +176,7 @@ export class PostService {
           public: post.public,
           author: {
             id: post.author?.id,
+            username: post.author?.username,
             name: post.author?.profile?.first_name,
             picture: post.author?.profile?.picture,
           },

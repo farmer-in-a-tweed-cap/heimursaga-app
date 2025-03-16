@@ -1,14 +1,12 @@
 import { Button, Card, CardContent, CardHeader } from '@repo/ui/components';
 import { cookies } from 'next/headers';
-import Link from 'next/link';
 
 import { apiClient } from '@/lib/api';
 
 import { PageNotFound } from '@/components/page';
 
-import { MapPreview } from '@/components';
+import { PostCard } from '@/components';
 import { AppLayout } from '@/layouts';
-import { ROUTER } from '@/router';
 import type { PageProps } from '@/types';
 
 export default async function Page({ params }: PageProps<{ post_id: string }>) {
@@ -19,10 +17,12 @@ export default async function Page({ params }: PageProps<{ post_id: string }>) {
   const postQuery = await apiClient.getPostById({ postId }, { cookie });
 
   const {
+    id,
     title,
     content,
     lat = 0,
     lon = 0,
+    author,
     createdByMe = false,
   } = postQuery.data || {};
 
@@ -30,7 +30,13 @@ export default async function Page({ params }: PageProps<{ post_id: string }>) {
     <AppLayout>
       {postQuery.success ? (
         <div className="w-full max-w-3xl">
-          <Card>
+          <PostCard
+            {...{ id, title, content, lat, lon, author }}
+            actions={
+              createdByMe ? { edit: true } : { like: true, bookmark: true }
+            }
+          />
+          {/* <Card>
             <CardHeader>
               <div className="w-full flex flex-row items-start justify-between">
                 <h2 className="text-xl font-medium">{title}</h2>
@@ -57,7 +63,7 @@ export default async function Page({ params }: PageProps<{ post_id: string }>) {
                 />
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       ) : (
         <PageNotFound />

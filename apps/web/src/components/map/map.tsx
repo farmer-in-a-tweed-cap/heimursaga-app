@@ -452,9 +452,9 @@ export const Map: React.FC<Props> = ({
 
   return (
     <div className="relative w-full h-full">
-      <div className="z-20 text-[8px] absolute bottom-2 right-2 bg-white text-black p-2">
+      {/* <div className="z-20 text-[8px] absolute bottom-2 right-2 bg-white text-black p-2">
         {JSON.stringify({ sources: sources?.results || 0 })}
-      </div>
+      </div> */}
       <div
         id="map-container"
         ref={mapboxContainerRef}
