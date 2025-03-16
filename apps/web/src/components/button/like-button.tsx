@@ -6,14 +6,14 @@ import { Heart } from 'lucide-react';
 
 type Props = {
   liked?: boolean;
-  count?: number;
+  likesCount?: number;
   disabled?: boolean;
   onClick?: () => void;
 };
 
 export const LikeButton: React.FC<Props> = ({
   liked = false,
-  count = 0,
+  likesCount = 0,
   disabled = false,
   onClick,
 }) => {
@@ -22,7 +22,7 @@ export const LikeButton: React.FC<Props> = ({
       variant="ghost"
       className={cn(
         'transition-all hover:bg-gray-200 rounded-full h-[32px]',
-        disabled ? 'bg-gray-200' : 'hover:bg-gray-200',
+        disabled ? '' : 'hover:bg-gray-200',
       )}
       size="sm"
       disabled={disabled}
@@ -32,7 +32,7 @@ export const LikeButton: React.FC<Props> = ({
         className={cn(liked ? 'fill-secondary stroke-secondary' : '')}
         size={18}
       />
-      <span>{count}</span>
+      <span>{likesCount}</span>
     </Button>
   );
 };

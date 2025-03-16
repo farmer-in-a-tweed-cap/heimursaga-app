@@ -18,7 +18,7 @@ export interface IPostDetail {
   liked?: boolean;
   bookmarked?: boolean;
   likesCount?: number;
-  bookmarksCount?: boolean;
+  bookmarksCount?: number;
   place?: string;
   date?: Date;
   createdByMe?: boolean;

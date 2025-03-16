@@ -102,7 +102,7 @@ export const apiClient = {
       body: JSON.stringify({}),
     }),
   bookmarkPost: async ({ postId }: { postId: string }) =>
-    api.request<void>(API_ROUTER.POSTS.BOOKMARK(postId), {
+    api.request<{ bookmarksCount: number }>(API_ROUTER.POSTS.BOOKMARK(postId), {
       method: 'POST',
       body: JSON.stringify({}),
     }),

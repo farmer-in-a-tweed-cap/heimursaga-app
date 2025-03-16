@@ -1,4 +1,4 @@
-import { PostCard, PostCardLink } from '../post';
+import { PostCard } from '../post';
 import { Card, Skeleton } from '@repo/ui/components';
 
 import { ROUTER } from '@/router';
@@ -27,21 +27,13 @@ export const ExploreSidebar = ({
         )}
       </div>
       <div className="mt-8 flex flex-col gap-4 overflow-y-scroll no-scrollbar">
-        {posts.map(({ id, title, content, author }, key) => (
-          <PostCardLink
+        {posts.map(({ id, ...post }, key) => (
+          <PostCard
             key={key}
             href={ROUTER.POSTS.DETAIL(id)}
-            target="_blank"
-            {...{
-              id,
-              title,
-              content,
-              author,
-              actions: {
-                like: false,
-                bookmark: false,
-              },
-            }}
+            {...post}
+            id={id}
+            actions={{ bookmark: true }}
           />
         ))}
       </div>

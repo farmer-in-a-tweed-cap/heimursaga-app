@@ -137,3 +137,16 @@ export const postLikeMutation = createMutation<
     return data as { likesCount: number };
   }),
 );
+
+export const postBookmarkMutation = createMutation<
+  { postId: string },
+  { bookmarksCount: number }
+>(({ postId }) =>
+  apiClient.bookmarkPost({ postId }).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+
+    return data as { bookmarksCount: number };
+  }),
+);

@@ -69,6 +69,13 @@ export class SearchService {
           where,
           select: {
             ...select,
+            // check if the session user has bookmarked this post
+            bookmarks: userId
+              ? {
+                  where: { user_id: userId },
+                  select: { post_id: true },
+                }
+              : undefined,
             author: {
               select: {
                 username: true,
@@ -81,19 +88,20 @@ export class SearchService {
           take,
           orderBy: [{ id: 'desc' }],
         })
-        .then((searchs) =>
-          searchs.map((search) => ({
-            id: search.public_id,
-            lat: search.lat,
-            lon: search.lon,
-            place: search.place,
-            date: search.date,
-            title: search.title,
-            content: search.content?.slice(0, 140),
+        .then((posts) =>
+          posts.map((post) => ({
+            id: post.public_id,
+            lat: post.lat,
+            lon: post.lon,
+            place: post.place,
+            date: post.date,
+            title: post.title,
+            content: post.content?.slice(0, 140),
+            bookmarked: userId ? post.bookmarks.length > 0 : false,
             author: {
-              username: search.author?.username,
-              name: search.author?.profile?.first_name,
-              picture: search.author?.profile?.picture,
+              username: post.author?.username,
+              name: post.author?.profile?.first_name,
+              picture: post.author?.profile?.picture,
             },
           })),
         );

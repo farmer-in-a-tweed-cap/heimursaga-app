@@ -12,7 +12,19 @@ export const PostFeed: React.FC<Props> = ({ posts = [], loading = false }) => {
     <div className="w-full grid grid-cols-1 gap-3">
       {posts?.map(
         (
-          { id, title, content, author, date, lat, lon, liked, likesCount },
+          {
+            id,
+            title,
+            content,
+            author,
+            date,
+            lat,
+            lon,
+            liked,
+            likesCount,
+            bookmarked,
+            bookmarksCount,
+          },
           key,
         ) => (
           <PostCard
@@ -25,6 +37,8 @@ export const PostFeed: React.FC<Props> = ({ posts = [], loading = false }) => {
             coordinates={{ lat, lon }}
             liked={liked}
             likesCount={likesCount}
+            bookmarked={bookmarked}
+            bookmarksCount={bookmarksCount}
           />
         ),
       )}

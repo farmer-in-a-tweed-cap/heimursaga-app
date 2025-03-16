@@ -72,7 +72,7 @@ export const PostLikeButton: React.FC<Props> = ({
   return (
     <LikeButton
       liked={state.liked}
-      count={state.likesCount}
+      likesCount={state.likesCount}
       disabled={loading}
       onClick={handleClick}
     />
