@@ -27,6 +27,9 @@ export const QUERY_KEYS = {
   SEARCH: 'search',
   USER_FOLLOWERS: 'user_followers',
   USER_FOLLOWING: 'user_following',
+  USER_FEED: 'user_feed',
+  USER_BOOKMARKS: 'user_bookmarks',
+  USER_DRAFTS: 'user_drafts',
 };
 
 const createQuery = <T = undefined, R = any>(
@@ -198,5 +201,38 @@ export const unfollowUserMutation = createMutation<{ username: string }, void>(
       if (!success) {
         throw new Error(message);
       }
+    }),
+);
+
+export const getUserFeed = createQuery<void, IPostQueryResponse>(
+  [QUERY_KEYS.USER_FEED],
+  () =>
+    apiClient.getUserFeed().then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IPostQueryResponse;
+    }),
+);
+
+export const getUserBookmarks = createQuery<void, IPostQueryResponse>(
+  [QUERY_KEYS.USER_BOOKMARKS],
+  () =>
+    apiClient.getUserBookmarks().then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IPostQueryResponse;
+    }),
+);
+
+export const getUserDrafts = createQuery<void, IPostQueryResponse>(
+  [QUERY_KEYS.USER_DRAFTS],
+  () =>
+    apiClient.getUserDrafts().then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IPostQueryResponse;
     }),
 );

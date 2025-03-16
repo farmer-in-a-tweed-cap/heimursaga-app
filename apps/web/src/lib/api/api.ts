@@ -5,6 +5,11 @@ export const API_ROUTER = {
   LOGOUT: 'auth/logout',
   GET_SESSION_USER: 'auth/user',
   SEARCH: '/search',
+  USER: {
+    FEED: `/user/feed`,
+    BOOKMARKS: `/user/bookmarks`,
+    DRAFTS: `/user/drafts`,
+  },
   USERS: {
     GET_BY_USERNAME: (username: string) => `/users/${username}`,
     GET_POSTS: (username: string) => `/users/${username}/posts`,

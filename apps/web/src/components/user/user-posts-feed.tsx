@@ -15,6 +15,8 @@ export const UserPostsFeed: React.FC<Props> = ({ username }) => {
     const userPostsQuery = useQuery({
       queryKey: [getUserPostsQuery.queryKey, username],
       queryFn: () => getUserPostsQuery.queryFn({ username }),
+      retry: 0,
+      enabled: !!username,
     });
 
     const results = userPostsQuery.data?.results || 0;
