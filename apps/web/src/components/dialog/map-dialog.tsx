@@ -2,14 +2,12 @@
 
 import {
   Button,
-  Dialog,
   DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@repo/ui/components';
 import { useEffect, useState } from 'react';
 

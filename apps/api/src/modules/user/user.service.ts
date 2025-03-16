@@ -180,6 +180,7 @@ export class UserService {
         select: {
           follower: {
             select: {
+              id: true,
               username: true,
               profile: {
                 select: {

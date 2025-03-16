@@ -20,6 +20,9 @@ export interface IUserDetail {
   firstName: string;
   lastName: string;
   picture: string;
+  memberDate?: Date;
+  followed?: boolean;
+  you?: boolean;
 }
 
 export interface IUserFollowersQueryResponse {
