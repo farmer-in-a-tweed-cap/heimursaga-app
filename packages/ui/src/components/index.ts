@@ -14,3 +14,4 @@ export * from './tabs';
 export * from './skeleton';
 export * from './logo';
 export * from './spinner';
+export * from './dropdown-menu';
