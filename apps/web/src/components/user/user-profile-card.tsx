@@ -5,8 +5,10 @@ import {
   Button,
   Card,
 } from '@repo/ui/components';
+import Link from 'next/link';
 
 import { UserFollowButton } from '@/components';
+import { ROUTER } from '@/router';
 
 type Props = {
   username?: string;
@@ -48,7 +50,9 @@ export const UserProfileCard: React.FC<Props> = ({
       </div> */}
       <div className="mt-6">
         {me ? (
-          <Button variant="outline">Edit profile</Button>
+          <Button variant="outline" asChild>
+            <Link href={ROUTER.USER.SETTINGS}>Edit profile</Link>
+          </Button>
         ) : (
           <UserFollowButton username={username} followed={followed} />
         )}

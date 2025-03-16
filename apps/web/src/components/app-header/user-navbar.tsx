@@ -45,10 +45,12 @@ export const UserNavbar = () => {
       <div className="flex flex-row items-center gap-2">
         <Dropdown
           trigger={
-            <Avatar>
-              <AvatarImage src={picture} />
-              <AvatarFallback>{firstName.slice(0, 1)}</AvatarFallback>
-            </Avatar>
+            <Link href={username ? ROUTER.MEMBERS.MEMBER(username) : '#'}>
+              <Avatar>
+                <AvatarImage src={picture} />
+                <AvatarFallback>{firstName.slice(0, 1)}</AvatarFallback>
+              </Avatar>
+            </Link>
           }
         >
           <div className="flex flex-col">
