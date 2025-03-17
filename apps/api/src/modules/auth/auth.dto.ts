@@ -3,6 +3,8 @@ import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 import {
   ILoginQueryPayloadDto,
+  IPasswordConfirmPayload,
+  IPasswordResetPayload,
   ISignupQueryPayloadDto,
 } from './auth.interface';
 
@@ -21,6 +23,7 @@ export class LoginPayloadDto implements ILoginQueryPayloadDto {
 
 export class SignupPayloadDto implements ISignupQueryPayloadDto {
   @ApiProperty({ required: true })
+  @IsString()
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -43,4 +46,24 @@ export class SignupPayloadDto implements ISignupQueryPayloadDto {
   @IsString()
   @IsNotEmpty()
   lastName: string;
+}
+
+export class PasswordResetDto implements IPasswordResetPayload {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}
+
+export class PasswordConfirmDto implements IPasswordConfirmPayload {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
+
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  password: string;
 }

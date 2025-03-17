@@ -14,7 +14,12 @@ import { SESSION_KEYS } from '@/common/constants';
 import { Public, Session } from '@/common/decorators';
 import { IRequest, IResponse, ISession } from '@/common/interfaces';
 
-import { LoginPayloadDto, SignupPayloadDto } from './auth.dto';
+import {
+  LoginPayloadDto,
+  PasswordConfirmDto,
+  PasswordResetDto,
+  SignupPayloadDto,
+} from './auth.dto';
 import { AuthService } from './auth.service';
 
 @ApiTags('auth')
@@ -69,5 +74,19 @@ export class AuthController {
       req.session.delete();
       res.send();
     }
+  }
+
+  @Public()
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() body: PasswordResetDto) {
+    return this.authService.resetPassword(body);
+  }
+
+  @Public()
+  @Post('confirm-password')
+  @HttpCode(HttpStatus.OK)
+  async confirmPassword(@Body() body: PasswordConfirmDto) {
+    return this.authService.confirmPassword(body);
   }
 }

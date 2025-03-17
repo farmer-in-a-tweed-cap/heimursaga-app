@@ -145,3 +145,14 @@ model Upload {
 
   @@map("uploads")
 }
+
+model EmailVerification {
+  id         Int       @id @default(autoincrement())
+  email      String    @db.VarChar(100)
+  token      String    @db.VarChar(100)
+  expired    Boolean?  @default(false)
+  expired_at DateTime
+  created_at DateTime? @default(now())
+
+  @@map("email_verifications")
+}

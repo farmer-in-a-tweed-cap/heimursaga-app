@@ -4,6 +4,7 @@ import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
 import { hashPassword } from '@/lib/utils';
 
+import { EMAIL_TEMPLATE_KEYS } from '@/common/email-templates';
 import { Role } from '@/common/enums';
 import {
   ServiceBadRequestException,
@@ -13,12 +14,17 @@ import {
   ServiceUnauthorizedException,
 } from '@/common/exceptions';
 import { ISession } from '@/common/interfaces';
+import { config } from '@/config';
+import { IPasswordResetEmailTemplateData } from '@/modules/email';
+import { EVENTS, EventService, IEmailSendEvent } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
 import {
   ILoginQueryPayload,
   ILoginQueryResponse,
+  IPasswordConfirmPayload,
+  IPasswordResetPayload,
   ISessionCreatePayload,
   ISessionUserQueryResponse,
   ISignupQueryPayload,
@@ -29,6 +35,7 @@ export class AuthService {
   constructor(
     private logger: Logger,
     private prisma: PrismaService,
+    private eventService: EventService,
   ) {}
 
   async getSessionUser(payload: ISession): Promise<ISessionUserQueryResponse> {
@@ -286,6 +293,120 @@ export class AuthService {
       return response;
     } catch (e) {
       return null;
+    }
+  }
+
+  async resetPassword(payload: IPasswordResetPayload): Promise<void> {
+    try {
+      const { APP_BASE_URL } = process.env;
+
+      const { email } = payload || {};
+      const maxRequests = config.verification_request_limit || 0;
+
+      // check if the user exists
+      const user = await this.prisma.user
+        .findFirstOrThrow({ where: { email } })
+        .catch(() => null);
+      if (!user)
+        throw new ServiceBadRequestException('user with this email not found');
+
+      // generate a token
+      const token = generator.verificationToken();
+
+      // check if there are too many verifications
+      const limited = await this.prisma.emailVerification
+        .count({
+          where: {
+            email,
+            expired: false,
+          },
+        })
+        .then((count) => (count >= maxRequests ? true : false));
+      if (limited)
+        throw new ServiceForbiddenException(
+          'you requested too many verifications, try later again',
+        );
+
+      // set expiration date (3 hours)
+      const expiresAt = dateformat().add(3, 'h').toDate();
+
+      // create a verification
+      const verification = await this.prisma.emailVerification.create({
+        data: {
+          token,
+          email,
+          expired_at: expiresAt,
+        },
+      });
+      if (!verification)
+        throw new ServiceBadRequestException('password can not be reset');
+
+      // generate a link
+      const link = new URL(
+        `reset-password?token=${token}`,
+        APP_BASE_URL,
+      ).toString();
+
+      // send the email
+      this.eventService.trigger<
+        IEmailSendEvent<IPasswordResetEmailTemplateData>
+      >({
+        event: EVENTS.SEND_EMAIL,
+        data: {
+          to: email,
+          template: EMAIL_TEMPLATE_KEYS.PASSWORD_RESET,
+          vars: { reset_link: link },
+        },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('password can not be reset');
+      throw exception;
+    }
+  }
+
+  async confirmPassword(payload: IPasswordConfirmPayload): Promise<void> {
+    try {
+      const { password, token } = payload || {};
+
+      if (!token)
+        throw new ServiceBadRequestException('token is expired or invalid');
+
+      // validate the token
+      const verification = await this.prisma.emailVerification.findFirstOrThrow(
+        {
+          where: { token, expired: false },
+          select: { email: true },
+        },
+      );
+
+      // update the user and expire the token
+      await this.prisma.$transaction(async (tx) => {
+        const hashedPassword = hashPassword(password);
+
+        // update the user
+        await tx.user.update({
+          where: { email: verification.email },
+          data: { password: hashedPassword },
+        });
+
+        // expire the token
+        await tx.emailVerification.updateMany({
+          where: { email: verification.email },
+          data: {
+            expired: true,
+            expired_at: dateformat().toDate(),
+          },
+        });
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('token is expired or invalid');
+      throw exception;
     }
   }
 }

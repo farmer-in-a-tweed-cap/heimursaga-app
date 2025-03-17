@@ -6,7 +6,7 @@ declare global {
       PORT: string;
       TZ: string;
 
-      APP_DOMAIN: string;
+      APP_BASE_URL: string;
       CORS_ORIGIN: string;
       DATABASE_URL: string;
 

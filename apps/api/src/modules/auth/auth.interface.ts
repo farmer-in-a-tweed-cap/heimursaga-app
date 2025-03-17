@@ -45,3 +45,12 @@ export interface ISignupQueryPayload {
 }
 
 export interface ISignupQueryPayloadDto extends ISignupQueryPayload {}
+
+export interface IPasswordResetPayload {
+  email: string;
+}
+
+export interface IPasswordConfirmPayload {
+  password: string;
+  token: string;
+}
