@@ -409,4 +409,22 @@ export class AuthService {
       throw exception;
     }
   }
+
+  async validateToken(token: string) {
+    try {
+      if (!token)
+        throw new ServiceBadRequestException('token is expired or invalid');
+
+      // validate the token
+      await this.prisma.emailVerification.findFirstOrThrow({
+        where: { token, expired: false },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('token is expired or invalid');
+      throw exception;
+    }
+  }
 }

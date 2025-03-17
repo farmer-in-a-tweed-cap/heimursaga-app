@@ -22,7 +22,7 @@ export const AppHeader = () => {
         `h-[${APP_HEADER_HEIGHT}px]`,
       )}
     >
-      <div className="app-container max-w-screen-xl box-border px-6 lg:px-0 flex flex-row items-center justify-between">
+      <div className="app-container max-w-screen-xl box-border flex flex-row items-center justify-between">
         <Link href={ROUTER.HOME}>
           <div className="w-[100px] lg:w-[120px] border-2 border-red-300">
             <Image src="/logo.svg" width={140} height={100} alt="" />

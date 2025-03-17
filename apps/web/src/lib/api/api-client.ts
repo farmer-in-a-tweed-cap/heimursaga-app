@@ -68,6 +68,10 @@ export const apiClient = {
     api.request<ISessionUserQueryResponse>(API_ROUTER.GET_SESSION_USER, {
       cookie,
     }),
+  validateToken: async (token: string, config?: RequestConfig) =>
+    api.request<void>(API_ROUTER.VALIDATE_TOKEN(token), {
+      cookie: config ? config.cookie : undefined,
+    }),
   getPosts: async (query: any, config?: RequestConfig) =>
     api.request<IPostQueryResponse>(API_ROUTER.POSTS.QUERY, config),
   getPostById: async (

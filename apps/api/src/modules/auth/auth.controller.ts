@@ -4,7 +4,9 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
   Post,
+  Query,
   Req,
   Res,
 } from '@nestjs/common';
@@ -88,5 +90,12 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async changePassword(@Body() body: PasswordChangeDto) {
     return this.authService.changePassword(body);
+  }
+
+  @Public()
+  @Get('tokens/:token')
+  @HttpCode(HttpStatus.OK)
+  async validateToken(@Param('token') token: string) {
+    return this.authService.validateToken(token);
   }
 }

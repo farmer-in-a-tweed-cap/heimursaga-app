@@ -79,7 +79,7 @@
 
 @layer components {
   .app-container {
-    @apply w-full h-auto max-w-full px-4 flex flex-row lg:max-w-7xl lg:px-0 box-border;
+    @apply w-full h-auto max-w-full px-4 flex flex-row lg:max-w-7xl box-border;
   }
 
   .error-message {

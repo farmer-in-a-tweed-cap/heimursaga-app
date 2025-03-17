@@ -114,12 +114,7 @@ export const SignupForm = ({
                       <FormItem>
                         <FormLabel>First name</FormLabel>
                         <FormControl>
-                          <Input
-                            type="first name"
-                            disabled={loading}
-                            required
-                            {...field}
-                          />
+                          <Input disabled={loading} required {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -134,12 +129,7 @@ export const SignupForm = ({
                       <FormItem>
                         <FormLabel>Last name</FormLabel>
                         <FormControl>
-                          <Input
-                            type="last name"
-                            disabled={loading}
-                            required
-                            {...field}
-                          />
+                          <Input disabled={loading} required {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

@@ -5,6 +5,7 @@ export const API_ROUTER = {
   LOGOUT: 'auth/logout',
   RESET_PASSWORD: 'auth/reset-password',
   CHANGE_PASSWORD: 'auth/change-password',
+  VALIDATE_TOKEN: (token: string) => `/auth/tokens/${token}`,
   GET_SESSION_USER: 'auth/user',
   SEARCH: '/search',
   USER: {
