@@ -3,7 +3,7 @@ import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 import {
   ILoginQueryPayloadDto,
-  IPasswordConfirmPayload,
+  IPasswordChangePayload,
   IPasswordResetPayload,
   ISignupQueryPayloadDto,
 } from './auth.interface';
@@ -56,7 +56,7 @@ export class PasswordResetDto implements IPasswordResetPayload {
   email: string;
 }
 
-export class PasswordConfirmDto implements IPasswordConfirmPayload {
+export class PasswordChangeDto implements IPasswordChangePayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()

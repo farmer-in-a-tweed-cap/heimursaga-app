@@ -7,7 +7,6 @@ import { apiClient } from '@/lib/api';
 
 import { AppFooter, AppHeader, ReactQueryProvider } from '@/components';
 import { AppProvider, IAppContextState, SessionProvider } from '@/contexts';
-import { ISessionUserQueryResponse } from '@/types';
 
 export const metadata: Metadata = {
   title: 'saga',

@@ -16,7 +16,7 @@ import { IRequest, IResponse, ISession } from '@/common/interfaces';
 
 import {
   LoginPayloadDto,
-  PasswordConfirmDto,
+  PasswordChangeDto,
   PasswordResetDto,
   SignupPayloadDto,
 } from './auth.dto';
@@ -84,9 +84,9 @@ export class AuthController {
   }
 
   @Public()
-  @Post('confirm-password')
+  @Post('change-password')
   @HttpCode(HttpStatus.OK)
-  async confirmPassword(@Body() body: PasswordConfirmDto) {
-    return this.authService.confirmPassword(body);
+  async changePassword(@Body() body: PasswordChangeDto) {
+    return this.authService.changePassword(body);
   }
 }

@@ -1,5 +1,7 @@
 import {
   ILoginQueryPayload,
+  IPasswordChangePayload,
+  IPasswordResetPayload,
   IPostCreatePayload,
   IPostCreateResponse,
   IPostDetail,
@@ -51,6 +53,16 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify({}),
       cookie,
+    }),
+  resetPassword: async (body: IPasswordResetPayload) =>
+    api.request<void>(API_ROUTER.RESET_PASSWORD, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  changePassword: async (body: IPasswordChangePayload) =>
+    api.request<void>(API_ROUTER.CHANGE_PASSWORD, {
+      method: 'POST',
+      body: JSON.stringify(body),
     }),
   getSession: async ({ cookie }: RequestConfig) =>
     api.request<ISessionUserQueryResponse>(API_ROUTER.GET_SESSION_USER, {

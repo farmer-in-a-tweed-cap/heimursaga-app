@@ -23,7 +23,7 @@ import { PrismaService } from '@/modules/prisma';
 import {
   ILoginQueryPayload,
   ILoginQueryResponse,
-  IPasswordConfirmPayload,
+  IPasswordChangePayload,
   IPasswordResetPayload,
   ISessionCreatePayload,
   ISessionUserQueryResponse,
@@ -367,7 +367,7 @@ export class AuthService {
     }
   }
 
-  async confirmPassword(payload: IPasswordConfirmPayload): Promise<void> {
+  async changePassword(payload: IPasswordChangePayload): Promise<void> {
     try {
       const { password, token } = payload || {};
 

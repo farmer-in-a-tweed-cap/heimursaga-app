@@ -1,5 +1,7 @@
 import {
   ILoginQueryPayload,
+  IPasswordChangePayload,
+  IPasswordResetPayload,
   IPostCreatePayload,
   IPostCreateResponse,
   IPostQueryMapResponse,
@@ -63,6 +65,30 @@ export const signupMutation = createMutation<ISignupQueryPayload, void>(
       }
       return data;
     }),
+);
+
+export const resetPasswordMutation = createMutation<
+  IPasswordResetPayload,
+  void
+>((payload) =>
+  apiClient.resetPassword(payload).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data;
+  }),
+);
+
+export const changePasswordMutation = createMutation<
+  IPasswordChangePayload,
+  void
+>((payload) =>
+  apiClient.changePassword(payload).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data;
+  }),
 );
 
 export const getPostsQuery = createQuery<any, IPostQueryResponse>(

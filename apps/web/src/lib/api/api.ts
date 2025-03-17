@@ -3,6 +3,8 @@ export const API_ROUTER = {
   LOGIN: 'auth/login',
   SIGNUP: 'auth/signup',
   LOGOUT: 'auth/logout',
+  RESET_PASSWORD: 'auth/reset-password',
+  CHANGE_PASSWORD: 'auth/change-password',
   GET_SESSION_USER: 'auth/user',
   SEARCH: '/search',
   USER: {

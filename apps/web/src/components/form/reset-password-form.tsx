@@ -15,17 +15,18 @@ import {
   FormLabel,
   FormMessage,
   Input,
-  Label,
 } from '@repo/ui/components';
+import { useToast } from '@repo/ui/hooks';
 import { cn } from '@repo/ui/lib/utils';
 import { useMutation } from '@tanstack/react-query';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { loginMutation } from '@/lib/api';
-import { fieldmsg, redirect } from '@/lib/utils';
+import { resetPasswordMutation } from '@/lib/api';
+import { fieldmsg } from '@/lib/utils';
 
 import { ROUTER } from '@/router';
 
@@ -34,29 +35,34 @@ const schema = z.object({
     .string()
     .email(fieldmsg.email())
     .nonempty(fieldmsg.required('email'))
-    .min(2, fieldmsg.min('email', 8))
+    .min(2, fieldmsg.min('email', 2))
     .max(50, fieldmsg.max('email', 30)),
-  password: z
-    .string()
-    .nonempty(fieldmsg.required('password'))
-    .min(2, fieldmsg.min('password', 8))
-    .max(50, fieldmsg.max('password', 20)),
 });
 
-export const LoginForm = ({
+export const ResetPasswordForm = ({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<'div'>) => {
   const [loading, setLoading] = useState<boolean>(false);
 
+  const toast = useToast();
+
   const mutation = useMutation({
-    mutationFn: loginMutation.mutationFn,
+    mutationFn: resetPasswordMutation.mutationFn,
     onSuccess: () => {
-      // redirect to home page
-      redirect(ROUTER.HOME);
+      toast({ message: 'we sent you a link' });
+      setLoading(false);
     },
     onError: (e) => {
-      console.log(e);
+      console.log('error', e);
+      const message = e?.message;
+
+      if (message) {
+        form.setError('email', { message });
+      } else {
+        form.setError('email', { message: `something went wrong` });
+      }
+
       setLoading(false);
     },
   });
@@ -64,8 +70,7 @@ export const LoginForm = ({
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      email: 'me@example.com',
-      password: '12345678',
+      email: '',
     },
   });
 
@@ -80,8 +85,10 @@ export const LoginForm = ({
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Welcome back.</CardTitle>
-          <CardDescription>Log in and start exploring.</CardDescription>
+          <CardTitle className="text-2xl">Forgot your password?</CardTitle>
+          <CardDescription>
+            Enter your email and we'll send you a magic link.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -107,49 +114,17 @@ export const LoginForm = ({
                     )}
                   />
                 </div>
-                <div className="grid gap-2">
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <div className="flex items-center">
-                          <Label htmlFor="password">Password</Label>
-                          <Link
-                            href={ROUTER.RESET_PASSWORD}
-                            className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                          >
-                            Forgot your password?
-                          </Link>
-                        </div>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            disabled={loading}
-                            required
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <div className="flex flex-col gap-2 items-center">
+                  <Button type="submit" className="w-full" loading={loading}>
+                    Send email
+                  </Button>
+                  <Link
+                    href={ROUTER.LOGIN}
+                    className="mt-4 text-sm hover:underline"
+                  >
+                    Back to log in
+                  </Link>
                 </div>
-                <Button type="submit" className="w-full" loading={loading}>
-                  Login
-                </Button>
-                {/* <Button variant="outline" className="w-full" disabled>
-                Login with Google
-              </Button> */}
-              </div>
-              <div className="mt-4 text-center text-sm">
-                Don&apos;t have an account?{' '}
-                <Link
-                  href={ROUTER.SIGNUP}
-                  className="underline underline-offset-4"
-                >
-                  Sign up
-                </Link>
               </div>
             </form>
           </Form>

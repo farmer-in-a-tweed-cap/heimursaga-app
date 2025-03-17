@@ -50,7 +50,7 @@ export interface IPasswordResetPayload {
   email: string;
 }
 
-export interface IPasswordConfirmPayload {
+export interface IPasswordChangePayload {
   password: string;
   token: string;
 }

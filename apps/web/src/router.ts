@@ -2,6 +2,7 @@ export const ROUTER = {
   HOME: '/',
   LOGIN: '/login',
   SIGNUP: '/signup',
+  RESET_PASSWORD: 'reset-password',
   EXPLORE: {
     HOME: '/explore',
     POST: (id: string) => `/explore/post/${id}`,

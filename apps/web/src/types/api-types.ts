@@ -11,6 +11,15 @@ export interface ISignupQueryPayload {
   lastName: string;
 }
 
+export interface IPasswordResetPayload {
+  email: string;
+}
+
+export interface IPasswordChangePayload {
+  password: string;
+  token: string;
+}
+
 export interface ISessionUser {
   role: string;
   username: string;
