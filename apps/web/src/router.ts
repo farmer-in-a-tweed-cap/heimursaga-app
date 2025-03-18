@@ -13,7 +13,7 @@ export const ROUTER = {
   USER: {
     PROFILE: '/user/profile',
     SETTINGS: {
-      HOME: '/user/settings',
+      HOME: '/user/settings/profile',
       PAGE_KEY: (key: string) => `/user/settings/${key}`,
       PROFILE: '/user/settings/profile',
       BILLING: '/user/settings/billing',

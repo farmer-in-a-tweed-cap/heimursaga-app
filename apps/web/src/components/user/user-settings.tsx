@@ -51,7 +51,7 @@ export const UserSettings: React.FC<Props> = ({ section }) => {
 
   return (
     <UserSettingsContext.Provider value={{ context: state, setContext }}>
-      <div className="app-container w-full max-w-5xl flex flex-row justify-between gap-4">
+      <div className="app-container w-full max-w-5xl flex flex-col sm:flex-row justify-between gap-4">
         <div className="w-full max-w-[200px]">
           <UserSettingsSidebar />
         </div>

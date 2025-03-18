@@ -69,14 +69,14 @@ export const UserNavbar = () => {
                 <Link
                   key={key}
                   href={href}
-                  className="w-full px-3 py-2 text-sm text-left font-normal hover:bg-gray-100 rounded-lg"
+                  className="w-full px-3 py-2 text-sm text-left font-normal hover:bg-gray-100"
                 >
                   {label}
                 </Link>
               ) : (
                 <button
                   key={key}
-                  className="w-full px-3 py-2 text-sm text-left font-normal hover:bg-gray-100 rounded-lg"
+                  className="w-full px-3 py-2 text-sm text-left font-normal hover:bg-gray-100"
                   onClick={onClick}
                 >
                   {label}
@@ -190,7 +190,7 @@ const Dropdown = ({ trigger, children }: DropdownProps) => {
         createPortal(
           <div
             data-dropdown-content="true"
-            className="absolute shadow min-w-[220px] bg-white p-1 box-border min-h-[50px] z-50 rounded-lg"
+            className="absolute shadow min-w-[220px] bg-white box-border min-h-[50px] z-50 overflow-hidden rounded-xl"
             style={{
               top: `${position.top + 10}px`,
               left: `${position.left - 185}px`,
