@@ -12,7 +12,12 @@ export const ROUTER = {
   },
   USER: {
     PROFILE: '/user/profile',
-    SETTINGS: '/user/settings',
+    SETTINGS: {
+      HOME: '/user/settings',
+      PAGE_KEY: (key: string) => `/user/settings/${key}`,
+      PROFILE: '/user/settings/profile',
+      BILLING: '/user/settings/billing',
+    },
   },
   POSTS: {
     DETAIL: (id: string) => `/posts/${id}`,

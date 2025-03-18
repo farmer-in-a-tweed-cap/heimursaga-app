@@ -59,7 +59,7 @@ export const UserNavbar = () => {
                 href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
                 label: 'Profile',
               },
-              { href: ROUTER.USER.SETTINGS, label: 'Settings' },
+              { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings' },
               {
                 label: 'Logout',
                 onClick: handleLogout,

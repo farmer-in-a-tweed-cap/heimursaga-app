@@ -43,10 +43,7 @@ const schema = z.object({
     .max(50, fieldmsg.max('password', 20)),
 });
 
-export const LoginForm = ({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<'div'>) => {
+export const LoginForm = ({}) => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const mutation = useMutation({
@@ -77,7 +74,7 @@ export const LoginForm = ({
   );
 
   return (
-    <div className={cn('flex flex-col gap-6', className)} {...props}>
+    <div className={cn('flex flex-col gap-6')}>
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Welcome back.</CardTitle>

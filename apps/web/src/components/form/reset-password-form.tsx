@@ -39,10 +39,7 @@ const schema = z.object({
     .max(50, fieldmsg.max('email', 30)),
 });
 
-export const ResetPasswordForm = ({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<'div'>) => {
+export const ResetPasswordForm = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const toast = useToast();
@@ -82,7 +79,7 @@ export const ResetPasswordForm = ({
   );
 
   return (
-    <div className={cn('flex flex-col gap-6', className)} {...props}>
+    <div className={cn('flex flex-col gap-6')}>
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Forgot your password?</CardTitle>

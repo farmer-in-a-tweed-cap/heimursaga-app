@@ -51,7 +51,7 @@ export const UserProfileCard: React.FC<Props> = ({
       <div className="mt-6">
         {me ? (
           <Button variant="outline" asChild>
-            <Link href={ROUTER.USER.SETTINGS}>Edit profile</Link>
+            <Link href={ROUTER.USER.SETTINGS.HOME}>Edit profile</Link>
           </Button>
         ) : (
           <UserFollowButton username={username} followed={followed} />

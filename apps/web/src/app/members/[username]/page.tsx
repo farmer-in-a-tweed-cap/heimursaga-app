@@ -5,13 +5,13 @@ import { apiClient } from '@/lib/api';
 import { PageNotFound, UserFeed, UserProfileCard } from '@/components';
 import { AppLayout } from '@/layouts';
 
-type PageProps = {
+type Props = {
   params: {
     username: string;
   };
 };
 
-export default async function Page({ params }: PageProps) {
+export default async function Page({ params }: Props) {
   const cookie = cookies().toString();
   const { username } = params;
 
