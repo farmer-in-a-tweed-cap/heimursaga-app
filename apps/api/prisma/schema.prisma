@@ -63,6 +63,7 @@ model UserProfile {
   first_name String    @db.VarChar(50)
   last_name  String    @db.VarChar(50)
   picture    String?   @db.VarChar(200)
+  bio        String?   @db.VarChar(200)
   user       User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id    Int       @unique
   created_at DateTime? @default(now())

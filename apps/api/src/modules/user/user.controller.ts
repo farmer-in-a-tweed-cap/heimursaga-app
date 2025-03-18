@@ -1,10 +1,12 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Put,
   Req,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -13,6 +15,7 @@ import { Public, Session } from '@/common/decorators';
 import { ParamUsernameDto } from '@/common/dto';
 import { IRequest, ISession } from '@/common/interfaces';
 
+import { UserSettingsUpdateDto } from './user.dto';
 import { SessionUserService, UserService } from './user.service';
 
 @ApiTags('users')
@@ -110,6 +113,28 @@ export class UserController {
 @Controller('user')
 export class SessionUserController {
   constructor(private sessionUserService: SessionUserService) {}
+
+  @Get('settings/profile')
+  @HttpCode(HttpStatus.OK)
+  async getProfileSettings(@Session() session: ISession) {
+    return await this.sessionUserService.getSettings({
+      userId: session.userId,
+      context: 'profile',
+    });
+  }
+
+  @Put('settings/profile')
+  @HttpCode(HttpStatus.OK)
+  async updateProfileSettings(
+    @Body() body: UserSettingsUpdateDto,
+    @Session() session: ISession,
+  ) {
+    return await this.sessionUserService.updateSettings({
+      userId: session.userId,
+      context: 'profile',
+      profile: body,
+    });
+  }
 
   @Get('posts')
   @HttpCode(HttpStatus.OK)

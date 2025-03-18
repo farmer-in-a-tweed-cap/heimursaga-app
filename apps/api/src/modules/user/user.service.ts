@@ -15,6 +15,8 @@ import {
   IUserFollowingQueryResponse,
   IUserPostsQueryResponse,
   IUserProfileDetail,
+  IUserSettingsResponse,
+  IUserSettingsUpdateQuery,
 } from './user.interface';
 
 @Injectable()
@@ -579,6 +581,116 @@ export class SessionUserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('posts not found');
+      throw exception;
+    }
+  }
+
+  async getSettings({
+    userId,
+    context,
+  }: {
+    userId: number;
+    context: 'profile' | 'billing';
+  }): Promise<IUserSettingsResponse> {
+    try {
+      if (!userId) throw new ServiceForbiddenException();
+
+      // fetch settings based on context
+      switch (context) {
+        case 'profile':
+          return this.prisma.user
+            .findFirstOrThrow({
+              where: { id: userId },
+              select: {
+                email: true,
+                username: true,
+                profile: {
+                  select: {
+                    first_name: true,
+                    last_name: true,
+                    bio: true,
+                    picture: true,
+                  },
+                },
+              },
+            })
+            .then(
+              ({ email, username, profile }) =>
+                ({
+                  context,
+                  profile: {
+                    email,
+                    username,
+                    picture: profile?.picture,
+                    firstName: profile?.first_name,
+                    lastName: profile?.last_name,
+                    bio: profile?.bio,
+                  },
+                }) as IUserSettingsResponse,
+            );
+        case 'billing':
+          break;
+        default:
+          throw new ServiceBadRequestException('settings not found');
+      }
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('settings not found');
+      throw exception;
+    }
+  }
+
+  async updateSettings({
+    userId,
+    context,
+    profile,
+  }: IUserSettingsUpdateQuery): Promise<void> {
+    try {
+      if (!userId) throw new ServiceForbiddenException();
+
+      // update settings based on context
+      switch (context) {
+        case 'profile':
+          // update user profile
+          await this.prisma.$transaction(async (tx) => {
+            // @todo: not safe to update username like that, create separate endpoints
+            await tx.user
+              .count({ where: { username: profile?.username } })
+              .then((count) => {
+                if (count >= 1) {
+                  throw new ServiceForbiddenException(
+                    'username is not available',
+                  );
+                }
+              });
+
+            await tx.user.update({
+              where: { id: userId },
+              data: { username: profile?.username },
+            });
+            await tx.userProfile.update({
+              where: { user_id: userId },
+              data: {
+                first_name: profile?.firstName,
+                last_name: profile?.lastName,
+                bio: profile?.bio,
+              },
+            });
+          });
+
+          break;
+        case 'billing':
+          break;
+        default:
+          throw new ServiceBadRequestException('settings not updated');
+      }
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('settings not updated');
       throw exception;
     }
   }

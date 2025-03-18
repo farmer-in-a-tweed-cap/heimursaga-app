@@ -34,3 +34,37 @@ export interface IUserFollowingQueryResponse {
   results: number;
   data: IUserDetail[];
 }
+
+export interface IUserSettingsResponse {
+  context: 'profile' | 'billing';
+  profile?: {
+    username: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    bio: string;
+    picture: string;
+  };
+}
+
+export interface IUserSettingsUpdateQuery {
+  context: 'profile' | 'billing';
+  userId: number;
+  profile?: {
+    username?: string;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    bio?: string;
+    picture?: string;
+  };
+}
+
+export interface IUserSettingsUpdateDto {
+  username?: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  picture?: string;
+}
