@@ -15,6 +15,7 @@ import {
   IUserFollowingQueryResponse,
   IUserPostsQueryResponse,
   IUserProfileDetail,
+  IUserSettingsProfileResponse,
   IUserSettingsResponse,
   IUserSettingsUpdateQuery,
 } from './user.interface';
@@ -591,7 +592,7 @@ export class SessionUserService {
   }: {
     userId: number;
     context: 'profile' | 'billing';
-  }): Promise<IUserSettingsResponse> {
+  }): Promise<IUserSettingsProfileResponse> {
     try {
       if (!userId) throw new ServiceForbiddenException();
 
@@ -617,16 +618,13 @@ export class SessionUserService {
             .then(
               ({ email, username, profile }) =>
                 ({
-                  context,
-                  profile: {
-                    email,
-                    username,
-                    picture: profile?.picture,
-                    firstName: profile?.first_name,
-                    lastName: profile?.last_name,
-                    bio: profile?.bio,
-                  },
-                }) as IUserSettingsResponse,
+                  email,
+                  username,
+                  picture: profile?.picture,
+                  firstName: profile?.first_name,
+                  lastName: profile?.last_name,
+                  bio: profile?.bio,
+                }) as IUserSettingsProfileResponse,
             );
         case 'billing':
           break;
@@ -655,21 +653,6 @@ export class SessionUserService {
         case 'profile':
           // update user profile
           await this.prisma.$transaction(async (tx) => {
-            // @todo: not safe to update username like that, create separate endpoints
-            await tx.user
-              .count({ where: { username: profile?.username } })
-              .then((count) => {
-                if (count >= 1) {
-                  throw new ServiceForbiddenException(
-                    'username is not available',
-                  );
-                }
-              });
-
-            await tx.user.update({
-              where: { id: userId },
-              data: { username: profile?.username },
-            });
             await tx.userProfile.update({
               where: { user_id: userId },
               data: {

@@ -11,7 +11,7 @@ import { USER_SETTINGS_TABS, UserSettingsContext } from './user-settings';
 
 export const UserSettingsSidebar = () => {
   const router = useRouter();
-  const { context, setContext } = useContext(UserSettingsContext);
+  const { context } = useContext(UserSettingsContext);
 
   const activeTab = context.tab;
 
@@ -27,7 +27,9 @@ export const UserSettingsSidebar = () => {
             key={key}
             className={cn(
               'w-full flex flex-row justify-start px-4 py-2 text-sm text-left font-normal hover:bg-gray-100 rounded-none',
-              activeTab === tab ? 'bg-gray-100 text-black' : 'text-black/70',
+              activeTab === tab
+                ? 'bg-gray-100 font-medium text-black'
+                : 'text-black/70',
             )}
             onClick={() => handleClick(tab)}
           >

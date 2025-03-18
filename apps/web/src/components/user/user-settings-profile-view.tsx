@@ -2,9 +2,6 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
   Button,
   Form,
   FormControl,
@@ -15,17 +12,22 @@ import {
   Input,
   Textarea,
 } from '@repo/ui/components';
+import { useToast } from '@repo/ui/hooks';
 import { cn } from '@repo/ui/lib/utils';
-import { useMutation } from '@tanstack/react-query';
-import { Edit, Edit2, Upload, UploadCloud } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { signupMutation } from '@/lib/api';
+import {
+  getUserProfileSettingsQuery,
+  updateUserProfileSettingsMutation,
+} from '@/lib/api';
 import { fieldmsg, redirect } from '@/lib/utils';
 
-import { ROUTER } from '@/router';
+import { useSession } from '@/hooks';
+import { IUserProfileSettings } from '@/types';
 
 import { UserAvatarUploadPicker } from './user-avatar-upload-picker';
 
@@ -40,22 +42,23 @@ const schema = z.object({
     .nonempty(fieldmsg.required('last name'))
     .min(2, fieldmsg.min('last name', 2))
     .max(50, fieldmsg.max('last name', 20)),
-  username: z
-    .string()
-    .nonempty(fieldmsg.required('username'))
-    .min(2, fieldmsg.min('username', 2))
-    .max(50, fieldmsg.max('username', 20)),
+
   bio: z
     .string()
     .nonempty(fieldmsg.required('bio'))
     .min(0, fieldmsg.min('bio', 0))
     .max(140, fieldmsg.max('bio', 140)),
-  email: z
-    .string()
-    .email(fieldmsg.email())
-    .nonempty(fieldmsg.required('email'))
-    .min(2, fieldmsg.min('email', 2))
-    .max(50, fieldmsg.max('email', 30)),
+  // username: z
+  //   .string()
+  //   .nonempty(fieldmsg.required('username'))
+  //   .min(2, fieldmsg.min('username', 2))
+  //   .max(50, fieldmsg.max('username', 20)),
+  // email: z
+  //   .string()
+  //   .email(fieldmsg.email())
+  //   .nonempty(fieldmsg.required('email'))
+  //   .min(2, fieldmsg.min('email', 2))
+  //   .max(50, fieldmsg.max('email', 30)),
   // travelsIn: z
   //   .string()
   //   .nonempty(fieldmsg.required('travels in'))
@@ -68,14 +71,22 @@ const schema = z.object({
   //   .max(50, fieldmsg.max('lives in', 50)),
 });
 
-export const UserSettingsProfileView = () => {
+type Props = {
+  data?: IUserProfileSettings;
+};
+
+export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
+  const session = useSession();
+  const router = useRouter();
+  const toast = useToast();
   const [loading, setLoading] = useState<boolean>(false);
 
   const mutation = useMutation({
-    mutationFn: signupMutation.mutationFn,
+    mutationFn: updateUserProfileSettingsMutation.mutationFn,
     onSuccess: () => {
-      // redirect to login page
-      redirect(ROUTER.LOGIN);
+      toast({ message: 'settings updated' });
+      setLoading(false);
+      router.refresh();
     },
     onError: (e) => {
       console.log('error', e);
@@ -85,22 +96,20 @@ export const UserSettingsProfileView = () => {
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      firstName: '',
-      lastName: '',
-      username: '',
-      email: '',
-      bio: '',
-    },
+    defaultValues: data
+      ? { ...data }
+      : {
+          firstName: '',
+          lastName: '',
+          bio: '',
+        },
   });
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      // setLoading(true);
+      setLoading(true);
 
-      console.log(values);
-
-      //   mutation.mutate(values);
+      mutation.mutate(values);
     },
   );
 
@@ -138,7 +147,7 @@ export const UserSettingsProfileView = () => {
                 )}
               />
             </div>
-            <div className="grid gap-2">
+            {/* <div className="grid gap-2">
               <FormField
                 control={form.control}
                 name="username"
@@ -152,8 +161,8 @@ export const UserSettingsProfileView = () => {
                   </FormItem>
                 )}
               />
-            </div>
-            <div className="grid gap-2">
+            </div> */}
+            {/* <div className="grid gap-2">
               <FormField
                 control={form.control}
                 name="email"
@@ -172,7 +181,7 @@ export const UserSettingsProfileView = () => {
                   </FormItem>
                 )}
               />
-            </div>
+            </div> */}
             {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <FormField
                 control={form.control}

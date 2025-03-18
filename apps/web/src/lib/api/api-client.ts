@@ -17,6 +17,8 @@ import {
   IUserFollowingQueryResponse,
   IUserPostsQueryResponse,
   IUserProfileDetail,
+  IUserSettingsProfileResponse,
+  IUserSettingsProfileUpdateQuery,
 } from '@/types/api-types';
 
 import { API_ROUTER, Api } from './api';
@@ -182,6 +184,23 @@ export const apiClient = {
   getUserDrafts: async (config?: RequestConfig) =>
     api.request<IPostQueryMapResponse>(API_ROUTER.USER.DRAFTS, {
       method: 'GET',
+      cookie: config ? config.cookie : undefined,
+    }),
+  getUserProfileSettings: async (config?: RequestConfig) =>
+    api.request<IUserSettingsProfileResponse>(
+      API_ROUTER.USER.SETTINGS.PROFILE,
+      {
+        method: 'GET',
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
+  updateUserProfileSettings: async (
+    payload: IUserSettingsProfileUpdateQuery,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.USER.SETTINGS.PROFILE, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,
     }),
 };

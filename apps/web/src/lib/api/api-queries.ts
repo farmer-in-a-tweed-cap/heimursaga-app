@@ -13,6 +13,8 @@ import {
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserPostsQueryResponse,
+  IUserSettingsProfileResponse,
+  IUserSettingsProfileUpdateQuery,
 } from '@/types/api-types';
 
 import { apiClient } from './api-client';
@@ -32,6 +34,7 @@ export const QUERY_KEYS = {
   USER_FEED: 'user_feed',
   USER_BOOKMARKS: 'user_bookmarks',
   USER_DRAFTS: 'user_drafts',
+  USER_SETTINGS_PROFILE: 'user_settings_profile',
 };
 
 const createQuery = <T = undefined, R = any>(
@@ -260,5 +263,30 @@ export const getUserDrafts = createQuery<void, IPostQueryResponse>(
         throw new Error(message);
       }
       return data as IPostQueryResponse;
+    }),
+);
+
+export const getUserProfileSettingsQuery = createQuery<
+  void,
+  IUserSettingsProfileResponse
+>([QUERY_KEYS.USER_SETTINGS_PROFILE], () =>
+  apiClient.getUserProfileSettings().then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as IUserSettingsProfileResponse;
+  }),
+);
+
+export const updateUserProfileSettingsMutation = createMutation<
+  IUserSettingsProfileUpdateQuery,
+  void
+>((payload) =>
+  apiClient
+    .updateUserProfileSettings(payload)
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
     }),
 );

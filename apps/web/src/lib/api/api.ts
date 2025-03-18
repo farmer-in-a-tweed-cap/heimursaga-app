@@ -12,6 +12,9 @@ export const API_ROUTER = {
     FEED: `/user/feed`,
     BOOKMARKS: `/user/bookmarks`,
     DRAFTS: `/user/drafts`,
+    SETTINGS: {
+      PROFILE: '/user/settings/profile',
+    },
   },
   USERS: {
     GET_BY_USERNAME: (username: string) => `/users/${username}`,

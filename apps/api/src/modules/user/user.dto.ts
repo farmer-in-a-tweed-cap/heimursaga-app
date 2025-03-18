@@ -1,14 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 
-import { IUserSettingsUpdateDto } from './user.interface';
+import { IUserSettingsProfileUpdateQuery } from './user.interface';
 
-export class UserSettingsUpdateDto implements IUserSettingsUpdateDto {
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  email: string;
-
+export class UserSettingsProfileUpdateDto
+  implements IUserSettingsProfileUpdateQuery
+{
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()

@@ -15,7 +15,7 @@ import { Public, Session } from '@/common/decorators';
 import { ParamUsernameDto } from '@/common/dto';
 import { IRequest, ISession } from '@/common/interfaces';
 
-import { UserSettingsUpdateDto } from './user.dto';
+import { UserSettingsProfileUpdateDto } from './user.dto';
 import { SessionUserService, UserService } from './user.service';
 
 @ApiTags('users')
@@ -126,7 +126,7 @@ export class SessionUserController {
   @Put('settings/profile')
   @HttpCode(HttpStatus.OK)
   async updateProfileSettings(
-    @Body() body: UserSettingsUpdateDto,
+    @Body() body: UserSettingsProfileUpdateDto,
     @Session() session: ISession,
   ) {
     return await this.sessionUserService.updateSettings({

@@ -35,9 +35,19 @@ export const UserSettingsContext = createContext<IUserSettingsContext>({
 
 type Props = {
   section: string;
+  data: {
+    profile?: {
+      username: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      bio: string;
+      picture: string;
+    };
+  };
 };
 
-export const UserSettings: React.FC<Props> = ({ section }) => {
+export const UserSettings: React.FC<Props> = ({ section, data }) => {
   const [state, setState] = useState<IUserSettingsContextValue>({
     tab: section || USER_SETTINGS_TAB_KEYS.PROFILE,
   });
@@ -59,7 +69,7 @@ export const UserSettings: React.FC<Props> = ({ section }) => {
           <CardTitle className="text-lg">{activeTab?.label}</CardTitle>
           <CardContent>
             {activeTabKey === USER_SETTINGS_TAB_KEYS.PROFILE && (
-              <UserSettingsProfileView />
+              <UserSettingsProfileView data={data?.profile} />
             )}
             {activeTabKey === USER_SETTINGS_TAB_KEYS.BILLING && (
               <UserSettingsBillingView />

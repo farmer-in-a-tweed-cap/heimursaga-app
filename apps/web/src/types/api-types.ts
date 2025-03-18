@@ -173,3 +173,29 @@ export interface IUserFollowingQueryResponse {
   results: number;
   data: IUserDetail[];
 }
+
+export interface IUserProfileSettings {
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  bio: string;
+  picture: string;
+}
+
+export interface IUserSettingsProfileResponse {
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  bio: string;
+  picture: string;
+}
+
+export interface IUserSettingsProfileUpdateQuery {
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  bio?: string;
+  picture?: string;
+}
