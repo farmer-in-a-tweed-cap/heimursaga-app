@@ -175,10 +175,10 @@ export const ExploreMap: React.FC<Props> = () => {
   }, []);
 
   return (
-    <div className="w-full h-full flex flex-row">
+    <div className="w-full h-full flex flex-row bg-white">
       <div
         className={cn(
-          'w-full h-full hidden sm:flex overflow-hidden shadow-sm',
+          'w-full h-full hidden sm:flex overflow-hidden',
           sidebar ? 'sm:max-w-[540px]' : 'max-w-[0px]',
         )}
       >
@@ -188,7 +188,12 @@ export const ExploreMap: React.FC<Props> = () => {
           posts={searchQueryQuery.data?.data}
         />
       </div>
-      <div className={cn('relative w-full')}>
+      <div
+        className={cn(
+          'relative w-full overflow-hidden',
+          sidebar ? 'rounded-l-3xl' : '',
+        )}
+      >
         <button
           className="z-20 absolute hidden sm:flex top-4 left-4 drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
           onClick={handleSidebarToggle}

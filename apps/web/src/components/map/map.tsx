@@ -103,6 +103,9 @@ export const Map: React.FC<Props> = ({
   const mapboxPopupRef = useRef<mapboxgl.Popup | null>(null);
   const markerRef = useRef<Marker | null>(null);
 
+  const showPopupRef = useRef<boolean>(false);
+  const hoverPopupRef = useRef<boolean>(false);
+
   useEffect(() => {
     if (!mapboxRef.current || !mapReady || !sources) return;
 
@@ -353,7 +356,7 @@ export const Map: React.FC<Props> = ({
 
         // set custom popup
         const popupContent = `
-          <div class="map-popup">
+          <div class="map-popup cursor-pointer">
             <div class="flex flex-col justify-start gap-0">
               <span class="text-sm font-medium">${title}</span>
               <span class="text-[0.625rem] font-normal text-gray-800">${dateformat(date).format('MMM DD')}</span>
@@ -364,10 +367,32 @@ export const Map: React.FC<Props> = ({
           </div>
         `;
 
-        mapboxPopupRef
-          .current!.setLngLat([coordinates[0], coordinates[1]])
-          .setHTML(popupContent)
-          .addTo(mapboxRef.current!);
+        setTimeout(() => {
+          mapboxPopupRef
+            .current!.setLngLat([coordinates[0], coordinates[1]])
+            .setHTML(popupContent)
+            .addTo(mapboxRef.current!);
+
+          const popupElement = mapboxPopupRef.current!._content;
+
+          if (popupElement) {
+            popupElement.addEventListener('mouseenter', () => {
+              hoverPopupRef.current = true;
+            });
+            popupElement.addEventListener('mouseleave', () => {
+              console.log('mouse leave');
+
+              hoverPopupRef.current = false;
+
+              setTimeout(() => {
+                showPopupRef.current = false;
+                mapboxPopupRef.current!.remove();
+              }, 250);
+            });
+          }
+
+          showPopupRef.current = true;
+        }, 250);
       });
 
       mapboxRef.current!.on('mouseleave', MAP_LAYERS.MARKERS, () => {
@@ -377,7 +402,11 @@ export const Map: React.FC<Props> = ({
         mapboxRef.current!.getCanvas().style.cursor = '';
 
         // remove popup
-        mapboxPopupRef.current.remove();
+        setTimeout(() => {
+          if (hoverPopupRef.current) return;
+          mapboxPopupRef.current!.remove();
+          showPopupRef.current = false;
+        }, 250);
       });
 
       // update on move
