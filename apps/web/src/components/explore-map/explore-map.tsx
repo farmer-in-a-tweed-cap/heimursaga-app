@@ -1,8 +1,11 @@
 'use client';
 
+import { Button } from '@repo/ui/components';
+import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
+import { ArrowLeftToLineIcon, ArrowRightToLineIcon } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
 import { QUERY_KEYS, searchQuery } from '@/lib/api';
@@ -13,7 +16,7 @@ import {
   MapOnLoadHandler,
   MapOnMoveHandler,
 } from '@/components';
-import { MAP_DEFAULT_COORDINATES } from '@/constants';
+import { APP_HEADER_HEIGHT, MAP_DEFAULT_COORDINATES } from '@/constants';
 import { useMapbox } from '@/hooks';
 import { ISearchQueryResponse } from '@/types';
 
@@ -45,6 +48,7 @@ export const ExploreMap: React.FC<Props> = () => {
   const [searchState] = useDebounce(_searchState, SEARCH_DEBOUNCE_INTERVAL, {
     leading: true,
   });
+  const [sidebar, setSidebar] = useState<boolean>(true);
 
   const searchQueryQuery = useQuery<ISearchQueryResponse, Error>({
     queryKey: [
@@ -97,8 +101,12 @@ export const ExploreMap: React.FC<Props> = () => {
 
   const handleMapLoad: MapOnLoadHandler = (value) => {
     const { bounds } = value;
+    const mapboxInstance = value.mapbox;
 
-    console.log('mapload');
+    // set mapbox ref
+    if (mapboxInstance && mapbox.ref) {
+      mapbox.ref!.current = mapboxInstance;
+    }
 
     // update query
     if (bounds) {
@@ -132,6 +140,19 @@ export const ExploreMap: React.FC<Props> = () => {
     updateSearchParams({ lat, lon, alt });
   };
 
+  const handleSidebarToggle = () => {
+    // update sidebar
+    setSidebar((sidebar) => !sidebar);
+
+    // resize the map
+    if (mapbox.ref!.current) {
+      setTimeout(() => {
+        console.log('resize map..');
+        mapbox.ref.current!.resize();
+      }, 0);
+    }
+  };
+
   useEffect(() => {
     const { lat, lon, alt } = params;
 
@@ -154,31 +175,48 @@ export const ExploreMap: React.FC<Props> = () => {
   }, []);
 
   return (
-    <div className="relative h-full">
-      <div className="absolute top-0 left-0 bottom-0 z-20 w-[490px] h-full p-5">
+    <div className="w-full h-full flex flex-row">
+      <div
+        className={cn(
+          'w-full h-full hidden sm:flex overflow-hidden shadow-sm',
+          sidebar ? 'sm:max-w-[540px]' : 'max-w-[0px]',
+        )}
+      >
         <ExploreSidebar
           loading={searchQueryQuery.isFetching}
           results={searchQueryQuery.data?.results}
           posts={searchQueryQuery.data?.data}
         />
       </div>
-      <div className="relative w-full h-full z-10">
-        {mapbox.token && (
-          <Map
-            token={mapbox.token}
-            coordinates={coordinates}
-            sources={
-              searchQueryQuery.isSuccess
-                ? {
-                    results: searchQueryQuery.data.results,
-                    geojson: searchQueryQuery.data.geojson,
-                  }
-                : undefined
-            }
-            onLoad={handleMapLoad}
-            onMove={handleMapMove}
-          />
-        )}
+      <div className={cn('relative w-full')}>
+        <button
+          className="z-20 absolute hidden sm:flex top-4 left-4 drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
+          onClick={handleSidebarToggle}
+        >
+          {sidebar ? (
+            <ArrowLeftToLineIcon size={18} />
+          ) : (
+            <ArrowRightToLineIcon size={18} />
+          )}
+        </button>
+        <div className="z-10 relative w-full h-full overflow-hidden">
+          {mapbox.token && (
+            <Map
+              token={mapbox.token}
+              coordinates={coordinates}
+              sources={
+                searchQueryQuery.isSuccess
+                  ? {
+                      results: searchQueryQuery.data.results,
+                      geojson: searchQueryQuery.data.geojson,
+                    }
+                  : undefined
+              }
+              onLoad={handleMapLoad}
+              onMove={handleMapMove}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

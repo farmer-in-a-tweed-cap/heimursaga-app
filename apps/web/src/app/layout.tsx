@@ -8,6 +8,8 @@ import { apiClient } from '@/lib/api';
 import { AppFooter, AppHeader, ReactQueryProvider } from '@/components';
 import { AppProvider, IAppContextState, SessionProvider } from '@/contexts';
 
+import './../styles.css';
+
 export const metadata: Metadata = {
   title: 'saga',
   description: 'a journaling platform for travelers',
@@ -72,14 +74,7 @@ export const AppMapLayout = ({ children }: { children: React.ReactNode }) => {
         <div className={cn('z-20 absolute top-0 left-0 right-0 h-[64px]')}>
           <AppHeader />
         </div>
-        <div
-          className={cn(
-            'z-10 relative w-full h-[100vh] box-border flex flex-row',
-            `pt-[64px]`,
-          )}
-        >
-          {children}
-        </div>
+        <div className={cn('app-content-full-container')}>{children}</div>
         <AppFooter />
       </div>
     </AuthLayout>

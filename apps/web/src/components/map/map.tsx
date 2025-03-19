@@ -1,5 +1,6 @@
 'use client';
 
+import { Button } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import mapboxgl, { MapOptions, Marker } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -15,6 +16,7 @@ import { MapNavigationControl } from './map-control';
 export type MapOnLoadHandler = (data: MapOnLoadHandlerValue) => void;
 
 export type MapOnLoadHandlerValue = {
+  mapbox: mapboxgl.Map | null;
   bounds?: {
     ne: { lat: number; lon: number };
     sw: { lat: number; lon: number };
@@ -205,6 +207,7 @@ export const Map: React.FC<Props> = ({
       if (!mapboxRef.current) return;
 
       setMapReady(true);
+      mapboxRef.current.resize();
 
       // get coordinates
       const { lng: lon, lat } = mapboxRef.current.getCenter();
@@ -218,6 +221,7 @@ export const Map: React.FC<Props> = ({
       // set initial props
       if (onLoad) {
         onLoad({
+          mapbox: mapboxRef.current,
           bounds:
             ne && sw
               ? {
@@ -435,6 +439,12 @@ export const Map: React.FC<Props> = ({
           });
         }
       });
+
+      // update the map on windwo resize
+      window.addEventListener('resize', () => {
+        if (!mapboxRef?.current) return;
+        mapboxRef.current.resize();
+      });
     }
 
     // @todo
@@ -451,14 +461,11 @@ export const Map: React.FC<Props> = ({
   }, []);
 
   return (
-    <div className="relative w-full h-full">
-      {/* <div className="z-20 text-[8px] absolute bottom-2 right-2 bg-white text-black p-2">
-        {JSON.stringify({ sources: sources?.results || 0 })}
-      </div> */}
+    <div className={cn(className, 'relative w-full h-full')}>
       <div
         id="map-container"
         ref={mapboxContainerRef}
-        className={cn(className, 'z-10 relative w-full h-full')}
+        className="z-10 !w-full !h-full"
       ></div>
     </div>
   );

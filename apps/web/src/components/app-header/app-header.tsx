@@ -16,13 +16,8 @@ const data = {
 
 export const AppHeader = () => {
   return (
-    <div
-      className={cn(
-        'w-full bg-white flex flex-row justify-center items-center drop-shadow-sm overflow-x-hidden',
-        `h-[${APP_HEADER_HEIGHT}px]`,
-      )}
-    >
-      <div className="app-container max-w-screen-xl box-border flex flex-row items-center justify-between">
+    <div className="app-header">
+      <div className="px-6 w-full box-border flex flex-row items-center justify-between">
         <Link href={ROUTER.HOME}>
           <div className="w-[100px] lg:w-[120px] border-2 border-red-300">
             <Image src="/logo.svg" width={140} height={100} alt="" />

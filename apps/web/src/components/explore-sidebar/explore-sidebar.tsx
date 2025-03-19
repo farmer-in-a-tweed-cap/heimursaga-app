@@ -14,10 +14,9 @@ export const ExploreSidebar = ({
   posts?: IPostDetail[];
 }) => {
   return (
-    <Card className="w-full h-full box-border p-6 flex flex-col">
-      <div className="flex flex-col gap-3">
-        <span className="text-xl font-medium">Explore</span>
-
+    <div className="relative flex flex-col w-full h-full bg-white">
+      <div className="flex flex-col gap-1 bg-white py-4 px-6">
+        <span className="text-lg font-medium">Explore</span>
         {loading ? (
           <Skeleton className="w-[100px] h-[16px] rounded-full" />
         ) : (
@@ -26,7 +25,7 @@ export const ExploreSidebar = ({
           </span>
         )}
       </div>
-      <div className="mt-8 flex flex-col gap-4 overflow-y-scroll no-scrollbar">
+      <div className="flex flex-col gap-4 overflow-y-scroll no-scrollbar p-6 box-border">
         {posts.map(({ id, ...post }, key) => (
           <PostCard
             key={key}
@@ -37,6 +36,6 @@ export const ExploreSidebar = ({
           />
         ))}
       </div>
-    </Card>
+    </div>
   );
 };
