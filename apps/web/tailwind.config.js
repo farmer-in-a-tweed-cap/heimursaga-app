@@ -6,7 +6,7 @@ module.exports = {
   theme: {
     extend: {
       height: {
-        'app-header': 'hsl(var(--app-header-height))',
+        'app-header': 'var(--app-header-height)',
       },
     },
   },

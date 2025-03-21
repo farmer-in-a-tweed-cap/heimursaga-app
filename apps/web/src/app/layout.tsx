@@ -2,11 +2,19 @@ import '@repo/ui/globals.css';
 import { cn } from '@repo/ui/lib/utils';
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import Image from 'next/image';
+import Link from 'next/link';
 
 import { apiClient } from '@/lib/api';
 
-import { AppFooter, AppHeader, ReactQueryProvider } from '@/components';
+import {
+  AppFooter,
+  AppHeader,
+  AppSidebar,
+  ReactQueryProvider,
+} from '@/components';
 import { AppProvider, IAppContextState, SessionProvider } from '@/contexts';
+import { ROUTER } from '@/router';
 
 import './../styles.css';
 
@@ -56,12 +64,15 @@ export const AuthLayout = async ({ children }: Props) => {
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthLayout>
-      <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
-        <AppHeader />
-        <div className="w-full h-auto min-h-screen flex flex-col py-6 items-center justify-start">
-          {children}
+      <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-row">
+        <AppSidebar />
+        <div className="relative w-full flex flex-col justify-start">
+          <AppHeader />
+          <div className="w-full h-auto flex flex-col py-6 items-center justify-start">
+            {children}
+          </div>
+          {/* <AppFooter /> */}
         </div>
-        <AppFooter />
       </div>
     </AuthLayout>
   );
@@ -70,11 +81,41 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
 export const AppMapLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <AuthLayout>
-      <div className="relative w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
-        <div className={cn('z-20 absolute top-0 left-0 right-0 h-[64px]')}>
-          <AppHeader />
+      <div className="w-full bg-[#EFEFEC] text-black flex flex-row">
+        <AppSidebar />
+        <div className="relative w-full flex flex-col justify-start">
+          <div className={cn('z-20 absolute top-0 left-0 right-0 h-[64px]')}>
+            <AppHeader />
+          </div>
+          <div className={cn('app-content-full-container')}>{children}</div>
+          {/* <AppFooter /> */}
         </div>
-        <div className={cn('app-content-full-container')}>{children}</div>
+      </div>
+    </AuthLayout>
+    // <AuthLayout>
+    //   <div className="relative w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
+    //     <div className={cn('z-20 absolute top-0 left-0 right-0 h-[64px]')}>
+    //       <AppHeader />
+    //     </div>
+    //     <div className={cn('app-content-full-container')}>{children}</div>
+    //     <AppFooter />
+    //   </div>
+    // </AuthLayout>
+  );
+};
+
+export const AppLayoutWithoutSidebar = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  return (
+    <AuthLayout>
+      <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
+        <AppHeader />
+        <div className="w-full h-auto min-h-screen flex flex-col py-6 items-center justify-start">
+          {children}
+        </div>
         <AppFooter />
       </div>
     </AuthLayout>

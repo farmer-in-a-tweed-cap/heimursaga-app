@@ -1,6 +1,5 @@
 export * from './provider';
-export * from './app-header';
-export * from './app-footer';
+export * from './app';
 export * from './form';
 export * from './map';
 export * from './dialog';

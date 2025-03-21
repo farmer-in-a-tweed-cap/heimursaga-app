@@ -11,18 +11,24 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: {
-          DEFAULT: '#ffffff',
-        },
         primary: {
-          DEFAULT: '#AA6C46',
-          foreground: '#ffffff',
+          DEFAULT: 'var(--primary)',
+          foreground: 'var(--primary-foreground)',
         },
         secondary: {
-          DEFAULT: '#212121',
+          DEFAULT: 'var(--secondary)',
+          foreground: 'var(--secondary-foreground)',
+        },
+        dark: {
+          DEFAULT: 'var(--dark)',
+          foreground: 'var(--dark-foreground)',
+          hover: 'var(--dark-hover)',
         },
         destructive: {
           DEFAULT: '#CC3300',
+        },
+        background: {
+          DEFAULT: '',
         },
       },
       fontSize: {
