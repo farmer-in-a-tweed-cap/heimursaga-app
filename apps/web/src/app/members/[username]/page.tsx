@@ -22,8 +22,8 @@ export default async function Page({ params }: Props) {
     <AppLayout>
       {userQuery.success ? (
         <div className="w-full flex flex-col justify-start items-center">
-          <div className="app-container w-full max-w-5xl flex flex-row justify-between gap-6">
-            <div className="w-full max-w-[320px]">
+          <div className="app-container w-full max-w-5xl flex flex-col lg:flex-row justify-between gap-6">
+            <div className="w-full lg:max-w-[320px]">
               <div className="sticky top-6">
                 <UserProfileCard
                   username={user?.username}

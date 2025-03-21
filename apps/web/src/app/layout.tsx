@@ -53,7 +53,6 @@ export default async function RootLayout({ children }: Props) {
 
 export const AuthLayout = async ({ children }: Props) => {
   const cookie = cookies().toString();
-
   const sessionQuery = await apiClient.getSession({ cookie });
 
   return (
@@ -92,15 +91,6 @@ export const AppMapLayout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </div>
     </AuthLayout>
-    // <AuthLayout>
-    //   <div className="relative w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
-    //     <div className={cn('z-20 absolute top-0 left-0 right-0 h-[64px]')}>
-    //       <AppHeader />
-    //     </div>
-    //     <div className={cn('app-content-full-container')}>{children}</div>
-    //     <AppFooter />
-    //   </div>
-    // </AuthLayout>
   );
 };
 
