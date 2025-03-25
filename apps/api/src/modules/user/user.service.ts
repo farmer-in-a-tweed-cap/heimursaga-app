@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { getUploadStaticUrl } from '@/lib/upload';
+
 import {
   ServiceBadRequestException,
   ServiceException,
@@ -9,6 +11,7 @@ import {
 } from '@/common/exceptions';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
+import { UploadContext, UploadService } from '@/modules/upload';
 
 import {
   IUserFollowersQueryResponse,
@@ -16,8 +19,8 @@ import {
   IUserPostsQueryResponse,
   IUserProfileDetail,
   IUserSettingsProfileResponse,
-  IUserSettingsResponse,
   IUserSettingsUpdateQuery,
+  IUserUpdatePictureQuery,
 } from './user.interface';
 
 @Injectable()
@@ -58,7 +61,9 @@ export class UserService {
 
       const response: IUserProfileDetail = {
         username: user.username,
-        picture: user.profile.picture,
+        picture: user.profile.picture
+          ? getUploadStaticUrl(user.profile.picture)
+          : '',
         firstName: user.profile.first_name,
         lastName: user.profile.last_name,
         memberDate: user.created_at,
@@ -156,7 +161,9 @@ export class UserService {
             author: {
               name: author.profile?.first_name,
               username: author?.username,
-              picture: author?.profile?.picture,
+              picture: author?.profile?.picture
+                ? getUploadStaticUrl(author?.profile.picture)
+                : '',
             },
             liked: userId ? likes.length > 0 : false,
             bookmarked: userId ? bookmarks.length > 0 : false,
@@ -224,7 +231,7 @@ export class UserService {
           username,
           firstName: profile.first_name,
           lastName: profile.first_name,
-          picture: profile.picture,
+          picture: profile.picture ? getUploadStaticUrl(profile?.picture) : '',
         })),
         results,
       };
@@ -284,7 +291,7 @@ export class UserService {
           username,
           firstName: profile.first_name,
           lastName: profile.first_name,
-          picture: profile.picture,
+          picture: profile.picture ? getUploadStaticUrl(profile.picture) : '',
         })),
         results,
       };
@@ -448,6 +455,7 @@ export class SessionUserService {
   constructor(
     private logger: Logger,
     private prisma: PrismaService,
+    private uploadService: UploadService,
   ) {}
 
   async getPosts({
@@ -565,7 +573,9 @@ export class SessionUserService {
             author: {
               name: author.profile?.first_name,
               username: author?.username,
-              picture: author?.profile?.picture,
+              picture: author?.profile?.picture
+                ? getUploadStaticUrl(author?.profile?.picture)
+                : '',
             },
             liked: userId ? likes.length > 0 : false,
             bookmarked: userId ? bookmarks.length > 0 : false,
@@ -620,7 +630,9 @@ export class SessionUserService {
                 ({
                   email,
                   username,
-                  picture: profile?.picture,
+                  picture: profile?.picture
+                    ? getUploadStaticUrl(profile?.picture)
+                    : '',
                   firstName: profile?.first_name,
                   lastName: profile?.last_name,
                   bio: profile?.bio,
@@ -674,6 +686,40 @@ export class SessionUserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('settings not updated');
+      throw exception;
+    }
+  }
+
+  async updatePicture({
+    userId,
+    file,
+  }: IUserUpdatePictureQuery): Promise<void> {
+    try {
+      if (!userId) throw new ServiceForbiddenException();
+
+      // get user
+      const user = await this.prisma.user
+        .findFirstOrThrow({ where: { id: userId }, select: { username: true } })
+        .catch(() => null);
+      if (!user) throw new ServiceForbiddenException();
+
+      // upload picture
+      const { thumbnail } = await this.uploadService.upload({
+        file,
+        context: UploadContext.USER,
+        user: { username: user.username },
+      });
+
+      // update user profile
+      await this.prisma.userProfile.update({
+        where: { user_id: userId },
+        data: { picture: thumbnail },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('user picture not updated');
       throw exception;
     }
   }

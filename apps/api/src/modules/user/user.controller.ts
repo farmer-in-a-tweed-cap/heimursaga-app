@@ -8,12 +8,16 @@ import {
   Post,
   Put,
   Req,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public, Session } from '@/common/decorators';
 import { ParamUsernameDto } from '@/common/dto';
+import { FileInterceptor } from '@/common/interceptors';
 import { IRequest, ISession } from '@/common/interfaces';
+import { IUploadedFile } from '@/modules/upload';
 
 import { UserSettingsProfileUpdateDto } from './user.dto';
 import { SessionUserService, UserService } from './user.service';
@@ -133,6 +137,26 @@ export class SessionUserController {
       userId: session.userId,
       context: 'profile',
       profile: body,
+    });
+  }
+
+  @Post('picture')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        files: 1,
+        fileSize: 2 * 1024 * 1024,
+      },
+    }),
+  )
+  async updatePicture(
+    @UploadedFile() file: IUploadedFile,
+    @Session() session: ISession,
+  ) {
+    return await this.sessionUserService.updatePicture({
+      userId: session.userId,
+      file,
     });
   }
 

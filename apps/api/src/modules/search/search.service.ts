@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
+import { getUploadStaticUrl } from '@/lib/upload';
+
 import {
   ServiceException,
   ServiceForbiddenException,
@@ -101,7 +103,9 @@ export class SearchService {
             author: {
               username: post.author?.username,
               name: post.author?.profile?.first_name,
-              picture: post.author?.profile?.picture,
+              picture: post.author?.profile?.picture
+                ? getUploadStaticUrl(post.author?.profile?.picture)
+                : undefined,
             },
           })),
         );

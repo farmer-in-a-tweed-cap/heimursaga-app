@@ -3,7 +3,6 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  Query,
   Session,
   UploadedFile,
   UseInterceptors,
@@ -14,7 +13,7 @@ import { Public } from '@/common/decorators';
 import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
 
-import { UploadMediaQueryDto } from './upload.dto';
+import { UploadContext } from './upload.enum';
 import { IUploadedFile } from './upload.interface';
 import { UploadService } from './upload.service';
 
@@ -35,10 +34,13 @@ export class UploadController {
     }),
   )
   async upload(
-    @Query() query: UploadMediaQueryDto,
     @UploadedFile() file: IUploadedFile,
     @Session() session: ISession,
   ) {
-    return this.uploadService.upload({ file, userId: session?.userId });
+    return this.uploadService.upload({
+      file,
+      context: UploadContext.UPLOAD,
+      user: { id: session?.userId },
+    });
   }
 }

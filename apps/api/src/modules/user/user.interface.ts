@@ -1,4 +1,5 @@
 import { IPostDetail } from '@/modules/post';
+import { IUploadedFile } from '@/modules/upload';
 
 export interface IUserProfileDetail {
   username: string;
@@ -75,4 +76,9 @@ export interface IUserSettingsProfileUpdateQuery {
   lastName?: string;
   bio?: string;
   picture?: string;
+}
+
+export interface IUserUpdatePictureQuery {
+  userId: number;
+  file: IUploadedFile;
 }

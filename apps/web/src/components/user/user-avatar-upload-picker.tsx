@@ -1,15 +1,32 @@
 'use client';
 
-import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components';
-import { UploadIcon } from 'lucide-react';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+  Spinner,
+} from '@repo/ui/components';
+import { cn } from '@repo/ui/lib/utils';
 import { useRef, useState } from 'react';
 
 type Props = {
+  src?: string;
   fallback?: string;
+  loading?: boolean;
+  onChange?: (file: File) => void;
 };
 
-export const UserAvatarUploadPicker: React.FC<Props> = ({ fallback }) => {
-  const [preview, setPreview] = useState<string | null>(null);
+const ACCEPT_FILE_TYPES = 'image/*';
+const MULTIPLE = false;
+
+export const UserAvatarUploadPicker: React.FC<Props> = ({
+  src = '',
+  fallback = '',
+  loading = false,
+  onChange,
+}) => {
+  const [preview, setPreview] = useState<string | null>(src);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleClick = () => {
@@ -26,11 +43,13 @@ export const UserAvatarUploadPicker: React.FC<Props> = ({ fallback }) => {
     reader.onload = (e: ProgressEvent<FileReader>) => {
       if (e.target?.result && typeof e.target.result === 'string') {
         setPreview(e.target.result);
-
-        console.log(e.target.result);
       }
     };
     reader.readAsDataURL(file);
+
+    if (onChange) {
+      onChange(file);
+    }
   };
 
   return (
@@ -40,23 +59,41 @@ export const UserAvatarUploadPicker: React.FC<Props> = ({ fallback }) => {
           type="file"
           ref={inputRef}
           onChange={handleChange}
-          accept="image/*"
-          multiple={false}
+          accept={ACCEPT_FILE_TYPES}
+          multiple={MULTIPLE}
           style={{ display: 'none' }}
         />
       </form>
-      <div>
-        <Avatar className="relative w-[100px] h-[100px]">
-          <button
-            className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 cursor-pointer text-black"
-            onClick={handleClick}
-          >
-            <UploadIcon size={16} className="z-20" />
-            <div className="z-10 transition-all absolute inset-0 bg-gray-200"></div>
-          </button>
-          <AvatarFallback>{fallback}</AvatarFallback>
+      <div className="flex flex-col">
+        <Avatar
+          className={cn(
+            'relative w-[75px] h-[75px]',
+            loading ? 'pointer-events-auto' : '',
+          )}
+        >
+          <div className="absolute inset-0 flex items-center justify-center text-black">
+            {loading && (
+              <>
+                <div className="z-20 absolute inset-0 flex items-center justify-center cursor-wait">
+                  <Spinner className="text-black" />
+                </div>
+                <div className="z-10 transition-all absolute inset-0 opacity-80 bg-white"></div>
+              </>
+            )}
+          </div>
+          <AvatarFallback>{fallback?.slice(0, 1)}</AvatarFallback>
           <AvatarImage src={preview || ''} alt="" />
         </Avatar>
+        <div className="mt-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClick}
+            disabled={loading}
+          >
+            Upload photo
+          </Button>
+        </div>
       </div>
     </div>
   );

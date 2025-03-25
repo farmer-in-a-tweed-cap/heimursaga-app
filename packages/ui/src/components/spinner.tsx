@@ -1,7 +1,11 @@
 import { Loader2 } from 'lucide-react';
 
-type SpinnerProps = {};
+import { cn } from './../lib/utils';
 
-export const Spinner: React.FC<SpinnerProps> = () => {
-  return <Loader2 className="animate-spin" />;
+type SpinnerProps = {
+  className?: string;
+};
+
+export const Spinner: React.FC<SpinnerProps> = ({ className }) => {
+  return <Loader2 className={cn('animate-spin', className)} />;
 };

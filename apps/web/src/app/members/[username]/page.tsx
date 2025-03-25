@@ -26,6 +26,7 @@ export default async function Page({ params }: Props) {
             <div className="w-full lg:max-w-[320px]">
               <div className="sticky top-6">
                 <UserProfileCard
+                  picture={user?.picture}
                   username={user?.username}
                   firstName={user?.firstName}
                   lastName={user?.lastName}

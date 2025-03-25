@@ -12,6 +12,7 @@ export const API_ROUTER = {
     FEED: `/user/feed`,
     BOOKMARKS: `/user/bookmarks`,
     DRAFTS: `/user/drafts`,
+    UPDATE_PICTURE: '/user/picture',
     SETTINGS: {
       PROFILE: '/user/settings/profile',
     },
@@ -32,6 +33,26 @@ export const API_ROUTER = {
     LIKE: (id: string) => `posts/${id}/like`,
     BOOKMARK: (id: string) => `posts/${id}/bookmark`,
   },
+};
+
+export const API_HEADERS = {
+  CONTENT_TYPE: {
+    JSON: 'application/json',
+    MULTIPART_FORM_DATA: 'multipart/form-data',
+  },
+};
+
+export const API_CONTENT_TYPES = {
+  JSON: 'json',
+  FORM_DATA: 'form-data',
+};
+
+export const API_METHODS = {
+  GET: 'GET',
+  POST: 'POST',
+  PUT: 'PUT',
+  PATCH: 'PATCH',
+  DELETE: 'DELETE',
 };
 
 type ApiConfig = {
@@ -59,14 +80,16 @@ export class Api {
   async request<R = any>(
     path: string,
     config?: RequestInit & {
+      contentType?: string;
       url?: string;
       parseJson?: boolean;
       cookie?: string;
     },
   ): Promise<IApiResponse<R>> {
     const { baseUrl, headers: globalHeaders } = this;
-    const { cookie, ...options } = config || {};
+    const { cookie, body, contentType, ...options } = config || {};
 
+    // parse url
     const url = new URL(
       path.startsWith('/') ? path.slice(1, path.length) : path,
       baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`,
@@ -82,6 +105,26 @@ export class Api {
       };
     }
 
+    // set content type
+    switch (contentType) {
+      case API_CONTENT_TYPES.JSON:
+        headers = {
+          ...headers,
+          'Content-Type': API_HEADERS.CONTENT_TYPE.JSON,
+        };
+        break;
+      case API_CONTENT_TYPES.FORM_DATA:
+        // @ts-ignore
+        delete headers['Content-Type'];
+        break;
+      default:
+        headers = {
+          ...headers,
+          'Content-Type': API_HEADERS.CONTENT_TYPE.JSON,
+        };
+        break;
+    }
+
     // set cookies
     if (cookie) {
       headers = {
@@ -93,11 +136,9 @@ export class Api {
     // fetch
     const response = await fetch(url, {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers,
-      },
+      headers,
       credentials: 'include',
+      body,
     });
 
     const json = await response.json().catch(() => ({}));
@@ -112,11 +153,11 @@ export class Api {
       } satisfies IApiResponse<R>;
     }
 
-    const body: IApiResponse<R> = {
+    const result: IApiResponse<R> = {
       success: true,
       data: json,
     };
 
-    return body;
+    return result;
   }
 }

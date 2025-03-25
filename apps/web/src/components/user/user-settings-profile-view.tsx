@@ -22,6 +22,7 @@ import { z } from 'zod';
 
 import {
   getUserProfileSettingsQuery,
+  updateUserPictureMutation,
   updateUserProfileSettingsMutation,
 } from '@/lib/api';
 import { fieldmsg, redirect } from '@/lib/utils';
@@ -48,27 +49,6 @@ const schema = z.object({
     .nonempty(fieldmsg.required('bio'))
     .min(0, fieldmsg.min('bio', 0))
     .max(140, fieldmsg.max('bio', 140)),
-  // username: z
-  //   .string()
-  //   .nonempty(fieldmsg.required('username'))
-  //   .min(2, fieldmsg.min('username', 2))
-  //   .max(50, fieldmsg.max('username', 20)),
-  // email: z
-  //   .string()
-  //   .email(fieldmsg.email())
-  //   .nonempty(fieldmsg.required('email'))
-  //   .min(2, fieldmsg.min('email', 2))
-  //   .max(50, fieldmsg.max('email', 30)),
-  // travelsIn: z
-  //   .string()
-  //   .nonempty(fieldmsg.required('travels in'))
-  //   .min(0, fieldmsg.min('travels in', 0))
-  //   .max(50, fieldmsg.max('travels in', 50)),
-  // livesIn: z
-  //   .string()
-  //   .nonempty(fieldmsg.required('lives in'))
-  //   .min(0, fieldmsg.min('lives in', 0))
-  //   .max(50, fieldmsg.max('lives in', 50)),
 });
 
 type Props = {
@@ -76,22 +56,36 @@ type Props = {
 };
 
 export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
-  const session = useSession();
   const router = useRouter();
   const toast = useToast();
-  const [loading, setLoading] = useState<boolean>(false);
 
-  const mutation = useMutation({
+  const [settingsLoading, setSettingsLoading] = useState<boolean>(false);
+  const [pictureLoading, setPictureLoading] = useState<boolean>(false);
+
+  const onError = (e: Error) => {
+    setSettingsLoading(false);
+    setPictureLoading(false);
+    console.log('settings not update', e);
+    // toast({ message: 'settings updated' });
+  };
+
+  const settingsUpdateMutation = useMutation({
     mutationFn: updateUserProfileSettingsMutation.mutationFn,
     onSuccess: () => {
+      setSettingsLoading(false);
       toast({ message: 'settings updated' });
-      setLoading(false);
       router.refresh();
     },
-    onError: (e) => {
-      console.log('error', e);
-      setLoading(false);
+    onError,
+  });
+
+  const pictureUpdateMutation = useMutation({
+    mutationFn: updateUserPictureMutation.mutationFn,
+    onSuccess: () => {
+      setPictureLoading(false);
+      router.refresh();
     },
+    onError,
   });
 
   const form = useForm<z.infer<typeof schema>>({
@@ -105,17 +99,27 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
         },
   });
 
+  const handleAvatarChange = (file: File) => {
+    setPictureLoading(true);
+
+    pictureUpdateMutation.mutate({ file });
+  };
+
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      setLoading(true);
-
-      mutation.mutate(values);
+      setSettingsLoading(true);
+      settingsUpdateMutation.mutate(values);
     },
   );
 
   return (
     <div className={cn('flex flex-col gap-6')}>
-      <UserAvatarUploadPicker fallback="M" />
+      <UserAvatarUploadPicker
+        src={data?.picture}
+        loading={pictureLoading}
+        fallback={data?.firstName}
+        onChange={handleAvatarChange}
+      />
       <Form {...form}>
         <form onSubmit={handleSubmit}>
           <div className="flex flex-col gap-6">
@@ -127,7 +131,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                   <FormItem>
                     <FormLabel>First name</FormLabel>
                     <FormControl>
-                      <Input disabled={loading} required {...field} />
+                      <Input disabled={settingsLoading} required {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -140,7 +144,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                   <FormItem>
                     <FormLabel>Last name</FormLabel>
                     <FormControl>
-                      <Input disabled={loading} required {...field} />
+                      <Input disabled={settingsLoading} required {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -220,7 +224,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                     <FormControl>
                       <Textarea
                         className="min-h-[120px]"
-                        disabled={loading}
+                        disabled={settingsLoading}
                         required
                         {...field}
                       />
@@ -231,7 +235,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
               />
             </div>
             <div>
-              <Button type="submit" loading={loading}>
+              <Button type="submit" loading={settingsLoading}>
                 Save
               </Button>
             </div>

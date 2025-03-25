@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
+import { getUploadStaticUrl } from '@/lib/upload';
 
 import {
   ServiceException,
@@ -95,7 +96,9 @@ export class PostService {
             author: {
               username: post.author?.username,
               name: post.author?.profile?.first_name,
-              picture: post.author?.profile?.picture,
+              picture: post.author?.profile?.picture
+                ? getUploadStaticUrl(post.author?.profile?.picture)
+                : undefined,
             },
             liked: userId ? post.likes.length > 0 : false,
             bookmarked: userId ? post.bookmarks.length > 0 : false,
@@ -178,7 +181,9 @@ export class PostService {
             id: post.author?.id,
             username: post.author?.username,
             name: post.author?.profile?.first_name,
-            picture: post.author?.profile?.picture,
+            picture: post.author?.profile?.picture
+              ? getUploadStaticUrl(post.author?.profile?.picture)
+              : undefined,
           },
           createdByMe: userId ? userId === post.author?.id : undefined,
           createdAt: post.created_at,

@@ -5,10 +5,14 @@ import * as crypto from 'node:crypto';
 import * as sharp from 'sharp';
 
 import { UploadedFileType } from '@/common/enums';
-import { ServiceException } from '@/common/exceptions';
+import {
+  ServiceBadRequestException,
+  ServiceException,
+} from '@/common/exceptions';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
+import { UPLOAD_BUCKETS, UploadContext } from './upload.enum';
 import { IUploadMediaPayload, IUploadMediaResponse } from './upload.interface';
 
 @Injectable()
@@ -36,15 +40,33 @@ export class UploadService {
 
   async upload(payload: IUploadMediaPayload): Promise<IUploadMediaResponse> {
     try {
-      const { S3_ENDPOINT, S3_BUCKET } = process.env;
-
       const {
+        context,
         thumbnail = true,
         file: { buffer },
+        user,
       } = payload;
 
+      let bucket;
+
+      // define bucket based on context
+      switch (context) {
+        case UploadContext.UPLOAD:
+          bucket = UPLOAD_BUCKETS.UPLOAD;
+          break;
+        case UploadContext.USER:
+          if (!user?.username)
+            throw new ServiceBadRequestException(
+              'upload failed, user id required',
+            );
+          bucket = UPLOAD_BUCKETS.USER;
+          break;
+        default:
+          bucket = UPLOAD_BUCKETS.UPLOAD;
+          break;
+      }
+
       // generate metadata
-      const bucket = S3_BUCKET;
       const ext = 'webp';
       const mimetype = 'image/webp';
       const hash = crypto.randomBytes(24).toString('hex');
@@ -98,11 +120,6 @@ export class UploadService {
         ),
       );
 
-      const urls = {
-        original: `${S3_ENDPOINT}/${paths.original}`,
-        thumbnail: `${S3_ENDPOINT}/${paths.thumbnail}`,
-      };
-
       // save the upload to the database
       await this.prisma.upload
         .create({
@@ -118,8 +135,8 @@ export class UploadService {
 
       // return original and thumbnail files
       const response: IUploadMediaResponse = {
-        original: urls.original,
-        thumbnail: urls.thumbnail,
+        original: paths.original,
+        thumbnail: paths.thumbnail,
       };
 
       return response;

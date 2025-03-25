@@ -15,6 +15,7 @@ import {
   IUserPostsQueryResponse,
   IUserSettingsProfileResponse,
   IUserSettingsProfileUpdateQuery,
+  IUserUpdatePictureQuery,
 } from '@/types/api-types';
 
 import { apiClient } from './api-client';
@@ -289,4 +290,15 @@ export const updateUserProfileSettingsMutation = createMutation<
         throw new Error(message);
       }
     }),
+);
+
+export const updateUserPictureMutation = createMutation<
+  IUserUpdatePictureQuery,
+  void
+>((payload) =>
+  apiClient.updateUserPicture(payload).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+  }),
 );

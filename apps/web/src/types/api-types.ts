@@ -199,3 +199,7 @@ export interface IUserSettingsProfileUpdateQuery {
   bio?: string;
   picture?: string;
 }
+
+export interface IUserUpdatePictureQuery {
+  file: File;
+}
