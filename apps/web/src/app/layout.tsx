@@ -2,19 +2,17 @@ import '@repo/ui/globals.css';
 import { cn } from '@repo/ui/lib/utils';
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import Image from 'next/image';
-import Link from 'next/link';
 
 import { apiClient } from '@/lib/api';
 
 import {
   AppFooter,
   AppHeader,
+  AppProvider,
   AppSidebar,
-  ReactQueryProvider,
+  IAppContextState,
 } from '@/components';
-import { AppProvider, IAppContextState, SessionProvider } from '@/contexts';
-import { ROUTER } from '@/router';
+import { SessionProvider } from '@/contexts';
 
 import './../styles.css';
 
@@ -43,9 +41,7 @@ export default async function RootLayout({ children }: Props) {
   return (
     <html lang="en">
       <body>
-        <AppProvider state={state}>
-          <ReactQueryProvider>{children}</ReactQueryProvider>
-        </AppProvider>
+        <AppProvider state={state}>{children}</AppProvider>
       </body>
     </html>
   );

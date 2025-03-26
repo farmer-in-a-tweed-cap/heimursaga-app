@@ -27,8 +27,12 @@ module.exports = {
         destructive: {
           DEFAULT: '#CC3300',
         },
+        accent: {
+          DEFAULT: 'var(--accent)',
+          foreground: 'var(--accent-foreground)',
+        },
         background: {
-          DEFAULT: '',
+          DEFAULT: 'var(--background)',
         },
       },
       fontSize: {

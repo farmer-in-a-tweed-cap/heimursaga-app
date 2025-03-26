@@ -2,7 +2,7 @@
 
 import { useContext, useRef } from 'react';
 
-import { AppContext } from '@/contexts';
+import { AppContext } from '@/components';
 
 export const useMapbox = () => {
   const { mapbox } = useContext(AppContext);

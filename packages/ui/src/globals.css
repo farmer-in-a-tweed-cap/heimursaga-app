@@ -11,11 +11,10 @@
     --dark: #252525;
     --dark-foreground: #a3a3a3;
     --dark-hover: #2f2f2f;
+    --background: #ffffff;
+    --accent: #ffffff;
+    --accent-foreground: #000000;
 
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-
-    --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;

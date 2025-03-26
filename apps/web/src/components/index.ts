@@ -1,4 +1,3 @@
-export * from './provider';
 export * from './app';
 export * from './form';
 export * from './map';
@@ -9,3 +8,4 @@ export * from './post';
 export * from './page';
 export * from './button';
 export * from './user';
+export * from './modal';

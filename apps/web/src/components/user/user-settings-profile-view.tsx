@@ -14,20 +14,19 @@ import {
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
 import { cn } from '@repo/ui/lib/utils';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import {
-  getUserProfileSettingsQuery,
   updateUserPictureMutation,
   updateUserProfileSettingsMutation,
 } from '@/lib/api';
-import { fieldmsg, redirect } from '@/lib/utils';
+import { fieldmsg } from '@/lib/utils';
 
-import { useSession } from '@/hooks';
+import { MODALS } from '@/components';
 import { IUserProfileSettings } from '@/types';
 
 import { UserAvatarUploadPicker } from './user-avatar-upload-picker';
