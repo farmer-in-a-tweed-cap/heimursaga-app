@@ -3,9 +3,9 @@
 import { Card, CardContent, CardTitle } from '@repo/ui/components';
 import { createContext, useState } from 'react';
 
-import { UserSettingsBillingView } from './user-settings-billing-view';
+import { UserSettingsNavbar } from './user-settings-navbar';
+import { UserSettingsPaymentMethodView } from './user-settings-payment-method-view';
 import { UserSettingsProfileView } from './user-settings-profile-view';
-import { UserSettingsSidebar } from './user-settings-sidebar';
 
 interface IUserSettingsContextValue {
   tab: string;
@@ -21,11 +21,12 @@ export const USER_SETTINGS_TAB_KEYS = {
   NOTIFICATIONS: 'notifications',
   SECURITY: 'security',
   BILLING: 'billing',
+  PAYMENT_METHODS: 'payment_methods',
 };
 
 export const USER_SETTINGS_TABS: { key: string; label: string }[] = [
   { key: USER_SETTINGS_TAB_KEYS.PROFILE, label: 'Profile' },
-  { key: USER_SETTINGS_TAB_KEYS.BILLING, label: 'Billing' },
+  { key: USER_SETTINGS_TAB_KEYS.PAYMENT_METHODS, label: 'Payment methods' },
 ];
 
 export const UserSettingsContext = createContext<IUserSettingsContext>({
@@ -61,18 +62,18 @@ export const UserSettings: React.FC<Props> = ({ section, data }) => {
 
   return (
     <UserSettingsContext.Provider value={{ context: state, setContext }}>
-      <div className="app-container w-full max-w-5xl flex flex-col sm:flex-row justify-between gap-4">
-        <div className="w-full max-w-[200px]">
-          <UserSettingsSidebar />
+      <div className="app-container w-full max-w-2xl flex flex-col gap-4">
+        <h2 className="page-header">Settings</h2>
+        <div>
+          <UserSettingsNavbar />
         </div>
         <Card>
-          <CardTitle className="text-lg">{activeTab?.label}</CardTitle>
           <CardContent>
             {activeTabKey === USER_SETTINGS_TAB_KEYS.PROFILE && (
               <UserSettingsProfileView data={data?.profile} />
             )}
-            {activeTabKey === USER_SETTINGS_TAB_KEYS.BILLING && (
-              <UserSettingsBillingView />
+            {activeTabKey === USER_SETTINGS_TAB_KEYS.PAYMENT_METHODS && (
+              <UserSettingsPaymentMethodView />
             )}
           </CardContent>
         </Card>

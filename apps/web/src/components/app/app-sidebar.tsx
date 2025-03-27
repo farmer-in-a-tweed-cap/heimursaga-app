@@ -33,8 +33,13 @@ const links: {
 export const AppSidebar = () => {
   const pathname = usePathname();
 
-  const isActiveLink = (path: string): boolean =>
-    pathname === (path.startsWith('/') ? path : `/${path}`);
+  const isActiveLink = (path: string): boolean => {
+    path = path.startsWith('/') ? path : `/${path}`;
+
+    const active = path === '/' ? pathname === path : pathname.startsWith(path);
+
+    return active;
+  };
 
   return (
     <div className="hidden sm:max-w-[200px] lg:flex xl:max-w-[240px] relative w-full">

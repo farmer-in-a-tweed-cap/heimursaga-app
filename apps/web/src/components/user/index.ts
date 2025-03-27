@@ -7,7 +7,7 @@ export * from './user-followers-feed';
 export * from './user-following-feed';
 export * from './user-bookmarks-feed';
 export * from './user-drafts-feed';
-export * from './user-settings-sidebar';
+export * from './user-settings-navbar';
 export * from './user-settings';
 
 export * from './user-settings-profile-view';
