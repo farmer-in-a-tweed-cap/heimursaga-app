@@ -25,8 +25,8 @@ const links: {
 }[] = [
   { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
   { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
-  { href: '#', label: 'Journal', icon: PenIcon },
-  { href: '#', label: 'Notifications', icon: BellIcon },
+  { href: ROUTER.JOURNAL, label: 'Journal', icon: PenIcon },
+  { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
   { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
 ];
 

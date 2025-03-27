@@ -39,14 +39,18 @@ export const UserNavbar = () => {
 
   return session ? (
     <div className="flex flex-row items-center gap-10">
-      <Button className="hidden lg:flex" onClick={handleCreatePostClick}>
+      <Button
+        className="hidden lg:flex"
+        size="sm"
+        onClick={handleCreatePostClick}
+      >
         Create post
       </Button>
       <div className="flex flex-row items-center gap-2">
         <Dropdown
           trigger={
             <Link href={username ? ROUTER.MEMBERS.MEMBER(username) : '#'}>
-              <Avatar>
+              <Avatar className="w-8 h-8">
                 <AvatarImage src={picture} />
                 <AvatarFallback>{firstName.slice(0, 1)}</AvatarFallback>
               </Avatar>

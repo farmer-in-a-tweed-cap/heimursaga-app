@@ -25,7 +25,7 @@ export default async function Page({ params }: Props) {
 
   return (
     <AppLayout>
-      <div className="w-full flex flex-col justify-start items-center">
+      <div className="w-full max-w-2xl flex flex-col gap-4">
         <UserSettings
           section={section}
           data={{

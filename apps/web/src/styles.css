@@ -24,8 +24,8 @@
     @apply w-full h-auto max-w-full px-4 flex flex-row box-border;
   }
 
-  .page-header {
-    @apply font-medium text-2xl sm:text-3xl;
+  .page-header-title {
+    @apply font-medium text-xl sm:text-2xl;
   }
 
   .app-sidebar-link {

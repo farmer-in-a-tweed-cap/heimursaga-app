@@ -10,6 +10,8 @@ export const ROUTER = {
   DASHBOARD: {
     HOME: '/dashboard',
   },
+  JOURNAL: '/journal',
+  NOTIFICATIONS: '/notifications',
   USER: {
     PROFILE: '/user/profile',
     SETTINGS: {

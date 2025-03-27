@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
 
-import { PostFeed } from '@/components';
+import { PageHeaderTitle, PostFeed } from '@/components';
 import { AppLayout } from '@/layouts';
 
 export default async function App() {
@@ -13,9 +13,12 @@ export default async function App() {
 
   return (
     <AppLayout>
-      <main className="flex flex-col justify-center items-center gap-2 w-full max-w-3xl px-4 lg:px-0">
-        <PostFeed loading={false} posts={posts} />
-      </main>
+      <div className="w-full max-w-2xl flex flex-col gap-4">
+        <PageHeaderTitle>Feed</PageHeaderTitle>
+        <div className="mt-4">
+          <PostFeed loading={false} posts={posts} />
+        </div>
+      </div>
     </AppLayout>
   );
 }

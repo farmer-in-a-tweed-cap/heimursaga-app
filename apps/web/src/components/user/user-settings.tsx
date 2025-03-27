@@ -1,7 +1,9 @@
 'use client';
 
-import { Card, CardContent, CardTitle } from '@repo/ui/components';
+import { Card, CardContent } from '@repo/ui/components';
 import { createContext, useState } from 'react';
+
+import { PageHeaderTitle } from '@/components';
 
 import { UserSettingsNavbar } from './user-settings-navbar';
 import { UserSettingsPaymentMethodView } from './user-settings-payment-method-view';
@@ -62,8 +64,8 @@ export const UserSettings: React.FC<Props> = ({ section, data }) => {
 
   return (
     <UserSettingsContext.Provider value={{ context: state, setContext }}>
-      <div className="app-container w-full max-w-2xl flex flex-col gap-4">
-        <h2 className="page-header">Settings</h2>
+      <div className="w-full flex flex-col gap-4">
+        <PageHeaderTitle>Settings</PageHeaderTitle>
         <div>
           <UserSettingsNavbar />
         </div>

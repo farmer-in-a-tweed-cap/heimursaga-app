@@ -63,7 +63,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
           <AppHeader />
-          <div className="w-full h-auto flex flex-col py-6 items-center justify-start">
+          <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
             {children}
           </div>
           {/* <AppFooter /> */}
