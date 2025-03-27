@@ -9,3 +9,4 @@ export * from './page';
 export * from './button';
 export * from './user';
 export * from './modal';
+export * from './stripe';

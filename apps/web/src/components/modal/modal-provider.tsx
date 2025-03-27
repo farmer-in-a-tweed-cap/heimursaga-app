@@ -56,7 +56,7 @@ interface IModalRegistry {
 
 const modalRegistry: IModalRegistry = {
   [MODALS.WELCOME]: () => import('./welcome-modal'),
-  // [MODALS.PAYMENT_METHOD_ADD]: () => import('./payment-method-add-modal'),
+  [MODALS.PAYMENT_METHOD_ADD]: () => import('./payment-method-add-modal'),
 };
 
 // modal cache
@@ -133,7 +133,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ModalContext.Provider value={{ context: state, setContext, preload }}>
       <Dialog open={open}>
-        <DialogContent onClose={handleClose} aria-describedby="">
+        <DialogContent onClose={handleClose}>
           <Suspense fallback={<div>Loading...</div>}>{modalContent}</Suspense>
         </DialogContent>
       </Dialog>

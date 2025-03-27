@@ -80,4 +80,8 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .input {
+    @apply border-input selection:bg-primary selection:text-primary-foreground align-middle h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-2 box-border text-base;
+  }
 }
