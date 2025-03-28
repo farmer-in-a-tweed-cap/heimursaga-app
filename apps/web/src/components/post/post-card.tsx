@@ -128,7 +128,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         </div>
       )}
       {actions?.like && (
-        <div className="mt-6 flex flex-row gap-1">
+        <div className="z-50 mt-6 w-auto flex flex-row gap-1">
           <PostLikeButton postId={id} likesCount={likesCount} liked={liked} />
         </div>
       )}
