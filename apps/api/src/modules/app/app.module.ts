@@ -9,6 +9,7 @@ import { PaymentModule } from '@/modules/payment';
 import { PostModule } from '@/modules/post';
 import { PrismaModule } from '@/modules/prisma';
 import { SearchModule } from '@/modules/search';
+import { StripeModule } from '@/modules/stripe';
 import { UploadModule } from '@/modules/upload';
 import { UserModule } from '@/modules/user';
 
@@ -25,6 +26,7 @@ import { AppService } from './app.service';
     LoggerModule,
     EventModule,
     EmailModule,
+    StripeModule,
     PrismaModule,
     AuthModule,
     PostModule,

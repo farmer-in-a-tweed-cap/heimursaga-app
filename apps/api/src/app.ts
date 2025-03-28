@@ -20,6 +20,7 @@ import { AppModule } from '@/modules/app';
 import { Logger } from '@/modules/logger';
 
 import { IRequest, IResponse } from './common/interfaces';
+import { generator } from './lib/generator';
 
 // build the app
 export async function app() {
@@ -90,6 +91,10 @@ export async function app() {
           path: '',
           method: RequestMethod.GET,
         },
+        {
+          path: 'webhook/stripe',
+          method: RequestMethod.POST,
+        },
       ],
     });
 
@@ -118,7 +123,9 @@ export async function app() {
     // run the app
     await app
       .listen(PORT, HOST, () => {
-        console.log('api running', { env: ENV });
+        console.log('api running', {
+          env: ENV,
+        });
       })
       .catch((e) => {
         console.log('api failed', e);
