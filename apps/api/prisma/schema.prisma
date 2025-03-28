@@ -16,27 +16,29 @@ datasource db {
 }
 
 model User {
-  id                Int            @id @default(autoincrement())
-  email             String         @unique @db.VarChar(50)
-  username          String         @unique @db.VarChar(50)
+  id                Int             @id @default(autoincrement())
+  email             String          @unique @db.VarChar(50)
+  username          String          @unique @db.VarChar(50)
   password          String
-  role              String         @db.VarChar(10)
-  is_premium        Boolean?       @default(false)
-  is_email_verified Boolean?       @default(false)
-  followers_count   Int?           @default(0)
-  following_count   Int?           @default(0)
-  bookmarks_count   Int?           @default(0)
-  posts_count       Int?           @default(0)
+  role              String          @db.VarChar(10)
+  is_premium        Boolean?        @default(false)
+  is_email_verified Boolean?        @default(false)
+  followers_count   Int?            @default(0)
+  following_count   Int?            @default(0)
+  bookmarks_count   Int?            @default(0)
+  posts_count       Int?            @default(0)
   profile           UserProfile?
   sessions          UserSession[]
   posts             Post[]
-  post_likes        PostLike[]     @relation("user_post_likes")
-  post_bookmarks    PostBookmark[] @relation("user_post_bookmarks")
-  following         UserFollow[]   @relation("user_follows_follower")
-  followers         UserFollow[]   @relation("user_follows_followee")
+  post_likes        PostLike[]      @relation("user_post_likes")
+  post_bookmarks    PostBookmark[]  @relation("user_post_bookmarks")
+  following         UserFollow[]    @relation("user_follows_follower")
+  followers         UserFollow[]    @relation("user_follows_followee")
   uploads           Upload[]
-  created_at        DateTime?      @default(now())
-  updated_at        DateTime?      @updatedAt
+  payments          Payment[]
+  payment_methods   PaymentMethod[]
+  created_at        DateTime?       @default(now())
+  updated_at        DateTime?       @updatedAt
 
   @@map("users")
 }
@@ -156,4 +158,52 @@ model EmailVerification {
   created_at DateTime? @default(now())
 
   @@map("email_verifications")
+}
+
+model Payment {
+  id                       Int            @id @default(autoincrement())
+  status                   PaymentStatus  @default(PENDING)
+  total                    Int
+  expiry                   DateTime?
+  refundable               Boolean?       @default(false)
+  stripe_payment_intent_id String?        @db.VarChar(40)
+  stripe_requires_action   Boolean?       @default(false)
+  stripe_receipt_url       String?
+  currency                 String?        @default("usd")
+  payment_method           PaymentMethod? @relation(fields: [payment_method_id], references: [id], onDelete: Cascade)
+  payment_method_id        Int?
+  user                     User?          @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user_id                  Int?
+  confirmed_at             DateTime?
+  canceled_at              DateTime?
+  created_at               DateTime?      @default(now())
+  updated_at               DateTime?      @updatedAt
+  deleted_at               DateTime?
+
+  @@map("payments")
+}
+
+model PaymentMethod {
+  id                       Int       @id @default(autoincrement())
+  paymentMethodId          String?
+  stripe_payment_method_id String?
+  label                    String?
+  last4                    String?
+  user                     User?     @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user_id                  Int?
+  payments                 Payment[]
+  created_at               DateTime? @default(now())
+  updated_at               DateTime? @updatedAt
+  deleted_at               DateTime?
+
+  @@map("payment_methods")
+}
+
+enum PaymentStatus {
+  PENDING
+  REQUIRES_ACTION
+  UNCAPTURED
+  CONFIRMED
+  CANCELED
+  REFUNDED
 }
