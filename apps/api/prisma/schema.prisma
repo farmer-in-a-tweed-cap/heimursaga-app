@@ -88,7 +88,6 @@ model UserFollow {
 
 model Post {
   id              Int            @id @default(autoincrement())
-  // @todo
   public_id       String?        @db.VarChar(14)
   title           String?        @db.VarChar(200)
   content         String         @db.Text
@@ -162,6 +161,7 @@ model EmailVerification {
 
 model Payment {
   id                       Int            @id @default(autoincrement())
+  public_id                String?        @db.VarChar(14)
   status                   PaymentStatus  @default(PENDING)
   total                    Int
   expiry                   DateTime?
@@ -185,7 +185,7 @@ model Payment {
 
 model PaymentMethod {
   id                       Int       @id @default(autoincrement())
-  paymentMethodId          String?
+  public_id                String?   @db.VarChar(14)
   stripe_payment_method_id String?
   label                    String?
   last4                    String?

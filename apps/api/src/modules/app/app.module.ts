@@ -5,6 +5,7 @@ import { AuthModule } from '@/modules/auth';
 import { EmailModule } from '@/modules/email';
 import { EventModule } from '@/modules/event';
 import { LoggerModule } from '@/modules/logger';
+import { PaymentModule } from '@/modules/payment';
 import { PostModule } from '@/modules/post';
 import { PrismaModule } from '@/modules/prisma';
 import { SearchModule } from '@/modules/search';
@@ -30,6 +31,7 @@ import { AppService } from './app.service';
     UploadModule,
     UserModule,
     SearchModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],
