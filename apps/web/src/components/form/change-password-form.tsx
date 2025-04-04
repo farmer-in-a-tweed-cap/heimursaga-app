@@ -98,7 +98,7 @@ export const ChangePasswordForm: React.FC<Props> = ({ token }) => {
           password,
         });
       } else {
-        toast({ message: 'token is invalid' });
+        toast({ type: 'error', message: 'token is invalid' });
       }
     },
   );

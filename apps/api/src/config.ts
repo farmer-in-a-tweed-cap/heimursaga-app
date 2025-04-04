@@ -3,4 +3,7 @@ export const config = {
     from: process.env.SMTP_EMAIL_FROM,
   },
   verification_request_limit: 5,
+  stripe: {
+    default_currency: 'usd',
+  },
 };

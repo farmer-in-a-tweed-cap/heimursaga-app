@@ -20,7 +20,6 @@ import { AppModule } from '@/modules/app';
 import { Logger } from '@/modules/logger';
 
 import { IRequest, IResponse } from './common/interfaces';
-import { generator } from './lib/generator';
 
 // build the app
 export async function app() {
@@ -92,7 +91,7 @@ export async function app() {
           method: RequestMethod.GET,
         },
         {
-          path: 'webhook/stripe',
+          path: 'stripe',
           method: RequestMethod.POST,
         },
       ],

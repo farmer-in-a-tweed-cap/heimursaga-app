@@ -6,13 +6,20 @@ import {
   ServiceForbiddenException,
 } from '@/common/exceptions';
 import { IRequest } from '@/common/interfaces';
+import { config } from '@/config';
 import { Logger } from '@/modules/logger';
+import { PrismaService } from '@/modules/prisma';
+
+import { IStripeCreatePaymentIntentPayload } from './stripe.interface';
 
 @Injectable()
 export class StripeService {
   public stripe: Stripe;
 
-  constructor(private logger: Logger) {
+  constructor(
+    private logger: Logger,
+    private prisma: PrismaService,
+  ) {
     const sk = process.env.STRIPE_SECRET_KEY;
 
     this.stripe = new Stripe(sk, {
@@ -43,15 +50,15 @@ export class StripeService {
     }
   }
 
-  async getOrCreateCustomer(options: {
+  async getOrCreateCustomer(payload: {
     email: string;
-    data: {
+    data?: {
       email: string;
       name: string;
     };
   }): Promise<Stripe.Customer> {
     try {
-      const { email, data } = options || {};
+      const { email, data } = payload || {};
 
       // check if the customer exists
       const customer = await this.stripe.customers
@@ -59,7 +66,7 @@ export class StripeService {
         .then(({ data }) => (data.length >= 1 ? data?.[0] : null))
         .catch(() => null);
 
-      if (!customer) {
+      if (!customer && data) {
         return this.stripe.customers.create(data);
       }
 
@@ -69,6 +76,66 @@ export class StripeService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('stripe customer not created');
+      throw exception;
+    }
+  }
+
+  async createPaymentIntent(
+    payload: IStripeCreatePaymentIntentPayload,
+  ): Promise<Stripe.PaymentIntent> {
+    try {
+      const { userId, amount } = payload;
+
+      if (!userId) throw new ServiceForbiddenException('customer not found');
+
+      const currency = config.stripe.default_currency;
+
+      // get the user
+      const user = await this.prisma.user.findFirst({
+        where: { id: userId },
+        select: {
+          email: true,
+          profile: {
+            select: {
+              first_name: true,
+              last_name: true,
+            },
+          },
+        },
+      });
+      if (!user) throw new ServiceForbiddenException('customer not found');
+
+      console.log({ user });
+
+      // get the customer
+      const customer = await this.getOrCreateCustomer({
+        email: user.email,
+        data: {
+          email: user.email,
+          name: [user.profile.last_name, user.profile.first_name].join(' '),
+        },
+      });
+      if (!customer) throw new ServiceForbiddenException('customer not found');
+
+      console.log({ customer });
+
+      // create a payment intent with the order amount and currency
+      const paymentIntent = await this.stripe.paymentIntents.create({
+        amount,
+        currency,
+        automatic_payment_methods: { enabled: false },
+        payment_method_types: ['card'],
+        customer: customer.id,
+      });
+
+      console.log({ paymentIntent });
+
+      return paymentIntent;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('payment intent not created');
       throw exception;
     }
   }
