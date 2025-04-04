@@ -65,14 +65,14 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
     setSettingsLoading(false);
     setPictureLoading(false);
     console.log('settings not update', e);
-    // toast({ message: 'settings updated' });
+    toast({ type: 'error', message: 'settings not updated' });
   };
 
   const settingsUpdateMutation = useMutation({
     mutationFn: updateUserProfileSettingsMutation.mutationFn,
     onSuccess: () => {
       setSettingsLoading(false);
-      toast({ message: 'settings updated' });
+      toast({ type: 'success', message: 'settings updated' });
       router.refresh();
     },
     onError,

@@ -47,7 +47,7 @@ export const ResetPasswordForm = () => {
   const mutation = useMutation({
     mutationFn: resetPasswordMutation.mutationFn,
     onSuccess: () => {
-      toast({ message: 'we sent you a link' });
+      toast({ type: 'success', message: 'we sent you a link' });
       setLoading(false);
     },
     onError: (e) => {

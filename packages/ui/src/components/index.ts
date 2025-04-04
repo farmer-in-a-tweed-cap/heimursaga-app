@@ -16,3 +16,4 @@ export * from './logo';
 export * from './spinner';
 export * from './dropdown-menu';
 export * from './separator';
+export * from './toast';

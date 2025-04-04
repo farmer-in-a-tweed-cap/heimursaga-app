@@ -9,3 +9,5 @@ export const MAP_DEFAULT_COORDINATES = {
 };
 
 export const DEBOUNCE_TIMEOUT = 250;
+
+export const TOAST_DURATION = 1500;

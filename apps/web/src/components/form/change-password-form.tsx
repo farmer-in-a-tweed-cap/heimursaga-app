@@ -59,7 +59,7 @@ export const ChangePasswordForm: React.FC<Props> = ({ token }) => {
   const mutation = useMutation({
     mutationFn: changePasswordMutation.mutationFn,
     onSuccess: () => {
-      toast({ message: 'password successfully changed' });
+      toast({ type: 'success', message: 'password successfully changed' });
 
       // redirect to the login page
       setTimeout(() => {
@@ -71,7 +71,7 @@ export const ChangePasswordForm: React.FC<Props> = ({ token }) => {
       const message = e?.message;
 
       if (message) {
-        toast({ message });
+        toast({ type: 'error', message });
       }
 
       setLoading(false);

@@ -1,15 +1,26 @@
 'use client';
 
+import { toast } from 'sonner';
+
 type ToastProps = {
-  message?: string;
+  type?: 'success' | 'message' | 'error';
+  message: string;
 };
 
-// @todo
 export const useToast = () => {
   return (props: ToastProps) => {
-    const { message } = props;
+    const { message, type = 'message' } = props;
 
-    // @ts-ignore
-    alert(message);
+    switch (type) {
+      case 'message':
+        toast.message(message);
+        break;
+      case 'success':
+        toast.success(message);
+        break;
+      default:
+        toast.message(message);
+        break;
+    }
   };
 };
