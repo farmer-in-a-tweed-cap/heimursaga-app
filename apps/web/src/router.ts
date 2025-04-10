@@ -11,6 +11,9 @@ export const ROUTER = {
     HOME: '/dashboard',
   },
   JOURNAL: '/journal',
+  BOOKMARKS: {
+    HOME: '/bookmarks',
+  },
   NOTIFICATIONS: '/notifications',
   USER: {
     PROFILE: '/user/profile',

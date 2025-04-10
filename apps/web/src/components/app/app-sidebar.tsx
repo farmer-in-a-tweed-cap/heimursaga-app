@@ -1,10 +1,10 @@
 'use client';
 
-import { ISessionUser } from '@repo/types';
 import { Button } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import {
   BellIcon,
+  BookmarkIcon,
   CogIcon,
   CompassIcon,
   HomeIcon,
@@ -30,6 +30,7 @@ const links: {
   { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
   { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
   { href: ROUTER.JOURNAL, label: 'Journal', icon: PenIcon },
+  { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
   { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
   { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
 ];
