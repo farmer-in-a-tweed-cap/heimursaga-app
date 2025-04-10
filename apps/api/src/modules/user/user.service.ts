@@ -48,7 +48,12 @@ export class UserService {
           id: true,
           username: true,
           profile: {
-            select: { first_name: true, last_name: true, picture: true },
+            select: {
+              first_name: true,
+              last_name: true,
+              picture: true,
+              bio: true,
+            },
           },
           followers: userId
             ? {
@@ -65,6 +70,7 @@ export class UserService {
         picture: user.profile.picture
           ? getUploadStaticUrl(user.profile.picture)
           : '',
+        bio: user.profile?.bio,
         firstName: user.profile.first_name,
         lastName: user.profile.last_name,
         memberDate: user.created_at,

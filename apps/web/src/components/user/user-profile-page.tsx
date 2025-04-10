@@ -1,5 +1,13 @@
 import { IUserProfileDetail } from '@repo/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Button,
+} from '@repo/ui/components';
+import Link from 'next/link';
+
+import { ROUTER } from '@/router';
 
 import { UserFollowButton } from './user-follow-button';
 import { UserPageSections } from './user-page-sections';
@@ -25,10 +33,14 @@ export const UserProfilePage: React.FC<Props> = ({ user, section }) => {
         </Avatar>
         <div className="mt-6 flex flex-col justify-center items-center gap-2">
           <span className="text-3xl font-semibold">{user?.firstName}</span>
-          <span className="text-sm">digital nomad</span>
+          <span className="text-sm">{user?.bio}</span>
         </div>
         {user?.you ? (
-          <></>
+          <div className="mt-6 flex flex-row gap-2">
+            <Button variant="outline" asChild>
+              <Link href={ROUTER.USER.SETTINGS.HOME}>Edit profile</Link>
+            </Button>
+          </div>
         ) : (
           <div className="mt-6 flex flex-row gap-2">
             <UserFollowButton

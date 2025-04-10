@@ -50,6 +50,7 @@ export interface IPasswordUpdatePayload {
 export interface IUserProfileDetail {
   username: string;
   picture: string;
+  bio?: string;
   firstName: string;
   lastName: string;
   memberDate?: Date;
