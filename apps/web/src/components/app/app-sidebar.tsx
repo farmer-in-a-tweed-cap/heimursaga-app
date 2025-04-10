@@ -20,24 +20,37 @@ import { CreatePostButton, UserNavbar } from '@/components';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
-const links: {
+type SidebarLink = {
   href: string;
   label: string;
   icon: ForwardRefExoticComponent<
     Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>
   >;
-}[] = [
-  { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
-  { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
-  { href: ROUTER.JOURNAL, label: 'Journal', icon: PenIcon },
-  { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
-  { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
-  { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
-];
+};
+
+const SIDEBAR_LINKS: {
+  guest: SidebarLink[];
+  user: SidebarLink[];
+} = {
+  guest: [
+    { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
+    { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
+  ],
+  user: [
+    { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
+    { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
+    { href: ROUTER.JOURNAL, label: 'Journal', icon: PenIcon },
+    { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
+    { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
+    { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
+  ],
+};
 
 export const AppSidebar = () => {
   const pathname = usePathname();
   const session = useSession();
+
+  const links = session ? SIDEBAR_LINKS.user : SIDEBAR_LINKS.guest;
 
   const isActiveLink = (path: string): boolean => {
     path = path.startsWith('/') ? path : `/${path}`;
