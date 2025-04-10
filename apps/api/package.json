@@ -4,6 +4,7 @@
   "description": "",
   "author": "",
   "private": true,
+  "main": "./dist/main.js",
   "scripts": {
     "build": "nest build --tsc",
     "postinstall": "npx prisma generate",
