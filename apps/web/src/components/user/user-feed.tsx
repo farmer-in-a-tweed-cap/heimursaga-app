@@ -7,19 +7,10 @@ import {
   TabsList,
   TabsTrigger,
 } from '@repo/ui/components';
-import {
-  useParams,
-  usePathname,
-  useRouter,
-  useSearchParams,
-} from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-import {
-  UserBookmarksFeed,
-  UserFollowingFeed,
-  UserPostsFeed,
-} from '@/components';
+import { UserFollowingFeed, UserPostsFeed } from '@/components';
 import { useSession } from '@/hooks';
 
 import { UserDraftsFeed } from './user-drafts-feed';
@@ -30,12 +21,12 @@ type Props = {
 };
 
 const tabs: Record<
-  'feed' | 'followers' | 'following' | 'bookmarks' | 'drafts',
+  'home' | 'followers' | 'following' | 'bookmarks' | 'drafts',
   { path: string; key: string }
 > = {
-  feed: {
+  home: {
     path: '',
-    key: 'posts',
+    key: 'home',
   },
   followers: {
     path: 'followers',
@@ -64,19 +55,19 @@ export const UserFeed: React.FC<Props> = ({ username }) => {
 
   const you = session?.username === username;
 
-  const defaultTab = searchParams.get('v') || tabs.feed.key;
+  const defaultTab = searchParams.get('v') || tabs.home.key;
 
   const [{ tab }, setState] = useState<{ tab: string }>({ tab: defaultTab });
 
   const tabsVisible = you
     ? [
-        tabs.feed.key,
+        tabs.home.key,
         tabs.followers.key,
         tabs.following.key,
-        tabs.bookmarks.key,
-        tabs.drafts.key,
+        // tabs.bookmarks.key,
+        // tabs.drafts.key,
       ]
-    : [tabs.feed.key, tabs.followers.key, tabs.following.key];
+    : [tabs.home.key, tabs.followers.key, tabs.following.key];
 
   const handleTabChange = (tab: string) => {
     const s = new URLSearchParams(searchParams.toString());
@@ -104,7 +95,7 @@ export const UserFeed: React.FC<Props> = ({ username }) => {
           ))}
         </Card>
       </TabsList>
-      <TabsContent value={tabs.feed.key}>
+      <TabsContent value={tabs.home.key}>
         <UserPostsFeed username={username} />
       </TabsContent>
       <TabsContent value={tabs.followers.key}>
@@ -113,12 +104,12 @@ export const UserFeed: React.FC<Props> = ({ username }) => {
       <TabsContent value={tabs.following.key}>
         <UserFollowingFeed username={username} />
       </TabsContent>
-      <TabsContent value={tabs.bookmarks.key}>
+      {/* <TabsContent value={tabs.bookmarks.key}>
         <UserBookmarksFeed />
-      </TabsContent>
-      <TabsContent value={tabs.drafts.key}>
+      </TabsContent> */}
+      {/* <TabsContent value={tabs.drafts.key}>
         <UserDraftsFeed />
-      </TabsContent>
+      </TabsContent> */}
     </Tabs>
   );
 };

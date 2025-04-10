@@ -27,7 +27,6 @@ export const ROUTER = {
     EDIT: (id: string) => `/posts/${id}/edit`,
   },
   MEMBERS: {
-    HOME: '/members',
-    MEMBER: (id: string) => `/members/${id}`,
+    MEMBER: (username: string) => `/${username}`,
   },
 };

@@ -13,3 +13,6 @@ export * from './user-settings';
 export * from './user-settings-profile-view';
 export * from './user-avatar-upload-picker';
 export * from './user-navbar';
+
+export * from './user-page-sections';
+export * from './user-profile-page';

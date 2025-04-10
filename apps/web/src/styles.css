@@ -25,10 +25,6 @@
     @apply w-full h-auto max-w-full px-4 flex flex-row box-border;
   }
 
-  .page-header-title {
-    @apply font-medium text-xl sm:text-2xl;
-  }
-
   .app-sidebar-link {
     @apply transition-all flex flex-row gap-4 items-center text-sm px-3 py-2 rounded-lg hover:bg-dark-hover;
 

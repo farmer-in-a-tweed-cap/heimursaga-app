@@ -62,11 +62,9 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
-          {/* <AppHeader /> */}
           <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
             {children}
           </div>
-          {/* <AppFooter /> */}
         </div>
       </div>
     </AuthLayout>

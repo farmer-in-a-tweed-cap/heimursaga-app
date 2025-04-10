@@ -1,6 +1,5 @@
 'use client';
 
-import { Card } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useContext } from 'react';
