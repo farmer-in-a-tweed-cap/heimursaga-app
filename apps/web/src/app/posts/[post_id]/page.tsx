@@ -1,4 +1,3 @@
-import { Button, Card, CardContent, CardHeader } from '@repo/ui/components';
 import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
@@ -14,7 +13,10 @@ export default async function Page({ params }: PageProps<{ post_id: string }>) {
 
   const { post_id: postId } = await params;
 
-  const postQuery = await apiClient.getPostById({ postId }, { cookie });
+  const postQuery = await apiClient.getPostById(
+    { query: { id: postId } },
+    { cookie },
+  );
 
   const {
     id,

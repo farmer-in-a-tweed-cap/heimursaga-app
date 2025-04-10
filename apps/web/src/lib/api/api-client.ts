@@ -1,26 +1,25 @@
 import {
-  ILoginQueryPayload,
-  IPasswordChangePayload,
+  ILoginPayload,
   IPasswordResetPayload,
+  IPasswordUpdatePayload,
   IPostCreatePayload,
   IPostCreateResponse,
   IPostDetail,
-  IPostFindByIdPayload,
   IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
   ISearchQueryPayload,
   ISearchQueryResponse,
-  ISessionUserQueryResponse,
-  ISignupQueryPayload,
+  ISessionUserGetResponse,
+  ISignupPayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
   IUserProfileDetail,
   IUserSettingsProfileResponse,
   IUserSettingsProfileUpdateQuery,
-  IUserUpdatePictureQuery,
-} from '@/types/api-types';
+} from '@repo/types';
 
 import {
   API_CONTENT_TYPES,
@@ -44,18 +43,27 @@ type RequestConfig = {
   cookie?: string;
 };
 
+export interface IApiClientQuery<Q = any> {
+  query: Q;
+}
+
+export interface IApiClientQueryWithPayload<Q = any, T = any> {
+  query: Q;
+  payload: T;
+}
+
 export const apiClient = {
   test: async () =>
     api.request<{ data: any[]; results: number }>(API_ROUTER.TEST),
-  login: async (body: ILoginQueryPayload) =>
+  login: async ({ payload }: IApiClientQueryWithPayload<{}, ILoginPayload>) =>
     api.request<void>(API_ROUTER.LOGIN, {
       method: API_METHODS.POST,
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     }),
-  signup: async (body: ISignupQueryPayload) =>
+  signup: async ({ payload }: IApiClientQueryWithPayload<{}, ISignupPayload>) =>
     api.request<void>(API_ROUTER.SIGNUP, {
       method: API_METHODS.POST,
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     }),
   logout: async ({ cookie }: RequestConfig) =>
     api.request<void>(API_ROUTER.LOGOUT, {
@@ -68,13 +76,15 @@ export const apiClient = {
       method: API_METHODS.POST,
       body: JSON.stringify(body),
     }),
-  changePassword: async (body: IPasswordChangePayload) =>
+  updatePassword: async ({
+    payload,
+  }: IApiClientQueryWithPayload<{}, IPasswordUpdatePayload>) =>
     api.request<void>(API_ROUTER.CHANGE_PASSWORD, {
       method: API_METHODS.POST,
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     }),
   getSession: async ({ cookie }: RequestConfig) =>
-    api.request<ISessionUserQueryResponse>(API_ROUTER.GET_SESSION_USER, {
+    api.request<ISessionUserGetResponse>(API_ROUTER.GET_SESSION_USER, {
       cookie,
     }),
   validateToken: async (token: string, config?: RequestConfig) =>
@@ -84,21 +94,25 @@ export const apiClient = {
   getPosts: async (query: any, config?: RequestConfig) =>
     api.request<IPostQueryResponse>(API_ROUTER.POSTS.QUERY, config),
   getPostById: async (
-    { postId }: IPostFindByIdPayload,
+    { query }: IApiClientQuery<{ id: string }>,
     { cookie }: RequestConfig,
-  ) => api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(postId), { cookie }),
+  ) =>
+    api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(query.id), { cookie }),
   createPost: async (body: IPostCreatePayload) =>
     api.request<IPostCreateResponse>(API_ROUTER.POSTS.CREATE, {
       method: API_METHODS.POST,
       body: JSON.stringify(body),
     }),
   updatePost: async (
-    { postId, data }: IPostUpdatePayload,
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<{ id: string }, IPostUpdatePayload>,
     config?: RequestConfig,
   ) =>
-    api.request<IPostUpdatePayload>(API_ROUTER.POSTS.UPDATE(postId), {
+    api.request<IPostUpdatePayload>(API_ROUTER.POSTS.UPDATE(query.id), {
       method: API_METHODS.PUT,
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,
     }),
   getUserByUsername: async (
@@ -211,7 +225,7 @@ export const apiClient = {
       cookie: config ? config.cookie : undefined,
     }),
   updateUserPicture: async (
-    payload: IUserUpdatePictureQuery,
+    payload: IUserPictureUploadClientPayload,
     config?: RequestConfig,
   ) => {
     const { file } = payload;

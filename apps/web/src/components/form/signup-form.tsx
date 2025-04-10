@@ -76,11 +76,11 @@ export const SignupForm = () => {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      firstName: 'jack',
-      lastName: 'nicholson',
-      username: 'jackyboy',
-      email: 'me@example.com',
-      password: '12345678',
+      firstName: '',
+      lastName: '',
+      username: '',
+      email: '',
+      password: '',
     },
   });
 

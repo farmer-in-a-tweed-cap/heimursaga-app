@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { IUserSettingsProfileResponse } from '@repo/types';
 import {
   Button,
   Form,
@@ -16,7 +17,7 @@ import { useToast } from '@repo/ui/hooks';
 import { cn } from '@repo/ui/lib/utils';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -25,9 +26,6 @@ import {
   updateUserProfileSettingsMutation,
 } from '@/lib/api';
 import { fieldmsg } from '@/lib/utils';
-
-import { MODALS } from '@/components';
-import { IUserProfileSettings } from '@/types';
 
 import { UserAvatarUploadPicker } from './user-avatar-upload-picker';
 
@@ -51,7 +49,7 @@ const schema = z.object({
 });
 
 type Props = {
-  data?: IUserProfileSettings;
+  data?: IUserSettingsProfileResponse;
 };
 
 export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
@@ -101,7 +99,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   const handleAvatarChange = (file: File) => {
     setPictureLoading(true);
 
-    pictureUpdateMutation.mutate({ file });
+    pictureUpdateMutation.mutate({ query: {}, payload: { file } });
   };
 
   const handleSubmit = form.handleSubmit(

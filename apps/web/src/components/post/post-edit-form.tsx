@@ -129,8 +129,8 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
     setVisibility((state) => ({ ...state, loading: true, public: checked }));
 
     mutation.mutate({
-      postId,
-      data: { public: checked },
+      query: { id: postId },
+      payload: { public: checked },
     });
   };
 
@@ -143,8 +143,8 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
       const { lat, lon } = location;
 
       mutation.mutate({
-        postId,
-        data: {
+        query: { id: postId },
+        payload: {
           ...values,
           lat,
           lon,

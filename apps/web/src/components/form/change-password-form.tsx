@@ -24,7 +24,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { changePasswordMutation } from '@/lib/api';
+import { updatePasswordMutation } from '@/lib/api';
 import { fieldmsg, redirect } from '@/lib/utils';
 
 import { ROUTER } from '@/router';
@@ -57,7 +57,7 @@ export const ChangePasswordForm: React.FC<Props> = ({ token }) => {
   const toast = useToast();
 
   const mutation = useMutation({
-    mutationFn: changePasswordMutation.mutationFn,
+    mutationFn: updatePasswordMutation.mutationFn,
     onSuccess: () => {
       toast({ type: 'success', message: 'password successfully changed' });
 

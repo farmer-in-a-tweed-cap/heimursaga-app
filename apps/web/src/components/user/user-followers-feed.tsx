@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { getUserFollowersQuery } from '@/lib/api';
 
-import { PostCard, UserCard } from '@/components';
+import { UserCard } from '@/components';
 import { ROUTER } from '@/router';
 
 type Props = {

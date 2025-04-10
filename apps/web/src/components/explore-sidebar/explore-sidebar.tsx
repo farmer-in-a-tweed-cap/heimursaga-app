@@ -1,8 +1,8 @@
 import { PostCard } from '../post';
-import { Card, Skeleton } from '@repo/ui/components';
+import { IPostDetail } from '@repo/types';
+import { Skeleton } from '@repo/ui/components';
 
 import { ROUTER } from '@/router';
-import { IPostDetail } from '@/types';
 
 export const ExploreSidebar = ({
   loading = false,

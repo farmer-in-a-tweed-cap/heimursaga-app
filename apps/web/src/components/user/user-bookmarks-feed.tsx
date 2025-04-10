@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { getUserBookmarks, getUserPostsQuery } from '@/lib/api';
+import { getUserBookmarks } from '@/lib/api';
 
 import { PostCard } from '@/components';
 

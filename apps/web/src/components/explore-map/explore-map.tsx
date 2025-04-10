@@ -1,11 +1,11 @@
 'use client';
 
-import { Button } from '@repo/ui/components';
+import { ISearchQueryResponse } from '@repo/types';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeftToLineIcon, ArrowRightToLineIcon } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
 import { QUERY_KEYS, searchQuery } from '@/lib/api';
@@ -16,9 +16,8 @@ import {
   MapOnLoadHandler,
   MapOnMoveHandler,
 } from '@/components';
-import { APP_HEADER_HEIGHT, MAP_DEFAULT_COORDINATES } from '@/constants';
+import { MAP_DEFAULT_COORDINATES } from '@/constants';
 import { useMapbox } from '@/hooks';
-import { ISearchQueryResponse } from '@/types';
 
 type Props = {
   className?: string;

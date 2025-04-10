@@ -1,7 +1,7 @@
 import {
-  ILoginQueryPayload,
-  IPasswordChangePayload,
+  ILoginPayload,
   IPasswordResetPayload,
+  IPasswordUpdatePayload,
   IPostCreatePayload,
   IPostCreateResponse,
   IPostQueryMapResponse,
@@ -9,16 +9,16 @@ import {
   IPostUpdatePayload,
   ISearchQueryPayload,
   ISearchQueryResponse,
-  ISignupQueryPayload,
+  ISignupPayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
   IUserSettingsProfileResponse,
   IUserSettingsProfileUpdateQuery,
-  IUserUpdatePictureQuery,
-} from '@/types/api-types';
+} from '@repo/types';
 
-import { apiClient } from './api-client';
+import { IApiClientQueryWithPayload, apiClient } from './api-client';
 
 export const QUERY_KEYS = {
   LOGIN: 'login',
@@ -51,19 +51,19 @@ const createMutation = <T = any, R = any>(
   return { mutationFn };
 };
 
-export const loginMutation = createMutation<ILoginQueryPayload, void>(
-  (payload) =>
-    apiClient.login(payload).then(({ success, message, data }) => {
-      if (!success) {
-        throw new Error(message);
-      }
-      return data;
-    }),
+export const loginMutation = createMutation<ILoginPayload, void>((payload) =>
+  apiClient.login({ query: {}, payload }).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data;
+  }),
 );
 
-export const signupMutation = createMutation<ISignupQueryPayload, void>(
-  (payload) =>
-    apiClient.signup(payload).then(({ success, message, data }) => {
+export const signupMutation = createMutation<ISignupPayload, void>((payload) =>
+  apiClient
+    .signup({ query: {}, payload })
+    .then(({ success, message, data }) => {
       if (!success) {
         throw new Error(message);
       }
@@ -83,19 +83,21 @@ export const resetPasswordMutation = createMutation<
   }),
 );
 
-export const changePasswordMutation = createMutation<
-  IPasswordChangePayload,
+export const updatePasswordMutation = createMutation<
+  IPasswordUpdatePayload,
   void
 >((payload) =>
-  apiClient.changePassword(payload).then(({ success, message, data }) => {
-    if (!success) {
-      throw new Error(message);
-    }
-    return data;
-  }),
+  apiClient
+    .updatePassword({ query: {}, payload })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data;
+    }),
 );
 
-export const getPostsQuery = createQuery<any, IPostQueryResponse>(
+export const getPostsQuery = createQuery<{}, IPostQueryResponse>(
   [QUERY_KEYS.GET_POSTS],
   (query) =>
     apiClient.getPosts(query).then(({ success, message, data }) => {
@@ -129,13 +131,15 @@ export const postCreateMutation = createMutation<
   }),
 );
 
-export const postUpdateMutation = createMutation<IPostUpdatePayload, void>(
-  (payload) =>
-    apiClient.updatePost(payload).then(({ success, message }) => {
-      if (!success) {
-        throw new Error(message);
-      }
-    }),
+export const postUpdateMutation = createMutation<
+  IApiClientQueryWithPayload<{ id: string }, IPostUpdatePayload>,
+  void
+>((query) =>
+  apiClient.updatePost(query).then(({ success, message }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+  }),
 );
 
 export const getUserPostsQuery = createQuery<
@@ -293,10 +297,10 @@ export const updateUserProfileSettingsMutation = createMutation<
 );
 
 export const updateUserPictureMutation = createMutation<
-  IUserUpdatePictureQuery,
+  IApiClientQueryWithPayload<{}, IUserPictureUploadClientPayload>,
   void
->((payload) =>
-  apiClient.updateUserPicture(payload).then(({ success, message, data }) => {
+>(({ payload }) =>
+  apiClient.updateUserPicture(payload).then(({ success, message }) => {
     if (!success) {
       throw new Error(message);
     }

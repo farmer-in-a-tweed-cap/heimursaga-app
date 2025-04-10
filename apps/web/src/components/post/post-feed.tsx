@@ -1,5 +1,6 @@
+import { IPostDetail } from '@repo/types';
+
 import { ROUTER } from '@/router';
-import { IPostDetail } from '@/types';
 
 import { PostCard } from './post-card';
 

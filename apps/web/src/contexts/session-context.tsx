@@ -1,8 +1,7 @@
 'use client';
 
+import { ISessionUser } from '@repo/types';
 import { ReactNode, createContext, useState } from 'react';
-
-import { ISessionUser } from '@/types';
 
 interface SessionContextType {
   session?: ISessionUser;

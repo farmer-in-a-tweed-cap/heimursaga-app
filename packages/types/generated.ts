@@ -1,5 +1,7 @@
+// api
+
 // session
-export interface ISessionUserGetResponse {
+export interface ISessionUser {
   role: string;
   username: string;
   email: string;
@@ -9,6 +11,8 @@ export interface ISessionUserGetResponse {
   isEmailVerified: boolean;
   isPremium: boolean;
 }
+
+export interface ISessionUserGetResponse extends ISessionUser {}
 
 // login
 export interface ILoginPayload {
@@ -113,6 +117,10 @@ export interface IUserPictureUploadPayload {
   file: { buffer: Buffer };
 }
 
+export interface IUserPictureUploadClientPayload {
+  file: File;
+}
+
 // payment method
 export interface IPaymentMethodCreatePayload {
   stripe_payment_method_id: string;
@@ -120,7 +128,8 @@ export interface IPaymentMethodCreatePayload {
 }
 
 // post
-export interface IPostDetailResponse {
+
+export interface IPostDetail {
   id: string;
   title: string;
   content?: string;
@@ -142,6 +151,13 @@ export interface IPostDetailResponse {
   };
 }
 
+export interface IPostQueryResponse {
+  data: IPostDetailResponse[];
+  results: number;
+}
+
+export interface IPostDetailResponse extends IPostDetail {}
+
 export interface IPostCreatePayload {
   title: string;
   content: string;
@@ -153,9 +169,19 @@ export interface IPostCreatePayload {
   date?: Date;
 }
 
+export interface IPostCreateResponse {
+  id: string;
+}
+
 export interface IPostUpdatePayload {
   title?: string;
   content?: string;
+  lat?: number;
+  lon?: number;
+  public?: boolean;
+  draft?: boolean;
+  place?: string;
+  date?: Date;
 }
 
 export interface IPostLikeResponse {
@@ -164,6 +190,19 @@ export interface IPostLikeResponse {
 
 export interface IPostBookmarkResponse {
   bookmarksCount: number;
+}
+
+export interface IPostQueryMapResponse {
+  results: number;
+  data: IPostDetailResponse[];
+  geojson?: {
+    type: 'FeatureCollection';
+    features: {
+      type: 'Feature';
+      properties: Record<string, string | number | boolean>[];
+      geometry: { type: 'Point'; coordinates: [number, number, number] };
+    };
+  };
 }
 
 // search
