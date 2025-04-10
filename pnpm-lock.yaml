@@ -59,6 +59,9 @@ importers:
       '@prisma/client':
         specifier: ^6.4.1
         version: 6.4.1(prisma@6.4.1)(typescript@5.5.4)
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -123,9 +126,6 @@ importers:
       '@nestjs/testing':
         specifier: ^10.0.0
         version: 10.0.0(@nestjs/common@10.0.0)(@nestjs/core@10.0.0)
-      '@repo/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@types/express':
         specifier: ^4.17.17
         version: 4.17.21
