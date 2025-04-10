@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { IPostCreatePayload, IPostUpdatePayload } from '@repo/types';
+import { IPostBookmarkResponse, IPostLikeResponse } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
@@ -10,19 +12,9 @@ import {
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
+import { IPayloadWithSession, IQueryWithSession } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
-
-import {
-  IPostBookmarkResponse,
-  IPostCreatePayload,
-  IPostDeletePayload,
-  IPostFindByIdPayload,
-  IPostLikePayload,
-  IPostLikeResponse,
-  IPostSearchPayload,
-  IPostUpdatePayload,
-} from './post.interface';
 
 @Injectable()
 export class PostService {
@@ -31,9 +23,10 @@ export class PostService {
     private prisma: PrismaService,
   ) {}
 
-  async search(payload: IPostSearchPayload) {
+  async search({ session }: IQueryWithSession) {
     try {
-      const { userId } = payload;
+      const { userId } = session;
+
       const where = {
         public_id: { not: null },
         public: true,
@@ -118,9 +111,10 @@ export class PostService {
     }
   }
 
-  async getById(payload: IPostFindByIdPayload) {
+  async getById({ query, session }: IQueryWithSession<{ publicId: string }>) {
     try {
-      const { publicId, userId } = payload;
+      const { publicId } = query;
+      const { userId } = session;
 
       // get the post
       const data = await this.prisma.post
@@ -199,16 +193,16 @@ export class PostService {
     }
   }
 
-  async create(payload: IPostCreatePayload) {
+  async create({ session, payload }: IPayloadWithSession<IPostCreatePayload>) {
     try {
-      const { userId, ...data } = payload;
+      const { userId } = session;
 
       const publicId = generator.publicId();
 
       // create a post
       const post = await this.prisma.post.create({
         data: {
-          ...data,
+          ...payload,
           public: true,
           draft: false,
           public_id: publicId,
@@ -231,9 +225,13 @@ export class PostService {
     }
   }
 
-  async update(payload: IPostUpdatePayload): Promise<void> {
+  async update(
+    { query, session }: IQueryWithSession<{ publicId: string }>,
+    payload: IPostUpdatePayload,
+  ): Promise<void> {
     try {
-      const { publicId, userId, ...data } = payload;
+      const { publicId } = query;
+      const { userId } = session;
 
       if (!publicId || !userId)
         throw new ServiceNotFoundException('post not found');
@@ -249,9 +247,9 @@ export class PostService {
         throw new ServiceForbiddenException('post can not be updated');
 
       // update the post
-      const post = await this.prisma.post.updateMany({
+      await this.prisma.post.updateMany({
         where: { public_id: publicId, author_id: userId },
-        data,
+        data: payload,
       });
     } catch (e) {
       this.logger.error(e);
@@ -262,9 +260,13 @@ export class PostService {
     }
   }
 
-  async delete(payload: IPostDeletePayload): Promise<void> {
+  async delete({
+    query,
+    session,
+  }: IQueryWithSession<{ publicId: string }>): Promise<void> {
     try {
-      const { publicId, userId } = payload;
+      const { publicId } = query;
+      const { userId } = session;
 
       if (!publicId || !userId)
         throw new ServiceNotFoundException('post not found');
@@ -280,7 +282,7 @@ export class PostService {
         throw new ServiceForbiddenException('post can not be deleted');
 
       // update the post
-      const post = await this.prisma.post.updateMany({
+      await this.prisma.post.updateMany({
         where: { public_id: publicId, author_id: userId, deleted_at: null },
         data: { deleted_at: dateformat().toDate() },
       });
@@ -293,9 +295,13 @@ export class PostService {
     }
   }
 
-  async like(payload: IPostLikePayload): Promise<IPostLikeResponse> {
+  async like({
+    query,
+    session,
+  }: IQueryWithSession<{ publicId: string }>): Promise<IPostLikeResponse> {
     try {
-      const { publicId, userId } = payload;
+      const { publicId } = query;
+      const { userId } = session;
 
       if (!publicId || !userId)
         throw new ServiceNotFoundException('post not found');
@@ -362,9 +368,13 @@ export class PostService {
     }
   }
 
-  async bookmark(payload: IPostLikePayload): Promise<IPostBookmarkResponse> {
+  async bookmark({
+    query,
+    session,
+  }: IQueryWithSession<{ publicId: string }>): Promise<IPostBookmarkResponse> {
     try {
-      const { publicId, userId } = payload;
+      const { publicId } = query;
+      const { userId } = session;
 
       if (!publicId || !userId)
         throw new ServiceNotFoundException('post not found');

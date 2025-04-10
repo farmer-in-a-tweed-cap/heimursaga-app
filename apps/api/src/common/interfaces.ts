@@ -20,3 +20,13 @@ export interface ISessionUser {
   userId: number;
   role: Role;
 }
+
+export interface IQueryWithSession<T = any> {
+  query: T;
+  session?: ISession;
+}
+
+export interface IPayloadWithSession<T = any> {
+  payload: T;
+  session?: ISession;
+}

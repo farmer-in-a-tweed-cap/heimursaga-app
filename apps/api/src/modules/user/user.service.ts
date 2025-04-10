@@ -1,5 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import {
+  IUserFollowersQueryResponse,
+  IUserFollowingQueryResponse,
+  IUserPictureUploadPayload,
+  IUserPostsQueryResponse,
+  IUserProfileDetail,
+  IUserSettingsProfileResponse,
+  IUserSettingsUpdateQuery,
+  MediaUploadContext,
+} from '@repo/types';
 
 import { getUploadStaticUrl } from '@/lib/upload';
 
@@ -9,19 +19,10 @@ import {
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
+import { IPayloadWithSession } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
-import { UploadContext, UploadService } from '@/modules/upload';
-
-import {
-  IUserFollowersQueryResponse,
-  IUserFollowingQueryResponse,
-  IUserPostsQueryResponse,
-  IUserProfileDetail,
-  IUserSettingsProfileResponse,
-  IUserSettingsUpdateQuery,
-  IUserUpdatePictureQuery,
-} from './user.interface';
+import { UploadService } from '@/modules/upload';
 
 @Injectable()
 export class UserService {
@@ -653,11 +654,13 @@ export class SessionUserService {
   }
 
   async updateSettings({
-    userId,
-    context,
-    profile,
-  }: IUserSettingsUpdateQuery): Promise<void> {
+    payload,
+    session,
+  }: IPayloadWithSession<IUserSettingsUpdateQuery>): Promise<void> {
     try {
+      const { userId } = session;
+      const { context, profile } = payload;
+
       if (!userId) throw new ServiceForbiddenException();
 
       // update settings based on context
@@ -691,23 +694,29 @@ export class SessionUserService {
   }
 
   async updatePicture({
-    userId,
-    file,
-  }: IUserUpdatePictureQuery): Promise<void> {
+    payload,
+    session,
+  }: IPayloadWithSession<IUserPictureUploadPayload>): Promise<void> {
     try {
+      const { userId } = session;
+
       if (!userId) throw new ServiceForbiddenException();
 
       // get user
       const user = await this.prisma.user
         .findFirstOrThrow({ where: { id: userId }, select: { username: true } })
-        .catch(() => null);
-      if (!user) throw new ServiceForbiddenException();
+        .catch(() => {
+          throw new ServiceForbiddenException();
+        });
 
       // upload picture
       const { thumbnail } = await this.uploadService.upload({
-        file,
-        context: UploadContext.USER,
-        user: { username: user.username },
+        payload: {
+          file: payload.file,
+          context: MediaUploadContext.USER,
+          thumbnail: true,
+        },
+        session,
       });
 
       // update user profile

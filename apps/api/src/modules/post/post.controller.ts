@@ -16,7 +16,7 @@ import { Public, Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
 import { IRequest, ISession } from '@/common/interfaces';
 
-import { PostCreatePayloadDto, PostUpdatePayloadDto } from './post.dto';
+import { PostCreateDto, PostUpdateDto } from './post.dto';
 import { PostService } from './post.service';
 
 @ApiTags('posts')
@@ -28,7 +28,7 @@ export class PostController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async search(@Session() session: ISession) {
-    return await this.postService.search({ userId: session?.userId });
+    return await this.postService.search({ query: {}, session });
   }
 
   @Public()
@@ -39,23 +39,18 @@ export class PostController {
     @Param() param: ParamPublicIdDto,
     @Session() session: ISession,
   ) {
-    const { id } = param;
-
     return await this.postService.getById({
-      publicId: id,
-      userId: session?.userId,
+      query: { publicId: param.id },
+      session,
     });
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(
-    @Body() body: PostCreatePayloadDto,
-    @Session() session: ISession,
-  ) {
+  async create(@Body() body: PostCreateDto, @Session() session: ISession) {
     return await this.postService.create({
-      ...body,
-      userId: session.userId,
+      payload: body,
+      session,
     });
   }
 
@@ -63,22 +58,24 @@ export class PostController {
   @HttpCode(HttpStatus.OK)
   async update(
     @Param() param: ParamPublicIdDto,
-    @Body() body: PostUpdatePayloadDto,
+    @Body() body: PostUpdateDto,
     @Session() session: ISession,
   ) {
-    return await this.postService.update({
-      ...body,
-      publicId: param.id,
-      userId: session.userId,
-    });
+    return await this.postService.update(
+      {
+        query: { publicId: param.id },
+        session,
+      },
+      body,
+    );
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async delete(@Param() param: ParamPublicIdDto, @Session() session: ISession) {
     return await this.postService.delete({
-      publicId: param.id,
-      userId: session.userId,
+      query: { publicId: param.id },
+      session,
     });
   }
 
@@ -86,8 +83,8 @@ export class PostController {
   @HttpCode(HttpStatus.OK)
   async like(@Param() param: ParamPublicIdDto, @Session() session: ISession) {
     return await this.postService.like({
-      publicId: param.id,
-      userId: session.userId,
+      query: { publicId: param.id },
+      session,
     });
   }
 
@@ -98,8 +95,8 @@ export class PostController {
     @Session() session: ISession,
   ) {
     return await this.postService.bookmark({
-      publicId: param.id,
-      userId: session.userId,
+      query: { publicId: param.id },
+      session,
     });
   }
 }

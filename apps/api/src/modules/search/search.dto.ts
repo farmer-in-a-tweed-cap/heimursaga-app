@@ -1,4 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  ISearchQueryLocation,
+  ISearchQueryLocationBound,
+  ISearchQueryLocationBounds,
+  ISearchQueryPayload,
+} from '@repo/types';
 import { Type } from 'class-transformer';
 import {
   IsNotEmpty,
@@ -8,14 +14,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import {
-  ISearchQueryLocation,
-  ISearchQueryLocationBound,
-  ISearchQueryLocationBounds,
-  ISearchQueryPayload,
-} from './search.interface';
-
-export class SearchQueryPayloadDto implements ISearchQueryPayload {
+export class SearchQueryDto implements ISearchQueryPayload {
   @ApiProperty({ required: false })
   @IsObject()
   @ValidateNested()

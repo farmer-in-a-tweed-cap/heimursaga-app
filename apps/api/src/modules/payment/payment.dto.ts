@@ -1,11 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IPaymentMethodCreatePayload } from '@repo/types';
 import { IsNotEmpty, IsString } from 'class-validator';
 
-import { IPaymentMethodCreatePayload } from './payment.interface';
-
-export class PaymentMethodCreatePayloadDto
-  implements IPaymentMethodCreatePayload
-{
+export class PaymentMethodCreateDto implements IPaymentMethodCreatePayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()

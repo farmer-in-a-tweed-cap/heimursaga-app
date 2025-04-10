@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IPostCreatePayload, IPostUpdatePayload } from '@repo/types';
 import {
   IsBoolean,
   IsDate,
@@ -8,9 +9,7 @@ import {
   IsString,
 } from 'class-validator';
 
-import { IPostCreatePayloadDto, IPostUpdatePayloadDto } from './post.interface';
-
-export class PostCreatePayloadDto implements IPostCreatePayloadDto {
+export class PostCreateDto implements IPostCreatePayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
@@ -52,7 +51,7 @@ export class PostCreatePayloadDto implements IPostCreatePayloadDto {
   date: Date;
 }
 
-export class PostUpdatePayloadDto implements IPostUpdatePayloadDto {
+export class PostUpdateDto implements IPostUpdatePayload {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()

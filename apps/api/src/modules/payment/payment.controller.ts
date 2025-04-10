@@ -14,7 +14,7 @@ import { Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import { PaymentMethodCreatePayloadDto } from './payment.dto';
+import { PaymentMethodCreateDto } from './payment.dto';
 import { PaymentService } from './payment.service';
 
 @ApiTags('payment-methods')
@@ -25,9 +25,7 @@ export class PaymentMethodController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async getPaymentMethods(@Session() session: ISession) {
-    return await this.paymentService.getPaymentMethods({
-      userId: session?.userId,
-    });
+    return await this.paymentService.getPaymentMethods({ query: {}, session });
   }
 
   @Get(':id')
@@ -37,23 +35,25 @@ export class PaymentMethodController {
     @Session() session: ISession,
   ) {
     return await this.paymentService.getPaymentMethodById({
-      publicId: param.id,
-      userId: session?.userId,
+      query: { publicId: param.id },
+      session,
     });
   }
 
+  // @todo
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createPaymentMethod(
-    @Body() body: PaymentMethodCreatePayloadDto,
+    @Body() body: PaymentMethodCreateDto,
     @Session() session: ISession,
   ) {
     return await this.paymentService.createPaymentMethod({
-      userId: session.userId,
-      data: body,
+      payload: body,
+      session,
     });
   }
 
+  // @todo
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async deletePaymentMethod(
@@ -61,8 +61,8 @@ export class PaymentMethodController {
     @Session() session: ISession,
   ) {
     return await this.paymentService.deletePaymentMethod({
-      publicId: param.id,
-      userId: session.userId,
+      query: { publicId: param.id },
+      session,
     });
   }
 }

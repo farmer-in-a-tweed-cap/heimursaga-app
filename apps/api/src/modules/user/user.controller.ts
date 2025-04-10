@@ -134,9 +134,11 @@ export class SessionUserController {
     @Session() session: ISession,
   ) {
     return await this.sessionUserService.updateSettings({
-      userId: session.userId,
-      context: 'profile',
-      profile: body,
+      payload: {
+        context: 'profile',
+        profile: body,
+      },
+      session,
     });
   }
 
@@ -155,8 +157,8 @@ export class SessionUserController {
     @Session() session: ISession,
   ) {
     return await this.sessionUserService.updatePicture({
-      userId: session.userId,
-      file,
+      payload: { file },
+      session,
     });
   }
 

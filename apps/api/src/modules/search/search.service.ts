@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { ISearchQueryPayload, ISearchQueryResponse } from '@repo/types';
 
 import { getUploadStaticUrl } from '@/lib/upload';
 
@@ -7,10 +8,9 @@ import {
   ServiceException,
   ServiceForbiddenException,
 } from '@/common/exceptions';
+import { IQueryWithSession } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
-
-import { ISearchQueryPayload, ISearchQueryResponse } from './search.interface';
 
 @Injectable()
 export class SearchService {
@@ -19,9 +19,13 @@ export class SearchService {
     private prisma: PrismaService,
   ) {}
 
-  async search(payload: ISearchQueryPayload) {
+  async search({
+    query,
+    session,
+  }: IQueryWithSession<ISearchQueryPayload>): Promise<ISearchQueryResponse> {
     try {
-      const { userId, location } = payload;
+      const { location } = query;
+      const { userId } = session;
 
       let where = {
         public_id: { not: null },
@@ -43,7 +47,6 @@ export class SearchService {
       } as Prisma.PostSelect;
 
       const take = 50;
-      const page = 1;
 
       if (location) {
         const { sw, ne } = location.bounds;
@@ -127,13 +130,11 @@ export class SearchService {
         })),
       };
 
-      const response: ISearchQueryResponse = {
+      return {
         results,
         data,
         geojson,
       };
-
-      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status

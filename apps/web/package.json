@@ -29,6 +29,7 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/tsconfig": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@repo/types": "workspace:*",
     "@types/geojson": "^7946.0.16",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",

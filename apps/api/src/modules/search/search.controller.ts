@@ -4,7 +4,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Public, Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
 
-import { SearchQueryPayloadDto } from './search.dto';
+import { SearchQueryDto } from './search.dto';
 import { SearchService } from './search.service';
 
 @ApiTags('search')
@@ -15,13 +15,10 @@ export class SearchController {
   @Public()
   @Post()
   @HttpCode(HttpStatus.OK)
-  async search(
-    @Body() body: SearchQueryPayloadDto,
-    @Session() session: ISession,
-  ) {
+  async search(@Body() body: SearchQueryDto, @Session() session: ISession) {
     return await this.searchService.search({
-      ...body,
-      userId: session?.userId,
+      query: body,
+      session,
     });
   }
 }

@@ -1,7 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { IUserSettingsProfileUpdateQuery } from '@repo/types';
 import { IsOptional, IsString } from 'class-validator';
-
-import { IUserSettingsProfileUpdateQuery } from './user.interface';
 
 export class UserSettingsProfileUpdateDto
   implements IUserSettingsProfileUpdateQuery

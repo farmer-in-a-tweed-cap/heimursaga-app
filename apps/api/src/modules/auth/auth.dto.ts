@@ -1,14 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
+import {
+  ILoginPayload,
+  IPasswordResetPayload,
+  IPasswordUpdatePayload,
+  ISignupPayload,
+} from '@repo/types';
 import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
-import {
-  ILoginQueryPayloadDto,
-  IPasswordChangePayload,
-  IPasswordResetPayload,
-  ISignupQueryPayloadDto,
-} from './auth.interface';
-
-export class LoginPayloadDto implements ILoginQueryPayloadDto {
+export class LoginDto implements ILoginPayload {
   @ApiProperty({ required: false })
   @IsEmail()
   @IsNotEmpty()
@@ -21,7 +20,7 @@ export class LoginPayloadDto implements ILoginQueryPayloadDto {
   password: string;
 }
 
-export class SignupPayloadDto implements ISignupQueryPayloadDto {
+export class SignupDto implements ISignupPayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsEmail()
@@ -56,7 +55,7 @@ export class PasswordResetDto implements IPasswordResetPayload {
   email: string;
 }
 
-export class PasswordChangeDto implements IPasswordChangePayload {
+export class PasswordUpdateDto implements IPasswordUpdatePayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()

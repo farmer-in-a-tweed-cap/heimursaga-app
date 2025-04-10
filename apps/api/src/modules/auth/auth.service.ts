@@ -1,4 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import {
+  ILoginPayload,
+  ILoginResponse,
+  IPasswordResetPayload,
+  IPasswordUpdatePayload,
+  ISessionUserGetResponse,
+  ISignupPayload,
+} from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
@@ -14,22 +22,14 @@ import {
   ServiceNotFoundException,
   ServiceUnauthorizedException,
 } from '@/common/exceptions';
-import { ISession } from '@/common/interfaces';
+import { IPayloadWithSession, ISession } from '@/common/interfaces';
 import { config } from '@/config';
 import { IPasswordResetEmailTemplateData } from '@/modules/email';
 import { EVENTS, EventService, IEmailSendEvent } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
-import {
-  ILoginQueryPayload,
-  ILoginQueryResponse,
-  IPasswordChangePayload,
-  IPasswordResetPayload,
-  ISessionCreatePayload,
-  ISessionUserQueryResponse,
-  ISignupQueryPayload,
-} from './auth.interface';
+import { ISessionCreateOptions } from './auth.interface';
 
 @Injectable()
 export class AuthService {
@@ -39,7 +39,7 @@ export class AuthService {
     private eventService: EventService,
   ) {}
 
-  async getSessionUser(payload: ISession): Promise<ISessionUserQueryResponse> {
+  async getSessionUser(payload: ISession): Promise<ISessionUserGetResponse> {
     try {
       const { userId } = payload;
       if (!userId) throw new ServiceNotFoundException('user not found');
@@ -80,7 +80,7 @@ export class AuthService {
         picture,
       } = user?.profile || {};
 
-      const response: ISessionUserQueryResponse = {
+      return {
         email,
         username,
         role,
@@ -90,8 +90,6 @@ export class AuthService {
         isEmailVerified,
         isPremium,
       };
-
-      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -101,9 +99,12 @@ export class AuthService {
     }
   }
 
-  async login(payload: ILoginQueryPayload): Promise<ILoginQueryResponse> {
+  async login({
+    payload,
+    session,
+  }: IPayloadWithSession<ILoginPayload>): Promise<ILoginResponse> {
     try {
-      const { email, session } = payload;
+      const { email } = payload;
       const { sid, ip, userAgent } = session || {};
 
       const password = hashPassword(payload.password);
@@ -132,21 +133,19 @@ export class AuthService {
       // @todo
       // trigger the login event
 
-      const response: ILoginQueryResponse = {
+      return {
         session: userSession,
       };
-
-      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('log in failed');
+        : new ServiceForbiddenException('login failed');
       throw exception;
     }
   }
 
-  async signup(payload: ISignupQueryPayload): Promise<void> {
+  async signup(payload: ISignupPayload): Promise<void> {
     try {
       const { firstName, lastName } = payload;
 
@@ -172,7 +171,7 @@ export class AuthService {
         throw new ServiceForbiddenException('username already in use');
 
       // create a user
-      const user = await this.prisma.user.create({
+      await this.prisma.user.create({
         data: {
           email,
           username,
@@ -209,7 +208,7 @@ export class AuthService {
           where: { sid },
           data: { expired: true, expires_at: dateformat().toDate() },
         })
-        .catch((e) => {
+        .catch(() => {
           throw new ServiceForbiddenException('session not found');
         });
     } catch (e) {
@@ -221,9 +220,9 @@ export class AuthService {
     }
   }
 
-  async createSession(payload: ISessionCreatePayload) {
+  async createSession(options: ISessionCreateOptions) {
     try {
-      const { ip, userAgent, userId, sid } = payload || {};
+      const { ip, userAgent, userId, sid } = options || {};
 
       // validate the session
       const session = await this.validateSession({ sid });
@@ -368,7 +367,7 @@ export class AuthService {
     }
   }
 
-  async changePassword(payload: IPasswordChangePayload): Promise<void> {
+  async updatePassword(payload: IPasswordUpdatePayload): Promise<void> {
     try {
       const { password, token } = payload || {};
 

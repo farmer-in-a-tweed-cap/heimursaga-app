@@ -1,24 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
-import { dateformat } from '@/lib/date-format';
-import { generator } from '@/lib/generator';
-import { getUploadStaticUrl } from '@/lib/upload';
-
 import {
   ServiceException,
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
+import { IPayloadWithSession, IQueryWithSession } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
-
-import {
-  IPaymentMethodCreateOptions,
-  IPaymentMethodDeleteOptions,
-  IPaymentMethodGetByIdOptions,
-  IPaymentMethodQueryOptions,
-} from './payment.interface';
 
 @Injectable()
 export class PaymentService {
@@ -27,9 +17,9 @@ export class PaymentService {
     private prisma: PrismaService,
   ) {}
 
-  async getPaymentMethods(query: IPaymentMethodQueryOptions) {
+  async getPaymentMethods({ session }: IQueryWithSession) {
     try {
-      const { userId } = query;
+      const { userId } = session;
 
       if (!userId) throw new ServiceForbiddenException();
 
@@ -64,47 +54,47 @@ export class PaymentService {
     }
   }
 
-  async getPaymentMethodById(query: IPaymentMethodGetByIdOptions) {
+  async getPaymentMethodById({
+    query,
+    session,
+  }: IQueryWithSession<{ publicId: string }>) {
     try {
-      const { userId } = query;
+      const { publicId } = query;
+      const { userId } = session;
 
+      if (!publicId)
+        return new ServiceNotFoundException('payment method not found');
       if (!userId) throw new ServiceForbiddenException();
 
-      const where = {
-        public_id: { not: null },
-        deleted_at: null,
-        user_id: userId,
-      } as Prisma.PaymentMethodWhereInput;
-
-      const take = 20;
-
-      // search payment methods
-      const results = await this.prisma.paymentMethod.count({ where });
-      const data = await this.prisma.paymentMethod.findMany({
-        where,
+      // get the payment method
+      const result = await this.prisma.paymentMethod.findFirstOrThrow({
+        where: {
+          public_id: publicId,
+          deleted_at: null,
+          user_id: userId,
+        },
         select: {
           public_id: true,
           label: true,
           last4: true,
         },
-        take,
         orderBy: [{ id: 'desc' }],
       });
 
-      return { results, data };
+      return result;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payment methods not found');
+        : new ServiceForbiddenException('payment method not found');
       throw exception;
     }
   }
 
   // @todo
-  async createPaymentMethod(payload: IPaymentMethodCreateOptions) {
+  async createPaymentMethod({ session }: IPayloadWithSession) {
     try {
-      const { userId } = payload;
+      const { userId } = session;
 
       if (!userId) throw new ServiceForbiddenException();
     } catch (e) {
@@ -117,9 +107,11 @@ export class PaymentService {
   }
 
   // @todo
-  async deletePaymentMethod(payload: IPaymentMethodDeleteOptions) {
+  async deletePaymentMethod({
+    session,
+  }: IQueryWithSession<{ publicId: string }>) {
     try {
-      const { userId } = payload;
+      const { userId } = session;
 
       if (!userId) throw new ServiceForbiddenException();
     } catch (e) {

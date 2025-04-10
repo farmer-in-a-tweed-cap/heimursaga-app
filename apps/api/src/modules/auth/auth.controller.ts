@@ -6,7 +6,6 @@ import {
   HttpStatus,
   Param,
   Post,
-  Query,
   Req,
   Res,
 } from '@nestjs/common';
@@ -17,10 +16,10 @@ import { Public, Session } from '@/common/decorators';
 import { IRequest, IResponse, ISession } from '@/common/interfaces';
 
 import {
-  LoginPayloadDto,
-  PasswordChangeDto,
+  LoginDto,
   PasswordResetDto,
-  SignupPayloadDto,
+  PasswordUpdateDto,
+  SignupDto,
 } from './auth.dto';
 import { AuthService } from './auth.service';
 
@@ -41,11 +40,11 @@ export class AuthController {
   async login(
     @Req() req: IRequest,
     @Res() res: IResponse,
-    @Body() body: LoginPayloadDto,
+    @Body() body: LoginDto,
     @Session() session: ISession,
   ) {
     const user = await this.authService.login({
-      ...body,
+      payload: body,
       session,
     });
 
@@ -56,7 +55,7 @@ export class AuthController {
   @Public()
   @Post('signup')
   @HttpCode(HttpStatus.OK)
-  async signup(@Body() body: SignupPayloadDto) {
+  async signup(@Body() body: SignupDto) {
     return this.authService.signup({
       ...body,
     });
@@ -88,8 +87,8 @@ export class AuthController {
   @Public()
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
-  async changePassword(@Body() body: PasswordChangeDto) {
-    return this.authService.changePassword(body);
+  async updatePassword(@Body() body: PasswordUpdateDto) {
+    return this.authService.updatePassword(body);
   }
 
   @Public()

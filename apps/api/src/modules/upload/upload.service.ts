@@ -1,19 +1,24 @@
 import { PutObjectCommand, S3 } from '@aws-sdk/client-s3';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  IMediaUploadPayload,
+  IMediaUploadResponse,
+  MediaUploadContext,
+} from '@repo/types';
 import * as crypto from 'node:crypto';
 import * as sharp from 'sharp';
 
 import { UploadedFileType } from '@/common/enums';
 import {
-  ServiceBadRequestException,
   ServiceException,
+  ServiceForbiddenException,
 } from '@/common/exceptions';
+import { IPayloadWithSession } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
-import { UPLOAD_BUCKETS, UploadContext } from './upload.enum';
-import { IUploadMediaPayload, IUploadMediaResponse } from './upload.interface';
+import { UPLOAD_BUCKETS } from './upload.enum';
 
 @Injectable()
 export class UploadService {
@@ -38,32 +43,51 @@ export class UploadService {
     });
   }
 
-  async upload(payload: IUploadMediaPayload): Promise<IUploadMediaResponse> {
+  async upload({
+    payload,
+    session,
+  }: IPayloadWithSession<IMediaUploadPayload>): Promise<IMediaUploadResponse> {
     try {
       const {
         context,
         thumbnail = true,
         file: { buffer },
-        user,
       } = payload;
+      const { userId } = session;
 
       let bucket;
+      let username: string = '';
+      let userRequired = false;
 
       // define bucket based on context
       switch (context) {
-        case UploadContext.UPLOAD:
+        case MediaUploadContext.UPLOAD:
           bucket = UPLOAD_BUCKETS.UPLOAD;
           break;
-        case UploadContext.USER:
-          if (!user?.username)
-            throw new ServiceBadRequestException(
-              'upload failed, user id required',
-            );
+        case MediaUploadContext.USER:
           bucket = UPLOAD_BUCKETS.USER;
+          userRequired = true;
           break;
         default:
           bucket = UPLOAD_BUCKETS.UPLOAD;
           break;
+      }
+
+      // check if the user is logged in
+      if (userRequired) {
+        if (!userId) throw new ServiceForbiddenException();
+
+        await this.prisma.user
+          .findFirstOrThrow({
+            where: { id: userId },
+            select: { id: true, username: true },
+          })
+          .then((user) => {
+            username = user.username;
+          })
+          .catch(() => {
+            throw new ServiceForbiddenException();
+          });
       }
 
       // generate metadata
@@ -134,12 +158,10 @@ export class UploadService {
         });
 
       // return original and thumbnail files
-      const response: IUploadMediaResponse = {
+      return {
         original: paths.original,
         thumbnail: paths.thumbnail,
       };
-
-      return response;
     } catch (e) {
       this.logger.error(e);
 

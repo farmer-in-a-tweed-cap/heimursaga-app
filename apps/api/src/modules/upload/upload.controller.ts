@@ -8,12 +8,12 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { MediaUploadContext } from '@repo/types';
 
 import { Public } from '@/common/decorators';
 import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
 
-import { UploadContext } from './upload.enum';
 import { IUploadedFile } from './upload.interface';
 import { UploadService } from './upload.service';
 
@@ -38,9 +38,11 @@ export class UploadController {
     @Session() session: ISession,
   ) {
     return this.uploadService.upload({
-      file,
-      context: UploadContext.UPLOAD,
-      user: { id: session?.userId },
+      payload: {
+        file: { buffer: file.buffer },
+        context: MediaUploadContext.UPLOAD,
+      },
+      session,
     });
   }
 }
