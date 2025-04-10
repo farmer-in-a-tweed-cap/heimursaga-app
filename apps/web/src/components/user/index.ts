@@ -12,3 +12,4 @@ export * from './user-settings';
 
 export * from './user-settings-profile-view';
 export * from './user-avatar-upload-picker';
+export * from './user-navbar';

@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ForwardRefExoticComponent, RefAttributes } from 'react';
 
+import { CreatePostButton, UserNavbar } from '@/components';
 import { ROUTER } from '@/router';
 
 const links: {
@@ -52,20 +53,26 @@ export const AppSidebar = () => {
               </div>
             </Link>
           </div>
-          <div className="mt-10 flex flex-col box-border px-3 py-6 gap-2">
-            {links.map(({ href, label, icon: Icon }, key) => (
-              <Link
-                key={key}
-                href={href}
-                className={cn(
-                  'app-sidebar-link',
-                  isActiveLink(href) ? 'app-sidebar-link-active' : '',
-                )}
-              >
-                <Icon size={18} className="app-sidebar-link-icon" />
-                {label}
-              </Link>
-            ))}
+          <div className="mt-10 w-full h-full flex flex-col justify-between box-border px-3 py-6">
+            <div className="flex flex-col gap-2">
+              {links.map(({ href, label, icon: Icon }, key) => (
+                <Link
+                  key={key}
+                  href={href}
+                  className={cn(
+                    'app-sidebar-link',
+                    isActiveLink(href) ? 'app-sidebar-link-active' : '',
+                  )}
+                >
+                  <Icon size={18} className="app-sidebar-link-icon" />
+                  {label}
+                </Link>
+              ))}
+            </div>
+            <div className="w-full flex flex-col gap-8">
+              {/* <CreatePostButton className="w-full" /> */}
+              <UserNavbar />
+            </div>
           </div>
         </div>
       </div>

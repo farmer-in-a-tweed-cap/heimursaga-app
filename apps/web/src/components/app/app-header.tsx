@@ -3,8 +3,6 @@ import Link from 'next/link';
 
 import { ROUTER } from '@/router';
 
-import { UserNavbar } from './user-navbar';
-
 const data = {
   menu: [
     { href: ROUTER.EXPLORE.HOME, label: 'Explore' },
@@ -36,7 +34,7 @@ export const AppHeader = () => {
               ))}
             </div> */}
           </nav>
-          <UserNavbar />
+          {/* <UserNavbar /> */}
         </div>
       </div>
     </div>

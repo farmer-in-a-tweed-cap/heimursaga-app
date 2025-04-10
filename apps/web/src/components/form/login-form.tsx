@@ -77,8 +77,8 @@ export const LoginForm = ({}) => {
     <div className={cn('flex flex-col gap-6')}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Welcome back.</CardTitle>
-          <CardDescription>Log in and start exploring.</CardDescription>
+          <h2 className="text-2xl font-bold">Welcome back.</h2>
+          <span className="text-sm">Log in and start exploring.</span>
         </CardHeader>
         <CardContent>
           <Form {...form}>

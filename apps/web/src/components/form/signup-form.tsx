@@ -96,8 +96,8 @@ export const SignupForm = () => {
     <div className={cn('flex flex-col gap-6')}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Sign up.</CardTitle>
-          <CardDescription>Create your free account today.</CardDescription>
+          <h2 className="text-2xl font-bold">Welcome back.</h2>
+          <span className="text-sm">Create your free account today.</span>
         </CardHeader>
         <CardContent>
           <Form {...form}>

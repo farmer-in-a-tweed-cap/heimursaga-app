@@ -62,7 +62,7 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
-          <AppHeader />
+          {/* <AppHeader /> */}
           <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
             {children}
           </div>
@@ -79,9 +79,9 @@ export const AppMapLayout = ({ children }: { children: React.ReactNode }) => {
       <div className="w-full bg-[#EFEFEC] text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
-          <div className={cn('z-20 absolute top-0 left-0 right-0 h-[64px]')}>
+          {/* <div className={cn('z-20 absolute top-0 left-0 right-0 h-[64px]')}>
             <AppHeader />
-          </div>
+          </div> */}
           <div className={cn('app-content-full-container')}>{children}</div>
           {/* <AppFooter /> */}
         </div>
@@ -98,7 +98,7 @@ export const AppLayoutWithoutSidebar = ({
   return (
     <AuthLayout>
       <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
-        <AppHeader />
+        {/* <AppHeader /> */}
         <div className="w-full h-auto min-h-screen flex flex-col py-6 items-center justify-start">
           {children}
         </div>

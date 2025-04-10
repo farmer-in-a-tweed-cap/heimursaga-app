@@ -15,9 +15,10 @@
   }
 
   .app-content-full-container {
-    @apply w-full relative;
-    height: calc(100vh - var(--app-header-height));
-    margin-top: var(--app-header-height);
+    @apply w-full h-screen relative;
+
+    /* height: calc(100vh - var(--app-header-height)); */
+    /* margin-top: var(--app-header-height); */
   }
 
   .app-container {
@@ -29,7 +30,7 @@
   }
 
   .app-sidebar-link {
-    @apply transition-all flex flex-row gap-4 items-center text-sm px-3 py-2 rounded-full hover:bg-dark-hover;
+    @apply transition-all flex flex-row gap-4 items-center text-sm px-3 py-2 rounded-lg hover:bg-dark-hover;
 
     &:hover {
       @apply text-white;

@@ -27,10 +27,6 @@ export const UserNavbar = () => {
     },
   });
 
-  const handleCreatePostClick = () => {
-    redirect(ROUTER.POSTS.CREATE);
-  };
-
   const handleLogout = () => {
     logoutMutation.mutate();
   };
@@ -39,13 +35,6 @@ export const UserNavbar = () => {
 
   return session ? (
     <div className="flex flex-row items-center gap-10">
-      <Button
-        className="hidden lg:flex"
-        size="sm"
-        onClick={handleCreatePostClick}
-      >
-        Create post
-      </Button>
       <div className="flex flex-row items-center gap-2">
         <Dropdown
           trigger={

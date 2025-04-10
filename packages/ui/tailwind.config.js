@@ -33,6 +33,11 @@ module.exports = {
         },
         background: {
           DEFAULT: 'var(--background)',
+          foreground: 'var(--background-foreground)',
+        },
+        popover: {
+          DEFAULT: 'var(--popover)',
+          foreground: 'var(--popover-foreground)',
         },
       },
       fontSize: {
