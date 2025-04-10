@@ -6,8 +6,9 @@
   :root {
     --primary: #aa6c46;
     --primary-foreground: #ffffff;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
+    --secondary: #ffffff;
+    --secondary-hover: #f7f7f7;
+    --secondary-foreground: #000000;
     --dark: #252525;
     --dark-foreground: #a3a3a3;
     --dark-hover: #2f2f2f;

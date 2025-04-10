@@ -1,6 +1,7 @@
 'use client';
 
 import { Button, ButtonProps } from '@repo/ui/components';
+import { PenIcon, SquarePenIcon } from 'lucide-react';
 
 import { redirect } from '@/lib/utils';
 
@@ -16,6 +17,7 @@ export const CreatePostButton: React.FC<ButtonProps> = ({
 
   return (
     <Button onClick={handleClick} {...props}>
+      <SquarePenIcon width={16} />
       {children ? children : 'Create post'}
     </Button>
   );

@@ -17,6 +17,7 @@ module.exports = {
         },
         secondary: {
           DEFAULT: 'var(--secondary)',
+          hover: 'var(--secondary-hover)',
           foreground: 'var(--secondary-foreground)',
         },
         dark: {

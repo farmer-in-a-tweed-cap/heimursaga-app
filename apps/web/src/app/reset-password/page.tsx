@@ -1,10 +1,11 @@
 import { LogoBrandDark } from '@repo/ui/components';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { apiClient } from '@/lib/api';
 
 import { ChangePasswordForm, ResetPasswordForm } from '@/components';
-import { AppLayout } from '@/layouts';
+import { AppLayout, AuthLayout } from '@/layouts';
 import { ROUTER } from '@/router';
 
 export default async function Page({
@@ -27,11 +28,13 @@ export default async function Page({
   }
 
   return (
-    <AppLayout>
+    <AuthLayout>
       <div className="flex min-h-screen w-full justify-center p-6 md:p-8">
         <div className="w-full max-w-md flex flex-col justify-start items-center gap-6">
           <div className="w-full max-w-[140px]">
-            <LogoBrandDark />
+            <Link href={ROUTER.HOME}>
+              <LogoBrandDark />
+            </Link>
           </div>
           <div className="w-full">
             {token ? (
@@ -42,6 +45,6 @@ export default async function Page({
           </div>
         </div>
       </div>
-    </AppLayout>
+    </AuthLayout>
   );
 }

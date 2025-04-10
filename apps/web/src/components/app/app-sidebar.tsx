@@ -1,5 +1,7 @@
 'use client';
 
+import { ISessionUser } from '@repo/types';
+import { Button } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import {
   BellIcon,
@@ -15,6 +17,7 @@ import { usePathname } from 'next/navigation';
 import { ForwardRefExoticComponent, RefAttributes } from 'react';
 
 import { CreatePostButton, UserNavbar } from '@/components';
+import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
 const links: {
@@ -33,12 +36,11 @@ const links: {
 
 export const AppSidebar = () => {
   const pathname = usePathname();
+  const session = useSession();
 
   const isActiveLink = (path: string): boolean => {
     path = path.startsWith('/') ? path : `/${path}`;
-
     const active = path === '/' ? pathname === path : pathname.startsWith(path);
-
     return active;
   };
 
@@ -71,9 +73,19 @@ export const AppSidebar = () => {
                 </Link>
               ))}
             </div>
-            <div className="w-full flex flex-col gap-8">
-              <UserNavbar />
-            </div>
+
+            {session ? (
+              <div className="w-full flex flex-col gap-8">
+                <CreatePostButton variant="secondary">Create</CreatePostButton>
+                <UserNavbar />
+              </div>
+            ) : (
+              <div className="w-full flex flex-col gap-8">
+                <Button variant="secondary" asChild>
+                  <Link href={ROUTER.LOGIN}>Log in</Link>
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>

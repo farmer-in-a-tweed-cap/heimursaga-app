@@ -45,9 +45,7 @@ export const UserNavbar = () => {
             <AvatarImage src={picture} alt="avatar" />
           </Avatar>
           <div className="hidden lg:flex flex-col items-start text-sm">
-            <span className="font-semibold text-sm text-white">
-              {firstName}
-            </span>
+            <span className="font-medium text-sm text-white">{firstName}</span>
             <span className="font-normal text-xs">Member</span>
           </div>
         </div>

@@ -47,7 +47,7 @@ export default async function RootLayout({ children }: Props) {
   );
 }
 
-export const AuthLayout = async ({ children }: Props) => {
+export const SecureLayout = async ({ children }: Props) => {
   const cookie = cookies().toString();
   const sessionQuery = await apiClient.getSession({ cookie });
 
@@ -58,7 +58,7 @@ export const AuthLayout = async ({ children }: Props) => {
 
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <AuthLayout>
+    <SecureLayout>
       <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
@@ -67,13 +67,27 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
         </div>
       </div>
-    </AuthLayout>
+    </SecureLayout>
+  );
+};
+
+export const AuthLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <SecureLayout>
+      <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-row">
+        <div className="relative w-full flex flex-col justify-start">
+          <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+            {children}
+          </div>
+        </div>
+      </div>
+    </SecureLayout>
   );
 };
 
 export const AppMapLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <AuthLayout>
+    <SecureLayout>
       <div className="w-full bg-[#EFEFEC] text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
@@ -81,10 +95,9 @@ export const AppMapLayout = ({ children }: { children: React.ReactNode }) => {
             <AppHeader />
           </div> */}
           <div className={cn('app-content-full-container')}>{children}</div>
-          {/* <AppFooter /> */}
         </div>
       </div>
-    </AuthLayout>
+    </SecureLayout>
   );
 };
 
@@ -94,7 +107,7 @@ export const AppLayoutWithoutSidebar = ({
   children: React.ReactNode;
 }) => {
   return (
-    <AuthLayout>
+    <SecureLayout>
       <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
         {/* <AppHeader /> */}
         <div className="w-full h-auto min-h-screen flex flex-col py-6 items-center justify-start">
@@ -102,6 +115,6 @@ export const AppLayoutWithoutSidebar = ({
         </div>
         <AppFooter />
       </div>
-    </AuthLayout>
+    </SecureLayout>
   );
 };

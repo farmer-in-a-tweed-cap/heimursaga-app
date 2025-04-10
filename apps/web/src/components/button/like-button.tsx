@@ -28,10 +28,7 @@ export const LikeButton: React.FC<Props> = ({
       disabled={disabled}
       onClick={disabled ? () => {} : onClick}
     >
-      <Heart
-        className={cn(liked ? 'fill-secondary stroke-secondary' : '')}
-        size={18}
-      />
+      <Heart className={cn(liked ? 'fill-black stroke-black' : '')} size={18} />
       <span>{likesCount}</span>
     </Button>
   );
