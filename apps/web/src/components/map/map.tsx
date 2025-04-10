@@ -210,7 +210,7 @@ export const Map: React.FC<Props> = ({
       if (!mapboxRef.current) return;
 
       setMapReady(true);
-      mapboxRef.current.resize();
+      mapboxRef.current?.resize();
 
       // get coordinates
       const { lng: lon, lat } = mapboxRef.current.getCenter();
@@ -472,7 +472,7 @@ export const Map: React.FC<Props> = ({
       // update the map on windwo resize
       window.addEventListener('resize', () => {
         if (!mapboxRef?.current) return;
-        mapboxRef.current.resize();
+        mapboxRef.current?.resize();
       });
     }
 
