@@ -142,6 +142,7 @@ export class UserService {
       const data = await this.prisma.post.findMany({
         where,
         select,
+        orderBy: [{ id: 'desc' }],
       });
 
       const response: IUserPostsQueryResponse = {
@@ -231,6 +232,7 @@ export class UserService {
             },
           },
         },
+        orderBy: [{ id: 'desc' }],
       });
 
       const response: IUserFollowersQueryResponse = {
@@ -291,6 +293,7 @@ export class UserService {
             },
           },
         },
+        orderBy: [{ id: 'desc' }],
       });
 
       const response: IUserFollowersQueryResponse = {
@@ -554,6 +557,7 @@ export class SessionUserService {
       const data = await this.prisma.post.findMany({
         where,
         select,
+        orderBy: [{ id: 'desc' }],
       });
 
       const response: IUserPostsQueryResponse = {
