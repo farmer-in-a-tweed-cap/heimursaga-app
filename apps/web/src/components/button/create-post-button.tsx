@@ -1,13 +1,22 @@
 'use client';
 
 import { Button, ButtonProps } from '@repo/ui/components';
-import { PenIcon, SquarePenIcon } from 'lucide-react';
+import { cn } from '@repo/ui/lib/utils';
+import { SquarePenIcon } from 'lucide-react';
 
 import { redirect } from '@/lib/utils';
 
 import { ROUTER } from '@/router';
 
-export const CreatePostButton: React.FC<ButtonProps> = ({
+type Props = {
+  classNames?: {
+    button?: string;
+    label?: string;
+  };
+} & ButtonProps;
+
+export const CreatePostButton: React.FC<Props> = ({
+  classNames,
   children,
   ...props
 }) => {
@@ -16,9 +25,15 @@ export const CreatePostButton: React.FC<ButtonProps> = ({
   };
 
   return (
-    <Button onClick={handleClick} {...props}>
+    <Button
+      onClick={handleClick}
+      className={cn(classNames?.button, '')}
+      {...props}
+    >
       <SquarePenIcon width={16} />
-      {children ? children : 'Create post'}
+      <span className={cn('', classNames?.label)}>
+        {children ? children : 'Create post'}
+      </span>
     </Button>
   );
 };

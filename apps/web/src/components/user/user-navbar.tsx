@@ -39,7 +39,7 @@ export const UserNavbar = () => {
   return session ? (
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <div className="w-full p-2 flex flex-row gap-4 items-center justify-center lg:justify-start rounded-none lg:rounded-full box-border bg-dark hover:bg-dark-hover focus:bg-dark-hover active:bg-dark-hover">
+        <div className="w-full p-2 flex flex-row gap-4 items-center justify-center lg:justify-start rounded-none lg:rounded-full box-border bg-dark hover:brightness-110 lg:hover:brightness-100 lg:hover:bg-dark-hover focus:bg-dark-hover active:bg-dark-hover">
           <Avatar>
             <AvatarFallback>{firstName?.slice(0, 1)}</AvatarFallback>
             <AvatarImage src={picture} alt="avatar" />

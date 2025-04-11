@@ -89,8 +89,13 @@ export const AppSidebar = () => {
             </div>
 
             {session ? (
-              <div className="w-full flex flex-col gap-8">
-                <CreatePostButton variant="secondary">Create</CreatePostButton>
+              <div className="w-full flex flex-col gap-8 px-3">
+                <CreatePostButton
+                  variant="secondary"
+                  classNames={{ label: 'hidden lg:flex', button: 'min-w-auto' }}
+                >
+                  Create
+                </CreatePostButton>
                 <UserNavbar />
               </div>
             ) : (
