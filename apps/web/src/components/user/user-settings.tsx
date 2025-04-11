@@ -1,40 +1,26 @@
 'use client';
 
-import { Card, CardContent } from '@repo/ui/components';
-import { createContext, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-import { PageHeaderTitle } from '@/components';
+import { PageHeaderTitle, TabNavbar } from '@/components';
+import { ROUTER } from '@/router';
 
-import { UserSettingsNavbar } from './user-settings-navbar';
 import { UserSettingsPaymentMethodView } from './user-settings-payment-method-view';
 import { UserSettingsProfileView } from './user-settings-profile-view';
 
-interface IUserSettingsContextValue {
-  tab: string;
-}
-
-interface IUserSettingsContext {
-  context: { tab: string };
-  setContext: (value: Partial<IUserSettingsContextValue>) => void;
-}
-
-export const USER_SETTINGS_TAB_KEYS = {
+const SECTION_KEYS = {
   PROFILE: 'profile',
+  PAYMENT_METHODS: 'payment-methods',
   NOTIFICATIONS: 'notifications',
   SECURITY: 'security',
   BILLING: 'billing',
-  PAYMENT_METHODS: 'payment_methods',
 };
 
-export const USER_SETTINGS_TABS: { key: string; label: string }[] = [
-  { key: USER_SETTINGS_TAB_KEYS.PROFILE, label: 'Profile' },
-  { key: USER_SETTINGS_TAB_KEYS.PAYMENT_METHODS, label: 'Payment methods' },
+const SECTION_TABS: { key: string; label: string }[] = [
+  { key: SECTION_KEYS.PROFILE, label: 'Profile' },
+  { key: SECTION_KEYS.PAYMENT_METHODS, label: 'Payment methods' },
 ];
-
-export const UserSettingsContext = createContext<IUserSettingsContext>({
-  context: { tab: USER_SETTINGS_TAB_KEYS.PROFILE },
-  setContext: () => {},
-});
 
 type Props = {
   section: string;
@@ -51,35 +37,41 @@ type Props = {
 };
 
 export const UserSettings: React.FC<Props> = ({ section, data }) => {
-  const [state, setState] = useState<IUserSettingsContextValue>({
-    tab: section || USER_SETTINGS_TAB_KEYS.PROFILE,
+  const router = useRouter();
+
+  const [state, setState] = useState<{ section: string }>({
+    section,
   });
 
-  const setContext = (value: Partial<IUserSettingsContextValue>) => {
-    setState((state) => ({ ...state, ...value }));
+  const sectionKey = state.section;
+
+  const handleChange = (section: string) => {
+    setState((state) => ({ ...state, section }));
+    router.push([ROUTER.USER.SETTINGS.HOME, section].join('/'), {
+      scroll: false,
+    });
   };
 
-  const activeTabKey = state.tab;
-  const activeTab = USER_SETTINGS_TABS.find(({ key }) => key === activeTabKey);
-
   return (
-    <UserSettingsContext.Provider value={{ context: state, setContext }}>
-      <div className="w-full flex flex-col gap-4">
-        <PageHeaderTitle>Settings</PageHeaderTitle>
-        <div>
-          <UserSettingsNavbar />
-        </div>
-        <Card>
-          <CardContent>
-            {activeTabKey === USER_SETTINGS_TAB_KEYS.PROFILE && (
-              <UserSettingsProfileView data={data?.profile} />
-            )}
-            {activeTabKey === USER_SETTINGS_TAB_KEYS.PAYMENT_METHODS && (
-              <UserSettingsPaymentMethodView />
-            )}
-          </CardContent>
-        </Card>
+    <div className="w-full flex flex-col gap-4">
+      <PageHeaderTitle>Settings</PageHeaderTitle>
+      <TabNavbar
+        tabs={SECTION_TABS}
+        activeTab={sectionKey}
+        classNames={{
+          container: 'justify-start',
+          tabs: 'justify-start',
+        }}
+        onChange={handleChange}
+      />
+      <div className="flex flex-col">
+        {sectionKey === SECTION_KEYS.PROFILE && (
+          <UserSettingsProfileView data={data?.profile} />
+        )}
+        {sectionKey === SECTION_KEYS.PAYMENT_METHODS && (
+          <UserSettingsPaymentMethodView />
+        )}
       </div>
-    </UserSettingsContext.Provider>
+    </div>
   );
 };

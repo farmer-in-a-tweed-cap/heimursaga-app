@@ -33,6 +33,16 @@ export const API_ROUTER = {
     LIKE: (id: string) => `posts/${id}/like`,
     BOOKMARK: (id: string) => `posts/${id}/bookmark`,
   },
+  PAYMENT_METHODS: {
+    GET_ALL: 'payment-methods',
+    GET_BY_ID: (id: string) => `payment-methods/${id}`,
+    CREATE: 'payment-methods',
+    DELETE: (id: string) => `payment-methods/${id}`,
+  },
+  STRIPE: {
+    CREATE_SETUP_INTENT: 'stripe/create-setup-intent',
+    CREATE_PAYMENT_INTENT: 'stripe/create-payment-intent',
+  },
 };
 
 export const API_HEADERS = {

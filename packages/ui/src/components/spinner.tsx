@@ -10,6 +10,12 @@ export const Spinner: React.FC<SpinnerProps> = ({ className }) => {
   return <Loader2 className={cn('animate-spin', className)} />;
 };
 
+export const LoadingSpinner = () => (
+  <div className="w-full h-full flex flex-row justify-center items-center p-6">
+    <Spinner />
+  </div>
+);
+
 type LoadingOverlayProps = {};
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = () => (

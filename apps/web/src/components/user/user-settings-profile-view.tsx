@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { IUserSettingsProfileResponse } from '@repo/types';
 import {
   Button,
+  Card,
+  CardContent,
   Form,
   FormControl,
   FormField,
@@ -110,45 +112,46 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   );
 
   return (
-    <div className={cn('flex flex-col gap-6')}>
-      <UserAvatarUploadPicker
-        src={data?.picture}
-        loading={pictureLoading}
-        fallback={data?.firstName}
-        onChange={handleAvatarChange}
-      />
-      <Form {...form}>
-        <form onSubmit={handleSubmit}>
-          <div className="flex flex-col gap-6">
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <FormField
-                control={form.control}
-                name="firstName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>First name</FormLabel>
-                    <FormControl>
-                      <Input disabled={settingsLoading} required {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />{' '}
-              <FormField
-                control={form.control}
-                name="lastName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Last name</FormLabel>
-                    <FormControl>
-                      <Input disabled={settingsLoading} required {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            {/* <div className="grid gap-2">
+    <Card className={cn('flex flex-col gap-6')}>
+      <CardContent>
+        <UserAvatarUploadPicker
+          src={data?.picture}
+          loading={pictureLoading}
+          fallback={data?.firstName}
+          onChange={handleAvatarChange}
+        />
+        <Form {...form}>
+          <form onSubmit={handleSubmit}>
+            <div className="flex flex-col gap-6">
+              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <FormField
+                  control={form.control}
+                  name="firstName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>First name</FormLabel>
+                      <FormControl>
+                        <Input disabled={settingsLoading} required {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />{' '}
+                <FormField
+                  control={form.control}
+                  name="lastName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Last name</FormLabel>
+                      <FormControl>
+                        <Input disabled={settingsLoading} required {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              {/* <div className="grid gap-2">
               <FormField
                 control={form.control}
                 name="username"
@@ -163,7 +166,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                 )}
               />
             </div> */}
-            {/* <div className="grid gap-2">
+              {/* <div className="grid gap-2">
               <FormField
                 control={form.control}
                 name="email"
@@ -183,7 +186,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                 )}
               />
             </div> */}
-            {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <FormField
                 control={form.control}
                 name="livesIn"
@@ -211,34 +214,35 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                 )}
               />
             </div> */}
-            <div className="grid gap-2">
-              <FormField
-                control={form.control}
-                name="bio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bio</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        className="min-h-[120px]"
-                        disabled={settingsLoading}
-                        required
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid gap-2">
+                <FormField
+                  control={form.control}
+                  name="bio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bio</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          className="min-h-[120px]"
+                          disabled={settingsLoading}
+                          required
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div>
+                <Button type="submit" loading={settingsLoading}>
+                  Save
+                </Button>
+              </div>
             </div>
-            <div>
-              <Button type="submit" loading={settingsLoading}>
-                Save
-              </Button>
-            </div>
-          </div>
-        </form>
-      </Form>
-    </div>
+          </form>
+        </Form>
+      </CardContent>
+    </Card>
   );
 };

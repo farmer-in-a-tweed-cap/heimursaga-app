@@ -2,6 +2,9 @@ import {
   ILoginPayload,
   IPasswordResetPayload,
   IPasswordUpdatePayload,
+  IPaymentMethodCreatePayload,
+  IPaymentMethodGetAllResponse,
+  IPaymentMethodGetByIdResponse,
   IPostCreatePayload,
   IPostCreateResponse,
   IPostDetail,
@@ -12,6 +15,7 @@ import {
   ISearchQueryResponse,
   ISessionUserGetResponse,
   ISignupPayload,
+  IStripeCreateSetupIntentResponse,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserPictureUploadClientPayload,
@@ -240,4 +244,59 @@ export const apiClient = {
       cookie: config ? config.cookie : undefined,
     });
   },
+  // stripe
+  createStripeSetupIntent: async (config?: RequestConfig) =>
+    api.request<IStripeCreateSetupIntentResponse>(
+      API_ROUTER.STRIPE.CREATE_SETUP_INTENT,
+      {
+        method: API_METHODS.POST,
+        body: JSON.stringify({}),
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
+  createStripePaymentIntent: async (config?: RequestConfig) =>
+    api.request<void>(API_ROUTER.STRIPE.CREATE_PAYMENT_INTENT, {
+      method: API_METHODS.POST,
+      body: JSON.stringify({
+        // ..
+      }),
+      cookie: config ? config.cookie : undefined,
+    }),
+  // payment method
+  getUserPaymentMethods: async (config?: RequestConfig) =>
+    api.request<IPaymentMethodGetAllResponse>(
+      API_ROUTER.PAYMENT_METHODS.GET_ALL,
+      {
+        method: API_METHODS.GET,
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
+  getPaymentMethodById: async (
+    { query }: IApiClientQuery<{ id: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<IPaymentMethodGetByIdResponse>(
+      API_ROUTER.PAYMENT_METHODS.GET_BY_ID(query.id),
+      {
+        method: API_METHODS.GET,
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
+  createPaymentMethod: async (
+    payload: IPaymentMethodCreatePayload,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.PAYMENT_METHODS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      cookie: config ? config.cookie : undefined,
+    }),
+  deletePaymentMethod: async (
+    { query }: IApiClientQuery<{ id: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.PAYMENT_METHODS.DELETE(query.id), {
+      method: API_METHODS.DELETE,
+      cookie: config ? config.cookie : undefined,
+    }),
 };

@@ -59,7 +59,7 @@ export const SecureLayout = async ({ children }: Props) => {
 export const AppLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <SecureLayout>
-      <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-row">
+      <div className="w-full min-h-screen bg-background text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
           <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">

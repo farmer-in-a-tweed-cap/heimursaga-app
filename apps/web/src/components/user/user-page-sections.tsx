@@ -1,18 +1,15 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import {
   TabNavbar,
-  UserBookmarksFeed,
   UserFollowersFeed,
   UserFollowingFeed,
   UserPostsFeed,
 } from '@/components';
-
-interface IUserPageSectionsContext {
-  section: string;
-}
+import { ROUTER } from '@/router';
 
 const SECTION_KEYS = {
   HOME: 'home',
@@ -35,7 +32,9 @@ export const UserPageSections: React.FC<Props> = ({
   username,
   section = SECTION_KEYS.HOME,
 }) => {
-  const [state, setState] = useState<IUserPageSectionsContext>({
+  const router = useRouter();
+
+  const [state, setState] = useState<{ section: string }>({
     section,
   });
 
@@ -43,6 +42,12 @@ export const UserPageSections: React.FC<Props> = ({
 
   const handleChange = (section: string) => {
     setState((state) => ({ ...state, section }));
+
+    if (username) {
+      router.push([ROUTER.MEMBERS.MEMBER(username), section].join('/'), {
+        scroll: false,
+      });
+    }
   };
 
   return (

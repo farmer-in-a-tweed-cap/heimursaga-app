@@ -22,21 +22,42 @@ import {
   useElements,
   useStripe,
 } from '@stripe/react-stripe-js';
+import { StripeError } from '@stripe/stripe-js';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { apiClient } from '@/lib/api';
 import { fieldmsg } from '@/lib/utils';
 
 import { StripeProvider } from '@/components';
 
 import { IModalBaseProps } from './modal-provider';
 
+enum StripeFieldKey {
+  CARD = 'card',
+  EXPIRY = 'expiry',
+  CVC = 'cvc',
+  ADDRESS = 'address',
+}
+
+type StripeField = {
+  loaded: boolean;
+  complete: boolean;
+};
+
+type StripeFieldState = {
+  card: StripeField;
+  expiry: StripeField;
+  cvc: StripeField;
+  address: StripeField;
+};
+
 const schema = z.object({
   name: z
     .string()
     .nonempty(fieldmsg.required('name on card'))
-    .max(50, fieldmsg.max('name on card', 50)),
+    .max(20, fieldmsg.max('name on card', 20)),
   postcode: z
     .string()
     .nonempty(fieldmsg.required('postcode'))
@@ -51,23 +72,12 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
   const stripe = useStripe();
   const stripeElements = useElements();
 
+  const [loading, setLoading] = useState(false);
+
   const [state, setState] = useState<{
     validated: boolean;
     loading: boolean;
-    stripe: {
-      card: {
-        loaded: boolean;
-        complete: boolean;
-      };
-      expiry: {
-        loaded: boolean;
-        complete: boolean;
-      };
-      cvc: {
-        loaded: boolean;
-        complete: boolean;
-      };
-    };
+    stripe: StripeFieldState;
   }>({
     validated: false,
     loading: false,
@@ -75,6 +85,7 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
       card: { loaded: false, complete: false },
       expiry: { loaded: false, complete: false },
       cvc: { loaded: false, complete: false },
+      address: { loaded: false, complete: false },
     },
   });
 
@@ -86,25 +97,110 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
     },
   });
 
-  const loading =
-    !state.stripe.card.loaded ||
-    !state.stripe.expiry.loaded ||
-    !state.stripe.cvc.loaded;
+  const stripeLoaded =
+    state.stripe.card.loaded &&
+    state.stripe.expiry.loaded &&
+    state.stripe.cvc.loaded;
 
-  const completed =
+  const stripeComplete =
     state.stripe.card.complete &&
     state.stripe.expiry.complete &&
     state.stripe.cvc.complete;
 
+  const handleCancel = () => {
+    close();
+    form.reset();
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      console.log(values);
+      try {
+        const { name, postcode } = values;
+
+        setLoading(true);
+
+        if (!stripe || !stripeElements) {
+          console.log('stripe not loaded');
+          return;
+        }
+
+        // get payment details from stripe elements
+        const elements = {
+          card: stripeElements.getElement('cardNumber'),
+          // address: stripeElements.getElement('address'),
+        };
+
+        if (!elements.card) {
+          console.log('stripe element not created', elements);
+          return;
+        }
+
+        // create a stripe payment setup
+        const stripePaymentSetup = await apiClient
+          .createStripeSetupIntent()
+          .then(({ data }) => data);
+        if (!stripePaymentSetup) {
+          console.log('stripe setup intent not created');
+          return;
+        }
+
+        console.log('stripe setup', stripePaymentSetup.secret);
+
+        // confirm the stripe payment setup
+        const stripeCardSetup = await stripe.confirmCardSetup(
+          stripePaymentSetup.secret,
+          {
+            payment_method: {
+              card: elements.card,
+              billing_details: {
+                name,
+                address: {
+                  postal_code: postcode,
+                  // country: billing.address.country || '',
+                  // city: billing.address.city || '',
+                  // postal_code: billing.address.postal_code || '',
+                  // line1: billing.address.line1 || '',
+                  // line2: billing.address.line2 || '',
+                },
+              },
+            },
+          },
+        );
+        const stripeError = stripeCardSetup.error as StripeError;
+        const stripePaymentMethodId = stripeCardSetup.setupIntent
+          ?.payment_method as string;
+
+        // create a payment method
+        if (stripePaymentMethodId) {
+          const paymentMethod = await apiClient.createPaymentMethod({
+            stripePaymentMethodId,
+          });
+
+          console.log('payment method', paymentMethod);
+        }
+
+        setLoading(false);
+        close();
+
+        if (onSubmit) {
+          onSubmit();
+        }
+
+        console.log({ stripeError, stripePaymentMethodId });
+      } catch (e) {
+        console.log('on submit error', e);
+      } finally {
+        setLoading(false);
+      }
     },
   );
 
-  const handleStripeFieldLoad = (field: 'card' | 'expiry' | 'cvc') => {
+  const handleStripeFieldLoad = (field: StripeFieldKey) => {
     switch (field) {
-      case 'card':
+      case StripeFieldKey.CARD:
         setState((prev) => ({
           ...prev,
           stripe: {
@@ -113,7 +209,7 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
           },
         }));
         break;
-      case 'expiry':
+      case StripeFieldKey.EXPIRY:
         setState((prev) => ({
           ...prev,
           stripe: {
@@ -122,12 +218,21 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
           },
         }));
         break;
-      case 'cvc':
+      case StripeFieldKey.CVC:
         setState((prev) => ({
           ...prev,
           stripe: {
             ...prev.stripe,
             cvc: { ...prev.stripe.cvc, loaded: true },
+          },
+        }));
+        break;
+      case StripeFieldKey.ADDRESS:
+        setState((prev) => ({
+          ...prev,
+          stripe: {
+            ...prev.stripe,
+            address: { ...prev.stripe.address, loaded: true },
           },
         }));
         break;
@@ -137,11 +242,11 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
   };
 
   const handleStripeFieldChange = (
-    field: 'card' | 'expiry' | 'cvc',
+    field: StripeFieldKey,
     complete: boolean,
   ) => {
     switch (field) {
-      case 'card':
+      case StripeFieldKey.CARD:
         setState((prev) => ({
           ...prev,
           stripe: {
@@ -150,7 +255,7 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
           },
         }));
         break;
-      case 'expiry':
+      case StripeFieldKey.EXPIRY:
         setState((prev) => ({
           ...prev,
           stripe: {
@@ -159,12 +264,21 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
           },
         }));
         break;
-      case 'cvc':
+      case StripeFieldKey.CVC:
         setState((prev) => ({
           ...prev,
           stripe: {
             ...prev.stripe,
             cvc: { ...prev.stripe.cvc, complete },
+          },
+        }));
+        break;
+      case StripeFieldKey.ADDRESS:
+        setState((prev) => ({
+          ...prev,
+          stripe: {
+            ...prev.stripe,
+            address: { ...prev.stripe.address, complete },
           },
         }));
         break;
@@ -182,10 +296,10 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
       <DialogHeader>
         <DialogTitle>Add payment method</DialogTitle>
       </DialogHeader>
-      <div className="relative py-4 w-full h-full flex items-center">
-        {loading && <LoadingOverlay />}
-        <Form {...form}>
-          <form onSubmit={handleSubmit} className="w-full">
+      <Form {...form}>
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="relative py-4 w-full h-full flex items-center">
+            {loading && <LoadingOverlay />}
             <div className="w-full flex flex-col gap-6">
               <FormField
                 control={form.control}
@@ -194,7 +308,7 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
                   <FormItem>
                     <FormLabel>Name on card</FormLabel>
                     <FormControl>
-                      <Input required maxLength={50} {...field} />
+                      <Input required maxLength={20} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -209,24 +323,26 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
                       showIcon: true,
                       placeholder: '0000 0000 0000 0000',
                     }}
-                    onReady={() => handleStripeFieldLoad('card')}
+                    onReady={() => handleStripeFieldLoad(StripeFieldKey.CARD)}
                     onChange={({ complete }) =>
-                      handleStripeFieldChange('card', complete)
+                      handleStripeFieldChange(StripeFieldKey.CARD, complete)
                     }
                   />
                   <div className="w-full flex flex-col sm:flex-row gap-2">
                     <CardExpiryElement
                       className="input"
-                      onReady={() => handleStripeFieldLoad('expiry')}
+                      onReady={() =>
+                        handleStripeFieldLoad(StripeFieldKey.EXPIRY)
+                      }
                       onChange={({ complete }) =>
-                        handleStripeFieldChange('expiry', complete)
+                        handleStripeFieldChange(StripeFieldKey.EXPIRY, complete)
                       }
                     />
                     <CardCvcElement
                       className="input"
-                      onReady={() => handleStripeFieldLoad('cvc')}
+                      onReady={() => handleStripeFieldLoad(StripeFieldKey.CVC)}
                       onChange={({ complete }) =>
-                        handleStripeFieldChange('cvc', complete)
+                        handleStripeFieldChange(StripeFieldKey.CVC, complete)
                       }
                     />
                   </div>
@@ -239,34 +355,48 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
                   <FormItem>
                     <FormLabel>Billing postcode</FormLabel>
                     <FormControl>
-                      <Input required maxLength={50} {...field} />
+                      {/* <AddressElement
+                        options={{
+                          mode: 'shipping',
+                          autocomplete: { mode: 'automatic' },
+                        }}
+                        onReady={() =>
+                          handleStripeFieldLoad(StripeFieldKey.ADDRESS)
+                        }
+                        onChange={({ complete }) =>
+                          handleStripeFieldChange(
+                            StripeFieldKey.ADDRESS,
+                            complete,
+                          )
+                        }
+                      /> */}
+                      <Input required maxLength={10} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
-          </form>
-        </Form>
-      </div>
-      <DialogFooter>
-        <Button
-          variant="secondary"
-          disabled={loading}
-          onClick={() => {
-            close();
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          variant="default"
-          disabled={loading || !completed}
-          onClick={onSubmit}
-        >
-          Add
-        </Button>
-      </DialogFooter>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="secondary"
+              disabled={loading || !stripeLoaded}
+              onClick={handleCancel}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="default"
+              disabled={loading || !stripeLoaded || !stripeComplete}
+              loading={loading}
+            >
+              Add
+            </Button>
+          </DialogFooter>
+        </form>
+      </Form>
     </>
   );
 };

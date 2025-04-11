@@ -2,6 +2,7 @@ import {
   ILoginPayload,
   IPasswordResetPayload,
   IPasswordUpdatePayload,
+  IPaymentMethodGetAllResponse,
   IPostCreatePayload,
   IPostCreateResponse,
   IPostQueryMapResponse,
@@ -36,6 +37,7 @@ export const QUERY_KEYS = {
   USER_BOOKMARKS: 'user_bookmarks',
   USER_DRAFTS: 'user_drafts',
   USER_SETTINGS_PROFILE: 'user_settings_profile',
+  USER_PAYMENT_METHODS: 'user_payment_methods,',
 };
 
 const createQuery = <T = undefined, R = any>(
@@ -304,5 +306,17 @@ export const updateUserPictureMutation = createMutation<
     if (!success) {
       throw new Error(message);
     }
+  }),
+);
+
+export const getUserPaymentMethods = createQuery<
+  void,
+  IPaymentMethodGetAllResponse
+>([QUERY_KEYS.USER_PAYMENT_METHODS], () =>
+  apiClient.getUserPaymentMethods().then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as IPaymentMethodGetAllResponse;
   }),
 );

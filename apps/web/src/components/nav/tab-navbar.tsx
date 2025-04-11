@@ -30,34 +30,35 @@ export const TabNavbar: React.FC<Props> = ({
   return (
     <div
       className={cn(
-        'w-full flex flex-row justify-center items-center gap-6 border-b-[1.5px] border-solid border-gray-200',
+        'w-full flex  flex-row justify-center items-center border-b-[1.5px] border-solid border-gray-200',
         classNames?.container,
       )}
     >
       <div
         className={cn(
-          'flex flex-row justify-center items-center',
+          'flex flex-row justify-center items-center gap-6',
           classNames?.tabs,
         )}
-      ></div>
-      {tabs.map(({ label, key: tab }, key) => (
-        <button
-          key={key}
-          className={cn(
-            'w-auto flex flex-col items-center gap-2 font-medium justify-start text-sm text-left hover:text-black rounded-none',
-            activeTab === tab ? 'text-black' : 'text-black/70',
-          )}
-          onClick={() => handleClick(tab)}
-        >
-          <span>{label}</span>
-          <span
+      >
+        {tabs.map(({ label, key: tab }, key) => (
+          <button
+            key={key}
             className={cn(
-              'h-[2px] w-[75%]',
-              activeTab === tab ? 'bg-black' : 'bg-transparent',
+              'w-auto flex flex-col items-center gap-2 font-medium justify-start text-sm text-left hover:text-black rounded-none',
+              activeTab === tab ? 'text-black' : 'text-black/70',
             )}
-          ></span>
-        </button>
-      ))}
+            onClick={() => handleClick(tab)}
+          >
+            <span>{label}</span>
+            <span
+              className={cn(
+                'h-[2px] w-[75%]',
+                activeTab === tab ? 'bg-black' : 'bg-transparent',
+              )}
+            ></span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 };
