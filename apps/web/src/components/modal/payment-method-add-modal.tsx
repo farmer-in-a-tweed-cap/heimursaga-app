@@ -32,7 +32,7 @@ import { fieldmsg } from '@/lib/utils';
 
 import { StripeProvider } from '@/components';
 
-import { IModalBaseProps } from './modal-provider';
+import { ModalBaseProps } from './modal-provider';
 
 enum StripeFieldKey {
   CARD = 'card',
@@ -64,7 +64,7 @@ const schema = z.object({
     .max(10, fieldmsg.max('postcode', 10)),
 });
 
-const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
+const PaymentMethodAddModal: React.FC<ModalBaseProps> = ({
   close,
   onSubmit,
   onCancel,
@@ -401,7 +401,7 @@ const PaymentMethodAddModal: React.FC<IModalBaseProps> = ({
   );
 };
 
-const PaymentMethodAddModalWithStripeProvider: React.FC<IModalBaseProps> = (
+const PaymentMethodAddModalWithStripeProvider: React.FC<ModalBaseProps> = (
   props,
 ) => (
   <StripeProvider>

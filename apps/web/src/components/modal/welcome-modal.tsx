@@ -7,10 +7,10 @@ import {
   DialogTitle,
 } from '@repo/ui/components';
 
-import { IModalBaseProps } from './modal-provider';
+import { ModalBaseProps } from './modal-provider';
 
 // @todo
-const WelcomeModal: React.FC<IModalBaseProps> = ({
+const WelcomeModal: React.FC<ModalBaseProps> = ({
   close,
   onSubmit,
   onCancel,

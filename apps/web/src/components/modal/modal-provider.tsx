@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@repo/ui/components';
+import { Dialog, DialogContent } from '@repo/ui/components';
 import {
   ReactNode,
   Suspense,
@@ -22,11 +13,13 @@ import {
 export const MODALS = {
   WELCOME: 'welcome',
   PAYMENT_METHOD_ADD: 'payment_method_add',
+  PAYMENT_METHOD_DELETE: 'payment_method_delete',
 };
 
 // modal context
-interface IModalContextState {
+interface IModalContextState<T = any> {
   id: string | null;
+  props?: T;
   onSubmit?: () => void;
   onCancel?: () => void;
 }
@@ -44,7 +37,8 @@ export const ModalContext = createContext<IModalContext>({
 });
 
 // modal registry
-type ModalComponent = React.ComponentType<{
+type ModalComponent<T = any> = React.ComponentType<{
+  props?: T;
   close: () => void;
   onSubmit?: () => void;
   onCancel?: () => void;
@@ -57,6 +51,7 @@ interface IModalRegistry {
 const modalRegistry: IModalRegistry = {
   [MODALS.WELCOME]: () => import('./welcome-modal'),
   [MODALS.PAYMENT_METHOD_ADD]: () => import('./payment-method-add-modal'),
+  [MODALS.PAYMENT_METHOD_DELETE]: () => import('./payment-method-delete-modal'),
 };
 
 // modal cache
@@ -69,15 +64,19 @@ const preloadModal = async (id: string) => {
   }
 };
 
-export interface IModalBaseProps {
+export type ModalBaseProps<T = any> = {
+  props?: T;
   close: () => void;
   onSubmit?: () => void;
   onCancel?: () => void;
-}
+};
 
 // modal provider
 export const ModalProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<IModalContextState>({ id: null });
+  const [state, setState] = useState<IModalContextState>({
+    id: null,
+    props: {},
+  });
   const [ModalComponent, setModalComponent] = useState<ModalComponent | null>(
     null,
   );
@@ -107,7 +106,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
-  // preload usage
+  // this is how you cache modals using useEffect hook
   // useEffect(() => {
   //   modal.preload(keys);
   // }, [modal.preload]);
@@ -124,6 +123,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
     return ModalComponent && modalId ? (
       <ModalComponent
         close={handleClose}
+        props={state.props}
         onSubmit={state.onSubmit}
         onCancel={state.onCancel}
       />

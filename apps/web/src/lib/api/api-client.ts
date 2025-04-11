@@ -297,6 +297,7 @@ export const apiClient = {
   ) =>
     api.request<void>(API_ROUTER.PAYMENT_METHODS.DELETE(query.id), {
       method: API_METHODS.DELETE,
+      body: JSON.stringify({}),
       cookie: config ? config.cookie : undefined,
     }),
 };

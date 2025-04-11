@@ -4,22 +4,26 @@ import { useContext } from 'react';
 
 import { ModalContext } from '@/components';
 
-export const useModal = () => {
+export function useModal() {
   const ctx = useContext(ModalContext);
 
-  const open = (
+  function open<T = any>(
     id: string,
     options?: {
+      props?: T;
       onSubmit?: () => void;
       onCancel?: () => void;
     },
-  ) => {
+  ) {
+    const { props, onSubmit, onCancel } = options || {};
+
     ctx.setContext({
       id,
-      onSubmit: options?.onSubmit,
-      onCancel: options?.onCancel,
+      props,
+      onSubmit,
+      onCancel,
     });
-  };
+  }
 
   const close = () => {
     ctx.setContext({ id: null });
@@ -35,4 +39,4 @@ export const useModal = () => {
     close,
     preload,
   };
-};
+}
