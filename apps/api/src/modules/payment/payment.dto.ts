@@ -6,10 +6,5 @@ export class PaymentMethodCreateDto implements IPaymentMethodCreatePayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
-  label: string;
-
-  @ApiProperty({ required: true })
-  @IsString()
-  @IsNotEmpty()
-  stripe_payment_method_id: string;
+  stripePaymentMethodId: string;
 }

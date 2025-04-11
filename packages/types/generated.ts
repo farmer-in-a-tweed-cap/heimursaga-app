@@ -123,13 +123,25 @@ export interface IUserPictureUploadClientPayload {
 }
 
 // payment method
-export interface IPaymentMethodCreatePayload {
-  stripe_payment_method_id: string;
+export interface IPaymentMethodDetail {
+  id: string;
   label: string;
+  stripePaymentMethodId?: string;
+  last4?: string;
+}
+
+export interface IPaymentMethodGetAllResponse {
+  data: IPaymentMethodDetail[];
+  results: number;
+}
+
+export interface IPaymentMethodGetByIdResponse extends IPaymentMethodDetail {}
+
+export interface IPaymentMethodCreatePayload {
+  stripePaymentMethodId: string;
 }
 
 // post
-
 export interface IPostDetail {
   id: string;
   title: string;

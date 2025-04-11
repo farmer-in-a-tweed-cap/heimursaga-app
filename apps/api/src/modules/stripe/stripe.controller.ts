@@ -18,6 +18,11 @@ export class StripeController {
     return this.stripeService.webhook(req);
   }
 
+  @Post('create-setup-intent')
+  createStripeSetupIntent() {
+    return this.stripeService.createSetupIntent();
+  }
+
   @Post('create-payment-intent')
   createStripePaymentIntent(
     @Session() session: ISession,
@@ -27,10 +32,5 @@ export class StripeController {
       userId: session?.userId,
       ...body,
     });
-  }
-
-  @Post('create-setup-intent')
-  createStripeSetupIntent(@Session() session: ISession) {
-    return this.stripeService.createSetupIntent();
   }
 }

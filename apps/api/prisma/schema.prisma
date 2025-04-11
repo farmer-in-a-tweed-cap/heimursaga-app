@@ -16,29 +16,31 @@ datasource db {
 }
 
 model User {
-  id                Int             @id @default(autoincrement())
-  email             String          @unique @db.VarChar(50)
-  username          String          @unique @db.VarChar(50)
-  password          String
-  role              String          @db.VarChar(10)
-  is_premium        Boolean?        @default(false)
-  is_email_verified Boolean?        @default(false)
-  followers_count   Int?            @default(0)
-  following_count   Int?            @default(0)
-  bookmarks_count   Int?            @default(0)
-  posts_count       Int?            @default(0)
-  profile           UserProfile?
-  sessions          UserSession[]
-  posts             Post[]
-  post_likes        PostLike[]      @relation("user_post_likes")
-  post_bookmarks    PostBookmark[]  @relation("user_post_bookmarks")
-  following         UserFollow[]    @relation("user_follows_follower")
-  followers         UserFollow[]    @relation("user_follows_followee")
-  uploads           Upload[]
-  payments          Payment[]
-  payment_methods   PaymentMethod[]
-  created_at        DateTime?       @default(now())
-  updated_at        DateTime?       @updatedAt
+  id                 Int             @id @default(autoincrement())
+  email              String          @unique @db.VarChar(50)
+  username           String          @unique @db.VarChar(50)
+  password           String
+  role               String          @db.VarChar(10)
+  is_creator         Boolean?        @default(false)
+  is_premium         Boolean?        @default(false)
+  is_email_verified  Boolean?        @default(false)
+  stripe_customer_id String?         @db.VarChar(40)
+  followers_count    Int?            @default(0)
+  following_count    Int?            @default(0)
+  bookmarks_count    Int?            @default(0)
+  posts_count        Int?            @default(0)
+  profile            UserProfile?
+  sessions           UserSession[]
+  posts              Post[]
+  post_likes         PostLike[]      @relation("user_post_likes")
+  post_bookmarks     PostBookmark[]  @relation("user_post_bookmarks")
+  following          UserFollow[]    @relation("user_follows_follower")
+  followers          UserFollow[]    @relation("user_follows_followee")
+  uploads            Upload[]
+  payments           Payment[]
+  payment_methods    PaymentMethod[]
+  created_at         DateTime?       @default(now())
+  updated_at         DateTime?       @updatedAt
 
   @@map("users")
 }

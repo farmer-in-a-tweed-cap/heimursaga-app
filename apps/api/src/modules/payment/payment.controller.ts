@@ -40,20 +40,23 @@ export class PaymentMethodController {
     });
   }
 
-  // @todo
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createPaymentMethod(
     @Body() body: PaymentMethodCreateDto,
     @Session() session: ISession,
   ) {
+    console.log('create payment method', {
+      body,
+      session,
+    });
+
     return await this.paymentService.createPaymentMethod({
       payload: body,
       session,
     });
   }
 
-  // @todo
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async deletePaymentMethod(
