@@ -268,3 +268,8 @@ export interface IMediaUploadResponse {
   thumbnail: string;
   original: string;
 }
+
+// stripe
+export interface IStripeCreateSetupIntentResponse {
+  secret: string;
+}

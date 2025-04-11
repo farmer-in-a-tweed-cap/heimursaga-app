@@ -1,4 +1,5 @@
 import { Injectable, RawBodyRequest } from '@nestjs/common';
+import { IStripeCreateSetupIntentResponse } from '@repo/types';
 import Stripe from 'stripe';
 
 import {
@@ -135,7 +136,23 @@ export class StripeService {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payment intent not created');
+        : new ServiceForbiddenException('stripe payment intent not created');
+      throw exception;
+    }
+  }
+
+  async createSetupIntent(): Promise<IStripeCreateSetupIntentResponse> {
+    try {
+      const intent = await this.stripe.setupIntents.create();
+
+      return {
+        secret: intent.client_secret,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('stripe setup intent not created');
       throw exception;
     }
   }

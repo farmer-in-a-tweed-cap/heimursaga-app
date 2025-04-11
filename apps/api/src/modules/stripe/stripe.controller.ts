@@ -28,4 +28,9 @@ export class StripeController {
       ...body,
     });
   }
+
+  @Post('create-setup-intent')
+  createStripeSetupIntent(@Session() session: ISession) {
+    return this.stripeService.createSetupIntent();
+  }
 }
