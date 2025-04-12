@@ -62,7 +62,7 @@ const PaymentMethodDeleteModal: React.FC<
       </div>
       <DialogFooter>
         <Button variant="outline" onClick={handleCancel}>
-          Cancel
+          Discard
         </Button>
         <Button loading={loading} onClick={handleSubmit}>
           Delete

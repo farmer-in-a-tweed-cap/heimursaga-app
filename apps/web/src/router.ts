@@ -15,6 +15,7 @@ export const ROUTER = {
     HOME: '/bookmarks',
   },
   PREMIUM: '/premium',
+  PREMIUM_CHECKOUT: '/premium/checkout',
   NOTIFICATIONS: '/notifications',
   USER: {
     PROFILE: '/user/profile',

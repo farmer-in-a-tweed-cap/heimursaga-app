@@ -2,17 +2,19 @@ import '@repo/ui/globals.css';
 import { cn } from '@repo/ui/lib/utils';
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
+import Link from 'next/link';
 
 import { apiClient } from '@/lib/api';
 
 import {
   AppFooter,
-  AppHeader,
   AppProvider,
   AppSidebar,
   IAppContextState,
+  Logo,
 } from '@/components';
 import { SessionProvider } from '@/contexts';
+import { ROUTER } from '@/router';
 
 import './../styles.css';
 
@@ -96,6 +98,21 @@ export const AppMapLayout = ({ children }: { children: React.ReactNode }) => {
           </div> */}
           <div className={cn('app-content-full-container')}>{children}</div>
         </div>
+      </div>
+    </SecureLayout>
+  );
+};
+
+export const CheckoutLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <SecureLayout>
+      <div className="w-full h-[55px] bg-white flex flex-row justify-center items-center border-b border-solid border-gray-200">
+        <Link href={ROUTER.HOME}>
+          <Logo />
+        </Link>
+      </div>
+      <div className="w-full min-h-screen bg-white text-black flex flex-row justify-center items-start">
+        <div className="w-full max-w-6xl flex flex-col p-4">{children}</div>
       </div>
     </SecureLayout>
   );

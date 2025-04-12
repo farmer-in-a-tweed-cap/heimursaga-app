@@ -10,15 +10,13 @@ import {
   HomeIcon,
   LucideProps,
   PenIcon,
-  PlusCircleIcon,
   StarIcon,
 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ForwardRefExoticComponent, RefAttributes } from 'react';
 
-import { CreatePostButton, UserNavbar } from '@/components';
+import { CreatePostButton, Logo, UserNavbar } from '@/components';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
@@ -67,9 +65,7 @@ export const AppSidebar = () => {
         <div className="bg-dark text-dark-foreground flex flex-col items-center w-full h-full py-4">
           <div className="w-full box-border lg:px-4 flex flex-row items-center  justify-center lg:justify-start">
             <Link href={ROUTER.HOME}>
-              <div className="w-[45px] h-auto">
-                <Image src="/logo-sm-light.svg" width={80} height={80} alt="" />
-              </div>
+              <Logo theme="dark" size="sm" />
             </Link>
           </div>
           <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-3">

@@ -1,5 +1,6 @@
 import { Button } from '@repo/ui/components';
 import { CheckIcon } from 'lucide-react';
+import Link from 'next/link';
 
 import { CloseButton } from '@/components';
 import { DEMO_DATA } from '@/constants';
@@ -10,7 +11,7 @@ const plans = [DEMO_DATA.PREMIUM_PLAN];
 export default function Page() {
   return (
     <div className="bg-background relative w-full min-h-screen flex flex-col justify-start items-center p-8">
-      <div className="absolute top-4 left-4">
+      <div className="absolute top-3 right-3 lg:top-4 lg:left-4">
         <CloseButton redirect={ROUTER.HOME} />
       </div>
       <div className="flex flex-col py-8 items-center">
@@ -76,7 +77,9 @@ export default function Page() {
         </div>
         <div className="mt-6 w-full max-w-xl flex flex-col justify-center items-center">
           <div>
-            <Button size="lg">Upgrade & Pay</Button>
+            <Button size="lg" asChild>
+              <Link href={ROUTER.PREMIUM_CHECKOUT}>Upgrade & Pay</Link>
+            </Button>
           </div>
           <div className="mt-10">
             <p className="text-xs text-gray-500 text-center">
