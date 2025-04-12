@@ -35,6 +35,18 @@ export const UserNavbar = () => {
   };
 
   const { username, picture = '', firstName = '' } = session || {};
+  const premium = false;
+
+  const links: { href: string; label: string }[] = [
+    {
+      href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+      label: 'Profile',
+    },
+    {
+      href: ROUTER.USER.SETTINGS.HOME,
+      label: 'Settings',
+    },
+  ];
 
   return session ? (
     <DropdownMenu>
@@ -51,13 +63,7 @@ export const UserNavbar = () => {
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="bg-background min-w-[240px] ml-4 mb-2 p-0 py-2">
-        {[
-          {
-            href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
-            label: 'Profile',
-          },
-          { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings' },
-        ].map(({ href, label }, key) => (
+        {links.map(({ href, label }, key) => (
           <DropdownMenuItem key={key} asChild>
             <Link
               href={href}

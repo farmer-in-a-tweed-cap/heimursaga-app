@@ -10,6 +10,8 @@ import {
   HomeIcon,
   LucideProps,
   PenIcon,
+  PlusCircleIcon,
+  StarIcon,
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -42,6 +44,7 @@ const SIDEBAR_LINKS: {
     { href: ROUTER.JOURNAL, label: 'Journal', icon: PenIcon },
     { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
     { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
+    { href: ROUTER.PREMIUM, label: 'Premium', icon: StarIcon },
     { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
   ],
 };
