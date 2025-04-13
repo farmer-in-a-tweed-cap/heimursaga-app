@@ -1,9 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IPostCreatePayload, IPostUpdatePayload } from '@repo/types';
+import {
+  IsBoolean,
+  IsDate,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
-import { IPostCreatePayloadDto, IPostUpdatePayloadDto } from './post.interface';
-
-export class PostCreatePayloadDto implements IPostCreatePayloadDto {
+export class PostCreateDto implements IPostCreatePayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
@@ -13,16 +19,71 @@ export class PostCreatePayloadDto implements IPostCreatePayloadDto {
   @IsString()
   @IsNotEmpty()
   content: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lat: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lon: number;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  public: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  draft: boolean;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  place: string;
+
+  @ApiProperty({ required: false })
+  @IsDate()
+  @IsOptional()
+  date: Date;
 }
 
-export class PostUpdatePayloadDto implements IPostUpdatePayloadDto {
+export class PostUpdateDto implements IPostUpdatePayload {
   @ApiProperty({ required: false })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   title: string;
 
   @ApiProperty({ required: false })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   content: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lat: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lon: number;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  public: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  draft: boolean;
+
+  @ApiProperty({ required: false })
+  @IsDate()
+  @IsOptional()
+  date: Date;
 }

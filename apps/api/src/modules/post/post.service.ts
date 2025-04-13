@@ -1,26 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { IPostCreatePayload, IPostUpdatePayload } from '@repo/types';
+import { IPostBookmarkResponse, IPostLikeResponse } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
+import { generator } from '@/lib/generator';
+import { getUploadStaticUrl } from '@/lib/upload';
 
 import {
   ServiceException,
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
+import { IPayloadWithSession, IQueryWithSession } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
-
-import {
-  IPostBookmarkResponse,
-  IPostCreatePayload,
-  IPostDeletePayload,
-  IPostFindByIdPayload,
-  IPostLikePayload,
-  IPostLikeResponse,
-  IPostSearchPayload,
-  IPostUpdatePayload,
-} from './post.interface';
 
 @Injectable()
 export class PostService {
@@ -29,10 +23,17 @@ export class PostService {
     private prisma: PrismaService,
   ) {}
 
-  async search(payload: IPostSearchPayload) {
+  async search({ session }: IQueryWithSession) {
     try {
-      const { userId } = payload;
-      const where = { deleted_at: null } as Prisma.PostWhereInput;
+      const { userId } = session;
+
+      const where = {
+        public_id: { not: null },
+        public: true,
+        deleted_at: null,
+      } as Prisma.PostWhereInput;
+
+      const take = 20;
 
       // search posts
       const results = await this.prisma.post.count({ where });
@@ -40,11 +41,15 @@ export class PostService {
         .findMany({
           where,
           select: {
-            id: true,
+            public_id: true,
             title: true,
             content: true,
-            likesCount: true,
-            bookmarksCount: true,
+            lat: true,
+            lon: true,
+            place: true,
+            date: true,
+            likes_count: true,
+            bookmarks_count: true,
             // check if the session user has liked this post
             likes: userId
               ? {
@@ -61,6 +66,7 @@ export class PostService {
               : undefined,
             author: {
               select: {
+                username: true,
                 profile: {
                   select: { first_name: true, picture: true },
                 },
@@ -68,20 +74,29 @@ export class PostService {
             },
             created_at: true,
           },
+          take,
           orderBy: [{ id: 'desc' }],
         })
         .then((posts) =>
           posts.map((post) => ({
-            id: post.id,
+            id: post.public_id,
+            lat: post.lat,
+            lon: post.lon,
+            place: post.place,
+            date: post.date,
             title: post.title,
+            content: post.content.slice(0, 140),
             author: {
+              username: post.author?.username,
               name: post.author?.profile?.first_name,
-              picture: post.author?.profile?.picture,
+              picture: post.author?.profile?.picture
+                ? getUploadStaticUrl(post.author?.profile?.picture)
+                : undefined,
             },
-            liked: userId ? post.likes.length > 0 : undefined,
-            bookmarked: userId ? post.bookmarks.length > 0 : undefined,
-            likesCount: post.likesCount,
-            bookmarksCount: post.bookmarksCount,
+            liked: userId ? post.likes.length > 0 : false,
+            bookmarked: userId ? post.bookmarks.length > 0 : false,
+            likesCount: post.likes_count,
+            bookmarksCount: post.bookmarks_count,
             createdAt: post.created_at,
           })),
         );
@@ -96,18 +111,27 @@ export class PostService {
     }
   }
 
-  async getById(payload: IPostFindByIdPayload) {
+  async getById({ query, session }: IQueryWithSession<{ publicId: string }>) {
     try {
-      const { id, userId } = payload;
+      const { publicId } = query;
+      const { userId } = session;
 
       // get the post
       const data = await this.prisma.post
         .findFirstOrThrow({
-          where: { id, deleted_at: null },
+          where: { public_id: publicId },
           select: {
-            id: true,
+            public_id: true,
             title: true,
             content: true,
+            public: true,
+            draft: true,
+            lat: true,
+            lon: true,
+            place: true,
+            date: true,
+            likes_count: true,
+            bookmarks_count: true,
             // check if the session user has liked this post
             likes: userId
               ? {
@@ -124,6 +148,8 @@ export class PostService {
               : undefined,
             author: {
               select: {
+                id: true,
+                username: true,
                 profile: {
                   select: { first_name: true, picture: true },
                 },
@@ -133,15 +159,27 @@ export class PostService {
           },
         })
         .then((post) => ({
-          id: post.id,
+          id: post.public_id,
           title: post.title,
           content: post.content,
+          lat: post.lat,
+          lon: post.lon,
+          place: post.place,
+          date: post.date,
           liked: userId ? post.likes.length > 0 : undefined,
           bookmarked: userId ? post.bookmarks.length > 0 : undefined,
+          likesCount: post.likes_count,
+          bookmarksCount: post.bookmarks_count,
+          public: post.public,
           author: {
+            id: post.author?.id,
+            username: post.author?.username,
             name: post.author?.profile?.first_name,
-            picture: post.author?.profile?.picture,
+            picture: post.author?.profile?.picture
+              ? getUploadStaticUrl(post.author?.profile?.picture)
+              : undefined,
           },
+          createdByMe: userId ? userId === post.author?.id : undefined,
           createdAt: post.created_at,
         }));
 
@@ -155,17 +193,29 @@ export class PostService {
     }
   }
 
-  async create(payload: IPostCreatePayload): Promise<void> {
+  async create({ session, payload }: IPayloadWithSession<IPostCreatePayload>) {
     try {
-      const { userId, ...data } = payload;
+      const { userId } = session;
+
+      const publicId = generator.publicId();
 
       // create a post
       const post = await this.prisma.post.create({
         data: {
-          ...data,
+          ...payload,
+          public: true,
+          draft: false,
+          public_id: publicId,
           author: { connect: { id: userId } },
         },
+        select: {
+          public_id: true,
+        },
       });
+
+      return {
+        id: post.public_id,
+      };
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -175,16 +225,21 @@ export class PostService {
     }
   }
 
-  async update(payload: IPostUpdatePayload): Promise<void> {
+  async update(
+    { query, session }: IQueryWithSession<{ publicId: string }>,
+    payload: IPostUpdatePayload,
+  ): Promise<void> {
     try {
-      const { id, userId, ...data } = payload;
+      const { publicId } = query;
+      const { userId } = session;
 
-      if (!id || !userId) throw new ServiceNotFoundException('post not found');
+      if (!publicId || !userId)
+        throw new ServiceNotFoundException('post not found');
 
       // access check
       const access = await this.prisma.post
         .findFirstOrThrow({
-          where: { id, author_id: userId },
+          where: { public_id: publicId, author_id: userId },
         })
         .then(() => true)
         .catch(() => false);
@@ -192,9 +247,9 @@ export class PostService {
         throw new ServiceForbiddenException('post can not be updated');
 
       // update the post
-      const post = await this.prisma.post.update({
-        where: { id, author_id: userId },
-        data,
+      await this.prisma.post.updateMany({
+        where: { public_id: publicId, author_id: userId },
+        data: payload,
       });
     } catch (e) {
       this.logger.error(e);
@@ -205,16 +260,21 @@ export class PostService {
     }
   }
 
-  async delete(payload: IPostDeletePayload): Promise<void> {
+  async delete({
+    query,
+    session,
+  }: IQueryWithSession<{ publicId: string }>): Promise<void> {
     try {
-      const { id, userId } = payload;
+      const { publicId } = query;
+      const { userId } = session;
 
-      if (!id || !userId) throw new ServiceNotFoundException('post not found');
+      if (!publicId || !userId)
+        throw new ServiceNotFoundException('post not found');
 
       // access check
       const access = await this.prisma.post
         .findFirstOrThrow({
-          where: { id, author_id: userId },
+          where: { public_id: publicId, author_id: userId },
         })
         .then(() => true)
         .catch(() => false);
@@ -222,8 +282,8 @@ export class PostService {
         throw new ServiceForbiddenException('post can not be deleted');
 
       // update the post
-      const post = await this.prisma.post.update({
-        where: { id, author_id: userId, deleted_at: null },
+      await this.prisma.post.updateMany({
+        where: { public_id: publicId, author_id: userId, deleted_at: null },
         data: { deleted_at: dateformat().toDate() },
       });
     } catch (e) {
@@ -235,30 +295,34 @@ export class PostService {
     }
   }
 
-  async like(payload: IPostLikePayload): Promise<IPostLikeResponse> {
+  async like({
+    query,
+    session,
+  }: IQueryWithSession<{ publicId: string }>): Promise<IPostLikeResponse> {
     try {
-      const { id, userId } = payload;
+      const { publicId } = query;
+      const { userId } = session;
 
-      if (!id || !userId) throw new ServiceNotFoundException('post not found');
+      if (!publicId || !userId)
+        throw new ServiceNotFoundException('post not found');
 
       // check if the post exists
       const post = await this.prisma.post
         .findFirstOrThrow({
-          where: { id, deleted_at: null },
+          where: { public_id: publicId, deleted_at: null },
           select: {
             id: true,
-            likesCount: true,
+            likes_count: true,
           },
         })
         .catch(() => null);
-
       if (!post) throw new ServiceNotFoundException('post not found');
 
       // check if it is liked already
       const liked = await this.prisma.postLike.findUnique({
         where: {
           post_id_user_id: {
-            post_id: id,
+            post_id: post.id,
             user_id: userId,
           },
         },
@@ -269,7 +333,7 @@ export class PostService {
         await this.prisma.postLike.delete({
           where: {
             post_id_user_id: {
-              post_id: id,
+              post_id: post.id,
               user_id: userId,
             },
           },
@@ -278,7 +342,7 @@ export class PostService {
         // create a like
         await this.prisma.postLike.create({
           data: {
-            post_id: id,
+            post_id: post.id,
             user_id: userId,
           },
         });
@@ -286,12 +350,12 @@ export class PostService {
 
       // update the like count
       const updatedPost = await this.prisma.post.update({
-        where: { id },
-        data: { likesCount: liked ? { decrement: 1 } : { increment: 1 } },
+        where: { id: post.id },
+        data: { likes_count: liked ? { decrement: 1 } : { increment: 1 } },
       });
 
       const response: IPostLikeResponse = {
-        likesCount: updatedPost.likesCount,
+        likesCount: updatedPost.likes_count,
       };
 
       return response;
@@ -304,19 +368,24 @@ export class PostService {
     }
   }
 
-  async bookmark(payload: IPostLikePayload): Promise<IPostBookmarkResponse> {
+  async bookmark({
+    query,
+    session,
+  }: IQueryWithSession<{ publicId: string }>): Promise<IPostBookmarkResponse> {
     try {
-      const { id, userId } = payload;
+      const { publicId } = query;
+      const { userId } = session;
 
-      if (!id || !userId) throw new ServiceNotFoundException('post not found');
+      if (!publicId || !userId)
+        throw new ServiceNotFoundException('post not found');
 
       // check if the post exists
       const post = await this.prisma.post
         .findFirstOrThrow({
-          where: { id, deleted_at: null },
+          where: { public_id: publicId, deleted_at: null },
           select: {
             id: true,
-            bookmarksCount: true,
+            bookmarks_count: true,
           },
         })
         .catch(() => null);
@@ -324,21 +393,21 @@ export class PostService {
       if (!post) throw new ServiceNotFoundException('post not found');
 
       // check if it is bookmarked already
-      const liked = await this.prisma.postBookmark.findUnique({
+      const bookmarked = await this.prisma.postBookmark.findUnique({
         where: {
           post_id_user_id: {
-            post_id: id,
+            post_id: post.id,
             user_id: userId,
           },
         },
       });
 
-      if (liked) {
+      if (bookmarked) {
         // delete the bookmark
         await this.prisma.postBookmark.delete({
           where: {
             post_id_user_id: {
-              post_id: id,
+              post_id: post.id,
               user_id: userId,
             },
           },
@@ -347,20 +416,30 @@ export class PostService {
         // create a bookmark
         await this.prisma.postBookmark.create({
           data: {
-            post_id: id,
+            post_id: post.id,
             user_id: userId,
           },
         });
       }
 
+      // update the user bookmark count
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          bookmarks_count: bookmarked ? { decrement: 1 } : { increment: 1 },
+        },
+      });
+
       // update the bookmark count
       const updatedPost = await this.prisma.post.update({
-        where: { id },
-        data: { bookmarksCount: liked ? { decrement: 1 } : { increment: 1 } },
+        where: { id: post.id },
+        data: {
+          bookmarks_count: bookmarked ? { decrement: 1 } : { increment: 1 },
+        },
       });
 
       const response: IPostBookmarkResponse = {
-        bookmarksCount: updatedPost.bookmarksCount,
+        bookmarksCount: updatedPost.bookmarks_count,
       };
 
       return response;

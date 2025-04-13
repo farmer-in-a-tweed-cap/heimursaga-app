@@ -8,14 +8,15 @@ import {
   Param,
   Post,
   Put,
+  Req,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public, Session } from '@/common/decorators';
-import { ParamNumberIdDto } from '@/common/dto';
-import { IUserSession } from '@/common/interfaces';
+import { ParamPublicIdDto } from '@/common/dto';
+import { IRequest, ISession } from '@/common/interfaces';
 
-import { PostCreatePayloadDto, PostUpdatePayloadDto } from './post.dto';
+import { PostCreateDto, PostUpdateDto } from './post.dto';
 import { PostService } from './post.service';
 
 @ApiTags('posts')
@@ -26,88 +27,76 @@ export class PostController {
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
-  async search(@Session() session: IUserSession) {
-    return await this.postService.search({ userId: session?.userId });
+  async search(@Session() session: ISession) {
+    return await this.postService.search({ query: {}, session });
   }
 
   @Public()
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getById(
-    @Param() param: ParamNumberIdDto,
-    @Session() session: IUserSession,
+    @Req() req: IRequest,
+    @Param() param: ParamPublicIdDto,
+    @Session() session: ISession,
   ) {
-    const { id } = param;
-
     return await this.postService.getById({
-      id,
-      userId: session?.userId,
+      query: { publicId: param.id },
+      session,
     });
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(
-    @Body() body: PostCreatePayloadDto,
-    @Session() session: IUserSession,
-  ) {
+  async create(@Body() body: PostCreateDto, @Session() session: ISession) {
     return await this.postService.create({
-      ...body,
-      userId: session.userId,
+      payload: body,
+      session,
     });
   }
 
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async update(
-    @Param() param: ParamNumberIdDto,
-    @Body() body: PostUpdatePayloadDto,
-    @Session() session: IUserSession,
+    @Param() param: ParamPublicIdDto,
+    @Body() body: PostUpdateDto,
+    @Session() session: ISession,
   ) {
-    console.log('delete', { ...param, ...body });
-
-    return await this.postService.update({
-      ...body,
-      id: param.id,
-      userId: session.userId,
-    });
+    return await this.postService.update(
+      {
+        query: { publicId: param.id },
+        session,
+      },
+      body,
+    );
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async delete(
-    @Param() param: ParamNumberIdDto,
-    @Session() session: IUserSession,
-  ) {
-    console.log('delete', param);
-
+  async delete(@Param() param: ParamPublicIdDto, @Session() session: ISession) {
     return await this.postService.delete({
-      id: param.id,
-      userId: session.userId,
+      query: { publicId: param.id },
+      session,
     });
   }
 
   @Post(':id/like')
   @HttpCode(HttpStatus.OK)
-  async like(
-    @Param() param: ParamNumberIdDto,
-    @Session() session: IUserSession,
-  ) {
+  async like(@Param() param: ParamPublicIdDto, @Session() session: ISession) {
     return await this.postService.like({
-      id: param.id,
-      userId: session.userId,
+      query: { publicId: param.id },
+      session,
     });
   }
 
   @Post(':id/bookmark')
   @HttpCode(HttpStatus.OK)
   async bookmark(
-    @Param() param: ParamNumberIdDto,
-    @Session() session: IUserSession,
+    @Param() param: ParamPublicIdDto,
+    @Session() session: ISession,
   ) {
     return await this.postService.bookmark({
-      id: param.id,
-      userId: session.userId,
+      query: { publicId: param.id },
+      session,
     });
   }
 }

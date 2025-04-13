@@ -43,51 +43,42 @@ const schema = z.object({
     .max(50, fieldmsg.max('password', 20)),
 });
 
-export const LoginForm = ({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<'div'>) => {
+export const LoginForm = ({}) => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const mutation = useMutation({
     mutationFn: loginMutation.mutationFn,
     onSuccess: () => {
-      console.log('success!');
+      // redirect to home page
       redirect(ROUTER.HOME);
     },
     onError: (e) => {
-      console.log('error', e);
+      console.log(e);
+      setLoading(false);
     },
   });
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      email: 'me1@example.com',
-      password: '12345678',
+      email: '',
+      password: '',
     },
   });
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       setLoading(true);
-
-      console.log(values);
-
-      await mutation.mutate(values);
-
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
+      mutation.mutate(values);
     },
   );
 
   return (
-    <div className={cn('flex flex-col gap-6', className)} {...props}>
+    <div className={cn('flex flex-col gap-6')}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Welcome back.</CardTitle>
-          <CardDescription>Log in and start exploring.</CardDescription>
+          <h2 className="text-2xl font-bold">Welcome back.</h2>
+          <span className="text-sm">Log in and start exploring.</span>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -121,12 +112,12 @@ export const LoginForm = ({
                       <FormItem>
                         <div className="flex items-center">
                           <Label htmlFor="password">Password</Label>
-                          <a
-                            href="#"
+                          <Link
+                            href={ROUTER.RESET_PASSWORD}
                             className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                           >
                             Forgot your password?
-                          </a>
+                          </Link>
                         </div>
                         <FormControl>
                           <Input

@@ -58,31 +58,29 @@ const schema = z.object({
     .max(50, fieldmsg.max('password', 20)),
 });
 
-export const SignupForm = ({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<'div'>) => {
+export const SignupForm = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const mutation = useMutation({
     mutationFn: signupMutation.mutationFn,
     onSuccess: () => {
-      console.log('success!');
+      // redirect to login page
       redirect(ROUTER.LOGIN);
     },
     onError: (e) => {
       console.log('error', e);
+      setLoading(false);
     },
   });
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      firstName: 'jack',
-      lastName: 'nicholson',
-      username: 'nicholson',
-      email: 'me@example.com',
-      password: '12345678',
+      firstName: '',
+      lastName: '',
+      username: '',
+      email: '',
+      password: '',
     },
   });
 
@@ -90,22 +88,16 @@ export const SignupForm = ({
     async (values: z.infer<typeof schema>) => {
       setLoading(true);
 
-      console.log(values);
-
-      await mutation.mutate(values);
-
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
+      mutation.mutate(values);
     },
   );
 
   return (
-    <div className={cn('flex flex-col gap-6', className)} {...props}>
+    <div className={cn('flex flex-col gap-6')}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Sign up.</CardTitle>
-          <CardDescription>Create your free account today.</CardDescription>
+          <h2 className="text-2xl font-bold">Welcome back.</h2>
+          <span className="text-sm">Create your free account today.</span>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -119,12 +111,7 @@ export const SignupForm = ({
                       <FormItem>
                         <FormLabel>First name</FormLabel>
                         <FormControl>
-                          <Input
-                            type="first name"
-                            disabled={loading}
-                            required
-                            {...field}
-                          />
+                          <Input disabled={loading} required {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -139,12 +126,22 @@ export const SignupForm = ({
                       <FormItem>
                         <FormLabel>Last name</FormLabel>
                         <FormControl>
-                          <Input
-                            type="last name"
-                            disabled={loading}
-                            required
-                            {...field}
-                          />
+                          <Input disabled={loading} required {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading} required {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

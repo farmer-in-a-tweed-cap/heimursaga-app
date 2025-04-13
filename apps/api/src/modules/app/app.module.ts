@@ -5,9 +5,13 @@ import { AuthModule } from '@/modules/auth';
 import { EmailModule } from '@/modules/email';
 import { EventModule } from '@/modules/event';
 import { LoggerModule } from '@/modules/logger';
+import { PaymentModule } from '@/modules/payment';
 import { PostModule } from '@/modules/post';
 import { PrismaModule } from '@/modules/prisma';
+import { SearchModule } from '@/modules/search';
+import { StripeModule } from '@/modules/stripe';
 import { UploadModule } from '@/modules/upload';
+import { UserModule } from '@/modules/user';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -22,10 +26,14 @@ import { AppService } from './app.service';
     LoggerModule,
     EventModule,
     EmailModule,
+    StripeModule,
     PrismaModule,
     AuthModule,
     PostModule,
     UploadModule,
+    UserModule,
+    SearchModule,
+    PaymentModule,
   ],
   controllers: [AppController],
   providers: [AppService],

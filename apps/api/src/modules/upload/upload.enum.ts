@@ -1,5 +1,9 @@
-export enum UploadType {
-  BASIC = 'basic',
-  ID = 'id',
-  LISTING_VERIFICATION = 'listing_verification',
+export enum UploadContext {
+  UPLOAD = 'upload',
+  USER = 'user',
 }
+
+export const UPLOAD_BUCKETS = {
+  UPLOAD: 'upload',
+  USER: 'user',
+};

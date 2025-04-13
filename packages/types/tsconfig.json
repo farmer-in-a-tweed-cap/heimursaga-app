@@ -1,9 +1,10 @@
 {
   "extends": "@repo/tsconfig/base.json",
-  "include": ["./*.ts"],
-  "exclude": ["node_modules"],
   "compilerOptions": {
     "outDir": "./dist",
+    "declaration": true,
     "rootDir": "."
-  }
+  },
+  "include": ["./*.ts"],
+  "exclude": ["node_modules", "dist"]
 }

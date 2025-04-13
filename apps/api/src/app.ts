@@ -1,4 +1,3 @@
-import { FastifyCookieOptions, fastifyCookie } from '@fastify/cookie';
 import { FastifyCorsOptions, fastifyCors } from '@fastify/cors';
 import { FastifyMultipartOptions, fastifyMultipart } from '@fastify/multipart';
 import {
@@ -13,23 +12,25 @@ import {
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import { getEnv } from '@/lib/utils';
+import { getEnv, sleep } from '@/lib/utils';
 
 import { HttpExceptionFilter } from '@/common/exception-filters';
 import { ServiceExceptionInterceptor } from '@/common/interceptors';
 import { AppModule } from '@/modules/app';
 import { Logger } from '@/modules/logger';
 
+import { IRequest, IResponse } from './common/interfaces';
+
 // build the app
 export async function app() {
   try {
     const ENV = getEnv();
     const IS_PRODUCTION = ENV === 'production';
+    const IS_DEVELOPMENT = ENV === 'development';
     const HOST = process.env?.HOST || '0.0.0.0';
     const PORT = parseInt(process.env.PORT) || 5000;
     const API_VERSION = 1;
     const API_PREFIX = `v${API_VERSION}`;
-    const COOKIE_SECRET = process.env.COOKIE_SECRET;
     const SESSION_SECRET = process.env.SESSION_SECRET;
     const CORS_ORIGIN = process.env.CORS_ORIGIN;
     const DISABLE_ERROR_MESSAGES = IS_PRODUCTION;
@@ -50,18 +51,6 @@ export async function app() {
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     } satisfies FastifyCorsOptions);
 
-    // @todo: remove cookie plugin
-    // await fastify.register<FastifyCookieOptions>(fastifyCookie as any, {
-    //   secret: COOKIE_SECRET,
-    //   parseOptions: {
-    //     httpOnly: true,
-    //     path: '/',
-    //     maxAge: 3600,
-    //     secure: IS_PRODUCTION,
-    //     // sameSite: 'strict',
-    //   },
-    // } satisfies FastifyCookieOptions);
-
     await fastify.register<FastifySecureSessionOptions>(
       fastifySecureSession as any,
       {
@@ -71,7 +60,7 @@ export async function app() {
         cookie: {
           httpOnly: true,
           path: '/',
-          maxAge: 3600,
+          maxAge: 60 * 60 * 24,
           secure: IS_PRODUCTION,
         },
       },
@@ -101,6 +90,10 @@ export async function app() {
           path: '',
           method: RequestMethod.GET,
         },
+        {
+          path: 'stripe',
+          method: RequestMethod.POST,
+        },
       ],
     });
 
@@ -114,6 +107,11 @@ export async function app() {
       }),
     );
 
+    app.use(async (req: IRequest, res: IResponse, next: () => void) => {
+      if (IS_DEVELOPMENT) await sleep(500);
+      next();
+    });
+
     // swagger
     const config = new DocumentBuilder()
       .setTitle('saga api')
@@ -124,7 +122,9 @@ export async function app() {
     // run the app
     await app
       .listen(PORT, HOST, () => {
-        console.log('api running', { env: ENV });
+        console.log('api running', {
+          env: ENV,
+        });
       })
       .catch((e) => {
         console.log('api failed', e);

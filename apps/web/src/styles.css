@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --app-header-height: 50px;
+  }
+}
+
+@layer components {
+  .app-header {
+    @apply w-full bg-white flex flex-row justify-center items-center drop-shadow-sm overflow-x-hidden;
+    height: var(--app-header-height);
+  }
+
+  .app-content-full-container {
+    @apply w-full h-screen relative;
+
+    /* height: calc(100vh - var(--app-header-height)); */
+    /* margin-top: var(--app-header-height); */
+  }
+
+  .app-container {
+    @apply w-full h-auto max-w-full px-4 flex flex-row box-border;
+  }
+
+  .app-sidebar-link {
+    @apply transition-all flex flex-row gap-4 items-center text-sm px-3 py-2 rounded-lg hover:bg-dark-hover;
+
+    &:hover {
+      @apply text-white;
+
+      .app-sidebar-link-icon {
+        @apply transition-all scale-105 text-white;
+      }
+    }
+  }
+
+  .app-sidebar-link-active {
+    @apply text-white bg-dark-hover;
+    .app-sidebar-link-icon {
+      @apply transition-all scale-105 text-white;
+    }
+  }
+
+  .error-message {
+    @apply text-red-500 text-sm;
+  }
+}
+
+.map-popup {
+  @apply w-[280px] bg-white p-4 text-black rounded-xl shadow text-sm flex flex-col justify-start items-start gap-2;
+}
+
+.map-popup-title {
+  @apply font-medium;
+}
+
+.map-popup-date {
+  @apply text-sm font-normal text-neutral-700;
+}
+
+.map-popup-content {
+  @apply font-normal;
+}
+
+.mapboxgl-popup {
+}
+
+.mapboxgl-popup-content {
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+}
+
+.mapboxgl-popup-tip {
+  @apply !hidden;
+}
+
+.map-control-group {
+  @apply bg-transparent flex flex-col gap-2 shadow-none p-4 box-border;
+}
+
+.map-control button {
+  @apply transition-all w-[48px] h-[48px] bg-white drop-shadow flex items-center justify-center rounded-full text-lg cursor-pointer scale-100 active:scale-95 hover:!bg-white hover:!opacity-100;
+}

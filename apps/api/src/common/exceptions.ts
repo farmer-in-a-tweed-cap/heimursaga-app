@@ -81,11 +81,11 @@ export class ServiceBadRequestException extends ServiceException {
 }
 
 export class ServiceForbiddenException extends ServiceException {
-  constructor(message: string) {
+  constructor(message?: string) {
     super(message);
 
     this.status = ServiceExceptionStatus.FORBIDDEN;
-    this.message = message;
+    this.message = message || 'forbidden';
   }
 }
 
@@ -94,6 +94,6 @@ export class ServiceUnauthorizedException extends ServiceException {
     super(message as string);
 
     this.status = ServiceExceptionStatus.UNAUTHORIZED;
-    this.message = message || 'Unauthorized';
+    this.message = message || 'unauthorized';
   }
 }

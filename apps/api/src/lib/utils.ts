@@ -7,6 +7,8 @@ const ENV = {
   DEVELOPMENT: 'development',
 };
 
+export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 export const array = (length: number) => Array.from(Array(length));
 
 export const getEnv = (): string => {

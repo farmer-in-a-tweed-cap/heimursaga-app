@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
 import * as nodemailer from 'nodemailer';
 
+import { getEmailTemplate } from '@/common/email-templates';
 import { ServiceException } from '@/common/exceptions';
 import { EVENTS, IEmailSendEvent } from '@/modules/event';
 import { Logger } from '@/modules/logger';
@@ -56,17 +57,32 @@ export class EmailService {
   }
 
   @OnEvent(EVENTS.SEND_EMAIL)
-  async onSend(event: IEmailSendEvent) {
+  async onSend(event: IEmailSendEvent): Promise<void> {
     try {
-      const { to, text, html, subject } = event;
+      const { to, vars } = event;
+
+      // get the template
+      const templateKey = event.template;
+      const template = templateKey ? getEmailTemplate(templateKey, vars) : null;
 
       // send the email
-      await this.send({
-        to,
-        subject,
-        text,
-        html,
-      });
+      if (template) {
+        const { subject, html } = template;
+        await this.send({
+          to,
+          subject,
+          html,
+        });
+      } else {
+        const { subject, text, html } = event;
+
+        await this.send({
+          to,
+          subject,
+          text: html ? undefined : text,
+          html: html ? html : undefined,
+        });
+      }
     } catch (e) {
       this.logger.error(e);
     }

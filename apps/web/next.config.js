@@ -25,6 +25,10 @@ module.exports = {
         source: '/api/:path*',
         destination: `${NEXT_PUBLIC_API_BASE_URL}/:path*`,
       },
+      {
+        source: '/user/settings',
+        destination: `/user/settings/profile`,
+      },
     ];
   },
 };

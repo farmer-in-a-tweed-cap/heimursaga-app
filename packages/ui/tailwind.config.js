@@ -12,15 +12,37 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#AA6C46',
-          foreground: '#ffffff',
+          DEFAULT: 'var(--primary)',
+          foreground: 'var(--primary-foreground)',
         },
         secondary: {
-          DEFAULT: '#212121',
+          DEFAULT: 'var(--secondary)',
+          hover: 'var(--secondary-hover)',
+          foreground: 'var(--secondary-foreground)',
+        },
+        dark: {
+          DEFAULT: 'var(--dark)',
+          foreground: 'var(--dark-foreground)',
+          hover: 'var(--dark-hover)',
         },
         destructive: {
           DEFAULT: '#CC3300',
         },
+        accent: {
+          DEFAULT: 'var(--accent)',
+          foreground: 'var(--accent-foreground)',
+        },
+        background: {
+          DEFAULT: 'var(--background)',
+          foreground: 'var(--background-foreground)',
+        },
+        popover: {
+          DEFAULT: 'var(--popover)',
+          foreground: 'var(--popover-foreground)',
+        },
+      },
+      fontSize: {
+        xxs: '0.625rem',
       },
       aspectRatio: {
         '4/3': '4/3',

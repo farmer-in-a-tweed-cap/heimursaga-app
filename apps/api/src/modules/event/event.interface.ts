@@ -1,3 +1,3 @@
 import { IEmailSendPayload } from '@/modules/email';
 
-export interface IEmailSendEvent extends IEmailSendPayload {}
+export interface IEmailSendEvent<T = any> extends IEmailSendPayload<T> {}

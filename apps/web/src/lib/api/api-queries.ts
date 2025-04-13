@@ -1,20 +1,49 @@
 import {
-  ILoginQueryPayload,
-  ISessionUserQueryResponse,
-  ISignupQueryPayload,
-} from '../../types/api-types';
+  ILoginPayload,
+  IPasswordResetPayload,
+  IPasswordUpdatePayload,
+  IPaymentMethodGetAllResponse,
+  IPostCreatePayload,
+  IPostCreateResponse,
+  IPostQueryMapResponse,
+  IPostQueryResponse,
+  IPostUpdatePayload,
+  ISearchQueryPayload,
+  ISearchQueryResponse,
+  ISignupPayload,
+  IUserFollowersQueryResponse,
+  IUserFollowingQueryResponse,
+  IUserPictureUploadClientPayload,
+  IUserPostsQueryResponse,
+  IUserSettingsProfileResponse,
+  IUserSettingsProfileUpdateQuery,
+} from '@repo/types';
 
-import { apiClient } from './api-client';
+import { IApiClientQueryWithPayload, apiClient } from './api-client';
 
 export const QUERY_KEYS = {
   LOGIN: 'login',
   SIGNUP: 'signup',
   POSTS: 'posts',
+  GET_POSTS: 'get_posts',
+  GET_USER_POSTS: 'get_user_posts',
+  QUERY_POST_MAP: 'query_post_map',
   GET_SESSION_USER: 'get_session_user',
   GET_SESSION: 'get_session',
+  SEARCH: 'search',
+  USER_FOLLOWERS: 'user_followers',
+  USER_FOLLOWING: 'user_following',
+  USER_FEED: 'user_feed',
+  USER_BOOKMARKS: 'user_bookmarks',
+  USER_DRAFTS: 'user_drafts',
+  USER_SETTINGS_PROFILE: 'user_settings_profile',
+  USER_PAYMENT_METHODS: 'user_payment_methods,',
 };
 
-const createQuery = <T = any>(queryKey: string, queryFn: () => Promise<T>) => {
+const createQuery = <T = undefined, R = any>(
+  queryKey: string[],
+  queryFn: (query: T) => Promise<R>,
+) => {
   return { queryKey: [queryKey], queryFn };
 };
 
@@ -24,19 +53,270 @@ const createMutation = <T = any, R = any>(
   return { mutationFn };
 };
 
-export const loginMutation = createMutation<ILoginQueryPayload, void>(
-  apiClient.login,
+export const loginMutation = createMutation<ILoginPayload, void>((payload) =>
+  apiClient.login({ query: {}, payload }).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data;
+  }),
 );
 
-export const signupMutation = createMutation<ISignupQueryPayload, void>(
-  apiClient.signup,
+export const signupMutation = createMutation<ISignupPayload, void>((payload) =>
+  apiClient
+    .signup({ query: {}, payload })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data;
+    }),
 );
 
-// export const logoutMutation = createMutation<void, void>(()=>apiClient.logout);
-
-export const getSessionQuery = createQuery<ISessionUserQueryResponse>(
-  QUERY_KEYS.GET_SESSION,
-  () => apiClient.getSession({ cookie: '' }),
+export const resetPasswordMutation = createMutation<
+  IPasswordResetPayload,
+  void
+>((payload) =>
+  apiClient.resetPassword(payload).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data;
+  }),
 );
 
-export const fetchPostsQuery = createQuery(QUERY_KEYS.POSTS, apiClient.test);
+export const updatePasswordMutation = createMutation<
+  IPasswordUpdatePayload,
+  void
+>((payload) =>
+  apiClient
+    .updatePassword({ query: {}, payload })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data;
+    }),
+);
+
+export const getPostsQuery = createQuery<{}, IPostQueryResponse>(
+  [QUERY_KEYS.GET_POSTS],
+  (query) =>
+    apiClient.getPosts(query).then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IPostQueryResponse;
+    }),
+);
+
+export const queryPostMapQuery = createQuery<void, IPostQueryMapResponse>(
+  [QUERY_KEYS.GET_POSTS],
+  (query) =>
+    apiClient.getPosts(query).then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IPostQueryMapResponse;
+    }),
+);
+
+export const postCreateMutation = createMutation<
+  IPostCreatePayload,
+  IPostCreateResponse
+>((payload) =>
+  apiClient.createPost(payload).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as IPostCreateResponse;
+  }),
+);
+
+export const postUpdateMutation = createMutation<
+  IApiClientQueryWithPayload<{ id: string }, IPostUpdatePayload>,
+  void
+>((query) =>
+  apiClient.updatePost(query).then(({ success, message }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+  }),
+);
+
+export const getUserPostsQuery = createQuery<
+  { username: string },
+  IUserPostsQueryResponse
+>([QUERY_KEYS.GET_POSTS], ({ username }) =>
+  apiClient.getUserPosts({ username }).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as IUserPostsQueryResponse;
+  }),
+);
+
+export const searchQuery = createQuery<
+  ISearchQueryPayload,
+  ISearchQueryResponse
+>([QUERY_KEYS.SEARCH], (query) =>
+  apiClient.search(query).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as ISearchQueryResponse;
+  }),
+);
+
+export const postLikeMutation = createMutation<
+  { postId: string },
+  { likesCount: number }
+>(({ postId }) =>
+  apiClient.likePost({ postId }).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+
+    return data as { likesCount: number };
+  }),
+);
+
+export const postBookmarkMutation = createMutation<
+  { postId: string },
+  { bookmarksCount: number }
+>(({ postId }) =>
+  apiClient.bookmarkPost({ postId }).then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+
+    return data as { bookmarksCount: number };
+  }),
+);
+
+export const getUserFollowersQuery = createQuery<
+  { username: string },
+  IUserFollowersQueryResponse
+>([QUERY_KEYS.USER_FOLLOWERS], ({ username }) =>
+  apiClient
+    .getUserFollowers({ username })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IUserFollowersQueryResponse;
+    }),
+);
+
+export const getUserFollowingQuery = createQuery<
+  { username: string },
+  IUserFollowingQueryResponse
+>([QUERY_KEYS.USER_FOLLOWING], ({ username }) =>
+  apiClient
+    .getUserFollowing({ username })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IUserFollowingQueryResponse;
+    }),
+);
+
+export const followUserMutation = createMutation<{ username: string }, void>(
+  ({ username }) =>
+    apiClient.followUser({ username }).then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+    }),
+);
+
+export const unfollowUserMutation = createMutation<{ username: string }, void>(
+  ({ username }) =>
+    apiClient.unfollowUser({ username }).then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+    }),
+);
+
+export const getUserFeed = createQuery<void, IPostQueryResponse>(
+  [QUERY_KEYS.USER_FEED],
+  () =>
+    apiClient.getUserFeed().then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IPostQueryResponse;
+    }),
+);
+
+export const getUserBookmarks = createQuery<void, IPostQueryResponse>(
+  [QUERY_KEYS.USER_BOOKMARKS],
+  () =>
+    apiClient.getUserBookmarks().then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IPostQueryResponse;
+    }),
+);
+
+export const getUserDrafts = createQuery<void, IPostQueryResponse>(
+  [QUERY_KEYS.USER_DRAFTS],
+  () =>
+    apiClient.getUserDrafts().then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IPostQueryResponse;
+    }),
+);
+
+export const getUserProfileSettingsQuery = createQuery<
+  void,
+  IUserSettingsProfileResponse
+>([QUERY_KEYS.USER_SETTINGS_PROFILE], () =>
+  apiClient.getUserProfileSettings().then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as IUserSettingsProfileResponse;
+  }),
+);
+
+export const updateUserProfileSettingsMutation = createMutation<
+  IUserSettingsProfileUpdateQuery,
+  void
+>((payload) =>
+  apiClient
+    .updateUserProfileSettings(payload)
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+    }),
+);
+
+export const updateUserPictureMutation = createMutation<
+  IApiClientQueryWithPayload<{}, IUserPictureUploadClientPayload>,
+  void
+>(({ payload }) =>
+  apiClient.updateUserPicture(payload).then(({ success, message }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+  }),
+);
+
+export const getUserPaymentMethods = createQuery<
+  void,
+  IPaymentMethodGetAllResponse
+>([QUERY_KEYS.USER_PAYMENT_METHODS], () =>
+  apiClient.getUserPaymentMethods().then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as IPaymentMethodGetAllResponse;
+  }),
+);

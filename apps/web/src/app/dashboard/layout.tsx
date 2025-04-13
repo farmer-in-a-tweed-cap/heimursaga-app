@@ -4,8 +4,8 @@ import { redirect } from 'next/navigation';
 
 import { apiClient } from '@/lib/api';
 
-import { AppMapLayout } from '@/components';
 import { SessionProvider } from '@/contexts';
+import { AppMapLayout } from '@/layouts';
 import { ROUTER } from '@/router';
 
 export const metadata: Metadata = {
@@ -23,14 +23,14 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   const cookie = cookies().toString();
-  const session = await apiClient.getSession({ cookie }).catch(() => null);
+  const sessionQuery = await apiClient.getSession({ cookie });
 
-  if (!session) {
+  if (!sessionQuery.success) {
     return redirect(ROUTER.LOGIN);
   }
 
   return (
-    <SessionProvider state={session}>
+    <SessionProvider state={sessionQuery.data}>
       <AppMapLayout>{children}</AppMapLayout>
     </SessionProvider>
   );

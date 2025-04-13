@@ -1,11 +1,26 @@
 import { Loader2 } from 'lucide-react';
 
+import { cn } from './../lib/utils';
+
 type SpinnerProps = {
-  size?: number;
+  className?: string;
 };
 
-export const Spinner: React.FC<SpinnerProps> = () => {
-  return <Loader2 className="animate-spin" />;
+export const Spinner: React.FC<SpinnerProps> = ({ className }) => {
+  return <Loader2 className={cn('animate-spin', className)} />;
 };
 
-Spinner.defaultProps = { size: 24 };
+export const LoadingSpinner = () => (
+  <div className="w-full h-full flex flex-row justify-center items-center p-6">
+    <Spinner />
+  </div>
+);
+
+type LoadingOverlayProps = {};
+
+export const LoadingOverlay: React.FC<LoadingOverlayProps> = () => (
+  <div className="z-50 absolute inset-0 flex items-center justify-center">
+    <div className="z-30 absolute inset-0 bg-white dark:bg-black opacity-60"></div>
+    <Spinner className="z-40" />
+  </div>
+);

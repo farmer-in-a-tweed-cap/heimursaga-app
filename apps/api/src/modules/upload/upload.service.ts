@@ -1,15 +1,24 @@
 import { PutObjectCommand, S3 } from '@aws-sdk/client-s3';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  IMediaUploadPayload,
+  IMediaUploadResponse,
+  MediaUploadContext,
+} from '@repo/types';
 import * as crypto from 'node:crypto';
 import * as sharp from 'sharp';
 
 import { UploadedFileType } from '@/common/enums';
-import { ServiceException } from '@/common/exceptions';
+import {
+  ServiceException,
+  ServiceForbiddenException,
+} from '@/common/exceptions';
+import { IPayloadWithSession } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
-import { IUploadMediaPayload, IUploadMediaResponse } from './upload.interface';
+import { UPLOAD_BUCKETS } from './upload.enum';
 
 @Injectable()
 export class UploadService {
@@ -34,17 +43,54 @@ export class UploadService {
     });
   }
 
-  async upload(payload: IUploadMediaPayload): Promise<IUploadMediaResponse> {
+  async upload({
+    payload,
+    session,
+  }: IPayloadWithSession<IMediaUploadPayload>): Promise<IMediaUploadResponse> {
     try {
-      const { S3_ENDPOINT, S3_BUCKET } = process.env;
-
       const {
+        context,
         thumbnail = true,
         file: { buffer },
       } = payload;
+      const { userId } = session;
+
+      let bucket;
+      let username: string = '';
+      let userRequired = false;
+
+      // define bucket based on context
+      switch (context) {
+        case MediaUploadContext.UPLOAD:
+          bucket = UPLOAD_BUCKETS.UPLOAD;
+          break;
+        case MediaUploadContext.USER:
+          bucket = UPLOAD_BUCKETS.USER;
+          userRequired = true;
+          break;
+        default:
+          bucket = UPLOAD_BUCKETS.UPLOAD;
+          break;
+      }
+
+      // check if the user is logged in
+      if (userRequired) {
+        if (!userId) throw new ServiceForbiddenException();
+
+        await this.prisma.user
+          .findFirstOrThrow({
+            where: { id: userId },
+            select: { id: true, username: true },
+          })
+          .then((user) => {
+            username = user.username;
+          })
+          .catch(() => {
+            throw new ServiceForbiddenException();
+          });
+      }
 
       // generate metadata
-      const bucket = S3_BUCKET;
       const ext = 'webp';
       const mimetype = 'image/webp';
       const hash = crypto.randomBytes(24).toString('hex');
@@ -98,11 +144,6 @@ export class UploadService {
         ),
       );
 
-      const urls = {
-        original: `${S3_ENDPOINT}/${paths.original}`,
-        thumbnail: `${S3_ENDPOINT}/${paths.thumbnail}`,
-      };
-
       // save the upload to the database
       await this.prisma.upload
         .create({
@@ -117,12 +158,10 @@ export class UploadService {
         });
 
       // return original and thumbnail files
-      const response: IUploadMediaResponse = {
-        original: urls.original,
-        thumbnail: urls.thumbnail,
+      return {
+        original: paths.original,
+        thumbnail: paths.thumbnail,
       };
-
-      return response;
     } catch (e) {
       this.logger.error(e);
 

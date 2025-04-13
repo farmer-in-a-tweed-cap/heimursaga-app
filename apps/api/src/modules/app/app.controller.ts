@@ -2,6 +2,7 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public } from '@/common/decorators';
+import { StripeService } from '@/modules/stripe';
 
 import { AppService } from './app.service';
 

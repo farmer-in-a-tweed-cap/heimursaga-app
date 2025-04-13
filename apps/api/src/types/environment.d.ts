@@ -6,7 +6,7 @@ declare global {
       PORT: string;
       TZ: string;
 
-      APP_DOMAIN: string;
+      APP_BASE_URL: string;
       CORS_ORIGIN: string;
       DATABASE_URL: string;
 
@@ -35,6 +35,7 @@ declare module '@fastify/secure-session' {
   interface SessionData {
     sid: string;
     user_id: number;
+    user_role: string;
   }
 }
 
