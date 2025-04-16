@@ -18,6 +18,7 @@ import {
   IStripeCreateSetupIntentResponse,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
   IUserProfileDetail,
@@ -298,6 +299,11 @@ export const apiClient = {
     api.request<void>(API_ROUTER.PAYMENT_METHODS.DELETE(query.id), {
       method: API_METHODS.DELETE,
       body: JSON.stringify({}),
+      cookie: config ? config.cookie : undefined,
+    }),
+  getUserNotifications: async (config?: RequestConfig) =>
+    api.request<IUserNotificationGetResponse>(API_ROUTER.USER.NOTIFICATIONS, {
+      method: API_METHODS.GET,
       cookie: config ? config.cookie : undefined,
     }),
 };

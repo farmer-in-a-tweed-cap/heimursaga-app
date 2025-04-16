@@ -13,6 +13,7 @@ export const API_ROUTER = {
     BOOKMARKS: `/user/bookmarks`,
     DRAFTS: `/user/drafts`,
     UPDATE_PICTURE: '/user/picture',
+    NOTIFICATIONS: '/user/notifications',
     SETTINGS: {
       PROFILE: '/user/settings/profile',
     },
