@@ -15,3 +15,10 @@ export enum PlanExpiryPeriod {
   MONTH = 'month',
   YEAR = 'year',
 }
+
+export enum UserNotificationContext {
+  LIKE = 'like',
+  FOLLOW = 'follow',
+  MEMBERSHIP = 'membership',
+  DONATION = 'donation',
+}

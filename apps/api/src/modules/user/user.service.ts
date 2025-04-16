@@ -1,17 +1,20 @@
+import { IUserNotificationCreatePayload } from '../notification';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserNotificationGetResponse,
   IUserPictureUploadPayload,
   IUserPostsQueryResponse,
   IUserProfileDetail,
   IUserSettingsProfileResponse,
   IUserSettingsUpdateQuery,
   MediaUploadContext,
+  UserNotificationContext,
 } from '@repo/types';
 
-import { getUploadStaticUrl } from '@/lib/upload';
+import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
   ServiceBadRequestException,
@@ -19,7 +22,8 @@ import {
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import { IPayloadWithSession } from '@/common/interfaces';
+import { IPayloadWithSession, IQueryWithSession } from '@/common/interfaces';
+import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 import { UploadService } from '@/modules/upload';
@@ -29,6 +33,7 @@ export class UserService {
   constructor(
     private logger: Logger,
     private prisma: PrismaService,
+    private eventService: EventService,
   ) {}
 
   async getByUsername({
@@ -68,7 +73,7 @@ export class UserService {
       const response: IUserProfileDetail = {
         username: user.username,
         picture: user.profile.picture
-          ? getUploadStaticUrl(user.profile.picture)
+          ? getStaticMediaUrl(user.profile.picture)
           : '',
         bio: user.profile?.bio,
         firstName: user.profile.first_name,
@@ -170,7 +175,7 @@ export class UserService {
               name: author.profile?.first_name,
               username: author?.username,
               picture: author?.profile?.picture
-                ? getUploadStaticUrl(author?.profile.picture)
+                ? getStaticMediaUrl(author?.profile.picture)
                 : '',
             },
             liked: userId ? likes.length > 0 : false,
@@ -240,7 +245,7 @@ export class UserService {
           username,
           firstName: profile.first_name,
           lastName: profile.first_name,
-          picture: profile.picture ? getUploadStaticUrl(profile?.picture) : '',
+          picture: profile.picture ? getStaticMediaUrl(profile?.picture) : '',
         })),
         results,
       };
@@ -301,7 +306,7 @@ export class UserService {
           username,
           firstName: profile.first_name,
           lastName: profile.first_name,
-          picture: profile.picture ? getUploadStaticUrl(profile.picture) : '',
+          picture: profile.picture ? getStaticMediaUrl(profile.picture) : '',
         })),
         results,
       };
@@ -375,6 +380,16 @@ export class UserService {
           where: { id: followerId },
           data: {
             following_count: { increment: 1 },
+          },
+        });
+
+        // create a notification
+        await this.eventService.trigger<IUserNotificationCreatePayload>({
+          event: EVENTS.NOTIFICATIONS.CREATE,
+          data: {
+            context: UserNotificationContext.FOLLOW,
+            userId: followeeId,
+            mentionUserId: followerId,
           },
         });
       });
@@ -585,7 +600,7 @@ export class SessionUserService {
               name: author.profile?.first_name,
               username: author?.username,
               picture: author?.profile?.picture
-                ? getUploadStaticUrl(author?.profile?.picture)
+                ? getStaticMediaUrl(author?.profile?.picture)
                 : '',
             },
             liked: userId ? likes.length > 0 : false,
@@ -642,7 +657,7 @@ export class SessionUserService {
                   email,
                   username,
                   picture: profile?.picture
-                    ? getUploadStaticUrl(profile?.picture)
+                    ? getStaticMediaUrl(profile?.picture)
                     : '',
                   firstName: profile?.first_name,
                   lastName: profile?.last_name,
@@ -739,6 +754,69 @@ export class SessionUserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('user picture not updated');
+      throw exception;
+    }
+  }
+
+  async getNotifications({
+    session,
+  }: IQueryWithSession): Promise<IUserNotificationGetResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      const where: Prisma.UserNotificationWhereInput = { user_id: userId };
+      const page = 1;
+      const take = 25;
+      const skip = page <= 1 ? 0 : take * page;
+
+      // get the notifications
+      const results = await this.prisma.userNotification.count({ where });
+
+      const data = await this.prisma.userNotification.findMany({
+        where,
+        select: {
+          context: true,
+          mention_user: {
+            select: {
+              username: true,
+              profile: { select: { picture: true, first_name: true } },
+            },
+          },
+          mention_post: {
+            select: { public_id: true },
+          },
+          body: true,
+          created_at: true,
+        },
+        take,
+        skip,
+        orderBy: [{ created_at: 'desc' }],
+      });
+
+      return {
+        results,
+        data: data.map(
+          ({ mention_user, context, mention_post, body, created_at }) => ({
+            context,
+            body,
+            mentionUser: {
+              username: mention_user.username,
+              name: mention_user.profile.first_name,
+              picture: getStaticMediaUrl(mention_user.profile.picture),
+            },
+            postId: mention_post?.public_id,
+            date: created_at,
+          }),
+        ),
+        page,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('notifications not found');
       throw exception;
     }
   }

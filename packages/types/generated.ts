@@ -330,3 +330,23 @@ export interface IMediaUploadResponse {
 export interface IStripeCreateSetupIntentResponse {
   secret: string;
 }
+
+// notifications
+
+export interface IUserNotification {
+  context: string;
+  date: Date;
+  mentionUser: {
+    username: string;
+    name: string;
+    picture: string;
+  };
+  body?: string;
+  postId?: string;
+}
+
+export interface IUserNotificationGetResponse {
+  results: number;
+  data: IUserNotification[];
+  page: number;
+}

@@ -3,4 +3,7 @@ export const EVENTS = {
   SIGNUP: 'signup',
   SEND_EMAIL: 'send_email',
   UPLOAD: 'upload',
+  NOTIFICATIONS: {
+    CREATE: 'notifications.create',
+  },
 };

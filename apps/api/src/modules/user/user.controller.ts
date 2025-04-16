@@ -188,4 +188,13 @@ export class SessionUserController {
       context: 'drafts',
     });
   }
+
+  @Get('notifications')
+  @HttpCode(HttpStatus.OK)
+  async getNotifications(@Session() session: ISession) {
+    return await this.sessionUserService.getNotifications({
+      session,
+      query: {},
+    });
+  }
 }

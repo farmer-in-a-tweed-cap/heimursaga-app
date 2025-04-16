@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { ISearchQueryPayload, ISearchQueryResponse } from '@repo/types';
 
-import { getUploadStaticUrl } from '@/lib/upload';
+import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
   ServiceException,
@@ -107,7 +107,7 @@ export class SearchService {
               username: post.author?.username,
               name: post.author?.profile?.first_name,
               picture: post.author?.profile?.picture
-                ? getUploadStaticUrl(post.author?.profile?.picture)
+                ? getStaticMediaUrl(post.author?.profile?.picture)
                 : undefined,
             },
           })),

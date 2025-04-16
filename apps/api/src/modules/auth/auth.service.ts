@@ -10,7 +10,7 @@ import {
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
-import { getUploadStaticUrl } from '@/lib/upload';
+import { getStaticMediaUrl } from '@/lib/upload';
 import { hashPassword } from '@/lib/utils';
 
 import { EMAIL_TEMPLATE_KEYS } from '@/common/email-templates';
@@ -86,7 +86,7 @@ export class AuthService {
         role,
         firstName,
         lastName,
-        picture: getUploadStaticUrl(picture),
+        picture: getStaticMediaUrl(picture),
         isEmailVerified,
         isPremium,
       };

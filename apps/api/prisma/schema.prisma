@@ -15,33 +15,37 @@ datasource db {
   directUrl = env("DATABASE_DIRECT_URL")
 }
 
+// models
+
 model User {
-  id                 Int             @id @default(autoincrement())
-  email              String          @unique @db.VarChar(50)
-  username           String          @unique @db.VarChar(50)
-  password           String
-  role               String          @db.VarChar(10)
-  is_creator         Boolean?        @default(false)
-  is_premium         Boolean?        @default(false)
-  is_email_verified  Boolean?        @default(false)
-  stripe_customer_id String?         @db.VarChar(40)
-  followers_count    Int?            @default(0)
-  following_count    Int?            @default(0)
-  bookmarks_count    Int?            @default(0)
-  posts_count        Int?            @default(0)
-  profile            UserProfile?
-  plans              UserPlan[]
-  sessions           UserSession[]
-  checkouts          Checkout[]
-  posts              Post[]
-  post_likes         PostLike[]      @relation("user_post_likes")
-  post_bookmarks     PostBookmark[]  @relation("user_post_bookmarks")
-  following          UserFollow[]    @relation("user_follows_follower")
-  followers          UserFollow[]    @relation("user_follows_followee")
-  uploads            Upload[]
-  payment_methods    PaymentMethod[]
-  created_at         DateTime?       @default(now())
-  updated_at         DateTime?       @updatedAt
+  id                    Int                @id @default(autoincrement())
+  email                 String             @unique @db.VarChar(50)
+  username              String             @unique @db.VarChar(50)
+  password              String
+  role                  String             @db.VarChar(10)
+  is_creator            Boolean?           @default(false)
+  is_premium            Boolean?           @default(false)
+  is_email_verified     Boolean?           @default(false)
+  stripe_customer_id    String?            @db.VarChar(40)
+  followers_count       Int?               @default(0)
+  following_count       Int?               @default(0)
+  bookmarks_count       Int?               @default(0)
+  posts_count           Int?               @default(0)
+  profile               UserProfile?
+  plans                 UserPlan[]
+  sessions              UserSession[]
+  checkouts             Checkout[]
+  posts                 Post[]
+  post_likes            PostLike[]         @relation("user_post_likes")
+  post_bookmarks        PostBookmark[]     @relation("user_post_bookmarks")
+  following             UserFollow[]       @relation("user_follows_follower")
+  followers             UserFollow[]       @relation("user_follows_followee")
+  uploads               Upload[]
+  payment_methods       PaymentMethod[]
+  notifications         UserNotification[] @relation("user_notifications")
+  notification_mentions UserNotification[] @relation("user_notification_mentions")
+  created_at            DateTime?          @default(now())
+  updated_at            DateTime?          @updatedAt
 
   @@map("users")
 }
@@ -121,26 +125,27 @@ model UserPlan {
 }
 
 model Post {
-  id              Int            @id @default(autoincrement())
-  public_id       String?        @db.VarChar(14)
-  title           String?        @db.VarChar(200)
-  content         String         @db.Text
-  public          Boolean?       @default(false)
-  draft           Boolean?       @default(false)
-  lat             Float?
-  lon             Float?
-  place           String?        @db.VarChar(250)
-  date            DateTime?      @default(now())
-  author          User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
-  author_id       Int
-  likes           PostLike[]     @relation("post_likes")
-  likes_count     Int?           @default(0)
-  bookmarks       PostBookmark[] @relation("post_bookmarks")
-  bookmarks_count Int?           @default(0)
-  uploads         Upload[]
-  created_at      DateTime?      @default(now())
-  updated_at      DateTime?      @updatedAt
-  deleted_at      DateTime?
+  id                    Int                @id @default(autoincrement())
+  public_id             String?            @db.VarChar(14)
+  title                 String?            @db.VarChar(200)
+  content               String             @db.Text
+  public                Boolean?           @default(false)
+  draft                 Boolean?           @default(false)
+  lat                   Float?
+  lon                   Float?
+  place                 String?            @db.VarChar(250)
+  date                  DateTime?          @default(now())
+  author                User?              @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  author_id             Int
+  likes                 PostLike[]         @relation("post_likes")
+  likes_count           Int?               @default(0)
+  bookmarks             PostBookmark[]     @relation("post_bookmarks")
+  bookmarks_count       Int?               @default(0)
+  uploads               Upload[]
+  notification_mentions UserNotification[] @relation("post_notification_mentions")
+  created_at            DateTime?          @default(now())
+  updated_at            DateTime?          @updatedAt
+  deleted_at            DateTime?
 
   @@map("posts")
 }
@@ -234,6 +239,26 @@ model PaymentMethod {
 
   @@map("payment_methods")
 }
+
+model UserNotification {
+  id              Int       @id @default(autoincrement())
+  public_id       String    @unique @db.VarChar(14)
+  context         String?   @db.VarChar(20)
+  body            String?   @db.Text
+  is_read         Boolean?  @default(false)
+  user            User?     @relation("user_notifications", fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user_id         Int?
+  mention_user    User?     @relation("user_notification_mentions", fields: [mention_user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  mention_user_id Int?
+  mention_post    Post?     @relation("post_notification_mentions", fields: [mention_post_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  mention_post_id Int?
+  created_at      DateTime? @default(now())
+  updated_at      DateTime? @updatedAt
+
+  @@map("user_notifications")
+}
+
+// enums
 
 enum CheckoutStatus {
   PENDING
