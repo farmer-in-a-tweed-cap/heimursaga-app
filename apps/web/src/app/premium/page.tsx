@@ -1,8 +1,7 @@
 import { Button } from '@repo/ui/components';
-import { CheckIcon } from 'lucide-react';
 import Link from 'next/link';
 
-import { CloseButton } from '@/components';
+import { BulletList, CloseButton } from '@/components';
 import { DEMO_DATA } from '@/constants';
 import { ROUTER } from '@/router';
 
@@ -57,19 +56,7 @@ export default function Page() {
                 </div>
 
                 <div className="mt-6">
-                  <ul className="flex flex-col gap-1">
-                    {features.map((feature, key) => (
-                      <li
-                        key={key}
-                        className="flex flex-row items-center justify-start gap-2 text-gray-600"
-                      >
-                        <CheckIcon size={18} />
-                        <span className="text-base  font-normal">
-                          {feature}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  <BulletList items={features} />
                 </div>
               </div>
             ),

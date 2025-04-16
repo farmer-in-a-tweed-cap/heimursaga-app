@@ -111,8 +111,8 @@ export const CheckoutLayout = ({ children }: { children: React.ReactNode }) => {
           <Logo />
         </Link>
       </div>
-      <div className="w-full min-h-screen bg-white text-black flex flex-row justify-center items-start">
-        <div className="w-full max-w-6xl flex flex-col p-4">{children}</div>
+      <div className="w-full bg-white text-black flex flex-row justify-center items-start">
+        <div className="w-full max-w-5xl flex flex-col p-4">{children}</div>
       </div>
     </SecureLayout>
   );
