@@ -30,14 +30,15 @@ model User {
   bookmarks_count    Int?            @default(0)
   posts_count        Int?            @default(0)
   profile            UserProfile?
+  plans              UserPlan[]
   sessions           UserSession[]
+  checkouts          Checkout[]
   posts              Post[]
   post_likes         PostLike[]      @relation("user_post_likes")
   post_bookmarks     PostBookmark[]  @relation("user_post_bookmarks")
   following          UserFollow[]    @relation("user_follows_follower")
   followers          UserFollow[]    @relation("user_follows_followee")
   uploads            Upload[]
-  payments           Payment[]
   payment_methods    PaymentMethod[]
   created_at         DateTime?       @default(now())
   updated_at         DateTime?       @updatedAt
@@ -86,6 +87,37 @@ model UserFollow {
 
   @@unique([follower_id, followee_id])
   @@map("user_follows")
+}
+
+model Plan {
+  id                    Int        @id @default(autoincrement())
+  slug                  String?    @unique @db.VarChar(20)
+  name                  String?    @db.VarChar(20)
+  description           String?    @db.Text
+  is_available          Boolean?   @default(false)
+  stripe_product_id     String?    @db.VarChar(20)
+  stripe_price_month_id String?    @db.VarChar(30)
+  stripe_price_year_id  String?    @db.VarChar(30)
+  features              String?    @db.Text
+  users                 UserPlan[]
+  checkouts             Checkout[]
+  created_at            DateTime?  @default(now())
+  updated_at            DateTime?  @updatedAt
+
+  @@map("plans")
+}
+
+model UserPlan {
+  plan_id    Int
+  plan       Plan      @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  user_id    Int
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  period     String?
+  expiry     DateTime? @default(now())
+  created_at DateTime? @default(now())
+
+  @@id([plan_id, user_id])
+  @@map("user_plans")
 }
 
 model Post {
@@ -161,19 +193,21 @@ model EmailVerification {
   @@map("email_verifications")
 }
 
-model Payment {
+model Checkout {
   id                       Int            @id @default(autoincrement())
-  public_id                String?        @db.VarChar(14)
-  status                   PaymentStatus  @default(PENDING)
+  public_id                String         @unique @db.VarChar(20)
+  status                   String?        @default("pending")
+  currency                 String?        @default("usd")
   total                    Int
   expiry                   DateTime?
-  refundable               Boolean?       @default(false)
-  stripe_payment_intent_id String?        @db.VarChar(40)
+  stripe_payment_intent_id String?        @db.VarChar(20)
+  stripe_product_id        String?        @db.VarChar(20)
   stripe_requires_action   Boolean?       @default(false)
   stripe_receipt_url       String?
-  currency                 String?        @default("usd")
   payment_method           PaymentMethod? @relation(fields: [payment_method_id], references: [id], onDelete: Cascade)
   payment_method_id        Int?
+  plan                     Plan?          @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  plan_id                  Int?
   user                     User?          @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   user_id                  Int?
   confirmed_at             DateTime?
@@ -182,26 +216,26 @@ model Payment {
   updated_at               DateTime?      @updatedAt
   deleted_at               DateTime?
 
-  @@map("payments")
+  @@map("checkouts")
 }
 
 model PaymentMethod {
-  id                       Int       @id @default(autoincrement())
-  public_id                String?   @db.VarChar(14)
+  id                       Int        @id @default(autoincrement())
+  public_id                String?    @db.VarChar(14)
   stripe_payment_method_id String?
   label                    String?
   last4                    String?
-  user                     User?     @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user                     User?      @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   user_id                  Int?
-  payments                 Payment[]
-  created_at               DateTime? @default(now())
-  updated_at               DateTime? @updatedAt
+  checkouts                Checkout[]
+  created_at               DateTime?  @default(now())
+  updated_at               DateTime?  @updatedAt
   deleted_at               DateTime?
 
   @@map("payment_methods")
 }
 
-enum PaymentStatus {
+enum CheckoutStatus {
   PENDING
   REQUIRES_ACTION
   UNCAPTURED

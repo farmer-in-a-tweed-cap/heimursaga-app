@@ -1,4 +1,5 @@
 // api
+import { CheckoutMode, CheckoutStatus, PlanExpiryPeriod } from './enums';
 
 // session
 export interface ISessionUser {
@@ -140,6 +141,50 @@ export interface IPaymentMethodGetByIdResponse extends IPaymentMethodDetail {}
 export interface IPaymentMethodCreatePayload {
   stripePaymentMethodId: string;
 }
+
+export interface IPaymentIntentCreateResponse {
+  secret: string;
+}
+
+export interface ICheckoutPayload {
+  mode: CheckoutMode;
+  membershipId?: string;
+  donation?: number;
+  creatorId?: string;
+}
+
+export interface ICheckoutResponse {
+  checkoutId: string;
+  status: CheckoutStatus;
+  secret: string;
+  requiresAction: boolean;
+}
+
+export interface IPlanUpgradeCheckoutPayload {
+  planId: string;
+  period: PlanExpiryPeriod;
+}
+
+export interface IPlanUpgradeCheckoutResponse {
+  planId: string;
+  period: PlanExpiryPeriod;
+  checkout: {
+    id: string;
+    status: CheckoutStatus;
+    amount: number;
+    currency: string;
+    secret: string;
+    requiresAction: boolean;
+  };
+}
+
+export interface IPlanUpgradeCompletePayload {
+  checkoutId: string;
+}
+
+export interface IPlanDegradePayload {}
+
+export interface IPlanDegradeResponse {}
 
 // post
 export interface IPostDetail {

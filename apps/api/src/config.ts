@@ -6,4 +6,9 @@ export const config = {
   stripe: {
     default_currency: 'usd',
   },
+  premium: {
+    currency: 'usd',
+    monthlyPrice: 5,
+    yearlyPrice: 50,
+  },
 };

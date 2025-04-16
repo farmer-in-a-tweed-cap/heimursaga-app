@@ -1,9 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  CheckoutMode,
+  CheckoutStatus,
+  ICheckoutPayload,
+  ICheckoutResponse,
+  IPaymentIntentCreateResponse,
   IPaymentMethodCreatePayload,
   IPaymentMethodGetAllResponse,
   IPaymentMethodGetByIdResponse,
+  IPlanUpgradeCheckoutPayload,
+  IPlanUpgradeCheckoutResponse,
+  IPlanUpgradeCompletePayload,
+  PlanExpiryPeriod,
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
@@ -16,6 +25,7 @@ import {
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import { IPayloadWithSession, IQueryWithSession } from '@/common/interfaces';
+import { config } from '@/config';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 import { StripeService } from '@/modules/stripe';
@@ -230,6 +240,444 @@ export class PaymentService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('payment method not deleted');
+      throw exception;
+    }
+  }
+
+  async createPaymentIntent({
+    session,
+  }: IPayloadWithSession<{}>): Promise<IPaymentIntentCreateResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      const amount = 500;
+      const currency = 'usd';
+
+      // get the user
+      const user = await this.prisma.user
+        .findFirstOrThrow({
+          where: { id: userId },
+          select: { email: true, username: true },
+        })
+        .catch(() => {
+          throw new ServiceForbiddenException();
+        });
+
+      // get the customer
+      const customer = await this.stripeService.getOrCreateCustomer({
+        email: user.email,
+        data: {
+          email: user.email,
+          name: user.username,
+        },
+      });
+
+      // create a payment intent
+      const paymentIntent =
+        await this.stripeService.stripe.paymentIntents.create({
+          amount,
+          currency,
+          payment_method_types: ['card'],
+          customer: customer.id,
+        });
+
+      console.log({ paymentIntent });
+
+      return {
+        secret: paymentIntent.client_secret,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('payment method not created');
+      throw exception;
+    }
+  }
+
+  // @todo
+  async createCheckout({
+    session,
+    payload,
+  }: IPayloadWithSession<ICheckoutPayload>): Promise<ICheckoutResponse> {
+    try {
+      const { userId } = session;
+      const { mode, donation } = payload;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      let currency = 'usd';
+      let amount = 0;
+
+      const period: string = 'year';
+
+      // get the user
+      const user = await this.prisma.user
+        .findFirstOrThrow({
+          where: { id: userId },
+          select: { email: true, username: true },
+        })
+        .catch(() => {
+          throw new ServiceForbiddenException();
+        });
+
+      // define the mode
+      switch (mode) {
+        case CheckoutMode.UPGRADE:
+          const plan = await this.prisma.plan
+            .findFirstOrThrow({
+              where: { slug: 'premium' },
+              select: {
+                stripe_price_month_id: true,
+                stripe_price_year_id: true,
+              },
+            })
+            .then(async ({ stripe_price_month_id, stripe_price_year_id }) => {
+              let price: number = 0;
+              let currency: string = 'usd';
+              let stripePriceId: string = '';
+
+              switch (period) {
+                case 'month':
+                  await this.stripeService.stripe.prices
+                    .retrieve(stripe_price_month_id)
+                    .then((s) => {
+                      price = s.unit_amount;
+                      currency = s.currency;
+                      stripePriceId = s.id;
+                    })
+                    .catch(() => {
+                      throw new ServiceBadRequestException('plan is not found');
+                    });
+                  break;
+                case 'year':
+                  await this.stripeService.stripe.prices
+                    .retrieve(stripe_price_year_id)
+                    .then((s) => {
+                      price = s.unit_amount;
+                      currency = s.currency;
+                      stripePriceId = s.id;
+                    })
+                    .catch(() => {
+                      throw new ServiceBadRequestException('plan is not found');
+                    });
+                  break;
+                default:
+                  throw new ServiceBadRequestException('plan is not found');
+              }
+
+              return {
+                price,
+                currency,
+                stripePriceId,
+              };
+            })
+            .catch(() => {
+              throw new ServiceBadRequestException('plan is not found');
+            });
+
+          console.log({ plan });
+
+          amount = plan.price;
+          currency = plan.currency;
+          break;
+        case CheckoutMode.MEMBERSHIP:
+          // @todo
+          amount = 0;
+          currency = config.premium.currency;
+          break;
+        case CheckoutMode.DONATION:
+          // @todo
+          amount = donation;
+          currency = config.premium.currency;
+          break;
+      }
+
+      // get the customer
+      const customer = await this.stripeService.getOrCreateCustomer({
+        email: user.email,
+        data: {
+          email: user.email,
+          name: user.username,
+        },
+      });
+
+      const { checkout, paymentIntent } = await this.prisma.$transaction(
+        async (tx) => {
+          // create a payment intent
+          const paymentIntent =
+            await this.stripeService.stripe.paymentIntents.create({
+              amount,
+              currency,
+              payment_method_types: ['card'],
+              customer: customer.id,
+            });
+
+          // create a checkout
+          const checkout = await tx.checkout.create({
+            data: {
+              public_id: generator.publicId(),
+              status: CheckoutStatus.PENDING,
+              // stripe_payment_intent_id: paymentIntent.id,
+              total: amount,
+              user_id: userId,
+            },
+            select: { public_id: true, status: true },
+          });
+
+          return {
+            checkout,
+            paymentIntent,
+          };
+        },
+      );
+
+      console.log({ checkout, paymentIntent });
+
+      return {
+        checkoutId: checkout.public_id,
+        status: checkout.status as CheckoutStatus,
+        secret: paymentIntent.client_secret,
+        requiresAction: false,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('payment method not created');
+      throw exception;
+    }
+  }
+
+  async checkoutPlanUpgrade({
+    session,
+    payload,
+  }: IPayloadWithSession<IPlanUpgradeCheckoutPayload>): Promise<IPlanUpgradeCheckoutResponse> {
+    try {
+      const { userId } = session;
+      const { planId, period } = payload;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      let currency = 'usd';
+      let amount = 0;
+
+      // get the user
+      const user = await this.prisma.user
+        .findFirstOrThrow({
+          where: { id: userId },
+          select: { email: true, username: true },
+        })
+        .catch(() => {
+          throw new ServiceForbiddenException();
+        });
+
+      // get the plan
+      const plan = await this.prisma.plan
+        .findFirstOrThrow({
+          where: { slug: planId },
+          select: {
+            stripe_price_month_id: true,
+            stripe_price_year_id: true,
+          },
+        })
+        .then(async ({ stripe_price_month_id, stripe_price_year_id }) => {
+          let price: number = 0;
+          let currency: string = 'usd';
+          let stripePriceId: string = '';
+
+          switch (period) {
+            case PlanExpiryPeriod.MONTH:
+              await this.stripeService.stripe.prices
+                .retrieve(stripe_price_month_id)
+                .then((s) => {
+                  price = s.unit_amount;
+                  currency = s.currency;
+                  stripePriceId = s.id;
+                })
+                .catch(() => {
+                  throw new ServiceBadRequestException('plan is not found');
+                });
+              break;
+            case PlanExpiryPeriod.YEAR:
+              await this.stripeService.stripe.prices
+                .retrieve(stripe_price_year_id)
+                .then((s) => {
+                  price = s.unit_amount;
+                  currency = s.currency;
+                  stripePriceId = s.id;
+                })
+                .catch(() => {
+                  throw new ServiceBadRequestException('plan is not found');
+                });
+              break;
+            default:
+              throw new ServiceBadRequestException('plan is not found');
+          }
+
+          return {
+            price,
+            currency,
+            stripePriceId,
+          };
+        })
+        .catch(() => {
+          throw new ServiceBadRequestException('plan is not found');
+        });
+
+      amount = plan.price;
+      currency = plan.currency;
+
+      console.log({ plan, amount, currency });
+
+      // get the customer
+      const customer = await this.stripeService.getOrCreateCustomer({
+        email: user.email,
+        data: {
+          email: user.email,
+          name: user.username,
+        },
+      });
+
+      const { checkout, paymentIntent } = await this.prisma.$transaction(
+        async (tx) => {
+          // create a payment intent
+          const paymentIntent =
+            await this.stripeService.stripe.paymentIntents.create({
+              amount,
+              currency,
+              payment_method_types: ['card'],
+              customer: customer.id,
+            });
+
+          // create a checkout
+          const checkout = await tx.checkout.create({
+            data: {
+              public_id: generator.publicId(),
+              status: CheckoutStatus.PENDING,
+              total: amount,
+              user_id: userId,
+            },
+            select: {
+              public_id: true,
+              status: true,
+              total: true,
+              currency: true,
+            },
+          });
+
+          return {
+            checkout,
+            paymentIntent,
+          };
+        },
+      );
+
+      console.log({ checkout, paymentIntent });
+
+      return {
+        planId,
+        period,
+        checkout: {
+          id: checkout.public_id,
+          status: checkout.status as CheckoutStatus,
+          amount: checkout.total,
+          currency: checkout.currency,
+          secret: paymentIntent.client_secret,
+          requiresAction: false,
+        },
+      };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('plan is not upgraded');
+      throw exception;
+    }
+  }
+
+  async completePlanUpgrade({
+    session,
+    payload,
+  }: IPayloadWithSession<IPlanUpgradeCompletePayload>): Promise<void> {
+    try {
+      const { userId } = session;
+      const { checkoutId } = payload;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      // get the user
+      const user = await this.prisma.user
+        .findFirstOrThrow({
+          where: { id: userId },
+          select: { id: true, email: true, username: true },
+        })
+        .catch(() => {
+          throw new ServiceForbiddenException();
+        });
+
+      // get the checkout
+      const checkout = await this.prisma.checkout.findFirstOrThrow({
+        where: {
+          public_id: checkoutId,
+          status: { in: [CheckoutStatus.PENDING] },
+        },
+        select: {
+          id: true,
+          public_id: true,
+          plan_id: true,
+          stripe_payment_intent_id: true,
+        },
+      });
+
+      // verify if the checkout is completed
+      const checkoutComplete = await this.stripeService.stripe.paymentIntents
+        .retrieve(checkout.stripe_payment_intent_id)
+        .then(({ status }) => status === 'succeeded')
+        .catch(() => false);
+      if (!checkoutComplete)
+        throw new ServiceBadRequestException(
+          'plan upgrade not completed, checkout not confirmed',
+        );
+
+      // get the plan
+      const plan = await this.prisma.plan
+        .findFirstOrThrow({
+          where: { id: checkout.plan_id },
+          select: { id: true },
+        })
+        .catch(() => {
+          throw new ServiceBadRequestException(
+            'plan upgrade not completed, plan not found',
+          );
+        });
+
+      // complete the upgrade
+      const {} = await this.prisma.$transaction(async (tx) => {
+        // attach the plan to the user
+        await tx.userPlan.create({
+          data: {
+            plan_id: plan.id,
+            user_id: user.id,
+          },
+        });
+
+        // complete the checkout
+        await tx.checkout.update({
+          where: { id: checkout.id },
+          data: {
+            status: CheckoutStatus.CONFIRMED,
+            confirmed_at: dateformat().toDate(),
+          },
+        });
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('plan upgrade not completed');
       throw exception;
     }
   }

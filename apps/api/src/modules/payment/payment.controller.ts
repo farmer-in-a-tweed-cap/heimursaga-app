@@ -14,7 +14,12 @@ import { Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import { PaymentMethodCreateDto } from './payment.dto';
+import {
+  CheckoutDto,
+  PaymentMethodCreateDto,
+  PlanUpgradeCheckoutDto,
+  PlanUpgradeCompleteDto,
+} from './payment.dto';
 import { PaymentService } from './payment.service';
 
 @ApiTags('payment-methods')
@@ -67,5 +72,75 @@ export class PaymentMethodController {
       query: { publicId: param.id },
       session,
     });
+  }
+}
+
+@ApiTags('payment-intents')
+@Controller('payment-intents')
+export class PaymentIntentController {
+  constructor(private paymentService: PaymentService) {}
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async createPaymentIntent(@Session() session: ISession) {
+    return await this.paymentService.createPaymentIntent({
+      session,
+      payload: {},
+    });
+  }
+}
+
+@ApiTags('checkouts')
+@Controller('checkouts')
+export class CheckoutController {
+  constructor(private paymentService: PaymentService) {}
+
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  async createCheckout(
+    @Session() session: ISession,
+    @Body() body: CheckoutDto,
+  ) {
+    return await this.paymentService.createCheckout({
+      session,
+      payload: body,
+    });
+  }
+}
+
+@ApiTags('plan')
+@Controller('plan')
+export class PlanController {
+  constructor(private paymentService: PaymentService) {}
+
+  @Post('upgrade/checkout')
+  @HttpCode(HttpStatus.OK)
+  async checkoutUpgrade(
+    @Session() session: ISession,
+    @Body() body: PlanUpgradeCheckoutDto,
+  ) {
+    return await this.paymentService.checkoutPlanUpgrade({
+      session,
+      payload: body,
+    });
+  }
+
+  @Post('upgrade/complete')
+  @HttpCode(HttpStatus.OK)
+  async completeUpgrade(
+    @Session() session: ISession,
+    @Body() body: PlanUpgradeCompleteDto,
+  ) {
+    return await this.paymentService.completePlanUpgrade({
+      session,
+      payload: body,
+    });
+  }
+
+  // @todo
+  @Post('degrade')
+  @HttpCode(HttpStatus.OK)
+  async degrade(@Session() session: ISession) {
+    return {};
   }
 }
