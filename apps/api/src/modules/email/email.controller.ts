@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Post,
 } from '@nestjs/common';
+import { ApiExcludeController } from '@nestjs/swagger';
 
 import { Public } from '@/common/decorators';
 import {
@@ -15,6 +16,7 @@ import {
 
 import { EmailService } from './email.service';
 
+@ApiExcludeController()
 @Controller('email')
 export class EmailController {
   constructor(private emailService: EmailService) {}

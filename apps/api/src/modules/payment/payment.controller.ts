@@ -90,24 +90,6 @@ export class PaymentIntentController {
   }
 }
 
-@ApiTags('checkouts')
-@Controller('checkouts')
-export class CheckoutController {
-  constructor(private paymentService: PaymentService) {}
-
-  @Post()
-  @HttpCode(HttpStatus.OK)
-  async createCheckout(
-    @Session() session: ISession,
-    @Body() body: CheckoutDto,
-  ) {
-    return await this.paymentService.createCheckout({
-      session,
-      payload: body,
-    });
-  }
-}
-
 @ApiTags('plan')
 @Controller('plan')
 export class PlanController {
@@ -138,9 +120,9 @@ export class PlanController {
   }
 
   // @todo
-  @Post('degrade')
+  @Post('downgrade')
   @HttpCode(HttpStatus.OK)
-  async degrade(@Session() session: ISession) {
+  async downgrade(@Session() session: ISession) {
     return {};
   }
 }

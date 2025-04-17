@@ -16,10 +16,4 @@ export class AppController {
   health() {
     return;
   }
-
-  @Public()
-  @Get('test')
-  test() {
-    return this.appService.test();
-  }
 }
