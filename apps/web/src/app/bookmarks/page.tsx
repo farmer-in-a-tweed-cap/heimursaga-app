@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/api';
 import { PageHeaderTitle, UserBookmarks } from '@/components';
 import { AppLayout } from '@/layouts';
 
-export default async function App() {
+export default async function Page() {
   const cookie = cookies().toString();
 
   const postQuery = await apiClient.getPosts({}, { cookie });

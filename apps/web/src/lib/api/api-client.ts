@@ -128,7 +128,9 @@ export const apiClient = {
       API_ROUTER.USERS.GET_BY_USERNAME(username),
       config,
     ),
-  getUserPosts: async (
+  getUserPosts: async (config?: RequestConfig) =>
+    api.request<IUserPostsQueryResponse>(API_ROUTER.USER.POSTS, config),
+  getUserPostsByUsername: async (
     { username }: { username: string },
     config?: RequestConfig,
   ) =>

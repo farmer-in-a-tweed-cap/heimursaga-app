@@ -10,7 +10,7 @@ import {
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-import { UserFollowingFeed, UserPostsFeed } from '@/components';
+import { UserFollowingFeed, UserPosts } from '@/components';
 import { useSession } from '@/hooks';
 
 import { UserDraftsFeed } from './user-drafts-feed';
@@ -96,7 +96,7 @@ export const UserFeed: React.FC<Props> = ({ username }) => {
         </Card>
       </TabsList>
       <TabsContent value={tabs.home.key}>
-        <UserPostsFeed username={username} />
+        <UserPosts username={username} />
       </TabsContent>
       <TabsContent value={tabs.followers.key}>
         <UserFollowersFeed username={username} />

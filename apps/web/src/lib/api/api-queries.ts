@@ -40,6 +40,7 @@ export const QUERY_KEYS = {
   USER_SETTINGS_PROFILE: 'user_settings_profile',
   USER_PAYMENT_METHODS: 'user_payment_methods,',
   USER: {
+    POSTS: 'user_posts',
     NOTIFICATIONS: 'user_notifications',
   },
 };
@@ -148,16 +149,29 @@ export const postUpdateMutation = createMutation<
   }),
 );
 
-export const getUserPostsQuery = createQuery<
+export const getUserPostsQuery = createQuery<void, IUserPostsQueryResponse>(
+  [QUERY_KEYS.GET_POSTS],
+  () =>
+    apiClient.getUserPosts().then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IUserPostsQueryResponse;
+    }),
+);
+
+export const getUserPostsByUsernameQuery = createQuery<
   { username: string },
   IUserPostsQueryResponse
 >([QUERY_KEYS.GET_POSTS], ({ username }) =>
-  apiClient.getUserPosts({ username }).then(({ success, message, data }) => {
-    if (!success) {
-      throw new Error(message);
-    }
-    return data as IUserPostsQueryResponse;
-  }),
+  apiClient
+    .getUserPostsByUsername({ username })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IUserPostsQueryResponse;
+    }),
 );
 
 export const searchQuery = createQuery<

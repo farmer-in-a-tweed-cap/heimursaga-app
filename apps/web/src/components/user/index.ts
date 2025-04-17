@@ -1,5 +1,8 @@
 export * from './user-feed';
-export * from './user-posts-feed';
+
+export * from './user-posts';
+export * from './user-journal-posts';
+
 export * from './user-profile-card';
 export * from './user-follow-button';
 export * from './user-card';

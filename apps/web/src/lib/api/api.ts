@@ -17,6 +17,7 @@ export const API_ROUTER = {
     SETTINGS: {
       PROFILE: '/user/settings/profile',
     },
+    POSTS: '/user/posts',
   },
   USERS: {
     GET_BY_USERNAME: (username: string) => `/users/${username}`,

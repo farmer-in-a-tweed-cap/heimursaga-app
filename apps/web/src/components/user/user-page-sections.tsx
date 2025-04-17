@@ -7,7 +7,7 @@ import {
   TabNavbar,
   UserFollowersFeed,
   UserFollowingFeed,
-  UserPostsFeed,
+  UserPosts,
 } from '@/components';
 import { ROUTER } from '@/router';
 
@@ -64,9 +64,7 @@ export const UserPageSections: React.FC<Props> = ({
         />
       </div>
       <div className="mt-4 flex flex-col w-full max-w-2xl">
-        {sectionKey === SECTION_KEYS.HOME && (
-          <UserPostsFeed username={username} />
-        )}
+        {sectionKey === SECTION_KEYS.HOME && <UserPosts username={username} />}
         {sectionKey === SECTION_KEYS.FOLLOWERS && (
           <UserFollowersFeed username={username} />
         )}
