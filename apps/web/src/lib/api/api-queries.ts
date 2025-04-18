@@ -13,6 +13,7 @@ import {
   ISignupPayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserMapGetResponse,
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
@@ -42,6 +43,7 @@ export const QUERY_KEYS = {
   USER: {
     POSTS: 'user_posts',
     NOTIFICATIONS: 'user_notifications',
+    MAP: 'user_map',
   },
 };
 
@@ -349,4 +351,18 @@ export const getUserNotifications = createQuery<
     }
     return data as IUserNotificationGetResponse;
   }),
+);
+
+export const getUserMapByUsername = createQuery<
+  { username: string },
+  IUserMapGetResponse
+>([QUERY_KEYS.USER.MAP], ({ username }) =>
+  apiClient
+    .getUserMapByUsername({ username })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IUserMapGetResponse;
+    }),
 );

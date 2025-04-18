@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { ROUTER } from '@/router';
 
 import { UserFollowButton } from './user-follow-button';
+import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
 
 type Props = {
@@ -20,9 +21,11 @@ type Props = {
 export const UserProfilePage: React.FC<Props> = ({ user, section }) => {
   return (
     <div className="w-full flex flex-col justify-start items-center">
-      <div className="z-10 w-full h-[220px] lg:h-[280px] bg-gray-300 rounded-lg"></div>
-      <div className="z-20 -mt-[60px] w-full max-w-2xl flex flex-col items-center">
-        <Avatar className="w-[120px] h-[120px]">
+      <div className="z-10 w-full h-auto">
+        <UserMapBanner className="z-30" username={user?.username} />
+      </div>
+      <div className="z-20 -mt-[60px] w-auto flex flex-col items-center rounded-full">
+        <Avatar className="z-50 w-[120px] h-[120px]">
           <AvatarFallback>{user?.firstName?.slice(0, 1)}</AvatarFallback>
           <AvatarImage
             width={120}
@@ -31,6 +34,8 @@ export const UserProfilePage: React.FC<Props> = ({ user, section }) => {
             alt="avatar"
           />
         </Avatar>
+      </div>
+      <div className="z-20 w-full max-w-2xl flex flex-col items-center">
         <div className="mt-6 flex flex-col justify-center items-center gap-2">
           <span className="text-3xl font-semibold">{user?.firstName}</span>
           <span className="text-sm">{user?.bio}</span>

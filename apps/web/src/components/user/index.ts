@@ -16,6 +16,7 @@ export * from './user-avatar-upload-picker';
 export * from './user-navbar';
 export * from './user-page-sections';
 export * from './user-profile-page';
+export * from './user-map-banner';
 
 export * from './user-notifications';
 export * from './user-notification-card';

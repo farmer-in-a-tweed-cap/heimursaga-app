@@ -18,6 +18,7 @@ import {
   IStripeCreateSetupIntentResponse,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserMapGetResponse,
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
@@ -138,6 +139,10 @@ export const apiClient = {
       API_ROUTER.USERS.GET_POSTS(username),
       config,
     ),
+  getUserMapByUsername: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) => api.request<IUserMapGetResponse>(API_ROUTER.USERS.MAP(username), config),
   search: async (query: ISearchQueryPayload, config?: RequestConfig) =>
     api.request<ISearchQueryResponse>(API_ROUTER.SEARCH, {
       method: API_METHODS.POST,

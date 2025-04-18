@@ -119,10 +119,12 @@ export const PostCard: React.FC<PostCardProps> = ({
             }
             lat={coordinates.lat}
             lon={coordinates.lon}
-            marker={{
-              lat: coordinates.lat,
-              lon: coordinates.lon,
-            }}
+            markers={[
+              {
+                lat: coordinates.lat,
+                lon: coordinates.lon,
+              },
+            ]}
           />
         </div>
       )}

@@ -1,5 +1,7 @@
 'use client';
 
+import { GeoJson } from '@repo/types';
+import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 
 import { APP_CONFIG } from '@/config';
@@ -10,12 +12,17 @@ import { MapPreviewOverlay } from './map-preview-overlay';
 
 type Props = {
   href?: string;
+  className?: string;
   lat?: number;
   lon?: number;
   alt?: number;
-  marker?: {
+  overlay?: boolean;
+  markers?: {
     lat: number;
     lon: number;
+  }[];
+  sources?: {
+    geojson: GeoJson;
   };
   onClick?: () => void;
 };
@@ -25,7 +32,10 @@ export const MapPreview: React.FC<Props> = ({
   lat = 0,
   lon = 0,
   alt = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
-  marker,
+  markers,
+  sources,
+  className,
+  overlay = true,
   onClick = () => {},
 }) => {
   const mapbox = useMapbox();
@@ -37,9 +47,16 @@ export const MapPreview: React.FC<Props> = ({
   const color = APP_CONFIG.MAPBOX.BRAND_COLOR;
   const retina = '@2x';
 
+  const marker = markers?.[0];
+
   return (
-    <div className="relative w-full aspect-5/2 h-auto bg-gray-50 rounded-xl overflow-hidden">
-      <MapPreviewOverlay href={href} onClick={onClick} />
+    <div
+      className={cn(
+        'relative w-full h-auto bg-gray-50 rounded-xl overflow-hidden',
+        className,
+      )}
+    >
+      {overlay && <MapPreviewOverlay href={href} onClick={onClick} />}
       <div className="z-10 w-full h-full">
         {token && (
           <Map
@@ -48,6 +65,10 @@ export const MapPreview: React.FC<Props> = ({
               lat,
               lon,
               alt,
+            }}
+            sources={{
+              results: 10,
+              geojson: sources?.geojson,
             }}
             marker={
               marker
@@ -74,7 +95,9 @@ export const MapStaticPreview: React.FC<Props> = ({
   lat = 0,
   lon = 0,
   alt = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
-  marker,
+  markers = [],
+  overlay = true,
+  className,
   onClick = () => {},
 }) => {
   const mapbox = useMapbox();
@@ -85,13 +108,22 @@ export const MapStaticPreview: React.FC<Props> = ({
   const style = APP_CONFIG.MAPBOX.STYLE;
   const color = APP_CONFIG.MAPBOX.BRAND_COLOR;
   const retina = '@2x';
-  const pin = marker ? `pin-s+${color}(${marker.lon},${marker.lat})` : '';
 
-  const src = `https://api.mapbox.com/styles/v1/${style}/static/${pin}/${lon},${lat},${alt},0,0/${width}x${height}${retina}?access_token=${token}`;
+  const pin =
+    markers.length >= 1
+      ? markers.map(({ lon, lat }) => `pin-s+${color}(${lon},${lat})`).join(',')
+      : '';
+
+  const src = `https://api.mapbox.com/styles/v1/${style}/static/${markers.length >= 1 ? `${pin}/` : ''}${lon},${lat},${alt},0,0/${width}x${height}${retina}?access_token=${token}`;
 
   return (
-    <div className="relative w-full aspect-5/2 h-auto bg-gray-50 rounded-xl overflow-hidden">
-      <MapPreviewOverlay href={href} onClick={onClick} />
+    <div
+      className={cn(
+        'relative w-full aspect-5/2 h-auto bg-gray-50 rounded-xl overflow-hidden',
+        className,
+      )}
+    >
+      {overlay && <MapPreviewOverlay href={href} onClick={onClick} />}
       <div className="z-10 w-full h-full">
         <Image
           src={src}

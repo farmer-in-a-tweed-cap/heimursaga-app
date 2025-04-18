@@ -22,6 +22,7 @@ export const API_ROUTER = {
   USERS: {
     GET_BY_USERNAME: (username: string) => `/users/${username}`,
     GET_POSTS: (username: string) => `/users/${username}/posts`,
+    MAP: (username: string) => `/users/${username}/map`,
     FOLLOWERS: (username: string) => `/users/${username}/followers`,
     FOLLOWING: (username: string) => `/users/${username}/following`,
     FOLLOW: (username: string) => `/users/${username}/follow`,

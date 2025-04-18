@@ -1,6 +1,19 @@
 // api
 import { CheckoutMode, CheckoutStatus, PlanExpiryPeriod } from './enums';
 
+// general
+export type GeoJson<T = any> = {
+  type: string;
+  features: {
+    type: string;
+    properties: T;
+    geometry: {
+      type: string;
+      coordinates: [number, number, number];
+    };
+  }[];
+};
+
 // session
 export interface ISessionUser {
   role: string;
@@ -332,7 +345,6 @@ export interface IStripeCreateSetupIntentResponse {
 }
 
 // notifications
-
 export interface IUserNotification {
   context: string;
   date: Date;
@@ -349,4 +361,10 @@ export interface IUserNotificationGetResponse {
   results: number;
   data: IUserNotification[];
   page: number;
+}
+
+// map
+export interface IUserMapGetResponse {
+  lastWaypoint: { lat: number; lon: number };
+  geojson: GeoJson<{ id: string; title: string }>;
 }

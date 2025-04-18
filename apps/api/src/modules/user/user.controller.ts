@@ -59,6 +59,16 @@ export class UserController {
     });
   }
 
+  @Public()
+  @Get(':username/map')
+  @HttpCode(HttpStatus.OK)
+  async getMap(@Param() param: ParamUsernameDto) {
+    return await this.userService.getMap({
+      username: param.username,
+    });
+  }
+
+  @Public()
   @Get(':username/followers')
   @HttpCode(HttpStatus.OK)
   async getFollowers(
@@ -73,6 +83,7 @@ export class UserController {
     });
   }
 
+  @Public()
   @Get(':username/following')
   @HttpCode(HttpStatus.OK)
   async getFollowing(

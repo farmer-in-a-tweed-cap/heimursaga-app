@@ -137,12 +137,14 @@ export const PostCreateForm = () => {
             lat={location.marker ? location.marker?.lat : location.lat}
             lon={location.marker ? location.marker?.lon : location.lon}
             alt={location.selected ? APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM : 6}
-            marker={
+            markers={
               location.marker
-                ? {
-                    lat: location.marker?.lat,
-                    lon: location.marker?.lon,
-                  }
+                ? [
+                    {
+                      lat: location.marker?.lat,
+                      lon: location.marker?.lon,
+                    },
+                  ]
                 : undefined
             }
             onClick={handleLocationPickModal}

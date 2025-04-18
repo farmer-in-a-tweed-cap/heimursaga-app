@@ -169,12 +169,14 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
             lat={location.marker ? location.marker?.lat : location.lat}
             lon={location.marker ? location.marker?.lon : location.lon}
             alt={APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM}
-            marker={
+            markers={
               location.marker
-                ? {
-                    lat: location.marker?.lat,
-                    lon: location.marker?.lon,
-                  }
+                ? [
+                    {
+                      lat: location.marker?.lat,
+                      lon: location.marker?.lon,
+                    },
+                  ]
                 : undefined
             }
             onClick={handleLocationPickModal}

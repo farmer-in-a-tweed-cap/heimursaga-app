@@ -40,6 +40,7 @@ type Props = {
     results: number;
     geojson: any;
   };
+
   coordinates?: { lat: number; lon: number; alt: number };
   marker?: { lat: number; lon: number };
   className?: string;

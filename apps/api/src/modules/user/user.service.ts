@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import {
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserMapGetResponse,
   IUserNotificationGetResponse,
   IUserPictureUploadPayload,
   IUserPostsQueryResponse,
@@ -14,6 +15,7 @@ import {
   UserNotificationContext,
 } from '@repo/types';
 
+import { toGeoJson } from '@/lib/geojson';
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
@@ -189,6 +191,53 @@ export class UserService {
       };
 
       return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('posts not found');
+      throw exception;
+    }
+  }
+
+  async getMap({
+    username,
+  }: {
+    username: string;
+  }): Promise<IUserMapGetResponse> {
+    try {
+      if (!username) throw new ServiceNotFoundException('user not found');
+
+      // get user posts
+      const posts = await this.prisma.post.findMany({
+        where: {
+          public: true,
+          author: {
+            username,
+          },
+          deleted_at: null,
+        },
+        select: {
+          public_id: true,
+          title: true,
+          lat: true,
+          lon: true,
+        },
+        orderBy: [{ id: 'desc' }],
+      });
+
+      const geojson = toGeoJson<{ id: string; title: string }>(
+        'collection',
+        posts.map(({ public_id, title, lat, lon }) => ({
+          lat,
+          lon,
+          properties: { id: public_id, title },
+        })),
+      );
+
+      return {
+        geojson,
+      };
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
