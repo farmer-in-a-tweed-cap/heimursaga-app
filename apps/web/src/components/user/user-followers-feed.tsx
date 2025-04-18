@@ -1,5 +1,6 @@
 'use client';
 
+import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 
 import { getUserFollowersQuery } from '@/lib/api';
@@ -8,43 +9,36 @@ import { UserCard } from '@/components';
 import { ROUTER } from '@/router';
 
 type Props = {
-  username?: string;
+  username: string;
 };
 
 export const UserFollowersFeed: React.FC<Props> = ({ username }) => {
-  if (username) {
-    const followersQuery = useQuery({
-      queryKey: [getUserFollowersQuery.queryKey, username],
-      queryFn: () => getUserFollowersQuery.queryFn({ username }),
-      enabled: !!username,
-      retry: 0,
-    });
+  const followersQuery = useQuery({
+    queryKey: [getUserFollowersQuery.queryKey, username],
+    queryFn: () => getUserFollowersQuery.queryFn({ username }),
+    enabled: !!username,
+    retry: 0,
+  });
 
-    const results = followersQuery.data?.results || 0;
-    const followers = followersQuery.data?.data || [];
+  const loading = followersQuery.isLoading;
+  const results = followersQuery.data?.results || 0;
+  const followers = followersQuery.data?.data || [];
 
-    return followersQuery.isLoading ? (
-      <>loading..</>
-    ) : followersQuery.isSuccess ? (
-      results < 1 ? (
-        <>no followers</>
-      ) : (
-        <div className="w-full flex flex-col gap-1">
-          {followers.map(({ name, username, ...follower }, key) => (
-            <UserCard
-              key={key}
-              href={ROUTER.MEMBERS.MEMBER(username)}
-              username={username}
-              name={name}
-              {...follower}
-            />
-          ))}
-        </div>
-      )
-    ) : (
-      <>no followers</>
-    );
-  } else {
-    return <>no followers</>;
-  }
+  return loading ? (
+    <LoadingSpinner />
+  ) : results < 1 ? (
+    <>no followers</>
+  ) : (
+    <div className="w-full flex flex-col gap-1">
+      {followers.map(({ name, username, ...follower }, key) => (
+        <UserCard
+          key={key}
+          href={ROUTER.MEMBERS.MEMBER(username)}
+          username={username}
+          name={name}
+          {...follower}
+        />
+      ))}
+    </div>
+  );
 };
