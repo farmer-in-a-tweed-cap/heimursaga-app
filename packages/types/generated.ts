@@ -20,8 +20,7 @@ export interface ISessionUser {
   username: string;
   email: string;
   picture?: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   isEmailVerified: boolean;
   isPremium: boolean;
 }
@@ -46,8 +45,7 @@ export interface ISignupPayload {
   email: string;
   username: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  name: string;
 }
 
 // password reset
@@ -63,10 +61,9 @@ export interface IPasswordUpdatePayload {
 // user
 export interface IUserProfileDetail {
   username: string;
+  name: string;
   picture: string;
   bio?: string;
-  firstName: string;
-  lastName: string;
   memberDate?: Date;
   followed?: boolean;
   you?: boolean;
@@ -75,10 +72,7 @@ export interface IUserProfileDetail {
 export interface IUserSettingsResponse {
   context: 'profile' | 'billing';
   profile?: {
-    username: string;
-    email: string;
-    firstName: string;
-    lastName: string;
+    name: string;
     bio: string;
     picture: string;
   };
@@ -87,10 +81,7 @@ export interface IUserSettingsResponse {
 export interface IUserSettingsUpdateQuery {
   context: 'profile' | 'billing';
   profile?: {
-    username?: string;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
+    name?: string;
     bio?: string;
     picture?: string;
   };
@@ -99,16 +90,13 @@ export interface IUserSettingsUpdateQuery {
 export interface IUserSettingsProfileResponse {
   username: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   bio: string;
   picture: string;
 }
 
 export interface IUserSettingsProfileUpdateQuery {
-  username?: string;
-  firstName?: string;
-  lastName?: string;
+  name?: string;
   bio?: string;
   picture?: string;
 }

@@ -26,7 +26,7 @@ export const UserProfilePage: React.FC<Props> = ({ user, section }) => {
       </div>
       <div className="z-20 -mt-[60px] w-auto flex flex-col items-center rounded-full">
         <Avatar className="z-50 w-[120px] h-[120px]">
-          <AvatarFallback>{user?.firstName?.slice(0, 1)}</AvatarFallback>
+          <AvatarFallback>{user?.name?.slice(0, 1)}</AvatarFallback>
           <AvatarImage
             width={120}
             height={120}
@@ -37,7 +37,7 @@ export const UserProfilePage: React.FC<Props> = ({ user, section }) => {
       </div>
       <div className="z-20 w-full max-w-2xl flex flex-col items-center">
         <div className="mt-6 flex flex-col justify-center items-center gap-2">
-          <span className="text-3xl font-semibold">{user?.firstName}</span>
+          <span className="text-3xl font-semibold">{user?.name}</span>
           <span className="text-sm">{user?.bio}</span>
         </div>
         {user?.you ? (

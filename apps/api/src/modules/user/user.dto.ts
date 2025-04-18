@@ -8,17 +8,7 @@ export class UserSettingsProfileUpdateDto
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  username: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  firstName: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  lastName: string;
+  name: string;
 
   @ApiProperty({ required: false })
   @IsString()

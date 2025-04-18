@@ -32,17 +32,11 @@ import { fieldmsg } from '@/lib/utils';
 import { UserAvatarUploadPicker } from './user-avatar-upload-picker';
 
 const schema = z.object({
-  firstName: z
+  name: z
     .string()
-    .nonempty(fieldmsg.required('first name'))
-    .min(2, fieldmsg.min('first name', 2))
-    .max(50, fieldmsg.max('first name', 20)),
-  lastName: z
-    .string()
-    .nonempty(fieldmsg.required('last name'))
-    .min(2, fieldmsg.min('last name', 2))
-    .max(50, fieldmsg.max('last name', 20)),
-
+    .nonempty(fieldmsg.required('name'))
+    .min(2, fieldmsg.min('name', 2))
+    .max(50, fieldmsg.max('name', 20)),
   bio: z
     .string()
     .nonempty(fieldmsg.required('bio'))
@@ -92,8 +86,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
     defaultValues: data
       ? { ...data }
       : {
-          firstName: '',
-          lastName: '',
+          name: '',
           bio: '',
         },
   });
@@ -117,7 +110,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
         <UserAvatarUploadPicker
           src={data?.picture}
           loading={pictureLoading}
-          fallback={data?.firstName}
+          fallback={data?.name}
           onChange={handleAvatarChange}
         />
         <Form {...form}>
@@ -126,23 +119,10 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
               <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <FormField
                   control={form.control}
-                  name="firstName"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First name</FormLabel>
-                      <FormControl>
-                        <Input disabled={settingsLoading} required {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />{' '}
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last name</FormLabel>
+                      <FormLabel>Name</FormLabel>
                       <FormControl>
                         <Input disabled={settingsLoading} required {...field} />
                       </FormControl>

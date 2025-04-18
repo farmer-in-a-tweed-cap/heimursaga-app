@@ -31,7 +31,7 @@ export class EmailController {
     @Body('html') html: string,
   ) {
     const template = getEmailTemplate(EMAIL_TEMPLATE_KEYS.WELCOME, {
-      first_name: 'peter',
+      name: 'peter',
     });
 
     if (!template) throw new BadRequestException();

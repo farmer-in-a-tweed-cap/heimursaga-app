@@ -98,8 +98,7 @@ export class StripeService {
           email: true,
           profile: {
             select: {
-              first_name: true,
-              last_name: true,
+              name: true,
             },
           },
         },
@@ -113,7 +112,7 @@ export class StripeService {
         email: user.email,
         data: {
           email: user.email,
-          name: [user.profile.last_name, user.profile.first_name].join(' '),
+          name: user.profile.name,
         },
       });
       if (!customer) throw new ServiceForbiddenException('customer not found');

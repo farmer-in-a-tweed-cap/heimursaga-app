@@ -69,8 +69,7 @@ model UserSession {
 
 model UserProfile {
   id         Int       @id @default(autoincrement())
-  first_name String    @db.VarChar(50)
-  last_name  String    @db.VarChar(50)
+  name       String?   @db.VarChar(50)
   picture    String?   @db.VarChar(200)
   bio        String?   @db.VarChar(200)
   user       User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)

@@ -12,8 +12,7 @@ import { ROUTER } from '@/router';
 
 type Props = {
   username?: string;
-  firstName?: string;
-  lastName?: string;
+  name?: string;
   picture?: string;
   memberDate?: Date;
   me?: boolean;
@@ -22,8 +21,7 @@ type Props = {
 
 export const UserProfileCard: React.FC<Props> = ({
   username = '',
-  firstName = '',
-  lastName = '',
+  name = '',
   picture = '',
   me = false,
   followed = false,
@@ -34,13 +32,11 @@ export const UserProfileCard: React.FC<Props> = ({
         <Avatar className="w-[80px] h-[80px]">
           <AvatarImage src={picture} />
           <AvatarFallback className="text-base">
-            {firstName.slice(0, 1)}
+            {name.slice(0, 1)}
           </AvatarFallback>
         </Avatar>
         <div className="mt-4 flex flex-col gap-1">
-          <span className="font-medium text-2xl">
-            {firstName} {lastName}
-          </span>
+          <span className="font-medium text-2xl">{name}</span>
           <span className="text-sm font-medium text-gray-500">@{username}</span>
         </div>
         {/* <div className="mt-4 flex flex-col gap-1">

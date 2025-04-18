@@ -58,8 +58,7 @@ export class AuthService {
           is_premium: true,
           profile: {
             select: {
-              first_name: true,
-              last_name: true,
+              name: true,
               picture: true,
             },
           },
@@ -74,18 +73,13 @@ export class AuthService {
         is_email_verified: isEmailVerified,
         is_premium: isPremium,
       } = user;
-      const {
-        first_name: firstName,
-        last_name: lastName,
-        picture,
-      } = user?.profile || {};
+      const { name, picture } = user?.profile || {};
 
       return {
         email,
         username,
         role,
-        firstName,
-        lastName,
+        name,
         picture: getStaticMediaUrl(picture),
         isEmailVerified,
         isPremium,
@@ -147,7 +141,7 @@ export class AuthService {
 
   async signup(payload: ISignupPayload): Promise<void> {
     try {
-      const { firstName, lastName } = payload;
+      const { name } = payload;
 
       // format email and username
       const username = payload.username.trim().toLowerCase();
@@ -178,7 +172,7 @@ export class AuthService {
           role: Role.USER,
           password,
           profile: {
-            create: { first_name: firstName, last_name: lastName, picture: '' },
+            create: { name, picture: '' },
           },
         },
         select: {

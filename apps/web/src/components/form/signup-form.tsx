@@ -5,9 +5,7 @@ import {
   Button,
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
   Form,
   FormControl,
   FormField,
@@ -15,7 +13,6 @@ import {
   FormLabel,
   FormMessage,
   Input,
-  Label,
 } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useMutation } from '@tanstack/react-query';
@@ -30,16 +27,11 @@ import { fieldmsg, redirect } from '@/lib/utils';
 import { ROUTER } from '@/router';
 
 const schema = z.object({
-  firstName: z
+  name: z
     .string()
-    .nonempty(fieldmsg.required('first name'))
-    .min(2, fieldmsg.min('first name', 2))
-    .max(50, fieldmsg.max('first name', 20)),
-  lastName: z
-    .string()
-    .nonempty(fieldmsg.required('last name'))
-    .min(2, fieldmsg.min('last name', 2))
-    .max(50, fieldmsg.max('last name', 20)),
+    .nonempty(fieldmsg.required('name'))
+    .min(2, fieldmsg.min('name', 2))
+    .max(50, fieldmsg.max('name', 20)),
   username: z
     .string()
     .nonempty(fieldmsg.required('username'))
@@ -76,8 +68,7 @@ export const SignupForm = () => {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      firstName: '',
-      lastName: '',
+      name: '',
       username: '',
       email: '',
       password: '',
@@ -103,36 +94,20 @@ export const SignupForm = () => {
           <Form {...form}>
             <form onSubmit={handleSubmit}>
               <div className="flex flex-col gap-6">
-                <div className="grid gap-2">
-                  <FormField
-                    control={form.control}
-                    name="firstName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>First name</FormLabel>
-                        <FormControl>
-                          <Input disabled={loading} required {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <FormField
-                    control={form.control}
-                    name="lastName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Last name</FormLabel>
-                        <FormControl>
-                          <Input disabled={loading} required {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input disabled={loading} required {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid gap-2">
                   <FormField
                     control={form.control}

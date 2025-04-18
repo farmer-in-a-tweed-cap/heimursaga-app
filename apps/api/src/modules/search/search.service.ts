@@ -85,7 +85,7 @@ export class SearchService {
               select: {
                 username: true,
                 profile: {
-                  select: { first_name: true, picture: true },
+                  select: { name: true, picture: true },
                 },
               },
             },
@@ -105,7 +105,7 @@ export class SearchService {
             bookmarked: userId ? post.bookmarks.length > 0 : false,
             author: {
               username: post.author?.username,
-              name: post.author?.profile?.first_name,
+              name: post.author?.profile?.name,
               picture: post.author?.profile?.picture
                 ? getStaticMediaUrl(post.author?.profile?.picture)
                 : undefined,

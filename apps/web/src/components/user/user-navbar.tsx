@@ -34,7 +34,7 @@ export const UserNavbar = () => {
     logoutMutation.mutate();
   };
 
-  const { username, picture = '', firstName = '' } = session || {};
+  const { username, picture = '', name = '' } = session || {};
   const premium = false;
 
   const links: { href: string; label: string }[] = [
@@ -53,11 +53,11 @@ export const UserNavbar = () => {
       <DropdownMenuTrigger>
         <div className="w-full p-2 flex flex-row gap-4 items-center justify-center lg:justify-start rounded-none lg:rounded-full box-border bg-dark lg:hover:brightness-100 lg:hover:bg-dark-hover focus:bg-dark-hover active:bg-dark-hover">
           <Avatar>
-            <AvatarFallback>{firstName?.slice(0, 1)}</AvatarFallback>
+            <AvatarFallback>{name?.slice(0, 1)}</AvatarFallback>
             <AvatarImage src={picture} alt="avatar" />
           </Avatar>
           <div className="hidden lg:flex flex-col items-start text-sm">
-            <span className="font-medium text-sm text-white">{firstName}</span>
+            <span className="font-medium text-sm text-white">{name}</span>
             <span className="font-normal text-xs">Member</span>
           </div>
         </div>

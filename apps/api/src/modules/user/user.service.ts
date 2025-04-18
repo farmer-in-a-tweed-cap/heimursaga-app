@@ -56,8 +56,7 @@ export class UserService {
           username: true,
           profile: {
             select: {
-              first_name: true,
-              last_name: true,
+              name: true,
               picture: true,
               bio: true,
             },
@@ -78,8 +77,7 @@ export class UserService {
           ? getStaticMediaUrl(user.profile.picture)
           : '',
         bio: user.profile?.bio,
-        firstName: user.profile.first_name,
-        lastName: user.profile.last_name,
+        name: user.profile.name,
         memberDate: user.created_at,
         followed: userId ? user.followers.length > 0 : false,
         you: userId ? userId === user.id : false,
@@ -136,7 +134,7 @@ export class UserService {
             id: true,
             username: true,
             profile: {
-              select: { first_name: true, last_name: true, picture: true },
+              select: { name: true, picture: true },
             },
           },
         },
@@ -174,7 +172,7 @@ export class UserService {
             lat,
             lon,
             author: {
-              name: author.profile?.first_name,
+              name: author.profile?.name,
               username: author?.username,
               picture: author?.profile?.picture
                 ? getStaticMediaUrl(author?.profile.picture)
@@ -226,17 +224,16 @@ export class UserService {
         orderBy: [{ id: 'desc' }],
       });
 
-      const geojson = toGeoJson<{ id: string; title: string }>(
-        'collection',
-        posts.map(({ public_id, title, lat, lon }) => ({
-          lat,
-          lon,
-          properties: { id: public_id, title },
-        })),
-      );
-
       return {
-        geojson,
+        lastWaypoint: { lat: posts[0].lat, lon: posts[0].lon },
+        geojson: toGeoJson<{ id: string; title: string }>(
+          'collection',
+          posts.map(({ public_id, title, lat, lon }) => ({
+            lat,
+            lon,
+            properties: { id: public_id, title },
+          })),
+        ),
       };
     } catch (e) {
       this.logger.error(e);
@@ -279,7 +276,7 @@ export class UserService {
               username: true,
               profile: {
                 select: {
-                  first_name: true,
+                  name: true,
                   picture: true,
                 },
               },
@@ -292,8 +289,7 @@ export class UserService {
       const response: IUserFollowersQueryResponse = {
         data: data.map(({ follower: { username, profile } }) => ({
           username,
-          firstName: profile.first_name,
-          lastName: profile.first_name,
+          name: profile.name,
           picture: profile.picture ? getStaticMediaUrl(profile?.picture) : '',
         })),
         results,
@@ -340,7 +336,7 @@ export class UserService {
               username: true,
               profile: {
                 select: {
-                  first_name: true,
+                  name: true,
                   picture: true,
                 },
               },
@@ -353,8 +349,7 @@ export class UserService {
       const response: IUserFollowersQueryResponse = {
         data: data.map(({ followee: { username, profile } }) => ({
           username,
-          firstName: profile.first_name,
-          lastName: profile.first_name,
+          name: profile.name,
           picture: profile.picture ? getStaticMediaUrl(profile.picture) : '',
         })),
         results,
@@ -576,7 +571,7 @@ export class SessionUserService {
             id: true,
             username: true,
             profile: {
-              select: { first_name: true, last_name: true, picture: true },
+              select: { name: true, picture: true },
             },
           },
         },
@@ -646,7 +641,7 @@ export class SessionUserService {
             lat,
             lon,
             author: {
-              name: author.profile?.first_name,
+              name: author.profile?.name,
               username: author?.username,
               picture: author?.profile?.picture
                 ? getStaticMediaUrl(author?.profile?.picture)
@@ -692,8 +687,7 @@ export class SessionUserService {
                 username: true,
                 profile: {
                   select: {
-                    first_name: true,
-                    last_name: true,
+                    name: true,
                     bio: true,
                     picture: true,
                   },
@@ -708,8 +702,7 @@ export class SessionUserService {
                   picture: profile?.picture
                     ? getStaticMediaUrl(profile?.picture)
                     : '',
-                  firstName: profile?.first_name,
-                  lastName: profile?.last_name,
+                  name: profile?.name,
                   bio: profile?.bio,
                 }) as IUserSettingsProfileResponse,
             );
@@ -745,8 +738,7 @@ export class SessionUserService {
             await tx.userProfile.update({
               where: { user_id: userId },
               data: {
-                first_name: profile?.firstName,
-                last_name: profile?.lastName,
+                name: profile?.name,
                 bio: profile?.bio,
               },
             });
@@ -830,7 +822,7 @@ export class SessionUserService {
           mention_user: {
             select: {
               username: true,
-              profile: { select: { picture: true, first_name: true } },
+              profile: { select: { picture: true, name: true } },
             },
           },
           mention_post: {
@@ -852,7 +844,7 @@ export class SessionUserService {
             body,
             mentionUser: {
               username: mention_user.username,
-              name: mention_user.profile.first_name,
+              name: mention_user.profile.name,
               picture: getStaticMediaUrl(mention_user.profile.picture),
             },
             postId: mention_post?.public_id,

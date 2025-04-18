@@ -1,6 +1,6 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 import { PageHeaderTitle, TabNavbar } from '@/components';
@@ -28,8 +28,7 @@ type Props = {
     profile?: {
       username: string;
       email: string;
-      firstName: string;
-      lastName: string;
+      name: string;
       bio: string;
       picture: string;
     };

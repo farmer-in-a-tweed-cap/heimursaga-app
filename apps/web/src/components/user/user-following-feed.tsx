@@ -30,17 +30,15 @@ export const UserFollowingFeed: React.FC<Props> = ({ username }) => {
         <>no following</>
       ) : (
         <div className="w-full flex flex-col gap-1">
-          {following.map(
-            ({ firstName, lastName, username, ...following }, key) => (
-              <UserCard
-                key={key}
-                href={ROUTER.MEMBERS.MEMBER(username)}
-                username={username}
-                name={[firstName, lastName].join(' ')}
-                {...following}
-              />
-            ),
-          )}
+          {following.map(({ name, username, ...following }, key) => (
+            <UserCard
+              key={key}
+              href={ROUTER.MEMBERS.MEMBER(username)}
+              username={username}
+              name={name}
+              {...following}
+            />
+          ))}
         </div>
       )
     ) : (

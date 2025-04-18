@@ -75,7 +75,7 @@ export class PostService {
               select: {
                 username: true,
                 profile: {
-                  select: { first_name: true, picture: true },
+                  select: { name: true, picture: true },
                 },
               },
             },
@@ -95,7 +95,7 @@ export class PostService {
             content: post.content.slice(0, 140),
             author: {
               username: post.author?.username,
-              name: post.author?.profile?.first_name,
+              name: post.author?.profile?.name,
               picture: post.author?.profile?.picture
                 ? getStaticMediaUrl(post.author?.profile?.picture)
                 : undefined,
@@ -158,7 +158,7 @@ export class PostService {
                 id: true,
                 username: true,
                 profile: {
-                  select: { first_name: true, picture: true },
+                  select: { name: true, picture: true },
                 },
               },
             },
@@ -181,7 +181,7 @@ export class PostService {
           author: {
             id: post.author?.id,
             username: post.author?.username,
-            name: post.author?.profile?.first_name,
+            name: post.author?.profile?.name,
             picture: post.author?.profile?.picture
               ? getStaticMediaUrl(post.author?.profile?.picture)
               : undefined,

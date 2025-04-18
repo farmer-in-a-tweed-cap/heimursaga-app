@@ -31,7 +31,7 @@ export const UserNavbar = () => {
     logoutMutation.mutate();
   };
 
-  const { username, picture = '', firstName = '' } = session || {};
+  const { username, picture = '', name = '' } = session || {};
 
   return session ? (
     <div className="flex flex-row items-center gap-10">
@@ -41,7 +41,7 @@ export const UserNavbar = () => {
             <Link href={username ? ROUTER.MEMBERS.MEMBER(username) : '#'}>
               <Avatar className="w-8 h-8">
                 <AvatarImage src={picture} />
-                <AvatarFallback>{firstName.slice(0, 1)}</AvatarFallback>
+                <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
               </Avatar>
             </Link>
           }
