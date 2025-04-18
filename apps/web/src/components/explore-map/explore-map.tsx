@@ -16,7 +16,7 @@ import {
   MapOnLoadHandler,
   MapOnMoveHandler,
 } from '@/components';
-import { MAP_DEFAULT_COORDINATES } from '@/constants';
+import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks';
 
 type Props = {
@@ -69,9 +69,15 @@ export const ExploreMap: React.FC<Props> = () => {
   });
 
   const coordinates = {
-    lat: params.lat ? parseFloat(params.lat) : MAP_DEFAULT_COORDINATES.LAT,
-    lon: params.lon ? parseFloat(params.lon) : MAP_DEFAULT_COORDINATES.LON,
-    alt: params.alt ? parseFloat(params.alt) : MAP_DEFAULT_COORDINATES.ALT,
+    lat: params.lat
+      ? parseFloat(params.lat)
+      : APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
+    lon: params.lon
+      ? parseFloat(params.lon)
+      : APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
+    alt: params.alt
+      ? parseFloat(params.alt)
+      : APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT,
   };
 
   const updateSearchParams = (params: {
@@ -160,14 +166,14 @@ export const ExploreMap: React.FC<Props> = () => {
     // set default coordinates
     if (!coordinateSet) {
       updateSearchParams({
-        lat: MAP_DEFAULT_COORDINATES.LAT,
-        lon: MAP_DEFAULT_COORDINATES.LON,
-        alt: MAP_DEFAULT_COORDINATES.ALT,
+        lat: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
+        lon: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
+        alt: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT,
       });
     } else {
       if (!alt) {
         updateSearchParams({
-          alt: MAP_DEFAULT_COORDINATES.ALT,
+          alt: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT,
         });
       }
     }

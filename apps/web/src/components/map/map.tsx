@@ -1,6 +1,5 @@
 'use client';
 
-import { Button } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import mapboxgl, { MapOptions, Marker } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -8,7 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { dateformat } from '@/lib/date-format';
 
-import { MAPBOX_STYLE } from '@/constants';
+import { APP_CONFIG } from '@/config';
 import { ROUTER } from '@/router';
 
 import { MapNavigationControl } from './map-control';
@@ -158,7 +157,7 @@ export const Map: React.FC<Props> = ({
     let mapboxConfig: MapOptions = {
       container: mapboxContainerRef.current,
       projection: 'equirectangular',
-      style: MAPBOX_STYLE,
+      style: APP_CONFIG.MAPBOX.STYLE,
       maxZoom: 18,
       minZoom: 4,
       pitch: 0,

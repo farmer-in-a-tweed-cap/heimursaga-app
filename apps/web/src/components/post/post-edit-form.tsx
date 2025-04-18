@@ -25,8 +25,8 @@ import { fieldmsg } from '@/lib/utils';
 
 import { MapDialog } from '@/components/dialog';
 
-import { Map, MapPreviewOverlay } from '@/components';
-import { MAP_DEFAULT_COORDINATES } from '@/constants';
+import { Map, MapPreviewOverlay, MapStaticPreview } from '@/components';
+import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks/use-mapbox';
 
 const schema = z.object({
@@ -80,12 +80,12 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
       lon: number;
     };
   }>({
-    lat: defaultValues?.lat || MAP_DEFAULT_COORDINATES.LAT,
-    lon: defaultValues?.lon || MAP_DEFAULT_COORDINATES.LON,
-    alt: MAP_DEFAULT_COORDINATES.ALT,
+    lat: defaultValues?.lat || APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
+    lon: defaultValues?.lon || APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
+    alt: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT,
     marker: {
-      lat: defaultValues?.lat || MAP_DEFAULT_COORDINATES.LAT,
-      lon: defaultValues?.lon || MAP_DEFAULT_COORDINATES.LON,
+      lat: defaultValues?.lat || APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
+      lon: defaultValues?.lon || APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
     },
   });
 
@@ -159,7 +159,8 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
         <div>
           <Dialog>
             <DialogTrigger asChild>
-              {mapbox.token && (
+              <MapStaticPreview lat={location.lat} lon={location.lon} />
+              {/* {mapbox.token && (
                 <div className="relative w-full aspect-5/2 rounded-xl overflow-hidden">
                   <MapPreviewOverlay />
                   <Map
@@ -177,9 +178,9 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
                     className="z-10"
                   />
                 </div>
-              )}
+              )} */}
             </DialogTrigger>
-            <MapDialog
+            {/* <MapDialog
               marker={location.marker}
               coordinates={{
                 lat: location.lat,
@@ -187,7 +188,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
                 alt: location.alt,
               }}
               onSubmit={handleLocationChange}
-            />
+            /> */}
           </Dialog>
         </div>
         <div className="mt-4">

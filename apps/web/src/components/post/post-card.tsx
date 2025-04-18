@@ -1,16 +1,10 @@
-import { MapPreview } from '../map';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Button,
-  Card,
-} from '@repo/ui/components';
+import { Avatar, AvatarFallback, AvatarImage, Card } from '@repo/ui/components';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { dateformat } from '@/lib/date-format';
 
+import { MapStaticPreview } from '@/components';
 import { ROUTER } from '@/router';
 
 import { PostBookmarkButton } from './post-bookmark-button';
@@ -117,13 +111,14 @@ export const PostCard: React.FC<PostCardProps> = ({
       </div>
       {coordinates && (
         <div className="mt-6">
-          <MapPreview
+          <MapStaticPreview
             href={
               id
                 ? `${ROUTER.EXPLORE.HOME}?lat=${coordinates.lat}&lon=${coordinates.lon}&alt=12`
                 : '#'
             }
-            coordinates={{ lat: coordinates.lat, lon: coordinates.lon }}
+            lat={coordinates.lat}
+            lon={coordinates.lon}
           />
         </div>
       )}

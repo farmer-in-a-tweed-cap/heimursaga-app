@@ -16,6 +16,11 @@ module.exports = {
         hostname: 'images.alltrails.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'api.mapbox.com',
+        pathname: '/**',
+      },
     ],
   },
   // proxy requests to backend
