@@ -3,8 +3,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
-  Dialog,
-  DialogTrigger,
   Form,
   FormControl,
   FormField,
@@ -16,18 +14,21 @@ import {
   Textarea,
 } from '@repo/ui/components';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { postUpdateMutation } from '@/lib/api';
 import { fieldmsg } from '@/lib/utils';
 
-import { MapDialog } from '@/components/dialog';
-
-import { Map, MapPreviewOverlay, MapStaticPreview } from '@/components';
+import {
+  MODALS,
+  MapLocationPickModalOnSubmitHandler,
+  MapPreview,
+} from '@/components';
+import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
-import { useMapbox } from '@/hooks/use-mapbox';
+import { useModal } from '@/hooks';
 
 const schema = z.object({
   title: z
@@ -54,7 +55,7 @@ type Props = {
 };
 
 export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
-  const mapbox = useMapbox();
+  const modal = useModal();
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -105,24 +106,26 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
     },
   });
 
-  const handleLocationChange = (location: {
-    lat: number;
-    lon: number;
-    alt: number;
-    marker?: {
-      lat: number;
-      lon: number;
-    };
-  }) => {
-    const { lat, lon, alt, marker } = location;
-
-    setLocation((location) => ({
-      ...location,
-      lat,
-      lon,
-      alt,
-      marker,
-    }));
+  const handleLocationPickModal = () => {
+    modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_PICK, {
+      full: true,
+      props: {
+        lat: location.marker ? location.marker?.lat : location.lat,
+        lon: location.marker ? location.marker?.lon : location.lon,
+        alt: APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
+        marker: location?.marker
+          ? {
+              lat: location?.marker?.lat,
+              lon: location?.marker?.lon,
+            }
+          : undefined,
+      },
+      onSubmit: ((data) => {
+        const { lat, lon, alt, marker } = data || {};
+        setLocation((location) => ({ ...location, lat, lon, alt, marker }));
+      }) as MapLocationPickModalOnSubmitHandler,
+      onCancel: () => {},
+    });
   };
 
   const handleVisibilityUpdate = (checked: boolean) => {
@@ -153,43 +156,29 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
     },
   );
 
+  // cache modals
+  useEffect(() => {
+    modal.preload([MODALS.MAP_LOCATION_PICK]);
+  }, [modal.preload]);
+
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-4">
         <div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <MapStaticPreview lat={location.lat} lon={location.lon} />
-              {/* {mapbox.token && (
-                <div className="relative w-full aspect-5/2 rounded-xl overflow-hidden">
-                  <MapPreviewOverlay />
-                  <Map
-                    token={mapbox.token}
-                    marker={location.marker}
-                    coordinates={{
-                      lat: location.lat,
-                      lon: location.lon,
-                      alt: location.alt,
-                    }}
-                    cursor="pointer"
-                    controls={false}
-                    disabled={true}
-                    markerEnabled={true}
-                    className="z-10"
-                  />
-                </div>
-              )} */}
-            </DialogTrigger>
-            {/* <MapDialog
-              marker={location.marker}
-              coordinates={{
-                lat: location.lat,
-                lon: location.lon,
-                alt: location.alt,
-              }}
-              onSubmit={handleLocationChange}
-            /> */}
-          </Dialog>
+          <MapPreview
+            lat={location.marker ? location.marker?.lat : location.lat}
+            lon={location.marker ? location.marker?.lon : location.lon}
+            alt={APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM}
+            marker={
+              location.marker
+                ? {
+                    lat: location.marker?.lat,
+                    lon: location.marker?.lon,
+                  }
+                : undefined
+            }
+            onClick={handleLocationPickModal}
+          />
         </div>
         <div className="mt-4">
           <Form {...form}>

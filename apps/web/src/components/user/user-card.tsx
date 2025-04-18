@@ -1,12 +1,6 @@
-import { MapPreview } from '../map';
 import { Avatar, AvatarFallback, AvatarImage, Card } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
-import Image from 'next/image';
 import Link from 'next/link';
-
-import { dateformat } from '@/lib/date-format';
-
-import { ROUTER } from '@/router';
 
 type Props = {
   href?: string;

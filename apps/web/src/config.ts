@@ -8,7 +8,7 @@ export const APP_CONFIG = {
       },
     },
     MAP_PREVIEW: {
-      ZOOM: 7,
+      ZOOM: 12,
     },
     STYLE: 'cnh1187/clikkzykm00wb01qf28pz4adt',
     BRAND_COLOR: 'AA6C46',

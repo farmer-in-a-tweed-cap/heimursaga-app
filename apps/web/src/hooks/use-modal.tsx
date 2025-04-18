@@ -11,14 +11,16 @@ export function useModal() {
     id: string,
     options?: {
       props?: T;
-      onSubmit?: () => void;
+      full?: boolean;
+      onSubmit?: (data?: any) => void;
       onCancel?: () => void;
     },
   ) {
-    const { props, onSubmit, onCancel } = options || {};
+    const { props, full, onSubmit, onCancel } = options || {};
 
     ctx.setContext({
       id,
+      full,
       props,
       onSubmit,
       onCancel,

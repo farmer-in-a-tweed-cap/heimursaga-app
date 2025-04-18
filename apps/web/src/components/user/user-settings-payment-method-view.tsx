@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  IPaymentMethodDetail,
-  IPaymentMethodGetAllResponse,
-} from '@repo/types';
+import { IPaymentMethodGetAllResponse } from '@repo/types';
 import { Button, Card, CardContent, LoadingSpinner } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
 import { useQuery } from '@tanstack/react-query';

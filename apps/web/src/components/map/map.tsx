@@ -47,9 +47,24 @@ type Props = {
   controls?: boolean;
   disabled?: boolean;
   markerEnabled?: boolean;
+  width?: number;
+  height?: number;
   onLoad?: MapOnLoadHandler;
   onMove?: MapOnMoveHandler;
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
+};
+
+const config = {
+  mapbox: {
+    style: `mapbox://styles/${APP_CONFIG.MAPBOX.STYLE}`,
+    maxZoom: 18,
+    minZoom: 4,
+    marker: {
+      color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
+      scale: 0.75,
+      draggable: false,
+    },
+  },
 };
 
 const MAP_SOURCES = {
@@ -59,14 +74,6 @@ const MAP_SOURCES = {
 const MAP_LAYERS = {
   MARKERS: 'markers',
   CLUSTERS: 'clusters',
-};
-
-const BRAND_COLOR = '#AA6C46';
-
-const markerConfig = {
-  color: BRAND_COLOR,
-  scale: 0.75,
-  draggable: false,
 };
 
 export const Map: React.FC<Props> = ({
@@ -79,6 +86,8 @@ export const Map: React.FC<Props> = ({
   controls = true,
   markerEnabled = false,
   disabled = false,
+  width = 600,
+  height = 240,
   onLoad,
   onMove,
   onMarkerChange,
@@ -140,7 +149,7 @@ export const Map: React.FC<Props> = ({
 
     // create a marker
     const { lat, lon } = marker;
-    markerRef.current = new mapboxgl.Marker(markerConfig)
+    markerRef.current = new mapboxgl.Marker(config.mapbox.marker)
       .setLngLat({ lat, lng: lon })
       .addTo(mapboxRef.current);
   }, [marker]);
@@ -157,9 +166,9 @@ export const Map: React.FC<Props> = ({
     let mapboxConfig: MapOptions = {
       container: mapboxContainerRef.current,
       projection: 'equirectangular',
-      style: APP_CONFIG.MAPBOX.STYLE,
-      maxZoom: 18,
-      minZoom: 4,
+      style: config.mapbox.style,
+      maxZoom: config.mapbox.maxZoom,
+      minZoom: config.mapbox.minZoom,
       pitch: 0,
       bearing: 0,
       renderWorldCopies: false,
@@ -199,7 +208,7 @@ export const Map: React.FC<Props> = ({
 
       // create a marker
       const { lat, lon } = marker;
-      markerRef.current = new mapboxgl.Marker(markerConfig)
+      markerRef.current = new mapboxgl.Marker(config.mapbox.marker)
         .setLngLat({ lat, lng: lon })
         .addTo(mapboxRef.current);
     }
@@ -272,7 +281,7 @@ export const Map: React.FC<Props> = ({
             ...[15, 12],
           ],
           'circle-stroke-width': 1,
-          'circle-color': BRAND_COLOR,
+          'circle-color': config.mapbox.marker.color,
           'circle-stroke-color': '#ffffff',
         },
       });
@@ -301,7 +310,7 @@ export const Map: React.FC<Props> = ({
           }
 
           // create a new marker
-          markerRef.current = new mapboxgl.Marker(markerConfig)
+          markerRef.current = new mapboxgl.Marker(config.mapbox.marker)
             .setLngLat({ lat, lng: lon })
             .addTo(mapboxRef.current);
 
@@ -489,10 +498,11 @@ export const Map: React.FC<Props> = ({
   }, []);
 
   return (
-    <div className={cn(className, 'relative w-full h-full')}>
+    <div className={cn(className, 'relative !w-full !h-full')}>
       <div
         id="map-container"
         ref={mapboxContainerRef}
+        style={{ width, height }}
         className="z-10 !w-full !h-full"
       ></div>
     </div>
