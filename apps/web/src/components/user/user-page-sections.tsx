@@ -26,11 +26,13 @@ const SECTION_TABS: { key: string; label: string }[] = [
 type Props = {
   username: string;
   section?: string;
+  me?: boolean;
 };
 
 export const UserPageSections: React.FC<Props> = ({
   username,
   section = SECTION_KEYS.HOME,
+  me = false,
 }) => {
   const router = useRouter();
 

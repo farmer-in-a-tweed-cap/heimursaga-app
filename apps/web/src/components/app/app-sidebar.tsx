@@ -39,7 +39,6 @@ const SIDEBAR_LINKS: {
   user: [
     { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
     { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
-    { href: ROUTER.JOURNAL, label: 'Journal', icon: PenIcon },
     { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
     { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
     { href: ROUTER.PREMIUM, label: 'Premium', icon: StarIcon },
