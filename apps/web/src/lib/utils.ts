@@ -8,6 +8,8 @@ export const fieldmsg = {
     `${field} must be less than ${max} characters`,
   nonempty: (field: string) => `${field} cannot be empty`,
   email: () => `invalid email format`,
+  minNumber: (field: string, min: number) => `${field} must be ${min} min`,
+  maxNumber: (field: string, max: number) => `${field} must be ${max} max`,
 };
 
 export const redirect = (href: string) => {

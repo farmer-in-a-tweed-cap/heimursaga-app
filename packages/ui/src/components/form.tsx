@@ -138,9 +138,9 @@ function FormDescription({ className, ...props }: React.ComponentProps<'p'>) {
 
 function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
   const { error, formMessageId } = useFormField();
-  const body = error ? String(error?.message ?? '') : props.children;
+  const errorMessage = error ? String(error?.message ?? '') : null;
 
-  if (!body) {
+  if (!errorMessage) {
     return null;
   }
 
@@ -151,7 +151,10 @@ function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
       className={cn('error-message', className)}
       {...props}
     >
-      {body}
+      {[
+        errorMessage.slice(0, 1).toUpperCase(),
+        errorMessage.slice(1, errorMessage.length),
+      ].join('')}
     </p>
   );
 }

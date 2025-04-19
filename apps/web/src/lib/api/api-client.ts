@@ -19,6 +19,8 @@ import {
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserMapGetResponse,
+  IUserMembershipTierGetAllResponse,
+  IUserMembershipTierUpdatePayload,
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
@@ -308,9 +310,34 @@ export const apiClient = {
       body: JSON.stringify({}),
       cookie: config ? config.cookie : undefined,
     }),
+  // notifications
   getUserNotifications: async (config?: RequestConfig) =>
     api.request<IUserNotificationGetResponse>(API_ROUTER.USER.NOTIFICATIONS, {
       method: API_METHODS.GET,
+      cookie: config ? config.cookie : undefined,
+    }),
+  // membership tiers
+  getUserMembershipTiers: async (config?: RequestConfig) =>
+    api.request<IUserMembershipTierGetAllResponse>(
+      API_ROUTER.USER.MEMBERSHIP_TIERS.GET,
+      {
+        method: API_METHODS.GET,
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
+  updateUserMembershipTierById: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<
+      { id: string },
+      IUserMembershipTierUpdatePayload
+    >,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.USER.MEMBERSHIP_TIERS.UPDATE(query.id), {
+      method: API_METHODS.PUT,
+      body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,
     }),
 };

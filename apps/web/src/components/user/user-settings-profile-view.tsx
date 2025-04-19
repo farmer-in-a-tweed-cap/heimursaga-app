@@ -116,7 +116,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
         <Form {...form}>
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="mt-6 gap-6 flex flex-col">
                 <FormField
                   control={form.control}
                   name="name"
@@ -130,89 +130,26 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                     </FormItem>
                   )}
                 />
-              </div>
-              {/* <div className="grid gap-2">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input disabled={loading} required {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div> */}
-              {/* <div className="grid gap-2">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        disabled={loading}
-                        required
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div> */}
-              {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <FormField
-                control={form.control}
-                name="livesIn"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lives in</FormLabel>
-                    <FormControl>
-                      <Input disabled={loading} required {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="travelsIn"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Travels in</FormLabel>
-                    <FormControl>
-                      <Input disabled={loading} required {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div> */}
-              <div className="grid gap-2">
-                <FormField
-                  control={form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          className="min-h-[120px]"
-                          disabled={settingsLoading}
-                          required
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bio</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            className="min-h-[120px]"
+                            disabled={settingsLoading}
+                            required
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
               <div>
                 <Button type="submit" loading={settingsLoading}>

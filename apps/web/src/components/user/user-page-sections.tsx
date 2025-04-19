@@ -17,12 +17,6 @@ const SECTION_KEYS = {
   FOLLOWING: 'following',
 };
 
-const SECTION_TABS: { key: string; label: string }[] = [
-  { key: SECTION_KEYS.HOME, label: 'Home' },
-  { key: SECTION_KEYS.FOLLOWERS, label: 'Followers' },
-  { key: SECTION_KEYS.FOLLOWING, label: 'Following' },
-];
-
 type Props = {
   username: string;
   section?: string;
@@ -40,6 +34,12 @@ export const UserPageSections: React.FC<Props> = ({
     section,
   });
 
+  const tabs: { key: string; label: string }[] = [
+    { key: SECTION_KEYS.HOME, label: 'Home' },
+    { key: SECTION_KEYS.FOLLOWERS, label: 'Followers' },
+    { key: SECTION_KEYS.FOLLOWING, label: 'Following' },
+  ];
+
   const sectionKey = state.section;
 
   const handleChange = (section: string) => {
@@ -56,7 +56,7 @@ export const UserPageSections: React.FC<Props> = ({
     <div className="w-full flex flex-col items-center gap-4">
       <div className="w-full flex flex-row">
         <TabNavbar
-          tabs={SECTION_TABS}
+          tabs={tabs}
           activeTab={sectionKey}
           classNames={{
             container: 'w-full',

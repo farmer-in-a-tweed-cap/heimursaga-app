@@ -14,6 +14,7 @@ import {
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserMapGetResponse,
+  IUserMembershipTierUpdatePayload,
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
@@ -365,4 +366,15 @@ export const getUserMapByUsername = createQuery<
       }
       return data as IUserMapGetResponse;
     }),
+);
+
+export const membershipTierUpdateMutation = createMutation<
+  IApiClientQueryWithPayload<{ id: string }, IUserMembershipTierUpdatePayload>,
+  void
+>((query) =>
+  apiClient.updateUserMembershipTierById(query).then(({ success, message }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+  }),
 );

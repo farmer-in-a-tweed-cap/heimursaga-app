@@ -11,6 +11,7 @@ import {
   LucideProps,
   PenIcon,
   StarIcon,
+  Users2Icon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -31,6 +32,7 @@ type SidebarLink = {
 const SIDEBAR_LINKS: {
   guest: SidebarLink[];
   user: SidebarLink[];
+  creator: SidebarLink[];
 } = {
   guest: [
     { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
@@ -44,13 +46,22 @@ const SIDEBAR_LINKS: {
     { href: ROUTER.PREMIUM, label: 'Premium', icon: StarIcon },
     { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
   ],
+  creator: [
+    { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
+    { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
+    { href: ROUTER.MEMBERSHIP, label: 'Membership', icon: Users2Icon },
+    { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
+    { href: ROUTER.PREMIUM, label: 'Premium', icon: StarIcon },
+    { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
+    { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
+  ],
 };
 
 export const AppSidebar = () => {
   const pathname = usePathname();
   const session = useSession();
 
-  const links = session ? SIDEBAR_LINKS.user : SIDEBAR_LINKS.guest;
+  const links = session ? SIDEBAR_LINKS.creator : SIDEBAR_LINKS.guest;
 
   const isActiveLink = (path: string): boolean => {
     path = path.startsWith('/') ? path : `/${path}`;
