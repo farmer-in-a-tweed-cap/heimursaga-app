@@ -42,6 +42,7 @@ model User {
   followers             UserFollow[]       @relation("user_follows_followee")
   uploads               Upload[]
   payment_methods       PaymentMethod[]
+  membership_tiers      MembershipTier[]
   notifications         UserNotification[] @relation("user_notifications")
   notification_mentions UserNotification[] @relation("user_notification_mentions")
   created_at            DateTime?          @default(now())
@@ -108,6 +109,21 @@ model Plan {
   updated_at            DateTime?  @updatedAt
 
   @@map("plans")
+}
+
+model MembershipTier {
+  id           Int       @id @default(autoincrement())
+  public_id    String    @unique @db.VarChar(14)
+  price        Int       @default(0) @db.Integer
+  description  String?   @db.VarChar(500)
+  is_available Boolean?  @default(false)
+  user_id      Int
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  created_at   DateTime? @default(now())
+  updated_at   DateTime? @updatedAt
+  deleted_at   DateTime?
+
+  @@map("membership_tiers")
 }
 
 model UserPlan {

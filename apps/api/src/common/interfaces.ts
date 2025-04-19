@@ -30,3 +30,14 @@ export interface IPayloadWithSession<T = any> {
   payload: T;
   session?: ISession;
 }
+
+export interface ISessionQuery<Q = any> {
+  query: Q;
+  session?: ISession;
+}
+
+export interface ISessionQueryWithPayload<Q = any, T = any> {
+  query: Q;
+  payload: T;
+  session?: ISession;
+}

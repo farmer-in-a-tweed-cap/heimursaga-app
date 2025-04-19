@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -14,12 +15,15 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public, Session } from '@/common/decorators';
-import { ParamUsernameDto } from '@/common/dto';
+import { ParamPublicIdDto, ParamUsernameDto } from '@/common/dto';
 import { FileInterceptor } from '@/common/interceptors';
 import { IRequest, ISession } from '@/common/interfaces';
 import { IUploadedFile } from '@/modules/upload';
 
-import { UserSettingsProfileUpdateDto } from './user.dto';
+import {
+  UserMembershipTierUpdateDto,
+  UserSettingsProfileUpdateDto,
+} from './user.dto';
 import { SessionUserService, UserService } from './user.service';
 
 @ApiTags('users')
@@ -31,7 +35,6 @@ export class UserController {
   @Get(':username')
   @HttpCode(HttpStatus.OK)
   async getByUsername(
-    @Req() req: IRequest,
     @Param() param: ParamUsernameDto,
     @Session() session: ISession,
   ) {
@@ -47,7 +50,6 @@ export class UserController {
   @Get(':username/posts')
   @HttpCode(HttpStatus.OK)
   async getPosts(
-    @Req() req: IRequest,
     @Param() param: ParamUsernameDto,
     @Session() session: ISession,
   ) {
@@ -206,6 +208,43 @@ export class SessionUserController {
     return await this.sessionUserService.getNotifications({
       session,
       query: {},
+    });
+  }
+
+  @Get('membership-tiers')
+  @HttpCode(HttpStatus.OK)
+  async getMembershipTiers(@Session() session: ISession) {
+    console.log('get membership');
+
+    return await this.sessionUserService.getMembershipTiers({
+      query: {},
+      session,
+    });
+  }
+
+  @Put('membership-tiers/:id')
+  @HttpCode(HttpStatus.OK)
+  async updateMembershipTier(
+    @Param() param: ParamPublicIdDto,
+    @Body() body: UserMembershipTierUpdateDto,
+    @Session() session: ISession,
+  ) {
+    return await this.sessionUserService.updateMembershipTier({
+      query: { id: param.id },
+      payload: body,
+      session,
+    });
+  }
+
+  @Delete('membership-tiers/:id')
+  @HttpCode(HttpStatus.OK)
+  async deleteMembershipTier(
+    @Param() param: ParamPublicIdDto,
+    @Session() session: ISession,
+  ) {
+    return await this.sessionUserService.deleteMembershipTier({
+      query: { id: param.id },
+      session,
     });
   }
 }

@@ -5,6 +5,8 @@ import {
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserMapGetResponse,
+  IUserMembershipTierGetAllResponse,
+  IUserMembershipTierUpdatePayload,
   IUserNotificationGetResponse,
   IUserPictureUploadPayload,
   IUserPostsQueryResponse,
@@ -15,6 +17,9 @@ import {
   UserNotificationContext,
 } from '@repo/types';
 
+import { dateformat } from '@/lib/date-format';
+import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
+import { generator } from '@/lib/generator';
 import { toGeoJson } from '@/lib/geojson';
 import { getStaticMediaUrl } from '@/lib/upload';
 
@@ -24,7 +29,12 @@ import {
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import { IPayloadWithSession, IQueryWithSession } from '@/common/interfaces';
+import {
+  IPayloadWithSession,
+  IQueryWithSession,
+  ISessionQuery,
+  ISessionQueryWithPayload,
+} from '@/common/interfaces';
 import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
@@ -858,6 +868,161 @@ export class SessionUserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('notifications not found');
+      throw exception;
+    }
+  }
+
+  async getMembershipTiers({
+    session,
+  }: ISessionQuery): Promise<IUserMembershipTierGetAllResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      const where: Prisma.MembershipTierWhereInput = {
+        user_id: userId,
+        deleted_at: null,
+      };
+
+      const response: IUserMembershipTierGetAllResponse = {
+        results: 0,
+        data: [],
+      };
+
+      // get the number of membership tiers
+      const results = await this.prisma.membershipTier.count({ where });
+
+      if (results >= 1) {
+        // get the membership tiers
+        const data = await this.prisma.membershipTier
+          .findMany({
+            where,
+            select: { public_id: true, price: true, description: true },
+          })
+          .catch(() => {
+            throw new ServiceNotFoundException('membership tiers not found');
+          });
+
+        response.results = results;
+        response.data = data.map(({ price, description, public_id: id }) => ({
+          price,
+          description,
+          id,
+          membersCount: 0,
+        }));
+      } else {
+        // create a membership tier if it doesn't exist
+        const tier = await this.prisma.membershipTier.create({
+          data: {
+            public_id: generator.publicId(),
+            price: 0,
+            description: '',
+            user: { connect: { id: userId } },
+          },
+          select: { public_id: true, price: true, description: true },
+        });
+
+        console.log({ tier });
+
+        response.results = 1;
+        response.data = [tier].map(({ price, description, public_id: id }) => ({
+          price,
+          description,
+          id,
+          membersCount: 0,
+        }));
+      }
+
+      response.data = response.data.map(({ price, ...data }) => ({
+        ...data,
+        price: integerToDecimal(price),
+      }));
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('membership tiers not found');
+      throw exception;
+    }
+  }
+
+  async updateMembershipTier({
+    query,
+    payload,
+    session,
+  }: ISessionQueryWithPayload<
+    { id: string },
+    IUserMembershipTierUpdatePayload
+  >): Promise<void> {
+    try {
+      const { userId } = session;
+      const { id } = query;
+
+      if (!userId) throw new ServiceForbiddenException();
+      if (!id) throw new ServiceNotFoundException('membership not found');
+
+      // check access
+      const access = await this.prisma.membershipTier
+        .findFirstOrThrow({
+          where: { public_id: id, user_id: userId, deleted_at: null },
+        })
+        .then(() => true)
+        .catch(() => false);
+      if (!access)
+        throw new ServiceNotFoundException('membership tier not found');
+
+      // update the membership tier
+      const price = payload.price ? decimalToInteger(payload.price) : undefined;
+      await this.prisma.membershipTier.update({
+        where: { public_id: id },
+        data: {
+          ...payload,
+          price,
+        },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('membership tier not updated');
+      throw exception;
+    }
+  }
+
+  async deleteMembershipTier({
+    query,
+    session,
+  }: ISessionQuery<{ id: string }>): Promise<void> {
+    try {
+      const { userId } = session;
+      const { id } = query;
+
+      if (!userId) throw new ServiceForbiddenException();
+      if (!id) throw new ServiceNotFoundException('membership not found');
+
+      // check access
+      const access = await this.prisma.membershipTier
+        .findFirstOrThrow({
+          where: { public_id: id, user_id: userId, deleted_at: null },
+        })
+        .then(() => true)
+        .catch(() => false);
+      if (!access)
+        throw new ServiceNotFoundException('membership tier not found');
+
+      // delete the membership tier
+      await this.prisma.membershipTier.update({
+        where: { public_id: id },
+        data: { deleted_at: dateformat().toDate() },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('membership tier not deleted');
       throw exception;
     }
   }

@@ -356,3 +356,24 @@ export interface IUserMapGetResponse {
   lastWaypoint: { lat: number; lon: number };
   geojson: GeoJson<{ id: string; title: string }>;
 }
+
+// membership tiers
+export interface IUserMembershipTier {
+  id: string;
+  price: number;
+  description: string;
+  membersCount: number;
+}
+
+export interface IUserMembershipTierGetAllResponse {
+  results: number;
+  data: IUserMembershipTier[];
+}
+
+export interface IUserMembershipTierGetByIdResponse
+  extends IUserMembershipTier {}
+
+export interface IUserMembershipTierUpdatePayload {
+  price: number;
+  description: string;
+}

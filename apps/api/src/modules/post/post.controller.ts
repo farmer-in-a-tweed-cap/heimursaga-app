@@ -35,7 +35,6 @@ export class PostController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getById(
-    @Req() req: IRequest,
     @Param() param: ParamPublicIdDto,
     @Session() session: ISession,
   ) {
