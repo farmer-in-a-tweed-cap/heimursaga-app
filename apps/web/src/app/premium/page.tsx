@@ -1,11 +1,11 @@
 import { Button } from '@repo/ui/components';
 import Link from 'next/link';
 
-import { BulletList, CloseButton } from '@/components';
+import { CloseButton, SubscriptionPlanCard } from '@/components';
 import { DEMO_DATA } from '@/constants';
 import { ROUTER } from '@/router';
 
-const plans = [DEMO_DATA.PREMIUM_PLAN];
+const plans = DEMO_DATA.PLANS;
 
 export default function Page() {
   return (
@@ -22,45 +22,9 @@ export default function Page() {
           </p>
         </div>
         <div className="mt-10 w-full max-w-lg grid gap-4">
-          {plans.map(
-            (
-              {
-                name,
-                monthlyPrice,
-                yearlyPrice,
-                yearlyDiscount,
-                features,
-                currencySymbol,
-              },
-              key,
-            ) => (
-              <div key={key} className="bg-gray-200 p-8 box-border rounded-xl">
-                <span className="text-xl font-medium">{name}</span>
-                <div className="mt-4 flex flex-row items-center gap-2">
-                  <span className="text-3xl font-semibold leading-none">
-                    {currencySymbol}
-                    {monthlyPrice}
-                  </span>
-                  <span className="pt-2 text-sm font-normal text-gray-600">
-                    / month
-                  </span>
-                </div>
-                <div className="mt-1 flex flex-row gap-2">
-                  <span className="text-gray-600 text-base">
-                    {currencySymbol}
-                    {yearlyPrice} billed annually
-                  </span>
-                  <span className="py-1 px-2 bg-green-100 text-green-800 text-xs font-bold rounded-lg uppercase">
-                    Save {yearlyDiscount}%
-                  </span>
-                </div>
-
-                <div className="mt-6">
-                  <BulletList items={features} />
-                </div>
-              </div>
-            ),
-          )}
+          {plans.map(({ currencySymbol: currency, ...plan }, key) => (
+            <SubscriptionPlanCard key={key} {...plan} currency={currency} />
+          ))}
         </div>
         <div className="mt-6 w-full max-w-xl flex flex-col justify-center items-center">
           <div>
