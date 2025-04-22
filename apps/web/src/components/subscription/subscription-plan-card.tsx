@@ -19,7 +19,7 @@ export const SubscriptionPlanCard: React.FC<Props> = ({
 }) => {
   return (
     <div className="bg-gray-200 p-8 box-border rounded-xl">
-      <span className="text-xl font-medium">{name}</span>
+      <span className="text-xl font-medium capitalize">{name}</span>
       <div className="mt-4 flex flex-row items-center gap-2">
         <span className="text-3xl font-semibold leading-none">
           {currency}

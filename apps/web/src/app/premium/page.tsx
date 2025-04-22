@@ -1,13 +1,21 @@
 import { Button } from '@repo/ui/components';
+import { cookies } from 'next/headers';
 import Link from 'next/link';
+
+import { apiClient } from '@/lib/api';
 
 import { CloseButton, SubscriptionPlanCard } from '@/components';
 import { DEMO_DATA } from '@/constants';
 import { ROUTER } from '@/router';
 
-const plans = DEMO_DATA.PLANS;
+export default async function Page() {
+  const cookie = cookies().toString();
 
-export default function Page() {
+  const plansQuery = await apiClient.getSubscriptionPlans({ cookie });
+
+  const plans = plansQuery.data?.data || [];
+  const features = DEMO_DATA.PLANS?.[0]?.features || [];
+
   return (
     <div className="bg-background relative w-full min-h-screen flex flex-col justify-start items-center p-8">
       <div className="absolute top-3 right-3 lg:top-4 lg:left-4">
@@ -16,14 +24,19 @@ export default function Page() {
       <div className="flex flex-col py-8 items-center">
         <div className="w-full max-w-xl flex flex-col items-center text-base gap-6">
           <h2 className="font-medium text-5xl">Upgrade to Premium</h2>
-          <p>
+          <p className="text-center">
             Enjoy an enhanced experience, exclusive creator tools, top-tier
             verification and security.
           </p>
         </div>
         <div className="mt-10 w-full max-w-lg grid gap-4">
           {plans.map(({ currencySymbol: currency, ...plan }, key) => (
-            <SubscriptionPlanCard key={key} {...plan} currency={currency} />
+            <SubscriptionPlanCard
+              key={key}
+              {...plan}
+              currency={currency}
+              features={features}
+            />
           ))}
         </div>
         <div className="mt-6 w-full max-w-xl flex flex-col justify-center items-center">

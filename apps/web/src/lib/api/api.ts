@@ -34,6 +34,10 @@ export const API_ROUTER = {
     FOLLOW: (username: string) => `/users/${username}/follow`,
     UNFOLLOW: (username: string) => `/users/${username}/unfollow`,
   },
+  SUBSCRIPTION_PLANS: {
+    GET: '/plans',
+    GET_BY_SLUG: (slug: string) => `/plans/${slug}`,
+  },
   POSTS: {
     QUERY: '/posts',
     GET_BY_ID: (id: string) => `posts/${id}`,

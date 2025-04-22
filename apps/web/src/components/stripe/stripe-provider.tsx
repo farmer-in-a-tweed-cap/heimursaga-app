@@ -1,8 +1,11 @@
 'use client';
 
+import { LoadingSpinner } from '@repo/ui/components';
 import { Elements } from '@stripe/react-stripe-js';
 import { Stripe, loadStripe } from '@stripe/stripe-js';
 import { useEffect, useState } from 'react';
+
+import { ERROR_CODES } from '@/constants';
 
 interface IStripeProviderProps {
   children: React.ReactNode;
@@ -15,18 +18,35 @@ export const StripeProvider: React.FC<IStripeProviderProps> = ({
 }) => {
   const [stripe, setStripe] = useState<Stripe | null>(null);
 
-  useEffect(() => {
-    loadStripe(STRIPE_PK)
+  const [state, setState] = useState<{ success: boolean; loading: boolean }>({
+    success: false,
+    loading: true,
+  });
+
+  const { success, loading } = state;
+
+  const handleStripeLoad = async () => {
+    setState((state) => ({ ...state, loading: true }));
+
+    await loadStripe(STRIPE_PK)
       .then((stripe) => {
-        setStripe(stripe);
         console.log('stripe is loaded');
+        setStripe(stripe);
+        setState((state) => ({ ...state, success: true, loading: false }));
       })
       .catch((e) => {
         console.log(`stripe is not loaded\n`, e);
+        setState((state) => ({ ...state, success: false, loading: false }));
       });
+  };
+
+  useEffect(() => {
+    handleStripeLoad();
   }, []);
 
-  return stripe ? (
+  return loading ? (
+    <LoadingSpinner />
+  ) : success ? (
     <Elements
       stripe={stripe}
       options={{
@@ -41,6 +61,6 @@ export const StripeProvider: React.FC<IStripeProviderProps> = ({
       {children}
     </Elements>
   ) : (
-    <></>
+    <>{ERROR_CODES.PAYMENT_FORM_NOT_LOADED}</>
   );
 };

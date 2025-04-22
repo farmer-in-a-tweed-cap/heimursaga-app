@@ -25,3 +25,7 @@ export const DEMO_DATA = {
     },
   ],
 };
+
+export const ERROR_CODES = {
+  PAYMENT_FORM_NOT_LOADED: 'PAYMENT_FORM_NOT_LOADED',
+};

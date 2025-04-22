@@ -16,6 +16,8 @@ import {
   ISessionUserGetResponse,
   ISignupPayload,
   IStripeCreateSetupIntentResponse,
+  ISubscriptionPlanGetAllResponse,
+  ISubscriptionPlanGetBySlugResponse,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserMapGetResponse,
@@ -340,4 +342,24 @@ export const apiClient = {
       body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,
     }),
+  // subscription plan
+  getSubscriptionPlans: async (config?: RequestConfig) =>
+    api.request<ISubscriptionPlanGetAllResponse>(
+      API_ROUTER.SUBSCRIPTION_PLANS.GET,
+      {
+        method: API_METHODS.GET,
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
+  getSubscriptionBySlug: async (
+    { query }: IApiClientQuery<{ slug: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ISubscriptionPlanGetBySlugResponse>(
+      API_ROUTER.SUBSCRIPTION_PLANS.GET_BY_SLUG(query.slug),
+      {
+        method: API_METHODS.GET,
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
 };
