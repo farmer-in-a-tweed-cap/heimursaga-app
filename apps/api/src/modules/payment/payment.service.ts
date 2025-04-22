@@ -12,12 +12,15 @@ import {
   IPlanUpgradeCheckoutPayload,
   IPlanUpgradeCheckoutResponse,
   IPlanUpgradeCompletePayload,
+  ISubscriptionPlanGetAllResponse,
+  ISubscriptionPlanGetBySlugResponse,
   PlanExpiryPeriod,
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
 
+import { CurrencyCode, CurrencySymbol } from '@/common/enums';
 import {
   ServiceBadRequestException,
   ServiceException,
@@ -451,6 +454,99 @@ export class PaymentService {
     }
   }
 
+  async getPlans({
+    session,
+  }: IQueryWithSession<{}>): Promise<ISubscriptionPlanGetAllResponse> {
+    try {
+      const { userId } = session;
+
+      // get plans
+      const data = await this.prisma.plan.findMany({
+        where: { is_available: true },
+        select: {
+          slug: true,
+          name: true,
+          is_available: true,
+          stripe_product_id: true,
+          price_year: true,
+          price_month: true,
+          discount_year: true,
+        },
+      });
+
+      return {
+        data: data.map(
+          ({ slug, name, price_year, price_month, discount_year }) => ({
+            slug,
+            name,
+            active: false,
+            priceMonthly: price_month,
+            priceYearly: price_year,
+            discountYearly: discount_year,
+            currency: CurrencyCode.USD,
+            currencySymbol: CurrencySymbol.USD,
+          }),
+        ),
+      };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('plans not found');
+      throw exception;
+    }
+  }
+
+  async getPlanBySlug({
+    query,
+
+    session,
+  }: IQueryWithSession<{
+    slug: string;
+  }>): Promise<ISubscriptionPlanGetBySlugResponse> {
+    try {
+      const { slug } = query;
+
+      if (!slug) throw new ServiceNotFoundException('plan not found');
+
+      // get the plan by id
+      const data = await this.prisma.plan
+        .findFirstOrThrow({
+          where: { slug, is_available: true },
+          select: {
+            name: true,
+            is_available: true,
+            stripe_product_id: true,
+            price_year: true,
+            price_month: true,
+            discount_year: true,
+          },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('plan not found');
+        });
+
+      const { name, price_year, price_month, discount_year } = data;
+
+      return {
+        slug,
+        name,
+        active: false,
+        priceMonthly: price_month,
+        priceYearly: price_year,
+        discountYearly: discount_year,
+        currency: CurrencyCode.USD,
+        currencySymbol: CurrencySymbol.USD,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('plan not found');
+      throw exception;
+    }
+  }
+
   async checkoutPlanUpgrade({
     session,
     payload,
@@ -541,15 +637,18 @@ export class PaymentService {
         },
       });
 
-      const { checkout, paymentIntent } = await this.prisma.$transaction(
+      const { checkout, subscription } = await this.prisma.$transaction(
         async (tx) => {
-          // create a payment intent
-          const paymentIntent =
-            await this.stripeService.stripe.paymentIntents.create({
-              amount,
-              currency,
-              payment_method_types: ['card'],
+          // create a subscription
+          const subscription =
+            await this.stripeService.stripe.subscriptions.create({
               customer: customer.id,
+              items: [{ price: plan.stripePriceId }],
+              payment_behavior: 'default_incomplete',
+              payment_settings: {
+                save_default_payment_method: 'on_subscription',
+              },
+              expand: ['latest_invoice.confirmation_secret'],
             });
 
           // create a checkout
@@ -570,24 +669,28 @@ export class PaymentService {
 
           return {
             checkout,
-            paymentIntent,
+            subscription,
           };
         },
       );
 
-      console.log({ checkout, paymentIntent });
+      console.log({
+        checkout,
+        subscription,
+        clientSecret: subscription.latest_invoice,
+      });
+
+      const subscriptionId = subscription.id;
+      const clientSecret = (
+        subscription.latest_invoice as {
+          confirmation_secret?: { client_secret: string };
+        }
+      )?.confirmation_secret?.client_secret;
 
       return {
         planId,
-        period,
-        checkout: {
-          id: checkout.public_id,
-          status: checkout.status as CheckoutStatus,
-          amount: checkout.total,
-          currency: checkout.currency,
-          secret: paymentIntent.client_secret,
-          requiresAction: false,
-        },
+        subscriptionId,
+        clientSecret,
       };
     } catch (e) {
       this.logger.error(e);

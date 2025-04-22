@@ -161,6 +161,25 @@ export interface ICheckoutResponse {
   requiresAction: boolean;
 }
 
+// subscription
+export interface ISubscriptionPlanDetail {
+  slug: string;
+  name: string;
+  active: boolean;
+  priceMonthly: number;
+  priceYearly: number;
+  discountYearly: number;
+  currency: string;
+  currencySymbol: string;
+}
+
+export interface ISubscriptionPlanGetAllResponse {
+  data: ISubscriptionPlanDetail[];
+}
+
+export interface ISubscriptionPlanGetBySlugResponse
+  extends ISubscriptionPlanDetail {}
+
 export interface IPlanUpgradeCheckoutPayload {
   planId: string;
   period: PlanExpiryPeriod;
@@ -168,15 +187,17 @@ export interface IPlanUpgradeCheckoutPayload {
 
 export interface IPlanUpgradeCheckoutResponse {
   planId: string;
-  period: PlanExpiryPeriod;
-  checkout: {
-    id: string;
-    status: CheckoutStatus;
-    amount: number;
-    currency: string;
-    secret: string;
-    requiresAction: boolean;
-  };
+  subscriptionId: string;
+  clientSecret?: string;
+  // period: PlanExpiryPeriod;
+  // checkout: {
+  //   id: string;
+  //   status: CheckoutStatus;
+  //   amount: number;
+  //   currency: string;
+  //   secret: string;
+  //   requiresAction: boolean;
+  // };
 }
 
 export interface IPlanUpgradeCompletePayload {

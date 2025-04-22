@@ -11,11 +11,10 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { Session } from '@/common/decorators';
-import { ParamPublicIdDto } from '@/common/dto';
+import { ParamPublicIdDto, ParamSlugDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
 import {
-  CheckoutDto,
   PaymentMethodCreateDto,
   PlanUpgradeCheckoutDto,
   PlanUpgradeCompleteDto,
@@ -86,6 +85,30 @@ export class PaymentIntentController {
     return await this.paymentService.createPaymentIntent({
       session,
       payload: {},
+    });
+  }
+}
+
+@ApiTags('plan')
+@Controller('plans')
+export class PlansController {
+  constructor(private paymentService: PaymentService) {}
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getAll(@Session() session: ISession) {
+    return await this.paymentService.getPlans({
+      query: {},
+      session,
+    });
+  }
+
+  @Get(':slug')
+  @HttpCode(HttpStatus.OK)
+  async getBySlug(@Session() session: ISession, @Param() param: ParamSlugDto) {
+    return await this.paymentService.getPlanBySlug({
+      query: { slug: param.slug },
+      session,
     });
   }
 }

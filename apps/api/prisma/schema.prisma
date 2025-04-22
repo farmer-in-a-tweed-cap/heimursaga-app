@@ -99,6 +99,9 @@ model Plan {
   name                  String?    @db.VarChar(20)
   description           String?    @db.Text
   is_available          Boolean?   @default(false)
+  price_month           Int?       @default(0)
+  price_year            Int?       @default(0)
+  discount_year         Int?       @default(0)
   stripe_product_id     String?    @db.VarChar(20)
   stripe_price_month_id String?    @db.VarChar(30)
   stripe_price_year_id  String?    @db.VarChar(30)

@@ -8,6 +8,7 @@ import {
   PaymentIntentController,
   PaymentMethodController,
   PlanController,
+  PlansController,
 } from './payment.controller';
 import { PaymentService } from './payment.service';
 
@@ -17,6 +18,7 @@ import { PaymentService } from './payment.service';
     PaymentMethodController,
     PaymentIntentController,
     PlanController,
+    PlansController,
   ],
   providers: [PaymentService],
   exports: [PaymentService],

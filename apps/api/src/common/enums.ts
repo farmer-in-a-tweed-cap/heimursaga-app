@@ -9,3 +9,11 @@ export enum UploadedFileType {
   VIDEO = 'VIDEO',
   DOCUMENT = 'DOCUMENT',
 }
+
+export enum CurrencyCode {
+  USD = 'usd',
+}
+
+export enum CurrencySymbol {
+  USD = '$',
+}
