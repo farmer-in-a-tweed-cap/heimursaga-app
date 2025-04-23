@@ -1,4 +1,6 @@
+import { EVENTS } from '../event';
 import { Injectable } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
 import {
   CheckoutMode,
@@ -9,18 +11,25 @@ import {
   IPaymentMethodCreatePayload,
   IPaymentMethodGetAllResponse,
   IPaymentMethodGetByIdResponse,
-  IPlanUpgradeCheckoutPayload,
-  IPlanUpgradeCheckoutResponse,
-  IPlanUpgradeCompletePayload,
   ISubscriptionPlanGetAllResponse,
   ISubscriptionPlanGetBySlugResponse,
+  ISubscriptionPlanUpgradeCheckoutPayload,
+  ISubscriptionPlanUpgradeCheckoutResponse,
+  ISubscriptionPlanUpgradeCompletePayload,
   PlanExpiryPeriod,
+  UserRole,
 } from '@repo/types';
+import Stripe from 'stripe';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
 
-import { CurrencyCode, CurrencySymbol } from '@/common/enums';
+import {
+  CurrencyCode,
+  CurrencySymbol,
+  PaymentTransactionType,
+  StripeMetadataKey,
+} from '@/common/enums';
 import {
   ServiceBadRequestException,
   ServiceException,
@@ -32,6 +41,8 @@ import { config } from '@/config';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 import { StripeService } from '@/modules/stripe';
+
+import { IOnSubscriptionUpgradeCompleteEvent } from './payment.interface';
 
 @Injectable()
 export class PaymentService {
@@ -194,8 +205,6 @@ export class PaymentService {
           stripePaymentMethodId,
           { customer: stripeCustomer.id },
         );
-
-        console.log({ paymentMethod, stripeCustomer, stripePaymentMethod });
       });
     } catch (e) {
       this.logger.error(e);
@@ -285,8 +294,6 @@ export class PaymentService {
           payment_method_types: ['card'],
           customer: customer.id,
         });
-
-      console.log({ paymentIntent });
 
       return {
         secret: paymentIntent.client_secret,
@@ -381,8 +388,6 @@ export class PaymentService {
               throw new ServiceBadRequestException('plan is not found');
             });
 
-          console.log({ plan });
-
           amount = plan.price;
           currency = plan.currency;
           break;
@@ -437,8 +442,6 @@ export class PaymentService {
         },
       );
 
-      console.log({ checkout, paymentIntent });
-
       return {
         checkoutId: checkout.public_id,
         status: checkout.status as CheckoutStatus,
@@ -471,15 +474,30 @@ export class PaymentService {
           price_year: true,
           price_month: true,
           discount_year: true,
+          users: {
+            select: {
+              user_id: true,
+            },
+          },
         },
       });
 
       return {
         data: data.map(
-          ({ slug, name, price_year, price_month, discount_year }) => ({
+          ({
             slug,
             name,
-            active: false,
+            price_year,
+            price_month,
+            discount_year,
+            users = [],
+          }) => ({
+            slug,
+            name,
+            active:
+              users.length >= 1
+                ? users.some(({ user_id }) => userId === user_id)
+                : false,
             priceMonthly: price_month,
             priceYearly: price_year,
             discountYearly: discount_year,
@@ -550,7 +568,7 @@ export class PaymentService {
   async checkoutPlanUpgrade({
     session,
     payload,
-  }: IPayloadWithSession<IPlanUpgradeCheckoutPayload>): Promise<IPlanUpgradeCheckoutResponse> {
+  }: IPayloadWithSession<ISubscriptionPlanUpgradeCheckoutPayload>): Promise<ISubscriptionPlanUpgradeCheckoutResponse> {
     try {
       const { userId } = session;
       const { planId, period } = payload;
@@ -564,7 +582,7 @@ export class PaymentService {
       const user = await this.prisma.user
         .findFirstOrThrow({
           where: { id: userId },
-          select: { email: true, username: true },
+          select: { email: true, username: true, id: true },
         })
         .catch(() => {
           throw new ServiceForbiddenException();
@@ -575,11 +593,12 @@ export class PaymentService {
         .findFirstOrThrow({
           where: { slug: planId },
           select: {
+            id: true,
             stripe_price_month_id: true,
             stripe_price_year_id: true,
           },
         })
-        .then(async ({ stripe_price_month_id, stripe_price_year_id }) => {
+        .then(async ({ id, stripe_price_month_id, stripe_price_year_id }) => {
           let price: number = 0;
           let currency: string = 'usd';
           let stripePriceId: string = '';
@@ -614,6 +633,7 @@ export class PaymentService {
           }
 
           return {
+            id,
             price,
             currency,
             stripePriceId,
@@ -626,8 +646,6 @@ export class PaymentService {
       amount = plan.price;
       currency = plan.currency;
 
-      console.log({ plan, amount, currency });
-
       // get the customer
       const customer = await this.stripeService.getOrCreateCustomer({
         email: user.email,
@@ -637,49 +655,68 @@ export class PaymentService {
         },
       });
 
-      const { checkout, subscription } = await this.prisma.$transaction(
-        async (tx) => {
-          // create a subscription
-          const subscription =
-            await this.stripeService.stripe.subscriptions.create({
-              customer: customer.id,
-              items: [{ price: plan.stripePriceId }],
-              payment_behavior: 'default_incomplete',
-              payment_settings: {
-                save_default_payment_method: 'on_subscription',
-              },
-              expand: ['latest_invoice.confirmation_secret'],
-            });
-
-          // create a checkout
-          const checkout = await tx.checkout.create({
-            data: {
-              public_id: generator.publicId(),
-              status: CheckoutStatus.PENDING,
-              total: amount,
-              user_id: userId,
+      const { subscription } = await this.prisma.$transaction(async (tx) => {
+        // create a subscription
+        const subscription =
+          await this.stripeService.stripe.subscriptions.create({
+            customer: customer.id,
+            items: [{ price: plan.stripePriceId }],
+            payment_behavior: 'default_incomplete',
+            payment_settings: {
+              save_default_payment_method: 'on_subscription',
             },
-            select: {
-              public_id: true,
-              status: true,
-              total: true,
-              currency: true,
-            },
+            expand: [
+              'latest_invoice.confirmation_secret',
+              'latest_invoice.payment_intent',
+            ],
           });
 
-          return {
-            checkout,
-            subscription,
-          };
-        },
-      );
+        const invoice = subscription.latest_invoice as {
+          payment_intent: Stripe.PaymentIntent;
+        };
+        const paymentIntent = invoice.payment_intent;
 
-      console.log({
-        checkout,
-        subscription,
-        clientSecret: subscription.latest_invoice,
+        // create a checkout
+        const checkout = await tx.checkout.create({
+          data: {
+            public_id: generator.publicId(),
+            status: CheckoutStatus.PENDING,
+            total: amount,
+            user_id: userId,
+            plan_id: plan.id,
+            stripe_payment_intent_id: paymentIntent.id,
+          },
+          select: {
+            id: true,
+            public_id: true,
+            status: true,
+            total: true,
+            currency: true,
+          },
+        });
+
+        // add metadata to the payment intent
+        const metadata = {
+          [StripeMetadataKey.TRANSACTION]: PaymentTransactionType.SUBSCRIPTION,
+          [StripeMetadataKey.USER_ID]: user.id,
+          [StripeMetadataKey.SUBSCRIPTION_PLAN_ID]: plan.id,
+          [StripeMetadataKey.CHECKOUT_ID]: checkout.id,
+        };
+
+        if (paymentIntent) {
+          await this.stripeService.stripe.paymentIntents.update(
+            paymentIntent.id,
+            { metadata },
+          );
+        }
+
+        return {
+          checkout,
+          subscription,
+        };
       });
 
+      const subscriptionPlanId = plan.id;
       const subscriptionId = subscription.id;
       const clientSecret = (
         subscription.latest_invoice as {
@@ -688,7 +725,7 @@ export class PaymentService {
       )?.confirmation_secret?.client_secret;
 
       return {
-        planId,
+        subscriptionPlanId,
         subscriptionId,
         clientSecret,
       };
@@ -701,49 +738,68 @@ export class PaymentService {
     }
   }
 
-  async completePlanUpgrade({
-    session,
-    payload,
-  }: IPayloadWithSession<IPlanUpgradeCompletePayload>): Promise<void> {
+  async completeSubscriptionPlanUpgrade(
+    payload: ISubscriptionPlanUpgradeCompletePayload,
+  ): Promise<void> {
     try {
-      const { userId } = session;
       const { checkoutId } = payload;
 
-      if (!userId) throw new ServiceForbiddenException();
+      if (!checkoutId)
+        throw new ServiceBadRequestException('plan upgrade not completed');
+
+      this.logger.log(
+        `upgrade subscription plan if checkout ${checkoutId} is completed`,
+      );
+
+      // get the checkout
+      const checkout = await this.prisma.checkout
+        .findFirstOrThrow({
+          where: {
+            id: checkoutId,
+            status: { in: [CheckoutStatus.PENDING] },
+          },
+          select: {
+            id: true,
+            public_id: true,
+            plan_id: true,
+            user_id: true,
+            stripe_payment_intent_id: true,
+          },
+        })
+        .catch(() => {
+          throw new ServiceBadRequestException(
+            'plan upgrade not completed, checkout not found',
+          );
+        });
 
       // get the user
       const user = await this.prisma.user
         .findFirstOrThrow({
-          where: { id: userId },
+          where: { id: checkout.user_id },
           select: { id: true, email: true, username: true },
         })
         .catch(() => {
-          throw new ServiceForbiddenException();
+          throw new ServiceBadRequestException(
+            'plan upgrade not completed, user not found',
+          );
         });
 
-      // get the checkout
-      const checkout = await this.prisma.checkout.findFirstOrThrow({
-        where: {
-          public_id: checkoutId,
-          status: { in: [CheckoutStatus.PENDING] },
-        },
-        select: {
-          id: true,
-          public_id: true,
-          plan_id: true,
-          stripe_payment_intent_id: true,
-        },
-      });
+      // verify if the stripe payment intent is completed
+      const stripePaymentIntent =
+        await this.stripeService.stripe.paymentIntents.retrieve(
+          checkout.stripe_payment_intent_id,
+        );
+      const stripePaymentIntentComplete =
+        stripePaymentIntent.status === 'succeeded';
 
-      // verify if the checkout is completed
-      const checkoutComplete = await this.stripeService.stripe.paymentIntents
-        .retrieve(checkout.stripe_payment_intent_id)
-        .then(({ status }) => status === 'succeeded')
-        .catch(() => false);
-      if (!checkoutComplete)
+      if (!stripePaymentIntentComplete)
         throw new ServiceBadRequestException(
           'plan upgrade not completed, checkout not confirmed',
         );
+
+      this.logger.log(
+        `stripe payment intent ${checkout.stripe_payment_intent_id} is completed`,
+      );
 
       // get the plan
       const plan = await this.prisma.plan
@@ -757,15 +813,41 @@ export class PaymentService {
           );
         });
 
-      // complete the upgrade
-      const {} = await this.prisma.$transaction(async (tx) => {
-        // attach the plan to the user
-        await tx.userPlan.create({
-          data: {
-            plan_id: plan.id,
-            user_id: user.id,
-          },
+      // complete the subscription upgrade
+      await this.prisma.$transaction(async (tx) => {
+        // get the user plan
+        const userPlan = await tx.userPlan.findFirst({
+          where: { user_id: user.id, plan_id: plan.id },
         });
+
+        if (userPlan) {
+          // update the user plan
+          await tx.userPlan.updateMany({
+            where: { plan_id: plan.id, user_id: user.id },
+            data: {
+              plan_id: plan.id,
+              user_id: user.id,
+            },
+          });
+        } else {
+          // create a plan and attach to the user
+          await tx.userPlan.create({
+            data: {
+              plan_id: plan.id,
+              user_id: user.id,
+            },
+          });
+        }
+
+        this.logger.log(`plan ${plan.id} attached to user ${user.id}`);
+
+        // update the user
+        await tx.user.update({
+          where: { id: user.id },
+          data: { role: UserRole.CREATOR },
+        });
+
+        this.logger.log(`user ${user.id} role changed to ${UserRole.CREATOR}`);
 
         // complete the checkout
         await tx.checkout.update({
@@ -775,6 +857,8 @@ export class PaymentService {
             confirmed_at: dateformat().toDate(),
           },
         });
+
+        this.logger.log(`checkout ${checkout.id} completed`);
       });
     } catch (e) {
       this.logger.error(e);
@@ -782,6 +866,20 @@ export class PaymentService {
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('plan upgrade not completed');
       throw exception;
+    }
+  }
+
+  @OnEvent(EVENTS.SUBSCRIPTION.UPGRADE.COMPLETE)
+  async onSubscriptionUpgradeComplete(
+    event: IOnSubscriptionUpgradeCompleteEvent,
+  ) {
+    const { checkoutId } = event;
+
+    this.completeSubscriptionPlanUpgrade({ checkoutId });
+
+    try {
+    } catch (e) {
+      this.logger.error(e);
     }
   }
 }

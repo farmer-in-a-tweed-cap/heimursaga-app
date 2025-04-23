@@ -10,15 +10,11 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { Session } from '@/common/decorators';
+import { Public, Session } from '@/common/decorators';
 import { ParamPublicIdDto, ParamSlugDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import {
-  PaymentMethodCreateDto,
-  PlanUpgradeCheckoutDto,
-  PlanUpgradeCompleteDto,
-} from './payment.dto';
+import { PaymentMethodCreateDto, PlanUpgradeCheckoutDto } from './payment.dto';
 import { PaymentService } from './payment.service';
 
 @ApiTags('payment-methods')
@@ -89,11 +85,12 @@ export class PaymentIntentController {
   }
 }
 
-@ApiTags('plan')
+@ApiTags('plans')
 @Controller('plans')
 export class PlansController {
   constructor(private paymentService: PaymentService) {}
 
+  @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAll(@Session() session: ISession) {
@@ -103,6 +100,7 @@ export class PlansController {
     });
   }
 
+  @Public()
   @Get(':slug')
   @HttpCode(HttpStatus.OK)
   async getBySlug(@Session() session: ISession, @Param() param: ParamSlugDto) {
@@ -130,17 +128,17 @@ export class PlanController {
     });
   }
 
-  @Post('upgrade/complete')
-  @HttpCode(HttpStatus.OK)
-  async completeUpgrade(
-    @Session() session: ISession,
-    @Body() body: PlanUpgradeCompleteDto,
-  ) {
-    return await this.paymentService.completePlanUpgrade({
-      session,
-      payload: body,
-    });
-  }
+  // @Post('upgrade/complete')
+  // @HttpCode(HttpStatus.OK)
+  // async completeUpgrade(
+  //   @Session() session: ISession,
+  //   @Body() body: PlanUpgradeCompleteDto,
+  // ) {
+  //   return await this.paymentService.completePlanUpgrade({
+  //     session,
+  //     payload: body,
+  //   });
+  // }
 
   // @todo
   @Post('downgrade')

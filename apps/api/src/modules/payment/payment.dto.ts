@@ -3,8 +3,8 @@ import {
   CheckoutMode,
   ICheckoutPayload,
   IPaymentMethodCreatePayload,
-  IPlanUpgradeCheckoutPayload,
-  IPlanUpgradeCompletePayload,
+  ISubscriptionPlanUpgradeCheckoutPayload,
+  ISubscriptionPlanUpgradeCompletePayload,
   PlanExpiryPeriod,
 } from '@repo/types';
 import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
@@ -23,7 +23,9 @@ export class CheckoutDto implements ICheckoutPayload {
   mode: CheckoutMode;
 }
 
-export class PlanUpgradeCheckoutDto implements IPlanUpgradeCheckoutPayload {
+export class PlanUpgradeCheckoutDto
+  implements ISubscriptionPlanUpgradeCheckoutPayload
+{
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
@@ -33,11 +35,4 @@ export class PlanUpgradeCheckoutDto implements IPlanUpgradeCheckoutPayload {
   @IsEnum(PlanExpiryPeriod)
   @IsNotEmpty()
   period: PlanExpiryPeriod;
-}
-
-export class PlanUpgradeCompleteDto implements IPlanUpgradeCompletePayload {
-  @ApiProperty({ required: true })
-  @IsString()
-  @IsNotEmpty()
-  checkoutId: string;
 }

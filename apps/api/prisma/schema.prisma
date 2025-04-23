@@ -223,8 +223,8 @@ model Checkout {
   currency                 String?        @default("usd")
   total                    Int
   expiry                   DateTime?
-  stripe_payment_intent_id String?        @db.VarChar(20)
-  stripe_product_id        String?        @db.VarChar(20)
+  stripe_payment_intent_id String?        @db.VarChar(40)
+  stripe_product_id        String?        @db.VarChar(40)
   stripe_requires_action   Boolean?       @default(false)
   stripe_receipt_url       String?
   payment_method           PaymentMethod? @relation(fields: [payment_method_id], references: [id], onDelete: Cascade)

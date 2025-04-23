@@ -6,6 +6,7 @@ import {
   IPasswordUpdatePayload,
   ISessionUserGetResponse,
   ISignupPayload,
+  UserRole,
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
@@ -14,7 +15,6 @@ import { getStaticMediaUrl } from '@/lib/upload';
 import { hashPassword } from '@/lib/utils';
 
 import { EMAIL_TEMPLATE_KEYS } from '@/common/email-templates';
-import { Role } from '@/common/enums';
 import {
   ServiceBadRequestException,
   ServiceException,
@@ -169,7 +169,7 @@ export class AuthService {
         data: {
           email,
           username,
-          role: Role.USER,
+          role: UserRole.USER,
           password,
           profile: {
             create: { name, picture: '' },
@@ -255,7 +255,7 @@ export class AuthService {
   async validateSession(payload: { sid: string }): Promise<{
     sid: string;
     userId: number;
-    role: Role;
+    role: UserRole;
   } | null> {
     try {
       const { sid } = payload;
@@ -280,7 +280,7 @@ export class AuthService {
 
       const response = {
         sid: session.sid,
-        role: session.user.role as Role,
+        role: session.user.role as UserRole,
         userId: session.user.id,
       };
 

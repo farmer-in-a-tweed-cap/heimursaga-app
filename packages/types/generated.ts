@@ -180,28 +180,19 @@ export interface ISubscriptionPlanGetAllResponse {
 export interface ISubscriptionPlanGetBySlugResponse
   extends ISubscriptionPlanDetail {}
 
-export interface IPlanUpgradeCheckoutPayload {
+export interface ISubscriptionPlanUpgradeCheckoutPayload {
   planId: string;
   period: PlanExpiryPeriod;
 }
 
-export interface IPlanUpgradeCheckoutResponse {
-  planId: string;
+export interface ISubscriptionPlanUpgradeCheckoutResponse {
+  subscriptionPlanId: number;
   subscriptionId: string;
-  clientSecret?: string;
-  // period: PlanExpiryPeriod;
-  // checkout: {
-  //   id: string;
-  //   status: CheckoutStatus;
-  //   amount: number;
-  //   currency: string;
-  //   secret: string;
-  //   requiresAction: boolean;
-  // };
+  clientSecret: string;
 }
 
-export interface IPlanUpgradeCompletePayload {
-  checkoutId: string;
+export interface ISubscriptionPlanUpgradeCompletePayload {
+  checkoutId: number;
 }
 
 export interface IPlanDegradePayload {}

@@ -6,4 +6,12 @@ export const EVENTS = {
   NOTIFICATIONS: {
     CREATE: 'notifications.create',
   },
+  SUBSCRIPTION: {
+    UPGRADE: {
+      COMPLETE: 'subscription.upgrade.complete',
+    },
+  },
+  MEMBERSHIP: {
+    COMPLETE: 'membership.complete',
+  },
 };

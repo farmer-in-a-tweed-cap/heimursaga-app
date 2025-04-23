@@ -1,13 +1,18 @@
+import { IOnSubscriptionUpgradeCompleteEvent } from '../payment';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
 import { IStripeCreateSetupIntentResponse } from '@repo/types';
 import Stripe from 'stripe';
 
+import { sleep } from '@/lib/utils';
+
+import { PaymentTransactionType, StripeMetadataKey } from '@/common/enums';
 import {
   ServiceException,
   ServiceForbiddenException,
 } from '@/common/exceptions';
 import { IRequest } from '@/common/interfaces';
 import { config } from '@/config';
+import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
@@ -20,6 +25,7 @@ export class StripeService {
   constructor(
     private logger: Logger,
     private prisma: PrismaService,
+    private eventService: EventService,
   ) {
     const sk = process.env.STRIPE_SECRET_KEY;
 
@@ -41,11 +47,17 @@ export class StripeService {
       );
       const data = event.data.object;
 
-      this.logger.log(
-        `stripe: ${event.type}\n${JSON.stringify(data, null, 2)}`,
-      );
+      await sleep(2000);
 
-      // @todo: handle stripe webhook events
+      // handle stripe webhook events
+      switch (event.type) {
+        case 'payment_intent.succeeded':
+          this.onPaymentIntent(data as Stripe.PaymentIntent);
+          break;
+      }
+
+      // save logs
+      this.logger.log(`stripe: ${event.type}`); // \n${JSON.stringify(data, null, 2)}
     } catch (e) {
       this.logger.error(e);
     }
@@ -153,6 +165,36 @@ export class StripeService {
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('stripe setup intent not created');
       throw exception;
+    }
+  }
+
+  async onPaymentIntent(event: Stripe.PaymentIntent) {
+    try {
+      const { metadata } = event;
+
+      const transaction = metadata?.[
+        StripeMetadataKey.TRANSACTION
+      ] as PaymentTransactionType;
+
+      const userId = metadata?.[StripeMetadataKey.USER_ID];
+      const subscriptionPlanId =
+        metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID];
+      const checkoutId = metadata?.[StripeMetadataKey.CHECKOUT_ID];
+
+      switch (transaction) {
+        case PaymentTransactionType.SUBSCRIPTION:
+          await this.eventService.trigger<IOnSubscriptionUpgradeCompleteEvent>({
+            event: EVENTS.SUBSCRIPTION.UPGRADE.COMPLETE,
+            data: {
+              userId: parseInt(userId),
+              subscriptionPlanId: parseInt(subscriptionPlanId),
+              checkoutId: parseInt(checkoutId),
+            },
+          });
+          break;
+      }
+    } catch (e) {
+      this.logger.error(e);
     }
   }
 }

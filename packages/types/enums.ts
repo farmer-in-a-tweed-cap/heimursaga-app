@@ -1,3 +1,9 @@
+export enum UserRole {
+  ADMIN = 'admin',
+  CREATOR = 'creator',
+  USER = 'user',
+}
+
 export enum CheckoutMode {
   UPGRADE = 'upgrade',
   MEMBERSHIP = 'membership',

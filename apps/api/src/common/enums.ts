@@ -1,9 +1,3 @@
-export enum Role {
-  ADMIN = 'admin',
-  CREATOR = 'creator',
-  USER = 'user',
-}
-
 export enum UploadedFileType {
   IMAGE = 'IMAGE',
   VIDEO = 'VIDEO',
@@ -16,4 +10,18 @@ export enum CurrencyCode {
 
 export enum CurrencySymbol {
   USD = '$',
+}
+
+export enum PaymentTransactionType {
+  SUBSCRIPTION = 'subscription',
+  MEMBERSHIP = 'membership',
+  DONATION = 'donation',
+}
+
+export enum StripeMetadataKey {
+  USER_ID = 'user_id',
+  TRANSACTION = 'transaction',
+  CHECKOUT_ID = 'checkout_id',
+  SUBSCRIPTION_ID = 'subscription_id',
+  SUBSCRIPTION_PLAN_ID = 'subscription_plan_id',
 }

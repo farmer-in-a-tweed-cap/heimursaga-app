@@ -1,6 +1,5 @@
+import { UserRole } from '@repo/types';
 import { FastifyReply, FastifyRequest } from 'fastify';
-
-import { Role } from './enums';
 
 export interface IRequest extends FastifyRequest {
   user?: ISessionUser;
@@ -18,7 +17,7 @@ export interface ISession {
 
 export interface ISessionUser {
   userId: number;
-  role: Role;
+  role: UserRole;
 }
 
 export interface IQueryWithSession<T = any> {

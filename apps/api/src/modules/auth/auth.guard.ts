@@ -5,12 +5,12 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { UserRole } from '@repo/types';
 
 import { generator } from '@/lib/generator';
 
 import { SESSION_KEYS } from '@/common/constants';
 import { PUBLIC_ROUTE_KEY, ROLES_KEY } from '@/common/decorators';
-import { Role } from '@/common/enums';
 import { ServiceUnauthorizedException } from '@/common/exceptions';
 import { IRequest } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
@@ -81,7 +81,7 @@ export class RolesGuard implements CanActivate {
       if (isPublic) return true;
 
       // Check if the user has required roles
-      const requiredRoles = this.reflector.getAllAndOverride<Role[]>(
+      const requiredRoles = this.reflector.getAllAndOverride<UserRole[]>(
         ROLES_KEY,
         [context.getHandler(), context.getClass()],
       );
