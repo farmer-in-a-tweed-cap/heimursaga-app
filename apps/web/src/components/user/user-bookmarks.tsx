@@ -13,6 +13,11 @@ export const UserBookmarks: React.FC<Props> = () => {
   const bookmarksQuery = useQuery({
     queryKey: [getUserBookmarks.queryKey],
     queryFn: () => getUserBookmarks.queryFn(),
+    retry: 0,
+    staleTime: 5000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const loading = bookmarksQuery.isLoading;
@@ -21,9 +26,7 @@ export const UserBookmarks: React.FC<Props> = () => {
 
   return loading ? (
     <LoadingSpinner />
-  ) : results < 1 ? (
-    <>no bookmarks found</>
-  ) : (
+  ) : results ? (
     <div className="w-full flex flex-col gap-2">
       {bookmarks.map(({ author, ...post }, key) => (
         <PostCard
@@ -41,5 +44,7 @@ export const UserBookmarks: React.FC<Props> = () => {
         />
       ))}
     </div>
+  ) : (
+    <span>No bookmarks yet.</span>
   );
 };

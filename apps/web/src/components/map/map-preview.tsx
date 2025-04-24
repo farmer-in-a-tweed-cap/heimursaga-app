@@ -52,7 +52,7 @@ export const MapPreview: React.FC<Props> = ({
   return (
     <div
       className={cn(
-        'relative w-full h-auto bg-gray-50 rounded-xl overflow-hidden',
+        'relative w-full h-[220px] bg-gray-50 rounded-xl overflow-hidden',
         className,
       )}
     >

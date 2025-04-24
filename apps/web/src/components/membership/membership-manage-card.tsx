@@ -70,13 +70,13 @@ export const MembershipManageCard: React.FC<Props> = ({
               </div>
             </div>
           )}
-          <div className="mt-6 flex flex-row items-center justify-start gap-2">
-            {!editing && (
+          {!editing && (
+            <div className="mt-6 flex flex-row items-center justify-start gap-2">
               <Button variant="outline" onClick={handleEdit}>
                 Edit
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

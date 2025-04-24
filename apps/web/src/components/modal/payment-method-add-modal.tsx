@@ -56,7 +56,7 @@ const PaymentMethodAddModal: React.FC<ModalBaseProps> = ({
       >
         <DialogFooter>
           <Button
-            variant="secondary"
+            variant="outline"
             disabled={form.loading || !form.loaded}
             onClick={handleCancel}
           >

@@ -149,7 +149,7 @@ export const MembershipEditForm: React.FC<Props> = ({
             <Button type="submit" loading={loading}>
               Save
             </Button>
-            <Button variant="secondary" disabled={loading} onClick={onCancel}>
+            <Button variant="outline" disabled={loading} onClick={onCancel}>
               Cancel
             </Button>
           </div>

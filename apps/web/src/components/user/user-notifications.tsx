@@ -12,6 +12,10 @@ export const UserNotifications = () => {
     queryKey: [getUserNotifications.queryKey],
     queryFn: () => getUserNotifications.queryFn(),
     retry: 0,
+    staleTime: 5000,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
   const loading = notificationsQuery.isLoading;
@@ -22,7 +26,7 @@ export const UserNotifications = () => {
     <div className="flex flex-col gap-2">
       {loading ? (
         <LoadingSpinner />
-      ) : (
+      ) : results ? (
         notifications.map(({ context, mentionUser, date, postId }, key) => (
           <UserNotificationCard
             key={key}
@@ -32,6 +36,8 @@ export const UserNotifications = () => {
             date={date}
           />
         ))
+      ) : (
+        <span>No notifications yet.</span>
       )}
     </div>
   );
