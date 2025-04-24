@@ -122,28 +122,18 @@ export class PlanController {
     @Session() session: ISession,
     @Body() body: PlanUpgradeCheckoutDto,
   ) {
-    return await this.paymentService.checkoutPlanUpgrade({
+    return await this.paymentService.checkoutSubscriptionPlanUpgrade({
       session,
       payload: body,
     });
   }
 
-  // @Post('upgrade/complete')
-  // @HttpCode(HttpStatus.OK)
-  // async completeUpgrade(
-  //   @Session() session: ISession,
-  //   @Body() body: PlanUpgradeCompleteDto,
-  // ) {
-  //   return await this.paymentService.completePlanUpgrade({
-  //     session,
-  //     payload: body,
-  //   });
-  // }
-
-  // @todo
   @Post('downgrade')
   @HttpCode(HttpStatus.OK)
   async downgrade(@Session() session: ISession) {
-    return {};
+    return await this.paymentService.downgradeSubscriptionPlan({
+      session,
+      query: {},
+    });
   }
 }

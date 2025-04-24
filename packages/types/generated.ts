@@ -166,6 +166,7 @@ export interface ISubscriptionPlanDetail {
   slug: string;
   name: string;
   active: boolean;
+  expiry?: Date;
   priceMonthly: number;
   priceYearly: number;
   discountYearly: number;

@@ -41,6 +41,7 @@ model User {
   following             UserFollow[]       @relation("user_follows_follower")
   followers             UserFollow[]       @relation("user_follows_followee")
   uploads               Upload[]
+  subscriptions         UserSubscription[]
   payment_methods       PaymentMethod[]
   membership_tiers      MembershipTier[]
   notifications         UserNotification[] @relation("user_notifications")
@@ -130,16 +131,31 @@ model MembershipTier {
 }
 
 model UserPlan {
-  plan_id    Int
-  plan       Plan      @relation(fields: [plan_id], references: [id], onDelete: Cascade)
-  user_id    Int
-  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  period     String?
-  expiry     DateTime? @default(now())
-  created_at DateTime? @default(now())
+  plan_id         Int
+  plan            Plan              @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  user_id         Int
+  user            User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  subscription    UserSubscription? @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+  subscription_id Int?              @unique
+  created_at      DateTime?         @default(now())
 
   @@id([plan_id, user_id])
   @@map("user_plans")
+}
+
+model UserSubscription {
+  id                     Int       @id @default(autoincrement())
+  public_id              String?   @db.VarChar(20)
+  stripe_subscription_id String?   @db.VarChar(40)
+  period                 String?
+  expiry                 DateTime? @default(now())
+  user                   User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id                Int?
+  plan                   UserPlan?
+  created_at             DateTime? @default(now())
+  updated_at             DateTime? @updatedAt
+
+  @@map("user_subscriptions")
 }
 
 model Post {
@@ -223,6 +239,7 @@ model Checkout {
   currency                 String?        @default("usd")
   total                    Int
   expiry                   DateTime?
+  stripe_subscription_id   String?        @db.VarChar(40)
   stripe_payment_intent_id String?        @db.VarChar(40)
   stripe_product_id        String?        @db.VarChar(40)
   stripe_requires_action   Boolean?       @default(false)

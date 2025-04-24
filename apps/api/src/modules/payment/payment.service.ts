@@ -22,6 +22,7 @@ import {
 import Stripe from 'stripe';
 
 import { dateformat } from '@/lib/date-format';
+import { integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 
 import {
@@ -36,7 +37,11 @@ import {
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import { IPayloadWithSession, IQueryWithSession } from '@/common/interfaces';
+import {
+  IPayloadWithSession,
+  IQueryWithSession,
+  ISessionQuery,
+} from '@/common/interfaces';
 import { config } from '@/config';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
@@ -477,12 +482,17 @@ export class PaymentService {
           users: {
             select: {
               user_id: true,
+              subscription: {
+                select: {
+                  expiry: true,
+                },
+              },
             },
           },
         },
       });
 
-      return {
+      const response: ISubscriptionPlanGetAllResponse = {
         data: data.map(
           ({
             slug,
@@ -498,14 +508,21 @@ export class PaymentService {
               users.length >= 1
                 ? users.some(({ user_id }) => userId === user_id)
                 : false,
-            priceMonthly: price_month,
-            priceYearly: price_year,
+            expiry:
+              users.length >= 1
+                ? users.find(({ user_id }) => userId === user_id)?.subscription
+                    ?.expiry
+                : undefined,
+            priceMonthly: integerToDecimal(price_month),
+            priceYearly: integerToDecimal(price_year),
             discountYearly: discount_year,
             currency: CurrencyCode.USD,
             currencySymbol: CurrencySymbol.USD,
           }),
         ),
       };
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -517,13 +534,13 @@ export class PaymentService {
 
   async getPlanBySlug({
     query,
-
     session,
   }: IQueryWithSession<{
     slug: string;
   }>): Promise<ISubscriptionPlanGetBySlugResponse> {
     try {
       const { slug } = query;
+      const { userId } = session;
 
       if (!slug) throw new ServiceNotFoundException('plan not found');
 
@@ -538,24 +555,44 @@ export class PaymentService {
             price_year: true,
             price_month: true,
             discount_year: true,
+            users: {
+              select: {
+                user_id: true,
+                subscription: {
+                  select: {
+                    expiry: true,
+                  },
+                },
+              },
+            },
           },
         })
         .catch(() => {
           throw new ServiceNotFoundException('plan not found');
         });
 
-      const { name, price_year, price_month, discount_year } = data;
+      const { name, price_year, price_month, discount_year, users } = data;
 
-      return {
+      const response: ISubscriptionPlanGetBySlugResponse = {
         slug,
         name,
-        active: false,
-        priceMonthly: price_month,
-        priceYearly: price_year,
+        priceMonthly: integerToDecimal(price_month),
+        priceYearly: integerToDecimal(price_year),
         discountYearly: discount_year,
         currency: CurrencyCode.USD,
         currencySymbol: CurrencySymbol.USD,
+        active:
+          users.length >= 1
+            ? users.some(({ user_id }) => userId === user_id)
+            : false,
+        expiry:
+          users.length >= 1
+            ? users.find(({ user_id }) => userId === user_id)?.subscription
+                ?.expiry
+            : undefined,
       };
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -565,7 +602,7 @@ export class PaymentService {
     }
   }
 
-  async checkoutPlanUpgrade({
+  async checkoutSubscriptionPlanUpgrade({
     session,
     payload,
   }: IPayloadWithSession<ISubscriptionPlanUpgradeCheckoutPayload>): Promise<ISubscriptionPlanUpgradeCheckoutResponse> {
@@ -655,71 +692,75 @@ export class PaymentService {
         },
       });
 
-      const { subscription } = await this.prisma.$transaction(async (tx) => {
-        // create a subscription
-        const subscription =
-          await this.stripeService.stripe.subscriptions.create({
-            customer: customer.id,
-            items: [{ price: plan.stripePriceId }],
-            payment_behavior: 'default_incomplete',
-            payment_settings: {
-              save_default_payment_method: 'on_subscription',
+      const { stripeSubscription } = await this.prisma.$transaction(
+        async (tx) => {
+          // create a subscription
+          const stripeSubscription =
+            await this.stripeService.stripe.subscriptions.create({
+              customer: customer.id,
+              items: [{ price: plan.stripePriceId }],
+              payment_behavior: 'default_incomplete',
+              payment_settings: {
+                save_default_payment_method: 'on_subscription',
+              },
+              expand: [
+                'latest_invoice.confirmation_secret',
+                'latest_invoice.payment_intent',
+              ],
+            });
+
+          const invoice = stripeSubscription.latest_invoice as {
+            payment_intent: Stripe.PaymentIntent;
+          };
+          const paymentIntent = invoice.payment_intent;
+
+          // create a checkout
+          const checkout = await tx.checkout.create({
+            data: {
+              public_id: generator.publicId(),
+              status: CheckoutStatus.PENDING,
+              total: amount,
+              user_id: userId,
+              plan_id: plan.id,
+              stripe_subscription_id: stripeSubscription.id,
+              stripe_payment_intent_id: paymentIntent.id,
             },
-            expand: [
-              'latest_invoice.confirmation_secret',
-              'latest_invoice.payment_intent',
-            ],
+            select: {
+              id: true,
+              public_id: true,
+              status: true,
+              total: true,
+              currency: true,
+            },
           });
 
-        const invoice = subscription.latest_invoice as {
-          payment_intent: Stripe.PaymentIntent;
-        };
-        const paymentIntent = invoice.payment_intent;
+          // add metadata to the payment intent
+          const metadata = {
+            [StripeMetadataKey.TRANSACTION]:
+              PaymentTransactionType.SUBSCRIPTION,
+            [StripeMetadataKey.USER_ID]: user.id,
+            [StripeMetadataKey.SUBSCRIPTION_PLAN_ID]: plan.id,
+            [StripeMetadataKey.CHECKOUT_ID]: checkout.id,
+          };
 
-        // create a checkout
-        const checkout = await tx.checkout.create({
-          data: {
-            public_id: generator.publicId(),
-            status: CheckoutStatus.PENDING,
-            total: amount,
-            user_id: userId,
-            plan_id: plan.id,
-            stripe_payment_intent_id: paymentIntent.id,
-          },
-          select: {
-            id: true,
-            public_id: true,
-            status: true,
-            total: true,
-            currency: true,
-          },
-        });
+          if (paymentIntent) {
+            await this.stripeService.stripe.paymentIntents.update(
+              paymentIntent.id,
+              { metadata },
+            );
+          }
 
-        // add metadata to the payment intent
-        const metadata = {
-          [StripeMetadataKey.TRANSACTION]: PaymentTransactionType.SUBSCRIPTION,
-          [StripeMetadataKey.USER_ID]: user.id,
-          [StripeMetadataKey.SUBSCRIPTION_PLAN_ID]: plan.id,
-          [StripeMetadataKey.CHECKOUT_ID]: checkout.id,
-        };
-
-        if (paymentIntent) {
-          await this.stripeService.stripe.paymentIntents.update(
-            paymentIntent.id,
-            { metadata },
-          );
-        }
-
-        return {
-          checkout,
-          subscription,
-        };
-      });
+          return {
+            checkout,
+            stripeSubscription,
+          };
+        },
+      );
 
       const subscriptionPlanId = plan.id;
-      const subscriptionId = subscription.id;
+      const subscriptionId = stripeSubscription.id;
       const clientSecret = (
-        subscription.latest_invoice as {
+        stripeSubscription.latest_invoice as {
           confirmation_secret?: { client_secret: string };
         }
       )?.confirmation_secret?.client_secret;
@@ -763,6 +804,7 @@ export class PaymentService {
             public_id: true,
             plan_id: true,
             user_id: true,
+            stripe_subscription_id: true,
             stripe_payment_intent_id: true,
           },
         })
@@ -789,6 +831,7 @@ export class PaymentService {
         await this.stripeService.stripe.paymentIntents.retrieve(
           checkout.stripe_payment_intent_id,
         );
+
       const stripePaymentIntentComplete =
         stripePaymentIntent.status === 'succeeded';
 
@@ -796,6 +839,14 @@ export class PaymentService {
         throw new ServiceBadRequestException(
           'plan upgrade not completed, checkout not confirmed',
         );
+
+      const stripeSubscription = await this.stripeService.stripe.subscriptions
+        .retrieve(checkout.stripe_subscription_id)
+        .catch(() => {
+          throw new ServiceBadRequestException(
+            'plan upgrade not completed, checkout not confirmed',
+          );
+        });
 
       this.logger.log(
         `stripe payment intent ${checkout.stripe_payment_intent_id} is completed`,
@@ -820,6 +871,20 @@ export class PaymentService {
           where: { user_id: user.id, plan_id: plan.id },
         });
 
+        // create a subscription
+        const expiry = dateformat(
+          stripeSubscription.current_period_end,
+        ).toDate();
+        const subscription = await tx.userSubscription.create({
+          data: {
+            public_id: generator.publicId(),
+            stripe_subscription_id: checkout.stripe_subscription_id,
+            period: PlanExpiryPeriod.MONTH,
+            expiry,
+            user: { connect: { id: user.id } },
+          },
+        });
+
         if (userPlan) {
           // update the user plan
           await tx.userPlan.updateMany({
@@ -827,6 +892,7 @@ export class PaymentService {
             data: {
               plan_id: plan.id,
               user_id: user.id,
+              subscription_id: subscription.id,
             },
           });
         } else {
@@ -835,6 +901,7 @@ export class PaymentService {
             data: {
               plan_id: plan.id,
               user_id: user.id,
+              subscription_id: subscription.id,
             },
           });
         }
@@ -865,6 +932,93 @@ export class PaymentService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('plan upgrade not completed');
+      throw exception;
+    }
+  }
+
+  async downgradeSubscriptionPlan({ session }: ISessionQuery): Promise<void> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      // check access
+      await this.prisma.user
+        .findFirstOrThrow({ where: { id: userId } })
+        .catch(() => {
+          throw new ServiceForbiddenException();
+        });
+
+      // downgrade the subscription plan
+      await this.prisma.$transaction(async (tx) => {
+        // get the user plan
+        const userPlan = await tx.userPlan
+          .findFirstOrThrow({
+            where: {
+              user_id: userId,
+            },
+            select: {
+              plan_id: true,
+              subscription: {
+                select: {
+                  stripe_subscription_id: true,
+                },
+              },
+            },
+          })
+          .catch(() => {
+            throw new ServiceBadRequestException(
+              'user does not have any subscription plans',
+            );
+          });
+
+        // delete the subscription plan
+        await tx.userPlan.deleteMany({
+          where: { user_id: userId, plan_id: userPlan.plan_id },
+        });
+        this.logger.log(`delete user ${userId} subscription plan`);
+
+        // update the user
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            role: UserRole.USER,
+          },
+        });
+        this.logger.log(`update user ${userId} role to ${UserRole.USER}`);
+
+        // cancel the stripe subscription
+        const stripeSubscriptionId =
+          userPlan?.subscription?.stripe_subscription_id;
+
+        if (stripeSubscriptionId) {
+          // retrieve the stripe subscription
+          const stripeSubscription =
+            await this.stripeService.stripe.subscriptions
+              .retrieve(stripeSubscriptionId)
+              .catch(() => {
+                throw new ServiceBadRequestException(
+                  'user does not have any active subscriptions',
+                );
+              });
+
+          // cancel the stripe subscription
+          await this.stripeService.stripe.subscriptions
+            .cancel(stripeSubscription.id)
+            .catch(() => {
+              throw new ServiceBadRequestException(
+                'subscription plan downgrade not completed, subscription not canceled',
+              );
+            });
+        }
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException(
+            'subscription plan downgrade not completed',
+          );
       throw exception;
     }
   }
