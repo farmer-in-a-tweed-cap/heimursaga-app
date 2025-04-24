@@ -24,3 +24,9 @@ export const LoadingOverlay: React.FC<LoadingOverlayProps> = () => (
     <Spinner className="z-40" />
   </div>
 );
+
+export const OverlayDisabled: React.FC = () => (
+  <div className="z-50 absolute inset-0 flex items-center justify-center">
+    <div className="z-30 absolute inset-0 bg-white dark:bg-black opacity-60"></div>
+  </div>
+);

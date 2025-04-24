@@ -25,6 +25,13 @@ export const API_ROUTER = {
       DELETE: (id: string) => `/user/membership-tiers/${id}`,
     },
   },
+  PLAN: {
+    UPGRADE: {
+      CHECKOUT: '/plan/upgrade/checkout',
+      COMPLETE: '/plan/upgrade/complete',
+    },
+    DOWNGRADE: '/plan/downgrade',
+  },
   USERS: {
     GET_BY_USERNAME: (username: string) => `/users/${username}`,
     GET_POSTS: (username: string) => `/users/${username}/posts`,
@@ -107,10 +114,11 @@ export class Api {
       url?: string;
       parseJson?: boolean;
       cookie?: string;
+      cache?: 'no-store';
     },
   ): Promise<IApiResponse<R>> {
     const { baseUrl, headers: globalHeaders } = this;
-    const { cookie, body, contentType, ...options } = config || {};
+    const { cookie, cache, body, contentType, ...options } = config || {};
 
     // parse url
     const url = new URL(
@@ -162,6 +170,7 @@ export class Api {
       headers,
       credentials: 'include',
       body,
+      cache,
     });
 
     const json = await response.json().catch(() => ({}));

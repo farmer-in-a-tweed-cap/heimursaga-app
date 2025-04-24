@@ -1,7 +1,9 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { PlanExpiryPeriod } from '@repo/types';
 import {
+  Button,
   Form,
   FormControl,
   FormField,
@@ -9,23 +11,27 @@ import {
   FormLabel,
   FormMessage,
   Input,
-  LoadingOverlay,
+  OverlayDisabled,
 } from '@repo/ui/components';
 import { useElements, useStripe } from '@stripe/react-stripe-js';
-import { StripeError } from '@stripe/stripe-js';
+import { useRouter } from 'next/navigation';
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { apiClient } from '@/lib/api';
-import { fieldmsg } from '@/lib/utils';
+import { fieldmsg, redirect, sleep } from '@/lib/utils';
 
 import {
+  InfoModalProps,
+  MODALS,
   StripeCardCvcInput,
   StripeCardExpiryInput,
   StripeCardNumberInput,
   StripeProvider,
 } from '@/components';
+import { useModal } from '@/hooks';
+import { ROUTER } from '@/router';
 
 type Props = {
   children?: React.ReactNode;
@@ -72,10 +78,10 @@ const FormComponent: React.FC<Props> = ({
   onLoading,
   onSubmit,
 }) => {
+  const router = useRouter();
+  const modal = useModal();
   const stripe = useStripe();
   const stripeElements = useElements();
-
-  const [loading, setLoading] = useState(false);
 
   const [state, setState] = useState<{
     validated: boolean;
@@ -91,6 +97,8 @@ const FormComponent: React.FC<Props> = ({
       address: { loaded: false, complete: false },
     },
   });
+
+  const [loading, setLoading] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -124,33 +132,50 @@ const FormComponent: React.FC<Props> = ({
         }
 
         // get payment details from stripe elements
-        const elements = {
-          card: stripeElements.getElement('cardNumber'),
-          // address: stripeElements.getElement('address'),
-        };
+        const stripeCardElement = stripeElements.getElement('cardNumber');
 
-        if (!elements.card) {
-          console.log('stripe element not created', elements);
+        if (!stripeCardElement) {
+          console.log('stripe elements not complete');
           return;
         }
 
-        // create a stripe payment setup
-        const stripePaymentSetup = await apiClient
-          .createStripeSetupIntent()
-          .then(({ data }) => data);
-        if (!stripePaymentSetup) {
-          console.log('stripe setup intent not created');
+        // initiate a subscription plan upgrade checkout
+        const checkout = await apiClient
+          .checkoutSubscriptionPlanUpgrade({
+            query: {},
+            payload: {
+              planId: 'premium',
+              period: PlanExpiryPeriod.MONTH,
+            },
+          })
+          .then(({ data }) => data)
+          .catch(() => {
+            modal.open<InfoModalProps>(MODALS.INFO, {
+              props: {
+                title: 'error',
+                message: 'checkout failed',
+              },
+            });
+          });
+
+        if (!checkout?.clientSecret) {
+          modal.open<InfoModalProps>(MODALS.INFO, {
+            props: {
+              title: 'error',
+              message: 'checkout failed',
+            },
+          });
           return;
         }
 
-        console.log('stripe setup', stripePaymentSetup.secret);
+        const { clientSecret } = checkout;
 
-        // confirm the stripe payment setup
-        const stripeCardSetup = await stripe.confirmCardSetup(
-          stripePaymentSetup.secret,
+        // confirm a stripe payment
+        const stripePaymentResponse = await stripe.confirmCardPayment(
+          clientSecret,
           {
             payment_method: {
-              card: elements.card,
+              card: stripeCardElement,
               billing_details: {
                 name,
                 address: {
@@ -165,30 +190,45 @@ const FormComponent: React.FC<Props> = ({
             },
           },
         );
-        const stripeError = stripeCardSetup.error as StripeError;
-        const stripePaymentMethodId = stripeCardSetup.setupIntent
-          ?.payment_method as string;
 
-        // create a payment method
-        if (stripePaymentMethodId) {
-          const paymentMethod = await apiClient.createPaymentMethod({
-            stripePaymentMethodId,
+        const stripePaymentCompleted =
+          stripePaymentResponse.paymentIntent?.status === 'succeeded' || false;
+
+        // handle a stripe response
+        if (stripePaymentResponse.paymentIntent) {
+          switch (stripePaymentResponse.paymentIntent.status) {
+            case 'succeeded':
+              break;
+            case 'requires_action':
+              break;
+          }
+        }
+
+        if (stripePaymentResponse.error) {
+          modal.open<InfoModalProps>(MODALS.INFO, {
+            props: {
+              title: 'error',
+              message: stripePaymentResponse.error.message,
+            },
           });
+          setLoading(false);
 
-          console.log('payment method', paymentMethod);
+          return;
         }
 
-        setLoading(false);
-        close();
-
-        if (onSubmit) {
-          onSubmit();
+        // complete the subscription plan upgrade
+        if (stripePaymentCompleted) {
+          await sleep(5000);
+          redirect(ROUTER.PREMIUM);
+          return;
         }
-
-        console.log({ stripeError, stripePaymentMethodId });
       } catch (e) {
-        console.log('on submit error', e);
-      } finally {
+        modal.open<InfoModalProps>(MODALS.INFO, {
+          props: {
+            title: 'error',
+            message: 'something went wrong',
+          },
+        });
         setLoading(false);
       }
     },
@@ -307,13 +347,15 @@ const FormComponent: React.FC<Props> = ({
 
   useEffect(() => {
     setState((prev) => ({ ...prev, loading: true }));
+
+    modal.preload([MODALS.INFO]);
   }, []);
 
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit} className="w-full">
         <div className="relative py-4 w-full h-full flex items-center">
-          {loading && <LoadingOverlay />}
+          {loading && <OverlayDisabled />}
           <div className="w-full flex flex-col gap-6">
             <FormField
               control={form.control}
@@ -383,13 +425,18 @@ const FormComponent: React.FC<Props> = ({
             />
           </div>
         </div>
-        {children}
+        <div className="flex mt-4">
+          <Button type="submit" className="w-full" loading={loading}>
+            Pay & upgrade
+          </Button>
+        </div>
+        {children && <div className="mt-4 flex flex-col">{children}</div>}
       </form>
     </Form>
   );
 };
 
-export const PaymentCheckoutForm: React.FC<Props> = (props) => (
+export const SubscriptionPlanUpgradeCheckoutForm: React.FC<Props> = (props) => (
   <StripeProvider>
     <FormComponent {...props} />
   </StripeProvider>

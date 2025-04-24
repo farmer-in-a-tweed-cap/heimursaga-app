@@ -1,12 +1,17 @@
-import { Button } from '@repo/ui/components';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
 import { apiClient } from '@/lib/api';
 
 import { CheckoutLayout } from '@/app/layout';
 
-import { BulletList, PageNotFound, PaymentCheckoutForm } from '@/components';
+import {
+  BulletList,
+  PageNotFound,
+  SubscriptionPlanUpgradeCheckoutForm,
+} from '@/components';
 import { DEMO_DATA } from '@/constants';
+import { ROUTER } from '@/router';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +25,13 @@ export default async function Page() {
 
   const plan = planQuery.data;
   const features = DEMO_DATA.PLANS[0].features;
+
+  const isPlanActive = plan?.active || false;
+
+  // redirect to the subscription page if plan is active
+  if (isPlanActive) {
+    redirect(ROUTER.PREMIUM);
+  }
 
   return (
     <CheckoutLayout>
@@ -59,20 +71,17 @@ export default async function Page() {
             </div>
           </div>
           <div className="basis-5/12">
-            <PaymentCheckoutForm>
-              <div className="mt-4 flex flex-col">
-                <Button className="w-full">Upgrade</Button>
-                <div className="mt-6">
-                  <p className="text-xs font-normal text-gray-500">
-                    By clicking Subscribe now, you agree to Patreon’s Terms of
-                    Use and Privacy Policy. This Patreon subscription
-                    automatically renews monthly, and you’ll be notified in
-                    advance if the monthly amount increases. Cancel anytime in
-                    your membership settings.
-                  </p>
-                </div>
+            <SubscriptionPlanUpgradeCheckoutForm>
+              <div className="mt-6">
+                <p className="text-xs font-normal text-gray-500">
+                  By clicking Subscribe now, you agree to Patreon’s Terms of Use
+                  and Privacy Policy. This Patreon subscription automatically
+                  renews monthly, and you’ll be notified in advance if the
+                  monthly amount increases. Cancel anytime in your membership
+                  settings.
+                </p>
               </div>
-            </PaymentCheckoutForm>
+            </SubscriptionPlanUpgradeCheckoutForm>
           </div>
         </div>
       ) : (

@@ -1,5 +1,6 @@
 'use client';
 
+import { UserRole } from '@repo/types';
 import {
   Avatar,
   AvatarFallback,
@@ -11,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/components';
+import { cn } from '@repo/ui/lib/utils';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 
@@ -19,6 +21,17 @@ import { redirect } from '@/lib/utils';
 
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
+
+const getRoleLabel = (role: string) => {
+  switch (role) {
+    case UserRole.USER:
+      return 'member';
+    case UserRole.ADMIN:
+      return 'admin';
+    case UserRole.CREATOR:
+      return 'creator';
+  }
+};
 
 export const UserNavbar = () => {
   const session = useSession();
@@ -35,7 +48,7 @@ export const UserNavbar = () => {
   };
 
   const { username, picture = '', name = '' } = session || {};
-  const premium = false;
+  const role = getRoleLabel(session?.role || UserRole.USER);
 
   const links: { href: string; label: string }[] = [
     {
@@ -58,7 +71,14 @@ export const UserNavbar = () => {
           </Avatar>
           <div className="hidden lg:flex flex-col items-start text-sm">
             <span className="font-medium text-sm text-white">{name}</span>
-            <span className="font-normal text-xs">Member</span>
+            <span
+              className={cn(
+                'font-normal text-xs capitalize',
+                // role === UserRole.CREATOR ? 'text-yellow-600' : '',
+              )}
+            >
+              {role}
+            </span>
           </div>
         </div>
       </DropdownMenuTrigger>

@@ -10,14 +10,16 @@ interface IModalRegistry {
 }
 
 export const MODALS = {
-  WELCOME: 'welcome',
+  INFO: 'info',
+  ACTION: 'action',
   PAYMENT_METHOD_ADD: 'payment_method_add',
   PAYMENT_METHOD_DELETE: 'payment_method_delete',
   MAP_LOCATION_PICK: 'map_location_pick',
 };
 
 export const modalRegistry: IModalRegistry = {
-  [MODALS.WELCOME]: () => import('./welcome-modal'),
+  [MODALS.INFO]: () => import('./info-modal'),
+  [MODALS.ACTION]: () => import('./action-modal'),
   [MODALS.PAYMENT_METHOD_ADD]: () => import('./payment-method-add-modal'),
   [MODALS.PAYMENT_METHOD_DELETE]: () => import('./payment-method-delete-modal'),
   [MODALS.MAP_LOCATION_PICK]: () => import('./map-location-pick-modal'),

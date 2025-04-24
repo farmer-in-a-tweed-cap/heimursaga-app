@@ -18,6 +18,9 @@ import {
   IStripeCreateSetupIntentResponse,
   ISubscriptionPlanGetAllResponse,
   ISubscriptionPlanGetBySlugResponse,
+  ISubscriptionPlanUpgradeCheckoutPayload,
+  ISubscriptionPlanUpgradeCheckoutResponse,
+  ISubscriptionPlanUpgradeCompletePayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserMapGetResponse,
@@ -51,6 +54,7 @@ const api = new Api({
 
 type RequestConfig = {
   cookie?: string;
+  cache?: 'no-store';
 };
 
 export interface IApiClientQuery<Q = any> {
@@ -348,7 +352,7 @@ export const apiClient = {
       API_ROUTER.SUBSCRIPTION_PLANS.GET,
       {
         method: API_METHODS.GET,
-        cookie: config ? config.cookie : undefined,
+        ...config,
       },
     ),
   getSubscriptionBySlug: async (
@@ -359,7 +363,41 @@ export const apiClient = {
       API_ROUTER.SUBSCRIPTION_PLANS.GET_BY_SLUG(query.slug),
       {
         method: API_METHODS.GET,
+        ...config,
+      },
+    ),
+  checkoutSubscriptionPlanUpgrade: async (
+    {
+      payload,
+    }: IApiClientQueryWithPayload<{}, ISubscriptionPlanUpgradeCheckoutPayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ISubscriptionPlanUpgradeCheckoutResponse>(
+      API_ROUTER.PLAN.UPGRADE.CHECKOUT,
+      {
+        method: API_METHODS.POST,
+        body: JSON.stringify(payload),
         cookie: config ? config.cookie : undefined,
       },
     ),
+  completeSubscriptionPlanUpgrade: async (
+    {
+      payload,
+    }: IApiClientQueryWithPayload<
+      ISubscriptionPlanUpgradeCompletePayload,
+      void
+    >,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.PLAN.UPGRADE.COMPLETE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      cookie: config ? config.cookie : undefined,
+    }),
+  downgradeSubscriptionPlan: async (config?: RequestConfig) =>
+    api.request<void>(API_ROUTER.PLAN.DOWNGRADE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify({}),
+      ...config,
+    }),
 };
