@@ -1,9 +1,14 @@
 import { LogoBrandDark } from '@repo/ui/components';
+import { Metadata } from 'next';
 import Link from 'next/link';
 
 import { LoginForm } from '@/components';
 import { AuthLayout } from '@/layouts';
 import { ROUTER } from '@/router';
+
+export const metadata: Metadata = {
+  title: 'Log in',
+};
 
 export default async function Page() {
   return (

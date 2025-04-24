@@ -1,3 +1,11 @@
+import { Metadata } from 'next';
+
+export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Dashboard',
+};
+
 export default function Page() {
   return (
     <div className="flex min-h-screen w-full justify-center p-6 md:p-8">

@@ -1,18 +1,17 @@
-import { Button } from '@repo/ui/components';
+import { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import Link from 'next/link';
 
 import { apiClient } from '@/lib/api';
 
-import {
-  CloseButton,
-  SubscriptionPlanCard,
-  SubscriptionPlanUpgrade,
-} from '@/components';
+import { CloseButton, SubscriptionPlanUpgrade } from '@/components';
 import { DEMO_DATA } from '@/constants';
 import { ROUTER } from '@/router';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Upgrade to premium',
+};
 
 export default async function Page() {
   const cookie = cookies().toString();

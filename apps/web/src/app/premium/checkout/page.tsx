@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
@@ -14,6 +15,10 @@ import { DEMO_DATA } from '@/constants';
 import { ROUTER } from '@/router';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Upgrade to premium',
+};
 
 export default async function Page() {
   const cookie = cookies().toString();

@@ -8,6 +8,8 @@ import { PostEditForm } from '@/components/post';
 import { AppLayout } from '@/layouts';
 import type { PageProps } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Page({ params }: PageProps<{ post_id: string }>) {
   const cookie = cookies().toString();
 

@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
@@ -10,6 +11,19 @@ type Props = {
     username: string;
   };
 };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username } = await params;
+
+  const user = await apiClient
+    .getUserByUsername({ username })
+    .then(({ data }) => data)
+    .catch(() => null);
+
+  return {
+    title: user ? `${user.name} | ${user.bio || ''}` : undefined,
+  };
+}
 
 export default async function Page({ params }: Props) {
   const cookie = cookies().toString();

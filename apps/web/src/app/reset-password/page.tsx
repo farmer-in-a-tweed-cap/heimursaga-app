@@ -1,12 +1,17 @@
 import { LogoBrandDark } from '@repo/ui/components';
+import { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { apiClient } from '@/lib/api';
 
 import { ChangePasswordForm, ResetPasswordForm } from '@/components';
-import { AppLayout, AuthLayout } from '@/layouts';
+import { AuthLayout } from '@/layouts';
 import { ROUTER } from '@/router';
+
+export const metadata: Metadata = {
+  title: 'Reset password',
+};
 
 export default async function Page({
   searchParams,

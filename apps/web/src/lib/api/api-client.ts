@@ -109,9 +109,8 @@ export const apiClient = {
     api.request<IPostQueryResponse>(API_ROUTER.POSTS.QUERY, config),
   getPostById: async (
     { query }: IApiClientQuery<{ id: string }>,
-    { cookie }: RequestConfig,
-  ) =>
-    api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(query.id), { cookie }),
+    config?: RequestConfig,
+  ) => api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(query.id), config),
   createPost: async (body: IPostCreatePayload) =>
     api.request<IPostCreateResponse>(API_ROUTER.POSTS.CREATE, {
       method: API_METHODS.POST,

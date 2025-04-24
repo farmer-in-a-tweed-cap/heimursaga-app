@@ -1,4 +1,10 @@
+import { Metadata } from 'next';
+
 import { ExploreMap } from '@/components';
+
+export const metadata: Metadata = {
+  title: 'Explore',
+};
 
 export default async function Page() {
   return (

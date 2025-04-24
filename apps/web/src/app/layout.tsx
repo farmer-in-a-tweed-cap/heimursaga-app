@@ -19,7 +19,10 @@ import { ROUTER } from '@/router';
 import './../styles.css';
 
 export const metadata: Metadata = {
-  title: 'saga',
+  title: {
+    template: '%s | saga',
+    default: 'saga',
+  },
   description: 'a journaling platform for travelers',
   openGraph: {
     title: 'saga',

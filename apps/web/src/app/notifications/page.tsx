@@ -1,7 +1,13 @@
+import { Metadata } from 'next';
+
 import { PageHeaderTitle, UserNotifications } from '@/components';
 import { AppLayout } from '@/layouts';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Notifications',
+};
 
 export default async function Page() {
   return (

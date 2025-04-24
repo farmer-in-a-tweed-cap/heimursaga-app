@@ -1,3 +1,4 @@
+import { Metadata } from 'next';
 import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
@@ -12,6 +13,10 @@ type Props = {
 };
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Settings',
+};
 
 export default async function Page({ params }: Props) {
   const cookie = cookies().toString();
