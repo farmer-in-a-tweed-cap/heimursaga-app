@@ -438,14 +438,16 @@ export class UserService {
         });
 
         // create a notification
-        await this.eventService.trigger<IUserNotificationCreatePayload>({
-          event: EVENTS.NOTIFICATIONS.CREATE,
-          data: {
-            context: UserNotificationContext.FOLLOW,
-            userId: followeeId,
-            mentionUserId: followerId,
-          },
-        });
+        if (followerId !== followeeId) {
+          await this.eventService.trigger<IUserNotificationCreatePayload>({
+            event: EVENTS.NOTIFICATIONS.CREATE,
+            data: {
+              context: UserNotificationContext.FOLLOW,
+              userId: followeeId,
+              mentionUserId: followerId,
+            },
+          });
+        }
       });
     } catch (e) {
       this.logger.error(e);

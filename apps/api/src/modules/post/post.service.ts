@@ -357,15 +357,17 @@ export class PostService {
         });
 
         // create a notification
-        await this.eventService.trigger<IUserNotificationCreatePayload>({
-          event: EVENTS.NOTIFICATIONS.CREATE,
-          data: {
-            context: UserNotificationContext.LIKE,
-            userId: post.author_id,
-            mentionUserId: userId,
-            mentionPostId: post.id,
-          },
-        });
+        if (userId !== post.author_id) {
+          await this.eventService.trigger<IUserNotificationCreatePayload>({
+            event: EVENTS.NOTIFICATIONS.CREATE,
+            data: {
+              context: UserNotificationContext.LIKE,
+              userId: post.author_id,
+              mentionUserId: userId,
+              mentionPostId: post.id,
+            },
+          });
+        }
       }
 
       // update the like count
