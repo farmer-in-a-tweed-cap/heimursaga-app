@@ -1,5 +1,6 @@
 'use client';
 
+import { UserRole } from '@repo/types';
 import { Button } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import {
@@ -9,7 +10,6 @@ import {
   CompassIcon,
   HomeIcon,
   LucideProps,
-  PenIcon,
   StarIcon,
   Users2Icon,
 } from 'lucide-react';
@@ -30,15 +30,15 @@ type SidebarLink = {
 };
 
 const SIDEBAR_LINKS: {
-  guest: SidebarLink[];
-  user: SidebarLink[];
-  creator: SidebarLink[];
+  GUEST: SidebarLink[];
+  USER: SidebarLink[];
+  CREATOR: SidebarLink[];
 } = {
-  guest: [
+  GUEST: [
     { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
     { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
   ],
-  user: [
+  USER: [
     { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
     { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
     { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
@@ -46,12 +46,11 @@ const SIDEBAR_LINKS: {
     { href: ROUTER.PREMIUM, label: 'Premium', icon: StarIcon },
     { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
   ],
-  creator: [
+  CREATOR: [
     { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
     { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
-    { href: ROUTER.MEMBERSHIP, label: 'Membership', icon: Users2Icon },
+    { href: ROUTER.MEMBERSHIP, label: 'Memberships', icon: Users2Icon },
     { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
-    { href: ROUTER.PREMIUM, label: 'Premium', icon: StarIcon },
     { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
     { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
   ],
@@ -61,7 +60,22 @@ export const AppSidebar = () => {
   const pathname = usePathname();
   const session = useSession();
 
-  const links = session ? SIDEBAR_LINKS.creator : SIDEBAR_LINKS.guest;
+  const userRole = session?.role as UserRole;
+
+  let links: SidebarLink[];
+
+  switch (userRole) {
+    case UserRole.CREATOR:
+      links = SIDEBAR_LINKS.CREATOR;
+      break;
+    case UserRole.USER:
+      links = SIDEBAR_LINKS.USER;
+      break;
+    default:
+      links = SIDEBAR_LINKS.GUEST;
+      break;
+  }
+  // const links = session ? SIDEBAR_LINKS.creator : SIDEBAR_LINKS.guest;
 
   const isActiveLink = (path: string): boolean => {
     path = path.startsWith('/') ? path : `/${path}`;
