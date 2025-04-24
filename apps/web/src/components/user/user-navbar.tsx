@@ -50,16 +50,28 @@ export const UserNavbar = () => {
   const { username, picture = '', name = '' } = session || {};
   const role = getRoleLabel(session?.role || UserRole.USER);
 
-  const links: { href: string; label: string }[] = [
-    {
-      href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
-      label: 'Profile',
-    },
-    {
-      href: ROUTER.USER.SETTINGS.HOME,
-      label: 'Settings',
-    },
-  ];
+  const links = {
+    user: [
+      {
+        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        label: 'Profile',
+      },
+      {
+        href: ROUTER.USER.SETTINGS.HOME,
+        label: 'Settings',
+      },
+    ],
+    info: [
+      {
+        href: '#',
+        label: 'Privacy policy',
+      },
+      {
+        href: '#',
+        label: 'Terms of service',
+      },
+    ],
+  };
 
   return session ? (
     <DropdownMenu>
@@ -83,7 +95,18 @@ export const UserNavbar = () => {
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="bg-background min-w-[240px] ml-4 mb-2 p-0 py-2">
-        {links.map(({ href, label }, key) => (
+        {links.user.map(({ href, label }, key) => (
+          <DropdownMenuItem key={key} asChild>
+            <Link
+              href={href}
+              className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-gray-200 py-2 hover:cursor-pointer"
+            >
+              {label}
+            </Link>
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        {links.info.map(({ href, label }, key) => (
           <DropdownMenuItem key={key} asChild>
             <Link
               href={href}
