@@ -17,22 +17,25 @@ export const metadata: Metadata = {
 export default async function Page() {
   const cookie = cookies().toString();
 
-  const membershipTierQuery = await apiClient.getUserSponsorshipTiers({
+  const sponsorshipTierQuery = await apiClient.getUserSponsorshipTiers({
     cookie,
+    cache: 'no-store',
   });
-  const membershipTier = membershipTierQuery.data?.data?.[0];
+
+  const sponsorshipTier = sponsorshipTierQuery.data?.data?.[0];
 
   return (
     <AppLayout>
       <div className="w-full max-w-2xl flex flex-col gap-4">
         <PageHeaderTitle>Sponsorships</PageHeaderTitle>
         <div className="mt-4">
-          {membershipTier && (
+          {sponsorshipTier && (
             <SponsorshipTierManageCard
-              id={membershipTier.id}
-              price={membershipTier.price}
-              description={membershipTier.description}
-              membersCount={membershipTier.membersCount}
+              id={sponsorshipTier.id}
+              price={sponsorshipTier.price}
+              description={sponsorshipTier.description}
+              isAvailable={sponsorshipTier.isAvailable}
+              membersCount={sponsorshipTier.membersCount}
             />
           )}
         </div>

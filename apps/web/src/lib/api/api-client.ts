@@ -15,6 +15,8 @@ import {
   ISearchQueryResponse,
   ISessionUserGetResponse,
   ISignupPayload,
+  ISponsorshipTierGetAllResponse,
+  ISponsorshipTierUpdatePayload,
   IStripeCreateSetupIntentResponse,
   ISubscriptionPlanGetAllResponse,
   ISubscriptionPlanGetBySlugResponse,
@@ -24,9 +26,6 @@ import {
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserMapGetResponse,
-  IUserMembershipGetAllResponse,
-  IUserMembershipTierGetAllResponse,
-  IUserMembershipTierUpdatePayload,
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
@@ -324,20 +323,20 @@ export const apiClient = {
     }),
   // sponsorships
   getUserSponsorshipTiers: async (config?: RequestConfig) =>
-    api.request<IUserMembershipTierGetAllResponse>(
+    api.request<ISponsorshipTierGetAllResponse>(
       API_ROUTER.USER.SPONSORSHIP_TIERS.GET,
       {
         method: API_METHODS.GET,
-        cookie: config ? config.cookie : undefined,
+        ...config,
       },
     ),
-  updateUserSponsorshipTierById: async (
+  updateSponsorshipTierById: async (
     {
       query,
       payload,
     }: IApiClientQueryWithPayload<
       { id: string },
-      IUserMembershipTierUpdatePayload
+      ISponsorshipTierUpdatePayload
     >,
     config?: RequestConfig,
   ) =>
@@ -350,7 +349,7 @@ export const apiClient = {
     { username }: { username: string },
     config?: RequestConfig,
   ) =>
-    api.request<IUserMembershipGetAllResponse>(
+    api.request<ISponsorshipTierGetAllResponse>(
       API_ROUTER.USERS.SPONSORSHIP_TIERS(username),
       {
         method: API_METHODS.GET,

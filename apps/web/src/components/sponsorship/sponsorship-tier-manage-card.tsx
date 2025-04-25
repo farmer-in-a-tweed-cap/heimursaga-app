@@ -1,7 +1,9 @@
 'use client';
 
-import { Button, Card, CardContent } from '@repo/ui/components';
+import { Button, Card, CardContent, Switch } from '@repo/ui/components';
 import { useState } from 'react';
+
+import { apiClient } from '@/lib/api';
 
 import {
   SponsorshipTierEditForm,
@@ -12,11 +14,13 @@ type Props = {
   id: string;
   price: number;
   description: string;
-  membersCount: number;
+  isAvailable?: boolean;
+  membersCount?: number;
 };
 
 export const SponsorshipTierManageCard: React.FC<Props> = ({
   id,
+  isAvailable = false,
   membersCount = 0,
   ...props
 }) => {
@@ -24,9 +28,27 @@ export const SponsorshipTierManageCard: React.FC<Props> = ({
     price: props.price,
     description: props.description,
   });
-  const [editing, setEditing] = useState(false);
+  const [available, setAvailable] = useState<boolean>(isAvailable || false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [editing, setEditing] = useState<boolean>(false);
 
   const { price, description } = state;
+
+  const handleToggleAvailability = async () => {
+    setLoading(true);
+
+    const isAvailable = !available;
+
+    // update the sponsorship tier
+    await apiClient.updateSponsorshipTierById({
+      query: { id },
+      payload: { isAvailable },
+    });
+
+    setAvailable(() => isAvailable);
+
+    setLoading(false);
+  };
 
   const handleEdit = () => {
     setEditing(true);
@@ -57,13 +79,23 @@ export const SponsorshipTierManageCard: React.FC<Props> = ({
             />
           ) : (
             <div className="flex flex-col">
-              <div className="flex flex-col justify-start items-start gap-0">
-                <span className="font-medium text-base text-black">
-                  ${price}/month
-                </span>
-                <span className="font-normal text-base text-gray-500">
-                  {membersCount} members
-                </span>
+              <div className="flex flex-row justify-between">
+                <div className="flex flex-col justify-start items-start gap-0">
+                  <span className="font-medium text-base text-black">
+                    ${price}/month
+                  </span>
+                  <span className="font-normal text-base text-gray-500">
+                    {membersCount} members
+                  </span>
+                </div>
+                <div>
+                  <Switch
+                    checked={available}
+                    aria-readonly
+                    disabled={loading}
+                    onCheckedChange={handleToggleAvailability}
+                  />
+                </div>
               </div>
               <div className="mt-4">
                 <p className="text-base">{description}</p>
