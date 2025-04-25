@@ -370,23 +370,22 @@ export interface IUserMapGetResponse {
   geojson: GeoJson<{ id: string; title: string }>;
 }
 
-// membership tiers
-export interface IUserMembershipTier {
+// sponsorship
+export interface ISponsorshipTier {
   id: string;
   price: number;
   description: string;
-  membersCount: number;
+  membersCount?: number;
 }
 
-export interface IUserMembershipTierGetAllResponse {
+export interface ISponsorshipTierGetAllResponse {
   results: number;
-  data: IUserMembershipTier[];
+  data: ISponsorshipTier[];
 }
 
-export interface IUserMembershipTierGetByIdResponse
-  extends IUserMembershipTier {}
+export interface ISponsorshipTierGetByIdResponse extends ISponsorshipTier {}
 
-export interface IUserMembershipTierUpdatePayload {
+export interface ISponsorshipTierUpdatePayload {
   price: number;
   description: string;
 }

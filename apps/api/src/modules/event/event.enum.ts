@@ -11,7 +11,7 @@ export const EVENTS = {
       COMPLETE: 'subscription.upgrade.complete',
     },
   },
-  MEMBERSHIP: {
-    COMPLETE: 'membership.complete',
+  SPONSORSHIP: {
+    COMPLETE: 'sponsorship.complete',
   },
 };

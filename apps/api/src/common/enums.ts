@@ -14,7 +14,7 @@ export enum CurrencySymbol {
 
 export enum PaymentTransactionType {
   SUBSCRIPTION = 'subscription',
-  MEMBERSHIP = 'membership',
+  SPONSORSHIP = 'sponsorship',
   DONATION = 'donation',
 }
 

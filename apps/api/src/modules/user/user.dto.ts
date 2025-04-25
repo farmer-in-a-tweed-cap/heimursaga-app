@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IUserMembershipTierUpdatePayload,
+  ISponsorshipTierUpdatePayload,
   IUserSettingsProfileUpdateQuery,
 } from '@repo/types';
 import { IsNumber, IsOptional, IsString } from 'class-validator';
@@ -20,7 +20,7 @@ export class UserSettingsProfileUpdateDto
 }
 
 export class UserMembershipTierUpdateDto
-  implements IUserMembershipTierUpdatePayload
+  implements ISponsorshipTierUpdatePayload
 {
   @ApiProperty({ required: false })
   @IsNumber()

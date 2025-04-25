@@ -124,6 +124,21 @@ export class UserController {
       userId: session.userId,
     });
   }
+
+  @Public()
+  @Get(':username/sponsorship-tiers')
+  @HttpCode(HttpStatus.OK)
+  async getSponsorshipTiers(
+    @Param() param: ParamUsernameDto,
+    @Session() session: ISession,
+  ) {
+    const { username } = param;
+
+    return await this.userService.getSponsorshipTiers({
+      username,
+      userId: session.userId,
+    });
+  }
 }
 
 @ApiTags('user')
@@ -211,38 +226,36 @@ export class SessionUserController {
     });
   }
 
-  @Get('membership-tiers')
+  @Get('sponsorship-tiers')
   @HttpCode(HttpStatus.OK)
-  async getMembershipTiers(@Session() session: ISession) {
-    console.log('get membership');
-
-    return await this.sessionUserService.getMembershipTiers({
+  async getSponsorshipTiers(@Session() session: ISession) {
+    return await this.sessionUserService.getSponsorshipTiers({
       query: {},
       session,
     });
   }
 
-  @Put('membership-tiers/:id')
+  @Put('sponsorship-tiers/:id')
   @HttpCode(HttpStatus.OK)
-  async updateMembershipTier(
+  async updateSponsorshipTier(
     @Param() param: ParamPublicIdDto,
     @Body() body: UserMembershipTierUpdateDto,
     @Session() session: ISession,
   ) {
-    return await this.sessionUserService.updateMembershipTier({
+    return await this.sessionUserService.updateSponsorshipTier({
       query: { id: param.id },
       payload: body,
       session,
     });
   }
 
-  @Delete('membership-tiers/:id')
+  @Delete('sponsorship-tiers/:id')
   @HttpCode(HttpStatus.OK)
-  async deleteMembershipTier(
+  async deleteSponsorshipTier(
     @Param() param: ParamPublicIdDto,
     @Session() session: ISession,
   ) {
-    return await this.sessionUserService.deleteMembershipTier({
+    return await this.sessionUserService.deleteSponsorshipTier({
       query: { id: param.id },
       session,
     });
