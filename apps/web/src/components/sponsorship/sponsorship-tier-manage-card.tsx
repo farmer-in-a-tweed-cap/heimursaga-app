@@ -4,9 +4,9 @@ import { Button, Card, CardContent } from '@repo/ui/components';
 import { useState } from 'react';
 
 import {
-  MembershipEditForm,
-  MembershipTierEditFormSubmitHandler,
-} from './membership-edit-form';
+  SponsorshipTierEditForm,
+  SponsorshipTierEditFormSubmitHandler,
+} from './sponsorship-tier-edit-form';
 
 type Props = {
   id: string;
@@ -15,7 +15,7 @@ type Props = {
   membersCount: number;
 };
 
-export const MembershipManageCard: React.FC<Props> = ({
+export const SponsorshipTierManageCard: React.FC<Props> = ({
   id,
   membersCount = 0,
   ...props
@@ -32,7 +32,7 @@ export const MembershipManageCard: React.FC<Props> = ({
     setEditing(true);
   };
 
-  const handleSave: MembershipTierEditFormSubmitHandler = (data) => {
+  const handleSave: SponsorshipTierEditFormSubmitHandler = (data) => {
     setEditing(false);
     setState((state) => ({ ...state, ...data }));
   };
@@ -46,7 +46,7 @@ export const MembershipManageCard: React.FC<Props> = ({
       <Card>
         <CardContent>
           {editing ? (
-            <MembershipEditForm
+            <SponsorshipTierEditForm
               membershipTierId={id}
               defaultValues={{
                 price,

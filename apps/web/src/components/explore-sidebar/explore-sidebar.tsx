@@ -1,8 +1,6 @@
 import { PostCard } from '../post';
 import { IPostDetail } from '@repo/types';
-import { Skeleton } from '@repo/ui/components';
-
-import { ROUTER } from '@/router';
+import { LoadingSpinner } from '@repo/ui/components';
 
 export const ExploreSidebar = ({
   loading = false,
@@ -18,7 +16,7 @@ export const ExploreSidebar = ({
       <div className="flex flex-col gap-1 bg-white py-4 px-6">
         <span className="text-lg font-medium">Explore</span>
         {loading ? (
-          <Skeleton className="w-[100px] h-[16px] rounded-full" />
+          <LoadingSpinner />
         ) : (
           <span className="h-[16px] text-sm font-normal text-gray-800">
             {results} entries found
@@ -29,10 +27,10 @@ export const ExploreSidebar = ({
         {posts.map(({ id, ...post }, key) => (
           <PostCard
             key={key}
-            href={ROUTER.POSTS.DETAIL(id)}
             {...post}
             id={id}
             actions={{ bookmark: true }}
+            onClick={() => {}}
           />
         ))}
       </div>

@@ -14,7 +14,10 @@ export const ROUTER = {
   BOOKMARKS: {
     HOME: '/bookmarks',
   },
-  MEMBERSHIP: '/membership',
+  SPONSORSHIPS: {
+    HOME: '/sponsorships',
+  },
+  AUDIENCE: '/audience',
   PREMIUM: '/premium',
   PREMIUM_CHECKOUT: '/premium/checkout',
   NOTIFICATIONS: '/notifications',
@@ -31,6 +34,15 @@ export const ROUTER = {
     DETAIL: (id: string) => `/posts/${id}`,
     CREATE: '/posts/create',
     EDIT: (id: string) => `/posts/${id}/edit`,
+  },
+  CHECKOUT: {
+    MEMBERSHIP: ({
+      username,
+      membershipId,
+    }: {
+      username: string;
+      membershipId: string;
+    }) => `/checkout/${username}?mid=${membershipId}`,
   },
   MEMBERS: {
     MEMBER: (username: string) => `/${username}`,

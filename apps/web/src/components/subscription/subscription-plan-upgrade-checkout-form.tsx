@@ -427,7 +427,7 @@ const FormComponent: React.FC<Props> = ({
         </div>
         <div className="flex mt-4">
           <Button type="submit" className="w-full" loading={loading}>
-            Pay & upgrade
+            Upgrade
           </Button>
         </div>
         {children && <div className="mt-4 flex flex-col">{children}</div>}

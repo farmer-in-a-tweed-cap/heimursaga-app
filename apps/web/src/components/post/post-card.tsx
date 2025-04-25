@@ -32,6 +32,7 @@ export type PostCardProps = {
   bookmarksCount?: number;
   liked?: boolean;
   likesCount?: number;
+  onClick?: () => void;
 };
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -56,10 +57,20 @@ export const PostCard: React.FC<PostCardProps> = ({
     bookmark: true,
     edit: false,
   },
+  onClick,
 }) => {
   return (
     <Card className="relative w-full h-auto box-border p-6 flex flex-col shadow-none border border-solid border-gray-200">
-      {href && <Link href={href} className="z-10 absolute inset-0"></Link>}
+      {href ? (
+        <Link href={href} className="z-10 absolute inset-0"></Link>
+      ) : onClick ? (
+        <div
+          className="z-10 absolute inset-0 cursor-pointer"
+          onClick={onClick}
+        ></div>
+      ) : (
+        <></>
+      )}
       <div className="flex flex-row justify-between items-center">
         <Link
           href={

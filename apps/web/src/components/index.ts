@@ -14,3 +14,4 @@ export * from './nav';
 export * from './payment';
 export * from './list';
 export * from './subscription';
+export * from './sponsorship';

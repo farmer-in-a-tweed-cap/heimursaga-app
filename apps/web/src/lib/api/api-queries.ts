@@ -46,6 +46,7 @@ export const QUERY_KEYS = {
     NOTIFICATIONS: 'user_notifications',
     MAP: 'user_map',
   },
+  MEMBERSHIPS: 'memberships',
 };
 
 const createQuery = <T = undefined, R = any>(
@@ -372,9 +373,11 @@ export const membershipTierUpdateMutation = createMutation<
   IApiClientQueryWithPayload<{ id: string }, IUserMembershipTierUpdatePayload>,
   void
 >((query) =>
-  apiClient.updateUserMembershipTierById(query).then(({ success, message }) => {
-    if (!success) {
-      throw new Error(message);
-    }
-  }),
+  apiClient
+    .updateUserSponsorshipTierById(query)
+    .then(({ success, message }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+    }),
 );

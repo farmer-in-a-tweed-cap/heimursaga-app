@@ -7,7 +7,9 @@ import {
   BellIcon,
   BookmarkIcon,
   CogIcon,
+  CoinsIcon,
   CompassIcon,
+  DollarSignIcon,
   HomeIcon,
   LucideProps,
   StarIcon,
@@ -49,7 +51,7 @@ const SIDEBAR_LINKS: {
   CREATOR: [
     { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
     { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
-    { href: ROUTER.MEMBERSHIP, label: 'Memberships', icon: Users2Icon },
+    { href: ROUTER.SPONSORSHIPS.HOME, label: 'Sponsorships', icon: CoinsIcon },
     { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
     { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
     { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
@@ -124,7 +126,7 @@ export const AppSidebar = () => {
             ) : (
               <div className="w-full flex flex-col gap-8">
                 <Button variant="secondary" asChild>
-                  <Link href={ROUTER.LOGIN}>Log in</Link>
+                  <a href={ROUTER.LOGIN}>Log in</a>
                 </Button>
               </div>
             )}

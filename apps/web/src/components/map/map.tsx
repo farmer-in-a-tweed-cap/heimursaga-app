@@ -52,6 +52,7 @@ type Props = {
   height?: number;
   onLoad?: MapOnLoadHandler;
   onMove?: MapOnMoveHandler;
+  onSourceClick?: (sourceId: string) => void;
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
 
@@ -367,11 +368,11 @@ export const Map: React.FC<Props> = ({
         const popupContent = `
           <div class="map-popup cursor-pointer">
             <div class="flex flex-col justify-start gap-0">
-              <span class="text-sm font-medium">${title}</span>
-              <span class="text-[0.625rem] font-normal text-gray-800">${dateformat(date).format('MMM DD')}</span>
+              <span class="text-base font-medium">${title}</span>
+              <span class="text-xs font-normal text-gray-800">${dateformat(date).format('MMM DD')}</span>
             </div>
             <div class="">
-              <p class="text-xs font-normal">${content ? (content.length < 80 ? content : `${content.slice(0, 80)}..`) : ''}</p>
+              <p class="text-sm font-normal">${content ? (content.length < 80 ? content : `${content.slice(0, 80)}..`) : ''}</p>
             </div>
           </div>
         `;
@@ -389,14 +390,14 @@ export const Map: React.FC<Props> = ({
               hoverPopupRef.current = true;
             });
             popupElement.addEventListener('mouseleave', () => {
-              console.log('mouse leave');
-
               hoverPopupRef.current = false;
 
               setTimeout(() => {
-                showPopupRef.current = false;
-                mapboxPopupRef.current!.remove();
-              }, 250);
+                if (!hoverPopupRef.current) {
+                  showPopupRef.current = false;
+                  mapboxPopupRef.current!.remove();
+                }
+              }, 500);
             });
           }
 
@@ -412,10 +413,11 @@ export const Map: React.FC<Props> = ({
 
         // remove popup
         setTimeout(() => {
-          if (hoverPopupRef.current) return;
-          mapboxPopupRef.current!.remove();
-          showPopupRef.current = false;
-        }, 250);
+          if (!hoverPopupRef.current) {
+            mapboxPopupRef.current!.remove();
+            showPopupRef.current = false;
+          }
+        }, 500);
       });
 
       // update on move

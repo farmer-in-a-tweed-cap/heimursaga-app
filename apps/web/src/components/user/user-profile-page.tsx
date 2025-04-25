@@ -25,12 +25,13 @@ export const UserProfilePage: React.FC<Props> = ({ user, section }) => {
         <UserMapBanner className="z-30" username={user?.username} />
       </div>
       <div className="z-20 -mt-[60px] w-auto flex flex-col items-center rounded-full">
-        <Avatar className="z-50 w-[120px] h-[120px]">
+        <Avatar className="z-50 w-[120px] h-[120px] overflow-hidden">
           <AvatarFallback>{user?.name?.slice(0, 1)}</AvatarFallback>
           <AvatarImage
             width={120}
             height={120}
             src={user?.picture}
+            className="w-full h-auto"
             alt="avatar"
           />
         </Avatar>

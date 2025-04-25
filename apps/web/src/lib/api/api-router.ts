@@ -18,11 +18,11 @@ export const API_ROUTER = {
       PROFILE: '/user/settings/profile',
     },
     POSTS: '/user/posts',
-    MEMBERSHIP_TIERS: {
-      GET: `/user/membership-tiers`,
-      GET_BY_ID: (id: string) => `/user/membership-tiers/${id}`,
-      UPDATE: (id: string) => `/user/membership-tiers/${id}`,
-      DELETE: (id: string) => `/user/membership-tiers/${id}`,
+    SPONSORSHIP_TIERS: {
+      GET: `/user/sponsorship-tiers`,
+      GET_BY_ID: (id: string) => `/user/sponsorship-tiers/${id}`,
+      UPDATE: (id: string) => `/user/sponsorship-tiers/${id}`,
+      DELETE: (id: string) => `/user/sponsorship-tiers/${id}`,
     },
   },
   PLAN: {
@@ -40,6 +40,8 @@ export const API_ROUTER = {
     FOLLOWING: (username: string) => `/users/${username}/following`,
     FOLLOW: (username: string) => `/users/${username}/follow`,
     UNFOLLOW: (username: string) => `/users/${username}/unfollow`,
+    SPONSORSHIP_TIERS: (username: string) =>
+      `/users/${username}/sponsorship-tiers`,
   },
   SUBSCRIPTION_PLANS: {
     GET: '/plans',

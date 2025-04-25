@@ -40,7 +40,7 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
   return (
     <div
       className={cn(
-        'relative w-full h-[220px] lg:h-[280px] bg-gray-300 rounded-lg overflow-hidden',
+        'relative w-full h-[180px] lg:h-[280px] bg-gray-300 rounded-lg overflow-hidden',
         className,
       )}
     >
@@ -48,20 +48,16 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
         className="transition-all z-20 absolute cursor-pointer inset-0 opacity-0 hover:opacity-10 hover:bg-black hover:scale-110"
         onClick={handleClick}
       ></div>
-      {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <div className="transition-all w-full h-full z-10">
-          <MapPreview
+      <div className="transition-all w-full h-full z-10">
+        {/* <MapStaticPreview
             className="w-full h-[220px] lg:h-[280px]"
             lat={lat}
             lon={lon}
-            alt={alt}
-            sources={geojson ? { geojson } : undefined}
+            alt={1}
+            // sources={geojson ? { geojson } : undefined}
             overlay={false}
-          />
-        </div>
-      )}
+          /> */}
+      </div>
     </div>
   );
 };

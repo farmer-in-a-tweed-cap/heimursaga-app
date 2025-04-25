@@ -24,6 +24,7 @@ import {
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserMapGetResponse,
+  IUserMembershipGetAllResponse,
   IUserMembershipTierGetAllResponse,
   IUserMembershipTierUpdatePayload,
   IUserNotificationGetResponse,
@@ -40,7 +41,7 @@ import {
   API_METHODS,
   API_ROUTER,
   Api,
-} from './api';
+} from './api-router';
 
 const baseUrl = `${process.env.NEXT_PUBLIC_APP_BASE_URL}/api`;
 
@@ -321,16 +322,16 @@ export const apiClient = {
       method: API_METHODS.GET,
       cookie: config ? config.cookie : undefined,
     }),
-  // membership tiers
-  getUserMembershipTiers: async (config?: RequestConfig) =>
+  // sponsorships
+  getUserSponsorshipTiers: async (config?: RequestConfig) =>
     api.request<IUserMembershipTierGetAllResponse>(
-      API_ROUTER.USER.MEMBERSHIP_TIERS.GET,
+      API_ROUTER.USER.SPONSORSHIP_TIERS.GET,
       {
         method: API_METHODS.GET,
         cookie: config ? config.cookie : undefined,
       },
     ),
-  updateUserMembershipTierById: async (
+  updateUserSponsorshipTierById: async (
     {
       query,
       payload,
@@ -340,11 +341,22 @@ export const apiClient = {
     >,
     config?: RequestConfig,
   ) =>
-    api.request<void>(API_ROUTER.USER.MEMBERSHIP_TIERS.UPDATE(query.id), {
+    api.request<void>(API_ROUTER.USER.SPONSORSHIP_TIERS.UPDATE(query.id), {
       method: API_METHODS.PUT,
       body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,
     }),
+  getSponsorshipTiersByUsername: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<IUserMembershipGetAllResponse>(
+      API_ROUTER.USERS.SPONSORSHIP_TIERS(username),
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
   // subscription plan
   getSubscriptionPlans: async (config?: RequestConfig) =>
     api.request<ISubscriptionPlanGetAllResponse>(

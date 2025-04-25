@@ -115,12 +115,12 @@ export const ResetPasswordForm = () => {
                   <Button type="submit" className="w-full" loading={loading}>
                     Send email
                   </Button>
-                  <Link
+                  <a
                     href={ROUTER.LOGIN}
                     className="mt-4 text-sm hover:underline"
                   >
                     Back to log in
-                  </Link>
+                  </a>
                 </div>
               </div>
             </form>

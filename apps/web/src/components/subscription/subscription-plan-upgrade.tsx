@@ -120,7 +120,7 @@ export const SubscriptionPlanUpgrade: React.FC<Props> = ({
         ) : (
           <div>
             <Button size="lg" onClick={handleUpgrade}>
-              Upgrade & pay
+              Upgrade
             </Button>
           </div>
         )}

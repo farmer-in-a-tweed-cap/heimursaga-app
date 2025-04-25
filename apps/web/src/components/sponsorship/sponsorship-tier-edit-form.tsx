@@ -1,3 +1,5 @@
+'use client';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
@@ -37,16 +39,16 @@ type Props = {
     price: number;
     description: string;
   };
-  onSubmit?: MembershipTierEditFormSubmitHandler;
+  onSubmit?: SponsorshipTierEditFormSubmitHandler;
   onCancel?: () => void;
 };
 
-export type MembershipTierEditFormSubmitHandler = (data?: {
+export type SponsorshipTierEditFormSubmitHandler = (data?: {
   price?: number;
   description?: string;
 }) => void;
 
-export const MembershipEditForm: React.FC<Props> = ({
+export const SponsorshipTierEditForm: React.FC<Props> = ({
   membershipTierId,
   defaultValues,
   onSubmit,

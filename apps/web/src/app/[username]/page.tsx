@@ -6,13 +6,16 @@ import { apiClient } from '@/lib/api';
 import { PageNotFound, UserProfilePage } from '@/components';
 import { AppLayout } from '@/layouts';
 
-type Props = {
+export type Props = {
   params: {
     username: string;
+    section?: string;
   };
 };
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export const generateMetadata = async ({
+  params,
+}: Props): Promise<Metadata> => {
   const { username } = await params;
 
   const user = await apiClient
@@ -23,20 +26,25 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: user ? `${user.name} | ${user.bio || ''}` : undefined,
   };
-}
+};
 
-export default async function Page({ params }: Props) {
+export const Page = async ({ params }: Props) => {
   const cookie = cookies().toString();
-  const { username } = params;
+  const { username, section } = params;
 
-  const { success, data } = await apiClient.getUserByUsername(
-    { username },
-    { cookie },
-  );
+  const [userQuery] = await Promise.all([
+    await apiClient.getUserByUsername({ username }, { cookie }),
+  ]);
 
   return (
     <AppLayout>
-      {success && data ? <UserProfilePage user={data} /> : <PageNotFound />}
+      {userQuery.success && userQuery.data ? (
+        <UserProfilePage user={userQuery.data} section={section} />
+      ) : (
+        <PageNotFound />
+      )}
     </AppLayout>
   );
-}
+};
+
+export default Page;

@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getUserPostsByUsernameQuery } from '@/lib/api';
 
 import { PostCard } from '@/components';
+import { ROUTER } from '@/router';
 
 type Props = {
   username: string;
@@ -33,6 +34,7 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
         <PostCard
           key={key}
           {...post}
+          href={post.id ? ROUTER.POSTS.DETAIL(post.id) : '#'}
           author={{
             name: author?.name,
             username: author?.username,

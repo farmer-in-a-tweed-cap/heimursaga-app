@@ -158,6 +158,10 @@ export const ExploreMap: React.FC<Props> = () => {
     }
   };
 
+  const handleSourceClick = () => {
+    alert('click');
+  };
+
   useEffect(() => {
     const { lat, lon, alt } = params;
 
@@ -188,7 +192,7 @@ export const ExploreMap: React.FC<Props> = () => {
         )}
       >
         <ExploreSidebar
-          loading={searchQueryQuery.isFetching}
+          loading={searchQueryQuery.isPending || searchQueryQuery.isLoading}
           results={searchQueryQuery.data?.results}
           posts={searchQueryQuery.data?.data}
         />
@@ -222,6 +226,7 @@ export const ExploreMap: React.FC<Props> = () => {
                     }
                   : undefined
               }
+              onSourceClick={handleSourceClick}
               onLoad={handleMapLoad}
               onMove={handleMapMove}
             />
