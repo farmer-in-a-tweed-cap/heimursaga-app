@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { AppErrorCode } from '@repo/types';
 import {
   Button,
   Card,
@@ -14,6 +15,7 @@ import {
   FormMessage,
   Input,
 } from '@repo/ui/components';
+import { useToast } from '@repo/ui/hooks';
 import { cn } from '@repo/ui/lib/utils';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -21,7 +23,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { signupMutation } from '@/lib/api';
+import { apiClient, signupMutation } from '@/lib/api';
 import { fieldmsg, redirect } from '@/lib/utils';
 
 import { ROUTER } from '@/router';
@@ -53,18 +55,6 @@ const schema = z.object({
 export const SignupForm = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
-  const mutation = useMutation({
-    mutationFn: signupMutation.mutationFn,
-    onSuccess: () => {
-      // redirect to login page
-      redirect(ROUTER.LOGIN);
-    },
-    onError: (e) => {
-      console.log('error', e);
-      setLoading(false);
-    },
-  });
-
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -77,9 +67,36 @@ export const SignupForm = () => {
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      setLoading(true);
+      try {
+        const { email, password, name, username } = values;
 
-      mutation.mutate(values);
+        setLoading(true);
+
+        // sign up
+        const { success, message } = await apiClient.signup({
+          query: {},
+          payload: { email, password, username, name },
+        });
+
+        if (success) {
+          // redirect to login page
+          redirect(ROUTER.LOGIN);
+        } else {
+          switch (message) {
+            case AppErrorCode.EMAIL_ALREADY_IN_USE:
+              form.setError('email', { message: 'Email already in use' });
+              break;
+            case AppErrorCode.USERNAME_ALREADY_IN_USE:
+              form.setError('username', { message: 'Username already in use' });
+              break;
+          }
+
+          setLoading(false);
+        }
+      } catch (e) {
+        form.setError('password', { message: 'Sign up failed' });
+        setLoading(false);
+      }
     },
   );
 

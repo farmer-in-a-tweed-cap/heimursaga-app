@@ -17,6 +17,7 @@ import {
   Input,
   Label,
 } from '@repo/ui/components';
+import { useToast } from '@repo/ui/hooks';
 import { cn } from '@repo/ui/lib/utils';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -24,7 +25,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { loginMutation } from '@/lib/api';
+import { apiClient, loginMutation } from '@/lib/api';
 import { fieldmsg, redirect } from '@/lib/utils';
 
 import { ROUTER } from '@/router';
@@ -43,7 +44,8 @@ const schema = z.object({
     .max(50, fieldmsg.max('password', 20)),
 });
 
-export const LoginForm = ({}) => {
+export const LoginForm = () => {
+  const toast = useToast();
   const [loading, setLoading] = useState<boolean>(false);
 
   const mutation = useMutation({
@@ -68,8 +70,30 @@ export const LoginForm = ({}) => {
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      setLoading(true);
-      mutation.mutate(values);
+      try {
+        const { email, password } = values;
+
+        setLoading(true);
+
+        // login
+        const { success } = await apiClient.login({
+          query: {},
+          payload: { email, password },
+        });
+
+        if (success) {
+          // redirect to home page
+          redirect(ROUTER.HOME);
+        } else {
+          form.setError('password', {
+            message: `Email or password not correct`,
+          });
+          setLoading(false);
+        }
+      } catch (e) {
+        form.setError('password', { message: `Email or password not correct` });
+        setLoading(false);
+      }
     },
   );
 

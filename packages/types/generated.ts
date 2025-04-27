@@ -375,6 +375,7 @@ export interface ISponsorshipTier {
   id: string;
   price: number;
   description: string;
+  isAvailable?: boolean;
   membersCount?: number;
 }
 
@@ -386,6 +387,7 @@ export interface ISponsorshipTierGetAllResponse {
 export interface ISponsorshipTierGetByIdResponse extends ISponsorshipTier {}
 
 export interface ISponsorshipTierUpdatePayload {
-  price: number;
-  description: string;
+  price?: number;
+  description?: string;
+  isAvailable?: boolean;
 }

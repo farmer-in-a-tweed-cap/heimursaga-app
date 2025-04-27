@@ -1,3 +1,8 @@
+export enum AppErrorCode {
+  EMAIL_ALREADY_IN_USE = 'email_already_in_use',
+  USERNAME_ALREADY_IN_USE = 'username_already_in_use',
+}
+
 export enum UserRole {
   ADMIN = 'admin',
   CREATOR = 'creator',
