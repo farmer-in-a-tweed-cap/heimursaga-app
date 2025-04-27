@@ -17,16 +17,12 @@ import {
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
 import { cn } from '@repo/ui/lib/utils';
-import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import {
-  updateUserPictureMutation,
-  updateUserProfileSettingsMutation,
-} from '@/lib/api';
+import { apiClient } from '@/lib/api';
 import { fieldmsg } from '@/lib/utils';
 
 import { UserAvatarUploadPicker } from './user-avatar-upload-picker';
@@ -37,6 +33,16 @@ const schema = z.object({
     .nonempty(fieldmsg.required('name'))
     .min(2, fieldmsg.min('name', 2))
     .max(50, fieldmsg.max('name', 20)),
+  username: z
+    .string()
+    .nonempty(fieldmsg.required('username'))
+    .min(4, fieldmsg.min('username', 4))
+    .max(20, fieldmsg.max('username', 20)),
+  email: z
+    .string()
+    .email(fieldmsg.email())
+    .nonempty(fieldmsg.required('email'))
+    .max(50, fieldmsg.max('email', 50)),
   bio: z
     .string()
     .nonempty(fieldmsg.required('bio'))
@@ -52,34 +58,10 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   const router = useRouter();
   const toast = useToast();
 
-  const [settingsLoading, setSettingsLoading] = useState<boolean>(false);
-  const [pictureLoading, setPictureLoading] = useState<boolean>(false);
-
-  const onError = (e: Error) => {
-    setSettingsLoading(false);
-    setPictureLoading(false);
-    console.log('settings not update', e);
-    toast({ type: 'error', message: 'settings not updated' });
-  };
-
-  const settingsUpdateMutation = useMutation({
-    mutationFn: updateUserProfileSettingsMutation.mutationFn,
-    onSuccess: () => {
-      setSettingsLoading(false);
-      toast({ type: 'success', message: 'settings updated' });
-      router.refresh();
-    },
-    onError,
-  });
-
-  const pictureUpdateMutation = useMutation({
-    mutationFn: updateUserPictureMutation.mutationFn,
-    onSuccess: () => {
-      setPictureLoading(false);
-      router.refresh();
-    },
-    onError,
-  });
+  const [loading, setLoading] = useState<{
+    picture: boolean;
+    settings: boolean;
+  }>({ picture: false, settings: false });
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -91,32 +73,87 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
         },
   });
 
-  const handleAvatarChange = (file: File) => {
-    setPictureLoading(true);
-
-    pictureUpdateMutation.mutate({ query: {}, payload: { file } });
-  };
-
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      setSettingsLoading(true);
-      settingsUpdateMutation.mutate(values);
+      try {
+        const { name, bio } = values;
+
+        setLoading((loading) => ({ ...loading, settings: true }));
+
+        // save the changes
+        await apiClient.updateUserProfileSettings({ name, bio });
+
+        toast({ type: 'success', message: 'settings updated' });
+        setLoading((loading) => ({ ...loading, settings: false }));
+        router.refresh();
+      } catch (e) {
+        setLoading((loading) => ({ ...loading, settings: false }));
+        toast({ type: 'error', message: 'settings not updated' });
+      }
     },
   );
+
+  const handlePictureUpdate = async (file: File) => {
+    try {
+      setLoading((loading) => ({ ...loading, picture: true }));
+
+      // save the changes
+      await apiClient.updateUserPicture({ file });
+
+      setLoading((loading) => ({ ...loading, picture: false }));
+    } catch (e) {
+      setLoading((loading) => ({ ...loading, picture: false }));
+    }
+  };
 
   return (
     <Card className={cn('flex flex-col gap-6')}>
       <CardContent>
         <UserAvatarUploadPicker
           src={data?.picture}
-          loading={pictureLoading}
+          loading={loading.picture}
           fallback={data?.name}
-          onChange={handleAvatarChange}
+          onChange={handlePictureUpdate}
         />
         <Form {...form}>
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
-              <div className="mt-6 gap-6 flex flex-col">
+              <div className="mt-8 gap-6 flex flex-col">
+                <div className="w-full flex lg:flex-row flex-col gap-6">
+                  <div className="basis-6/12 lg:basis-full">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      disabled
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input required {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="basis-6/12 lg:basis-full">
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      disabled
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Username</FormLabel>
+                          <FormControl>
+                            <Input required {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
                 <FormField
                   control={form.control}
                   name="name"
@@ -124,12 +161,17 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                     <FormItem>
                       <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input disabled={settingsLoading} required {...field} />
+                        <Input
+                          disabled={loading.settings}
+                          required
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
+
                 <div className="grid gap-2">
                   <FormField
                     control={form.control}
@@ -140,7 +182,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                         <FormControl>
                           <Textarea
                             className="min-h-[120px]"
-                            disabled={settingsLoading}
+                            disabled={loading.settings}
                             required
                             {...field}
                           />
@@ -152,7 +194,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                 </div>
               </div>
               <div>
-                <Button type="submit" loading={settingsLoading}>
+                <Button type="submit" loading={loading.settings}>
                   Save
                 </Button>
               </div>
