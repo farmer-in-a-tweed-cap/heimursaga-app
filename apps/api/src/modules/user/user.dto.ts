@@ -3,7 +3,7 @@ import {
   ISponsorshipTierUpdatePayload,
   IUserSettingsProfileUpdateQuery,
 } from '@repo/types';
-import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UserSettingsProfileUpdateDto
   implements IUserSettingsProfileUpdateQuery
@@ -31,4 +31,9 @@ export class UserMembershipTierUpdateDto
   @IsString()
   @IsOptional()
   description: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isAvailable: boolean;
 }

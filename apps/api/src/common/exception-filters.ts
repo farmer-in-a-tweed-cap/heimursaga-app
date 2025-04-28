@@ -21,7 +21,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const url = request.url;
     const message = exception.message;
 
-    // Validation
+    // validate
     const exceptionResponse: any = exception.getResponse();
 
     const validation: string[] = exceptionResponse?.message;
@@ -32,6 +32,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       url,
       message,
       validation: isValidation ? validation : undefined,
+      // errors: [{ field: 'email', code: 'EMAIL_ALREADY_USED' }],
     };
 
     // logger.error(error);

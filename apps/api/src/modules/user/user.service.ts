@@ -532,8 +532,10 @@ export class UserService {
 
   async getSponsorshipTiers({
     username,
+    available,
   }: {
     username: string;
+    available?: boolean;
     userId: number;
   }): Promise<ISponsorshipTierGetAllResponse> {
     try {
@@ -547,21 +549,44 @@ export class UserService {
 
       // get sponsorship tiers
       const data = await this.prisma.sponsorshipTier.findMany({
-        where: { user_id: user.id, is_available: true, deleted_at: null },
+        where: {
+          user_id: user.id,
+          is_available: typeof available === 'boolean' ? available : undefined,
+          deleted_at: null,
+        },
         select: {
           public_id: true,
           price: true,
           description: true,
+          user: {
+            select: {
+              username: true,
+              profile: {
+                select: {
+                  name: true,
+                  picture: true,
+                },
+              },
+            },
+          },
         },
         orderBy: [{ id: 'desc' }],
       });
 
       const response: ISponsorshipTierGetAllResponse = {
         results: data.length,
-        data: data.map(({ public_id: id, price, description }) => ({
+        data: data.map(({ public_id: id, price, description, user }) => ({
           id,
           description,
           price: integerToDecimal(price),
+          creator: user
+            ? {
+                username: user.username,
+                name: user.profile.name,
+                picture: getStaticMediaUrl(user.profile.picture),
+                bio: '',
+              }
+            : undefined,
         })),
       };
 
@@ -945,19 +970,27 @@ export class SessionUserService {
         const data = await this.prisma.sponsorshipTier
           .findMany({
             where,
-            select: { public_id: true, price: true, description: true },
+            select: {
+              public_id: true,
+              price: true,
+              description: true,
+              is_available: true,
+            },
           })
           .catch(() => {
             throw new ServiceNotFoundException('sponsorship tiers not found');
           });
 
         response.results = results;
-        response.data = data.map(({ price, description, public_id: id }) => ({
-          price: integerToDecimal(price),
-          description,
-          id,
-          membersCount: 0,
-        }));
+        response.data = data.map(
+          ({ price, description, public_id: id, is_available }) => ({
+            price: integerToDecimal(price),
+            description,
+            id,
+            isAvailable: is_available,
+            membersCount: 0,
+          }),
+        );
       } else {
         // create a sponsorship tier if it doesn't exist
         const tier = await this.prisma.sponsorshipTier.create({
@@ -968,24 +1001,102 @@ export class SessionUserService {
             is_available: true,
             user: { connect: { id: userId } },
           },
-          select: { public_id: true, price: true, description: true },
+          select: {
+            public_id: true,
+            price: true,
+            description: true,
+            is_available: true,
+          },
         });
 
-        console.log({ tier });
-
         response.results = 1;
-        response.data = [tier].map(({ price, description, public_id: id }) => ({
-          price,
-          description,
-          id,
-          membersCount: 0,
-        }));
+        response.data = [tier].map(
+          ({ price, description, public_id: id, is_available }) => ({
+            price,
+            description,
+            id,
+            membersCount: 0,
+            isAvailable: is_available,
+          }),
+        );
       }
 
-      response.data = response.data.map(({ price, ...data }) => ({
+      response.data = response.data.map(({ price, isAvailable, ...data }) => ({
         ...data,
         price: integerToDecimal(price),
+        isAvailable,
       }));
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('sponsorship tiers not found');
+      throw exception;
+    }
+  }
+
+  async getSponsorshipByUsername({
+    session,
+  }: ISessionQuery): Promise<ISponsorshipTierGetAllResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      const where: Prisma.SponsorshipTierWhereInput = {
+        user_id: userId,
+        deleted_at: null,
+      };
+
+      // get the sponsorship tiers
+      const results = await this.prisma.sponsorshipTier.count({ where });
+      const data = await this.prisma.sponsorshipTier
+        .findMany({
+          where,
+          select: {
+            public_id: true,
+            price: true,
+            description: true,
+            is_available: true,
+            user: {
+              select: {
+                username: true,
+                profile: {
+                  select: {
+                    name: true,
+                    picture: true,
+                  },
+                },
+              },
+            },
+          },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('sponsorship tiers not found');
+        });
+
+      const response = {
+        data: data.map(
+          ({ price, description, public_id: id, is_available, user }) => ({
+            price: integerToDecimal(price),
+            description,
+            id,
+            isAvailable: is_available,
+            membersCount: 0,
+            creator: user
+              ? {
+                  username: user.username,
+                  name: user.profile.name,
+                  picture: user.profile.picture,
+                  bio: '',
+                }
+              : undefined,
+          }),
+        ),
+        results,
+      };
 
       return response;
     } catch (e) {
@@ -1023,13 +1134,15 @@ export class SessionUserService {
         throw new ServiceNotFoundException('sponsorship tier not found');
 
       // update the sponsorship tier
+      const { description, isAvailable } = payload;
       const price = payload.price ? decimalToInteger(payload.price) : undefined;
+
       await this.prisma.sponsorshipTier.update({
         where: { public_id: id },
         data: {
-          ...payload,
-          price: decimalToInteger(price),
-          is_available: true,
+          price,
+          description,
+          is_available: isAvailable,
         },
       });
     } catch (e) {

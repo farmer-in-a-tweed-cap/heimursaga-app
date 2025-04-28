@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  AppErrorCode,
   ILoginPayload,
   ILoginResponse,
   IPasswordResetPayload,
@@ -155,14 +156,16 @@ export class AuthService {
         .count({ where: { email } })
         .then((count) => count <= 0);
       if (!isEmailAvailable)
-        throw new ServiceForbiddenException('email already in use');
+        throw new ServiceForbiddenException(AppErrorCode.EMAIL_ALREADY_IN_USE);
 
       // check if the username is available
       const isUsernameAvailable = await this.prisma.user
         .count({ where: { username } })
         .then((count) => count <= 0);
       if (!isUsernameAvailable)
-        throw new ServiceForbiddenException('username already in use');
+        throw new ServiceForbiddenException(
+          AppErrorCode.USERNAME_ALREADY_IN_USE,
+        );
 
       // create a user
       await this.prisma.user.create({

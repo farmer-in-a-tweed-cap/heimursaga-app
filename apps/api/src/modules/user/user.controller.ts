@@ -136,6 +136,7 @@ export class UserController {
 
     return await this.userService.getSponsorshipTiers({
       username,
+      available: true,
       userId: session.userId,
     });
   }

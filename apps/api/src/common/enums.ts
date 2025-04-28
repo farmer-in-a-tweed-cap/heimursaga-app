@@ -25,3 +25,8 @@ export enum StripeMetadataKey {
   SUBSCRIPTION_ID = 'subscription_id',
   SUBSCRIPTION_PLAN_ID = 'subscription_plan_id',
 }
+
+export enum ServiceErrorCode {
+  EMAIL_ALREADY_IN_USE = 'email_already_in_use',
+  USERNAME_ALREADY_IN_USE = 'username_already_in_use',
+}

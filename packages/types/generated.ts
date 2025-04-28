@@ -377,11 +377,21 @@ export interface ISponsorshipTier {
   description: string;
   isAvailable?: boolean;
   membersCount?: number;
+  creator?: {
+    username: string;
+    picture: string;
+    name: string;
+    bio: string;
+  };
 }
 
 export interface ISponsorshipTierGetAllResponse {
   results: number;
   data: ISponsorshipTier[];
+}
+
+export interface ISponsorshipTierGetByUsernameResponse {
+  sponsorship: ISponsorshipTier;
 }
 
 export interface ISponsorshipTierGetByIdResponse extends ISponsorshipTier {}
