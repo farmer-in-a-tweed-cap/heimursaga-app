@@ -565,6 +565,7 @@ export class UserService {
                 select: {
                   name: true,
                   picture: true,
+                  bio: true,
                 },
               },
             },
@@ -584,7 +585,7 @@ export class UserService {
                 username: user.username,
                 name: user.profile.name,
                 picture: getStaticMediaUrl(user.profile.picture),
-                bio: '',
+                bio: user.profile.bio,
               }
             : undefined,
         })),
