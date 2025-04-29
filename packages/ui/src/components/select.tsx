@@ -3,6 +3,7 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import * as React from 'react';
 
 import { cn } from './../lib/utils';
+import { LoadingSpinner, Spinner } from './spinner';
 
 function Select({
   ...props
@@ -165,8 +166,52 @@ function SelectScrollDownButton({
   );
 }
 
+type SelectInputProps = {
+  items?: { value: string; label: string }[];
+  placeholder?: string;
+  loading?: boolean;
+};
+
+const SelectInput = ({
+  loading = false,
+  items = [],
+  placeholder,
+  ...props
+}: React.ComponentProps<typeof SelectPrimitive.Root> & SelectInputProps) => {
+  return (
+    <Select {...props}>
+      <SelectTrigger
+        className={cn(loading ? 'cursor-not-allowed' : '')}
+        disabled={loading}
+      >
+        {loading ? (
+          <div className="w-full flex flex-row justify-start items-center">
+            <Spinner />
+          </div>
+        ) : (
+          <SelectValue placeholder={placeholder} />
+        )}
+      </SelectTrigger>
+      {loading ? (
+        <></>
+      ) : (
+        <SelectContent>
+          <SelectGroup>
+            {items.map(({ value, label }, key) => (
+              <SelectItem key={key} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      )}
+    </Select>
+  );
+};
+
 export {
   Select,
+  SelectInput,
   SelectContent,
   SelectGroup,
   SelectItem,
