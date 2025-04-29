@@ -25,22 +25,22 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { updatePasswordMutation } from '@/lib/api';
-import { fieldmsg, redirect } from '@/lib/utils';
 
+import { redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
 const schema = z
   .object({
     password: z
       .string()
-      .nonempty(fieldmsg.required('password'))
-      .min(2, fieldmsg.min('password', 2))
-      .max(20, fieldmsg.max('password', 20)),
+      .nonempty(zodMessage.required('password'))
+      .min(2, zodMessage.string.min('password', 2))
+      .max(20, zodMessage.string.max('password', 20)),
     passwordConfirmation: z
       .string()
-      .nonempty(fieldmsg.required('password'))
-      .min(2, fieldmsg.min('password', 2))
-      .max(20, fieldmsg.max('password', 20)),
+      .nonempty(zodMessage.required('password'))
+      .min(2, zodMessage.string.min('password', 2))
+      .max(20, zodMessage.string.max('password', 20)),
   })
   .refine((data) => data.password === data.passwordConfirmation, {
     message: 'passwords must match',

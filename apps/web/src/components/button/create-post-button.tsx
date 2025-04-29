@@ -4,8 +4,7 @@ import { Button, ButtonProps } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { SquarePenIcon } from 'lucide-react';
 
-import { redirect } from '@/lib/utils';
-
+import { redirect } from '@/lib';
 import { ROUTER } from '@/router';
 
 type Props = {

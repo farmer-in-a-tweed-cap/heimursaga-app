@@ -12,9 +12,9 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import { apiClient } from '@/lib/api';
-import { redirect } from '@/lib/utils';
 
 import { useSession } from '@/hooks';
+import { redirect } from '@/lib';
 import { ROUTER } from '@/router';
 
 export const UserNavbar = () => {

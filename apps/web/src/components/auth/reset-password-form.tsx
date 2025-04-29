@@ -26,17 +26,17 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { resetPasswordMutation } from '@/lib/api';
-import { fieldmsg } from '@/lib/utils';
 
+import { zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
 const schema = z.object({
   email: z
     .string()
-    .email(fieldmsg.email())
-    .nonempty(fieldmsg.required('email'))
-    .min(2, fieldmsg.min('email', 2))
-    .max(50, fieldmsg.max('email', 30)),
+    .email(zodMessage.email())
+    .nonempty(zodMessage.required('email'))
+    .min(2, zodMessage.string.min('email', 2))
+    .max(50, zodMessage.string.max('email', 30)),
 });
 
 export const ResetPasswordForm = () => {

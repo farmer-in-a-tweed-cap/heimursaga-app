@@ -69,7 +69,7 @@ export const SponsorshipTierManageCard: React.FC<Props> = ({
         <CardContent>
           {editing ? (
             <SponsorshipTierEditForm
-              membershipTierId={id}
+              sponsorshipTierId={id}
               defaultValues={{
                 price,
                 description,

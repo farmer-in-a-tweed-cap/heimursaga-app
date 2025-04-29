@@ -18,7 +18,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { postCreateMutation } from '@/lib/api';
-import { fieldmsg, redirect } from '@/lib/utils';
 
 import {
   MODALS,
@@ -28,19 +27,20 @@ import {
 } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { useModal } from '@/hooks';
+import { redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
 const schema = z.object({
   title: z
     .string()
-    .nonempty(fieldmsg.required('title'))
-    .min(5, fieldmsg.min('title', 5))
-    .max(50, fieldmsg.max('title', 50)),
+    .nonempty(zodMessage.required('title'))
+    .min(5, zodMessage.string.min('title', 5))
+    .max(50, zodMessage.string.max('title', 50)),
   content: z
     .string()
-    .nonempty(fieldmsg.required('content'))
-    .min(2, fieldmsg.min('content', 25))
-    .max(3000, fieldmsg.max('content', 3000)),
+    .nonempty(zodMessage.required('content'))
+    .min(2, zodMessage.string.min('content', 25))
+    .max(3000, zodMessage.string.max('content', 3000)),
 });
 
 export const PostCreateForm = () => {

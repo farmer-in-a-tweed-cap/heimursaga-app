@@ -1,3 +1,4 @@
+import { SponsorButton } from '../sponsorship';
 import { IUserProfileDetail } from '@repo/types';
 import {
   Avatar,
@@ -48,11 +49,12 @@ export const UserProfilePage: React.FC<Props> = ({ user, section }) => {
             </Button>
           </div>
         ) : (
-          <div className="mt-6 flex flex-row gap-2">
+          <div className="mt-6 flex flex-row gap-2 items-center">
             <UserFollowButton
               username={user?.username}
               followed={user?.followed}
             />
+            <SponsorButton username={user?.username} />
           </div>
         )}
       </div>

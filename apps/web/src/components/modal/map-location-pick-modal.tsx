@@ -8,10 +8,9 @@ import {
 } from '@repo/ui/components';
 import { useState } from 'react';
 
-import { sleep } from '@/lib/utils';
-
 import { Map } from '@/components';
 import { useMapbox } from '@/hooks';
+import { sleep } from '@/lib';
 
 import { ModalBaseProps } from './modal-provider';
 

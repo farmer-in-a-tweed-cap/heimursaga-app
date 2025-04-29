@@ -26,22 +26,22 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { apiClient, loginMutation } from '@/lib/api';
-import { fieldmsg, redirect } from '@/lib/utils';
 
+import { redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
 const schema = z.object({
   email: z
     .string()
-    .email(fieldmsg.email())
-    .nonempty(fieldmsg.required('email'))
-    .min(2, fieldmsg.min('email', 8))
-    .max(50, fieldmsg.max('email', 30)),
+    .email(zodMessage.email())
+    .nonempty(zodMessage.required('email'))
+    .min(2, zodMessage.string.min('email', 8))
+    .max(50, zodMessage.string.max('email', 30)),
   password: z
     .string()
-    .nonempty(fieldmsg.required('password'))
-    .min(2, fieldmsg.min('password', 8))
-    .max(50, fieldmsg.max('password', 20)),
+    .nonempty(zodMessage.required('password'))
+    .min(2, zodMessage.string.min('password', 8))
+    .max(50, zodMessage.string.max('password', 20)),
 });
 
 export const LoginForm = () => {

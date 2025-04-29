@@ -20,7 +20,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { apiClient } from '@/lib/api';
-import { fieldmsg, redirect, sleep } from '@/lib/utils';
 
 import {
   InfoModalProps,
@@ -31,6 +30,7 @@ import {
   StripeProvider,
 } from '@/components';
 import { useModal } from '@/hooks';
+import { redirect, sleep, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
 type Props = {
@@ -63,12 +63,12 @@ type StripeFieldState = {
 const schema = z.object({
   name: z
     .string()
-    .nonempty(fieldmsg.required('name on card'))
-    .max(20, fieldmsg.max('name on card', 20)),
+    .nonempty(zodMessage.required('name on card'))
+    .max(20, zodMessage.string.max('name on card', 20)),
   postcode: z
     .string()
-    .nonempty(fieldmsg.required('postcode'))
-    .max(10, fieldmsg.max('postcode', 10)),
+    .nonempty(zodMessage.required('postcode'))
+    .max(10, zodMessage.string.max('postcode', 10)),
 });
 
 const FormComponent: React.FC<Props> = ({

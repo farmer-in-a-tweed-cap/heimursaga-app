@@ -6,10 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 import { apiClient } from '@/lib/api';
-import { redirect, sleep } from '@/lib/utils';
 
 import { ActionModalProps, MODALS } from '@/components';
 import { useModal } from '@/hooks';
+import { redirect, sleep } from '@/lib';
 import { ROUTER } from '@/router';
 
 import { SubscriptionPlanCard } from './subscription-plan-card';

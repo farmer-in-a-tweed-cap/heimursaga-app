@@ -67,12 +67,7 @@ export const UserPageSections: React.FC<Props> = ({
         />
       </div>
       <div className="mt-4 flex flex-col w-full max-w-2xl">
-        {sectionKey === SECTION_KEYS.HOME && (
-          <div className="flex flex-col gap-6">
-            <UserMemberships username={username} />
-            <UserPosts username={username} />
-          </div>
-        )}
+        {sectionKey === SECTION_KEYS.HOME && <UserPosts username={username} />}
         {sectionKey === SECTION_KEYS.FOLLOWERS && (
           <UserFollowersFeed username={username} />
         )}

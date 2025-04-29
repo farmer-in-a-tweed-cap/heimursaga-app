@@ -18,7 +18,6 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { apiClient } from '@/lib/api';
-import { fieldmsg } from '@/lib/utils';
 
 import {
   StripeCardCvcInput,
@@ -26,6 +25,7 @@ import {
   StripeCardNumberInput,
   StripeProvider,
 } from '@/components';
+import { zodMessage } from '@/lib';
 
 type Props = {
   children?: React.ReactNode;
@@ -57,12 +57,12 @@ type StripeFieldState = {
 const schema = z.object({
   name: z
     .string()
-    .nonempty(fieldmsg.required('name on card'))
-    .max(20, fieldmsg.max('name on card', 20)),
+    .nonempty(zodMessage.required('name on card'))
+    .max(20, zodMessage.string.max('name on card', 20)),
   postcode: z
     .string()
-    .nonempty(fieldmsg.required('postcode'))
-    .max(10, fieldmsg.max('postcode', 10)),
+    .nonempty(zodMessage.required('postcode'))
+    .max(10, zodMessage.string.max('postcode', 10)),
 });
 
 const PaymentMethodAddForm_: React.FC<Props> = ({

@@ -35,15 +35,7 @@ export const ROUTER = {
     CREATE: '/posts/create',
     EDIT: (id: string) => `/posts/${id}/edit`,
   },
-  CHECKOUT: {
-    MEMBERSHIP: ({
-      username,
-      membershipId,
-    }: {
-      username: string;
-      membershipId: string;
-    }) => `/checkout/${username}?mid=${membershipId}`,
-  },
+  SPONSOR: ({ username }: { username: string }) => `/sponsor/${username}`,
   MEMBERS: {
     MEMBER: (username: string) => `/${username}`,
   },

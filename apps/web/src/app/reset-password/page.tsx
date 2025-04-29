@@ -6,7 +6,7 @@ import { redirect } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 
 import { ChangePasswordForm, ResetPasswordForm } from '@/components';
-import { AuthLayout } from '@/layouts';
+import { LoginLayout } from '@/layouts';
 import { ROUTER } from '@/router';
 
 export const metadata: Metadata = {
@@ -33,7 +33,7 @@ export default async function Page({
   }
 
   return (
-    <AuthLayout>
+    <LoginLayout>
       <div className="flex min-h-screen w-full justify-center p-6 md:p-8">
         <div className="w-full max-w-md flex flex-col justify-start items-center gap-6">
           <div className="w-full max-w-[140px]">
@@ -50,6 +50,6 @@ export default async function Page({
           </div>
         </div>
       </div>
-    </AuthLayout>
+    </LoginLayout>
   );
 }

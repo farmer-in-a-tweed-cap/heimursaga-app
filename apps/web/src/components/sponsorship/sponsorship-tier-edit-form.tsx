@@ -13,28 +13,28 @@ import {
   Textarea,
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
-import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { membershipTierUpdateMutation } from '@/lib/api';
-import { fieldmsg } from '@/lib/utils';
+import { apiClient } from '@/lib/api';
+
+import { zodMessage } from '@/lib';
 
 const schema = z.object({
   price: z
     .number()
-    .min(5, fieldmsg.minNumber('price', 5))
-    .max(500, fieldmsg.maxNumber('price', 500)),
+    .min(5, zodMessage.number.min('price', 5))
+    .max(500, zodMessage.number.max('price', 500)),
   description: z
     .string()
-    .nonempty(fieldmsg.required('description'))
-    .min(2, fieldmsg.min('description', 5))
-    .max(10, fieldmsg.max('description', 100)),
+    .nonempty(zodMessage.required('description'))
+    .min(2, zodMessage.string.min('description', 5))
+    .max(10, zodMessage.string.max('description', 100)),
 });
 
 type Props = {
-  membershipTierId?: string;
+  sponsorshipTierId?: string;
   defaultValues?: {
     price: number;
     description: string;
@@ -49,7 +49,7 @@ export type SponsorshipTierEditFormSubmitHandler = (data?: {
 }) => void;
 
 export const SponsorshipTierEditForm: React.FC<Props> = ({
-  membershipTierId,
+  sponsorshipTierId,
   defaultValues,
   onSubmit,
   onCancel,
@@ -68,39 +68,44 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
         },
   });
 
-  const mutation = useMutation({
-    mutationFn: membershipTierUpdateMutation.mutationFn,
-    onSuccess: () => {
-      setLoading(false);
-      toast({ type: 'success', message: 'membership tier updated' });
-      if (onSubmit) {
-        onSubmit({
-          price: form.getValues('price'),
-          description: form.getValues('description'),
-        });
-      }
-    },
-    onError: (e) => {
-      setLoading(false);
-      toast({ type: 'error', message: 'membership tier not updated' });
-    },
-  });
-
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      if (!membershipTierId) return;
+      try {
+        if (!sponsorshipTierId) return;
 
-      setLoading(true);
+        setLoading(true);
 
-      const { price, description } = values;
+        const { price, description } = values;
 
-      mutation.mutate({
-        query: { id: membershipTierId },
-        payload: {
-          price,
-          description,
-        },
-      });
+        const sponsorshipTierUpdate = await apiClient.updateSponsorshipTierById(
+          {
+            query: { id: sponsorshipTierId },
+            payload: {
+              price,
+              description,
+            },
+          },
+        );
+
+        if (!sponsorshipTierUpdate.success) {
+          toast({ type: 'error', message: 'membership tier not updated' });
+          return;
+        }
+
+        toast({ type: 'success', message: 'membership tier updated' });
+
+        if (onSubmit) {
+          onSubmit({
+            price: form.getValues('price'),
+            description: form.getValues('description'),
+          });
+        }
+
+        setLoading(false);
+      } catch (e) {
+        toast({ type: 'error', message: 'membership tier not updated' });
+        setLoading(false);
+      }
     },
   );
 

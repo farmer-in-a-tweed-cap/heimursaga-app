@@ -3,7 +3,8 @@ import { cookies } from 'next/headers';
 import { apiClient } from '@/lib/api';
 
 import { PageHeaderTitle, PostFeed } from '@/components';
-import { AppLayout } from '@/layouts';
+
+import { AppLayout } from './layout';
 
 export default async function App() {
   const cookie = cookies().toString();
@@ -12,7 +13,7 @@ export default async function App() {
   const posts = postQuery.data ? postQuery.data.data : [];
 
   return (
-    <AppLayout>
+    <AppLayout secure={false}>
       <div className="w-full max-w-2xl flex flex-col gap-4">
         <PageHeaderTitle>Home</PageHeaderTitle>
         <div className="mt-4">

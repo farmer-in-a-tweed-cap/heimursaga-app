@@ -46,7 +46,7 @@ export default async function Page({ params }: Props) {
   } = postQuery.data || {};
 
   return (
-    <AppLayout>
+    <AppLayout secure={true}>
       {postQuery.success ? (
         <div className="w-full max-w-3xl">
           <PostCard

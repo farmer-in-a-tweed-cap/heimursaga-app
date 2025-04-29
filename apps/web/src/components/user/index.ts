@@ -21,3 +21,5 @@ export * from './user-map-banner';
 
 export * from './user-notifications';
 export * from './user-notification-card';
+export * from './user-avatar';
+export * from './user-bar';

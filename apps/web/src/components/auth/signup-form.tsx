@@ -15,41 +15,39 @@ import {
   FormMessage,
   Input,
 } from '@repo/ui/components';
-import { useToast } from '@repo/ui/hooks';
 import { cn } from '@repo/ui/lib/utils';
-import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { apiClient, signupMutation } from '@/lib/api';
-import { fieldmsg, redirect } from '@/lib/utils';
+import { apiClient } from '@/lib/api';
 
+import { redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
 const schema = z.object({
   name: z
     .string()
-    .nonempty(fieldmsg.required('name'))
-    .min(2, fieldmsg.min('name', 2))
-    .max(50, fieldmsg.max('name', 20)),
+    .nonempty(zodMessage.required('name'))
+    .min(2, zodMessage.string.min('name', 2))
+    .max(50, zodMessage.string.max('name', 20)),
   username: z
     .string()
-    .nonempty(fieldmsg.required('username'))
-    .min(2, fieldmsg.min('username', 2))
-    .max(50, fieldmsg.max('username', 20)),
+    .nonempty(zodMessage.required('username'))
+    .min(2, zodMessage.string.min('username', 2))
+    .max(50, zodMessage.string.max('username', 20)),
   email: z
     .string()
-    .email(fieldmsg.email())
-    .nonempty(fieldmsg.required('email'))
-    .min(2, fieldmsg.min('email', 2))
-    .max(50, fieldmsg.max('email', 30)),
+    .email(zodMessage.email())
+    .nonempty(zodMessage.required('email'))
+    .min(2, zodMessage.string.min('email', 2))
+    .max(50, zodMessage.string.max('email', 30)),
   password: z
     .string()
-    .nonempty(fieldmsg.required('password'))
-    .min(2, fieldmsg.min('password', 2))
-    .max(50, fieldmsg.max('password', 20)),
+    .nonempty(zodMessage.required('password'))
+    .min(2, zodMessage.string.min('password', 2))
+    .max(50, zodMessage.string.max('password', 20)),
 });
 
 export const SignupForm = () => {

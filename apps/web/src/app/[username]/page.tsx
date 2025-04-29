@@ -37,7 +37,7 @@ export const Page = async ({ params }: Props) => {
   ]);
 
   return (
-    <AppLayout>
+    <AppLayout secure={false}>
       {userQuery.success && userQuery.data ? (
         <UserProfilePage user={userQuery.data} section={section} />
       ) : (

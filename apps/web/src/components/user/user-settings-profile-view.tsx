@@ -23,31 +23,32 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { apiClient } from '@/lib/api';
-import { fieldmsg } from '@/lib/utils';
+
+import { zodMessage } from '@/lib';
 
 import { UserAvatarUploadPicker } from './user-avatar-upload-picker';
 
 const schema = z.object({
   name: z
     .string()
-    .nonempty(fieldmsg.required('name'))
-    .min(2, fieldmsg.min('name', 2))
-    .max(50, fieldmsg.max('name', 20)),
+    .nonempty(zodMessage.required('name'))
+    .min(2, zodMessage.string.min('name', 2))
+    .max(50, zodMessage.string.max('name', 20)),
   username: z
     .string()
-    .nonempty(fieldmsg.required('username'))
-    .min(4, fieldmsg.min('username', 4))
-    .max(20, fieldmsg.max('username', 20)),
+    .nonempty(zodMessage.required('username'))
+    .min(4, zodMessage.string.min('username', 4))
+    .max(20, zodMessage.string.max('username', 20)),
   email: z
     .string()
-    .email(fieldmsg.email())
-    .nonempty(fieldmsg.required('email'))
-    .max(50, fieldmsg.max('email', 50)),
+    .email(zodMessage.email())
+    .nonempty(zodMessage.required('email'))
+    .max(50, zodMessage.string.max('email', 50)),
   bio: z
     .string()
-    .nonempty(fieldmsg.required('bio'))
-    .min(0, fieldmsg.min('bio', 0))
-    .max(140, fieldmsg.max('bio', 140)),
+    .nonempty(zodMessage.required('bio'))
+    .min(0, zodMessage.string.min('bio', 0))
+    .max(140, zodMessage.string.max('bio', 140)),
 });
 
 type Props = {

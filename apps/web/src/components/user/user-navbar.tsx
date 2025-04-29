@@ -17,9 +17,9 @@ import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 
 import { apiClient } from '@/lib/api';
-import { redirect } from '@/lib/utils';
 
 import { useSession } from '@/hooks';
+import { redirect } from '@/lib';
 import { ROUTER } from '@/router';
 
 const getRoleLabel = (role: string) => {
