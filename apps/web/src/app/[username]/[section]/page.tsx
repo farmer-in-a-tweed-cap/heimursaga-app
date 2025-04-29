@@ -1,4 +1,7 @@
-import { generateMetadata as metadataGenerator, Page as page } from './../page';
+import {
+  generateMetadata as metadataGenerator,
+  Page as page,
+} from './../_page';
 
 export const generateMetadata = metadataGenerator;
 
