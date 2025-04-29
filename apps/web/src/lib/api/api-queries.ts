@@ -11,10 +11,10 @@ import {
   ISearchQueryPayload,
   ISearchQueryResponse,
   ISignupPayload,
+  ISponsorshipTierUpdatePayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserMapGetResponse,
-  IUserMembershipTierUpdatePayload,
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
@@ -370,14 +370,12 @@ export const getUserMapByUsername = createQuery<
 );
 
 export const membershipTierUpdateMutation = createMutation<
-  IApiClientQueryWithPayload<{ id: string }, IUserMembershipTierUpdatePayload>,
+  IApiClientQueryWithPayload<{ id: string }, ISponsorshipTierUpdatePayload>,
   void
 >((query) =>
-  apiClient
-    .updateUserSponsorshipTierById(query)
-    .then(({ success, message }) => {
-      if (!success) {
-        throw new Error(message);
-      }
-    }),
+  apiClient.updateSponsorshipTierById(query).then(({ success, message }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+  }),
 );
