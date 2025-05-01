@@ -1,7 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNumber } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 
-import { IStripeCreatePaymentIntentDto } from './stripe.interface';
+import {
+  IStripeAccountLinkPayload,
+  IStripeCreatePaymentIntentDto,
+} from './stripe.interface';
 
 export class StripeCreatePaymentIntentDto
   implements IStripeCreatePaymentIntentDto
@@ -9,4 +12,11 @@ export class StripeCreatePaymentIntentDto
   @ApiProperty({ required: true })
   @IsNumber()
   amount: number;
+}
+
+export class StripeAccountLinkDto implements IStripeAccountLinkPayload {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  accountId: string;
 }
