@@ -422,3 +422,8 @@ export interface IPayoutMethodGetAllByUsernameResponse {
 export interface IPayoutMethodPlatformLinkGetResponse {
   url: string;
 }
+
+export interface IPayoutMethodCreatePayload {
+  country: string;
+  platform: string;
+}

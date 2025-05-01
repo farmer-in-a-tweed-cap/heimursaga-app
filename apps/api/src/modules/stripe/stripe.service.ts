@@ -232,10 +232,12 @@ export class StripeService {
     }
   }
 
-  async createAccount(): Promise<IStripeAccountCreateResponse> {
+  async createAccount({
+    country,
+  }: {
+    country: string;
+  }): Promise<IStripeAccountCreateResponse> {
     try {
-      const country = 'SG';
-
       // create a stripe account
       const account = await this.stripe.accounts.create({
         controller: {

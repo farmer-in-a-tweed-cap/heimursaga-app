@@ -1,10 +1,19 @@
-import { Controller, Get, HttpCode, HttpStatus, Param } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
+import { PayoutMethodCreateDto } from './payout.dto';
 import { PayoutService } from './payout.service';
 
 @ApiTags('payout-methods')
@@ -29,6 +38,19 @@ export class PayoutMethodController {
   ) {
     return await this.payoutService.getPayoutMethodPlatformLink({
       query: { publicId: param.id },
+      session,
+    });
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  async createPayoutMethod(
+    @Session() session: ISession,
+    @Body() body: PayoutMethodCreateDto,
+  ) {
+    return await this.payoutService.createPayoutMethod({
+      query: {},
+      payload: body,
       session,
     });
   }

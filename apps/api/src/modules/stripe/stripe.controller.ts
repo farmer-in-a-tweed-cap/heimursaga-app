@@ -58,7 +58,7 @@ export class StripeController {
 
   @Post('account')
   async createAccount(@Session() session: ISession) {
-    return this.stripeService.createAccount();
+    return this.stripeService.createAccount({ country: 'SG' });
   }
 
   @Post('account-link')
