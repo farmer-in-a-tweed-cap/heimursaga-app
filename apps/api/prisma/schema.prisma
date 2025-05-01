@@ -43,6 +43,8 @@ model User {
   uploads               Upload[]
   subscriptions         UserSubscription[]
   payment_methods       PaymentMethod[]
+  payout_methods        PayoutMethod[]
+  payouts               Payout[]
   sponsorship_tiers     SponsorshipTier[]
   notifications         UserNotification[] @relation("user_notifications")
   notification_mentions UserNotification[] @relation("user_notification_mentions")
@@ -273,6 +275,43 @@ model PaymentMethod {
   deleted_at               DateTime?
 
   @@map("payment_methods")
+}
+
+model PayoutMethod {
+  id                Int       @id @default(autoincrement())
+  public_id         String    @unique @db.VarChar(14)
+  platform          String
+  is_verified       Boolean   @default(false)
+  business_type     String?
+  business_name     String?
+  email             String?   @db.VarChar(50)
+  phone_number      String?   @db.VarChar(20)
+  stripe_account_id String?
+  user              User?     @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user_id           Int?
+  created_at        DateTime? @default(now())
+  updated_at        DateTime? @updatedAt
+  deleted_at        DateTime?
+  Payout            Payout[]
+
+  @@map("payout_methods")
+}
+
+model Payout {
+  id               Int          @id @default(autoincrement())
+  public_id        String       @unique @db.VarChar(14)
+  status           String?      @default("pending") @db.VarChar(20)
+  amount           Int
+  payout_method    PayoutMethod @relation(fields: [payout_method_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  payout_method_id Int
+  user             User         @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
+  user_id          Int
+  confirmed_at     DateTime?    @default(now())
+  created_at       DateTime?    @default(now())
+  updated_at       DateTime?    @updatedAt
+  deleted_at       DateTime?
+
+  @@map("payouts")
 }
 
 model UserNotification {

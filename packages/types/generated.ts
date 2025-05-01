@@ -401,3 +401,24 @@ export interface ISponsorshipTierUpdatePayload {
   description?: string;
   isAvailable?: boolean;
 }
+
+// payout
+export interface IPayoutMethodBaseDetail {
+  id: string;
+  platform: string;
+  isVerified: boolean;
+  businessName: string;
+  businessType: string;
+  phoneNumber?: string;
+  email: string;
+  stripeAccountId?: string;
+}
+
+export interface IPayoutMethodGetAllByUsernameResponse {
+  data: IPayoutMethodBaseDetail[];
+  results: number;
+}
+
+export interface IPayoutMethodPlatformLinkGetResponse {
+  url: string;
+}

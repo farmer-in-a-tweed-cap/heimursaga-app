@@ -33,3 +33,8 @@ export enum UserNotificationContext {
   MEMBERSHIP = 'membership',
   DONATION = 'donation',
 }
+
+export enum PayoutMethodPlatform {
+  STRIPE = 'stripe',
+  PAYPAL = 'paypal',
+}

@@ -7,6 +7,7 @@ import { EventModule } from '@/modules/event';
 import { LoggerModule } from '@/modules/logger';
 import { NotificationModule } from '@/modules/notification';
 import { PaymentModule } from '@/modules/payment';
+import { PayoutModule } from '@/modules/payout';
 import { PostModule } from '@/modules/post';
 import { PrismaModule } from '@/modules/prisma';
 import { SearchModule } from '@/modules/search';
@@ -35,6 +36,7 @@ import { AppService } from './app.service';
     UserModule,
     SearchModule,
     PaymentModule,
+    PayoutModule,
     NotificationModule,
   ],
   controllers: [AppController],
