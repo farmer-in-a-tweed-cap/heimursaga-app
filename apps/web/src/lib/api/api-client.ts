@@ -5,6 +5,8 @@ import {
   IPaymentMethodCreatePayload,
   IPaymentMethodGetAllResponse,
   IPaymentMethodGetByIdResponse,
+  IPayoutMethodGetAllByUsernameResponse,
+  IPayoutMethodPlatformLinkGetResponse,
   IPostCreatePayload,
   IPostCreateResponse,
   IPostDetail,
@@ -410,4 +412,24 @@ export const apiClient = {
       body: JSON.stringify({}),
       ...config,
     }),
+  // payout methods
+  getUserPayoutMethods: async (config?: RequestConfig) =>
+    api.request<IPayoutMethodGetAllByUsernameResponse>(
+      API_ROUTER.PAYOUT_METHODS.GET_ALL,
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
+  getPayoutMethodPlatformLink: async (
+    { query }: IApiClientQuery<{ id: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<IPayoutMethodPlatformLinkGetResponse>(
+      API_ROUTER.PAYOUT_METHODS.PLATFORM_LINK.GET(query.id),
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
 };

@@ -61,6 +61,15 @@ export const API_ROUTER = {
     CREATE: 'payment-methods',
     DELETE: (id: string) => `payment-methods/${id}`,
   },
+  PAYOUT_METHODS: {
+    GET_ALL: 'payout-methods',
+    GET_BY_ID: (id: string) => `payout-methods/${id}`,
+    CREATE: 'payout-methods',
+    DELETE: (id: string) => `payout-methods/${id}`,
+    PLATFORM_LINK: {
+      GET: (id: string) => `payout-methods/${id}/platform-link`,
+    },
+  },
   STRIPE: {
     CREATE_SETUP_INTENT: 'stripe/create-setup-intent',
     CREATE_PAYMENT_INTENT: 'stripe/create-payment-intent',

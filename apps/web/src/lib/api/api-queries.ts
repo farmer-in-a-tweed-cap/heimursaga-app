@@ -47,6 +47,7 @@ export const QUERY_KEYS = {
     MAP: 'user_map',
   },
   MEMBERSHIPS: 'memberships',
+  PAYOUT_METHODS: 'payout_methods',
 };
 
 const createQuery = <T = undefined, R = any>(
