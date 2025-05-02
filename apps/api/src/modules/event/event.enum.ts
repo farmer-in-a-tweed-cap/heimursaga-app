@@ -12,6 +12,6 @@ export const EVENTS = {
     },
   },
   SPONSORSHIP: {
-    COMPLETE: 'sponsorship.complete',
+    CHECKOUT_COMPLETE: 'sponsorship.checkout.complete',
   },
 };

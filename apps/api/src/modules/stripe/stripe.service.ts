@@ -16,6 +16,7 @@ import { config } from '@/config';
 import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
+import { IOnSponsorCheckoutCompleteEvent } from '@/modules/sponsor';
 
 import {
   IStripeAccountCreateResponse,
@@ -183,6 +184,7 @@ export class StripeService {
       ] as PaymentTransactionType;
 
       const userId = metadata?.[StripeMetadataKey.USER_ID];
+      const creatorId = metadata?.[StripeMetadataKey.CREATOR_ID];
       const subscriptionPlanId =
         metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID];
       const checkoutId = metadata?.[StripeMetadataKey.CHECKOUT_ID];
@@ -194,6 +196,16 @@ export class StripeService {
             data: {
               userId: parseInt(userId),
               subscriptionPlanId: parseInt(subscriptionPlanId),
+              checkoutId: parseInt(checkoutId),
+            },
+          });
+          break;
+        case PaymentTransactionType.SPONSORSHIP:
+          await this.eventService.trigger<IOnSponsorCheckoutCompleteEvent>({
+            event: EVENTS.SPONSORSHIP.CHECKOUT_COMPLETE,
+            data: {
+              userId: parseInt(userId),
+              creatorId: parseInt(creatorId),
               checkoutId: parseInt(checkoutId),
             },
           });

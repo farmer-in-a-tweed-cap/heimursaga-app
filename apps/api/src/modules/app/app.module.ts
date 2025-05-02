@@ -11,6 +11,7 @@ import { PayoutModule } from '@/modules/payout';
 import { PostModule } from '@/modules/post';
 import { PrismaModule } from '@/modules/prisma';
 import { SearchModule } from '@/modules/search';
+import { SponsorModule } from '@/modules/sponsor';
 import { StripeModule } from '@/modules/stripe';
 import { UploadModule } from '@/modules/upload';
 import { UserModule } from '@/modules/user';
@@ -36,6 +37,7 @@ import { AppService } from './app.service';
     UserModule,
     SearchModule,
     PaymentModule,
+    SponsorModule,
     PayoutModule,
     NotificationModule,
   ],

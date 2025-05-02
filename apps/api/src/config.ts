@@ -5,6 +5,7 @@ export const config = {
   verification_request_limit: 5,
   stripe: {
     default_currency: 'usd',
+    application_fee: 100,
   },
   premium: {
     currency: 'usd',

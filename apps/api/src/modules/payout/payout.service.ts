@@ -8,6 +8,8 @@ import {
   PayoutMethodPlatform,
 } from '@repo/types';
 
+import { integerToDecimal } from '@/lib/formatter';
+
 import {
   ServiceBadRequestException,
   ServiceException,
@@ -285,8 +287,12 @@ export class PayoutService {
 
       const response: IPayoutBalanceGetResponse = {
         available: {
-          amount: stripeBalance.available[0].amount,
+          amount: integerToDecimal(stripeBalance.available[0].amount),
           currency: stripeBalance.available[0].currency,
+        },
+        pending: {
+          amount: integerToDecimal(stripeBalance.pending[0].amount),
+          currency: stripeBalance.pending[0].currency,
         },
       };
 

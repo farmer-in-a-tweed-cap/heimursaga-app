@@ -429,8 +429,26 @@ export interface IPayoutMethodCreatePayload {
 }
 
 export interface IPayoutBalanceGetResponse {
+  pending: {
+    amount: number;
+    currency: string;
+  };
   available: {
     amount: number;
     currency: string;
   };
+}
+
+// sponsor
+export interface ISponsorCheckoutPayload {
+  creatorId: string;
+  sponsorshipType: string;
+  paymentMethodId: string;
+  sponsorshipTierId?: string;
+  oneTimePaymentAmount?: number;
+}
+
+export interface ISponsorCheckoutResponse {
+  paymentMethodId: string;
+  clientSecret: string;
 }

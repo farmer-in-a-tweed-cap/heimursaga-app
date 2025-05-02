@@ -4,7 +4,6 @@ import {
   ICheckoutPayload,
   IPaymentMethodCreatePayload,
   ISubscriptionPlanUpgradeCheckoutPayload,
-  ISubscriptionPlanUpgradeCompletePayload,
   PlanExpiryPeriod,
 } from '@repo/types';
 import { IsEnum, IsNotEmpty, IsString } from 'class-validator';

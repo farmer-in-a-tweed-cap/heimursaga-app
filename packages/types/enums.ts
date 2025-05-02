@@ -38,3 +38,8 @@ export enum PayoutMethodPlatform {
   STRIPE = 'stripe',
   PAYPAL = 'paypal',
 }
+
+export enum SponsorshipType {
+  ONE_TIME_PAYMENT = 'one_time_payment',
+  SUBSCRIPTION = 'subscription',
+}

@@ -20,6 +20,7 @@ export enum PaymentTransactionType {
 
 export enum StripeMetadataKey {
   USER_ID = 'user_id',
+  CREATOR_ID = 'creator_id',
   TRANSACTION = 'transaction',
   CHECKOUT_ID = 'checkout_id',
   SUBSCRIPTION_ID = 'subscription_id',
