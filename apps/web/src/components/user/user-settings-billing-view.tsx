@@ -1,5 +1,6 @@
 'use client';
 
+import { TabNavbar } from '../nav';
 import {
   Badge,
   Button,
@@ -19,6 +20,11 @@ import { QUERY_KEYS, apiClient } from '@/lib/api';
 import { useModal, useSession } from '@/hooks';
 import { redirect } from '@/lib';
 
+const TABS = {
+  TIERS: 'Tiers',
+  SPONSORS: 'Sponsors',
+};
+
 export const UserSettingsBillingView = () => {
   const router = useRouter();
   const session = useSession();
@@ -26,6 +32,7 @@ export const UserSettingsBillingView = () => {
   const toast = useToast();
 
   const [loading, setLoading] = useState({ button: false });
+  const [tab, setTab] = useState<string>(TABS.TIERS);
 
   const payoutMethodQuery = useQuery({
     queryKey: [QUERY_KEYS.PAYOUT_METHODS],
@@ -40,6 +47,11 @@ export const UserSettingsBillingView = () => {
     enabled: !!session?.username,
     retry: 0,
   });
+
+  const tabs: { key: string; label: string }[] = [
+    { key: TABS.TIERS, label: 'Tiers' },
+    { key: TABS.SPONSORS, label: 'Sponsors' },
+  ];
 
   const payoutBalance = payoutBalanceQuery?.data;
   const payoutMethod = payoutMethodQuery?.data?.data?.[0];
@@ -79,6 +91,16 @@ export const UserSettingsBillingView = () => {
     }
   };
 
+  const handleTabChange = (tab: string) => {
+    setTab(tab);
+
+    // if (username) {
+    //   router.push([ROUTER.MEMBERS.MEMBER(username), section].join('/'), {
+    //     scroll: false,
+    //   });
+    // }
+  };
+
   // // cache modals
   // useEffect(() => {
   //   modal.preload([MODALS.PAYMENT_METHOD_ADD, MODALS.PAYMENT_METHOD_DELETE]);
@@ -86,6 +108,17 @@ export const UserSettingsBillingView = () => {
 
   return (
     <div className="flex flex-col">
+      <div className="w-full flex flex-row">
+        <TabNavbar
+          tabs={tabs}
+          activeTab={tab}
+          classNames={{
+            container: 'w-full',
+            tabs: 'max-w-2xl',
+          }}
+          onChange={handleTabChange}
+        />
+      </div>
       {JSON.stringify({ b: payoutBalance })}
       {payoutMethodQuery.isLoading ? (
         <LoadingSpinner />

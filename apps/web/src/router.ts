@@ -14,8 +14,8 @@ export const ROUTER = {
   BOOKMARKS: {
     HOME: '/bookmarks',
   },
-  SPONSORSHIPS: {
-    HOME: '/sponsorships',
+  SPONSORSHIP: {
+    HOME: '/sponsorship',
   },
   AUDIENCE: '/audience',
   PREMIUM: '/premium',

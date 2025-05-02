@@ -101,6 +101,7 @@ export const SponsorshipCheckoutForm: React.FC<Props> = ({
   const { sponsorshipType, paymentMethodId, paymentMethodType } = state;
 
   const oneTimePaymentAmount = form.watch('oneTimePaymentAmount') || 0;
+  const sponsorshipEnabled = !!sponsorship;
   const sponsorshipMonthlyAmount = sponsorship?.price || 0;
   const currencySymbol = '$';
 
@@ -157,7 +158,14 @@ export const SponsorshipCheckoutForm: React.FC<Props> = ({
                 <ChipGroup
                   className="w-full grid grid-cols-2"
                   value={sponsorshipType}
-                  items={DATA.SPONSORSHIP_OPTIONS}
+                  items={
+                    sponsorshipEnabled
+                      ? DATA.SPONSORSHIP_OPTIONS
+                      : [
+                          DATA.SPONSORSHIP_OPTIONS[0],
+                          { ...DATA.SPONSORSHIP_OPTIONS[1], disabled: true },
+                        ]
+                  }
                   onSelect={handleSponsorshipTypeSelect}
                 />
                 <div className="mt-6">
@@ -249,7 +257,7 @@ export const SponsorshipCheckoutForm: React.FC<Props> = ({
               <div>
                 <span className="font-medium text-base">
                   {sponsorshipType === SPONSORSHIP_TYPES.MONTHLY
-                    ? `You’ll pay ${currencySymbol}${sponsorshipMonthlyAmount} monthly on the ${dateformat().format('DD')}th.`
+                    ? `You’ll pay ${currencySymbol}${sponsorshipMonthlyAmount} monthly on the ${dateformat().format('D')}th.`
                     : `You'll pay ${currencySymbol}${oneTimePaymentAmount}`}
                 </span>
               </div>

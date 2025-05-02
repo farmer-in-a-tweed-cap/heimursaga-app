@@ -52,7 +52,7 @@ const SIDEBAR_LINKS: {
   CREATOR: [
     { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
     { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
-    { href: ROUTER.SPONSORSHIPS.HOME, label: 'Sponsors', icon: CoinsIcon },
+    { href: ROUTER.SPONSORSHIP.HOME, label: 'Sponsorship', icon: CoinsIcon },
     { href: ROUTER.PAYOUTS.HOME, label: 'Payouts', icon: BanknoteIcon },
     { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
     { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },

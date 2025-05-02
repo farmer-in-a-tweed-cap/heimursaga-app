@@ -23,13 +23,16 @@ export default async function Page({ params }: Props) {
   const { username } = params;
   const cookie = cookies().toString();
 
-  const [sponsorshipTierQuery, paymentMethodQuery] = await Promise.all([
-    apiClient.getSponsorshipTiersByUsername({ username }, { cookie }),
-    apiClient.getUserPaymentMethods({ cookie }),
-  ]);
+  const [sponsorshipTierQuery, paymentMethodQuery, creatorQuery] =
+    await Promise.all([
+      apiClient.getSponsorshipTiersByUsername({ username }, { cookie }),
+      apiClient.getUserPaymentMethods({ cookie }),
+      apiClient.getUserByUsername({ username }, { cookie }),
+    ]);
 
   const sponsorship = sponsorshipTierQuery.data?.data?.[0];
   const paymentMethods = paymentMethodQuery.data?.data;
+  const creator = creatorQuery.data;
 
   return (
     <CheckoutLayout>
@@ -46,9 +49,7 @@ export default async function Page({ params }: Props) {
           </div>
         </div>
         <div className="basis-5/12">
-          {sponsorship?.creator && (
-            <SponsorCheckoutSummary user={sponsorship.creator} />
-          )}
+          {creator && <SponsorCheckoutSummary user={creator} />}
         </div>
       </div>
     </CheckoutLayout>
