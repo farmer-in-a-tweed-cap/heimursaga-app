@@ -5,6 +5,7 @@ type ChipItem = {
   label?: string;
   icon?: () => JSX.Element;
   selected?: boolean;
+  disabled?: boolean;
 };
 
 type ChipProps = ChipItem & {
@@ -20,6 +21,7 @@ export const Chip: React.FC<ChipProps> = ({
   icon: Icon,
   className,
   selected = false,
+  disabled = false,
   onClick,
 }) => {
   const handleClick = () => {
@@ -31,11 +33,12 @@ export const Chip: React.FC<ChipProps> = ({
   return (
     <div
       className={cn(
-        'transition-all w-auto min-w-[100px] py-3 px-4 bg-transparent border-2 border-solid rounded-lg cursor-pointer text-sm font-medium',
-        selected ? 'border-black text-black' : 'border-gray-200 text-gray-600',
+        'transition-all w-auto min-w-[100px] py-3 px-4 bg-transparent border-2 border-solid rounded-lg text-sm font-medium',
         className,
+        selected ? 'border-black text-black' : 'border-gray-200 text-gray-600',
+        disabled ? 'cursor-not-allowed' : 'cursor-pointer',
       )}
-      onClick={handleClick}
+      onClick={disabled ? () => {} : handleClick}
     >
       <div className="flex flex-row items-center gap-3">
         {Icon ? <Icon /> : <></>}
@@ -73,7 +76,7 @@ export const ChipGroup: React.FC<ChipGroupProps> = ({
         <Chip
           key={key}
           {...chip}
-          className={cn(disabled ? 'cursor-default' : 'cursor-pointer')}
+          className={cn(disabled ? 'cursor-not-allowed' : 'cursor-pointer')}
           selected={value === chip.value}
           onClick={disabled ? () => {} : () => handleSelect(chip.value)}
         />
