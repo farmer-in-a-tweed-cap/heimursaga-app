@@ -985,7 +985,7 @@ export class SessionUserService {
         response.results = results;
         response.data = data.map(
           ({ price, description, public_id: id, is_available }) => ({
-            price: integerToDecimal(price),
+            price,
             description,
             id,
             isAvailable: is_available,
@@ -1022,10 +1022,9 @@ export class SessionUserService {
         );
       }
 
-      response.data = response.data.map(({ price, isAvailable, ...data }) => ({
+      response.data = response.data.map(({ price, ...data }) => ({
         ...data,
         price: integerToDecimal(price),
-        isAvailable,
       }));
 
       return response;

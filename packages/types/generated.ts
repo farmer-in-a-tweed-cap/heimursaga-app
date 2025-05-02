@@ -427,3 +427,10 @@ export interface IPayoutMethodCreatePayload {
   country: string;
   platform: string;
 }
+
+export interface IPayoutBalanceGetResponse {
+  available: {
+    amount: number;
+    currency: string;
+  };
+}

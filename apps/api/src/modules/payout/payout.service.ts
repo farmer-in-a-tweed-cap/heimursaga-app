@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  IPayoutBalanceGetResponse,
   IPayoutMethodCreatePayload,
   IPayoutMethodGetAllByUsernameResponse,
   IPayoutMethodPlatformLinkGetResponse,
@@ -15,6 +16,7 @@ import {
 } from '@/common/exceptions';
 import {
   IQueryWithSession,
+  ISessionQuery,
   ISessionQueryWithPayload,
 } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
@@ -247,6 +249,48 @@ export class PayoutService {
       } else {
         throw new ServiceBadRequestException('payout method not created');
       }
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('payout methods not found');
+      throw exception;
+    }
+  }
+
+  async getUserPayoutBalance({
+    session,
+  }: ISessionQuery): Promise<IPayoutBalanceGetResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      // get a payout method
+      const payoutMethod = await this.prisma.payoutMethod.findFirst({
+        where: {
+          user_id: userId,
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+          stripe_account_id: true,
+        },
+      });
+
+      // get a stripe available balance
+      const stripeBalance = await this.stripeService.stripe.balance.retrieve({
+        stripeAccount: payoutMethod.stripe_account_id,
+      });
+
+      const response: IPayoutBalanceGetResponse = {
+        available: {
+          amount: stripeBalance.available[0].amount,
+          currency: stripeBalance.available[0].currency,
+        },
+      };
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status

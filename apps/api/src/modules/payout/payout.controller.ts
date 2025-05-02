@@ -55,3 +55,18 @@ export class PayoutMethodController {
     });
   }
 }
+
+@ApiTags('payout-balance')
+@Controller('payout-balance')
+export class PayoutBalanceController {
+  constructor(private payoutService: PayoutService) {}
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getUserPayoutBalance(@Session() session: ISession) {
+    return await this.payoutService.getUserPayoutBalance({
+      query: {},
+      session,
+    });
+  }
+}

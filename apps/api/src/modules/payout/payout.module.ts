@@ -4,12 +4,15 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '@/modules/prisma';
 import { StripeModule } from '@/modules/stripe';
 
-import { PayoutMethodController } from './payout.controller';
+import {
+  PayoutBalanceController,
+  PayoutMethodController,
+} from './payout.controller';
 import { PayoutService } from './payout.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule, StripeModule],
-  controllers: [PayoutMethodController],
+  controllers: [PayoutMethodController, PayoutBalanceController],
   providers: [PayoutService],
   exports: [PayoutService],
 })
