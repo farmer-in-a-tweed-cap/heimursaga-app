@@ -62,25 +62,38 @@ export class PayoutService {
         orderBy: [{ id: 'desc' }],
       });
 
+      const payoutMethod = data.slice(0, 1)[0];
+      const stripeAccountId = payoutMethod.stripe_account_id;
+
+      // retrieve a stripe account
+      const stripeAccount =
+        await this.stripeService.stripe.accounts.retrieve(stripeAccountId);
+      const email =
+        stripeAccount.business_type === 'individual'
+          ? stripeAccount.individual?.email
+          : stripeAccount?.email;
+      const phoneNumber =
+        stripeAccount.business_type === 'individual'
+          ? stripeAccount.individual?.phone
+          : stripeAccount.company?.phone;
+
       const response: IPayoutMethodGetAllByUsernameResponse = {
         results,
-        data: data.map(
+        data: [payoutMethod].map(
           ({
             public_id,
             stripe_account_id,
             business_name,
             business_type,
-            email,
             platform,
-            phone_number,
             is_verified,
           }) => ({
             id: public_id,
             businessName: business_name,
             businessType: business_type,
             email,
+            phoneNumber,
             platform,
-            phoneNumber: phone_number,
             isVerified: is_verified,
             stripeAccountId: stripe_account_id,
           }),
