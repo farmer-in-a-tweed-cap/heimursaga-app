@@ -70,6 +70,9 @@ export const API_ROUTER = {
       GET: (id: string) => `payout-methods/${id}/platform-link`,
     },
   },
+  PAYOUT_BALANCE: {
+    GET: 'payout-balance',
+  },
   STRIPE: {
     CREATE_SETUP_INTENT: 'stripe/create-setup-intent',
     CREATE_PAYMENT_INTENT: 'stripe/create-payment-intent',

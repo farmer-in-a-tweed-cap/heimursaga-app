@@ -5,6 +5,8 @@ import {
   IPaymentMethodCreatePayload,
   IPaymentMethodGetAllResponse,
   IPaymentMethodGetByIdResponse,
+  IPayoutBalanceGetResponse,
+  IPayoutMethodCreatePayload,
   IPayoutMethodGetAllByUsernameResponse,
   IPayoutMethodPlatformLinkGetResponse,
   IPostCreatePayload,
@@ -432,4 +434,19 @@ export const apiClient = {
         ...config,
       },
     ),
+  createPayoutMethod: async (
+    { payload }: IApiClientQueryWithPayload<IPayoutMethodCreatePayload, void>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.PAYOUT_METHODS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
+  // payout balance
+  getUserPayoutBalance: async (config?: RequestConfig) =>
+    api.request<IPayoutBalanceGetResponse>(API_ROUTER.PAYOUT_BALANCE.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
 };

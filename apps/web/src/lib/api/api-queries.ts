@@ -48,6 +48,7 @@ export const QUERY_KEYS = {
   },
   MEMBERSHIPS: 'memberships',
   PAYOUT_METHODS: 'payout_methods',
+  PAYOUT_BALANCE: 'payout_balance',
 };
 
 const createQuery = <T = undefined, R = any>(

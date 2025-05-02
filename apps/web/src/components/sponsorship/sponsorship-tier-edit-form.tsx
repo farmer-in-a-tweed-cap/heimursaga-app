@@ -77,6 +77,7 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
 
         const { price, description } = values;
 
+        // update the sponsorship tier
         const sponsorshipTierUpdate = await apiClient.updateSponsorshipTierById(
           {
             query: { id: sponsorshipTierId },

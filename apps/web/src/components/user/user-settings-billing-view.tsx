@@ -34,6 +34,14 @@ export const UserSettingsBillingView = () => {
     retry: 0,
   });
 
+  const payoutBalanceQuery = useQuery({
+    queryKey: [QUERY_KEYS.PAYOUT_BALANCE],
+    queryFn: () => apiClient.getUserPayoutBalance().then(({ data }) => data),
+    enabled: !!session?.username,
+    retry: 0,
+  });
+
+  const payoutBalance = payoutBalanceQuery?.data;
   const payoutMethod = payoutMethodQuery?.data?.data?.[0];
 
   const handlePayoutMethodConnect = () => {};
@@ -78,6 +86,7 @@ export const UserSettingsBillingView = () => {
 
   return (
     <div className="flex flex-col">
+      {JSON.stringify({ b: payoutBalance })}
       {payoutMethodQuery.isLoading ? (
         <LoadingSpinner />
       ) : (

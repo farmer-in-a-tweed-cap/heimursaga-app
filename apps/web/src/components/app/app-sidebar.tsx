@@ -4,6 +4,7 @@ import { UserRole } from '@repo/types';
 import { Button } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import {
+  BanknoteIcon,
   BellIcon,
   BookmarkIcon,
   CogIcon,
@@ -51,7 +52,8 @@ const SIDEBAR_LINKS: {
   CREATOR: [
     { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
     { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
-    { href: ROUTER.SPONSORSHIPS.HOME, label: 'Sponsorships', icon: CoinsIcon },
+    { href: ROUTER.SPONSORSHIPS.HOME, label: 'Sponsors', icon: CoinsIcon },
+    { href: ROUTER.PAYOUTS.HOME, label: 'Payouts', icon: BanknoteIcon },
     { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
     { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
     { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
