@@ -3,12 +3,14 @@ import { Prisma } from '@prisma/client';
 import {
   IPayoutBalanceGetResponse,
   IPayoutMethodCreatePayload,
+  IPayoutMethodCreateResponse,
   IPayoutMethodGetAllByUsernameResponse,
   IPayoutMethodPlatformLinkGetResponse,
   PayoutMethodPlatform,
 } from '@repo/types';
 
 import { integerToDecimal } from '@/lib/formatter';
+import { generator } from '@/lib/generator';
 
 import {
   ServiceBadRequestException,
@@ -66,42 +68,49 @@ export class PayoutService {
         orderBy: [{ id: 'desc' }],
       });
 
-      const payoutMethod = data.slice(0, 1)[0];
-      const stripeAccountId = payoutMethod.stripe_account_id;
+      const payoutMethod = data?.[0];
+      const stripeAccountId = payoutMethod?.stripe_account_id;
+
+      let email = '';
+      let phoneNumber = '';
 
       // retrieve a stripe account
-      const stripeAccount =
-        await this.stripeService.stripe.accounts.retrieve(stripeAccountId);
-      const email =
-        stripeAccount.business_type === 'individual'
-          ? stripeAccount.individual?.email
-          : stripeAccount?.email;
-      const phoneNumber =
-        stripeAccount.business_type === 'individual'
-          ? stripeAccount.individual?.phone
-          : stripeAccount.company?.phone;
+      if (stripeAccountId) {
+        const stripeAccount =
+          await this.stripeService.stripe.accounts.retrieve(stripeAccountId);
+        email =
+          stripeAccount.business_type === 'individual'
+            ? stripeAccount.individual?.email
+            : stripeAccount?.email;
+        phoneNumber =
+          stripeAccount.business_type === 'individual'
+            ? stripeAccount.individual?.phone
+            : stripeAccount.company?.phone;
+      }
 
       const response: IPayoutMethodGetAllByUsernameResponse = {
         results,
-        data: [payoutMethod].map(
-          ({
-            public_id,
-            stripe_account_id,
-            business_name,
-            business_type,
-            platform,
-            is_verified,
-          }) => ({
-            id: public_id,
-            businessName: business_name,
-            businessType: business_type,
-            email,
-            phoneNumber,
-            platform,
-            isVerified: is_verified,
-            stripeAccountId: stripe_account_id,
-          }),
-        ),
+        data: payoutMethod
+          ? [payoutMethod].map(
+              ({
+                public_id,
+                stripe_account_id,
+                business_name,
+                business_type,
+                platform,
+                is_verified,
+              }) => ({
+                id: public_id,
+                businessName: business_name,
+                businessType: business_type,
+                email,
+                phoneNumber,
+                platform,
+                isVerified: is_verified,
+                stripeAccountId: stripe_account_id,
+              }),
+            )
+          : [],
       };
 
       return response;
@@ -119,9 +128,10 @@ export class PayoutService {
     session,
   }: IQueryWithSession<{
     publicId: string;
+    mode: 'account_onboarding' | 'account_update';
   }>): Promise<IPayoutMethodPlatformLinkGetResponse> {
     try {
-      const { publicId } = query;
+      const { publicId, mode } = query;
       const { userId } = session;
 
       if (!publicId || !userId) throw new ServiceForbiddenException();
@@ -160,7 +170,7 @@ export class PayoutService {
                 account: payoutMethod.stripe_account_id,
                 return_url: returnUrl,
                 refresh_url: returnUrl,
-                type: 'account_update',
+                type: mode,
               })
               .then(({ url }) => url);
           } else {
@@ -198,7 +208,7 @@ export class PayoutService {
   }: ISessionQueryWithPayload<
     {},
     IPayoutMethodCreatePayload
-  >): Promise<IPayoutMethodPlatformLinkGetResponse> {
+  >): Promise<IPayoutMethodCreateResponse> {
     try {
       const { userId } = session;
       const { platform, country } = payload;
@@ -212,28 +222,39 @@ export class PayoutService {
       if (platform === PayoutMethodPlatform.STRIPE) {
         // check if the user already has a payout method
         const payoutMethod = await this.prisma.payoutMethod.findFirst({
-          where: {
-            user_id: userId,
-          },
+          where: { user_id: userId },
           select: {
             id: true,
+            public_id: true,
             stripe_account_id: true,
           },
         });
 
-        if (payoutMethod.stripe_account_id) {
+        if (payoutMethod) {
           throw new ServiceBadRequestException(
             'user already has a payout method',
           );
         } else {
           // create a stripe account
           const stripeAccount = await this.stripeService
-            .createAccount({
-              country: 'SG',
-            })
+            .createAccount({ country })
             .catch(() => {
               throw new ServiceForbiddenException('payout method not created');
             });
+
+          // create a payout method
+          const payoutMethod = await this.prisma.payoutMethod.create({
+            data: {
+              public_id: generator.publicId(),
+              is_verified: false,
+              platform,
+              stripe_account_id: stripeAccount.accountId,
+              user_id: userId,
+            },
+            select: {
+              public_id: true,
+            },
+          });
 
           // get a stripe onboarding url
           const stripeAccountLink = await this.stripeService
@@ -242,8 +263,11 @@ export class PayoutService {
               throw new ServiceForbiddenException('payout method not created');
             });
 
-          const response: IPayoutMethodPlatformLinkGetResponse = {
-            url: stripeAccountLink.url,
+          const response: IPayoutMethodCreateResponse = {
+            payoutMethodId: payoutMethod.public_id,
+            platform: {
+              onboardingUrl: stripeAccountLink.url,
+            },
           };
 
           return response;
@@ -255,7 +279,7 @@ export class PayoutService {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payout methods not found');
+        : new ServiceForbiddenException('payout method not created');
       throw exception;
     }
   }

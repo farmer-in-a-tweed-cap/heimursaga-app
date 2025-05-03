@@ -1,4 +1,11 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Session } from '@/common/decorators';
@@ -21,6 +28,21 @@ export class SponsorController {
     return await this.sponsorService.checkout({
       query: {},
       payload: body,
+      session,
+    });
+  }
+}
+
+@ApiTags('sponsorships')
+@Controller('sponsorships')
+export class SponsorshipController {
+  constructor(private sponsorService: SponsorService) {}
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getSponsorships(@Session() session: ISession) {
+    return await this.sponsorService.getCreatorSponsorships({
+      query: {},
       session,
     });
   }

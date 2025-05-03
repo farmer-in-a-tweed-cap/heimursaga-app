@@ -266,6 +266,7 @@ export class StripeService {
         },
         capabilities: {
           transfers: { requested: true },
+          card_payments: { requested: true },
         },
         country,
       });

@@ -4,12 +4,12 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '@/modules/prisma';
 import { StripeModule } from '@/modules/stripe';
 
-import { SponsorController } from './sponsor.controller';
+import { SponsorController, SponsorshipController } from './sponsor.controller';
 import { SponsorService } from './sponsor.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule, StripeModule],
-  controllers: [SponsorController],
+  controllers: [SponsorController, SponsorshipController],
   providers: [SponsorService],
   exports: [SponsorService],
 })

@@ -43,3 +43,10 @@ export enum SponsorshipType {
   ONE_TIME_PAYMENT = 'one_time_payment',
   SUBSCRIPTION = 'subscription',
 }
+export enum CurrencyCode {
+  USD = 'usd',
+}
+
+export enum CountryCode {
+  UNITED_STATES = 'us',
+}

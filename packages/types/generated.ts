@@ -1,5 +1,10 @@
 // api
-import { CheckoutMode, CheckoutStatus, PlanExpiryPeriod } from './enums';
+import {
+  CheckoutMode,
+  CheckoutStatus,
+  PlanExpiryPeriod,
+  SponsorshipType,
+} from './enums';
 
 // general
 export type GeoJson<T = any> = {
@@ -428,6 +433,13 @@ export interface IPayoutMethodCreatePayload {
   platform: string;
 }
 
+export interface IPayoutMethodCreateResponse {
+  payoutMethodId: string;
+  platform: {
+    onboardingUrl: string;
+  };
+}
+
 export interface IPayoutBalanceGetResponse {
   pending: {
     amount: number;
@@ -451,4 +463,26 @@ export interface ISponsorCheckoutPayload {
 export interface ISponsorCheckoutResponse {
   paymentMethodId: string;
   clientSecret: string;
+}
+
+export interface ISponsorshipDetail {
+  id: string;
+  type: SponsorshipType;
+  amount: number;
+  currency: string;
+  user?: {
+    username: string;
+    name: string;
+    picture: string;
+  };
+  creator?: {
+    username: string;
+    name: string;
+    picture: string;
+  };
+}
+
+export interface ISponsorshipGetAllResponse {
+  results: number;
+  data: ISponsorshipDetail[];
 }

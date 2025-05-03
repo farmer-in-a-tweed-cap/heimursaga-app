@@ -1,10 +1,12 @@
 import { EVENTS } from '../event';
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+import { Prisma } from '@prisma/client';
 import {
   CheckoutStatus,
   ISponsorCheckoutPayload,
   ISponsorCheckoutResponse,
+  ISponsorshipGetAllResponse,
   SponsorshipType,
 } from '@repo/types';
 
@@ -22,7 +24,7 @@ import {
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import { ISessionQueryWithPayload } from '@/common/interfaces';
+import { ISessionQuery, ISessionQueryWithPayload } from '@/common/interfaces';
 import { config } from '@/config';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
@@ -233,6 +235,67 @@ export class SponsorService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('sponsor checkout not completed');
+      throw exception;
+    }
+  }
+
+  async getCreatorSponsorships({
+    session,
+  }: ISessionQuery): Promise<ISponsorshipGetAllResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      const where: Prisma.SponsorshipWhereInput = {
+        creator_id: userId,
+        deleted_at: null,
+      };
+
+      // get sponsorships
+      const take = 50;
+      const results = await this.prisma.sponsorship.count({ where });
+      const data = await this.prisma.sponsorship.findMany({
+        where,
+        select: {
+          public_id: true,
+          type: true,
+          amount: true,
+          currency: true,
+          user: {
+            select: {
+              username: true,
+              profile: {
+                select: { name: true, picture: true },
+              },
+            },
+          },
+        },
+        take,
+        orderBy: [{ id: 'desc' }],
+      });
+
+      const response: ISponsorshipGetAllResponse = {
+        results,
+        data: data.map(({ public_id: id, amount, currency, user, type }) => ({
+          id,
+          type: type as SponsorshipType,
+          amount,
+          currency,
+          user: {
+            username: user.username,
+            name: user.profile.name,
+            picture: user.profile.picture,
+          },
+        })),
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('sponsorships not found');
       throw exception;
     }
   }

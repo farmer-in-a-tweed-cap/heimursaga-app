@@ -37,7 +37,7 @@ export class PayoutMethodController {
     @Param() param: ParamPublicIdDto,
   ) {
     return await this.payoutService.getPayoutMethodPlatformLink({
-      query: { publicId: param.id },
+      query: { publicId: param.id, mode: 'account_update' },
       session,
     });
   }
