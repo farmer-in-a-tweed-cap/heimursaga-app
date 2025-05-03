@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  LoadingSpinner,
-} from '@repo/ui/components';
+import { Button, Card, CardContent, LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 
 import { QUERY_KEYS, apiClient } from '@/lib/api';

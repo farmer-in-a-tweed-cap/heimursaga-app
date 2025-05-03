@@ -43,6 +43,7 @@ export default async function Page({ params }: Props) {
           </div>
           <div className="mt-10">
             <SponsorshipCheckoutForm
+              username={username}
               sponsorship={sponsorship}
               paymentMethods={paymentMethods}
             />

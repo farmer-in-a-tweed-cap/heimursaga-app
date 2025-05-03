@@ -1,3 +1,5 @@
+import { CURRENCY_SYMBOLS } from '@/constants';
+
 export const array = (length: number) => Array.from(Array(length));
 
 export const redirect = (href: string) => {
@@ -12,4 +14,9 @@ export const debounce = <T = any, R = void>(fn: (args: T) => R, ms = 300) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn.call(this, args), ms);
   };
+};
+
+export const getCurrencySymbol = (code: string) => {
+  // @ts-ignore
+  return CURRENCY_SYMBOLS[code] ? CURRENCY_SYMBOLS[code] : CURRENCY_SYMBOLS.USD;
 };

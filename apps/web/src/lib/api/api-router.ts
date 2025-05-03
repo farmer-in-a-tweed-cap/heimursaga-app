@@ -66,12 +66,16 @@ export const API_ROUTER = {
     GET_BY_ID: (id: string) => `payout-methods/${id}`,
     CREATE: 'payout-methods',
     DELETE: (id: string) => `payout-methods/${id}`,
-    PLATFORM_LINK: {
-      GET: (id: string) => `payout-methods/${id}/platform-link`,
-    },
+    PLATFORM_LINK: (id: string) => `payout-methods/${id}/platform-link`,
   },
   PAYOUT_BALANCE: {
     GET: 'payout-balance',
+  },
+  SPONSOR: {
+    CHECKOUT: 'sponsor/checkout',
+  },
+  SPONSORSHIPS: {
+    GET: 'sponsorships',
   },
   STRIPE: {
     CREATE_SETUP_INTENT: 'stripe/create-setup-intent',

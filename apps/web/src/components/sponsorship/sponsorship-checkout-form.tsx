@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ISponsorshipTier } from '@repo/types';
+import { ISponsorshipTier, SponsorshipType } from '@repo/types';
 import {
   Button,
   ChipGroup,
@@ -14,18 +14,27 @@ import {
   NumberInput,
   SelectInput,
 } from '@repo/ui/components';
+import { useStripe } from '@stripe/react-stripe-js';
 import { CreditCardIcon, LockIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { apiClient } from '@/lib/api';
 import { dateformat } from '@/lib/date-format';
 
-import { sleep, zodMessage } from '@/lib';
-
-import { SponsorshipTierCard } from './sponsorship-tier-card';
+import {
+  InfoModalProps,
+  MODALS,
+  SponsorshipTierCard,
+  StripeProvider,
+} from '@/components';
+import { useModal } from '@/hooks';
+import { redirect, sleep, zodMessage } from '@/lib';
+import { ROUTER } from '@/router';
 
 type Props = {
+  username?: string;
   sponsorship?: ISponsorshipTier;
   paymentMethods?: { id: string; label: string }[];
 };
@@ -33,11 +42,6 @@ type Props = {
 const PAYMENT_METHOD_TYPES = {
   CARD: 'card',
   PAYPAL: 'paypal',
-};
-
-const SPONSORSHIP_TYPES = {
-  ONE_TIME: 'one_time',
-  MONTHLY: 'monthly',
 };
 
 const DATA = {
@@ -49,8 +53,8 @@ const DATA = {
     },
   ],
   SPONSORSHIP_OPTIONS: [
-    { label: 'One-time', value: SPONSORSHIP_TYPES.ONE_TIME },
-    { label: 'Monthly', value: SPONSORSHIP_TYPES.MONTHLY },
+    { label: 'One-time', value: SponsorshipType.ONE_TIME_PAYMENT },
+    { label: 'Monthly', value: SponsorshipType.SUBSCRIPTION },
   ],
 };
 
@@ -69,10 +73,14 @@ const schema = z.object({
     .max(20, zodMessage.string.max('payment method', 20)),
 });
 
-export const SponsorshipCheckoutForm: React.FC<Props> = ({
+export const FormComponent: React.FC<Props> = ({
+  username,
   sponsorship,
   paymentMethods = [],
 }) => {
+  const stripe = useStripe();
+  const modal = useModal();
+
   const [loading, setLoading] = useState<{
     form: boolean;
     paymentMethods: boolean;
@@ -84,7 +92,7 @@ export const SponsorshipCheckoutForm: React.FC<Props> = ({
     paymentMethodId?: string;
     paymentMethods: { id: string; label: string }[];
   }>({
-    sponsorshipType: SPONSORSHIP_TYPES.ONE_TIME,
+    sponsorshipType: SponsorshipType.ONE_TIME_PAYMENT,
     paymentMethodType: PAYMENT_METHOD_TYPES.CARD,
     paymentMethods,
   });
@@ -112,23 +120,80 @@ export const SponsorshipCheckoutForm: React.FC<Props> = ({
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
+        if (!stripe || !username) return;
+
         setLoading((loading) => ({ ...loading, form: true }));
 
-        const { sponsorshipType, paymentMethodType } = state;
+        const { sponsorshipType } = state;
         const { oneTimePaymentAmount, paymentMethodId } = values;
-
-        // @todo complete the checkout
+        const creatorId = username;
 
         console.log('submit:', {
-          sponsorshipType,
-          paymentMethodType,
+          creatorId,
           oneTimePaymentAmount,
+          sponsorshipType,
           paymentMethodId,
         });
 
-        await sleep(2000);
+        // initiate a checkout
+        const checkout = await apiClient.sponsorCheckout({
+          query: {},
+          payload: {
+            creatorId,
+            oneTimePaymentAmount,
+            sponsorshipType,
+            paymentMethodId,
+          },
+        });
+        const stripePaymentMethodId = checkout.data?.paymentMethodId;
+        const clientSecret = checkout.data?.clientSecret;
 
-        setLoading((loading) => ({ ...loading, form: false }));
+        console.log(checkout.data);
+
+        if (!checkout.success || !stripePaymentMethodId || !clientSecret) {
+          modal.open<InfoModalProps>(MODALS.INFO, {
+            props: {
+              title: 'error',
+              message: checkout.message,
+            },
+          });
+          setLoading((loading) => ({ ...loading, form: false }));
+          return;
+        }
+
+        // confirm a stripe payment
+        const stripePayment = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: stripePaymentMethodId,
+        });
+
+        console.log(stripePayment);
+
+        // handle a stripe response
+        if (stripePayment.paymentIntent) {
+          switch (stripePayment.paymentIntent.status) {
+            case 'succeeded':
+              break;
+            case 'requires_action':
+              break;
+          }
+        }
+
+        if (stripePayment.error) {
+          modal.open<InfoModalProps>(MODALS.INFO, {
+            props: {
+              title: 'error',
+              message: stripePayment.error.message,
+            },
+          });
+          setLoading((loading) => ({ ...loading, form: false }));
+
+          return;
+        }
+
+        // redirect to the home page
+        redirect(ROUTER.HOME);
+
+        // setLoading((loading) => ({ ...loading, form: false }));
       } catch (e) {
         setLoading((loading) => ({ ...loading, form: false }));
       }
@@ -169,7 +234,7 @@ export const SponsorshipCheckoutForm: React.FC<Props> = ({
                   onSelect={handleSponsorshipTypeSelect}
                 />
                 <div className="mt-6">
-                  {sponsorshipType === SPONSORSHIP_TYPES.ONE_TIME && (
+                  {sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT && (
                     <div className="flex flex-col">
                       <FormField
                         disabled={loading.form}
@@ -201,7 +266,7 @@ export const SponsorshipCheckoutForm: React.FC<Props> = ({
                       />
                     </div>
                   )}
-                  {sponsorshipType === SPONSORSHIP_TYPES.MONTHLY &&
+                  {sponsorshipType === SponsorshipType.SUBSCRIPTION &&
                   sponsorship ? (
                     <div className="flex flex-col">
                       <SponsorshipTierCard
@@ -256,7 +321,7 @@ export const SponsorshipCheckoutForm: React.FC<Props> = ({
             <div className="flex flex-col">
               <div>
                 <span className="font-medium text-base">
-                  {sponsorshipType === SPONSORSHIP_TYPES.MONTHLY
+                  {sponsorshipType === SponsorshipType.SUBSCRIPTION
                     ? `You’ll pay ${currencySymbol}${sponsorshipMonthlyAmount} monthly on the ${dateformat().format('D')}th.`
                     : `You'll pay ${currencySymbol}${oneTimePaymentAmount}`}
                 </span>
@@ -274,7 +339,7 @@ export const SponsorshipCheckoutForm: React.FC<Props> = ({
                 <Button loading={loading.form}>
                   <div className="flex flex-row items-center justify-center gap-2">
                     <LockIcon />
-                    {sponsorshipType === SPONSORSHIP_TYPES.MONTHLY
+                    {sponsorshipType === SponsorshipType.SUBSCRIPTION
                       ? 'Subscribe'
                       : 'Pay'}
                   </div>
@@ -287,3 +352,9 @@ export const SponsorshipCheckoutForm: React.FC<Props> = ({
     </Form>
   );
 };
+
+export const SponsorshipCheckoutForm: React.FC<Props> = (props) => (
+  <StripeProvider>
+    <FormComponent {...props} />
+  </StripeProvider>
+);

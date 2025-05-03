@@ -4,9 +4,7 @@ import { TabNavbar } from '../nav';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { ROUTER } from '@/router';
-
-import { SponsorshipSponsorView } from './sponsorship-sponsor-view';
+import { CreatorSponsorships } from './creator-sponsorships';
 import { SponsorshipTierView } from './sponsorship-tier-view';
 
 const TABS = {
@@ -15,8 +13,6 @@ const TABS = {
 };
 
 export const SponsorshipView = () => {
-  const router = useRouter();
-
   const [tab, setTab] = useState<string>(TABS.TIERS);
 
   const tabs: { key: string; label: string }[] = [
@@ -48,7 +44,7 @@ export const SponsorshipView = () => {
       </div>
       <div className="mt-2 flex flex-col w-full max-w-2xl">
         {tab === TABS.TIERS && <SponsorshipTierView />}
-        {tab === TABS.SPONSORS && <SponsorshipSponsorView />}
+        {tab === TABS.SPONSORS && <CreatorSponsorships />}
       </div>
     </div>
   );

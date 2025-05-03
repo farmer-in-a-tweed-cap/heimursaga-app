@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default async function Page() {
   return (
     <AppLayout>
-      <div className="w-full max-w-2xl flex flex-col">
+      <div className="w-full max-w-3xl flex flex-col">
         <PageHeaderTitle>Sponsorship</PageHeaderTitle>
         <div className="flex flex-col mt-6">
           <SponsorshipView />

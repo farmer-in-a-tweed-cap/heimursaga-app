@@ -7,6 +7,7 @@ import {
   IPaymentMethodGetByIdResponse,
   IPayoutBalanceGetResponse,
   IPayoutMethodCreatePayload,
+  IPayoutMethodCreateResponse,
   IPayoutMethodGetAllByUsernameResponse,
   IPayoutMethodPlatformLinkGetResponse,
   IPostCreatePayload,
@@ -19,6 +20,9 @@ import {
   ISearchQueryResponse,
   ISessionUserGetResponse,
   ISignupPayload,
+  ISponsorCheckoutPayload,
+  ISponsorCheckoutResponse,
+  ISponsorshipGetAllResponse,
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
   IStripeCreateSetupIntentResponse,
@@ -423,29 +427,44 @@ export const apiClient = {
         ...config,
       },
     ),
+  createPayoutMethod: async (
+    payload: IPayoutMethodCreatePayload,
+    config?: RequestConfig,
+  ) =>
+    api.request<IPayoutMethodCreateResponse>(API_ROUTER.PAYOUT_METHODS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
   getPayoutMethodPlatformLink: async (
     { query }: IApiClientQuery<{ id: string }>,
     config?: RequestConfig,
   ) =>
     api.request<IPayoutMethodPlatformLinkGetResponse>(
-      API_ROUTER.PAYOUT_METHODS.PLATFORM_LINK.GET(query.id),
+      API_ROUTER.PAYOUT_METHODS.PLATFORM_LINK(query.id),
       {
         method: API_METHODS.GET,
         ...config,
       },
     ),
-  createPayoutMethod: async (
-    { payload }: IApiClientQueryWithPayload<IPayoutMethodCreatePayload, void>,
+  // payout balance
+  getUserPayoutBalance: async (config?: RequestConfig) =>
+    api.request<IPayoutBalanceGetResponse>(API_ROUTER.PAYOUT_BALANCE.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
+  // sponsor
+  sponsorCheckout: async (
+    { payload }: IApiClientQueryWithPayload<{}, ISponsorCheckoutPayload>,
     config?: RequestConfig,
   ) =>
-    api.request<void>(API_ROUTER.PAYOUT_METHODS.CREATE, {
+    api.request<ISponsorCheckoutResponse>(API_ROUTER.SPONSOR.CHECKOUT, {
       method: API_METHODS.POST,
       body: JSON.stringify(payload),
       ...config,
     }),
-  // payout balance
-  getUserPayoutBalance: async (config?: RequestConfig) =>
-    api.request<IPayoutBalanceGetResponse>(API_ROUTER.PAYOUT_BALANCE.GET, {
+  getCreatorSponsorships: async (config?: RequestConfig) =>
+    api.request<ISponsorshipGetAllResponse>(API_ROUTER.SPONSORSHIPS.GET, {
       method: API_METHODS.GET,
       ...config,
     }),

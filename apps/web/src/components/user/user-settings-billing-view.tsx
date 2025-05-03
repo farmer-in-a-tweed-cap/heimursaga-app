@@ -1,6 +1,6 @@
 'use client';
 
-import { TabNavbar } from '../nav';
+import { CountryCode, PayoutMethodPlatform } from '@repo/types';
 import {
   Badge,
   Button,
@@ -20,11 +20,6 @@ import { QUERY_KEYS, apiClient } from '@/lib/api';
 import { useModal, useSession } from '@/hooks';
 import { redirect } from '@/lib';
 
-const TABS = {
-  TIERS: 'Tiers',
-  SPONSORS: 'Sponsors',
-};
-
 export const UserSettingsBillingView = () => {
   const router = useRouter();
   const session = useSession();
@@ -32,7 +27,6 @@ export const UserSettingsBillingView = () => {
   const toast = useToast();
 
   const [loading, setLoading] = useState({ button: false });
-  const [tab, setTab] = useState<string>(TABS.TIERS);
 
   const payoutMethodQuery = useQuery({
     queryKey: [QUERY_KEYS.PAYOUT_METHODS],
@@ -41,28 +35,46 @@ export const UserSettingsBillingView = () => {
     retry: 0,
   });
 
-  const payoutBalanceQuery = useQuery({
-    queryKey: [QUERY_KEYS.PAYOUT_BALANCE],
-    queryFn: () => apiClient.getUserPayoutBalance().then(({ data }) => data),
-    enabled: !!session?.username,
-    retry: 0,
-  });
-
-  const tabs: { key: string; label: string }[] = [
-    { key: TABS.TIERS, label: 'Tiers' },
-    { key: TABS.SPONSORS, label: 'Sponsors' },
-  ];
-
-  const payoutBalance = payoutBalanceQuery?.data;
   const payoutMethod = payoutMethodQuery?.data?.data?.[0];
+  const updateAvailable = !!payoutMethod?.id;
 
-  const handlePayoutMethodConnect = () => {};
+  const handlePayoutMethodCreate = async () => {
+    try {
+      setLoading((loading) => ({ ...loading, button: true }));
+
+      // create a payout method
+      const response = await apiClient.createPayoutMethod({
+        platform: PayoutMethodPlatform.STRIPE,
+        country: CountryCode.UNITED_STATES,
+      });
+
+      if (!response.success) {
+        toast({ type: 'error', message: 'payout method not created' });
+        setLoading((loading) => ({ ...loading, button: false }));
+        return;
+      }
+
+      const onboardingUrl = response.data?.platform?.onboardingUrl;
+
+      // redirect to the payout method platform onboarding page
+      if (onboardingUrl) {
+        return redirect(onboardingUrl);
+      }
+    } catch (e) {
+      setLoading((loading) => ({ ...loading, button: false }));
+      toast({ type: 'error', message: 'payout method not created' });
+    }
+  };
 
   const handlePayoutMethodUpdate = async () => {
     try {
       const payoutMethodId = payoutMethod?.id;
 
       if (!payoutMethodId) {
+        toast({
+          type: 'error',
+          message: 'payout method not available',
+        });
         return;
       }
 
@@ -91,35 +103,8 @@ export const UserSettingsBillingView = () => {
     }
   };
 
-  const handleTabChange = (tab: string) => {
-    setTab(tab);
-
-    // if (username) {
-    //   router.push([ROUTER.MEMBERS.MEMBER(username), section].join('/'), {
-    //     scroll: false,
-    //   });
-    // }
-  };
-
-  // // cache modals
-  // useEffect(() => {
-  //   modal.preload([MODALS.PAYMENT_METHOD_ADD, MODALS.PAYMENT_METHOD_DELETE]);
-  // }, [modal.preload]);
-
   return (
     <div className="flex flex-col">
-      <div className="w-full flex flex-row">
-        <TabNavbar
-          tabs={tabs}
-          activeTab={tab}
-          classNames={{
-            container: 'w-full',
-            tabs: 'max-w-2xl',
-          }}
-          onChange={handleTabChange}
-        />
-      </div>
-      {JSON.stringify({ b: payoutBalance })}
       {payoutMethodQuery.isLoading ? (
         <LoadingSpinner />
       ) : (
@@ -132,9 +117,13 @@ export const UserSettingsBillingView = () => {
               <span className="text-sm font-normal">Stripe</span>
               <div>
                 {payoutMethod ? (
-                  <span className="text-base font-medium">
-                    {payoutMethod?.email || '******'}
-                  </span>
+                  payoutMethod.isVerified ? (
+                    <span className="text-base font-medium">
+                      {payoutMethod?.email || '******'}
+                    </span>
+                  ) : (
+                    <Badge variant="outline">Pending</Badge>
+                  )
                 ) : (
                   <Badge variant="outline">Not connected</Badge>
                 )}
@@ -150,15 +139,17 @@ export const UserSettingsBillingView = () => {
                   <Button
                     variant="outline"
                     loading={loading.button}
+                    disabled={!updateAvailable}
                     onClick={handlePayoutMethodUpdate}
                   >
-                    Update
+                    {payoutMethod.isVerified ? 'Update' : 'Complete setup'}
                   </Button>
                 ) : (
                   <Button
                     variant="outline"
                     loading={loading.button}
-                    onClick={handlePayoutMethodConnect}
+                    disabled={updateAvailable}
+                    onClick={handlePayoutMethodCreate}
                   >
                     Connect
                   </Button>

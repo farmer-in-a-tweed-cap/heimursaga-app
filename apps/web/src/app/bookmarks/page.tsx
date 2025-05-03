@@ -16,11 +16,10 @@ export default async function Page() {
   const cookie = cookies().toString();
 
   const postQuery = await apiClient.getPosts({}, { cookie });
-  const posts = postQuery.data ? postQuery.data.data : [];
 
   return (
     <AppLayout>
-      <div className="w-full max-w-2xl flex flex-col gap-4">
+      <div className="w-full max-w-3xl flex flex-col gap-4">
         <PageHeaderTitle>Bookmarks</PageHeaderTitle>
         <div className="mt-4">
           <UserBookmarks />
