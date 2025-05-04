@@ -51,10 +51,12 @@ export const UserNotificationCard: React.FC<Props> = ({
           </Avatar>
         </Link>
         <div className="flex flex-col">
-          <span className="text-xs font-medium">
-            {dateformat(date).format('MMM DD')}
-          </span>
           <span className="font-normal text-base">{text}</span>
+          <span className="text-xs font-normal text-gray-700">
+            {dateformat(date).isToday()
+              ? dateformat(date).format('HH:mm')
+              : dateformat(date).format('MMM DD')}
+          </span>
         </div>
       </div>
     </Card>
