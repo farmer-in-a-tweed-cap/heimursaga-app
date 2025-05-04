@@ -864,6 +864,7 @@ export class SessionUserService {
           file: payload.file,
           context: MediaUploadContext.USER,
           thumbnail: true,
+          aspect: 'square',
         },
         session,
       });
