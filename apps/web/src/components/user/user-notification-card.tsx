@@ -19,27 +19,33 @@ export const UserNotificationCard: React.FC<Props> = ({
   date,
   postId,
 }) => {
-  let text: string = '';
-  let link: string | undefined = undefined;
+  const notification: { mention: string; text: string; url?: string } = {
+    mention: '',
+    text: '',
+  };
 
   switch (context) {
     case UserNotificationContext.LIKE:
-      text = `${mentionUser.name} liked your post`;
+      notification.mention = mentionUser.name;
+      notification.text = 'liked your post';
       if (postId) {
-        link = ROUTER.POSTS.DETAIL(postId);
+        notification.url = ROUTER.POSTS.DETAIL(postId);
       }
       break;
     case UserNotificationContext.FOLLOW:
-      text = `${mentionUser.name} followed you`;
+      notification.mention = mentionUser.name;
+      notification.text = 'followed you';
       if (mentionUser?.username) {
-        link = ROUTER.MEMBERS.MEMBER(mentionUser?.username);
+        notification.url = ROUTER.MEMBERS.MEMBER(mentionUser?.username);
       }
       break;
   }
 
   return (
     <Card className="p-4 box-border cursor-pointer hover:bg-gray-50">
-      {link && <Link href={link} className="z-10 absolute inset-0"></Link>}
+      {notification.url && (
+        <Link href={notification.url} className="z-10 absolute inset-0"></Link>
+      )}
       <div className="flex flex-row gap-4 items-center">
         <Link
           href={ROUTER.MEMBERS.MEMBER(mentionUser?.username)}
@@ -51,7 +57,12 @@ export const UserNotificationCard: React.FC<Props> = ({
           </Avatar>
         </Link>
         <div className="flex flex-col">
-          <span className="font-normal text-base">{text}</span>
+          <div className="flex flex-row gap-1">
+            <span className="font-normal text-base">
+              {notification.mention} {notification.text}
+            </span>
+          </div>
+
           <span className="text-xs font-normal text-gray-700">
             {dateformat(date).isToday()
               ? dateformat(date).format('HH:mm')
