@@ -34,6 +34,10 @@ module.exports = {
         source: '/user/settings',
         destination: `/user/settings/profile`,
       },
+      {
+        source: '/sponsorship',
+        destination: `/sponsorship/tiers`,
+      },
     ];
   },
 };

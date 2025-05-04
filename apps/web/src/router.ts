@@ -15,7 +15,10 @@ export const ROUTER = {
     HOME: '/bookmarks',
   },
   SPONSORSHIP: {
-    HOME: '/sponsorship',
+    ROOT: '/sponsorship',
+    HOME: '/sponsorship/tiers',
+    TIERS: '/sponsorship/tiers',
+    SPONSORS: '/sponsorship/sponsors',
   },
   AUDIENCE: '/audience',
   PREMIUM: '/premium',
@@ -24,6 +27,7 @@ export const ROUTER = {
   USER: {
     PROFILE: '/user/profile',
     SETTINGS: {
+      ROOT: '/user/settings',
       HOME: '/user/settings',
       PAGE_KEY: (key: string) => `/user/settings/${key}`,
       PROFILE: '/user/settings/profile',

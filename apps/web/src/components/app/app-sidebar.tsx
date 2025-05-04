@@ -10,11 +10,9 @@ import {
   CogIcon,
   CoinsIcon,
   CompassIcon,
-  DollarSignIcon,
   HomeIcon,
   LucideProps,
   StarIcon,
-  Users2Icon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -26,6 +24,7 @@ import { ROUTER } from '@/router';
 
 type SidebarLink = {
   href: string;
+  base: string;
   label: string;
   icon: ForwardRefExoticComponent<
     Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>
@@ -38,25 +37,85 @@ const SIDEBAR_LINKS: {
   CREATOR: SidebarLink[];
 } = {
   GUEST: [
-    { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
-    { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
+    { href: ROUTER.HOME, base: ROUTER.HOME, label: 'Home', icon: HomeIcon },
+    {
+      href: ROUTER.EXPLORE.HOME,
+      base: ROUTER.EXPLORE.HOME,
+      label: 'Explore',
+      icon: CompassIcon,
+    },
   ],
   USER: [
-    { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
-    { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
-    { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
-    { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
-    { href: ROUTER.PREMIUM, label: 'Premium', icon: StarIcon },
-    { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
+    { href: ROUTER.HOME, base: ROUTER.HOME, label: 'Home', icon: HomeIcon },
+    {
+      href: ROUTER.EXPLORE.HOME,
+      base: ROUTER.EXPLORE.HOME,
+      label: 'Explore',
+      icon: CompassIcon,
+    },
+    {
+      href: ROUTER.BOOKMARKS.HOME,
+      base: ROUTER.BOOKMARKS.HOME,
+      label: 'Bookmarks',
+      icon: BookmarkIcon,
+    },
+    {
+      href: ROUTER.NOTIFICATIONS,
+      base: ROUTER.NOTIFICATIONS,
+      label: 'Notifications',
+      icon: BellIcon,
+    },
+    {
+      href: ROUTER.PREMIUM,
+      base: ROUTER.PREMIUM,
+      label: 'Premium',
+      icon: StarIcon,
+    },
+    {
+      href: ROUTER.USER.SETTINGS.HOME,
+      base: ROUTER.USER.SETTINGS.HOME,
+      label: 'Settings',
+      icon: CogIcon,
+    },
   ],
   CREATOR: [
-    { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
-    { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
-    { href: ROUTER.SPONSORSHIP.HOME, label: 'Sponsorship', icon: CoinsIcon },
-    { href: ROUTER.PAYOUTS.HOME, label: 'Payouts', icon: BanknoteIcon },
-    { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
-    { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
-    { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
+    { href: ROUTER.HOME, base: ROUTER.HOME, label: 'Home', icon: HomeIcon },
+    {
+      href: ROUTER.EXPLORE.HOME,
+      base: ROUTER.EXPLORE.HOME,
+      label: 'Explore',
+      icon: CompassIcon,
+    },
+    {
+      href: ROUTER.SPONSORSHIP.ROOT,
+      base: ROUTER.SPONSORSHIP.ROOT,
+      label: 'Sponsorship',
+      icon: CoinsIcon,
+    },
+    {
+      href: ROUTER.PAYOUTS.HOME,
+      base: ROUTER.PAYOUTS.HOME,
+      label: 'Payouts',
+      icon: BanknoteIcon,
+    },
+    {
+      href: ROUTER.BOOKMARKS.HOME,
+      base: ROUTER.BOOKMARKS.HOME,
+      label: 'Bookmarks',
+      icon: BookmarkIcon,
+    },
+    {
+      href: ROUTER.NOTIFICATIONS,
+      base: ROUTER.NOTIFICATIONS,
+      label: 'Notifications',
+      icon: BellIcon,
+    },
+    {
+      href: ROUTER.USER.SETTINGS.HOME,
+      base: ROUTER.USER.SETTINGS.ROOT,
+      label: 'Settings',
+      icon: CogIcon,
+    },
   ],
 };
 
@@ -79,7 +138,6 @@ export const AppSidebar = () => {
       links = SIDEBAR_LINKS.GUEST;
       break;
   }
-  // const links = session ? SIDEBAR_LINKS.creator : SIDEBAR_LINKS.guest;
 
   const isActiveLink = (path: string): boolean => {
     path = path.startsWith('/') ? path : `/${path}`;
@@ -98,13 +156,13 @@ export const AppSidebar = () => {
           </div>
           <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-3">
             <div className="lg:w-full flex flex-col gap-2">
-              {links.map(({ href, label, icon: Icon }, key) => (
+              {links.map(({ href, base, label, icon: Icon }, key) => (
                 <Link
                   key={key}
                   href={href}
                   className={cn(
                     'w-full app-sidebar-link',
-                    isActiveLink(href) ? 'app-sidebar-link-active' : '',
+                    isActiveLink(base) ? 'app-sidebar-link-active' : '',
                   )}
                 >
                   <Icon size={18} className="app-sidebar-link-icon" />
@@ -119,7 +177,10 @@ export const AppSidebar = () => {
               <div className="w-full flex flex-col gap-8 px-3">
                 <CreatePostButton
                   variant="secondary"
-                  classNames={{ label: 'hidden lg:flex', button: 'min-w-auto' }}
+                  classNames={{
+                    label: 'hidden lg:flex',
+                    button: 'min-w-auto bg-white hover:bg-secondary',
+                  }}
                 >
                   Create
                 </CreatePostButton>

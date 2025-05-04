@@ -2,7 +2,9 @@
 
 import { TabNavbar } from '../nav';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { ROUTER } from '@/router';
 
 import { CreatorSponsorships } from './creator-sponsorships';
 import { SponsorshipTierView } from './sponsorship-tier-view';
@@ -12,8 +14,14 @@ const TABS = {
   SPONSORS: 'sponsors',
 };
 
-export const SponsorshipView = () => {
-  const [tab, setTab] = useState<string>(TABS.TIERS);
+type Props = {
+  section: string;
+};
+
+export const SponsorshipView: React.FC<Props> = ({ section }) => {
+  const router = useRouter();
+
+  const [tab, setTab] = useState<string>(section || TABS.TIERS);
 
   const tabs: { key: string; label: string }[] = [
     { key: TABS.TIERS, label: 'Tiers' },
@@ -22,15 +30,21 @@ export const SponsorshipView = () => {
 
   const handleTabChange = (tab: string) => {
     setTab(tab);
-
-    // @todo
-    // router.push([ROUTER.SPONSORSHIP.HOME, tab].join('/'), {
-    //   scroll: false,
-    // });
+    router.push([ROUTER.SPONSORSHIP.ROOT, tab].join('/'), {
+      scroll: false,
+    });
   };
 
+  useEffect(() => {
+    if (!section) {
+      router.push([ROUTER.SPONSORSHIP.HOME, TABS.TIERS].join('/'), {
+        scroll: false,
+      });
+    }
+  }, []);
+
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col w-full">
       <div className="w-full flex flex-row">
         <TabNavbar
           tabs={tabs}
@@ -42,7 +56,7 @@ export const SponsorshipView = () => {
           onChange={handleTabChange}
         />
       </div>
-      <div className="mt-2 flex flex-col w-full max-w-2xl">
+      <div className="mt-2 flex flex-col w-full">
         {tab === TABS.TIERS && <SponsorshipTierView />}
         {tab === TABS.SPONSORS && <CreatorSponsorships />}
       </div>

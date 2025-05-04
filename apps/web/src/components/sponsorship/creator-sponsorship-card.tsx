@@ -33,15 +33,15 @@ export const CreatorSponsorshipCard: React.FC<Props> = ({
     : getCurrencySymbol(CurrencyCode.USD);
 
   const sponsorshipTypeLabel =
-    type === SponsorshipType.SUBSCRIPTION ? 'subscription' : 'one-time payment';
+    type === SponsorshipType.SUBSCRIPTION ? 'subscription' : 'one-time';
 
   return (
     <Card className="cursor-pointer hover:bg-gray-50">
       <Link href={user?.username ? ROUTER.MEMBERS.MEMBER(user?.username) : '#'}>
         <CardContent className="flex flex-row justify-between items-start">
-          <div className="flex flex-col justify-start items-start">
+          <div className="flex flex-col justify-start items-start gap-1">
             {user && <span>{user.name}</span>}
-            <div className="mt-2 flex flex-row text-lg font-medium">
+            <div className="flex flex-row text-base font-medium">
               <span>{currencySymbol}</span>
               <span>{amount}</span>
             </div>
