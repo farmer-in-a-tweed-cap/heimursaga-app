@@ -110,7 +110,7 @@ export const SubscriptionPlanUpgrade: React.FC<Props> = ({
         {active ? (
           <Button
             size="lg"
-            variant="secondary"
+            variant="outline"
             className="w-full sm:w-auto sm:min-w-[200px]"
             loading={loading}
             onClick={handleDowngradeConfirmationModal}

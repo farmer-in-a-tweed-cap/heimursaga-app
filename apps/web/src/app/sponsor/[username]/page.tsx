@@ -37,11 +37,16 @@ export default async function Page({ params }: Props) {
   return (
     <CheckoutLayout>
       <div className="w-full h-auto flex flex-col lg:flex-row lg:justify-between gap-14 py-4">
-        <div className="basis-6/12">
+        <div className="basis-full lg:basis-6/12">
           <div className="flex flex-col gap-4">
             <span className="text-3xl font-medium">Sponsor</span>
           </div>
-          <div className="mt-10">
+          <div className="mt-10 flex flex-col gap-10">
+            {creator && (
+              <div className="flex lg:hidden">
+                <SponsorCheckoutSummary user={creator} />
+              </div>
+            )}
             <SponsorshipCheckoutForm
               username={username}
               sponsorship={sponsorship}
@@ -49,7 +54,7 @@ export default async function Page({ params }: Props) {
             />
           </div>
         </div>
-        <div className="basis-5/12">
+        <div className="hidden basis-auto lg:flex lg:basis-5/12">
           {creator && <SponsorCheckoutSummary user={creator} />}
         </div>
       </div>

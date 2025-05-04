@@ -107,7 +107,7 @@ export const LoginLayout = async ({
   if (logged) return redirect(ROUTER.HOME);
 
   return (
-    <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-row">
+    <div className="w-full min-h-screen bg-background text-black flex flex-row">
       <div className="relative w-full flex flex-col justify-start">
         <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
           {children}
@@ -126,7 +126,7 @@ export const AppMapLayout = ({
 }) => {
   return (
     <SessionLayout secure={secure}>
-      <div className="w-full bg-[#EFEFEC] text-black flex flex-row">
+      <div className="w-full bg-background text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
           <div className={cn('app-content-full-container')}>{children}</div>
@@ -158,7 +158,7 @@ export const AppLayoutWithoutSidebar = ({
 }) => {
   return (
     <SessionLayout>
-      <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
+      <div className="w-full min-h-screen bg-background text-black flex flex-col justify-start">
         <div className="w-full h-auto min-h-screen flex flex-col py-6 items-center justify-start">
           {children}
         </div>

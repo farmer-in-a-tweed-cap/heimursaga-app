@@ -85,7 +85,7 @@ export const UserSettingsPaymentMethodView = () => {
             />
           ))}
           <div className="mt-2">
-            <Button variant="secondary" onClick={handlePaymentMethodCreate}>
+            <Button variant="outline" onClick={handlePaymentMethodCreate}>
               Add payment method
             </Button>
           </div>

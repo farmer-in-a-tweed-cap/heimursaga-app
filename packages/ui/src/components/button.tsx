@@ -21,9 +21,9 @@ const buttonVariants = cva(
         secondary:
           'min-w-[80px] border border-input bg-secondary text-black shadow-xs hover:bg-secondary-hover hover:text-secondary-foreground rounded-full',
         destructive:
-          'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40',
+          'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 rounded-full',
         outline:
-          'min-w-[80px] border border-input bg-accent shadow-xs hover:bg-accent hover:text-accent-foreground rounded-full',
+          'min-w-[80px] border border-input bg-transparent shadow-xs hover:bg-secondary rounded-full',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
         icon: '!w-[32px] !h-[32px] bg-transparent rounded-full hover:bg-secondary-hover',

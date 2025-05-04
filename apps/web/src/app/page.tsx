@@ -14,7 +14,7 @@ export default async function App() {
 
   return (
     <AppLayout secure={false}>
-      <div className="w-full max-w-2xl flex flex-col gap-4">
+      <div className="w-full max-w-3xl flex flex-col gap-4">
         <PageHeaderTitle>Home</PageHeaderTitle>
         <div className="mt-4">
           <PostFeed loading={false} posts={posts} />

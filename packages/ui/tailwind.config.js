@@ -12,33 +12,38 @@ module.exports = {
     extend: {
       colors: {
         primary: {
-          DEFAULT: 'var(--primary)',
-          foreground: 'var(--primary-foreground)',
+          DEFAULT: 'rgb(var(--color-primary))',
+          foreground: 'rgb(var(--color-primary-foreground))',
         },
         secondary: {
-          DEFAULT: 'var(--secondary)',
-          hover: 'var(--secondary-hover)',
-          foreground: 'var(--secondary-foreground)',
+          DEFAULT: 'rgb(var(--color-secondary))',
+          foreground: 'rgb(var(--color-secondary-foreground))',
+          hover: 'rgb(var(--color-secondary-hover))',
         },
         dark: {
-          DEFAULT: 'var(--dark)',
-          foreground: 'var(--dark-foreground)',
-          hover: 'var(--dark-hover)',
+          DEFAULT: 'rgb(var(--color-dark))',
+          foreground: 'rgb(var(--color-dark-foreground))',
+          hover: 'rgb(var(--color-dark-hover))',
         },
         destructive: {
-          DEFAULT: '#CC3300',
+          DEFAULT: 'rgb(var(--color-destructive))',
+          foreground: 'rgb(var(--color-destructive-foreground))',
+        },
+        success: {
+          DEFAULT: 'rgb(var(--color-success))',
+          foreground: 'rgb(var(--color-success-foreground))',
         },
         accent: {
-          DEFAULT: 'var(--accent)',
-          foreground: 'var(--accent-foreground)',
+          DEFAULT: 'rgb(var(--color-accent))',
+          foreground: 'rgb(var(--color-accent-foreground))',
         },
         background: {
-          DEFAULT: 'var(--background)',
-          foreground: 'var(--background-foreground)',
+          DEFAULT: 'rgb(var(--color-background))',
+          foreground: 'rgb(var(--color-background-foreground))',
         },
         popover: {
-          DEFAULT: 'var(--popover)',
-          foreground: 'var(--popover-foreground)',
+          DEFAULT: 'rgb(var(--color-popover))',
+          foreground: 'rgb(var(--color-popover-foreground))',
         },
       },
       aspectRatio: {

@@ -31,7 +31,7 @@ export const CreatorSponsorships = () => {
           <span className="text-lg font-medium">
             {sponsorshipResults} sponsors
           </span>
-          <div className="mt-2 flex flex-col gap-4">
+          <div className="mt-2 flex flex-col gap-2">
             {sponsorships.map(({ id, amount, currency, type, user }, key) => (
               <CreatorSponsorshipCard
                 key={key}
