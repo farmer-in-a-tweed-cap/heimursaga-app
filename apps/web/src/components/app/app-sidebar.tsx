@@ -5,6 +5,10 @@ import { Button } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import {
   BanknoteIcon,
+  BarChart2Icon,
+  BarChart3,
+  BarChart4,
+  BarChartIcon,
   BellIcon,
   BookmarkIcon,
   CogIcon,
@@ -91,6 +95,12 @@ const SIDEBAR_LINKS: {
       base: ROUTER.SPONSORSHIP.ROOT,
       label: 'Sponsorship',
       icon: CoinsIcon,
+    },
+    {
+      href: ROUTER.INSIGHTS.HOME,
+      base: ROUTER.INSIGHTS.HOME,
+      label: 'Insights',
+      icon: BarChart2Icon,
     },
     {
       href: ROUTER.PAYOUTS.HOME,

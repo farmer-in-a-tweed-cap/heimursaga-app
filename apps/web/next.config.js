@@ -21,6 +21,16 @@ module.exports = {
         hostname: 'api.mapbox.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'api.mapbox.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'heimursaga-photos.s3.us-east-2.amazonaws.com',
+        pathname: '/**',
+      },
     ],
   },
   // proxy requests to backend
