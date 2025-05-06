@@ -270,6 +270,7 @@ export class SponsorService {
               },
             },
           },
+          created_at: true,
         },
         take,
         orderBy: [{ id: 'desc' }],
@@ -277,17 +278,20 @@ export class SponsorService {
 
       const response: ISponsorshipGetAllResponse = {
         results,
-        data: data.map(({ public_id: id, amount, currency, user, type }) => ({
-          id,
-          type: type as SponsorshipType,
-          amount,
-          currency,
-          user: {
-            username: user.username,
-            name: user.profile.name,
-            picture: user.profile.picture,
-          },
-        })),
+        data: data.map(
+          ({ public_id: id, amount, currency, user, type, created_at }) => ({
+            id,
+            type: type as SponsorshipType,
+            amount,
+            currency,
+            user: {
+              username: user.username,
+              name: user.profile.name,
+              picture: user.profile.picture,
+            },
+            createdAt: created_at,
+          }),
+        ),
       };
 
       return response;

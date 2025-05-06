@@ -56,7 +56,7 @@ export const SponsorshipView: React.FC<Props> = ({ section }) => {
           onChange={handleTabChange}
         />
       </div>
-      <div className="mt-2 flex flex-col w-full">
+      <div className="mt-2 flex flex-col w-full py-4">
         {tab === TABS.TIERS && <SponsorshipTierView />}
         {tab === TABS.SPONSORS && <CreatorSponsorships />}
       </div>

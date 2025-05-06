@@ -27,7 +27,7 @@ export const SponsorshipTierView = () => {
       {sponsorshipTierQuery.isLoading ? (
         <LoadingSpinner />
       ) : sponsorshipsCount ? (
-        <div className="mt-4">
+        <div className="">
           {sponsorships.map((tier, key) => (
             <SponsorshipTierManageCard
               key={key}

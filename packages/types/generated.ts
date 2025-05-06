@@ -481,6 +481,7 @@ export interface ISponsorshipDetail {
     name: string;
     picture: string;
   };
+  createdAt?: Date;
 }
 
 export interface ISponsorshipGetAllResponse {
