@@ -25,3 +25,4 @@ export * from './user-avatar';
 export * from './user-bar';
 
 export * from './user-payout-balance';
+export * from './user-profile-buttons';

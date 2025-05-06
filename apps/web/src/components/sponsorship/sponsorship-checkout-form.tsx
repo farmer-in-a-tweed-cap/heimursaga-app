@@ -347,6 +347,11 @@ export const FormComponent: React.FC<Props> = ({
               </div>
             </div>
           </div>
+          <div className="mt-6 flex flex-col">
+            <span className="text-sm font-medium text-gray-600">
+              legal_menu
+            </span>
+          </div>
         </div>
       </form>
     </Form>

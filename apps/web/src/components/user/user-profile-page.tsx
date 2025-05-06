@@ -8,11 +8,13 @@ import {
 } from '@repo/ui/components';
 import Link from 'next/link';
 
+import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
 import { UserFollowButton } from './user-follow-button';
 import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
+import { UserProfileButtons } from './user-profile-buttons';
 
 type Props = {
   user: IUserProfileDetail;
@@ -37,27 +39,15 @@ export const UserProfilePage: React.FC<Props> = ({ user, section }) => {
           />
         </Avatar>
       </div>
-      <div className="z-20 w-full max-w-2xl flex flex-col items-center">
-        <div className="mt-6 flex flex-col justify-center items-center gap-2">
-          <span className="text-3xl font-semibold">{user?.name}</span>
-          <span className="text-sm">{user?.bio}</span>
-        </div>
-        {user?.you ? (
-          <div className="mt-6 flex flex-row gap-2">
-            <Button variant="outline" asChild>
-              <Link href={ROUTER.USER.SETTINGS.HOME}>Edit profile</Link>
-            </Button>
-          </div>
-        ) : (
-          <div className="mt-6 flex flex-row gap-2 items-center">
-            <UserFollowButton
-              username={user?.username}
-              followed={user?.followed}
-            />
-            <SponsorButton username={user?.username} />
-          </div>
-        )}
+      <div className="mt-6 flex flex-col justify-center items-center gap-2">
+        <span className="text-3xl font-semibold">{user?.name}</span>
+        <span className="text-sm">{user?.bio}</span>
       </div>
+      <UserProfileButtons
+        me={user?.you}
+        followed={user?.followed}
+        user={user}
+      />
       <div className="mt-10 w-full flex flex-col">
         {user?.username && (
           <UserPageSections username={user?.username} section={section} />

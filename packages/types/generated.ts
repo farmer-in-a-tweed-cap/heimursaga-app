@@ -334,6 +334,7 @@ export interface IMediaUploadPayload {
   file: { buffer: Buffer };
   context: MediaUploadContext;
   thumbnail?: boolean;
+  aspect?: 'auto' | 'square';
 }
 
 export interface IMediaUploadQueryParams {

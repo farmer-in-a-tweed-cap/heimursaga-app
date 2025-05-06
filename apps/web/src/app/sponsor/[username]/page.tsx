@@ -52,11 +52,6 @@ export default async function Page({ params }: Props) {
               sponsorship={sponsorship}
               paymentMethods={paymentMethods}
             />
-            <div className="mt-4 flex flex-col">
-              <span className="text-sm font-medium text-gray-600">
-                legal_menu
-              </span>
-            </div>
           </div>
         </div>
         <div className="hidden basis-auto lg:flex lg:basis-4/12">

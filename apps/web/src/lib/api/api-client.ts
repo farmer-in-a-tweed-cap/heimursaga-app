@@ -87,11 +87,11 @@ export const apiClient = {
       method: API_METHODS.POST,
       body: JSON.stringify(payload),
     }),
-  logout: async ({ cookie }: RequestConfig) =>
+  logout: async (config?: RequestConfig) =>
     api.request<void>(API_ROUTER.LOGOUT, {
       method: API_METHODS.POST,
       body: JSON.stringify({}),
-      cookie,
+      ...config,
     }),
   resetPassword: async (body: IPasswordResetPayload) =>
     api.request<void>(API_ROUTER.RESET_PASSWORD, {

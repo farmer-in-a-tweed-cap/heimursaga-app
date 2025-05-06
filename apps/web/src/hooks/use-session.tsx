@@ -7,8 +7,8 @@ import { SessionContext } from '@/contexts';
 export const useSession = () => {
   const context = useContext(SessionContext);
 
-  if (!context)
-    throw new Error('useSession must be used within a SessionProvider');
+  const session = context?.session;
+  const logged = !!session;
 
-  return context.session;
+  return { ...session, logged };
 };

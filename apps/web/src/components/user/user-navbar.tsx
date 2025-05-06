@@ -36,15 +36,19 @@ const getRoleLabel = (role: string) => {
 export const UserNavbar = () => {
   const session = useSession();
 
-  const logoutMutation = useMutation({
-    mutationFn: () => apiClient.logout({ cookie: '' }),
-    onSuccess: () => {
-      redirect(ROUTER.HOME);
-    },
-  });
+  const handleLogout = async () => {
+    try {
+      // log out
+      const response = await apiClient.logout();
 
-  const handleLogout = () => {
-    logoutMutation.mutate();
+      if (!response.success) {
+        return;
+      }
+
+      redirect(ROUTER.HOME);
+    } catch (e) {
+      //
+    }
   };
 
   const { username, picture = '', name = '' } = session || {};
@@ -73,7 +77,7 @@ export const UserNavbar = () => {
     ],
   };
 
-  return session ? (
+  return session.logged ? (
     <DropdownMenu>
       <DropdownMenuTrigger>
         <div className="w-full p-2 flex flex-row gap-4 items-center justify-center lg:justify-start rounded-none lg:rounded-full box-border bg-dark lg:hover:brightness-100 lg:hover:bg-dark-hover focus:bg-dark-hover active:bg-dark-hover">
