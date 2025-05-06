@@ -86,7 +86,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
       <DropdownMenuTrigger>
         <div
           className={cn(
-            'flex flex-row gap-4 items-center justify-center lg:justify-start rounded-none lg:rounded-full box-border bg-dark hover:brightness-105 lg:hover:bg-dark-hover focus:bg-dark-hover active:bg-dark-hover',
+            'flex flex-row gap-4 items-center justify-center lg:justify-start rounded-none lg:rounded-full box-border bg-dark lg:hover:bg-dark-hover focus:bg-secondary-hover active:bg-dark-hover',
             collapsed ? '' : 'p-2',
           )}
         >

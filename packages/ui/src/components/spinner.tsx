@@ -4,10 +4,11 @@ import { cn } from './../lib/utils';
 
 type SpinnerProps = {
   className?: string;
+  size?: number;
 };
 
-export const Spinner: React.FC<SpinnerProps> = ({ className }) => {
-  return <Loader2 className={cn('animate-spin', className)} />;
+export const Spinner: React.FC<SpinnerProps> = ({ size = 20, className }) => {
+  return <Loader2 size={size} className={cn('animate-spin', className)} />;
 };
 
 export const LoadingSpinner: React.FC<SpinnerProps> = () => (

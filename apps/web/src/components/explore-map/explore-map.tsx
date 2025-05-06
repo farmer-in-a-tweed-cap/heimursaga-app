@@ -1,10 +1,15 @@
 'use client';
 
+import { Searchbar } from '../search';
 import { ISearchQueryResponse } from '@repo/types';
-import { LoadingSpinner } from '@repo/ui/components';
+import { Button, Input, LoadingSpinner, Skeleton } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeftToLineIcon, ArrowRightToLineIcon } from 'lucide-react';
+import {
+  ArrowLeftToLineIcon,
+  ArrowRightToLineIcon,
+  SearchIcon,
+} from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
@@ -18,12 +23,13 @@ import {
   Map,
   MapOnLoadHandler,
   MapOnMoveHandler,
+  MapOnSourceClickHandler,
   PostCard,
   UserBar,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks';
-import { dateformat } from '@/lib';
+import { dateformat, sleep } from '@/lib';
 import { ROUTER } from '@/router';
 
 type Props = {
@@ -42,6 +48,7 @@ export const ExploreMap: React.FC<Props> = () => {
     lon: searchParams.get('lon'),
     alt: searchParams.get('alt'),
     postId: searchParams.get('post_id'),
+    s: searchParams.get('s'),
   };
 
   const mapbox = useMapbox();
@@ -57,6 +64,12 @@ export const ExploreMap: React.FC<Props> = () => {
   const [searchState] = useDebounce(_searchState, SEARCH_DEBOUNCE_INTERVAL, {
     leading: true,
   });
+
+  const [search, setSearch] = useState<{
+    query?: string;
+    loading: boolean;
+  }>({ loading: false });
+  const [searchDebounced] = useDebounce(search, 500, { leading: true });
 
   const [sidebar, setSidebar] = useState<boolean>(true);
 
@@ -110,8 +123,9 @@ export const ExploreMap: React.FC<Props> = () => {
     lon?: number;
     alt?: number;
     post_id?: string;
+    s?: string;
   }) => {
-    const { lat, lon, alt, post_id } = params;
+    const { lat, lon, alt, post_id, s: search } = params;
 
     const s = new URLSearchParams(searchParams.toString());
 
@@ -131,6 +145,10 @@ export const ExploreMap: React.FC<Props> = () => {
       s.set('post_id', `${post_id}`);
     }
 
+    if (search) {
+      s.set('s', `${search}`);
+    }
+
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
   };
 
@@ -140,18 +158,6 @@ export const ExploreMap: React.FC<Props> = () => {
     fields.forEach((field) => s.delete(field));
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
   };
-
-  // const fetchPost = async () => {
-  //   try {
-  //     setPostId((post) => ({ ...post, loading: true }));
-
-  //     // get the post
-  //     // const post = await apiClient.
-  //     // setPost(post=>({...post, loading:true}))
-  //   } catch (e) {
-  //     setPost((post) => ({ ...post, loading: true }));
-  //   }
-  // };
 
   const handleMapLoad: MapOnLoadHandler = (value) => {
     const { bounds } = value;
@@ -204,8 +210,8 @@ export const ExploreMap: React.FC<Props> = () => {
     }
   };
 
-  const handleSourceClick = () => {
-    alert('click');
+  const handleSourceClick: MapOnSourceClickHandler = (sourceId) => {
+    handlePostOpen(sourceId);
   };
 
   const handlePostOpen = (postId: string) => {
@@ -220,14 +226,47 @@ export const ExploreMap: React.FC<Props> = () => {
     deleteSearchParams(['post_id']);
   };
 
+  const handleSearchChange = async (query: string) => {
+    setSearch((search) => ({ ...search, query }));
+  };
+
+  const handleSearchSubmit = (query: string) => {
+    setSearch((search) => ({ ...search, query }));
+    updateSearchParams({ s: query });
+  };
+
+  const fetchSearch = async (query: string) => {
+    try {
+      setSearch((search) => ({ ...search, loading: true }));
+
+      // @todo
+      await sleep(1500);
+
+      setSearch((search) => ({ ...search, loading: false }));
+    } catch (e) {
+      setSearch((search) => ({ ...search, loading: false }));
+    }
+  };
+
   useEffect(() => {
-    const { lat, lon, alt, postId } = params;
+    if (searchDebounced.query) {
+      fetchSearch(searchDebounced.query);
+    }
+  }, [searchDebounced.query]);
+
+  useEffect(() => {
+    const { lat, lon, alt, postId, s } = params;
     const coordinateSet = lat && lon;
 
     // open a post if it's set in the url
     if (postId) {
       setPostId(postId);
       setDrawer(true);
+    }
+
+    // set default search
+    if (s) {
+      setSearch((search) => ({ ...search, query: s }));
     }
 
     // set default coordinates
@@ -254,27 +293,43 @@ export const ExploreMap: React.FC<Props> = () => {
           sidebar ? 'max-w-[50%]' : 'max-w-[0px]',
         )}
       >
-        <div className="relative flex flex-col w-full h-full">
-          <div className="flex flex-col gap-1 bg-white py-4 px-6">
-            <span className="text-lg font-medium">Explore</span>
+        <div className="relative flex flex-col w-full h-full ">
+          <div className="flex flex-row justify-between items-center py-4 px-6 bg-white">
+            <div className="flex flex-col gap-0">
+              <span className="text-lg font-medium">Explore</span>
+              {searchQueryQuery.isPending || searchQueryQuery.isLoading ? (
+                <div className="mt-1 h-[16] flex flex-row items-center justify-start">
+                  <Skeleton className="h-[10px]" />
+                </div>
+              ) : (
+                <span className="h-[16px] text-sm font-normal text-gray-600">
+                  {searchQueryQuery.data?.results} entries found
+                </span>
+              )}
+            </div>
+            <div className="w-full max-w-[280px]">
+              <Searchbar
+                value={search.query}
+                loading={search.loading}
+                onChange={handleSearchChange}
+                onSubmit={handleSearchSubmit}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-4 overflow-y-scroll no-scrollbar p-6 box-border">
             {searchQueryQuery.isPending || searchQueryQuery.isLoading ? (
               <LoadingSpinner />
             ) : (
-              <span className="h-[16px] text-sm font-normal text-gray-800">
-                {searchQueryQuery.data?.results} entries found
-              </span>
+              searchQueryQuery.data?.data.map(({ id, ...post }, key) => (
+                <PostCard
+                  key={key}
+                  {...post}
+                  id={id}
+                  actions={{ bookmark: true }}
+                  onClick={() => handlePostOpen(id)}
+                />
+              ))
             )}
-          </div>
-          <div className="flex flex-col gap-4 overflow-y-scroll no-scrollbar p-6 box-border">
-            {searchQueryQuery.data?.data.map(({ id, ...post }, key) => (
-              <PostCard
-                key={key}
-                {...post}
-                id={id}
-                actions={{ bookmark: true }}
-                onClick={() => handlePostOpen(id)}
-              />
-            ))}
           </div>
         </div>
       </div>

@@ -35,6 +35,8 @@ export type MapOnMoveHandlerValue = {
 
 export type MapOnMoveHandler = (data: MapOnMoveHandlerValue) => void;
 
+export type MapOnSourceClickHandler = (sourceId: string) => void;
+
 type Props = {
   token: string;
   sources?: {
@@ -53,7 +55,7 @@ type Props = {
   height?: number;
   onLoad?: MapOnLoadHandler;
   onMove?: MapOnMoveHandler;
-  onSourceClick?: (sourceId: string) => void;
+  onSourceClick?: MapOnSourceClickHandler;
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
 
@@ -89,11 +91,10 @@ export const Map: React.FC<Props> = ({
   controls = true,
   markerEnabled = false,
   disabled = false,
-  width = 600,
-  height = 240,
   onLoad,
   onMove,
   onMarkerChange,
+  onSourceClick,
 }) => {
   const [mapReady, setMapReady] = useState(false);
 
@@ -116,14 +117,6 @@ export const Map: React.FC<Props> = ({
 
   const showPopupRef = useRef<boolean>(false);
   const hoverPopupRef = useRef<boolean>(false);
-
-  const debouncedResize = debounce(() => {
-    if (mapboxRef.current) {
-      mapboxRef.current.resize();
-    }
-  }, 0);
-
-  const resizer = new ResizeObserver(debouncedResize);
 
   useEffect(() => {
     if (!mapboxRef.current || !mapReady || !sources) return;
@@ -166,16 +159,15 @@ export const Map: React.FC<Props> = ({
   }, [marker]);
 
   useEffect(() => {
-    resizer.observe(mapboxContainerRef.current);
-
     if (!mapboxContainerRef.current || !token) return;
 
+    // resize the map on the container resize
     let rafId: number;
     const resizeObserver = new ResizeObserver(() => {
       cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         if (mapboxRef.current) {
-          mapboxRef.current.resize();
+          mapboxRef.current!.resize();
         }
       });
     });
@@ -299,12 +291,12 @@ export const Map: React.FC<Props> = ({
             ['linear'],
             ['zoom'],
             // dynamic point sizes ([zoom, radius])
-            ...[5, 5],
-            ...[8, 12],
-            ...[12, 12],
-            ...[15, 12],
+            ...[5, 4],
+            ...[8, 6],
+            ...[12, 10],
+            ...[15, 10],
           ],
-          'circle-stroke-width': 1,
+          'circle-stroke-width': 2,
           'circle-color': config.mapbox.marker.color,
           'circle-stroke-color': '#ffffff',
         },
@@ -353,14 +345,11 @@ export const Map: React.FC<Props> = ({
         offset: 15,
       });
 
-      // on popup click
+      // handle source click
       mapboxRef.current!.on('click', MAP_LAYERS.MARKERS, (e) => {
-        if (!mapboxRef.current) return;
-
-        const id = e?.features?.[0]?.properties?.id;
-
-        if (id) {
-          window.open(ROUTER.POSTS.DETAIL(id), '_blank');
+        if (mapboxRef.current && onSourceClick) {
+          const sourceId = e.features?.[0].properties?.id;
+          onSourceClick(sourceId);
         }
       });
 
@@ -379,7 +368,7 @@ export const Map: React.FC<Props> = ({
 
         const feature = e.features[0];
         const coordinates = (feature.geometry as any).coordinates.slice();
-        const { title, id, content, date } = feature.properties as {
+        const { title, content, date } = feature.properties as {
           title: string;
           id: string;
           content: string;
@@ -391,10 +380,10 @@ export const Map: React.FC<Props> = ({
           <div class="map-popup cursor-pointer">
             <div class="flex flex-col justify-start gap-0">
               <span class="text-base font-medium">${title}</span>
-              <span class="text-xs font-normal text-gray-800">${dateformat(date).format('MMM DD')}</span>
+              <span class="text-[0.7rem] font-normal text-gray-800">${dateformat(date).format('MMM DD')}</span>
             </div>
             <div class="">
-              <p class="text-sm font-normal">${content ? (content.length < 80 ? content : `${content.slice(0, 80)}..`) : ''}</p>
+              <p class="text-sm font-normal text-gray-600">${content ? (content.length < 80 ? content : `${content.slice(0, 80)}..`) : ''}</p>
             </div>
           </div>
         `;
@@ -411,6 +400,7 @@ export const Map: React.FC<Props> = ({
             popupElement.addEventListener('mouseenter', () => {
               hoverPopupRef.current = true;
             });
+
             popupElement.addEventListener('mouseleave', () => {
               hoverPopupRef.current = false;
 
@@ -419,7 +409,7 @@ export const Map: React.FC<Props> = ({
                   showPopupRef.current = false;
                   mapboxPopupRef.current!.remove();
                 }
-              }, 500);
+              }, 250);
             });
           }
 
@@ -439,7 +429,7 @@ export const Map: React.FC<Props> = ({
             mapboxPopupRef.current!.remove();
             showPopupRef.current = false;
           }
-        }, 500);
+        }, 100);
       });
 
       // update on move

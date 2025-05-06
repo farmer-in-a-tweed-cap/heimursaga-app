@@ -210,8 +210,8 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
           {session.logged ? (
             <div
               className={cn(
-                'flex flex-col items-center justify-center gap-4',
-                collapsed ? '' : 'px-3',
+                'w-full flex flex-col gap-6',
+                collapsed ? 'items-center justify-center' : 'px-3',
               )}
             >
               <CreatePostButton
