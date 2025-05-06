@@ -261,4 +261,13 @@ export class SessionUserController {
       session,
     });
   }
+
+  @Get('insights/post')
+  @HttpCode(HttpStatus.OK)
+  async getPostInsights(@Session() session: ISession) {
+    return await this.sessionUserService.getPostInsights({
+      query: {},
+      session,
+    });
+  }
 }

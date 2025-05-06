@@ -2,6 +2,7 @@ import { IUserNotificationCreatePayload } from '../notification';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  IPostInsightsGetResponse,
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
   IUserFollowersQueryResponse,
@@ -1186,6 +1187,52 @@ export class SessionUserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('sponsorship tier not deleted');
+      throw exception;
+    }
+  }
+
+  async getPostInsights({
+    session,
+  }: ISessionQuery): Promise<IPostInsightsGetResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      // get post data
+      const posts = await this.prisma.post.findMany({
+        where: {
+          author_id: userId,
+          deleted_at: null,
+        },
+        select: {
+          public_id: true,
+          title: true,
+          likes_count: true,
+          bookmarks_count: true,
+          created_at: true,
+        },
+      });
+
+      const response: IPostInsightsGetResponse = {
+        posts: posts.map(
+          ({ public_id, title, likes_count, bookmarks_count, created_at }) => ({
+            id: public_id,
+            title,
+            likesCount: likes_count,
+            bookmarksCount: bookmarks_count,
+            impressionsCount: 0,
+            createdAt: created_at,
+          }),
+        ),
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException();
       throw exception;
     }
   }

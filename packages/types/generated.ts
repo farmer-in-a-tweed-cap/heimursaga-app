@@ -488,3 +488,15 @@ export interface ISponsorshipGetAllResponse {
   results: number;
   data: ISponsorshipDetail[];
 }
+
+// insights
+export interface IPostInsightsGetResponse {
+  posts: {
+    id: string;
+    title: string;
+    impressionsCount: number;
+    likesCount: number;
+    bookmarksCount: number;
+    createdAt: Date;
+  }[];
+}
