@@ -48,6 +48,10 @@ module.exports = {
         source: '/sponsorship',
         destination: `/sponsorship/tiers`,
       },
+      {
+        source: '/insights',
+        destination: `/insights/posts`,
+      },
     ];
   },
 };

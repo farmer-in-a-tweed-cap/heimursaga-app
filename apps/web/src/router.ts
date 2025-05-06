@@ -47,6 +47,7 @@ export const ROUTER = {
     HOME: '/payouts',
   },
   INSIGHTS: {
+    ROOT: '/insights',
     HOME: '/insights',
   },
 };

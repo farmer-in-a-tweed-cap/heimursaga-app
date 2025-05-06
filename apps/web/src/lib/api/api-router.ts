@@ -17,6 +17,9 @@ export const API_ROUTER = {
     SETTINGS: {
       PROFILE: '/user/settings/profile',
     },
+    INSIGHTS: {
+      POST: '/user/insights/post',
+    },
     POSTS: '/user/posts',
     SPONSORSHIP_TIERS: {
       GET: `/user/sponsorship-tiers`,

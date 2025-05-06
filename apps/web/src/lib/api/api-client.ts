@@ -13,6 +13,7 @@ import {
   IPostCreatePayload,
   IPostCreateResponse,
   IPostDetail,
+  IPostInsightsGetResponse,
   IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
@@ -465,6 +466,12 @@ export const apiClient = {
     }),
   getCreatorSponsorships: async (config?: RequestConfig) =>
     api.request<ISponsorshipGetAllResponse>(API_ROUTER.SPONSORSHIPS.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
+  // insights
+  getPostInsights: async (config?: RequestConfig) =>
+    api.request<IPostInsightsGetResponse>(API_ROUTER.USER.INSIGHTS.POST, {
       method: API_METHODS.GET,
       ...config,
     }),

@@ -51,6 +51,9 @@ export const QUERY_KEYS = {
   PAYOUT_BALANCE: 'payout_balance',
   SPONSORSHIPS: 'sponsorships',
   SPONSORSHIP_TIERS: 'sponsorship_tiers',
+  INSIGHTS: {
+    POST: 'post_insights',
+  },
 };
 
 const createQuery = <T = undefined, R = any>(

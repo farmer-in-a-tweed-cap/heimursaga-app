@@ -143,15 +143,17 @@ export type DataTableRow<T = any> = {
 export type DataTableColumn<T = any> = ColumnDef<T>;
 
 type Props = {
-  loading?: boolean;
   columns: DataTableColumn<any>[];
   rows: any[];
+  loading?: boolean;
+  hidePagination?: boolean;
 };
 
 export const DataTable: React.FC<Props> = ({
-  loading = false,
   columns = [],
   rows = [],
+  loading = false,
+  hidePagination = false,
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -279,24 +281,28 @@ export const DataTable: React.FC<Props> = ({
               {table.getFilteredSelectedRowModel().rows.length} of{' '}
               {table.getFilteredRowModel().rows.length} row(s) selected.
             </div> */}
-            <div className="space-x-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                Prev
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                Next
-              </Button>
-            </div>
+            {hidePagination ? (
+              <></>
+            ) : (
+              <div className="space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                >
+                  Prev
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         </>
       )}
