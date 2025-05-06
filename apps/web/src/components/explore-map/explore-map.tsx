@@ -1,23 +1,30 @@
 'use client';
 
 import { ISearchQueryResponse } from '@repo/types';
+import { LoadingSpinner } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeftToLineIcon, ArrowRightToLineIcon } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
-import { QUERY_KEYS, searchQuery } from '@/lib/api';
+import { QUERY_KEYS, apiClient, searchQuery } from '@/lib/api';
 
 import {
-  ExploreSidebar,
+  CloseButton,
   Map,
   MapOnLoadHandler,
   MapOnMoveHandler,
+  PostCard,
+  UserBar,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks';
+import { dateformat } from '@/lib';
+import { ROUTER } from '@/router';
 
 type Props = {
   className?: string;
@@ -34,9 +41,12 @@ export const ExploreMap: React.FC<Props> = () => {
     lat: searchParams.get('lat'),
     lon: searchParams.get('lon'),
     alt: searchParams.get('alt'),
+    postId: searchParams.get('post_id'),
   };
 
   const mapbox = useMapbox();
+
+  const [drawer, setDrawer] = useState<boolean>(false);
 
   const [_searchState, setSearchState] = useState<{
     bounds: {
@@ -47,7 +57,19 @@ export const ExploreMap: React.FC<Props> = () => {
   const [searchState] = useDebounce(_searchState, SEARCH_DEBOUNCE_INTERVAL, {
     leading: true,
   });
+
   const [sidebar, setSidebar] = useState<boolean>(true);
+
+  const [postId, setPostId] = useState<string | null>(null);
+
+  const postQuery = useQuery({
+    queryKey: [QUERY_KEYS.POSTS, postId],
+    queryFn: async () =>
+      apiClient
+        .getPostById({ query: { id: postId as string } })
+        .then(({ data }) => data),
+    enabled: !!postId,
+  });
 
   const searchQueryQuery = useQuery<ISearchQueryResponse, Error>({
     queryKey: [
@@ -68,6 +90,9 @@ export const ExploreMap: React.FC<Props> = () => {
     retry: 0,
   });
 
+  const post = postQuery?.data;
+  const postLoading = postQuery.isLoading;
+
   const coordinates = {
     lat: params.lat
       ? parseFloat(params.lat)
@@ -84,8 +109,9 @@ export const ExploreMap: React.FC<Props> = () => {
     lat?: number;
     lon?: number;
     alt?: number;
+    post_id?: string;
   }) => {
-    const { lat, lon, alt } = params;
+    const { lat, lon, alt, post_id } = params;
 
     const s = new URLSearchParams(searchParams.toString());
 
@@ -101,8 +127,31 @@ export const ExploreMap: React.FC<Props> = () => {
       s.set('alt', `${alt}`);
     }
 
+    if (post_id) {
+      s.set('post_id', `${post_id}`);
+    }
+
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
   };
+
+  // @todo: convert into an util function
+  const deleteSearchParams = (fields: string[]) => {
+    const s = new URLSearchParams(searchParams.toString());
+    fields.forEach((field) => s.delete(field));
+    router.push(`${pathname}?${s.toString()}`, { scroll: false });
+  };
+
+  // const fetchPost = async () => {
+  //   try {
+  //     setPostId((post) => ({ ...post, loading: true }));
+
+  //     // get the post
+  //     // const post = await apiClient.
+  //     // setPost(post=>({...post, loading:true}))
+  //   } catch (e) {
+  //     setPost((post) => ({ ...post, loading: true }));
+  //   }
+  // };
 
   const handleMapLoad: MapOnLoadHandler = (value) => {
     const { bounds } = value;
@@ -162,10 +211,27 @@ export const ExploreMap: React.FC<Props> = () => {
     alert('click');
   };
 
-  useEffect(() => {
-    const { lat, lon, alt } = params;
+  const handlePostOpen = (postId: string) => {
+    setDrawer(true);
+    setPostId(postId);
+    updateSearchParams({ post_id: postId });
+  };
 
+  const handlePostClose = () => {
+    setDrawer(false);
+    setPostId(null);
+    deleteSearchParams(['post_id']);
+  };
+
+  useEffect(() => {
+    const { lat, lon, alt, postId } = params;
     const coordinateSet = lat && lon;
+
+    // open a post if it's set in the url
+    if (postId) {
+      setPostId(postId);
+      setDrawer(true);
+    }
 
     // set default coordinates
     if (!coordinateSet) {
@@ -184,23 +250,83 @@ export const ExploreMap: React.FC<Props> = () => {
   }, []);
 
   return (
-    <div className="w-full h-full flex flex-row bg-white">
+    <div className="w-full h-full flex flex-row justify-between bg-white">
       <div
         className={cn(
-          'w-full h-full hidden sm:flex overflow-hidden',
-          sidebar ? 'sm:max-w-[540px]' : 'max-w-[0px]',
+          'relative w-full h-full  hidden sm:flex overflow-hidden',
+          sidebar ? 'max-w-[50%]' : 'max-w-[0px]',
         )}
       >
-        <ExploreSidebar
-          loading={searchQueryQuery.isPending || searchQueryQuery.isLoading}
-          results={searchQueryQuery.data?.results}
-          posts={searchQueryQuery.data?.data}
-        />
+        <div className="relative flex flex-col w-full h-full">
+          <div className="flex flex-col gap-1 bg-white py-4 px-6">
+            <span className="text-lg font-medium">Explore</span>
+            {searchQueryQuery.isPending || searchQueryQuery.isLoading ? (
+              <LoadingSpinner />
+            ) : (
+              <span className="h-[16px] text-sm font-normal text-gray-800">
+                {searchQueryQuery.data?.results} entries found
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-4 overflow-y-scroll no-scrollbar p-6 box-border">
+            {searchQueryQuery.data?.data.map(({ id, ...post }, key) => (
+              <PostCard
+                key={key}
+                {...post}
+                id={id}
+                actions={{ bookmark: true }}
+                onClick={() => handlePostOpen(id)}
+              />
+            ))}
+          </div>
+        </div>
       </div>
       <div
         className={cn(
-          'relative w-full overflow-hidden',
-          sidebar ? 'rounded-l-3xl' : '',
+          'z-50 w-[50%] overflow-y-scroll h-screen absolute transform transition-transform duration-300 ease-in-out right-0 top-0 bottom-0 bg-white rounded-l-2xl drop-shadow-lg',
+          drawer ? 'translate-x-0' : 'translate-x-full',
+        )}
+      >
+        <div className="flex flex-col">
+          <div className="p-4 h-[60px] sticky top-0 w-full flex flex-row justify-start items-center">
+            <CloseButton className="bg-white" onClick={handlePostClose} />
+          </div>
+          <div className="-mt-[60px] w-full h-[280px] bg-gray-500 rounded-l-2xl"></div>
+          {postLoading ? (
+            <LoadingSpinner />
+          ) : post ? (
+            <div className="w-full flex flex-col p-6">
+              {post.author && (
+                <Link
+                  href={
+                    post?.author?.username
+                      ? ROUTER.MEMBERS.MEMBER(post?.author?.username)
+                      : '#'
+                  }
+                >
+                  <UserBar
+                    name={post?.author?.name}
+                    picture={post.author?.picture}
+                    text={dateformat(post?.date).format('MMM DD')}
+                  />
+                </Link>
+              )}
+              <div className="mt-6">
+                <h2 className="text-2xl font-medium">{post.title}</h2>
+              </div>
+              <div className="py-6">
+                <p className="text-base font-normal">{post.content}</p>
+              </div>
+            </div>
+          ) : (
+            <>post not found</>
+          )}
+        </div>
+      </div>
+      <div
+        className={cn(
+          'z-40 w-full relative overflow-hidden transition-all duration-300 ease-in-out',
+          sidebar ? 'max-w-[50%] rounded-l-2xl' : 'max-w-[100%] rounded-l-none',
         )}
       >
         <button
@@ -213,7 +339,7 @@ export const ExploreMap: React.FC<Props> = () => {
             <ArrowRightToLineIcon size={18} />
           )}
         </button>
-        <div className="z-10 relative w-full h-full overflow-hidden">
+        <div className={cn('z-10 relative !w-full h-full overflow-hidden')}>
           {mapbox.token && (
             <Map
               token={mapbox.token}

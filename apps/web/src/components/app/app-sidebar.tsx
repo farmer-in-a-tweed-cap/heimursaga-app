@@ -129,7 +129,11 @@ const SIDEBAR_LINKS: {
   ],
 };
 
-export const AppSidebar = () => {
+type Props = {
+  collapsed?: boolean;
+};
+
+export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
   const pathname = usePathname();
   const session = useSession();
 
@@ -156,10 +160,25 @@ export const AppSidebar = () => {
   };
 
   return (
-    <div className="hidden sm:max-w-[65px] md:flex lg:max-w-[240px] relative w-full">
-      <div className="sm:max-w-[65px] md:flex lg:max-w-[240px] w-full h-screen fixed top-0 bottom-0 left-0 bg-white flex-col">
+    <div
+      className={cn(
+        'hidden sm:max-w-[65px] md:flex relative w-full',
+        collapsed ? 'lg:max-w-[65px]' : 'lg:max-w-[240px]',
+      )}
+    >
+      <div
+        className={cn(
+          'md:flex w-full h-screen fixed top-0 bottom-0 left-0 bg-white flex-col',
+          collapsed ? 'lg:max-w-[65px]' : 'lg:max-w-[240px]',
+        )}
+      >
         <div className="bg-dark text-dark-foreground flex flex-col items-center w-full h-full py-4">
-          <div className="w-full box-border lg:px-4 flex flex-row items-center  justify-center lg:justify-start">
+          <div
+            className={cn(
+              'w-full box-border flex flex-row items-center justify-center',
+              collapsed ? '' : 'lg:px-4 lg:justify-start',
+            )}
+          >
             <Link href={ROUTER.HOME}>
               <Logo theme="dark" size="sm" />
             </Link>
@@ -175,35 +194,44 @@ export const AppSidebar = () => {
                     isActiveLink(base) ? 'app-sidebar-link-active' : '',
                   )}
                 >
-                  <Icon size={18} className="app-sidebar-link-icon" />
-                  <span className="hidden lg:flex text-sm leading-none">
+                  <Icon size={20} className="app-sidebar-link-icon" />
+                  <span
+                    className={cn(
+                      'text-sm leading-none',
+                      collapsed ? 'hidden' : 'hidden lg:flex',
+                    )}
+                  >
                     {label}
                   </span>
                 </Link>
               ))}
             </div>
-
-            {session.logged ? (
-              <div className="w-full flex flex-col gap-8 px-3">
-                <CreatePostButton
-                  variant="secondary"
-                  classNames={{
-                    label: 'hidden lg:flex',
-                    button: 'min-w-auto bg-white hover:bg-secondary',
-                  }}
-                >
-                  Create
-                </CreatePostButton>
-                <UserNavbar />
-              </div>
-            ) : (
-              <div className="w-full flex flex-col gap-8">
-                <Button variant="secondary" asChild>
-                  <a href={ROUTER.LOGIN}>Log in</a>
-                </Button>
-              </div>
-            )}
           </div>
+          {session.logged ? (
+            <div
+              className={cn(
+                'flex flex-col items-center justify-center gap-4',
+                collapsed ? '' : 'px-3',
+              )}
+            >
+              <CreatePostButton
+                variant="secondary"
+                classNames={{
+                  label: collapsed ? 'hidden' : 'hidden lg:flex',
+                  button: 'min-w-auto bg-white hover:bg-secondary',
+                }}
+              >
+                Create
+              </CreatePostButton>
+              <UserNavbar collapsed={collapsed} />
+            </div>
+          ) : (
+            <div className="w-full flex flex-col gap-8">
+              <Button variant="secondary" asChild>
+                <a href={ROUTER.LOGIN}>Log in</a>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -1,3 +1,5 @@
+'use client';
+
 import { PostCard } from '../post';
 import { IPostDetail } from '@repo/types';
 import { LoadingSpinner } from '@repo/ui/components';

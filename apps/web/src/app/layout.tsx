@@ -127,7 +127,7 @@ export const AppMapLayout = ({
   return (
     <SessionLayout secure={secure}>
       <div className="w-full bg-background text-black flex flex-row">
-        <AppSidebar />
+        <AppSidebar collapsed={true} />
         <div className="relative w-full flex flex-col justify-start">
           <div className={cn('app-content-full-container')}>{children}</div>
         </div>

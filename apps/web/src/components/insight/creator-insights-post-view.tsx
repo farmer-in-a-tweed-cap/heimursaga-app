@@ -60,7 +60,7 @@ export const CreatorInsightsPostView = () => {
       accessorKey: 'date',
       header: () => 'Date',
       cell: ({ row }) =>
-        dateformat(row.getValue('createdAt')).format('DD/MM/YY'),
+        dateformat(row.getValue('createdAt')).format('MMM DD, YYYY'),
     },
   ];
 

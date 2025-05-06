@@ -29,7 +29,7 @@ export const CreatePostButton: React.FC<Props> = ({
       className={cn(classNames?.button, '')}
       {...props}
     >
-      <SquarePenIcon width={16} />
+      <SquarePenIcon width={20} />
       <span className={cn('', classNames?.label)}>
         {children ? children : 'Create post'}
       </span>

@@ -33,7 +33,11 @@ const getRoleLabel = (role: string) => {
   }
 };
 
-export const UserNavbar = () => {
+type Props = {
+  collapsed?: boolean;
+};
+
+export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
   const session = useSession();
 
   const handleLogout = async () => {
@@ -80,22 +84,24 @@ export const UserNavbar = () => {
   return session.logged ? (
     <DropdownMenu>
       <DropdownMenuTrigger>
-        <div className="w-full p-2 flex flex-row gap-4 items-center justify-center lg:justify-start rounded-none lg:rounded-full box-border bg-dark lg:hover:brightness-100 lg:hover:bg-dark-hover focus:bg-dark-hover active:bg-dark-hover">
+        <div
+          className={cn(
+            'flex flex-row gap-4 items-center justify-center lg:justify-start rounded-none lg:rounded-full box-border bg-dark hover:brightness-105 lg:hover:bg-dark-hover focus:bg-dark-hover active:bg-dark-hover',
+            collapsed ? '' : 'p-2',
+          )}
+        >
           <Avatar>
             <AvatarFallback>{name?.slice(0, 1)}</AvatarFallback>
             <AvatarImage src={picture} alt="avatar" />
           </Avatar>
-          <div className="hidden lg:flex flex-col items-start text-sm">
-            <span className="font-medium text-sm text-white">{name}</span>
-            <span
-              className={cn(
-                'font-normal text-xs capitalize',
-                // role === UserRole.CREATOR ? 'text-yellow-600' : '',
-              )}
-            >
-              {role}
-            </span>
-          </div>
+          {!collapsed && (
+            <div className="hidden lg:flex flex-col items-start text-sm">
+              <span className="font-medium text-sm text-white">{name}</span>
+              <span className={cn('font-normal text-xs capitalize')}>
+                {role}
+              </span>
+            </div>
+          )}
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="bg-background min-w-[240px] ml-4 mb-2 p-0 py-2">
