@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { dateformat } from '@/lib/date-format';
 
 import { APP_CONFIG } from '@/config';
+import { debounce } from '@/lib';
 import { ROUTER } from '@/router';
 
 import { MapNavigationControl } from './map-control';
@@ -116,6 +117,14 @@ export const Map: React.FC<Props> = ({
   const showPopupRef = useRef<boolean>(false);
   const hoverPopupRef = useRef<boolean>(false);
 
+  const debouncedResize = debounce(() => {
+    if (mapboxRef.current) {
+      mapboxRef.current.resize();
+    }
+  }, 0);
+
+  const resizer = new ResizeObserver(debouncedResize);
+
   useEffect(() => {
     if (!mapboxRef.current || !mapReady || !sources) return;
 
@@ -157,7 +166,21 @@ export const Map: React.FC<Props> = ({
   }, [marker]);
 
   useEffect(() => {
+    resizer.observe(mapboxContainerRef.current);
+
     if (!mapboxContainerRef.current || !token) return;
+
+    let rafId: number;
+    const resizeObserver = new ResizeObserver(() => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        if (mapboxRef.current) {
+          mapboxRef.current.resize();
+        }
+      });
+    });
+
+    resizeObserver.observe(mapboxContainerRef.current);
 
     console.log('map:render');
 
@@ -220,7 +243,6 @@ export const Map: React.FC<Props> = ({
       if (!mapboxRef.current) return;
 
       setMapReady(true);
-      mapboxRef.current?.resize();
 
       // get coordinates
       const { lng: lon, lat } = mapboxRef.current.getCenter();
@@ -479,18 +501,17 @@ export const Map: React.FC<Props> = ({
           });
         }
       });
-
-      // update the map on windwo resize
-      window.addEventListener('resize', () => {
-        if (!mapboxRef?.current) return;
-        mapboxRef.current?.resize();
-      });
     }
 
     // @todo
-    // prevent dragging beyond the visible map area
+    // 1. prevent dragging beyond the visible map area
+
+    // resize the map on the container element resize
 
     return () => {
+      resizeObserver.disconnect();
+      cancelAnimationFrame(rafId);
+
       if (markerRef.current) {
         markerRef.current.remove();
       }
@@ -501,12 +522,11 @@ export const Map: React.FC<Props> = ({
   }, []);
 
   return (
-    <div className={cn(className, 'relative !w-full !h-full')}>
+    <div className={cn(className, 'relative w-full h-full')}>
       <div
         id="map-container"
         ref={mapboxContainerRef}
-        style={{ width, height }}
-        className="z-10 !w-full !h-full"
+        className="z-10 w-full h-full"
       ></div>
     </div>
   );

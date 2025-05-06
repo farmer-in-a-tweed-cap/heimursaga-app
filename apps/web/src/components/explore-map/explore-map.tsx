@@ -199,11 +199,8 @@ export const ExploreMap: React.FC<Props> = () => {
     setSidebar((sidebar) => !sidebar);
 
     // resize the map
-    if (mapbox.ref!.current) {
-      setTimeout(() => {
-        console.log('resize map..');
-        mapbox.ref.current!.resize();
-      }, 0);
+    if (mapbox.ref.current) {
+      mapbox.ref.current.resize();
     }
   };
 
@@ -325,7 +322,7 @@ export const ExploreMap: React.FC<Props> = () => {
       </div>
       <div
         className={cn(
-          'z-40 w-full relative overflow-hidden transition-all duration-300 ease-in-out',
+          'z-40 w-full relative overflow-hidden',
           sidebar ? 'max-w-[50%] rounded-l-2xl' : 'max-w-[100%] rounded-l-none',
         )}
       >
