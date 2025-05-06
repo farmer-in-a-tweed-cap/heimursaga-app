@@ -18,3 +18,4 @@ export * from './dropdown-menu';
 export * from './separator';
 export * from './toast';
 export * from './chip';
+export * from './data-table';
