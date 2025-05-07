@@ -43,6 +43,12 @@ export const ROUTER = {
   MEMBERS: {
     MEMBER: (username: string) => `/${username}`,
   },
+  TRIPS: {
+    HOME: '/trips',
+    CREATE: `/trips/create`,
+    DETAIL: (id: string) => `/trips/${id}`,
+    EDIT: (id: string) => `/trips/${id}/edit`,
+  },
   PAYOUTS: {
     HOME: '/payouts',
   },

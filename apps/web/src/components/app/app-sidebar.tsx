@@ -16,7 +16,10 @@ import {
   CompassIcon,
   HomeIcon,
   LucideProps,
+  PlaneIcon,
+  PlaneTakeoffIcon,
   StarIcon,
+  WholeWordIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -89,6 +92,12 @@ const SIDEBAR_LINKS: {
       base: ROUTER.EXPLORE.HOME,
       label: 'Explore',
       icon: CompassIcon,
+    },
+    {
+      href: ROUTER.TRIPS.HOME,
+      base: ROUTER.TRIPS.HOME,
+      label: 'Trips',
+      icon: PlaneTakeoffIcon,
     },
     {
       href: ROUTER.SPONSORSHIP.ROOT,
