@@ -20,3 +20,7 @@ export const getCurrencySymbol = (code: string) => {
   // @ts-ignore
   return CURRENCY_SYMBOLS[code] ? CURRENCY_SYMBOLS[code] : CURRENCY_SYMBOLS.USD;
 };
+
+export const randomInteger = (min: number, max: number) => {
+  return Math.random() * (max - min) + min;
+};

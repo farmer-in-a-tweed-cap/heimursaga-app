@@ -393,6 +393,8 @@ export const ExploreMap: React.FC<Props> = () => {
             <Map
               token={mapbox.token}
               coordinates={coordinates}
+              minZoom={4}
+              maxZoom={15}
               sources={[
                 {
                   source: 'waypoints',
@@ -403,6 +405,9 @@ export const ExploreMap: React.FC<Props> = () => {
                       properties: { id, title, content, date },
                     }),
                   ),
+                  config: {
+                    cluster: true,
+                  },
                 },
               ]}
               onSourceClick={handleSourceClick}

@@ -14,7 +14,7 @@ import {
   TripWaypointEditFormState,
 } from '@/components';
 import { useMapbox } from '@/hooks';
-import { array, toGeoJson } from '@/lib';
+import { array, randomInteger } from '@/lib';
 
 export const TripCreateView = () => {
   const mapbox = useMapbox();
@@ -36,11 +36,11 @@ export const TripCreateView = () => {
       lon: number;
     }[]
   >(
-    array(5).map((_, key) => ({
+    array(100).map((_, key) => ({
       id: `${key}`,
       title: 'title',
-      lat: 50.84 + key,
-      lon: 4.3572 + key,
+      lat: randomInteger(40, 50),
+      lon: randomInteger(0, 40),
     })),
   );
 
@@ -204,6 +204,9 @@ export const TripCreateView = () => {
                       lon,
                       properties: {},
                     })),
+                    config: {
+                      cluster: false,
+                    },
                   },
                 ]}
               />

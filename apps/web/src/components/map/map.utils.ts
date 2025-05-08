@@ -1,3 +1,5 @@
+import { SourceSpecification } from 'mapbox-gl';
+
 import { toGeoJson } from '@/lib';
 
 import { MapSource } from './map';
@@ -12,11 +14,19 @@ export const addSources = ({
   try {
     if (!mapbox) return;
 
-    sources.forEach(({ source, data }) => {
-      mapbox.addSource(source, {
+    sources.forEach(({ source: id, data, config }) => {
+      let source: SourceSpecification = {
         type: 'geojson',
-        data: toGeoJson({ mode: source, data }),
-      });
+        data: toGeoJson({ mode: id, data }),
+      };
+
+      if (config?.cluster) {
+        source.cluster = true;
+        source.clusterMaxZoom = 10;
+        source.clusterRadius = 50;
+      }
+
+      mapbox.addSource(id, source);
     });
   } catch (e) {
     console.error(e);

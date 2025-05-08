@@ -8,7 +8,6 @@ import { useEffect, useRef, useState } from 'react';
 import { dateformat } from '@/lib/date-format';
 
 import { APP_CONFIG } from '@/config';
-import { toGeoJson } from '@/lib';
 
 import { MapNavigationControl } from './map-control';
 import { addSources, updateSources } from './map.utils';
@@ -41,6 +40,8 @@ type Props = {
   token: string;
   mode?: 'basic' | 'trips';
   sources?: MapSource[];
+  minZoom?: number;
+  maxZoom?: number;
   coordinates?: { lat: number; lon: number; alt: number };
   marker?: { lat: number; lon: number };
   className?: string;
@@ -61,18 +62,17 @@ export type MapSourceId = 'waypoints' | 'trips';
 export type MapSource<T = any> = {
   source: MapSourceId;
   data: { lat: number; lon: number; properties: T }[];
+  config?: { cluster?: boolean };
 };
 
 const config = {
-  mapbox: {
-    style: `mapbox://styles/${APP_CONFIG.MAPBOX.STYLE}`,
-    maxZoom: 18,
-    minZoom: 2,
-    marker: {
-      color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
-      scale: 0.75,
-      draggable: false,
-    },
+  style: `mapbox://styles/${APP_CONFIG.MAPBOX.STYLE}`,
+  maxZoom: 18,
+  minZoom: 2,
+  marker: {
+    color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
+    scale: 0.75,
+    draggable: false,
   },
 };
 
@@ -94,6 +94,8 @@ export const Map: React.FC<Props> = ({
   cursor,
   marker,
   sources,
+  minZoom = 4,
+  maxZoom = 10,
   coordinates = { lat: 48, lon: 7, alt: 5 },
   controls = true,
   markerEnabled = false,
@@ -103,7 +105,7 @@ export const Map: React.FC<Props> = ({
   onMarkerChange,
   onSourceClick,
 }) => {
-  const [mapReady, setMapReady] = useState(false);
+  const [mapLoaded, setMapLoaded] = useState(false);
 
   // refs
   const mapboxRef = useRef<mapboxgl.Map | null>(null);
@@ -120,13 +122,13 @@ export const Map: React.FC<Props> = ({
 
   // update sources on change
   useEffect(() => {
-    if (!mapboxRef.current || !mapReady || !sources) return;
+    if (!mapboxRef.current || !mapLoaded || !sources) return;
     updateSources({ mapbox: mapboxRef.current, sources });
   }, [sources]);
 
   // update coordinates on change
   useEffect(() => {
-    if (!mapboxRef.current || !mapReady) return;
+    if (!mapboxRef.current || !mapLoaded) return;
 
     const { lat, lon, alt } = coordinates;
 
@@ -138,7 +140,7 @@ export const Map: React.FC<Props> = ({
 
   // update a marker on change
   useEffect(() => {
-    if (!mapboxRef.current || !mapReady || !marker) return;
+    if (!mapboxRef.current || !mapLoaded || !marker) return;
 
     // remove existing marker if it exists
     if (markerRef.current) {
@@ -147,7 +149,7 @@ export const Map: React.FC<Props> = ({
 
     // create a marker
     const { lat, lon } = marker;
-    markerRef.current = new mapboxgl.Marker(config.mapbox.marker)
+    markerRef.current = new mapboxgl.Marker(config.marker)
       .setLngLat({ lat, lng: lon })
       .addTo(mapboxRef.current);
   }, [marker]);
@@ -175,17 +177,25 @@ export const Map: React.FC<Props> = ({
 
     let mapboxConfig: MapOptions = {
       container: mapboxContainerRef.current,
-      style: config.mapbox.style,
-      maxZoom: config.mapbox.maxZoom,
-      minZoom: config.mapbox.minZoom,
+      style: config.style,
+      maxZoom: maxZoom ? maxZoom : config.maxZoom,
+      minZoom: minZoom ? minZoom : config.minZoom,
     };
 
     if (coordinates) {
-      const { lat, lon, alt } = coordinates;
       mapboxConfig = {
         ...mapboxConfig,
-        center: [lon, lat],
-        zoom: alt,
+        center: [coordinates.lon, coordinates.lat],
+        zoom: coordinates.alt,
+      };
+    } else {
+      mapboxConfig = {
+        ...mapboxConfig,
+        center: [
+          APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
+          APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
+        ],
+        zoom: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT,
       };
     }
 
@@ -203,10 +213,6 @@ export const Map: React.FC<Props> = ({
     // set max bounds
     const bounds = new mapboxgl.LngLatBounds([-180, -85], [180, 85]);
     mapboxRef.current.setMaxBounds(bounds);
-    mapboxRef.current.fitBounds(bounds, {
-      padding: 0,
-      animate: false,
-    });
 
     // create a marker
     if (marker) {
@@ -217,16 +223,16 @@ export const Map: React.FC<Props> = ({
 
       // create a marker
       const { lat, lon } = marker;
-      markerRef.current = new mapboxgl.Marker(config.mapbox.marker)
+      markerRef.current = new mapboxgl.Marker(config.marker)
         .setLngLat({ lat, lng: lon })
         .addTo(mapboxRef.current);
     }
 
     // update mapbox on load
     mapboxRef.current.on('load', () => {
-      if (!mapboxRef.current) return;
+      setMapLoaded(true);
 
-      setMapReady(true);
+      if (!mapboxRef.current) return;
 
       // get coordinates
       const { lng: lon, lat } = mapboxRef.current.getCenter();
@@ -273,7 +279,7 @@ export const Map: React.FC<Props> = ({
             ...[15, 10],
           ],
           'circle-stroke-width': 2,
-          'circle-color': config.mapbox.marker.color,
+          'circle-color': config.marker.color,
           'circle-stroke-color': '#ffffff',
         },
       });
@@ -303,7 +309,7 @@ export const Map: React.FC<Props> = ({
           }
 
           // create a new marker
-          markerRef.current = new mapboxgl.Marker(config.mapbox.marker)
+          markerRef.current = new mapboxgl.Marker(config.marker)
             .setLngLat({ lat, lng: lon })
             .addTo(mapboxRef.current);
 
