@@ -11,10 +11,10 @@ export const MapPreviewOverlay = ({
   <div className="absolute z-20 transition-all inset-0 w-full h-full flex flex-row justify-center items-center opacity-0 cursor-pointer hover:opacity-100">
     {href ? (
       <Link href={href}>
-        <div className="absolute z-10 inset-0 bg-gray-200 opacity-50"></div>
+        <div className="absolute z-10 inset-0 bg-accent opacity-50"></div>
       </Link>
     ) : (
-      <div className="absolute z-10 inset-0 bg-gray-200 opacity-50"></div>
+      <div className="absolute z-10 inset-0 bg-accent opacity-50"></div>
     )}
     {href ? (
       <Button variant="outline" className="z-20 bg-white">

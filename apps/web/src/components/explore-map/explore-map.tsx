@@ -287,7 +287,7 @@ export const ExploreMap: React.FC<Props> = () => {
       <div
         className={cn(
           'relative w-full h-full  hidden sm:flex overflow-hidden',
-          sidebar ? 'max-w-[50%]' : 'max-w-[0px]',
+          sidebar ? 'max-w-[40%]' : 'max-w-[0px]',
         )}
       >
         <div className="relative flex flex-col w-full h-full ">
@@ -313,7 +313,7 @@ export const ExploreMap: React.FC<Props> = () => {
               />
             </div>
           </div>
-          <div className="flex flex-col gap-4 overflow-y-scroll no-scrollbar p-6 box-border">
+          <div className="flex flex-col gap-2 overflow-y-scroll no-scrollbar p-6 box-border">
             {searchQuery.isPending || searchQuery.isLoading ? (
               <LoadingSpinner />
             ) : (
@@ -332,7 +332,7 @@ export const ExploreMap: React.FC<Props> = () => {
       </div>
       <div
         className={cn(
-          'z-50 w-[50%] overflow-y-scroll h-screen absolute transform transition-transform duration-300 ease-in-out right-0 top-0 bottom-0 bg-white rounded-l-2xl drop-shadow-lg',
+          'z-50 w-[60%] overflow-y-scroll h-screen absolute transform transition-transform duration-300 ease-in-out right-0 top-0 bottom-0 bg-white rounded-l-2xl drop-shadow-lg',
           drawer ? 'translate-x-0' : 'translate-x-full',
         )}
       >
@@ -344,7 +344,7 @@ export const ExploreMap: React.FC<Props> = () => {
           {postLoading ? (
             <LoadingSpinner />
           ) : post ? (
-            <div className="w-full flex flex-col p-6">
+            <div className="w-full flex flex-col p-8">
               {post.author && (
                 <Link
                   href={
@@ -360,8 +360,8 @@ export const ExploreMap: React.FC<Props> = () => {
                   />
                 </Link>
               )}
-              <div className="mt-6">
-                <h2 className="text-2xl font-medium">{post.title}</h2>
+              <div className="mt-8">
+                <h2 className="text-3xl font-medium">{post.title}</h2>
               </div>
               <div className="py-6">
                 <p className="text-base font-normal">{post.content}</p>
@@ -375,7 +375,7 @@ export const ExploreMap: React.FC<Props> = () => {
       <div
         className={cn(
           'z-40 w-full relative overflow-hidden',
-          sidebar ? 'max-w-[50%] rounded-l-2xl' : 'max-w-[100%] rounded-l-none',
+          sidebar ? 'max-w-[60%] rounded-l-2xl' : 'max-w-[100%] rounded-l-none',
         )}
       >
         <button

@@ -26,7 +26,7 @@ export const SubscriptionPlanCard: React.FC<Props> = ({
   expiry,
 }) => {
   return (
-    <div className="bg-gray-200 p-8 box-border rounded-xl">
+    <div className="bg-accent p-8 box-border rounded-xl">
       <div className="flex flex-row justify-between">
         <span className="text-xl font-medium capitalize">{name}</span>
         {active && <Badge variant="success">active</Badge>}

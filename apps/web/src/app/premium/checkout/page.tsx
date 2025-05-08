@@ -72,7 +72,7 @@ export default async function Page() {
                   </span>
                 </div>
               </div>
-              <div className="mt-10 w-full h-[1px] bg-gray-200"></div>
+              <div className="mt-10 w-full h-[1px] bg-accent"></div>
             </div>
           </div>
           <div className="basis-5/12">

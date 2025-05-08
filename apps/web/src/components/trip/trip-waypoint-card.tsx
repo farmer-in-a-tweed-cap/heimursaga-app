@@ -41,7 +41,7 @@ export const TripWaypointCard: React.FC<Props> = ({
     <div className="w-full h-auto py-4 box-border border-b border-solid border-gray-100">
       <div className="flex flex-row gap-2 justify-between items-center">
         <div className="flex flex-row gap-2 justify-start items-center">
-          <span className="w-6 h-6 bg-gray-200 text-black flex items-center justify-center rounded-full">
+          <span className="w-6 h-6 bg-accent text-black flex items-center justify-center rounded-full">
             {orderIndex}
           </span>
           <span className="text-base font-medium text-black">{title}</span>

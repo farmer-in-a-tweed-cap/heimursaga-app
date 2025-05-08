@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { dateformat } from '@/lib/date-format';
 
-import { MapStaticPreview } from '@/components';
+import { MapStaticPreview, UserBar } from '@/components';
 import { ROUTER } from '@/router';
 
 import { PostBookmarkButton } from './post-bookmark-button';
@@ -60,7 +60,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onClick,
 }) => {
   return (
-    <Card className="relative w-full h-auto box-border p-6 flex flex-col shadow-none border border-solid border-gray-200">
+    <Card className="relative w-full h-auto box-border p-5 flex flex-col shadow-none border border-solid border-accent">
       {href ? (
         <Link href={href} className="z-10 absolute inset-0"></Link>
       ) : onClick ? (
@@ -79,19 +79,20 @@ export const PostCard: React.FC<PostCardProps> = ({
           className="z-20"
         >
           <div className="flex flex-row justify-start items-center gap-3">
-            <Avatar className="w-[40px] h-[40px]">
-              <AvatarImage src={author?.picture} />
-              <AvatarFallback>{author?.name?.slice(0, 1)}</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col items-start justify-center">
-              <span className="text-sm font-semibold">{author?.name}</span>
-              <span className="text-xs text-gray-500">
-                {dateformat(date).format('MMM DD')}
-              </span>
-            </div>
+            <Link
+              href={
+                author?.username ? ROUTER.MEMBERS.MEMBER(author.username) : '#'
+              }
+            >
+              <UserBar
+                name={author?.name}
+                picture={author?.picture}
+                text={dateformat(date).format('MMM DD')}
+              />
+            </Link>
           </div>
         </Link>
-        <div className="z-20 flex flex-row items-center gap-2">
+        <div className="z-20 absolute top-3 right-3 flex flex-row items-center gap-2">
           {actions?.bookmark && (
             <PostBookmarkButton
               postId={id}
@@ -114,9 +115,9 @@ export const PostCard: React.FC<PostCardProps> = ({
           />
         </div>
       )}
-      <div className="mt-6 flex flex-col gap-2">
+      <div className="mt-4 flex flex-col gap-1">
         <span className="text-base font-medium">{title}</span>
-        <p className="text-base font-normal text-neutral-700">
+        <p className="text-sm font-normal text-neutral-700">
           {content ? (content.length < 140 ? content : `${content}..`) : ''}
         </p>
       </div>

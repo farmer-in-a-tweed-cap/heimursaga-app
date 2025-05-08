@@ -40,7 +40,7 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
   return (
     <div
       className={cn(
-        'relative w-full h-[180px] lg:h-[280px] bg-gray-300 rounded-lg overflow-hidden',
+        'relative w-full h-[180px] lg:h-[280px] bg-accent rounded-lg overflow-hidden',
         className,
       )}
     >

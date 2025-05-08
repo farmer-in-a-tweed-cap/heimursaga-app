@@ -31,7 +31,7 @@ export const CloseButton: React.FC<Props> = ({
   return (
     <button
       className={cn(
-        'flex items-center justify-center w-10 h-10 bg-transparent rounded-full hover:bg-gray-200 transition-all',
+        'flex items-center justify-center w-10 h-10 bg-transparent rounded-full hover:bg-accent transition-all',
         className,
       )}
       aria-label="Close"
