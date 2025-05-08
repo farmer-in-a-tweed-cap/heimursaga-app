@@ -14,7 +14,7 @@ import {
   TripWaypointEditFormState,
 } from '@/components';
 import { useMapbox } from '@/hooks';
-import { array } from '@/lib';
+import { array, toGeoJson } from '@/lib';
 
 export const TripCreateView = () => {
   const mapbox = useMapbox();
@@ -39,8 +39,8 @@ export const TripCreateView = () => {
     array(5).map((_, key) => ({
       id: `${key}`,
       title: 'title',
-      lat: -90,
-      lon: -180,
+      lat: 50.84 + key,
+      lon: 4.3572 + key,
     })),
   );
 
@@ -189,7 +189,21 @@ export const TripCreateView = () => {
           )}
         >
           <div className={cn('z-10 relative !w-full h-full overflow-hidden')}>
-            {mapbox.token && <Map token={mapbox.token} />}
+            {mapbox.token && (
+              <Map
+                token={mapbox.token}
+                sources={[
+                  {
+                    source: 'waypoints',
+                    data: waypoints.map(({ lat, lon }) => ({
+                      lat,
+                      lon,
+                      properties: {},
+                    })),
+                  },
+                ]}
+              />
+            )}
           </div>
         </div>
       </div>

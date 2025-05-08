@@ -1,22 +1,16 @@
 'use client';
 
 import { Searchbar } from '../search';
-import { ISearchQueryResponse } from '@repo/types';
-import { Button, Input, LoadingSpinner, Skeleton } from '@repo/ui/components';
+import { LoadingSpinner, Skeleton } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowLeftToLineIcon,
-  ArrowRightToLineIcon,
-  SearchIcon,
-} from 'lucide-react';
-import Image from 'next/image';
+import { ArrowLeftToLineIcon, ArrowRightToLineIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
-import { QUERY_KEYS, apiClient, searchQuery } from '@/lib/api';
+import { QUERY_KEYS, apiClient } from '@/lib/api';
 
 import {
   CloseButton,
@@ -84,7 +78,7 @@ export const ExploreMap: React.FC<Props> = () => {
     enabled: !!postId,
   });
 
-  const searchQueryQuery = useQuery<ISearchQueryResponse, Error>({
+  const searchQuery = useQuery({
     queryKey: [
       QUERY_KEYS.SEARCH,
       searchState?.bounds.ne.lat,
@@ -93,7 +87,9 @@ export const ExploreMap: React.FC<Props> = () => {
       searchState?.bounds.sw.lon,
     ],
     queryFn: async () =>
-      searchQuery.queryFn({ location: { bounds: searchState?.bounds } }),
+      apiClient
+        .search({ location: { bounds: searchState?.bounds } })
+        .then(({ data }) => data),
     enabled: [
       searchState?.bounds.ne.lat,
       searchState?.bounds.ne.lon,
@@ -105,6 +101,7 @@ export const ExploreMap: React.FC<Props> = () => {
 
   const post = postQuery?.data;
   const postLoading = postQuery.isLoading;
+  const waypoints = searchQuery.data?.data || [];
 
   const coordinates = {
     lat: params.lat
@@ -297,13 +294,13 @@ export const ExploreMap: React.FC<Props> = () => {
           <div className="flex flex-row justify-between items-center py-4 px-6 bg-white">
             <div className="flex flex-col gap-0">
               <span className="text-lg font-medium">Explore</span>
-              {searchQueryQuery.isPending || searchQueryQuery.isLoading ? (
+              {searchQuery.isPending || searchQuery.isLoading ? (
                 <div className="mt-1 h-[16] flex flex-row items-center justify-start">
                   <Skeleton className="h-[10px]" />
                 </div>
               ) : (
                 <span className="h-[16px] text-sm font-normal text-gray-600">
-                  {searchQueryQuery.data?.results} entries found
+                  {searchQuery.data?.results} entries found
                 </span>
               )}
             </div>
@@ -317,10 +314,10 @@ export const ExploreMap: React.FC<Props> = () => {
             </div>
           </div>
           <div className="flex flex-col gap-4 overflow-y-scroll no-scrollbar p-6 box-border">
-            {searchQueryQuery.isPending || searchQueryQuery.isLoading ? (
+            {searchQuery.isPending || searchQuery.isLoading ? (
               <LoadingSpinner />
             ) : (
-              searchQueryQuery.data?.data.map(({ id, ...post }, key) => (
+              searchQuery.data?.data.map(({ id, ...post }, key) => (
                 <PostCard
                   key={key}
                   {...post}
@@ -396,14 +393,18 @@ export const ExploreMap: React.FC<Props> = () => {
             <Map
               token={mapbox.token}
               coordinates={coordinates}
-              sources={
-                searchQueryQuery.isSuccess
-                  ? {
-                      results: searchQueryQuery.data.results,
-                      geojson: searchQueryQuery.data.geojson,
-                    }
-                  : undefined
-              }
+              sources={[
+                {
+                  source: 'waypoints',
+                  data: waypoints.map(
+                    ({ lat, lon, id, title, content, date }) => ({
+                      lat,
+                      lon,
+                      properties: { id, title, content, date },
+                    }),
+                  ),
+                },
+              ]}
               onSourceClick={handleSourceClick}
               onLoad={handleMapLoad}
               onMove={handleMapMove}

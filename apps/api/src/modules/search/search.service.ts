@@ -113,27 +113,9 @@ export class SearchService {
           })),
         );
 
-      const geojson = {
-        type: 'FeatureCollection',
-        features: data.map(({ id, title, content, date, lon, lat }) => ({
-          type: 'Feature',
-          properties: {
-            id,
-            title,
-            content,
-            date,
-          },
-          geometry: {
-            type: 'Point',
-            coordinates: [lon, lat, 0.0] as [number, number, number],
-          },
-        })),
-      };
-
       return {
         results,
         data,
-        geojson,
       };
     } catch (e) {
       this.logger.error(e);

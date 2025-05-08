@@ -300,14 +300,6 @@ export interface ISearchQueryResponse {
     lat: number;
     lon: number;
   }[];
-  geojson?: {
-    type: string;
-    features: {
-      type: string;
-      properties: Record<string, string | number | boolean | Date>;
-      geometry: { type: string; coordinates: [number, number, number] };
-    }[];
-  };
 }
 
 export interface ISearchQueryLocation {
@@ -499,4 +491,40 @@ export interface IPostInsightsGetResponse {
     bookmarksCount: number;
     createdAt: Date;
   }[];
+}
+
+// trips
+export interface ITripDetail {
+  id: string;
+  title: string;
+  description?: string;
+  posts: {
+    id: string;
+    title: string;
+    lat: number;
+    lon: number;
+  }[];
+}
+
+export interface ITripGetAllResponse {
+  results: number;
+  data: ITripDetail[];
+}
+
+export interface ITripGetByIdResponse extends ITripDetail {}
+
+export interface ITripCreatePayload {
+  title: string;
+  posts: ITripPostCreatePayload[];
+}
+
+export interface ITripCreateResponse {
+  tripId: string;
+}
+
+export interface ITripPostCreatePayload {
+  title?: string;
+  lat: number;
+  lon: number;
+  date: Date;
 }

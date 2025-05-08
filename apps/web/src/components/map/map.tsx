@@ -8,8 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 import { dateformat } from '@/lib/date-format';
 
 import { APP_CONFIG } from '@/config';
-import { debounce } from '@/lib';
-import { ROUTER } from '@/router';
+import { toGeoJson } from '@/lib';
 
 import { MapNavigationControl } from './map-control';
 
@@ -39,11 +38,8 @@ export type MapOnSourceClickHandler = (sourceId: string) => void;
 
 type Props = {
   token: string;
-  sources?: {
-    results: number;
-    geojson: any;
-  };
-
+  mode?: 'basic' | 'trips';
+  sources?: MapSource[];
   coordinates?: { lat: number; lon: number; alt: number };
   marker?: { lat: number; lon: number };
   className?: string;
@@ -59,6 +55,13 @@ type Props = {
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
 
+type MapSourceId = 'waypoints' | 'trips';
+
+type MapSource<T = any> = {
+  source: MapSourceId;
+  data: { lat: number; lon: number; properties: T }[];
+};
+
 const config = {
   mapbox: {
     style: `mapbox://styles/${APP_CONFIG.MAPBOX.STYLE}`,
@@ -72,18 +75,70 @@ const config = {
   },
 };
 
-const MAP_SOURCES = {
-  MARKERS: 'markers',
+const SOURCES = {
+  WAYPOINTS: 'waypoints',
+  TRIPS: 'trips',
 };
 
-const MAP_LAYERS = {
+const LAYERS = {
   MARKERS: 'markers',
+  WAYPOINTS: 'waypoints',
   CLUSTERS: 'clusters',
+};
+
+const addSources = ({
+  mapbox,
+  sources,
+}: {
+  mapbox: mapboxgl.Map;
+  sources: MapSource[];
+}) => {
+  try {
+    if (!mapbox) return;
+
+    sources.forEach(({ source, data }) => {
+      mapbox.addSource(source, {
+        type: 'geojson',
+        data: toGeoJson({ mode: source, data }),
+      });
+    });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const updateSources = ({
+  mapbox,
+  sources,
+}: {
+  mapbox: mapboxgl.Map;
+  sources: MapSource[];
+}) => {
+  try {
+    if (!mapbox) return;
+
+    sources.forEach(({ source: id, data }) => {
+      const source = mapbox.getSource(id) as mapboxgl.GeoJSONSource;
+      source.setData(
+        toGeoJson({
+          mode: id,
+          data: data.map(({ lat, lon, properties }) => ({
+            lat,
+            lon,
+            properties,
+          })),
+        }),
+      );
+    });
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 export const Map: React.FC<Props> = ({
   className,
   token,
+  mode = 'basic',
   cursor,
   marker,
   sources,
@@ -118,18 +173,10 @@ export const Map: React.FC<Props> = ({
   const showPopupRef = useRef<boolean>(false);
   const hoverPopupRef = useRef<boolean>(false);
 
+  // update sources on change
   useEffect(() => {
     if (!mapboxRef.current || !mapReady || !sources) return;
-
-    console.log('map:sources');
-
-    const { geojson } = sources;
-
-    const source = mapboxRef.current.getSource(
-      MAP_SOURCES.MARKERS,
-    ) as mapboxgl.GeoJSONSource;
-
-    source.setData(geojson);
+    updateSources({ mapbox: mapboxRef.current, sources });
   }, [sources]);
 
   useEffect(() => {
@@ -259,32 +306,16 @@ export const Map: React.FC<Props> = ({
         });
       }
 
-      // source config
-      const sourceConfig: mapboxgl.SourceSpecification = {
-        type: 'geojson',
-        // @todo: add clusters
-      };
-
       // add sources
       if (sources) {
-        const { geojson } = sources;
-
-        mapboxRef.current.addSource(MAP_SOURCES.MARKERS, {
-          ...sourceConfig,
-          data: geojson,
-        });
-      } else {
-        mapboxRef.current.addSource(MAP_SOURCES.MARKERS, {
-          ...sourceConfig,
-          data: { type: 'FeatureCollection', features: [] },
-        });
+        addSources({ mapbox: mapboxRef.current, sources });
       }
 
       // add circle layer with dynamic size
       mapboxRef.current.addLayer({
-        id: MAP_LAYERS.MARKERS,
+        id: LAYERS.WAYPOINTS,
         type: 'circle',
-        source: MAP_SOURCES.MARKERS,
+        source: SOURCES.WAYPOINTS,
         paint: {
           'circle-radius': [
             'interpolate',
@@ -346,7 +377,7 @@ export const Map: React.FC<Props> = ({
       });
 
       // handle source click
-      mapboxRef.current!.on('click', MAP_LAYERS.MARKERS, (e) => {
+      mapboxRef.current!.on('click', LAYERS.WAYPOINTS, (e) => {
         if (mapboxRef.current && onSourceClick) {
           const sourceId = e.features?.[0].properties?.id;
           onSourceClick(sourceId);
@@ -354,7 +385,7 @@ export const Map: React.FC<Props> = ({
       });
 
       // on popoup hover
-      mapboxRef.current!.on('mouseover', MAP_LAYERS.MARKERS, (e) => {
+      mapboxRef.current!.on('mouseover', LAYERS.WAYPOINTS, (e) => {
         if (
           !mapboxRef.current ||
           !mapboxPopupRef.current ||
@@ -417,7 +448,7 @@ export const Map: React.FC<Props> = ({
         }, 250);
       });
 
-      mapboxRef.current!.on('mouseleave', MAP_LAYERS.MARKERS, () => {
+      mapboxRef.current!.on('mouseleave', LAYERS.WAYPOINTS, () => {
         if (!mapboxPopupRef.current) return;
 
         // reset cursor

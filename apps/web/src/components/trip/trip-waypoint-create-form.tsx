@@ -34,14 +34,8 @@ const schema = z.object({
     .nonempty(zodMessage.required('title'))
     .min(2, zodMessage.string.min('title', 2))
     .max(20, zodMessage.string.max('title', 20)),
-  lat: z
-    .number()
-    .min(-90, zodMessage.string.min('latitude', -90))
-    .max(90, zodMessage.string.max('latitude', 90)),
-  lon: z
-    .number()
-    .min(-180, zodMessage.string.min('longitude', -180))
-    .max(180, zodMessage.string.max('longitude', 180)),
+  lat: z.string().max(20, zodMessage.string.max('latitude', 20)),
+  lon: z.string().max(20, zodMessage.string.max('longitude', 20)),
 });
 
 export const TripWaypointCreateForm: React.FC<Props> = ({
@@ -54,8 +48,8 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
     resolver: zodResolver(schema),
     defaultValues: {
       title: '',
-      lat: 0,
-      lon: 0,
+      lat: '0',
+      lon: '0',
     },
   });
 
@@ -64,6 +58,8 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
       try {
         setLoading(true);
 
+        const { title, lat, lon } = values;
+
         // @todo
         // if (success) {
         // } else {
@@ -71,7 +67,11 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
         // }
 
         if (onSubmit) {
-          onSubmit(values);
+          onSubmit({
+            title,
+            lat: parseFloat(lat),
+            lon: parseFloat(lon),
+          });
         }
       } catch (e) {
         setLoading(false);
