@@ -20,7 +20,7 @@ export const UserCard: React.FC<Props> = ({
   return (
     <Card
       className={cn(
-        'relative w-full h-auto box-border p-6 flex flex-col shadow-none border border-solid border-gray-200',
+        'relative w-full h-auto box-border p-4 flex flex-col shadow-none border border-solid border-gray-200',
         href ? 'hover:bg-white/80' : '',
       )}
     >

@@ -115,10 +115,10 @@ export const PostCard: React.FC<PostCardProps> = ({
           />
         </div>
       )}
-      <div className="mt-4 flex flex-col gap-1">
+      <div className="mt-6 flex flex-col gap-2">
         <span className="text-base font-medium">{title}</span>
         <p className="text-sm font-normal text-neutral-700">
-          {content ? (content.length < 140 ? content : `${content}..`) : ''}
+          {content.length <= 140 ? content : `${content.slice(0, 140)}..`}
         </p>
       </div>
       {coordinates && (

@@ -1,17 +1,6 @@
-import { SponsorButton } from '../sponsorship';
 import { IUserProfileDetail } from '@repo/types';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Button,
-} from '@repo/ui/components';
-import Link from 'next/link';
+import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components';
 
-import { useSession } from '@/hooks';
-import { ROUTER } from '@/router';
-
-import { UserFollowButton } from './user-follow-button';
 import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
 import { UserProfileButtons } from './user-profile-buttons';

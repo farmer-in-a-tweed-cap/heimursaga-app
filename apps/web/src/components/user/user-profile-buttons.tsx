@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@repo/ui/components';
-import { Link } from 'lucide-react';
+import Link from 'next/link';
 
 import { SponsorButton, UserFollowButton } from '@/components';
 import { useSession } from '@/hooks';
@@ -28,7 +28,7 @@ export const UserProfileButtons: React.FC<Props> = ({
     <div className="z-20 w-full max-w-2xl flex flex-col items-center">
       {me ? (
         <div className="mt-6 flex flex-row gap-2">
-          <Button variant="outline" asChild>
+          <Button variant="secondary" asChild>
             <Link href={ROUTER.USER.SETTINGS.HOME}>Edit profile</Link>
           </Button>
         </div>
