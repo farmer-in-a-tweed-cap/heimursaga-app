@@ -14,12 +14,12 @@
     --color-dark-hover: 50 50 50;
     --color-background: 255 255 255;
     --color-background-foreground: 0 0 0;
-    --color-accent: 255 255 255;
-    --color-accent-foreground: 0 0 0;
     --color-success: 217 249 157;
     --color-success-foreground: 50 121 66;
     --color-destructive: 176 0 32;
     --color-destructive-foreground: 255 255 255;
+    --color-accent: 240 240 240;
+    --color-accent-foreground: 0 0 0;
 
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
