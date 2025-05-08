@@ -57,10 +57,11 @@ type Props = {
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
 
-export type MapSourceId = 'waypoints' | 'trips';
+export type MapSourceType = 'point' | 'line';
 
 export type MapSource<T = any> = {
-  source: MapSourceId;
+  sourceId: string;
+  type: MapSourceType;
   data: { lat: number; lon: number; properties: T }[];
   config?: { cluster?: boolean };
 };
@@ -76,21 +77,20 @@ const config = {
   },
 };
 
-const SOURCES = {
+export const MAP_SOURCES = {
   WAYPOINTS: 'waypoints',
   TRIPS: 'trips',
 };
 
-const LAYERS = {
-  MARKERS: 'markers',
+const MAP_LAYERS = {
   WAYPOINTS: 'waypoints',
+  LINES: 'lines',
   CLUSTERS: 'clusters',
 };
 
 export const Map: React.FC<Props> = ({
   className,
   token,
-  mode = 'basic',
   cursor,
   marker,
   sources,
@@ -264,23 +264,38 @@ export const Map: React.FC<Props> = ({
 
       // add waypoint layer
       mapboxRef.current.addLayer({
-        id: LAYERS.WAYPOINTS,
+        id: MAP_LAYERS.WAYPOINTS,
         type: 'circle',
-        source: SOURCES.WAYPOINTS,
+        source: MAP_SOURCES.WAYPOINTS,
         paint: {
           'circle-radius': [
             'interpolate',
             ['linear'],
             ['zoom'],
             // dynamic point sizes ([zoom, radius])
-            ...[5, 4],
-            ...[8, 6],
-            ...[12, 10],
-            ...[15, 10],
+            ...[5, 5],
+            ...[8, 8],
+            ...[12, 12],
+            ...[15, 12],
           ],
           'circle-stroke-width': 2,
           'circle-color': config.marker.color,
           'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // add line source
+      mapboxRef.current.addLayer({
+        id: MAP_LAYERS.LINES,
+        type: 'line',
+        source: MAP_SOURCES.TRIPS,
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
+          'line-width': 2,
         },
       });
 
@@ -329,7 +344,7 @@ export const Map: React.FC<Props> = ({
       });
 
       // handle waypoint layer click event
-      mapboxRef.current!.on('click', LAYERS.WAYPOINTS, (e) => {
+      mapboxRef.current!.on('click', MAP_LAYERS.WAYPOINTS, (e) => {
         if (mapboxRef.current && onSourceClick) {
           const sourceId = e.features?.[0].properties?.id;
           onSourceClick(sourceId);
@@ -337,7 +352,7 @@ export const Map: React.FC<Props> = ({
       });
 
       // handle waypoint layer mouse over event
-      mapboxRef.current!.on('mouseover', LAYERS.WAYPOINTS, (e) => {
+      mapboxRef.current!.on('mouseover', MAP_LAYERS.WAYPOINTS, (e) => {
         if (
           !mapboxRef.current ||
           !mapboxPopupRef.current ||
@@ -401,7 +416,7 @@ export const Map: React.FC<Props> = ({
       });
 
       // handle waypoint layer mouse leave event
-      mapboxRef.current!.on('mouseleave', LAYERS.WAYPOINTS, () => {
+      mapboxRef.current!.on('mouseleave', MAP_LAYERS.WAYPOINTS, () => {
         if (!mapboxPopupRef.current) return;
 
         // reset cursor

@@ -14,10 +14,10 @@ export const addSources = ({
   try {
     if (!mapbox) return;
 
-    sources.forEach(({ source: id, data, config }) => {
+    sources.forEach(({ sourceId, type, data, config }) => {
       let source: SourceSpecification = {
         type: 'geojson',
-        data: toGeoJson({ mode: id, data }),
+        data: toGeoJson({ type, data }),
       };
 
       if (config?.cluster) {
@@ -26,7 +26,7 @@ export const addSources = ({
         source.clusterRadius = 50;
       }
 
-      mapbox.addSource(id, source);
+      mapbox.addSource(sourceId, source);
     });
   } catch (e) {
     console.error(e);
@@ -43,11 +43,11 @@ export const updateSources = ({
   try {
     if (!mapbox) return;
 
-    sources.forEach(({ source: id, data }) => {
-      const source = mapbox.getSource(id) as mapboxgl.GeoJSONSource;
+    sources.forEach(({ sourceId, type, data }) => {
+      const source = mapbox.getSource(sourceId) as mapboxgl.GeoJSONSource;
       source.setData(
         toGeoJson({
-          mode: id,
+          type,
           data: data.map(({ lat, lon, properties }) => ({
             lat,
             lon,

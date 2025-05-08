@@ -397,7 +397,8 @@ export const ExploreMap: React.FC<Props> = () => {
               maxZoom={15}
               sources={[
                 {
-                  source: 'waypoints',
+                  sourceId: 'waypoints',
+                  type: 'point',
                   data: waypoints.map(
                     ({ lat, lon, id, title, content, date }) => ({
                       lat,

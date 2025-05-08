@@ -5,6 +5,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { useState } from 'react';
 
 import {
+  MAP_SOURCES,
   Map,
   TripWaypointCard,
   TripWaypointCardClickHandler,
@@ -36,11 +37,11 @@ export const TripCreateView = () => {
       lon: number;
     }[]
   >(
-    array(100).map((_, key) => ({
+    array(10).map((_, key) => ({
       id: `${key}`,
       title: 'title',
-      lat: randomInteger(40, 50),
-      lon: randomInteger(0, 40),
+      lat: randomInteger(45, 50),
+      lon: randomInteger(0, 5),
     })),
   );
 
@@ -198,7 +199,8 @@ export const TripCreateView = () => {
                 token={mapbox.token}
                 sources={[
                   {
-                    source: 'waypoints',
+                    sourceId: MAP_SOURCES.WAYPOINTS,
+                    type: 'point',
                     data: waypoints.map(({ lat, lon }) => ({
                       lat,
                       lon,
@@ -207,6 +209,15 @@ export const TripCreateView = () => {
                     config: {
                       cluster: false,
                     },
+                  },
+                  {
+                    sourceId: MAP_SOURCES.TRIPS,
+                    type: 'line',
+                    data: waypoints.map(({ lat, lon }) => ({
+                      lat,
+                      lon,
+                      properties: {},
+                    })),
                   },
                 ]}
               />

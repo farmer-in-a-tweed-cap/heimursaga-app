@@ -5,14 +5,14 @@ type GeoJsonFeature<T = any> = {
 };
 
 export const toGeoJson = <T = any>({
-  mode,
+  type,
   data,
 }: {
-  mode: string;
+  type: 'point' | 'line';
   data: GeoJsonFeature<T>[];
 }): GeoJSON.GeoJSON => {
-  switch (mode) {
-    default:
+  switch (type) {
+    case 'point':
       return {
         type: 'FeatureCollection',
         features: data.map(({ lat, lon, properties }) => ({
@@ -23,6 +23,14 @@ export const toGeoJson = <T = any>({
             coordinates: [lon, lat, 0.0],
           },
         })),
-      };
+      } as GeoJSON.GeoJSON;
+    case 'line':
+      return {
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: data.map(({ lat, lon }) => [lon, lat, 0.0]),
+        },
+      } as GeoJSON.GeoJSON;
   }
 };
