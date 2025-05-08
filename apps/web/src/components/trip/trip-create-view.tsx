@@ -17,6 +17,25 @@ import {
 import { useMapbox } from '@/hooks';
 import { array, randomInteger } from '@/lib';
 
+function sortByDate<T = any>(
+  elements: { date: Date }[],
+  order: 'asc' | 'desc',
+): T[] {
+  return elements.sort((a, b) =>
+    order === 'desc'
+      ? b.date.getTime() - a.date.getTime()
+      : a.date.getTime() - b.date.getTime(),
+  ) as T[];
+}
+
+type WaypointElement = {
+  id: string;
+  title: string;
+  lat: number;
+  lon: number;
+  date: Date;
+};
+
 export const TripCreateView = () => {
   const mapbox = useMapbox();
 
@@ -29,19 +48,13 @@ export const TripCreateView = () => {
     waypointEditing: false,
   });
 
-  const [waypoints, setWaypoints] = useState<
-    {
-      id: string;
-      title: string;
-      lat: number;
-      lon: number;
-    }[]
-  >(
+  const [waypoints, setWaypoints] = useState<WaypointElement[]>(
     array(10).map((_, key) => ({
-      id: `${key}`,
+      id: `${key + 1}`,
       title: 'title',
       lat: randomInteger(45, 50),
       lon: randomInteger(0, 5),
+      date: new Date(),
     })),
   );
 
@@ -120,9 +133,9 @@ export const TripCreateView = () => {
     <div className="w-full h-full flex flex-row justify-between bg-white">
       <div className="w-full relative h-full hidden sm:flex overflow-hidden">
         <div className="basis-4/12 relative flex flex-col h-full">
-          <div className="relative flex flex-col justify-start items-start py-4 px-6 bg-white overflow-y-scroll">
-            <div className="w-full flex flex-col gap-14 py-4 box-border">
-              <div className="flex flex-col justify-start items-start gap-2">
+          <div className="relative flex flex-col justify-start items-start px-6 bg-white overflow-y-scroll">
+            <div className="w-full flex flex-col gap-10 box-border">
+              <div className="flex flex-col justify-start pt-6 items-start gap-2">
                 <h1 className="text-xl font-medium">Create a trip</h1>
                 <span className="font-normal text-base text-gray-700">
                   Easily plan the perfect path for your next trip.
@@ -132,32 +145,34 @@ export const TripCreateView = () => {
                 <h2 className="text-xl font-medium">Waypoints</h2>
                 <div className="mt-4 flex flex-col">
                   <div className="flex flex-col gap-2">
-                    {waypoints.map(({ id, title, lat, lon }, key) =>
-                      waypointEditingId === id ? (
-                        <div
-                          key={key}
-                          className="py-4 border-b border-solid border-accent"
-                        >
-                          <TripWaypointEditForm
-                            defaultValues={{ title, lat, lon }}
-                            onSubmit={(data) =>
-                              handleWaypointEditSubmit(id, data)
-                            }
-                            onCancel={handleWaypointEditCancel}
+                    {sortByDate<WaypointElement>(waypoints, 'desc').map(
+                      ({ id, title, lat, lon, date }, key) =>
+                        waypointEditingId === id ? (
+                          <div
+                            key={key}
+                            className="py-4 border-b border-solid border-accent"
+                          >
+                            <TripWaypointEditForm
+                              defaultValues={{ title, lat, lon, date }}
+                              onSubmit={(data) =>
+                                handleWaypointEditSubmit(id, data)
+                              }
+                              onCancel={handleWaypointEditCancel}
+                            />
+                          </div>
+                        ) : (
+                          <TripWaypointCard
+                            key={key + 1}
+                            id={id}
+                            orderIndex={key + 1}
+                            title={title}
+                            lat={lat}
+                            lon={lon}
+                            date={date}
+                            onEdit={handleWaypointEdit}
+                            onDelete={handleWaypointDelete}
                           />
-                        </div>
-                      ) : (
-                        <TripWaypointCard
-                          key={key}
-                          id={id}
-                          orderIndex={key}
-                          title={title}
-                          lat={lat}
-                          lon={lon}
-                          onEdit={handleWaypointEdit}
-                          onDelete={handleWaypointDelete}
-                        />
-                      ),
+                        ),
                     )}
                   </div>
                   {waypointCreating && (

@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
+  DatePicker,
   Form,
   FormControl,
   FormField,
@@ -16,7 +17,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { zodMessage } from '@/lib';
+import { dateformat, zodMessage } from '@/lib';
 
 type Props = {
   defaultValues: Partial<TripWaypointEditFormState>;
@@ -28,6 +29,7 @@ export type TripWaypointEditFormState = {
   title: string;
   lat: number;
   lon: number;
+  date: Date;
 };
 
 export type TripWaypointEditFormSubmitHandler = (
@@ -42,6 +44,7 @@ const schema = z.object({
     .max(20, zodMessage.string.max('title', 20)),
   lat: z.string().max(20, zodMessage.string.max('latitude', 20)),
   lon: z.string().max(20, zodMessage.string.max('longitude', 20)),
+  date: z.date(),
 });
 
 export const TripWaypointEditForm: React.FC<Props> = ({
@@ -61,6 +64,7 @@ export const TripWaypointEditForm: React.FC<Props> = ({
       lon: defaultValues?.lon
         ? parseFloat(`${defaultValues.lon}`).toString()
         : '0',
+      date: defaultValues?.date,
     },
   });
 
@@ -69,7 +73,7 @@ export const TripWaypointEditForm: React.FC<Props> = ({
       try {
         setLoading(true);
 
-        const { title, lat, lon } = values;
+        const { title, lat, lon, date } = values;
 
         // @todo
         // if (success) {
@@ -82,6 +86,7 @@ export const TripWaypointEditForm: React.FC<Props> = ({
             title,
             lat: parseFloat(lat),
             lon: parseFloat(lon),
+            date,
           });
         }
       } catch (e) {
@@ -136,6 +141,26 @@ export const TripWaypointEditForm: React.FC<Props> = ({
               )}
             />
           </div>
+          <FormField
+            control={form.control}
+            name="date"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Date</FormLabel>
+                <FormControl>
+                  <DatePicker
+                    format={(date) => dateformat(date).format('MMM DD, YYYY')}
+                    date={form.watch('date')}
+                    onChange={(date) => form.setValue('date', date)}
+                    inputProps={{
+                      name: field.name,
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
         <div className="mt-6 flex flex-row justify-end gap-2">
           <Button
