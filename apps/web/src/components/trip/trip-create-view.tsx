@@ -133,14 +133,18 @@ export const TripCreateView = () => {
                   <div className="flex flex-col gap-2">
                     {waypoints.map(({ id, title, lat, lon }, key) =>
                       waypointEditingId === id ? (
-                        <TripWaypointEditForm
+                        <div
                           key={key}
-                          defaultValues={{ title, lat, lon }}
-                          onSubmit={(data) =>
-                            handleWaypointEditSubmit(id, data)
-                          }
-                          onCancel={handleWaypointEditCancel}
-                        />
+                          className="py-4 border-b border-solid border-accent"
+                        >
+                          <TripWaypointEditForm
+                            defaultValues={{ title, lat, lon }}
+                            onSubmit={(data) =>
+                              handleWaypointEditSubmit(id, data)
+                            }
+                            onCancel={handleWaypointEditCancel}
+                          />
+                        </div>
                       ) : (
                         <TripWaypointCard
                           key={key}
@@ -155,14 +159,14 @@ export const TripCreateView = () => {
                       ),
                     )}
                   </div>
-                  <div>
-                    {waypointCreating && (
+                  {waypointCreating && (
+                    <div className="py-4 border-b border-solid border-accent">
                       <TripWaypointCreateForm
                         onSubmit={handleWaypointCreateSubmit}
                         onCancel={handleWaypointCreateCancel}
                       />
-                    )}
-                  </div>
+                    </div>
+                  )}
                   {!waypointCreating && !waypointEditing && (
                     <div className="mt-6 flex flex-col">
                       <Button

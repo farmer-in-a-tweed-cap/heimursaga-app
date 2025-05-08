@@ -11,6 +11,7 @@ import { APP_CONFIG } from '@/config';
 import { toGeoJson } from '@/lib';
 
 import { MapNavigationControl } from './map-control';
+import { addSources, updateSources } from './map.utils';
 
 export type MapOnLoadHandler = (data: MapOnLoadHandlerValue) => void;
 
@@ -55,9 +56,9 @@ type Props = {
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
 
-type MapSourceId = 'waypoints' | 'trips';
+export type MapSourceId = 'waypoints' | 'trips';
 
-type MapSource<T = any> = {
+export type MapSource<T = any> = {
   source: MapSourceId;
   data: { lat: number; lon: number; properties: T }[];
 };
@@ -66,7 +67,7 @@ const config = {
   mapbox: {
     style: `mapbox://styles/${APP_CONFIG.MAPBOX.STYLE}`,
     maxZoom: 18,
-    minZoom: 4,
+    minZoom: 2,
     marker: {
       color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
       scale: 0.75,
@@ -84,55 +85,6 @@ const LAYERS = {
   MARKERS: 'markers',
   WAYPOINTS: 'waypoints',
   CLUSTERS: 'clusters',
-};
-
-const addSources = ({
-  mapbox,
-  sources,
-}: {
-  mapbox: mapboxgl.Map;
-  sources: MapSource[];
-}) => {
-  try {
-    if (!mapbox) return;
-
-    sources.forEach(({ source, data }) => {
-      mapbox.addSource(source, {
-        type: 'geojson',
-        data: toGeoJson({ mode: source, data }),
-      });
-    });
-  } catch (e) {
-    console.error(e);
-  }
-};
-
-const updateSources = ({
-  mapbox,
-  sources,
-}: {
-  mapbox: mapboxgl.Map;
-  sources: MapSource[];
-}) => {
-  try {
-    if (!mapbox) return;
-
-    sources.forEach(({ source: id, data }) => {
-      const source = mapbox.getSource(id) as mapboxgl.GeoJSONSource;
-      source.setData(
-        toGeoJson({
-          mode: id,
-          data: data.map(({ lat, lon, properties }) => ({
-            lat,
-            lon,
-            properties,
-          })),
-        }),
-      );
-    });
-  } catch (e) {
-    console.error(e);
-  }
 };
 
 export const Map: React.FC<Props> = ({
@@ -153,25 +105,18 @@ export const Map: React.FC<Props> = ({
 }) => {
   const [mapReady, setMapReady] = useState(false);
 
-  const [map, setMap] = useState<{
-    bounds: {
-      ne: { lat: number; lon: number };
-      sw: { lat: number; lon: number };
-    };
-  }>({
-    bounds: {
-      ne: { lat: 0, lon: 0 },
-      sw: { lat: 0, lon: 0 },
-    },
-  });
-
+  // refs
   const mapboxRef = useRef<mapboxgl.Map | null>(null);
   const mapboxContainerRef = useRef<any>(null);
   const mapboxPopupRef = useRef<mapboxgl.Popup | null>(null);
   const markerRef = useRef<Marker | null>(null);
-
   const showPopupRef = useRef<boolean>(false);
   const hoverPopupRef = useRef<boolean>(false);
+
+  // if there is no token, don't render the map
+  if (!token) {
+    return <></>;
+  }
 
   // update sources on change
   useEffect(() => {
@@ -179,6 +124,7 @@ export const Map: React.FC<Props> = ({
     updateSources({ mapbox: mapboxRef.current, sources });
   }, [sources]);
 
+  // update coordinates on change
   useEffect(() => {
     if (!mapboxRef.current || !mapReady) return;
 
@@ -190,6 +136,7 @@ export const Map: React.FC<Props> = ({
     }
   }, [coordinates]);
 
+  // update a marker on change
   useEffect(() => {
     if (!mapboxRef.current || !mapReady || !marker) return;
 
@@ -205,8 +152,10 @@ export const Map: React.FC<Props> = ({
       .addTo(mapboxRef.current);
   }, [marker]);
 
+  // render the map
   useEffect(() => {
-    if (!mapboxContainerRef.current || !token) return;
+    // check if the container element available
+    if (!mapboxContainerRef.current) return;
 
     // resize the map on the container resize
     let rafId: number;
@@ -221,29 +170,16 @@ export const Map: React.FC<Props> = ({
 
     resizeObserver.observe(mapboxContainerRef.current);
 
-    console.log('map:render');
-
-    // initiate mapbox
+    // create a mapbox config
     mapboxgl.accessToken = token;
 
-    // set the mapbox config
     let mapboxConfig: MapOptions = {
       container: mapboxContainerRef.current,
-      projection: 'equirectangular',
       style: config.mapbox.style,
       maxZoom: config.mapbox.maxZoom,
       minZoom: config.mapbox.minZoom,
-      pitch: 0,
-      bearing: 0,
-      renderWorldCopies: false,
-      antialias: false,
-      maxBounds: [
-        [-180, -85],
-        [180, 85],
-      ],
     };
 
-    // set initial coordinates
     if (coordinates) {
       const { lat, lon, alt } = coordinates;
       mapboxConfig = {
@@ -264,6 +200,15 @@ export const Map: React.FC<Props> = ({
     // create a mapbox instance
     mapboxRef.current = new mapboxgl.Map(mapboxConfig);
 
+    // set max bounds
+    const bounds = new mapboxgl.LngLatBounds([-180, -85], [180, 85]);
+    mapboxRef.current.setMaxBounds(bounds);
+    mapboxRef.current.fitBounds(bounds, {
+      padding: 0,
+      animate: false,
+    });
+
+    // create a marker
     if (marker) {
       // remove existing marker if it exists
       if (markerRef.current) {
@@ -277,7 +222,7 @@ export const Map: React.FC<Props> = ({
         .addTo(mapboxRef.current);
     }
 
-    // update on load
+    // update mapbox on load
     mapboxRef.current.on('load', () => {
       if (!mapboxRef.current) return;
 
@@ -311,7 +256,7 @@ export const Map: React.FC<Props> = ({
         addSources({ mapbox: mapboxRef.current, sources });
       }
 
-      // add circle layer with dynamic size
+      // add waypoint layer
       mapboxRef.current.addLayer({
         id: LAYERS.WAYPOINTS,
         type: 'circle',
@@ -345,6 +290,7 @@ export const Map: React.FC<Props> = ({
     });
 
     if (!disabled) {
+      // handle click event
       mapboxRef.current.on('click', (e) => {
         if (!mapboxRef.current) return;
 
@@ -376,7 +322,7 @@ export const Map: React.FC<Props> = ({
         offset: 15,
       });
 
-      // handle source click
+      // handle waypoint layer click event
       mapboxRef.current!.on('click', LAYERS.WAYPOINTS, (e) => {
         if (mapboxRef.current && onSourceClick) {
           const sourceId = e.features?.[0].properties?.id;
@@ -384,7 +330,7 @@ export const Map: React.FC<Props> = ({
         }
       });
 
-      // on popoup hover
+      // handle waypoint layer mouse over event
       mapboxRef.current!.on('mouseover', LAYERS.WAYPOINTS, (e) => {
         if (
           !mapboxRef.current ||
@@ -448,6 +394,7 @@ export const Map: React.FC<Props> = ({
         }, 250);
       });
 
+      // handle waypoint layer mouse leave event
       mapboxRef.current!.on('mouseleave', LAYERS.WAYPOINTS, () => {
         if (!mapboxPopupRef.current) return;
 
@@ -463,7 +410,7 @@ export const Map: React.FC<Props> = ({
         }, 100);
       });
 
-      // update on move
+      // update on map drag
       mapboxRef.current.on('moveend', () => {
         if (!mapboxRef.current) return;
 
@@ -493,7 +440,7 @@ export const Map: React.FC<Props> = ({
         }
       });
 
-      // update on zoom
+      // update on map zoom
       mapboxRef.current.on('zoomend', (e) => {
         if (!mapboxRef.current) return;
 
@@ -523,11 +470,6 @@ export const Map: React.FC<Props> = ({
         }
       });
     }
-
-    // @todo
-    // 1. prevent dragging beyond the visible map area
-
-    // resize the map on the container element resize
 
     return () => {
       resizeObserver.disconnect();
