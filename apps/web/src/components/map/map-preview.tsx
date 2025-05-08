@@ -1,13 +1,12 @@
 'use client';
 
-import { GeoJson } from '@repo/types';
 import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 
 import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks';
 
-import { Map } from './map';
+import { Map, MapSource } from './map';
 import { MapPreviewOverlay } from './map-preview-overlay';
 
 type Props = {
@@ -21,9 +20,6 @@ type Props = {
     lat: number;
     lon: number;
   }[];
-  sources?: {
-    geojson: GeoJson;
-  };
   onClick?: () => void;
 };
 
@@ -33,7 +29,6 @@ export const MapPreview: React.FC<Props> = ({
   lon = 0,
   alt = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
   markers,
-  sources,
   className,
   overlay = true,
   onClick = () => {},
@@ -65,10 +60,6 @@ export const MapPreview: React.FC<Props> = ({
               lat,
               lon,
               alt,
-            }}
-            sources={{
-              results: 10,
-              geojson: sources?.geojson,
             }}
             marker={
               marker
