@@ -5,7 +5,7 @@ import { AppMapLayout } from '@/app/layout';
 import { TripCreateView } from '@/components';
 
 export const metadata: Metadata = {
-  title: 'Create trip',
+  title: 'Create a trip',
 };
 
 export default async function Page() {

@@ -18,3 +18,4 @@ export * from './sponsorship';
 export * from './auth';
 export * from './insight';
 export * from './trip';
+export * from './menu';
