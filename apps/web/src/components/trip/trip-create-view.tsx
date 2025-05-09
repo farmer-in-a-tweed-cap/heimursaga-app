@@ -7,6 +7,8 @@ import { useState } from 'react';
 import {
   MAP_SOURCES,
   Map,
+  MapSource,
+  MapSourceData,
   TripWaypointCard,
   TripWaypointCardClickHandler,
   TripWaypointCreateForm,
@@ -214,21 +216,50 @@ export const TripCreateView = () => {
                 token={mapbox.token}
                 sources={[
                   {
-                    sourceId: MAP_SOURCES.WAYPOINTS,
+                    sourceId: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
                     type: 'point',
-                    data: waypoints.map(({ lat, lon }) => ({
+                    data: waypoints.map(({ id, title, date, lat, lon }) => ({
+                      id,
                       lat,
                       lon,
-                      properties: {},
+                      properties: {
+                        id,
+                        title,
+                        date,
+                      },
                     })),
                     config: {
                       cluster: false,
+                    },
+                    onChange: (
+                      data: MapSourceData<{ title: string; date: Date }>[],
+                    ) => {
+                      setWaypoints(
+                        data.map(({ id, lat, lon, properties }) => ({
+                          id,
+                          lat,
+                          lon,
+                          title: '',
+                          date: new Date(),
+                        })),
+                      );
+
+                      // setWaypoints(
+                      //   data.map(({ id, lat, lon, properties }) => ({
+                      //     id,
+                      //     lat,
+                      //     lon,
+                      //     title: properties.title,
+                      //     date: properties.date,
+                      //   })),
+                      // );
                     },
                   },
                   {
                     sourceId: MAP_SOURCES.TRIPS,
                     type: 'line',
-                    data: waypoints.map(({ lat, lon }) => ({
+                    data: waypoints.map(({ id, lat, lon }) => ({
+                      id,
                       lat,
                       lon,
                       properties: {},
