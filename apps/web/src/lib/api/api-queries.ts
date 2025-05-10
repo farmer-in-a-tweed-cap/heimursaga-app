@@ -56,6 +56,7 @@ export const QUERY_KEYS = {
   INSIGHTS: {
     POST: 'post_insights',
   },
+  TRIPS: 'trips',
 };
 
 const createQuery = <T = undefined, R = any>(

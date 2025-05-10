@@ -45,7 +45,7 @@ export type MapOnSourceClickHandler = (sourceId: string) => void;
 export type MapSourceType = 'point' | 'line';
 
 export type MapSourceData<T = any> = {
-  id: string;
+  id: number | string;
   lat: number;
   lon: number;
   properties: T;

@@ -579,6 +579,7 @@ export const apiClient = {
       }),
       {
         method: API_METHODS.DELETE,
+        body: JSON.stringify({}),
         ...config,
       },
     ),

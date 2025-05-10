@@ -11,9 +11,7 @@ import {
   FormLabel,
   FormMessage,
   Input,
-  NumberInput,
 } from '@repo/ui/components';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -21,6 +19,7 @@ import { dateformat, zodMessage } from '@/lib';
 
 type Props = {
   defaultValues: Partial<TripWaypointEditFormState>;
+  loading?: boolean;
   onSubmit?: TripWaypointEditFormSubmitHandler;
   onCancel?: () => void;
 };
@@ -48,12 +47,11 @@ const schema = z.object({
 });
 
 export const TripWaypointEditForm: React.FC<Props> = ({
+  loading = false,
   defaultValues,
   onSubmit,
   onCancel,
 }) => {
-  const [loading, setLoading] = useState<boolean>(false);
-
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -70,27 +68,14 @@ export const TripWaypointEditForm: React.FC<Props> = ({
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      try {
-        setLoading(true);
-
-        const { title, lat, lon, date } = values;
-
-        // @todo
-        // if (success) {
-        // } else {
-        //   setLoading(false);
-        // }
-
-        if (onSubmit) {
-          onSubmit({
-            title,
-            lat: parseFloat(lat),
-            lon: parseFloat(lon),
-            date,
-          });
-        }
-      } catch (e) {
-        setLoading(false);
+      const { title, lat, lon, date } = values;
+      if (onSubmit) {
+        onSubmit({
+          title,
+          lat: parseFloat(lat),
+          lon: parseFloat(lon),
+          date,
+        });
       }
     },
   );
@@ -152,6 +137,7 @@ export const TripWaypointEditForm: React.FC<Props> = ({
                     format={(date) => dateformat(date).format('MMM DD, YYYY')}
                     date={form.watch('date')}
                     onChange={(date) => form.setValue('date', date)}
+                    disabled={loading}
                     inputProps={{
                       name: field.name,
                     }}

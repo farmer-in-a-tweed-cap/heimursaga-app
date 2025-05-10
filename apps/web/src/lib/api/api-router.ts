@@ -93,7 +93,8 @@ export const API_ROUTER = {
     UPDATE: (id: string) => `/trips/${id}`,
     DELETE: (id: string) => `/trips/${id}`,
     WAYPOINTS: {
-      CREATE: ({ trip_id }: { trip_id: string }) => `/trips/${trip_id}`,
+      CREATE: ({ trip_id }: { trip_id: string }) =>
+        `/trips/${trip_id}/waypoints`,
       UPDATE: ({
         trip_id,
         waypoint_id,

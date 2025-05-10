@@ -5,10 +5,15 @@ type Props = {
   href?: string;
   id: string;
   title: string;
-  postsCount: number;
+  waypointsCount: number;
 };
 
-export const TripCard: React.FC<Props> = ({ href, id, title, postsCount }) => {
+export const TripCard: React.FC<Props> = ({
+  href,
+  id,
+  title,
+  waypointsCount = 0,
+}) => {
   return (
     <Card className="p-4 box-border cursor-pointer hover:bg-gray-50">
       {href && <Link href={href} className="z-10 absolute inset-0"></Link>}
@@ -19,7 +24,7 @@ export const TripCard: React.FC<Props> = ({ href, id, title, postsCount }) => {
           </div>
           <div>
             <span className="text-sm text-gray-600 font-normal">
-              {postsCount} posts
+              {waypointsCount} waypoints
             </span>
           </div>
         </div>

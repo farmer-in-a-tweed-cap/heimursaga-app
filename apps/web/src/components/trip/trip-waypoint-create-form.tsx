@@ -20,6 +20,7 @@ import { z } from 'zod';
 import { dateformat, zodMessage } from '@/lib';
 
 type Props = {
+  loading?: boolean;
   onSubmit?: TripWaypointCreateFormSubmitHandler;
   onCancel?: () => void;
 };
@@ -43,11 +44,10 @@ const schema = z.object({
 });
 
 export const TripWaypointCreateForm: React.FC<Props> = ({
+  loading = false,
   onSubmit,
   onCancel,
 }) => {
-  const [loading, setLoading] = useState<boolean>(false);
-
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -59,27 +59,15 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      try {
-        setLoading(true);
+      const { title, lat, lon, date } = values;
 
-        const { title, lat, lon, date } = values;
-
-        // @todo
-        // if (success) {
-        // } else {
-        //   setLoading(false);
-        // }
-
-        if (onSubmit) {
-          onSubmit({
-            title,
-            lat: parseFloat(lat),
-            lon: parseFloat(lon),
-            date,
-          });
-        }
-      } catch (e) {
-        setLoading(false);
+      if (onSubmit) {
+        onSubmit({
+          title,
+          lat: parseFloat(lat),
+          lon: parseFloat(lon),
+          date,
+        });
       }
     },
   );
@@ -140,6 +128,7 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
                     format={(date) => dateformat(date).format('MMM DD, YYYY')}
                     date={form.watch('date')}
                     onChange={(date) => form.setValue('date', date)}
+                    disabled={loading}
                     inputProps={{
                       name: field.name,
                     }}

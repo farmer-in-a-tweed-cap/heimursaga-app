@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default async function Page() {
   return (
     <AppMapLayout>
-      <TripCreateView />
+      <TripCreateView mode="create" />
     </AppMapLayout>
   );
 }
