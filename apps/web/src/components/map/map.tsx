@@ -78,6 +78,7 @@ export const MAP_SOURCES = {
 
 const MAP_LAYERS = {
   WAYPOINTS: 'waypoints',
+  WAYPOINTS_ORDER_NUMBER: 'waypoint_order_number',
   WAYPOINTS_DRAGGABLE: 'waypoints_draggable',
   LINES: 'lines',
   CLUSTERS: 'clusters',
@@ -378,27 +379,6 @@ export const Map: React.FC<Props> = ({
       });
 
       mapboxRef.current.addLayer({
-        id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
-        type: 'circle',
-        source: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
-        paint: {
-          'circle-radius': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            // dynamic point sizes ([zoom, radius])
-            ...[5, 5],
-            ...[8, 8],
-            ...[12, 12],
-            ...[15, 12],
-          ],
-          'circle-stroke-width': 2,
-          'circle-color': config.marker.color,
-          'circle-stroke-color': '#ffffff',
-        },
-      });
-
-      mapboxRef.current.addLayer({
         id: MAP_LAYERS.LINES,
         type: 'line',
         source: MAP_SOURCES.TRIPS,
@@ -408,7 +388,53 @@ export const Map: React.FC<Props> = ({
         },
         paint: {
           'line-color': `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
-          'line-width': 2,
+          'line-width': 3,
+        },
+      });
+
+      mapboxRef.current.addLayer({
+        id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
+        type: 'circle',
+        source: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
+        paint: {
+          'circle-radius': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            // dynamic point sizes ([zoom, radius])
+            ...[5, 10],
+            ...[8, 10],
+            ...[12, 14],
+            ...[15, 14],
+          ],
+          'circle-stroke-width': 2,
+          'circle-color': config.marker.color,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      mapboxRef.current.addLayer({
+        id: MAP_LAYERS.WAYPOINTS_ORDER_NUMBER,
+        type: 'symbol',
+        source: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
+        layout: {
+          'text-field': ['get', 'index'],
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            // dynamic font size ([zoom, radius])
+            ...[5, 10],
+            ...[8, 10],
+            ...[12, 14],
+            ...[15, 14],
+          ],
+          'text-anchor': 'center',
+          'text-offset': [0, 0],
+        },
+        paint: {
+          'text-color': '#ffffff',
         },
       });
 

@@ -7,7 +7,6 @@ import { useState } from 'react';
 import {
   MAP_SOURCES,
   Map,
-  MapSource,
   MapSourceData,
   TripWaypointCard,
   TripWaypointCardClickHandler,
@@ -147,7 +146,7 @@ export const TripCreateView = () => {
                 <h2 className="text-xl font-medium">Waypoints</h2>
                 <div className="mt-4 flex flex-col">
                   <div className="flex flex-col gap-2">
-                    {sortByDate<WaypointElement>(waypoints, 'desc').map(
+                    {sortByDate<WaypointElement>(waypoints, 'asc').map(
                       ({ id, title, lat, lon, date }, key) =>
                         waypointEditingId === id ? (
                           <div
@@ -218,16 +217,19 @@ export const TripCreateView = () => {
                   {
                     sourceId: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
                     type: 'point',
-                    data: waypoints.map(({ id, title, date, lat, lon }) => ({
-                      id,
-                      lat,
-                      lon,
-                      properties: {
+                    data: waypoints.map(
+                      ({ id, title, date, lat, lon }, key) => ({
                         id,
-                        title,
-                        date,
-                      },
-                    })),
+                        lat,
+                        lon,
+                        properties: {
+                          index: key + 1,
+                          id,
+                          title,
+                          date,
+                        },
+                      }),
+                    ),
                     config: {
                       cluster: false,
                     },
@@ -243,16 +245,6 @@ export const TripCreateView = () => {
                           date: new Date(),
                         })),
                       );
-
-                      // setWaypoints(
-                      //   data.map(({ id, lat, lon, properties }) => ({
-                      //     id,
-                      //     lat,
-                      //     lon,
-                      //     title: properties.title,
-                      //     date: properties.date,
-                      //   })),
-                      // );
                     },
                   },
                   {
