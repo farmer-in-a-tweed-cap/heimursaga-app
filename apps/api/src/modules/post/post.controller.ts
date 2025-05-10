@@ -8,13 +8,12 @@ import {
   Param,
   Post,
   Put,
-  Req,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public, Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
-import { IRequest, ISession } from '@/common/interfaces';
+import { ISession } from '@/common/interfaces';
 
 import { PostCreateDto, PostUpdateDto } from './post.dto';
 import { PostService } from './post.service';

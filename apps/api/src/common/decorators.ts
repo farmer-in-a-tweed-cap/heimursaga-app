@@ -21,7 +21,7 @@ export const Session = createParamDecorator(
 
     const sid = req.session.get(SESSION_KEYS.SID);
     const userId = req.session.get(SESSION_KEYS.USER_ID);
-    const userRole = req.session.get(SESSION_KEYS.USER_ROLE);
+    const userRole = req.session.get(SESSION_KEYS.USER_ROLE) as UserRole;
 
     const forwardedFor = req.headers['x-forwarded-for'] as string;
     const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : req.ip;

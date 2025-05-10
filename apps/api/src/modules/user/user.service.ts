@@ -16,6 +16,7 @@ import {
   IUserSettingsUpdateQuery,
   MediaUploadContext,
   UserNotificationContext,
+  UserRole,
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
@@ -65,6 +66,7 @@ export class UserService {
         select: {
           id: true,
           username: true,
+          role: true,
           profile: {
             select: {
               name: true,
@@ -92,6 +94,7 @@ export class UserService {
         memberDate: user.created_at,
         followed: userId ? user.followers.length > 0 : false,
         you: userId ? userId === user.id : false,
+        creator: user.role === UserRole.CREATOR,
       };
 
       return response;

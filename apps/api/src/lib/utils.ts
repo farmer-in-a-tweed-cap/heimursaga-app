@@ -1,3 +1,4 @@
+import { UserRole } from '@repo/types';
 import * as crypto from 'node:crypto';
 import * as path from 'node:path';
 
@@ -47,4 +48,9 @@ export const hashPassword = (password: string): string => {
     .toString('hex');
 
   return hash;
+};
+
+export const matchRoles = (role: UserRole, roles: UserRole[]): boolean => {
+  if (!role) return false;
+  return roles.some((r) => r === role);
 };

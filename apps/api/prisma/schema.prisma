@@ -211,15 +211,17 @@ model Post {
 }
 
 model Waypoint {
-  id         Int            @id @default(autoincrement())
-  lat        Float
-  lon        Float
-  public     Boolean?       @default(true)
-  posts      Post[]
-  trips      TripWaypoint[] @relation("waypoint_trips")
-  created_at DateTime?      @default(now())
-  updated_at DateTime?      @updatedAt
-  deleted_at DateTime?
+  id          Int            @id @default(autoincrement())
+  lat         Float
+  lon         Float
+  title       String?        @db.VarChar(200)
+  description String?        @db.VarChar(500)
+  public      Boolean?       @default(true)
+  posts       Post[]
+  trips       TripWaypoint[] @relation("waypoint_trips")
+  created_at  DateTime?      @default(now())
+  updated_at  DateTime?      @updatedAt
+  deleted_at  DateTime?
 
   @@map("waypoints")
 }

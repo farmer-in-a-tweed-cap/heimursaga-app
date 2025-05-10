@@ -204,16 +204,27 @@ export class PostService {
     try {
       const { userId } = session;
 
-      const publicId = generator.publicId();
+      // check access
+      if (!userId) throw new ServiceForbiddenException();
+
+      const { lat, lon } = payload;
 
       // create a post
       const post = await this.prisma.post.create({
         data: {
           ...payload,
+          public_id: generator.publicId(),
+          lat,
+          lon,
           public: true,
           draft: false,
-          public_id: publicId,
           author: { connect: { id: userId } },
+          waypoint: {
+            create: {
+              lat,
+              lon,
+            },
+          },
         },
         select: {
           public_id: true,
@@ -240,8 +251,10 @@ export class PostService {
       const { publicId } = query;
       const { userId } = session;
 
-      if (!publicId || !userId)
-        throw new ServiceNotFoundException('post not found');
+      // check access
+      if (!userId) throw new ServiceForbiddenException();
+
+      if (!publicId) throw new ServiceNotFoundException('post not found');
 
       // access check
       const access = await this.prisma.post
@@ -275,8 +288,10 @@ export class PostService {
       const { publicId } = query;
       const { userId } = session;
 
-      if (!publicId || !userId)
-        throw new ServiceNotFoundException('post not found');
+      // check access
+      if (!userId) throw new ServiceForbiddenException();
+
+      if (!publicId) throw new ServiceNotFoundException('post not found');
 
       // access check
       const access = await this.prisma.post

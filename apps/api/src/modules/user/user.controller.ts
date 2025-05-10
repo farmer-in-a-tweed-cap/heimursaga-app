@@ -8,7 +8,6 @@ import {
   Param,
   Post,
   Put,
-  Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -17,7 +16,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Public, Session } from '@/common/decorators';
 import { ParamPublicIdDto, ParamUsernameDto } from '@/common/dto';
 import { FileInterceptor } from '@/common/interceptors';
-import { IRequest, ISession } from '@/common/interfaces';
+import { ISession } from '@/common/interfaces';
 import { IUploadedFile } from '@/modules/upload';
 
 import {

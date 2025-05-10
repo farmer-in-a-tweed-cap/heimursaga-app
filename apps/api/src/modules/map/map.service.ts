@@ -36,19 +36,6 @@ export class MapService {
         },
       } as Prisma.WaypointWhereInput;
 
-      const select = {
-        public_id: true,
-        title: true,
-        lat: true,
-        lon: true,
-        place: true,
-        content: true,
-        date: true,
-        likes_count: true,
-        bookmarks_count: true,
-        created_at: true,
-      } as Prisma.PostSelect;
-
       const take = 50;
 
       if (location) {
@@ -96,13 +83,14 @@ export class MapService {
             take: 1,
           },
         },
+        take,
+        orderBy: [{ id: 'desc' }],
       });
 
       const response: IMapQueryResponse = {
         results,
         waypoints: waypoints.map(({ lat, lon, posts }) => {
           const post = posts[0];
-
           return {
             lat,
             lon,

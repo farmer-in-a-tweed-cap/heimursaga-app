@@ -505,12 +505,7 @@ export interface ITripDetail {
   id: string;
   title: string;
   description?: string;
-  posts: {
-    id: string;
-    title: string;
-    lat: number;
-    lon: number;
-  }[];
+  waypoints: IWaypointDetail[];
 }
 
 export interface ITripGetAllResponse {
@@ -522,16 +517,35 @@ export interface ITripGetByIdResponse extends ITripDetail {}
 
 export interface ITripCreatePayload {
   title: string;
-  posts: ITripPostCreatePayload[];
 }
 
 export interface ITripCreateResponse {
   tripId: string;
 }
 
-export interface ITripPostCreatePayload {
-  title?: string;
+export interface ITripUpdatePayload {
+  title: string;
+}
+
+// waypoints
+export interface IWaypointDetail {
+  id: number;
   lat: number;
   lon: number;
-  date: Date;
+  title: string;
+  description?: string;
+}
+
+export interface IWaypointCreatePayload {
+  lat: number;
+  lon: number;
+  title?: string;
+  description?: string;
+}
+
+export interface IWaypointUpdatePayload {
+  lat?: number;
+  lon?: number;
+  title?: string;
+  description?: string;
 }

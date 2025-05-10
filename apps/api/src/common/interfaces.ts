@@ -10,7 +10,7 @@ export interface IResponse extends FastifyReply {}
 export interface ISession {
   sid: string;
   userId?: number;
-  userRole?: string;
+  userRole?: UserRole;
   ip?: string;
   userAgent?: string;
 }
