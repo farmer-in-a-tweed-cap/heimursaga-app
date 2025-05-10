@@ -11,7 +11,6 @@ import { ROUTER } from '@/router';
 
 type Props = {
   username: string;
-  me: boolean;
 };
 
 export const UserPosts: React.FC<Props> = ({ username }) => {
