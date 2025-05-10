@@ -36,6 +36,7 @@ model User {
   sessions              UserSession[]
   checkouts             Checkout[]
   posts                 Post[]
+  trips                 Trip[]
   post_likes            PostLike[]         @relation("user_post_likes")
   post_bookmarks        PostBookmark[]     @relation("user_post_bookmarks")
   following             UserFollow[]       @relation("user_follows_follower")
@@ -192,6 +193,8 @@ model Post {
   lon                   Float?
   place                 String?            @db.VarChar(250)
   date                  DateTime?          @default(now())
+  waypoint              Waypoint?          @relation(fields: [waypoint_id], references: [id], onDelete: Cascade)
+  waypoint_id           Int?
   author                User?              @relation(fields: [author_id], references: [id], onDelete: Cascade)
   author_id             Int
   likes                 PostLike[]         @relation("post_likes")
@@ -207,11 +210,52 @@ model Post {
   @@map("posts")
 }
 
+model Waypoint {
+  id         Int            @id @default(autoincrement())
+  lat        Float
+  lon        Float
+  public     Boolean?       @default(true)
+  posts      Post[]
+  trips      TripWaypoint[] @relation("waypoint_trips")
+  created_at DateTime?      @default(now())
+  updated_at DateTime?      @updatedAt
+  deleted_at DateTime?
+
+  @@map("waypoints")
+}
+
+model Trip {
+  id          Int            @id @default(autoincrement())
+  public_id   String         @db.VarChar(14)
+  title       String         @db.VarChar(200)
+  description String?        @db.Text
+  public      Boolean?       @default(false)
+  waypoints   TripWaypoint[] @relation("trip_waypoints")
+  author      User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  author_id   Int
+  created_at  DateTime?      @default(now())
+  updated_at  DateTime?      @updatedAt
+  deleted_at  DateTime?
+
+  @@map("trips")
+}
+
+model TripWaypoint {
+  waypoint_id Int
+  waypoint    Waypoint  @relation("waypoint_trips", fields: [waypoint_id], references: [id], onDelete: Cascade)
+  trip_id     Int
+  trip        Trip      @relation("trip_waypoints", fields: [trip_id], references: [id], onDelete: Cascade)
+  created_at  DateTime? @default(now())
+
+  @@id([trip_id, waypoint_id])
+  @@map("trip_waypoints")
+}
+
 model PostLike {
   post_id    Int
+  post       Post      @relation("post_likes", fields: [post_id], references: [id], onDelete: Cascade)
   user_id    Int
   user       User      @relation("user_post_likes", fields: [user_id], references: [id], onDelete: Cascade)
-  post       Post      @relation("post_likes", fields: [post_id], references: [id], onDelete: Cascade)
   created_at DateTime? @default(now())
 
   @@id([post_id, user_id])
@@ -220,9 +264,9 @@ model PostLike {
 
 model PostBookmark {
   post_id    Int
+  post       Post      @relation("post_bookmarks", fields: [post_id], references: [id], onDelete: Cascade)
   user_id    Int
   user       User      @relation("user_post_bookmarks", fields: [user_id], references: [id], onDelete: Cascade)
-  post       Post      @relation("post_bookmarks", fields: [post_id], references: [id], onDelete: Cascade)
   created_at DateTime? @default(now())
 
   @@id([post_id, user_id])
