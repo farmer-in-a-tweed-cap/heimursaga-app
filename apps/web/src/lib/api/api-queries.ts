@@ -1,5 +1,7 @@
 import {
   ILoginPayload,
+  IMapQueryPayload,
+  IMapQueryResponse,
   IPasswordResetPayload,
   IPasswordUpdatePayload,
   IPaymentMethodGetAllResponse,
@@ -8,8 +10,6 @@ import {
   IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
-  ISearchQueryPayload,
-  ISearchQueryResponse,
   ISignupPayload,
   ISponsorshipTierUpdatePayload,
   IUserFollowersQueryResponse,
@@ -33,7 +33,9 @@ export const QUERY_KEYS = {
   QUERY_POST_MAP: 'query_post_map',
   GET_SESSION_USER: 'get_session_user',
   GET_SESSION: 'get_session',
-  SEARCH: 'search',
+  MAP: {
+    QUERY: 'map_query',
+  },
   USER_FOLLOWERS: 'user_followers',
   USER_FOLLOWING: 'user_following',
   USER_FEED: 'user_feed',
@@ -183,18 +185,6 @@ export const getUserPostsByUsernameQuery = createQuery<
       }
       return data as IUserPostsQueryResponse;
     }),
-);
-
-export const searchQuery = createQuery<
-  ISearchQueryPayload,
-  ISearchQueryResponse
->([QUERY_KEYS.SEARCH], (query) =>
-  apiClient.search(query).then(({ success, message, data }) => {
-    if (!success) {
-      throw new Error(message);
-    }
-    return data as ISearchQueryResponse;
-  }),
 );
 
 export const postLikeMutation = createMutation<

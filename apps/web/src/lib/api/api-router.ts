@@ -7,7 +7,9 @@ export const API_ROUTER = {
   CHANGE_PASSWORD: 'auth/change-password',
   VALIDATE_TOKEN: (token: string) => `/auth/tokens/${token}`,
   GET_SESSION_USER: 'auth/user',
-  SEARCH: '/search',
+  MAP: {
+    QUERY: '/map/query',
+  },
   USER: {
     FEED: `/user/feed`,
     BOOKMARKS: `/user/bookmarks`,

@@ -1,5 +1,7 @@
 import {
   ILoginPayload,
+  IMapQueryPayload,
+  IMapQueryResponse,
   IPasswordResetPayload,
   IPasswordUpdatePayload,
   IPaymentMethodCreatePayload,
@@ -17,8 +19,6 @@ import {
   IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
-  ISearchQueryPayload,
-  ISearchQueryResponse,
   ISessionUserGetResponse,
   ISignupPayload,
   ISponsorCheckoutPayload,
@@ -159,11 +159,11 @@ export const apiClient = {
     { username }: { username: string },
     config?: RequestConfig,
   ) => api.request<IUserMapGetResponse>(API_ROUTER.USERS.MAP(username), config),
-  search: async (query: ISearchQueryPayload, config?: RequestConfig) =>
-    api.request<ISearchQueryResponse>(API_ROUTER.SEARCH, {
+  mapQuery: async (query: IMapQueryPayload, config?: RequestConfig) =>
+    api.request<IMapQueryResponse>(API_ROUTER.MAP.QUERY, {
       method: API_METHODS.POST,
       body: JSON.stringify(query),
-      cookie: config ? config.cookie : undefined,
+      ...config,
     }),
   likePost: async ({ postId }: { postId: string }, config?: RequestConfig) =>
     api.request<{ likesCount: number }>(API_ROUTER.POSTS.LIKE(postId), {

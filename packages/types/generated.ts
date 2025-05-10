@@ -282,36 +282,42 @@ export interface IPostQueryMapResponse {
   };
 }
 
-// search
-export interface ISearchQueryPayload {
-  location?: ISearchQueryLocation;
+// map
+export interface IMapQueryPayload {
+  location?: IMapQueryLocation;
   limit?: number;
   page?: number;
   userId?: number;
 }
 
-export interface ISearchQueryResponse {
+export interface IMapQueryResponse {
   results: number;
-  data: {
-    id: string;
-    title: string;
-    content: string;
-    date: Date;
+  waypoints: {
     lat: number;
     lon: number;
+    post?: {
+      id: string;
+      title: string;
+      content: string;
+      author: {
+        username: string;
+        name: string;
+        picture: string;
+      };
+    };
   }[];
 }
 
-export interface ISearchQueryLocation {
-  bounds?: ISearchQueryLocationBounds;
+export interface IMapQueryLocation {
+  bounds?: IMapQueryLocationBounds;
 }
 
-export interface ISearchQueryLocationBounds {
-  ne: ISearchQueryLocationBound;
-  sw: ISearchQueryLocationBound;
+export interface IMapQueryLocationBounds {
+  ne: IMapQueryLocationBound;
+  sw: IMapQueryLocationBound;
 }
 
-export interface ISearchQueryLocationBound {
+export interface IMapQueryLocationBound {
   lat: number;
   lon: number;
 }

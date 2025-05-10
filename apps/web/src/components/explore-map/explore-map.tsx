@@ -69,18 +69,9 @@ export const ExploreMap: React.FC<Props> = () => {
 
   const [postId, setPostId] = useState<string | null>(null);
 
-  const postQuery = useQuery({
-    queryKey: [QUERY_KEYS.POSTS, postId],
-    queryFn: async () =>
-      apiClient
-        .getPostById({ query: { id: postId as string } })
-        .then(({ data }) => data),
-    enabled: !!postId,
-  });
-
-  const searchQuery = useQuery({
+  const mapQuery = useQuery({
     queryKey: [
-      QUERY_KEYS.SEARCH,
+      QUERY_KEYS.MAP.QUERY,
       searchState?.bounds.ne.lat,
       searchState?.bounds.ne.lon,
       searchState?.bounds.sw.lat,
@@ -88,7 +79,7 @@ export const ExploreMap: React.FC<Props> = () => {
     ],
     queryFn: async () =>
       apiClient
-        .search({ location: { bounds: searchState?.bounds } })
+        .mapQuery({ location: { bounds: searchState?.bounds } })
         .then(({ data }) => data),
     enabled: [
       searchState?.bounds.ne.lat,
@@ -99,9 +90,21 @@ export const ExploreMap: React.FC<Props> = () => {
     retry: 0,
   });
 
+  const postQuery = useQuery({
+    queryKey: [QUERY_KEYS.POSTS, postId],
+    queryFn: async () =>
+      apiClient
+        .getPostById({ query: { id: postId as string } })
+        .then(({ data }) => data),
+    enabled: !!postId,
+  });
+
   const post = postQuery?.data;
   const postLoading = postQuery.isLoading;
-  const waypoints = searchQuery.data?.data || [];
+
+  const mapQueryLoading = mapQuery.isPending || mapQuery.isLoading;
+  const mapQueryResults = mapQuery.data?.results || 0;
+  const mapQueryWaypoints = mapQuery.data?.waypoints || [];
 
   const coordinates = {
     lat: params.lat
@@ -294,13 +297,13 @@ export const ExploreMap: React.FC<Props> = () => {
           <div className="flex flex-row justify-between items-center py-4 px-6 bg-white">
             <div className="flex flex-col gap-0">
               <span className="text-lg font-medium">Explore</span>
-              {searchQuery.isPending || searchQuery.isLoading ? (
+              {mapQuery.isPending || mapQuery.isLoading ? (
                 <div className="mt-1 h-[16] flex flex-row items-center justify-start">
                   <Skeleton className="h-[10px]" />
                 </div>
               ) : (
                 <span className="h-[16px] text-sm font-normal text-gray-600">
-                  {searchQuery.data?.results} entries found
+                  {mapQueryResults} entries found
                 </span>
               )}
             </div>
@@ -314,18 +317,22 @@ export const ExploreMap: React.FC<Props> = () => {
             </div>
           </div>
           <div className="flex flex-col gap-2 overflow-y-scroll no-scrollbar p-6 box-border">
-            {searchQuery.isPending || searchQuery.isLoading ? (
+            {mapQueryLoading ? (
               <LoadingSpinner />
             ) : (
-              searchQuery.data?.data.map(({ id, ...post }, key) => (
-                <PostCard
-                  key={key}
-                  {...post}
-                  id={id}
-                  actions={{ bookmark: true }}
-                  onClick={() => handlePostOpen(id)}
-                />
-              ))
+              mapQueryWaypoints.map(({ post }, key) =>
+                post ? (
+                  <PostCard
+                    key={key}
+                    {...post}
+                    id={post.id}
+                    actions={{ bookmark: true }}
+                    onClick={() => handlePostOpen(post.id)}
+                  />
+                ) : (
+                  <></>
+                ),
+              )
             )}
           </div>
         </div>
@@ -399,13 +406,19 @@ export const ExploreMap: React.FC<Props> = () => {
                 {
                   sourceId: 'waypoints',
                   type: 'point',
-                  data: waypoints.map(
-                    ({ lat, lon, id, title, content, date }) => ({
-                      lat,
-                      lon,
-                      properties: { id, title, content, date },
-                    }),
-                  ),
+                  data: mapQueryWaypoints.map(({ lat, lon, post }, key) => ({
+                    id: `${key}`,
+                    lat,
+                    lon,
+                    properties: post
+                      ? {
+                          id: post.id,
+                          title: post.title,
+                          content: post.content,
+                          // date: post.date,
+                        }
+                      : {},
+                  })),
                   config: {
                     cluster: true,
                   },
