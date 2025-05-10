@@ -13,6 +13,7 @@ type Props = {
   format: (date: Date) => string;
   date?: Date;
   onChange?: (date: Date) => void;
+  disabled?: boolean;
   inputProps?: React.ComponentProps<'input'>;
 };
 
@@ -20,6 +21,7 @@ export const DatePicker: React.FC<Props> = ({
   date,
   format,
   onChange,
+  disabled = false,
   inputProps,
 }) => {
   const handleSelect = (date?: Date) => {
@@ -30,14 +32,21 @@ export const DatePicker: React.FC<Props> = ({
 
   return (
     <Popover>
-      <PopoverTrigger>
+      <PopoverTrigger disabled={disabled}>
         <div className="relative flex flex-row">
           <div className="absolute left-0 top-0 bottom-0 w-[40px] flex flex-row items-center justify-center">
-            <CalendarIcon size={16} />
+            <CalendarIcon
+              size={16}
+              className={cn(disabled ? 'text-gray-500' : 'text-black')}
+            />
           </div>
           <Input
             value={date ? format(date) : 'dd/mm/yyyy'}
-            className="cursor-pointer pl-9"
+            className={cn(
+              disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+              'pl-9',
+            )}
+            disabled={disabled}
             {...inputProps}
           />
         </div>
