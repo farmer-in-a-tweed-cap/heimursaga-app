@@ -5,12 +5,12 @@ import { AuthModule } from '@/modules/auth';
 import { EmailModule } from '@/modules/email';
 import { EventModule } from '@/modules/event';
 import { LoggerModule } from '@/modules/logger';
+import { MapModule } from '@/modules/map';
 import { NotificationModule } from '@/modules/notification';
 import { PaymentModule } from '@/modules/payment';
 import { PayoutModule } from '@/modules/payout';
 import { PostModule } from '@/modules/post';
 import { PrismaModule } from '@/modules/prisma';
-import { SearchModule } from '@/modules/search';
 import { SponsorModule } from '@/modules/sponsor';
 import { StripeModule } from '@/modules/stripe';
 import { UploadModule } from '@/modules/upload';
@@ -35,7 +35,7 @@ import { AppService } from './app.service';
     PostModule,
     UploadModule,
     UserModule,
-    SearchModule,
+    MapModule,
     PaymentModule,
     SponsorModule,
     PayoutModule,
