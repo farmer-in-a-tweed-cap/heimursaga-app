@@ -6,6 +6,7 @@ import {
 } from '@repo/types';
 import {
   IsDate,
+  IsDateString,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -66,7 +67,7 @@ export class WaypointCreateDto implements IWaypointCreatePayload {
   title?: string;
 
   @ApiProperty({ required: false })
-  @IsDate({ message: 'must be a date' })
+  @IsDateString()
   @IsOptional()
   date: Date;
 }
@@ -90,7 +91,7 @@ export class WaypointUpdateDto implements IWaypointUpdatePayload {
   lon?: number;
 
   @ApiProperty({ required: false })
-  @IsDate({ message: 'must be a date' })
+  @IsDateString()
   @IsOptional()
   date?: Date;
 }

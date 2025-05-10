@@ -93,14 +93,15 @@ export class TripService {
           id: public_id,
           title,
           description: '',
-          waypoints: waypoints.map(({ waypoint: { id, lat, lon, title } }) => {
-            return {
-              id,
-              lat,
-              lon,
-              title,
-            };
-          }),
+          waypointsCount: waypoints.length,
+          // waypoints: waypoints.map(({ waypoint: { id, lat, lon, title } }) => {
+          //   return {
+          //     id,
+          //     lat,
+          //     lon,
+          //     title,
+          //   };
+          // }),
         })),
       };
 
@@ -158,7 +159,13 @@ export class TripService {
           waypoints: {
             select: {
               waypoint: {
-                select: { id: true, title: true, lat: true, lon: true },
+                select: {
+                  id: true,
+                  title: true,
+                  lat: true,
+                  lon: true,
+                  date: true,
+                },
               },
             },
           },
@@ -171,14 +178,17 @@ export class TripService {
         id: public_id,
         title,
         description: '',
-        waypoints: waypoints.map(({ waypoint: { id, lat, lon, title } }) => {
-          return {
-            id,
-            lat,
-            lon,
-            title,
-          };
-        }),
+        waypoints: waypoints.map(
+          ({ waypoint: { id, lat, lon, title, date } }) => {
+            return {
+              id,
+              lat,
+              lon,
+              title,
+              date,
+            };
+          },
+        ),
       };
 
       return response;
@@ -335,13 +345,15 @@ export class TripService {
         });
 
       // create a waypoint
+      const { title, lat, lon, date } = payload;
       await this.prisma.tripWaypoint.create({
         data: {
           waypoint: {
             create: {
-              title: payload.title,
-              lat: payload.lat,
-              lon: payload.lon,
+              title,
+              lat,
+              lon,
+              date,
             },
           },
 
@@ -404,7 +416,7 @@ export class TripService {
 
       // get the waypoint
       if (!waypointId) throw new ServiceNotFoundException('waypoint not found');
-      const waypoint = await this.prisma.trip
+      const waypoint = await this.prisma.waypoint
         .findFirstOrThrow({
           where: { id: waypointId },
           select: { id: true },
@@ -414,13 +426,14 @@ export class TripService {
         });
 
       // update the waypoint
-      const { title, lat, lon } = payload;
+      const { title, lat, lon, date } = payload;
       await this.prisma.waypoint.update({
         where: { id: waypoint.id },
         data: {
           title,
           lat,
           lon,
+          date,
         },
       });
     } catch (e) {
@@ -471,7 +484,7 @@ export class TripService {
 
       // get the waypoint
       if (!waypointId) throw new ServiceNotFoundException('waypoint not found');
-      const waypoint = await this.prisma.trip
+      const waypoint = await this.prisma.waypoint
         .findFirstOrThrow({
           where: { id: waypointId },
           select: { id: true },

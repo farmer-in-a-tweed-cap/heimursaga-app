@@ -217,6 +217,7 @@ model Waypoint {
   title       String?        @db.VarChar(200)
   description String?        @db.VarChar(500)
   public      Boolean?       @default(true)
+  date        DateTime?
   posts       Post[]
   trips       TripWaypoint[] @relation("waypoint_trips")
   created_at  DateTime?      @default(now())

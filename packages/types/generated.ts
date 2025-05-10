@@ -510,7 +510,11 @@ export interface ITripDetail {
 
 export interface ITripGetAllResponse {
   results: number;
-  data: ITripDetail[];
+  data: {
+    id: string;
+    title: string;
+    waypointsCount: number;
+  }[];
 }
 
 export interface ITripGetByIdResponse extends ITripDetail {}
@@ -533,12 +537,14 @@ export interface IWaypointDetail {
   lat: number;
   lon: number;
   title: string;
+  date?: Date;
   description?: string;
 }
 
 export interface IWaypointCreatePayload {
   lat: number;
   lon: number;
+  date?: Date;
   title?: string;
   description?: string;
 }
@@ -546,6 +552,7 @@ export interface IWaypointCreatePayload {
 export interface IWaypointUpdatePayload {
   lat?: number;
   lon?: number;
+  date?: Date;
   title?: string;
   description?: string;
 }
