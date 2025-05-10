@@ -32,6 +32,11 @@ import {
   ISubscriptionPlanUpgradeCheckoutPayload,
   ISubscriptionPlanUpgradeCheckoutResponse,
   ISubscriptionPlanUpgradeCompletePayload,
+  ITripCreatePayload,
+  ITripCreateResponse,
+  ITripGetAllResponse,
+  ITripGetByIdResponse,
+  ITripUpdatePayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserMapGetResponse,
@@ -41,6 +46,8 @@ import {
   IUserProfileDetail,
   IUserSettingsProfileResponse,
   IUserSettingsProfileUpdateQuery,
+  IWaypointCreatePayload,
+  IWaypointUpdatePayload,
 } from '@repo/types';
 
 import {
@@ -475,4 +482,104 @@ export const apiClient = {
       method: API_METHODS.GET,
       ...config,
     }),
+
+  // trips
+  getTrips: async (
+    // { payload }: IApiClientQueryWithPayload<{}>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ITripGetAllResponse>(API_ROUTER.TRIPS.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
+  getTripById: async (
+    { query }: IApiClientQuery<{ tripId: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ITripGetByIdResponse>(
+      API_ROUTER.TRIPS.GET_BY_ID(query.tripId),
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
+  createTrip: async (
+    { payload }: IApiClientQueryWithPayload<{}, ITripCreatePayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ITripCreateResponse>(API_ROUTER.TRIPS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
+  updateTrip: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<{ tripId: string }, ITripUpdatePayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.TRIPS.UPDATE(query.tripId), {
+      method: API_METHODS.PUT,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
+  deleteTrip: async (
+    { query }: IApiClientQuery<{ tripId: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.TRIPS.DELETE(query.tripId), {
+      method: API_METHODS.DELETE,
+      ...config,
+    }),
+  createTripWaypoint: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<{ tripId: string }, IWaypointCreatePayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(
+      API_ROUTER.TRIPS.WAYPOINTS.CREATE({ trip_id: query.tripId }),
+      {
+        method: API_METHODS.POST,
+        body: JSON.stringify(payload),
+        ...config,
+      },
+    ),
+  updateTripWaypoint: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<
+      { tripId: string; waypointId: number },
+      IWaypointUpdatePayload
+    >,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(
+      API_ROUTER.TRIPS.WAYPOINTS.UPDATE({
+        trip_id: query.tripId,
+        waypoint_id: query.waypointId,
+      }),
+      {
+        method: API_METHODS.PUT,
+        body: JSON.stringify(payload),
+        ...config,
+      },
+    ),
+  deleteTripWaypoint: async (
+    { query }: IApiClientQuery<{ tripId: string; waypointId: number }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(
+      API_ROUTER.TRIPS.WAYPOINTS.DELETE({
+        trip_id: query.tripId,
+        waypoint_id: query.waypointId,
+      }),
+      {
+        method: API_METHODS.DELETE,
+        ...config,
+      },
+    ),
 };

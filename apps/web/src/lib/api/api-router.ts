@@ -86,6 +86,30 @@ export const API_ROUTER = {
     CREATE_SETUP_INTENT: 'stripe/create-setup-intent',
     CREATE_PAYMENT_INTENT: 'stripe/create-payment-intent',
   },
+  TRIPS: {
+    GET: '/trips',
+    GET_BY_ID: (id: string) => `/trips/${id}`,
+    CREATE: '/trips',
+    UPDATE: (id: string) => `/trips/${id}`,
+    DELETE: (id: string) => `/trips/${id}`,
+    WAYPOINTS: {
+      CREATE: ({ trip_id }: { trip_id: string }) => `/trips/${trip_id}`,
+      UPDATE: ({
+        trip_id,
+        waypoint_id,
+      }: {
+        trip_id: string;
+        waypoint_id: number;
+      }) => `/trips/${trip_id}/waypoints/${waypoint_id}`,
+      DELETE: ({
+        trip_id,
+        waypoint_id,
+      }: {
+        trip_id: string;
+        waypoint_id: number;
+      }) => `/trips/${trip_id}/waypoints/${waypoint_id}`,
+    },
+  },
 };
 
 export const API_HEADERS = {

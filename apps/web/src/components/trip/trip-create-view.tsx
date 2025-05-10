@@ -1,8 +1,20 @@
 'use client';
 
-import { Button } from '@repo/ui/components';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  Button,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  Input,
+} from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 import {
   MAP_SOURCES,
@@ -16,7 +28,7 @@ import {
   TripWaypointEditFormState,
 } from '@/components';
 import { useMapbox } from '@/hooks';
-import { array, randomInteger } from '@/lib';
+import { array, randomInteger, zodMessage } from '@/lib';
 
 function sortByDate<T = any>(
   elements: { date: Date }[],
@@ -37,6 +49,15 @@ type WaypointElement = {
   date: Date;
 };
 
+const schema = z.object({
+  title: z
+    .string()
+    .nonempty(zodMessage.required('title'))
+    .min(0, zodMessage.string.min('title', 0))
+    .max(100, zodMessage.string.max('title', 100)),
+  description: z.string().max(500, zodMessage.string.max('description', 500)),
+});
+
 export const TripCreateView = () => {
   const mapbox = useMapbox();
 
@@ -49,6 +70,7 @@ export const TripCreateView = () => {
     waypointEditing: false,
   });
 
+  const [loading, setLoading] = useState<boolean>(false);
   const [waypoints, setWaypoints] = useState<WaypointElement[]>(
     array(10).map((_, key) => ({
       id: `${key + 1}`,
@@ -60,6 +82,14 @@ export const TripCreateView = () => {
   );
 
   const { waypointCreating, waypointEditing, waypointEditingId } = state;
+
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      title: '',
+      description: '',
+    },
+  });
 
   const handleWaypointCreate = () => {
     setState((state) => ({ ...state, waypointCreating: true }));
@@ -128,7 +158,27 @@ export const TripCreateView = () => {
     setWaypoints((waypoints) => waypoints.filter((el) => el.id !== id));
   };
 
-  const handleSubmit = () => {};
+  const handleSubmit = form.handleSubmit(
+    async (values: z.infer<typeof schema>) => {
+      try {
+        setLoading(true);
+
+        const { title } = values;
+
+        alert(JSON.stringify({ title }));
+
+        // @todo
+        // if (success) {
+        // } else {
+        //   setLoading(false);
+        // }
+
+        setLoading(false);
+      } catch (e) {
+        setLoading(false);
+      }
+    },
+  );
 
   return (
     <div className="w-full h-full flex flex-row justify-between bg-white">
@@ -141,6 +191,41 @@ export const TripCreateView = () => {
                 <span className="font-normal text-base text-gray-700">
                   Easily plan the perfect path for your next trip.
                 </span>
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-xl font-medium">Trip</h2>
+                <div className="mt-6 flex flex-col gap-6">
+                  <Form {...form}>
+                    <form onSubmit={handleSubmit}>
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl>
+                              <Input disabled={loading} required {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {/* <FormField
+                        control={form.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Description</FormLabel>
+                            <FormControl>
+                              <Input disabled={loading} required {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      /> */}
+                    </form>
+                  </Form>
+                </div>
               </div>
               <div className="flex flex-col">
                 <h2 className="text-xl font-medium">Waypoints</h2>
@@ -196,6 +281,7 @@ export const TripCreateView = () => {
                   )}
                 </div>
               </div>
+
               <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background py-4 box-border">
                 <Button size="lg" onClick={handleSubmit}>
                   Save trip

@@ -101,7 +101,6 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
               </FormItem>
             )}
           />
-
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
             <FormField
               control={form.control}

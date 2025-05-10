@@ -13,7 +13,6 @@ import { useState } from 'react';
 import { UserFollowingFeed, UserPosts } from '@/components';
 import { useSession } from '@/hooks';
 
-import { UserDraftsFeed } from './user-drafts-feed';
 import { UserFollowersFeed } from './user-followers-feed';
 
 type Props = {
