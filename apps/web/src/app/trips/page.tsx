@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export default async function Page() {
   return (
     <AppLayout>
-      <div className="w-full max-w-3xl flex flex-col gap-4">
+      <div className="w-full max-w-3xl flex flex-col gap-6">
         <div className="w-full flex flex-row items-end justify-between">
           <PageHeaderTitle>Trips</PageHeaderTitle>
           <div>

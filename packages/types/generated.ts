@@ -72,6 +72,7 @@ export interface IUserProfileDetail {
   memberDate?: Date;
   followed?: boolean;
   you?: boolean;
+  creator?: boolean;
 }
 
 export interface IUserSettingsResponse {

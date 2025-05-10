@@ -6,9 +6,6 @@ import { cn } from '@repo/ui/lib/utils';
 import {
   BanknoteIcon,
   BarChart2Icon,
-  BarChart3,
-  BarChart4,
-  BarChartIcon,
   BellIcon,
   BookmarkIcon,
   CogIcon,
@@ -16,10 +13,8 @@ import {
   CompassIcon,
   HomeIcon,
   LucideProps,
-  PlaneIcon,
   PlaneTakeoffIcon,
   StarIcon,
-  WholeWordIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -44,22 +39,32 @@ const SIDEBAR_LINKS: {
   CREATOR: SidebarLink[];
 } = {
   GUEST: [
-    { href: ROUTER.HOME, base: ROUTER.HOME, label: 'Home', icon: HomeIcon },
     {
-      href: ROUTER.EXPLORE.HOME,
-      base: ROUTER.EXPLORE.HOME,
-      label: 'Explore',
-      icon: CompassIcon,
+      href: ROUTER.HOME,
+      base: ROUTER.HOME,
+      label: 'Home',
+      icon: HomeIcon,
     },
+    // {
+    //   href: ROUTER.EXPLORE.HOME,
+    //   base: ROUTER.EXPLORE.HOME,
+    //   label: 'Explore',
+    //   icon: CompassIcon,
+    // },
   ],
   USER: [
-    { href: ROUTER.HOME, base: ROUTER.HOME, label: 'Home', icon: HomeIcon },
     {
-      href: ROUTER.EXPLORE.HOME,
-      base: ROUTER.EXPLORE.HOME,
-      label: 'Explore',
-      icon: CompassIcon,
+      href: ROUTER.HOME,
+      base: ROUTER.HOME,
+      label: 'Home',
+      icon: HomeIcon,
     },
+    // {
+    //   href: ROUTER.EXPLORE.HOME,
+    //   base: ROUTER.EXPLORE.HOME,
+    //   label: 'Explore',
+    //   icon: CompassIcon,
+    // },
     {
       href: ROUTER.BOOKMARKS.HOME,
       base: ROUTER.BOOKMARKS.HOME,
@@ -72,27 +77,33 @@ const SIDEBAR_LINKS: {
       label: 'Notifications',
       icon: BellIcon,
     },
-    {
-      href: ROUTER.PREMIUM,
-      base: ROUTER.PREMIUM,
-      label: 'Premium',
-      icon: StarIcon,
-    },
-    {
-      href: ROUTER.USER.SETTINGS.HOME,
-      base: ROUTER.USER.SETTINGS.HOME,
-      label: 'Settings',
-      icon: CogIcon,
-    },
+    // {
+    //   href: ROUTER.PREMIUM,
+    //   base: ROUTER.PREMIUM,
+    //   label: 'Premium',
+    //   icon: StarIcon,
+    // },
+    // {
+    //   href: ROUTER.USER.SETTINGS.HOME,
+    //   base: ROUTER.USER.SETTINGS.HOME,
+    //   label: 'Settings',
+    //   icon: CogIcon,
+    // },
   ],
   CREATOR: [
-    { href: ROUTER.HOME, base: ROUTER.HOME, label: 'Home', icon: HomeIcon },
+    // { href: ROUTER.HOME, base: ROUTER.HOME, label: 'Home', icon: HomeIcon },
     {
-      href: ROUTER.EXPLORE.HOME,
-      base: ROUTER.EXPLORE.HOME,
-      label: 'Explore',
-      icon: CompassIcon,
+      href: ROUTER.HOME,
+      base: ROUTER.HOME,
+      label: 'Home',
+      icon: HomeIcon,
     },
+    // {
+    //   href: ROUTER.EXPLORE.HOME,
+    //   base: ROUTER.EXPLORE.HOME,
+    //   label: 'Explore',
+    //   icon: CompassIcon,
+    // },
     {
       href: ROUTER.TRIPS.HOME,
       base: ROUTER.TRIPS.HOME,
@@ -129,12 +140,12 @@ const SIDEBAR_LINKS: {
       label: 'Notifications',
       icon: BellIcon,
     },
-    {
-      href: ROUTER.USER.SETTINGS.HOME,
-      base: ROUTER.USER.SETTINGS.ROOT,
-      label: 'Settings',
-      icon: CogIcon,
-    },
+    // {
+    //   href: ROUTER.USER.SETTINGS.HOME,
+    //   base: ROUTER.USER.SETTINGS.ROOT,
+    //   label: 'Settings',
+    //   icon: CogIcon,
+    // },
   ],
 };
 
@@ -235,7 +246,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
               <UserNavbar collapsed={collapsed} />
             </div>
           ) : (
-            <div className="w-full flex flex-col gap-8">
+            <div className="w-full flex flex-col gap-8 px-3">
               <Button variant="secondary" asChild>
                 <a href={ROUTER.LOGIN}>Log in</a>
               </Button>

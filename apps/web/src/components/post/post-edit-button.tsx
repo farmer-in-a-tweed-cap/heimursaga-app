@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@repo/ui/components';
-import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 import { ROUTER } from '@/router';
 
@@ -9,16 +9,9 @@ type Props = {
   postId?: string;
 };
 export const PostEditButton: React.FC<Props> = ({ postId }) => {
-  const router = useRouter();
-
-  const handleEdit = () => {
-    if (!postId) return;
-    router.push(ROUTER.POSTS.EDIT(postId));
-  };
-
   return (
-    <Button variant="outline" onClick={handleEdit}>
-      Edit
+    <Button variant="outline" asChild>
+      <Link href={postId ? ROUTER.POSTS.EDIT(postId) : '#'}>Edit</Link>
     </Button>
   );
 };

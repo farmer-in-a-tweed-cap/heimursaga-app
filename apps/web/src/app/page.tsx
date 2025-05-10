@@ -1,25 +1,19 @@
-import { cookies } from 'next/headers';
+import { Metadata } from 'next';
 
-import { apiClient } from '@/lib/api';
+import { ExploreMap } from '@/components';
 
-import { PageHeaderTitle, PostFeed } from '@/components';
+import { AppMapLayout } from './layout';
 
-import { AppLayout } from './layout';
+export const metadata: Metadata = {
+  title: 'Home',
+};
 
-export default async function App() {
-  const cookie = cookies().toString();
-
-  const postQuery = await apiClient.getPosts({}, { cookie });
-  const posts = postQuery.data ? postQuery.data.data : [];
-
+export default async function Page() {
   return (
-    <AppLayout secure={false}>
-      <div className="w-full max-w-3xl flex flex-col gap-4">
-        <PageHeaderTitle>Home</PageHeaderTitle>
-        <div className="mt-4">
-          <PostFeed loading={false} posts={posts} />
-        </div>
+    <AppMapLayout secure={false}>
+      <div className="w-full h-full flex flex-col justify-start items-center">
+        <ExploreMap />
       </div>
-    </AppLayout>
+    </AppMapLayout>
   );
 }

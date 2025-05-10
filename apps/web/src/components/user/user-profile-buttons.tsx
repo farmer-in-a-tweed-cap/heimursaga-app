@@ -10,6 +10,7 @@ import { ROUTER } from '@/router';
 type Props = {
   me?: boolean;
   followed?: boolean;
+  creator?: boolean;
   user?: {
     username: string;
     name: string;
@@ -20,6 +21,7 @@ type Props = {
 export const UserProfileButtons: React.FC<Props> = ({
   me = false,
   followed = false,
+  creator = false,
   user,
 }) => {
   const session = useSession();
@@ -35,7 +37,7 @@ export const UserProfileButtons: React.FC<Props> = ({
       ) : (
         <div className="mt-6 flex flex-row gap-2 items-center">
           <UserFollowButton username={user?.username} followed={followed} />
-          <SponsorButton username={user?.username} />
+          {creator && <SponsorButton username={user?.username} />}
         </div>
       )}
     </div>

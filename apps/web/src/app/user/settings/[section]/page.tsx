@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
 
-import { UserSettings } from '@/components';
+import { PageHeaderTitle, UserSettings } from '@/components';
 import { AppLayout } from '@/layouts';
 
 type Props = {
@@ -30,7 +30,8 @@ export default async function Page({ params }: Props) {
 
   return (
     <AppLayout>
-      <div className="w-full max-w-3xl flex flex-col gap-4">
+      <div className="w-full max-w-3xl flex flex-col gap-6">
+        <PageHeaderTitle>Settings</PageHeaderTitle>
         <UserSettings
           section={section}
           data={{

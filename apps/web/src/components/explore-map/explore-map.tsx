@@ -14,6 +14,7 @@ import { QUERY_KEYS, apiClient } from '@/lib/api';
 
 import {
   CloseButton,
+  MAP_SOURCES,
   Map,
   MapOnLoadHandler,
   MapOnMoveHandler,
@@ -326,7 +327,7 @@ export const ExploreMap: React.FC<Props> = () => {
                     key={key}
                     {...post}
                     id={post.id}
-                    actions={{ bookmark: true }}
+                    actions={{ like: false, bookmark: true, edit: false }}
                     onClick={() => handlePostOpen(post.id)}
                   />
                 ) : (
@@ -404,7 +405,7 @@ export const ExploreMap: React.FC<Props> = () => {
               maxZoom={15}
               sources={[
                 {
-                  sourceId: 'waypoints',
+                  sourceId: MAP_SOURCES.WAYPOINTS,
                   type: 'point',
                   data: mapQueryWaypoints.map(({ lat, lon, post }, key) => ({
                     id: `${key}`,
@@ -420,7 +421,7 @@ export const ExploreMap: React.FC<Props> = () => {
                       : {},
                   })),
                   config: {
-                    cluster: true,
+                    cluster: false,
                   },
                 },
               ]}

@@ -18,7 +18,7 @@ export const MapPreviewOverlay = ({
     )}
     {href ? (
       <Button variant="outline" className="z-20 bg-white">
-        <Link href={href}>Open map </Link>
+        <Link href={href}>Open map</Link>
       </Button>
     ) : (
       <Button variant="outline" className="z-20" onClick={onClick}>

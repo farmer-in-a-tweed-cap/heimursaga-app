@@ -1,10 +1,13 @@
-import { Avatar, AvatarFallback, AvatarImage, Card } from '@repo/ui/components';
+'use client';
+
+import { Card } from '@repo/ui/components';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { dateformat } from '@/lib/date-format';
 
 import { MapStaticPreview, UserBar } from '@/components';
+import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
 import { PostBookmarkButton } from './post-bookmark-button';
@@ -57,8 +60,14 @@ export const PostCard: React.FC<PostCardProps> = ({
     bookmark: true,
     edit: false,
   },
+
   onClick,
 }) => {
+  const session = useSession();
+  const me =
+    session.username && author.username
+      ? author.username === session.username
+      : false;
   return (
     <Card className="relative w-full h-auto box-border p-5 flex flex-col shadow-none border border-solid border-accent">
       {href ? (
@@ -93,15 +102,30 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
         </Link>
         <div className="z-20 absolute top-3 right-3 flex flex-row items-center gap-2">
-          {actions?.bookmark && (
-            <PostBookmarkButton
-              postId={id}
-              bookmarked={bookmarked}
-              bookmarksCount={bookmarksCount}
-              disableCount={true}
-            />
+          {me ? (
+            <>
+              {actions?.edit && <PostEditButton postId={id} />}
+              {actions?.bookmark && (
+                <PostBookmarkButton
+                  postId={id}
+                  bookmarked={bookmarked}
+                  bookmarksCount={bookmarksCount}
+                  disableCount={true}
+                />
+              )}
+            </>
+          ) : (
+            <>
+              {actions?.bookmark && (
+                <PostBookmarkButton
+                  postId={id}
+                  bookmarked={bookmarked}
+                  bookmarksCount={bookmarksCount}
+                  disableCount={true}
+                />
+              )}
+            </>
           )}
-          {actions?.edit && <PostEditButton postId={id} />}
         </div>
       </div>
       {thumbnail && (

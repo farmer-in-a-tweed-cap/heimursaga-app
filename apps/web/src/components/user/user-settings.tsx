@@ -55,7 +55,6 @@ export const UserSettings: React.FC<Props> = ({ section, data }) => {
 
   return (
     <div className="w-full flex flex-col gap-4">
-      <PageHeaderTitle>Settings</PageHeaderTitle>
       <TabNavbar
         tabs={SECTION_TABS}
         activeTab={sectionKey}

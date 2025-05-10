@@ -27,7 +27,7 @@ export const UserBookmarks: React.FC<Props> = () => {
   return loading ? (
     <LoadingSpinner />
   ) : results ? (
-    <div className="w-full flex flex-col gap-2">
+    <div className="w-full flex flex-col gap-3">
       {bookmarks.map(({ author, ...post }, key) => (
         <PostCard
           key={key}
