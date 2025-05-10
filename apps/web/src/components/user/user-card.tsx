@@ -21,7 +21,7 @@ export const UserCard: React.FC<Props> = ({
     <Card
       className={cn(
         'relative w-full h-auto box-border p-4 flex flex-col shadow-none border border-solid border-gray-200',
-        href ? 'hover:bg-white/80' : '',
+        href ? 'hover:bg-accent/30' : '',
       )}
     >
       {href && <Link href={href} className="z-10 absolute inset-0"></Link>}

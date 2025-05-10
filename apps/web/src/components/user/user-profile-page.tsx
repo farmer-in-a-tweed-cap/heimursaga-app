@@ -13,15 +13,15 @@ type Props = {
 export const UserProfilePage: React.FC<Props> = ({ user, section }) => {
   return (
     <div className="w-full flex flex-col justify-start items-center">
-      <div className="z-10 w-full h-auto">
+      {/* <div className="z-10 w-full h-auto">
         <UserMapBanner className="z-30" username={user?.username} />
-      </div>
-      <div className="z-20 -mt-[60px] w-auto flex flex-col items-center rounded-full">
-        <Avatar className="z-50 w-[120px] h-[120px] overflow-hidden">
+      </div> */}
+      <div className="z-20 w-auto flex flex-col items-center rounded-full">
+        <Avatar className="z-50 w-[100px] h-[100px] overflow-hidden">
           <AvatarFallback>{user?.name?.slice(0, 1)}</AvatarFallback>
           <AvatarImage
-            width={120}
-            height={120}
+            width={100}
+            height={100}
             src={user?.picture}
             className="w-full h-auto"
             alt="avatar"
@@ -29,8 +29,8 @@ export const UserProfilePage: React.FC<Props> = ({ user, section }) => {
         </Avatar>
       </div>
       <div className="mt-6 flex flex-col justify-center items-center gap-2">
-        <span className="text-3xl font-semibold">{user?.name}</span>
-        <span className="text-sm">{user?.bio}</span>
+        <span className="text-2xl font-semibold">{user?.name}</span>
+        <span className="text-sm font-normal text-gray-600">{user?.bio}</span>
       </div>
       <UserProfileButtons
         me={user?.you}

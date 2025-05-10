@@ -66,7 +66,7 @@ export const UserPageSections: React.FC<Props> = ({
           onChange={handleChange}
         />
       </div>
-      <div className="mt-4 flex flex-col w-full max-w-2xl">
+      <div className="mt-2 flex flex-col w-full max-w-2xl">
         {sectionKey === SECTION_KEYS.HOME && <UserPosts username={username} />}
         {sectionKey === SECTION_KEYS.FOLLOWERS && (
           <UserFollowersFeed username={username} />

@@ -29,7 +29,7 @@ export const UserFollowersFeed: React.FC<Props> = ({ username }) => {
   ) : results < 1 ? (
     <>no followers</>
   ) : (
-    <div className="w-full flex flex-col gap-1">
+    <div className="w-full flex flex-col gap-2">
       {followers.map(({ name, username, ...follower }, key) => (
         <UserCard
           key={key}
