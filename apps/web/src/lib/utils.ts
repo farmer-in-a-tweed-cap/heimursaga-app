@@ -1,14 +1,6 @@
-export const array = (length: number) => Array.from(Array(length));
+import { CURRENCY_SYMBOLS } from '@/constants';
 
-export const fieldmsg = {
-  required: (field: string) => `${field} is required`,
-  min: (field: string, min: number) =>
-    `${field} must be at least ${min} characters`,
-  max: (field: string, max: number) =>
-    `${field} must be less than ${max} characters`,
-  nonempty: (field: string) => `${field} cannot be empty`,
-  email: () => `invalid email format`,
-};
+export const array = (length: number) => Array.from(Array(length));
 
 export const redirect = (href: string) => {
   window.location.href = href;
@@ -22,4 +14,13 @@ export const debounce = <T = any, R = void>(fn: (args: T) => R, ms = 300) => {
     clearTimeout(timeoutId);
     timeoutId = setTimeout(() => fn.call(this, args), ms);
   };
+};
+
+export const getCurrencySymbol = (code: string) => {
+  // @ts-ignore
+  return CURRENCY_SYMBOLS[code] ? CURRENCY_SYMBOLS[code] : CURRENCY_SYMBOLS.USD;
+};
+
+export const randomInteger = (min: number, max: number) => {
+  return Math.random() * (max - min) + min;
 };

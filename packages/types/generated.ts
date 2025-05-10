@@ -1,4 +1,23 @@
 // api
+import {
+  CheckoutMode,
+  CheckoutStatus,
+  PlanExpiryPeriod,
+  SponsorshipType,
+} from './enums';
+
+// general
+export type GeoJson<T = any> = {
+  type: string;
+  features: {
+    type: string;
+    properties: T;
+    geometry: {
+      type: string;
+      coordinates: [number, number, number];
+    };
+  }[];
+};
 
 // session
 export interface ISessionUser {
@@ -6,8 +25,7 @@ export interface ISessionUser {
   username: string;
   email: string;
   picture?: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   isEmailVerified: boolean;
   isPremium: boolean;
 }
@@ -32,8 +50,7 @@ export interface ISignupPayload {
   email: string;
   username: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  name: string;
 }
 
 // password reset
@@ -49,22 +66,19 @@ export interface IPasswordUpdatePayload {
 // user
 export interface IUserProfileDetail {
   username: string;
+  name: string;
   picture: string;
   bio?: string;
-  firstName: string;
-  lastName: string;
   memberDate?: Date;
   followed?: boolean;
   you?: boolean;
+  creator?: boolean;
 }
 
 export interface IUserSettingsResponse {
   context: 'profile' | 'billing';
   profile?: {
-    username: string;
-    email: string;
-    firstName: string;
-    lastName: string;
+    name: string;
     bio: string;
     picture: string;
   };
@@ -73,10 +87,7 @@ export interface IUserSettingsResponse {
 export interface IUserSettingsUpdateQuery {
   context: 'profile' | 'billing';
   profile?: {
-    username?: string;
-    email?: string;
-    firstName?: string;
-    lastName?: string;
+    name?: string;
     bio?: string;
     picture?: string;
   };
@@ -85,16 +96,13 @@ export interface IUserSettingsUpdateQuery {
 export interface IUserSettingsProfileResponse {
   username: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
   bio: string;
   picture: string;
 }
 
 export interface IUserSettingsProfileUpdateQuery {
-  username?: string;
-  firstName?: string;
-  lastName?: string;
+  name?: string;
   bio?: string;
   picture?: string;
 }
@@ -140,6 +148,63 @@ export interface IPaymentMethodGetByIdResponse extends IPaymentMethodDetail {}
 export interface IPaymentMethodCreatePayload {
   stripePaymentMethodId: string;
 }
+
+export interface IPaymentIntentCreateResponse {
+  secret: string;
+}
+
+export interface ICheckoutPayload {
+  mode: CheckoutMode;
+  membershipId?: string;
+  donation?: number;
+  creatorId?: string;
+}
+
+export interface ICheckoutResponse {
+  checkoutId: string;
+  status: CheckoutStatus;
+  secret: string;
+  requiresAction: boolean;
+}
+
+// subscription
+export interface ISubscriptionPlanDetail {
+  slug: string;
+  name: string;
+  active: boolean;
+  expiry?: Date;
+  priceMonthly: number;
+  priceYearly: number;
+  discountYearly: number;
+  currency: string;
+  currencySymbol: string;
+}
+
+export interface ISubscriptionPlanGetAllResponse {
+  data: ISubscriptionPlanDetail[];
+}
+
+export interface ISubscriptionPlanGetBySlugResponse
+  extends ISubscriptionPlanDetail {}
+
+export interface ISubscriptionPlanUpgradeCheckoutPayload {
+  planId: string;
+  period: PlanExpiryPeriod;
+}
+
+export interface ISubscriptionPlanUpgradeCheckoutResponse {
+  subscriptionPlanId: number;
+  subscriptionId: string;
+  clientSecret: string;
+}
+
+export interface ISubscriptionPlanUpgradeCompletePayload {
+  checkoutId: number;
+}
+
+export interface IPlanDegradePayload {}
+
+export interface IPlanDegradeResponse {}
 
 // post
 export interface IPostDetail {
@@ -218,44 +283,42 @@ export interface IPostQueryMapResponse {
   };
 }
 
-// search
-export interface ISearchQueryPayload {
-  location?: ISearchQueryLocation;
+// map
+export interface IMapQueryPayload {
+  location?: IMapQueryLocation;
   limit?: number;
   page?: number;
   userId?: number;
 }
 
-export interface ISearchQueryResponse {
+export interface IMapQueryResponse {
   results: number;
-  data: {
-    id: string;
-    title: string;
-    content: string;
-    date: Date;
+  waypoints: {
     lat: number;
     lon: number;
+    post?: {
+      id: string;
+      title: string;
+      content: string;
+      author: {
+        username: string;
+        name: string;
+        picture: string;
+      };
+    };
   }[];
-  geojson?: {
-    type: string;
-    features: {
-      type: string;
-      properties: Record<string, string | number | boolean | Date>;
-      geometry: { type: string; coordinates: [number, number, number] };
-    }[];
-  };
 }
 
-export interface ISearchQueryLocation {
-  bounds?: ISearchQueryLocationBounds;
+export interface IMapQueryLocation {
+  bounds?: IMapQueryLocationBounds;
 }
 
-export interface ISearchQueryLocationBounds {
-  ne: ISearchQueryLocationBound;
-  sw: ISearchQueryLocationBound;
+export interface IMapQueryLocationBounds {
+  ne: IMapQueryLocationBound;
+  sw: IMapQueryLocationBound;
 }
 
-export interface ISearchQueryLocationBound {
+export interface IMapQueryLocationBound {
   lat: number;
   lon: number;
 }
@@ -270,6 +333,7 @@ export interface IMediaUploadPayload {
   file: { buffer: Buffer };
   context: MediaUploadContext;
   thumbnail?: boolean;
+  aspect?: 'auto' | 'square';
 }
 
 export interface IMediaUploadQueryParams {
@@ -284,4 +348,211 @@ export interface IMediaUploadResponse {
 // stripe
 export interface IStripeCreateSetupIntentResponse {
   secret: string;
+}
+
+// notifications
+export interface IUserNotification {
+  context: string;
+  date: Date;
+  mentionUser: {
+    username: string;
+    name: string;
+    picture: string;
+  };
+  body?: string;
+  postId?: string;
+}
+
+export interface IUserNotificationGetResponse {
+  results: number;
+  data: IUserNotification[];
+  page: number;
+}
+
+// map
+export interface IUserMapGetResponse {
+  lastWaypoint: { lat: number; lon: number };
+  geojson: GeoJson<{ id: string; title: string }>;
+}
+
+// sponsorship
+export interface ISponsorshipTier {
+  id: string;
+  price: number;
+  description: string;
+  isAvailable?: boolean;
+  membersCount?: number;
+  creator?: {
+    username: string;
+    picture: string;
+    name: string;
+    bio: string;
+  };
+}
+
+export interface ISponsorshipTierGetAllResponse {
+  results: number;
+  data: ISponsorshipTier[];
+}
+
+export interface ISponsorshipTierGetByUsernameResponse {
+  sponsorship: ISponsorshipTier;
+}
+
+export interface ISponsorshipTierGetByIdResponse extends ISponsorshipTier {}
+
+export interface ISponsorshipTierUpdatePayload {
+  price?: number;
+  description?: string;
+  isAvailable?: boolean;
+}
+
+// payout
+export interface IPayoutMethodBaseDetail {
+  id: string;
+  platform: string;
+  isVerified: boolean;
+  businessName: string;
+  businessType: string;
+  phoneNumber?: string;
+  email: string;
+  stripeAccountId?: string;
+}
+
+export interface IPayoutMethodGetAllByUsernameResponse {
+  data: IPayoutMethodBaseDetail[];
+  results: number;
+}
+
+export interface IPayoutMethodPlatformLinkGetResponse {
+  url: string;
+}
+
+export interface IPayoutMethodCreatePayload {
+  country: string;
+  platform: string;
+}
+
+export interface IPayoutMethodCreateResponse {
+  payoutMethodId: string;
+  platform: {
+    onboardingUrl: string;
+  };
+}
+
+export interface IPayoutBalanceGetResponse {
+  pending: {
+    amount: number;
+    currency: string;
+  };
+  available: {
+    amount: number;
+    currency: string;
+  };
+}
+
+// sponsor
+export interface ISponsorCheckoutPayload {
+  creatorId: string;
+  sponsorshipType: string;
+  paymentMethodId: string;
+  sponsorshipTierId?: string;
+  oneTimePaymentAmount?: number;
+}
+
+export interface ISponsorCheckoutResponse {
+  paymentMethodId: string;
+  clientSecret: string;
+}
+
+export interface ISponsorshipDetail {
+  id: string;
+  type: SponsorshipType;
+  amount: number;
+  currency: string;
+  user?: {
+    username: string;
+    name: string;
+    picture: string;
+  };
+  creator?: {
+    username: string;
+    name: string;
+    picture: string;
+  };
+  createdAt?: Date;
+}
+
+export interface ISponsorshipGetAllResponse {
+  results: number;
+  data: ISponsorshipDetail[];
+}
+
+// insights
+export interface IPostInsightsGetResponse {
+  posts: {
+    id: string;
+    title: string;
+    impressionsCount: number;
+    likesCount: number;
+    bookmarksCount: number;
+    createdAt: Date;
+  }[];
+}
+
+// trips
+export interface ITripDetail {
+  id: string;
+  title: string;
+  description?: string;
+  waypoints: IWaypointDetail[];
+}
+
+export interface ITripGetAllResponse {
+  results: number;
+  data: {
+    id: string;
+    title: string;
+    waypointsCount: number;
+  }[];
+}
+
+export interface ITripGetByIdResponse extends ITripDetail {}
+
+export interface ITripCreatePayload {
+  title: string;
+}
+
+export interface ITripCreateResponse {
+  tripId: string;
+}
+
+export interface ITripUpdatePayload {
+  title: string;
+}
+
+// waypoints
+export interface IWaypointDetail {
+  id: number;
+  lat: number;
+  lon: number;
+  title: string;
+  date?: Date;
+  description?: string;
+}
+
+export interface IWaypointCreatePayload {
+  lat: number;
+  lon: number;
+  date?: Date;
+  title?: string;
+  description?: string;
+}
+
+export interface IWaypointUpdatePayload {
+  lat?: number;
+  lon?: number;
+  date?: Date;
+  title?: string;
+  description?: string;
 }

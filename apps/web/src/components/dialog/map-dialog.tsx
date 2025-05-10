@@ -100,7 +100,7 @@ export const MapDialog: React.FC<Props> = ({
           Select the location you want to attach to your post.
         </DialogDescription>
       </DialogHeader>
-      <div className="w-full h-full flex items-center space-x-2 bg-gray-100">
+      <div className="w-full h-full flex items-center space-x-2 bg-accent">
         {mapbox.token && (
           <Map
             token={mapbox.token}

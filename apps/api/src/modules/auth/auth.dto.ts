@@ -39,12 +39,7 @@ export class SignupDto implements ISignupPayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
-  firstName: string;
-
-  @ApiProperty({ required: true })
-  @IsString()
-  @IsNotEmpty()
-  lastName: string;
+  name: string;
 }
 
 export class PasswordResetDto implements IPasswordResetPayload {

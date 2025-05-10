@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { IPostCreatePayload, IPostUpdatePayload } from '@repo/types';
+import {
+  IPostCreatePayload,
+  IPostUpdatePayload,
+  UserNotificationContext,
+} from '@repo/types';
 import { IPostBookmarkResponse, IPostLikeResponse } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
-import { getUploadStaticUrl } from '@/lib/upload';
+import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
   ServiceException,
@@ -13,7 +17,9 @@ import {
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import { IPayloadWithSession, IQueryWithSession } from '@/common/interfaces';
+import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
+import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
 
 @Injectable()
@@ -21,6 +27,7 @@ export class PostService {
   constructor(
     private logger: Logger,
     private prisma: PrismaService,
+    private eventService: EventService,
   ) {}
 
   async search({ session }: IQueryWithSession) {
@@ -68,7 +75,7 @@ export class PostService {
               select: {
                 username: true,
                 profile: {
-                  select: { first_name: true, picture: true },
+                  select: { name: true, picture: true },
                 },
               },
             },
@@ -88,9 +95,9 @@ export class PostService {
             content: post.content.slice(0, 140),
             author: {
               username: post.author?.username,
-              name: post.author?.profile?.first_name,
+              name: post.author?.profile?.name,
               picture: post.author?.profile?.picture
-                ? getUploadStaticUrl(post.author?.profile?.picture)
+                ? getStaticMediaUrl(post.author?.profile?.picture)
                 : undefined,
             },
             liked: userId ? post.likes.length > 0 : false,
@@ -151,7 +158,7 @@ export class PostService {
                 id: true,
                 username: true,
                 profile: {
-                  select: { first_name: true, picture: true },
+                  select: { name: true, picture: true },
                 },
               },
             },
@@ -174,9 +181,9 @@ export class PostService {
           author: {
             id: post.author?.id,
             username: post.author?.username,
-            name: post.author?.profile?.first_name,
+            name: post.author?.profile?.name,
             picture: post.author?.profile?.picture
-              ? getUploadStaticUrl(post.author?.profile?.picture)
+              ? getStaticMediaUrl(post.author?.profile?.picture)
               : undefined,
           },
           createdByMe: userId ? userId === post.author?.id : undefined,
@@ -197,16 +204,27 @@ export class PostService {
     try {
       const { userId } = session;
 
-      const publicId = generator.publicId();
+      // check access
+      if (!userId) throw new ServiceForbiddenException();
+
+      const { lat, lon } = payload;
 
       // create a post
       const post = await this.prisma.post.create({
         data: {
           ...payload,
+          public_id: generator.publicId(),
+          lat,
+          lon,
           public: true,
           draft: false,
-          public_id: publicId,
           author: { connect: { id: userId } },
+          waypoint: {
+            create: {
+              lat,
+              lon,
+            },
+          },
         },
         select: {
           public_id: true,
@@ -233,8 +251,10 @@ export class PostService {
       const { publicId } = query;
       const { userId } = session;
 
-      if (!publicId || !userId)
-        throw new ServiceNotFoundException('post not found');
+      // check access
+      if (!userId) throw new ServiceForbiddenException();
+
+      if (!publicId) throw new ServiceNotFoundException('post not found');
 
       // access check
       const access = await this.prisma.post
@@ -268,8 +288,10 @@ export class PostService {
       const { publicId } = query;
       const { userId } = session;
 
-      if (!publicId || !userId)
-        throw new ServiceNotFoundException('post not found');
+      // check access
+      if (!userId) throw new ServiceForbiddenException();
+
+      if (!publicId) throw new ServiceNotFoundException('post not found');
 
       // access check
       const access = await this.prisma.post
@@ -313,10 +335,12 @@ export class PostService {
           select: {
             id: true,
             likes_count: true,
+            author_id: true,
           },
         })
-        .catch(() => null);
-      if (!post) throw new ServiceNotFoundException('post not found');
+        .catch(() => {
+          throw new ServiceNotFoundException('post not found');
+        });
 
       // check if it is liked already
       const liked = await this.prisma.postLike.findUnique({
@@ -346,6 +370,19 @@ export class PostService {
             user_id: userId,
           },
         });
+
+        // create a notification
+        if (userId !== post.author_id) {
+          await this.eventService.trigger<IUserNotificationCreatePayload>({
+            event: EVENTS.NOTIFICATIONS.CREATE,
+            data: {
+              context: UserNotificationContext.LIKE,
+              userId: post.author_id,
+              mentionUserId: userId,
+              mentionPostId: post.id,
+            },
+          });
+        }
       }
 
       // update the like count

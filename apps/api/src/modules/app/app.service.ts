@@ -19,7 +19,7 @@ export class AppService {
                 select: {
                   id: true,
                   profile: {
-                    select: { first_name: true },
+                    select: { name: true },
                   },
                 },
               },
@@ -32,7 +32,7 @@ export class AppService {
               title: post.title,
               author: post?.author
                 ? {
-                    name: post?.author?.profile?.first_name,
+                    name: post?.author?.profile?.name,
                   }
                 : undefined,
               date: post.created_at,

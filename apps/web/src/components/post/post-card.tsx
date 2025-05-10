@@ -1,16 +1,13 @@
-import { MapPreview } from '../map';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Button,
-  Card,
-} from '@repo/ui/components';
+'use client';
+
+import { Card } from '@repo/ui/components';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { dateformat } from '@/lib/date-format';
 
+import { MapStaticPreview, UserBar } from '@/components';
+import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
 import { PostBookmarkButton } from './post-bookmark-button';
@@ -38,6 +35,7 @@ export type PostCardProps = {
   bookmarksCount?: number;
   liked?: boolean;
   likesCount?: number;
+  onClick?: () => void;
 };
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -62,10 +60,26 @@ export const PostCard: React.FC<PostCardProps> = ({
     bookmark: true,
     edit: false,
   },
+
+  onClick,
 }) => {
+  const session = useSession();
+  const me =
+    session.username && author.username
+      ? author.username === session.username
+      : false;
   return (
-    <Card className="relative w-full h-auto box-border p-6 flex flex-col shadow-none border border-solid border-gray-200">
-      {href && <Link href={href} className="z-10 absolute inset-0"></Link>}
+    <Card className="relative w-full h-auto box-border p-5 flex flex-col shadow-none border border-solid border-accent">
+      {href ? (
+        <Link href={href} className="z-10 absolute inset-0"></Link>
+      ) : onClick ? (
+        <div
+          className="z-10 absolute inset-0 cursor-pointer"
+          onClick={onClick}
+        ></div>
+      ) : (
+        <></>
+      )}
       <div className="flex flex-row justify-between items-center">
         <Link
           href={
@@ -74,28 +88,44 @@ export const PostCard: React.FC<PostCardProps> = ({
           className="z-20"
         >
           <div className="flex flex-row justify-start items-center gap-3">
-            <Avatar className="w-[40px] h-[40px]">
-              <AvatarImage src={author?.picture} />
-              <AvatarFallback>{author?.name?.slice(0, 1)}</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col items-start justify-center">
-              <span className="text-sm font-semibold">{author?.name}</span>
-              <span className="text-xs text-gray-500">
-                {dateformat(date).format('MMM DD')}
-              </span>
-            </div>
+            <Link
+              href={
+                author?.username ? ROUTER.MEMBERS.MEMBER(author.username) : '#'
+              }
+            >
+              <UserBar
+                name={author?.name}
+                picture={author?.picture}
+                text={dateformat(date).format('MMM DD')}
+              />
+            </Link>
           </div>
         </Link>
-        <div className="z-20 flex flex-row items-center gap-2">
-          {actions?.bookmark && (
-            <PostBookmarkButton
-              postId={id}
-              bookmarked={bookmarked}
-              bookmarksCount={bookmarksCount}
-              disableCount={true}
-            />
+        <div className="z-20 absolute top-3 right-3 flex flex-row items-center gap-2">
+          {me ? (
+            <>
+              {actions?.edit && <PostEditButton postId={id} />}
+              {actions?.bookmark && (
+                <PostBookmarkButton
+                  postId={id}
+                  bookmarked={bookmarked}
+                  bookmarksCount={bookmarksCount}
+                  disableCount={true}
+                />
+              )}
+            </>
+          ) : (
+            <>
+              {actions?.bookmark && (
+                <PostBookmarkButton
+                  postId={id}
+                  bookmarked={bookmarked}
+                  bookmarksCount={bookmarksCount}
+                  disableCount={true}
+                />
+              )}
+            </>
           )}
-          {actions?.edit && <PostEditButton postId={id} />}
         </div>
       </div>
       {thumbnail && (
@@ -111,19 +141,26 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
       <div className="mt-6 flex flex-col gap-2">
         <span className="text-base font-medium">{title}</span>
-        <p className="text-base font-normal text-neutral-700">
-          {content ? (content.length < 140 ? content : `${content}..`) : ''}
+        <p className="text-sm font-normal text-neutral-700">
+          {content.length <= 140 ? content : `${content.slice(0, 140)}..`}
         </p>
       </div>
       {coordinates && (
         <div className="mt-6">
-          <MapPreview
+          <MapStaticPreview
             href={
               id
                 ? `${ROUTER.EXPLORE.HOME}?lat=${coordinates.lat}&lon=${coordinates.lon}&alt=12`
                 : '#'
             }
-            coordinates={{ lat: coordinates.lat, lon: coordinates.lon }}
+            lat={coordinates.lat}
+            lon={coordinates.lon}
+            markers={[
+              {
+                lat: coordinates.lat,
+                lon: coordinates.lon,
+              },
+            ]}
           />
         </div>
       )}

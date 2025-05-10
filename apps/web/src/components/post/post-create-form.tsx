@@ -3,8 +3,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
-  Dialog,
-  DialogTrigger,
   Form,
   FormControl,
   FormField,
@@ -15,35 +13,38 @@ import {
   Textarea,
 } from '@repo/ui/components';
 import { useMutation } from '@tanstack/react-query';
-import { Link } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { postCreateMutation } from '@/lib/api';
-import { fieldmsg, redirect } from '@/lib/utils';
 
-import { MapDialog } from '@/components/dialog';
-
-import { Map, MapPreviewOverlay } from '@/components';
-import { useMapbox } from '@/hooks/use-mapbox';
+import {
+  MODALS,
+  MapLocationPickModalOnSubmitHandler,
+  MapLocationPickModalProps,
+  MapPreview,
+} from '@/components';
+import { APP_CONFIG } from '@/config';
+import { useModal } from '@/hooks';
+import { redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
 const schema = z.object({
   title: z
     .string()
-    .nonempty(fieldmsg.required('title'))
-    .min(5, fieldmsg.min('title', 5))
-    .max(50, fieldmsg.max('title', 50)),
+    .nonempty(zodMessage.required('title'))
+    .min(5, zodMessage.string.min('title', 5))
+    .max(50, zodMessage.string.max('title', 50)),
   content: z
     .string()
-    .nonempty(fieldmsg.required('content'))
-    .min(2, fieldmsg.min('content', 25))
-    .max(3000, fieldmsg.max('content', 3000)),
+    .nonempty(zodMessage.required('content'))
+    .min(2, zodMessage.string.min('content', 25))
+    .max(3000, zodMessage.string.max('content', 3000)),
 });
 
 export const PostCreateForm = () => {
-  const mapbox = useMapbox();
+  const modal = useModal();
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -59,14 +60,16 @@ export const PostCreateForm = () => {
     lat: number;
     lon: number;
     alt: number;
+    selected: boolean;
     marker?: {
       lat: number;
       lon: number;
     };
   }>({
-    lat: 48,
-    lon: 17,
-    alt: 5,
+    lat: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
+    lon: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
+    alt: APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
+    selected: false,
   });
 
   const mutation = useMutation({
@@ -82,24 +85,34 @@ export const PostCreateForm = () => {
     },
   });
 
-  const handleLocationChange = (location: {
-    lat: number;
-    lon: number;
-    alt: number;
-    marker?: {
-      lat: number;
-      lon: number;
-    };
-  }) => {
-    const { lat, lon, alt, marker } = location;
+  const handleLocationPickModal = () => {
+    modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_PICK, {
+      full: true,
+      props: {
+        lat: location.marker ? location.marker?.lat : location.lat,
+        lon: location.marker ? location.marker?.lon : location.lon,
+        alt: location.selected ? APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM : 6,
+        marker: location?.marker
+          ? {
+              lat: location?.marker?.lat,
+              lon: location?.marker?.lon,
+            }
+          : undefined,
+      },
+      onSubmit: ((data) => {
+        const { lat, lon, alt, marker } = data || {};
 
-    setLocation((location) => ({
-      ...location,
-      lat,
-      lon,
-      alt,
-      marker,
-    }));
+        setLocation((location) => ({
+          ...location,
+          selected: true,
+          lat,
+          lon,
+          alt,
+          marker,
+        }));
+      }) as MapLocationPickModalOnSubmitHandler,
+      onCancel: () => {},
+    });
   };
 
   const handleSubmit = form.handleSubmit(
@@ -120,38 +133,22 @@ export const PostCreateForm = () => {
     <div className="flex flex-col">
       <div className="flex flex-col gap-4">
         <div>
-          <Dialog>
-            <DialogTrigger asChild>
-              {mapbox.token && (
-                <div className="relative w-full aspect-5/2 rounded-xl overflow-hidden">
-                  <MapPreviewOverlay />
-                  <Map
-                    token={mapbox.token}
-                    marker={location.marker}
-                    coordinates={{
-                      lat: location.lat,
-                      lon: location.lon,
-                      alt: location.alt,
-                    }}
-                    cursor="pointer"
-                    controls={false}
-                    disabled={true}
-                    markerEnabled={true}
-                    className="z-10"
-                  />
-                </div>
-              )}
-            </DialogTrigger>
-            <MapDialog
-              marker={location.marker}
-              coordinates={{
-                lat: location.lat,
-                lon: location.lon,
-                alt: location.alt,
-              }}
-              onSubmit={handleLocationChange}
-            />
-          </Dialog>
+          <MapPreview
+            lat={location.marker ? location.marker?.lat : location.lat}
+            lon={location.marker ? location.marker?.lon : location.lon}
+            alt={location.selected ? APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM : 6}
+            markers={
+              location.marker
+                ? [
+                    {
+                      lat: location.marker?.lat,
+                      lon: location.marker?.lon,
+                    },
+                  ]
+                : undefined
+            }
+            onClick={handleLocationPickModal}
+          />
         </div>
         <div className="mt-4">
           <Form {...form}>

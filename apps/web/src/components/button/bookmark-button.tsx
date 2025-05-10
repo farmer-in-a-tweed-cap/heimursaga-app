@@ -23,8 +23,8 @@ export const BookmarkButton: React.FC<Props> = ({
     <Button
       variant="ghost"
       className={cn(
-        'transition-all hover:bg-gray-200 rounded-full',
-        disabled ? '' : 'hover:bg-gray-200',
+        'transition-all hover:bg-accent rounded-full',
+        disabled ? '' : 'hover:bg-accent',
         disableCount ? 'w-[32px] h-[32px]' : ' w-auto h-[32px]',
       )}
       size="sm"

@@ -1,15 +1,19 @@
 'use client';
 
+import { UserRole } from '@repo/types';
 import { Button } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import {
+  BanknoteIcon,
+  BarChart2Icon,
   BellIcon,
   BookmarkIcon,
   CogIcon,
+  CoinsIcon,
   CompassIcon,
   HomeIcon,
   LucideProps,
-  PenIcon,
+  PlaneTakeoffIcon,
   StarIcon,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -22,6 +26,7 @@ import { ROUTER } from '@/router';
 
 type SidebarLink = {
   href: string;
+  base: string;
   label: string;
   icon: ForwardRefExoticComponent<
     Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>
@@ -29,29 +34,144 @@ type SidebarLink = {
 };
 
 const SIDEBAR_LINKS: {
-  guest: SidebarLink[];
-  user: SidebarLink[];
+  GUEST: SidebarLink[];
+  USER: SidebarLink[];
+  CREATOR: SidebarLink[];
 } = {
-  guest: [
-    { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
-    { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
+  GUEST: [
+    {
+      href: ROUTER.HOME,
+      base: ROUTER.HOME,
+      label: 'Home',
+      icon: HomeIcon,
+    },
+    // {
+    //   href: ROUTER.EXPLORE.HOME,
+    //   base: ROUTER.EXPLORE.HOME,
+    //   label: 'Explore',
+    //   icon: CompassIcon,
+    // },
   ],
-  user: [
-    { href: ROUTER.HOME, label: 'Home', icon: HomeIcon },
-    { href: ROUTER.EXPLORE.HOME, label: 'Explore', icon: CompassIcon },
-    { href: ROUTER.JOURNAL, label: 'Journal', icon: PenIcon },
-    { href: ROUTER.BOOKMARKS.HOME, label: 'Bookmarks', icon: BookmarkIcon },
-    { href: ROUTER.NOTIFICATIONS, label: 'Notifications', icon: BellIcon },
-    { href: ROUTER.PREMIUM, label: 'Premium', icon: StarIcon },
-    { href: ROUTER.USER.SETTINGS.HOME, label: 'Settings', icon: CogIcon },
+  USER: [
+    {
+      href: ROUTER.HOME,
+      base: ROUTER.HOME,
+      label: 'Home',
+      icon: HomeIcon,
+    },
+    // {
+    //   href: ROUTER.EXPLORE.HOME,
+    //   base: ROUTER.EXPLORE.HOME,
+    //   label: 'Explore',
+    //   icon: CompassIcon,
+    // },
+    {
+      href: ROUTER.BOOKMARKS.HOME,
+      base: ROUTER.BOOKMARKS.HOME,
+      label: 'Bookmarks',
+      icon: BookmarkIcon,
+    },
+    {
+      href: ROUTER.NOTIFICATIONS,
+      base: ROUTER.NOTIFICATIONS,
+      label: 'Notifications',
+      icon: BellIcon,
+    },
+    // {
+    //   href: ROUTER.PREMIUM,
+    //   base: ROUTER.PREMIUM,
+    //   label: 'Premium',
+    //   icon: StarIcon,
+    // },
+    // {
+    //   href: ROUTER.USER.SETTINGS.HOME,
+    //   base: ROUTER.USER.SETTINGS.HOME,
+    //   label: 'Settings',
+    //   icon: CogIcon,
+    // },
+  ],
+  CREATOR: [
+    // { href: ROUTER.HOME, base: ROUTER.HOME, label: 'Home', icon: HomeIcon },
+    {
+      href: ROUTER.HOME,
+      base: ROUTER.HOME,
+      label: 'Home',
+      icon: HomeIcon,
+    },
+    // {
+    //   href: ROUTER.EXPLORE.HOME,
+    //   base: ROUTER.EXPLORE.HOME,
+    //   label: 'Explore',
+    //   icon: CompassIcon,
+    // },
+    {
+      href: ROUTER.TRIPS.HOME,
+      base: ROUTER.TRIPS.HOME,
+      label: 'Trips',
+      icon: PlaneTakeoffIcon,
+    },
+    {
+      href: ROUTER.SPONSORSHIP.ROOT,
+      base: ROUTER.SPONSORSHIP.ROOT,
+      label: 'Sponsorship',
+      icon: CoinsIcon,
+    },
+    {
+      href: ROUTER.INSIGHTS.HOME,
+      base: ROUTER.INSIGHTS.HOME,
+      label: 'Insights',
+      icon: BarChart2Icon,
+    },
+    {
+      href: ROUTER.PAYOUTS.HOME,
+      base: ROUTER.PAYOUTS.HOME,
+      label: 'Payouts',
+      icon: BanknoteIcon,
+    },
+    {
+      href: ROUTER.BOOKMARKS.HOME,
+      base: ROUTER.BOOKMARKS.HOME,
+      label: 'Bookmarks',
+      icon: BookmarkIcon,
+    },
+    {
+      href: ROUTER.NOTIFICATIONS,
+      base: ROUTER.NOTIFICATIONS,
+      label: 'Notifications',
+      icon: BellIcon,
+    },
+    // {
+    //   href: ROUTER.USER.SETTINGS.HOME,
+    //   base: ROUTER.USER.SETTINGS.ROOT,
+    //   label: 'Settings',
+    //   icon: CogIcon,
+    // },
   ],
 };
 
-export const AppSidebar = () => {
+type Props = {
+  collapsed?: boolean;
+};
+
+export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
   const pathname = usePathname();
   const session = useSession();
 
-  const links = session ? SIDEBAR_LINKS.user : SIDEBAR_LINKS.guest;
+  const userRole = session?.role as UserRole;
+
+  let links: SidebarLink[];
+
+  switch (userRole) {
+    case UserRole.CREATOR:
+      links = SIDEBAR_LINKS.CREATOR;
+      break;
+    case UserRole.USER:
+      links = SIDEBAR_LINKS.USER;
+      break;
+    default:
+      links = SIDEBAR_LINKS.GUEST;
+      break;
+  }
 
   const isActiveLink = (path: string): boolean => {
     path = path.startsWith('/') ? path : `/${path}`;
@@ -60,51 +180,78 @@ export const AppSidebar = () => {
   };
 
   return (
-    <div className="hidden sm:max-w-[65px] md:flex lg:max-w-[240px] relative w-full">
-      <div className="sm:max-w-[65px] md:flex lg:max-w-[240px] w-full h-screen fixed top-0 bottom-0 left-0 bg-white flex-col">
+    <div
+      className={cn(
+        'hidden sm:max-w-[65px] md:flex relative w-full',
+        collapsed ? 'lg:max-w-[65px]' : 'lg:max-w-[240px]',
+      )}
+    >
+      <div
+        className={cn(
+          'md:flex w-full h-screen fixed top-0 bottom-0 left-0 bg-white flex-col',
+          collapsed ? 'lg:max-w-[65px]' : 'lg:max-w-[240px]',
+        )}
+      >
         <div className="bg-dark text-dark-foreground flex flex-col items-center w-full h-full py-4">
-          <div className="w-full box-border lg:px-4 flex flex-row items-center  justify-center lg:justify-start">
+          <div
+            className={cn(
+              'w-full box-border flex flex-row items-center justify-center',
+              collapsed ? '' : 'lg:px-4 lg:justify-start',
+            )}
+          >
             <Link href={ROUTER.HOME}>
               <Logo theme="dark" size="sm" />
             </Link>
           </div>
           <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-3">
             <div className="lg:w-full flex flex-col gap-2">
-              {links.map(({ href, label, icon: Icon }, key) => (
+              {links.map(({ href, base, label, icon: Icon }, key) => (
                 <Link
                   key={key}
                   href={href}
                   className={cn(
                     'w-full app-sidebar-link',
-                    isActiveLink(href) ? 'app-sidebar-link-active' : '',
+                    isActiveLink(base) ? 'app-sidebar-link-active' : '',
                   )}
                 >
-                  <Icon size={18} className="app-sidebar-link-icon" />
-                  <span className="hidden lg:flex text-sm leading-none">
+                  <Icon size={20} className="app-sidebar-link-icon" />
+                  <span
+                    className={cn(
+                      'text-sm leading-none',
+                      collapsed ? 'hidden' : 'hidden lg:flex',
+                    )}
+                  >
                     {label}
                   </span>
                 </Link>
               ))}
             </div>
-
-            {session ? (
-              <div className="w-full flex flex-col gap-8 px-3">
-                <CreatePostButton
-                  variant="secondary"
-                  classNames={{ label: 'hidden lg:flex', button: 'min-w-auto' }}
-                >
-                  Create
-                </CreatePostButton>
-                <UserNavbar />
-              </div>
-            ) : (
-              <div className="w-full flex flex-col gap-8">
-                <Button variant="secondary" asChild>
-                  <Link href={ROUTER.LOGIN}>Log in</Link>
-                </Button>
-              </div>
-            )}
           </div>
+          {session.logged ? (
+            <div
+              className={cn(
+                'w-full flex flex-col gap-6',
+                collapsed ? 'items-center justify-center' : 'px-3',
+              )}
+            >
+              <CreatePostButton
+                variant="secondary"
+                classNames={{
+                  label: collapsed ? 'hidden' : 'hidden lg:flex',
+                  button: 'min-w-auto bg-white hover:bg-secondary',
+                }}
+              >
+                Create
+              </CreatePostButton>
+              <UserNavbar collapsed={collapsed} />
+            </div>
+          ) : (
+            <div className="w-full flex flex-col gap-8 px-3">
+              <Button variant="secondary" asChild>
+                <a href={ROUTER.LOGIN}>Log in</a>
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -6,6 +6,12 @@ export class ParamPublicIdDto {
   id: string;
 }
 
+export class ParamSlugDto {
+  @IsString()
+  @IsNotEmpty()
+  slug: string;
+}
+
 export class ParamUsernameDto {
   @IsString()
   @IsNotEmpty()

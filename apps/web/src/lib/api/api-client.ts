@@ -1,28 +1,53 @@
 import {
   ILoginPayload,
+  IMapQueryPayload,
+  IMapQueryResponse,
   IPasswordResetPayload,
   IPasswordUpdatePayload,
   IPaymentMethodCreatePayload,
   IPaymentMethodGetAllResponse,
   IPaymentMethodGetByIdResponse,
+  IPayoutBalanceGetResponse,
+  IPayoutMethodCreatePayload,
+  IPayoutMethodCreateResponse,
+  IPayoutMethodGetAllByUsernameResponse,
+  IPayoutMethodPlatformLinkGetResponse,
   IPostCreatePayload,
   IPostCreateResponse,
   IPostDetail,
+  IPostInsightsGetResponse,
   IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
-  ISearchQueryPayload,
-  ISearchQueryResponse,
   ISessionUserGetResponse,
   ISignupPayload,
+  ISponsorCheckoutPayload,
+  ISponsorCheckoutResponse,
+  ISponsorshipGetAllResponse,
+  ISponsorshipTierGetAllResponse,
+  ISponsorshipTierUpdatePayload,
   IStripeCreateSetupIntentResponse,
+  ISubscriptionPlanGetAllResponse,
+  ISubscriptionPlanGetBySlugResponse,
+  ISubscriptionPlanUpgradeCheckoutPayload,
+  ISubscriptionPlanUpgradeCheckoutResponse,
+  ISubscriptionPlanUpgradeCompletePayload,
+  ITripCreatePayload,
+  ITripCreateResponse,
+  ITripGetAllResponse,
+  ITripGetByIdResponse,
+  ITripUpdatePayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserMapGetResponse,
+  IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
   IUserProfileDetail,
   IUserSettingsProfileResponse,
   IUserSettingsProfileUpdateQuery,
+  IWaypointCreatePayload,
+  IWaypointUpdatePayload,
 } from '@repo/types';
 
 import {
@@ -31,7 +56,7 @@ import {
   API_METHODS,
   API_ROUTER,
   Api,
-} from './api';
+} from './api-router';
 
 const baseUrl = `${process.env.NEXT_PUBLIC_APP_BASE_URL}/api`;
 
@@ -45,6 +70,7 @@ const api = new Api({
 
 type RequestConfig = {
   cookie?: string;
+  cache?: 'no-store';
 };
 
 export interface IApiClientQuery<Q = any> {
@@ -69,11 +95,11 @@ export const apiClient = {
       method: API_METHODS.POST,
       body: JSON.stringify(payload),
     }),
-  logout: async ({ cookie }: RequestConfig) =>
+  logout: async (config?: RequestConfig) =>
     api.request<void>(API_ROUTER.LOGOUT, {
       method: API_METHODS.POST,
       body: JSON.stringify({}),
-      cookie,
+      ...config,
     }),
   resetPassword: async (body: IPasswordResetPayload) =>
     api.request<void>(API_ROUTER.RESET_PASSWORD, {
@@ -99,9 +125,8 @@ export const apiClient = {
     api.request<IPostQueryResponse>(API_ROUTER.POSTS.QUERY, config),
   getPostById: async (
     { query }: IApiClientQuery<{ id: string }>,
-    { cookie }: RequestConfig,
-  ) =>
-    api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(query.id), { cookie }),
+    config?: RequestConfig,
+  ) => api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(query.id), config),
   createPost: async (body: IPostCreatePayload) =>
     api.request<IPostCreateResponse>(API_ROUTER.POSTS.CREATE, {
       method: API_METHODS.POST,
@@ -127,7 +152,9 @@ export const apiClient = {
       API_ROUTER.USERS.GET_BY_USERNAME(username),
       config,
     ),
-  getUserPosts: async (
+  getUserPosts: async (config?: RequestConfig) =>
+    api.request<IUserPostsQueryResponse>(API_ROUTER.USER.POSTS, config),
+  getUserPostsByUsername: async (
     { username }: { username: string },
     config?: RequestConfig,
   ) =>
@@ -135,11 +162,15 @@ export const apiClient = {
       API_ROUTER.USERS.GET_POSTS(username),
       config,
     ),
-  search: async (query: ISearchQueryPayload, config?: RequestConfig) =>
-    api.request<ISearchQueryResponse>(API_ROUTER.SEARCH, {
+  getUserMapByUsername: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) => api.request<IUserMapGetResponse>(API_ROUTER.USERS.MAP(username), config),
+  mapQuery: async (query: IMapQueryPayload, config?: RequestConfig) =>
+    api.request<IMapQueryResponse>(API_ROUTER.MAP.QUERY, {
       method: API_METHODS.POST,
       body: JSON.stringify(query),
-      cookie: config ? config.cookie : undefined,
+      ...config,
     }),
   likePost: async ({ postId }: { postId: string }, config?: RequestConfig) =>
     api.request<{ likesCount: number }>(API_ROUTER.POSTS.LIKE(postId), {
@@ -300,4 +331,256 @@ export const apiClient = {
       body: JSON.stringify({}),
       cookie: config ? config.cookie : undefined,
     }),
+  // notifications
+  getUserNotifications: async (config?: RequestConfig) =>
+    api.request<IUserNotificationGetResponse>(API_ROUTER.USER.NOTIFICATIONS, {
+      method: API_METHODS.GET,
+      cookie: config ? config.cookie : undefined,
+    }),
+  // sponsorships
+  getUserSponsorshipTiers: async (config?: RequestConfig) =>
+    api.request<ISponsorshipTierGetAllResponse>(
+      API_ROUTER.USER.SPONSORSHIP_TIERS.GET,
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
+  updateSponsorshipTierById: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<
+      { id: string },
+      ISponsorshipTierUpdatePayload
+    >,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.USER.SPONSORSHIP_TIERS.UPDATE(query.id), {
+      method: API_METHODS.PUT,
+      body: JSON.stringify(payload),
+      cookie: config ? config.cookie : undefined,
+    }),
+  getSponsorshipTiersByUsername: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<ISponsorshipTierGetAllResponse>(
+      API_ROUTER.USERS.SPONSORSHIP_TIERS(username),
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
+  // subscription plan
+  getSubscriptionPlans: async (config?: RequestConfig) =>
+    api.request<ISubscriptionPlanGetAllResponse>(
+      API_ROUTER.SUBSCRIPTION_PLANS.GET,
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
+  getSubscriptionBySlug: async (
+    { query }: IApiClientQuery<{ slug: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ISubscriptionPlanGetBySlugResponse>(
+      API_ROUTER.SUBSCRIPTION_PLANS.GET_BY_SLUG(query.slug),
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
+  checkoutSubscriptionPlanUpgrade: async (
+    {
+      payload,
+    }: IApiClientQueryWithPayload<{}, ISubscriptionPlanUpgradeCheckoutPayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ISubscriptionPlanUpgradeCheckoutResponse>(
+      API_ROUTER.PLAN.UPGRADE.CHECKOUT,
+      {
+        method: API_METHODS.POST,
+        body: JSON.stringify(payload),
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
+  completeSubscriptionPlanUpgrade: async (
+    {
+      payload,
+    }: IApiClientQueryWithPayload<
+      ISubscriptionPlanUpgradeCompletePayload,
+      void
+    >,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.PLAN.UPGRADE.COMPLETE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      cookie: config ? config.cookie : undefined,
+    }),
+  downgradeSubscriptionPlan: async (config?: RequestConfig) =>
+    api.request<void>(API_ROUTER.PLAN.DOWNGRADE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify({}),
+      ...config,
+    }),
+  // payout methods
+  getUserPayoutMethods: async (config?: RequestConfig) =>
+    api.request<IPayoutMethodGetAllByUsernameResponse>(
+      API_ROUTER.PAYOUT_METHODS.GET_ALL,
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
+  createPayoutMethod: async (
+    payload: IPayoutMethodCreatePayload,
+    config?: RequestConfig,
+  ) =>
+    api.request<IPayoutMethodCreateResponse>(API_ROUTER.PAYOUT_METHODS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
+  getPayoutMethodPlatformLink: async (
+    { query }: IApiClientQuery<{ id: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<IPayoutMethodPlatformLinkGetResponse>(
+      API_ROUTER.PAYOUT_METHODS.PLATFORM_LINK(query.id),
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
+  // payout balance
+  getUserPayoutBalance: async (config?: RequestConfig) =>
+    api.request<IPayoutBalanceGetResponse>(API_ROUTER.PAYOUT_BALANCE.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
+  // sponsor
+  sponsorCheckout: async (
+    { payload }: IApiClientQueryWithPayload<{}, ISponsorCheckoutPayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ISponsorCheckoutResponse>(API_ROUTER.SPONSOR.CHECKOUT, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
+  getCreatorSponsorships: async (config?: RequestConfig) =>
+    api.request<ISponsorshipGetAllResponse>(API_ROUTER.SPONSORSHIPS.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
+  // insights
+  getPostInsights: async (config?: RequestConfig) =>
+    api.request<IPostInsightsGetResponse>(API_ROUTER.USER.INSIGHTS.POST, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
+
+  // trips
+  getTrips: async (
+    // { payload }: IApiClientQueryWithPayload<{}>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ITripGetAllResponse>(API_ROUTER.TRIPS.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
+  getTripById: async (
+    { query }: IApiClientQuery<{ tripId: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ITripGetByIdResponse>(
+      API_ROUTER.TRIPS.GET_BY_ID(query.tripId),
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    ),
+  createTrip: async (
+    { payload }: IApiClientQueryWithPayload<{}, ITripCreatePayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<ITripCreateResponse>(API_ROUTER.TRIPS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
+  updateTrip: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<{ tripId: string }, ITripUpdatePayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.TRIPS.UPDATE(query.tripId), {
+      method: API_METHODS.PUT,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
+  deleteTrip: async (
+    { query }: IApiClientQuery<{ tripId: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.TRIPS.DELETE(query.tripId), {
+      method: API_METHODS.DELETE,
+      ...config,
+    }),
+  createTripWaypoint: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<{ tripId: string }, IWaypointCreatePayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(
+      API_ROUTER.TRIPS.WAYPOINTS.CREATE({ trip_id: query.tripId }),
+      {
+        method: API_METHODS.POST,
+        body: JSON.stringify(payload),
+        ...config,
+      },
+    ),
+  updateTripWaypoint: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<
+      { tripId: string; waypointId: number },
+      IWaypointUpdatePayload
+    >,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(
+      API_ROUTER.TRIPS.WAYPOINTS.UPDATE({
+        trip_id: query.tripId,
+        waypoint_id: query.waypointId,
+      }),
+      {
+        method: API_METHODS.PUT,
+        body: JSON.stringify(payload),
+        ...config,
+      },
+    ),
+  deleteTripWaypoint: async (
+    { query }: IApiClientQuery<{ tripId: string; waypointId: number }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(
+      API_ROUTER.TRIPS.WAYPOINTS.DELETE({
+        trip_id: query.tripId,
+        waypoint_id: query.waypointId,
+      }),
+      {
+        method: API_METHODS.DELETE,
+        body: JSON.stringify({}),
+        ...config,
+      },
+    ),
 };

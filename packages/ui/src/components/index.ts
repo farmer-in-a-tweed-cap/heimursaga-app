@@ -17,3 +17,8 @@ export * from './spinner';
 export * from './dropdown-menu';
 export * from './separator';
 export * from './toast';
+export * from './chip';
+export * from './data-table';
+export * from './popover';
+// export * from './calendar';
+export * from './date-picker';

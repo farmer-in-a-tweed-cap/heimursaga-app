@@ -1,25 +1,28 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
   Put,
-  Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public, Session } from '@/common/decorators';
-import { ParamUsernameDto } from '@/common/dto';
+import { ParamPublicIdDto, ParamUsernameDto } from '@/common/dto';
 import { FileInterceptor } from '@/common/interceptors';
-import { IRequest, ISession } from '@/common/interfaces';
+import { ISession } from '@/common/interfaces';
 import { IUploadedFile } from '@/modules/upload';
 
-import { UserSettingsProfileUpdateDto } from './user.dto';
+import {
+  UserMembershipTierUpdateDto,
+  UserSettingsProfileUpdateDto,
+} from './user.dto';
 import { SessionUserService, UserService } from './user.service';
 
 @ApiTags('users')
@@ -31,7 +34,6 @@ export class UserController {
   @Get(':username')
   @HttpCode(HttpStatus.OK)
   async getByUsername(
-    @Req() req: IRequest,
     @Param() param: ParamUsernameDto,
     @Session() session: ISession,
   ) {
@@ -47,7 +49,6 @@ export class UserController {
   @Get(':username/posts')
   @HttpCode(HttpStatus.OK)
   async getPosts(
-    @Req() req: IRequest,
     @Param() param: ParamUsernameDto,
     @Session() session: ISession,
   ) {
@@ -59,6 +60,16 @@ export class UserController {
     });
   }
 
+  @Public()
+  @Get(':username/map')
+  @HttpCode(HttpStatus.OK)
+  async getMap(@Param() param: ParamUsernameDto) {
+    return await this.userService.getMap({
+      username: param.username,
+    });
+  }
+
+  @Public()
   @Get(':username/followers')
   @HttpCode(HttpStatus.OK)
   async getFollowers(
@@ -73,6 +84,7 @@ export class UserController {
     });
   }
 
+  @Public()
   @Get(':username/following')
   @HttpCode(HttpStatus.OK)
   async getFollowing(
@@ -108,6 +120,22 @@ export class UserController {
 
     return await this.userService.unfollow({
       username,
+      userId: session.userId,
+    });
+  }
+
+  @Public()
+  @Get(':username/sponsorship-tiers')
+  @HttpCode(HttpStatus.OK)
+  async getSponsorshipTiers(
+    @Param() param: ParamUsernameDto,
+    @Session() session: ISession,
+  ) {
+    const { username } = param;
+
+    return await this.userService.getSponsorshipTiers({
+      username,
+      available: true,
       userId: session.userId,
     });
   }
@@ -186,6 +214,59 @@ export class SessionUserController {
     return await this.sessionUserService.getPosts({
       userId: session.userId,
       context: 'drafts',
+    });
+  }
+
+  @Get('notifications')
+  @HttpCode(HttpStatus.OK)
+  async getNotifications(@Session() session: ISession) {
+    return await this.sessionUserService.getNotifications({
+      session,
+      query: {},
+    });
+  }
+
+  @Get('sponsorship-tiers')
+  @HttpCode(HttpStatus.OK)
+  async getSponsorshipTiers(@Session() session: ISession) {
+    return await this.sessionUserService.getSponsorshipTiers({
+      query: {},
+      session,
+    });
+  }
+
+  @Put('sponsorship-tiers/:id')
+  @HttpCode(HttpStatus.OK)
+  async updateSponsorshipTier(
+    @Param() param: ParamPublicIdDto,
+    @Body() body: UserMembershipTierUpdateDto,
+    @Session() session: ISession,
+  ) {
+    return await this.sessionUserService.updateSponsorshipTier({
+      query: { id: param.id },
+      payload: body,
+      session,
+    });
+  }
+
+  @Delete('sponsorship-tiers/:id')
+  @HttpCode(HttpStatus.OK)
+  async deleteSponsorshipTier(
+    @Param() param: ParamPublicIdDto,
+    @Session() session: ISession,
+  ) {
+    return await this.sessionUserService.deleteSponsorshipTier({
+      query: { id: param.id },
+      session,
+    });
+  }
+
+  @Get('insights/post')
+  @HttpCode(HttpStatus.OK)
+  async getPostInsights(@Session() session: ISession) {
+    return await this.sessionUserService.getPostInsights({
+      query: {},
+      session,
     });
   }
 }

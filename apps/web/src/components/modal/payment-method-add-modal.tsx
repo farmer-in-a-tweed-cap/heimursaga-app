@@ -56,7 +56,7 @@ const PaymentMethodAddModal: React.FC<ModalBaseProps> = ({
       >
         <DialogFooter>
           <Button
-            variant="secondary"
+            variant="outline"
             disabled={form.loading || !form.loaded}
             onClick={handleCancel}
           >
@@ -116,7 +116,7 @@ export default PaymentMethodAddModalWithStripeProvider;
 // import { z } from 'zod';
 
 // import { apiClient } from '@/lib/api';
-// import { fieldmsg } from '@/lib/utils';
+// import { zodMessage } from '@/lib';
 
 // import {
 //   StripeCardCvcInput,
@@ -149,12 +149,12 @@ export default PaymentMethodAddModalWithStripeProvider;
 // const schema = z.object({
 //   name: z
 //     .string()
-//     .nonempty(fieldmsg.required('name on card'))
-//     .max(20, fieldmsg.max('name on card', 20)),
+//     .nonempty(zodMessage.required('name on card'))
+//     .max(20, zodMessage.string.max('name on card', 20)),
 //   postcode: z
 //     .string()
-//     .nonempty(fieldmsg.required('postcode'))
-//     .max(10, fieldmsg.max('postcode', 10)),
+//     .nonempty(zodMessage.required('postcode'))
+//     .max(10, zodMessage.string.max('postcode', 10)),
 // });
 
 // const PaymentMethodAddModal: React.FC<ModalBaseProps> = ({

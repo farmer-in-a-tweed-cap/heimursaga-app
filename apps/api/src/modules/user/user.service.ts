@@ -1,17 +1,29 @@
+import { IUserNotificationCreatePayload } from '../notification';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  IPostInsightsGetResponse,
+  ISponsorshipTierGetAllResponse,
+  ISponsorshipTierUpdatePayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserMapGetResponse,
+  IUserNotificationGetResponse,
   IUserPictureUploadPayload,
   IUserPostsQueryResponse,
   IUserProfileDetail,
   IUserSettingsProfileResponse,
   IUserSettingsUpdateQuery,
   MediaUploadContext,
+  UserNotificationContext,
+  UserRole,
 } from '@repo/types';
 
-import { getUploadStaticUrl } from '@/lib/upload';
+import { dateformat } from '@/lib/date-format';
+import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
+import { generator } from '@/lib/generator';
+import { toGeoJson } from '@/lib/geojson';
+import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
   ServiceBadRequestException,
@@ -19,7 +31,13 @@ import {
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import { IPayloadWithSession } from '@/common/interfaces';
+import {
+  IPayloadWithSession,
+  IQueryWithSession,
+  ISessionQuery,
+  ISessionQueryWithPayload,
+} from '@/common/interfaces';
+import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 import { UploadService } from '@/modules/upload';
@@ -29,6 +47,7 @@ export class UserService {
   constructor(
     private logger: Logger,
     private prisma: PrismaService,
+    private eventService: EventService,
   ) {}
 
   async getByUsername({
@@ -47,10 +66,10 @@ export class UserService {
         select: {
           id: true,
           username: true,
+          role: true,
           profile: {
             select: {
-              first_name: true,
-              last_name: true,
+              name: true,
               picture: true,
               bio: true,
             },
@@ -68,14 +87,14 @@ export class UserService {
       const response: IUserProfileDetail = {
         username: user.username,
         picture: user.profile.picture
-          ? getUploadStaticUrl(user.profile.picture)
+          ? getStaticMediaUrl(user.profile.picture)
           : '',
         bio: user.profile?.bio,
-        firstName: user.profile.first_name,
-        lastName: user.profile.last_name,
+        name: user.profile.name,
         memberDate: user.created_at,
         followed: userId ? user.followers.length > 0 : false,
         you: userId ? userId === user.id : false,
+        creator: user.role === UserRole.CREATOR,
       };
 
       return response;
@@ -129,7 +148,7 @@ export class UserService {
             id: true,
             username: true,
             profile: {
-              select: { first_name: true, last_name: true, picture: true },
+              select: { name: true, picture: true },
             },
           },
         },
@@ -167,10 +186,10 @@ export class UserService {
             lat,
             lon,
             author: {
-              name: author.profile?.first_name,
+              name: author.profile?.name,
               username: author?.username,
               picture: author?.profile?.picture
-                ? getUploadStaticUrl(author?.profile.picture)
+                ? getStaticMediaUrl(author?.profile.picture)
                 : '',
             },
             liked: userId ? likes.length > 0 : false,
@@ -184,6 +203,52 @@ export class UserService {
       };
 
       return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('posts not found');
+      throw exception;
+    }
+  }
+
+  async getMap({
+    username,
+  }: {
+    username: string;
+  }): Promise<IUserMapGetResponse> {
+    try {
+      if (!username) throw new ServiceNotFoundException('user not found');
+
+      // get user posts
+      const posts = await this.prisma.post.findMany({
+        where: {
+          public: true,
+          author: {
+            username,
+          },
+          deleted_at: null,
+        },
+        select: {
+          public_id: true,
+          title: true,
+          lat: true,
+          lon: true,
+        },
+        orderBy: [{ id: 'desc' }],
+      });
+
+      return {
+        lastWaypoint: { lat: posts[0].lat, lon: posts[0].lon },
+        geojson: toGeoJson<{ id: string; title: string }>(
+          'collection',
+          posts.map(({ public_id, title, lat, lon }) => ({
+            lat,
+            lon,
+            properties: { id: public_id, title },
+          })),
+        ),
+      };
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -225,7 +290,7 @@ export class UserService {
               username: true,
               profile: {
                 select: {
-                  first_name: true,
+                  name: true,
                   picture: true,
                 },
               },
@@ -238,9 +303,8 @@ export class UserService {
       const response: IUserFollowersQueryResponse = {
         data: data.map(({ follower: { username, profile } }) => ({
           username,
-          firstName: profile.first_name,
-          lastName: profile.first_name,
-          picture: profile.picture ? getUploadStaticUrl(profile?.picture) : '',
+          name: profile.name,
+          picture: profile.picture ? getStaticMediaUrl(profile?.picture) : '',
         })),
         results,
       };
@@ -286,7 +350,7 @@ export class UserService {
               username: true,
               profile: {
                 select: {
-                  first_name: true,
+                  name: true,
                   picture: true,
                 },
               },
@@ -299,9 +363,8 @@ export class UserService {
       const response: IUserFollowersQueryResponse = {
         data: data.map(({ followee: { username, profile } }) => ({
           username,
-          firstName: profile.first_name,
-          lastName: profile.first_name,
-          picture: profile.picture ? getUploadStaticUrl(profile.picture) : '',
+          name: profile.name,
+          picture: profile.picture ? getStaticMediaUrl(profile.picture) : '',
         })),
         results,
       };
@@ -377,6 +440,18 @@ export class UserService {
             following_count: { increment: 1 },
           },
         });
+
+        // create a notification
+        if (followerId !== followeeId) {
+          await this.eventService.trigger<IUserNotificationCreatePayload>({
+            event: EVENTS.NOTIFICATIONS.CREATE,
+            data: {
+              context: UserNotificationContext.FOLLOW,
+              userId: followeeId,
+              mentionUserId: followerId,
+            },
+          });
+        }
       });
     } catch (e) {
       this.logger.error(e);
@@ -458,6 +533,77 @@ export class UserService {
       throw exception;
     }
   }
+
+  async getSponsorshipTiers({
+    username,
+    available,
+  }: {
+    username: string;
+    available?: boolean;
+    userId: number;
+  }): Promise<ISponsorshipTierGetAllResponse> {
+    try {
+      if (!username) throw new ServiceNotFoundException('user not found');
+
+      // check if the user exists
+      const user = await this.prisma.user
+        .findFirstOrThrow({ where: { username }, select: { id: true } })
+        .catch(() => null);
+      if (!user) throw new ServiceNotFoundException('user not found');
+
+      // get sponsorship tiers
+      const data = await this.prisma.sponsorshipTier.findMany({
+        where: {
+          user_id: user.id,
+          is_available: typeof available === 'boolean' ? available : undefined,
+          deleted_at: null,
+        },
+        select: {
+          public_id: true,
+          price: true,
+          description: true,
+          user: {
+            select: {
+              username: true,
+              profile: {
+                select: {
+                  name: true,
+                  picture: true,
+                  bio: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: [{ id: 'desc' }],
+      });
+
+      const response: ISponsorshipTierGetAllResponse = {
+        results: data.length,
+        data: data.map(({ public_id: id, price, description, user }) => ({
+          id,
+          description,
+          price: integerToDecimal(price),
+          creator: user
+            ? {
+                username: user.username,
+                name: user.profile.name,
+                picture: getStaticMediaUrl(user.profile.picture),
+                bio: user.profile.bio,
+              }
+            : undefined,
+        })),
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('sponsorship tiers not found');
+      throw exception;
+    }
+  }
 }
 
 @Injectable()
@@ -512,7 +658,7 @@ export class SessionUserService {
             id: true,
             username: true,
             profile: {
-              select: { first_name: true, last_name: true, picture: true },
+              select: { name: true, picture: true },
             },
           },
         },
@@ -582,10 +728,10 @@ export class SessionUserService {
             lat,
             lon,
             author: {
-              name: author.profile?.first_name,
+              name: author.profile?.name,
               username: author?.username,
               picture: author?.profile?.picture
-                ? getUploadStaticUrl(author?.profile?.picture)
+                ? getStaticMediaUrl(author?.profile?.picture)
                 : '',
             },
             liked: userId ? likes.length > 0 : false,
@@ -628,8 +774,7 @@ export class SessionUserService {
                 username: true,
                 profile: {
                   select: {
-                    first_name: true,
-                    last_name: true,
+                    name: true,
                     bio: true,
                     picture: true,
                   },
@@ -642,10 +787,9 @@ export class SessionUserService {
                   email,
                   username,
                   picture: profile?.picture
-                    ? getUploadStaticUrl(profile?.picture)
+                    ? getStaticMediaUrl(profile?.picture)
                     : '',
-                  firstName: profile?.first_name,
-                  lastName: profile?.last_name,
+                  name: profile?.name,
                   bio: profile?.bio,
                 }) as IUserSettingsProfileResponse,
             );
@@ -681,8 +825,7 @@ export class SessionUserService {
             await tx.userProfile.update({
               where: { user_id: userId },
               data: {
-                first_name: profile?.firstName,
-                last_name: profile?.lastName,
+                name: profile?.name,
                 bio: profile?.bio,
               },
             });
@@ -725,6 +868,7 @@ export class SessionUserService {
           file: payload.file,
           context: MediaUploadContext.USER,
           thumbnail: true,
+          aspect: 'square',
         },
         session,
       });
@@ -739,6 +883,359 @@ export class SessionUserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('user picture not updated');
+      throw exception;
+    }
+  }
+
+  async getNotifications({
+    session,
+  }: IQueryWithSession): Promise<IUserNotificationGetResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      const where: Prisma.UserNotificationWhereInput = { user_id: userId };
+      const page = 1;
+      const take = 25;
+      const skip = page <= 1 ? 0 : take * page;
+
+      // get the notifications
+      const results = await this.prisma.userNotification.count({ where });
+
+      const data = await this.prisma.userNotification.findMany({
+        where,
+        select: {
+          context: true,
+          mention_user: {
+            select: {
+              username: true,
+              profile: { select: { picture: true, name: true } },
+            },
+          },
+          mention_post: {
+            select: { public_id: true },
+          },
+          body: true,
+          created_at: true,
+        },
+        take,
+        skip,
+        orderBy: [{ created_at: 'desc' }],
+      });
+
+      return {
+        results,
+        data: data.map(
+          ({ mention_user, context, mention_post, body, created_at }) => ({
+            context,
+            body,
+            mentionUser: {
+              username: mention_user.username,
+              name: mention_user.profile.name,
+              picture: getStaticMediaUrl(mention_user.profile.picture),
+            },
+            postId: mention_post?.public_id,
+            date: created_at,
+          }),
+        ),
+        page,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('notifications not found');
+      throw exception;
+    }
+  }
+
+  async getSponsorshipTiers({
+    session,
+  }: ISessionQuery): Promise<ISponsorshipTierGetAllResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      const where: Prisma.SponsorshipTierWhereInput = {
+        user_id: userId,
+        deleted_at: null,
+      };
+
+      const response: ISponsorshipTierGetAllResponse = {
+        results: 0,
+        data: [],
+      };
+
+      // get the number of sponsorship tiers
+      const results = await this.prisma.sponsorshipTier.count({ where });
+
+      if (results >= 1) {
+        // get the sponsorship tiers
+        const data = await this.prisma.sponsorshipTier
+          .findMany({
+            where,
+            select: {
+              public_id: true,
+              price: true,
+              description: true,
+              is_available: true,
+            },
+          })
+          .catch(() => {
+            throw new ServiceNotFoundException('sponsorship tiers not found');
+          });
+
+        response.results = results;
+        response.data = data.map(
+          ({ price, description, public_id: id, is_available }) => ({
+            price,
+            description,
+            id,
+            isAvailable: is_available,
+            membersCount: 0,
+          }),
+        );
+      } else {
+        // create a sponsorship tier if it doesn't exist
+        const tier = await this.prisma.sponsorshipTier.create({
+          data: {
+            public_id: generator.publicId(),
+            price: 0,
+            description: '',
+            is_available: true,
+            user: { connect: { id: userId } },
+          },
+          select: {
+            public_id: true,
+            price: true,
+            description: true,
+            is_available: true,
+          },
+        });
+
+        response.results = 1;
+        response.data = [tier].map(
+          ({ price, description, public_id: id, is_available }) => ({
+            price,
+            description,
+            id,
+            membersCount: 0,
+            isAvailable: is_available,
+          }),
+        );
+      }
+
+      response.data = response.data.map(({ price, ...data }) => ({
+        ...data,
+        price: integerToDecimal(price),
+      }));
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('sponsorship tiers not found');
+      throw exception;
+    }
+  }
+
+  async getSponsorshipByUsername({
+    session,
+  }: ISessionQuery): Promise<ISponsorshipTierGetAllResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      const where: Prisma.SponsorshipTierWhereInput = {
+        user_id: userId,
+        deleted_at: null,
+      };
+
+      // get the sponsorship tiers
+      const results = await this.prisma.sponsorshipTier.count({ where });
+      const data = await this.prisma.sponsorshipTier
+        .findMany({
+          where,
+          select: {
+            public_id: true,
+            price: true,
+            description: true,
+            is_available: true,
+            user: {
+              select: {
+                username: true,
+                profile: {
+                  select: {
+                    name: true,
+                    picture: true,
+                  },
+                },
+              },
+            },
+          },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('sponsorship tiers not found');
+        });
+
+      const response = {
+        data: data.map(
+          ({ price, description, public_id: id, is_available, user }) => ({
+            price: integerToDecimal(price),
+            description,
+            id,
+            isAvailable: is_available,
+            membersCount: 0,
+            creator: user
+              ? {
+                  username: user.username,
+                  name: user.profile.name,
+                  picture: user.profile.picture,
+                  bio: '',
+                }
+              : undefined,
+          }),
+        ),
+        results,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('sponsorship tiers not found');
+      throw exception;
+    }
+  }
+
+  async updateSponsorshipTier({
+    query,
+    payload,
+    session,
+  }: ISessionQueryWithPayload<
+    { id: string },
+    ISponsorshipTierUpdatePayload
+  >): Promise<void> {
+    try {
+      const { userId } = session;
+      const { id } = query;
+
+      if (!userId) throw new ServiceForbiddenException();
+      if (!id) throw new ServiceNotFoundException('sponsorship tier not found');
+
+      // check access
+      const access = await this.prisma.sponsorshipTier
+        .findFirstOrThrow({
+          where: { public_id: id, user_id: userId, deleted_at: null },
+        })
+        .then(() => true)
+        .catch(() => false);
+      if (!access)
+        throw new ServiceNotFoundException('sponsorship tier not found');
+
+      // update the sponsorship tier
+      const { description, isAvailable } = payload;
+      const price = payload.price ? decimalToInteger(payload.price) : undefined;
+
+      await this.prisma.sponsorshipTier.update({
+        where: { public_id: id },
+        data: {
+          price,
+          description,
+          is_available: isAvailable,
+        },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('sponsorship tier not updated');
+      throw exception;
+    }
+  }
+
+  async deleteSponsorshipTier({
+    query,
+    session,
+  }: ISessionQuery<{ id: string }>): Promise<void> {
+    try {
+      const { userId } = session;
+      const { id } = query;
+
+      if (!userId) throw new ServiceForbiddenException();
+      if (!id) throw new ServiceNotFoundException('sponsorship tier not found');
+
+      // check access
+      const access = await this.prisma.sponsorshipTier
+        .findFirstOrThrow({
+          where: { public_id: id, user_id: userId, deleted_at: null },
+        })
+        .then(() => true)
+        .catch(() => false);
+      if (!access)
+        throw new ServiceNotFoundException('sponsorship tier not found');
+
+      // delete the sponsorship tier
+      await this.prisma.sponsorshipTier.update({
+        where: { public_id: id },
+        data: { deleted_at: dateformat().toDate() },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('sponsorship tier not deleted');
+      throw exception;
+    }
+  }
+
+  async getPostInsights({
+    session,
+  }: ISessionQuery): Promise<IPostInsightsGetResponse> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      // get post data
+      const posts = await this.prisma.post.findMany({
+        where: {
+          author_id: userId,
+          deleted_at: null,
+        },
+        select: {
+          public_id: true,
+          title: true,
+          likes_count: true,
+          bookmarks_count: true,
+          created_at: true,
+        },
+      });
+
+      const response: IPostInsightsGetResponse = {
+        posts: posts.map(
+          ({ public_id, title, likes_count, bookmarks_count, created_at }) => ({
+            id: public_id,
+            title,
+            likesCount: likes_count,
+            bookmarksCount: bookmarks_count,
+            impressionsCount: 0,
+            createdAt: created_at,
+          }),
+        ),
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException();
       throw exception;
     }
   }

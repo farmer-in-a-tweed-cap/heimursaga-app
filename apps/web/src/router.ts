@@ -14,12 +14,20 @@ export const ROUTER = {
   BOOKMARKS: {
     HOME: '/bookmarks',
   },
+  SPONSORSHIP: {
+    ROOT: '/sponsorship',
+    HOME: '/sponsorship/tiers',
+    TIERS: '/sponsorship/tiers',
+    SPONSORS: '/sponsorship/sponsors',
+  },
+  AUDIENCE: '/audience',
   PREMIUM: '/premium',
   PREMIUM_CHECKOUT: '/premium/checkout',
   NOTIFICATIONS: '/notifications',
   USER: {
     PROFILE: '/user/profile',
     SETTINGS: {
+      ROOT: '/user/settings',
       HOME: '/user/settings',
       PAGE_KEY: (key: string) => `/user/settings/${key}`,
       PROFILE: '/user/settings/profile',
@@ -31,7 +39,21 @@ export const ROUTER = {
     CREATE: '/posts/create',
     EDIT: (id: string) => `/posts/${id}/edit`,
   },
+  SPONSOR: ({ username }: { username: string }) => `/sponsor/${username}`,
   MEMBERS: {
     MEMBER: (username: string) => `/${username}`,
+  },
+  TRIPS: {
+    HOME: '/trips',
+    CREATE: `/trips/create`,
+    DETAIL: (id: string) => `/trips/${id}`,
+    EDIT: (id: string) => `/trips/${id}/edit`,
+  },
+  PAYOUTS: {
+    HOME: '/payouts',
+  },
+  INSIGHTS: {
+    ROOT: '/insights',
+    HOME: '/insights',
   },
 };

@@ -16,6 +16,21 @@ module.exports = {
         hostname: 'images.alltrails.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'api.mapbox.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.mapbox.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'heimursaga-photos.s3.us-east-2.amazonaws.com',
+        pathname: '/**',
+      },
     ],
   },
   // proxy requests to backend
@@ -28,6 +43,14 @@ module.exports = {
       {
         source: '/user/settings',
         destination: `/user/settings/profile`,
+      },
+      {
+        source: '/sponsorship',
+        destination: `/sponsorship/tiers`,
+      },
+      {
+        source: '/insights',
+        destination: `/insights/posts`,
       },
     ];
   },

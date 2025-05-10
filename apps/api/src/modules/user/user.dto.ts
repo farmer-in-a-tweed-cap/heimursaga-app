@@ -1,6 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IUserSettingsProfileUpdateQuery } from '@repo/types';
-import { IsOptional, IsString } from 'class-validator';
+import {
+  ISponsorshipTierUpdatePayload,
+  IUserSettingsProfileUpdateQuery,
+} from '@repo/types';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class UserSettingsProfileUpdateDto
   implements IUserSettingsProfileUpdateQuery
@@ -8,20 +11,29 @@ export class UserSettingsProfileUpdateDto
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  username: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  firstName: string;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  lastName: string;
+  name: string;
 
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
   bio: string;
+}
+
+export class UserMembershipTierUpdateDto
+  implements ISponsorshipTierUpdatePayload
+{
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  price: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  description: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isAvailable: boolean;
 }

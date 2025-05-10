@@ -1,12 +1,6 @@
-import { MapPreview } from '../map';
 import { Avatar, AvatarFallback, AvatarImage, Card } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
-import Image from 'next/image';
 import Link from 'next/link';
-
-import { dateformat } from '@/lib/date-format';
-
-import { ROUTER } from '@/router';
 
 type Props = {
   href?: string;
@@ -26,8 +20,8 @@ export const UserCard: React.FC<Props> = ({
   return (
     <Card
       className={cn(
-        'relative w-full h-auto box-border p-6 flex flex-col shadow-none border border-solid border-gray-200',
-        href ? 'hover:bg-white/80' : '',
+        'relative w-full h-auto box-border p-4 flex flex-col shadow-none border border-solid border-gray-200',
+        href ? 'hover:bg-accent/30' : '',
       )}
     >
       {href && <Link href={href} className="z-10 absolute inset-0"></Link>}

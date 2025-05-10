@@ -1,10 +1,23 @@
-import { Body, Controller, Post, RawBodyRequest, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  Param,
+  Post,
+  RawBodyRequest,
+  Req,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public, Session } from '@/common/decorators';
+import { ParamPublicIdDto } from '@/common/dto';
 import { IRequest, ISession } from '@/common/interfaces';
 
-import { StripeCreatePaymentIntentDto } from './stripe.dto';
+import {
+  StripeAccountLinkDto,
+  StripeCreatePaymentIntentDto,
+} from './stripe.dto';
 import { StripeService } from './stripe.service';
 
 @ApiTags('stripe')
@@ -32,5 +45,28 @@ export class StripeController {
       userId: session?.userId,
       ...body,
     });
+  }
+
+  @Get('account/:id')
+  async getAccount(
+    @Param() param: ParamPublicIdDto,
+    @Session() session: ISession,
+  ) {
+    const { id } = param;
+    return this.stripeService.getAccount({ accountId: id });
+  }
+
+  @Post('account')
+  async createAccount(@Session() session: ISession) {
+    return this.stripeService.createAccount({ country: 'SG' });
+  }
+
+  @Post('account-link')
+  async linkAccount(
+    @Session() session: ISession,
+    @Body() body: StripeAccountLinkDto,
+  ) {
+    const { accountId } = body;
+    return this.stripeService.linkAccount({ accountId });
   }
 }

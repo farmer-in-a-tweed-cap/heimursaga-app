@@ -31,8 +31,7 @@ export async function app() {
     const PORT = parseInt(process.env.PORT) || 5000;
     const API_VERSION = 1;
     const API_PREFIX = `v${API_VERSION}`;
-    const SESSION_SECRET = process.env.SESSION_SECRET;
-    const CORS_ORIGIN = process.env.CORS_ORIGIN;
+    const { SESSION_SECRET, SESSION_MAX_AGE = 168, CORS_ORIGIN } = process.env;
     const DISABLE_ERROR_MESSAGES = IS_PRODUCTION;
 
     // create a fastify adapter
@@ -60,7 +59,7 @@ export async function app() {
         cookie: {
           httpOnly: true,
           path: '/',
-          maxAge: 60 * 60 * 24,
+          maxAge: SESSION_MAX_AGE * 60 * 60,
           secure: IS_PRODUCTION,
         },
       },

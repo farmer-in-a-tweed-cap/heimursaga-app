@@ -1,5 +1,7 @@
 import {
   ILoginPayload,
+  IMapQueryPayload,
+  IMapQueryResponse,
   IPasswordResetPayload,
   IPasswordUpdatePayload,
   IPaymentMethodGetAllResponse,
@@ -8,11 +10,12 @@ import {
   IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
-  ISearchQueryPayload,
-  ISearchQueryResponse,
   ISignupPayload,
+  ISponsorshipTierUpdatePayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserMapGetResponse,
+  IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
   IUserSettingsProfileResponse,
@@ -30,7 +33,9 @@ export const QUERY_KEYS = {
   QUERY_POST_MAP: 'query_post_map',
   GET_SESSION_USER: 'get_session_user',
   GET_SESSION: 'get_session',
-  SEARCH: 'search',
+  MAP: {
+    QUERY: 'map_query',
+  },
   USER_FOLLOWERS: 'user_followers',
   USER_FOLLOWING: 'user_following',
   USER_FEED: 'user_feed',
@@ -38,6 +43,20 @@ export const QUERY_KEYS = {
   USER_DRAFTS: 'user_drafts',
   USER_SETTINGS_PROFILE: 'user_settings_profile',
   USER_PAYMENT_METHODS: 'user_payment_methods,',
+  USER: {
+    POSTS: 'user_posts',
+    NOTIFICATIONS: 'user_notifications',
+    MAP: 'user_map',
+  },
+  MEMBERSHIPS: 'memberships',
+  PAYOUT_METHODS: 'payout_methods',
+  PAYOUT_BALANCE: 'payout_balance',
+  SPONSORSHIPS: 'sponsorships',
+  SPONSORSHIP_TIERS: 'sponsorship_tiers',
+  INSIGHTS: {
+    POST: 'post_insights',
+  },
+  TRIPS: 'trips',
 };
 
 const createQuery = <T = undefined, R = any>(
@@ -144,28 +163,29 @@ export const postUpdateMutation = createMutation<
   }),
 );
 
-export const getUserPostsQuery = createQuery<
+export const getUserPostsQuery = createQuery<void, IUserPostsQueryResponse>(
+  [QUERY_KEYS.GET_POSTS],
+  () =>
+    apiClient.getUserPosts().then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IUserPostsQueryResponse;
+    }),
+);
+
+export const getUserPostsByUsernameQuery = createQuery<
   { username: string },
   IUserPostsQueryResponse
 >([QUERY_KEYS.GET_POSTS], ({ username }) =>
-  apiClient.getUserPosts({ username }).then(({ success, message, data }) => {
-    if (!success) {
-      throw new Error(message);
-    }
-    return data as IUserPostsQueryResponse;
-  }),
-);
-
-export const searchQuery = createQuery<
-  ISearchQueryPayload,
-  ISearchQueryResponse
->([QUERY_KEYS.SEARCH], (query) =>
-  apiClient.search(query).then(({ success, message, data }) => {
-    if (!success) {
-      throw new Error(message);
-    }
-    return data as ISearchQueryResponse;
-  }),
+  apiClient
+    .getUserPostsByUsername({ username })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IUserPostsQueryResponse;
+    }),
 );
 
 export const postLikeMutation = createMutation<
@@ -318,5 +338,42 @@ export const getUserPaymentMethods = createQuery<
       throw new Error(message);
     }
     return data as IPaymentMethodGetAllResponse;
+  }),
+);
+
+export const getUserNotifications = createQuery<
+  void,
+  IUserNotificationGetResponse
+>([QUERY_KEYS.USER.NOTIFICATIONS], () =>
+  apiClient.getUserNotifications().then(({ success, message, data }) => {
+    if (!success) {
+      throw new Error(message);
+    }
+    return data as IUserNotificationGetResponse;
+  }),
+);
+
+export const getUserMapByUsername = createQuery<
+  { username: string },
+  IUserMapGetResponse
+>([QUERY_KEYS.USER.MAP], ({ username }) =>
+  apiClient
+    .getUserMapByUsername({ username })
+    .then(({ success, message, data }) => {
+      if (!success) {
+        throw new Error(message);
+      }
+      return data as IUserMapGetResponse;
+    }),
+);
+
+export const membershipTierUpdateMutation = createMutation<
+  IApiClientQueryWithPayload<{ id: string }, ISponsorshipTierUpdatePayload>,
+  void
+>((query) =>
+  apiClient.updateSponsorshipTierById(query).then(({ success, message }) => {
+    if (!success) {
+      throw new Error(message);
+    }
   }),
 );

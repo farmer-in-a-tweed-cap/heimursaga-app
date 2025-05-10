@@ -11,7 +11,7 @@ type Props = {
 
 export const PostFeed: React.FC<Props> = ({ posts = [], loading = false }) => {
   return (
-    <div className="w-full grid grid-cols-1 gap-2">
+    <div className="w-full grid grid-cols-1 gap-4">
       {posts?.map(({ id, ...post }, key) => (
         <PostCard
           href={id ? ROUTER.POSTS.DETAIL(id) : undefined}

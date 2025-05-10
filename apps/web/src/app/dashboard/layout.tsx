@@ -8,15 +8,6 @@ import { SessionProvider } from '@/contexts';
 import { AppMapLayout } from '@/layouts';
 import { ROUTER } from '@/router';
 
-export const metadata: Metadata = {
-  title: 'saga',
-  description: 'a journaling platform for travelers',
-  openGraph: {
-    title: 'saga',
-    description: 'a journaling platform for travelers',
-  },
-};
-
 export default async function Layout({
   children,
 }: {

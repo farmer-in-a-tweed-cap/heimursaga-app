@@ -3,6 +3,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 
 import { apiClient } from '@/lib/api';
 
@@ -19,7 +20,10 @@ import { ROUTER } from '@/router';
 import './../styles.css';
 
 export const metadata: Metadata = {
-  title: 'saga',
+  title: {
+    template: '%s | saga',
+    default: 'saga',
+  },
   description: 'a journaling platform for travelers',
   openGraph: {
     title: 'saga',
@@ -49,18 +53,34 @@ export default async function RootLayout({ children }: Props) {
   );
 }
 
-export const SecureLayout = async ({ children }: Props) => {
+export const SessionLayout = async ({
+  children,
+  secure = true,
+}: Props & { secure?: boolean }) => {
   const cookie = cookies().toString();
   const sessionQuery = await apiClient.getSession({ cookie });
+  const logged = !!sessionQuery.data || null;
+
+  // protect private routes
+  if (secure) {
+    // if not logged, redirect to the login page
+    if (!logged) return redirect(ROUTER.LOGIN);
+  }
 
   return (
     <SessionProvider state={sessionQuery.data}>{children}</SessionProvider>
   );
 };
 
-export const AppLayout = ({ children }: { children: React.ReactNode }) => {
+export const AppLayout = ({
+  children,
+  secure = true,
+}: {
+  children: React.ReactNode;
+  secure?: boolean;
+}) => {
   return (
-    <SecureLayout>
+    <SessionLayout secure={secure}>
       <div className="w-full min-h-screen bg-background text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
@@ -69,52 +89,65 @@ export const AppLayout = ({ children }: { children: React.ReactNode }) => {
           </div>
         </div>
       </div>
-    </SecureLayout>
+    </SessionLayout>
   );
 };
 
-export const AuthLayout = ({ children }: { children: React.ReactNode }) => {
+export const LoginLayout = async ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const cookie = cookies().toString();
+
+  const sessionQuery = await apiClient.getSession({ cookie });
+  const logged = !!sessionQuery.data || null;
+
+  // if logged, redirect to the home page
+  if (logged) return redirect(ROUTER.HOME);
+
   return (
-    <SecureLayout>
-      <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-row">
-        <div className="relative w-full flex flex-col justify-start">
-          <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
-            {children}
-          </div>
+    <div className="w-full min-h-screen bg-background text-black flex flex-row">
+      <div className="relative w-full flex flex-col justify-start">
+        <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+          {children}
         </div>
       </div>
-    </SecureLayout>
+    </div>
   );
 };
 
-export const AppMapLayout = ({ children }: { children: React.ReactNode }) => {
+export const AppMapLayout = ({
+  children,
+  secure = true,
+}: {
+  children: React.ReactNode;
+  secure?: boolean;
+}) => {
   return (
-    <SecureLayout>
-      <div className="w-full bg-[#EFEFEC] text-black flex flex-row">
-        <AppSidebar />
+    <SessionLayout secure={secure}>
+      <div className="w-full bg-background text-black flex flex-row">
+        <AppSidebar collapsed={true} />
         <div className="relative w-full flex flex-col justify-start">
-          {/* <div className={cn('z-20 absolute top-0 left-0 right-0 h-[64px]')}>
-            <AppHeader />
-          </div> */}
           <div className={cn('app-content-full-container')}>{children}</div>
         </div>
       </div>
-    </SecureLayout>
+    </SessionLayout>
   );
 };
 
 export const CheckoutLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <SecureLayout>
+    <SessionLayout>
       <div className="w-full h-[55px] bg-white flex flex-row justify-center items-center border-b border-solid border-gray-200">
         <Link href={ROUTER.HOME}>
           <Logo />
         </Link>
       </div>
-      <div className="w-full min-h-screen bg-white text-black flex flex-row justify-center items-start">
-        <div className="w-full max-w-6xl flex flex-col p-4">{children}</div>
+      <div className="w-full bg-white text-black flex flex-row justify-center items-start">
+        <div className="w-full max-w-5xl flex flex-col p-4">{children}</div>
       </div>
-    </SecureLayout>
+    </SessionLayout>
   );
 };
 
@@ -124,14 +157,13 @@ export const AppLayoutWithoutSidebar = ({
   children: React.ReactNode;
 }) => {
   return (
-    <SecureLayout>
-      <div className="w-full min-h-screen bg-[#EFEFEC] text-black flex flex-col justify-start">
-        {/* <AppHeader /> */}
+    <SessionLayout>
+      <div className="w-full min-h-screen bg-background text-black flex flex-col justify-start">
         <div className="w-full h-auto min-h-screen flex flex-col py-6 items-center justify-start">
           {children}
         </div>
         <AppFooter />
       </div>
-    </SecureLayout>
+    </SessionLayout>
   );
 };

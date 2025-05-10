@@ -4,12 +4,11 @@ import {
   createParamDecorator,
 } from '@nestjs/common';
 import { SetMetadata } from '@nestjs/common';
+import { UserRole } from '@repo/types';
 import { Transform } from 'class-transformer';
 
 import { SESSION_KEYS } from '@/common/constants';
 import { IRequest, ISession } from '@/common/interfaces';
-
-import { Role } from './enums';
 
 export const PUBLIC_ROUTE_KEY = 'PUBLIC_ROUTE_KEY';
 export const ROLES_KEY = 'ROLES_KEY';
@@ -22,7 +21,7 @@ export const Session = createParamDecorator(
 
     const sid = req.session.get(SESSION_KEYS.SID);
     const userId = req.session.get(SESSION_KEYS.USER_ID);
-    const userRole = req.session.get(SESSION_KEYS.USER_ROLE);
+    const userRole = req.session.get(SESSION_KEYS.USER_ROLE) as UserRole;
 
     const forwardedFor = req.headers['x-forwarded-for'] as string;
     const ip = forwardedFor ? forwardedFor.split(',')[0].trim() : req.ip;
@@ -38,7 +37,7 @@ export const Session = createParamDecorator(
   },
 );
 
-export const Roles = (...roles: Role[]): CustomDecorator<string> =>
+export const Roles = (...roles: UserRole[]): CustomDecorator<string> =>
   SetMetadata(ROLES_KEY, roles);
 
 export const ToNumber = () =>

@@ -1,20 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import {
+  AppErrorCode,
   ILoginPayload,
   ILoginResponse,
   IPasswordResetPayload,
   IPasswordUpdatePayload,
   ISessionUserGetResponse,
   ISignupPayload,
+  UserRole,
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
-import { getUploadStaticUrl } from '@/lib/upload';
+import { getStaticMediaUrl } from '@/lib/upload';
 import { hashPassword } from '@/lib/utils';
 
 import { EMAIL_TEMPLATE_KEYS } from '@/common/email-templates';
-import { Role } from '@/common/enums';
 import {
   ServiceBadRequestException,
   ServiceException,
@@ -58,8 +59,7 @@ export class AuthService {
           is_premium: true,
           profile: {
             select: {
-              first_name: true,
-              last_name: true,
+              name: true,
               picture: true,
             },
           },
@@ -74,19 +74,14 @@ export class AuthService {
         is_email_verified: isEmailVerified,
         is_premium: isPremium,
       } = user;
-      const {
-        first_name: firstName,
-        last_name: lastName,
-        picture,
-      } = user?.profile || {};
+      const { name, picture } = user?.profile || {};
 
       return {
         email,
         username,
         role,
-        firstName,
-        lastName,
-        picture: getUploadStaticUrl(picture),
+        name,
+        picture: getStaticMediaUrl(picture),
         isEmailVerified,
         isPremium,
       };
@@ -147,7 +142,7 @@ export class AuthService {
 
   async signup(payload: ISignupPayload): Promise<void> {
     try {
-      const { firstName, lastName } = payload;
+      const { name } = payload;
 
       // format email and username
       const username = payload.username.trim().toLowerCase();
@@ -161,24 +156,26 @@ export class AuthService {
         .count({ where: { email } })
         .then((count) => count <= 0);
       if (!isEmailAvailable)
-        throw new ServiceForbiddenException('email already in use');
+        throw new ServiceForbiddenException(AppErrorCode.EMAIL_ALREADY_IN_USE);
 
       // check if the username is available
       const isUsernameAvailable = await this.prisma.user
         .count({ where: { username } })
         .then((count) => count <= 0);
       if (!isUsernameAvailable)
-        throw new ServiceForbiddenException('username already in use');
+        throw new ServiceForbiddenException(
+          AppErrorCode.USERNAME_ALREADY_IN_USE,
+        );
 
       // create a user
       await this.prisma.user.create({
         data: {
           email,
           username,
-          role: Role.USER,
+          role: UserRole.USER,
           password,
           profile: {
-            create: { first_name: firstName, last_name: lastName, picture: '' },
+            create: { name, picture: '' },
           },
         },
         select: {
@@ -261,7 +258,7 @@ export class AuthService {
   async validateSession(payload: { sid: string }): Promise<{
     sid: string;
     userId: number;
-    role: Role;
+    role: UserRole;
   } | null> {
     try {
       const { sid } = payload;
@@ -286,7 +283,7 @@ export class AuthService {
 
       const response = {
         sid: session.sid,
-        role: session.user.role as Role,
+        role: session.user.role as UserRole,
         userId: session.user.id,
       };
 

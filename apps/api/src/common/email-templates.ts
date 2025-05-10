@@ -8,7 +8,7 @@ const templates: { key: string; subject: string; html: (v?: any) => string }[] =
     {
       key: EMAIL_TEMPLATE_KEYS.WELCOME,
       subject: 'welcome to saga',
-      html: (v: { first_name: string }) => `welcome to saga, ${v?.first_name}`,
+      html: (v: { name: string }) => `welcome to saga, ${v?.name}`,
     },
     {
       key: EMAIL_TEMPLATE_KEYS.PASSWORD_RESET,

@@ -7,7 +7,7 @@ import {
   TabNavbar,
   UserFollowersFeed,
   UserFollowingFeed,
-  UserPostsFeed,
+  UserPosts,
 } from '@/components';
 import { ROUTER } from '@/router';
 
@@ -17,26 +17,28 @@ const SECTION_KEYS = {
   FOLLOWING: 'following',
 };
 
-const SECTION_TABS: { key: string; label: string }[] = [
-  { key: SECTION_KEYS.HOME, label: 'Home' },
-  { key: SECTION_KEYS.FOLLOWERS, label: 'Followers' },
-  { key: SECTION_KEYS.FOLLOWING, label: 'Following' },
-];
-
 type Props = {
   username: string;
   section?: string;
+  me?: boolean;
 };
 
 export const UserPageSections: React.FC<Props> = ({
   username,
   section = SECTION_KEYS.HOME,
+  me = false,
 }) => {
   const router = useRouter();
 
   const [state, setState] = useState<{ section: string }>({
     section,
   });
+
+  const tabs: { key: string; label: string }[] = [
+    { key: SECTION_KEYS.HOME, label: 'Home' },
+    { key: SECTION_KEYS.FOLLOWERS, label: 'Followers' },
+    { key: SECTION_KEYS.FOLLOWING, label: 'Following' },
+  ];
 
   const sectionKey = state.section;
 
@@ -54,7 +56,7 @@ export const UserPageSections: React.FC<Props> = ({
     <div className="w-full flex flex-col items-center gap-4">
       <div className="w-full flex flex-row">
         <TabNavbar
-          tabs={SECTION_TABS}
+          tabs={tabs}
           activeTab={sectionKey}
           classNames={{
             container: 'w-full',
@@ -63,10 +65,8 @@ export const UserPageSections: React.FC<Props> = ({
           onChange={handleChange}
         />
       </div>
-      <div className="mt-4 flex flex-col w-full max-w-2xl">
-        {sectionKey === SECTION_KEYS.HOME && (
-          <UserPostsFeed username={username} />
-        )}
+      <div className="mt-2 flex flex-col w-full max-w-2xl">
+        {sectionKey === SECTION_KEYS.HOME && <UserPosts username={username} />}
         {sectionKey === SECTION_KEYS.FOLLOWERS && (
           <UserFollowersFeed username={username} />
         )}

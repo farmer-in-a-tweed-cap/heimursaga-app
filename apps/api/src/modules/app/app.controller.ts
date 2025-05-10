@@ -2,7 +2,6 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public } from '@/common/decorators';
-import { StripeService } from '@/modules/stripe';
 
 import { AppService } from './app.service';
 
@@ -15,11 +14,5 @@ export class AppController {
   @Get()
   health() {
     return;
-  }
-
-  @Public()
-  @Get('test')
-  test() {
-    return this.appService.test();
   }
 }

@@ -17,37 +17,38 @@ import {
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
 import { cn } from '@repo/ui/lib/utils';
-import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import {
-  updateUserPictureMutation,
-  updateUserProfileSettingsMutation,
-} from '@/lib/api';
-import { fieldmsg } from '@/lib/utils';
+import { apiClient } from '@/lib/api';
+
+import { zodMessage } from '@/lib';
 
 import { UserAvatarUploadPicker } from './user-avatar-upload-picker';
 
 const schema = z.object({
-  firstName: z
+  name: z
     .string()
-    .nonempty(fieldmsg.required('first name'))
-    .min(2, fieldmsg.min('first name', 2))
-    .max(50, fieldmsg.max('first name', 20)),
-  lastName: z
+    .nonempty(zodMessage.required('name'))
+    .min(2, zodMessage.string.min('name', 2))
+    .max(50, zodMessage.string.max('name', 20)),
+  username: z
     .string()
-    .nonempty(fieldmsg.required('last name'))
-    .min(2, fieldmsg.min('last name', 2))
-    .max(50, fieldmsg.max('last name', 20)),
-
+    .nonempty(zodMessage.required('username'))
+    .min(4, zodMessage.string.min('username', 4))
+    .max(20, zodMessage.string.max('username', 20)),
+  email: z
+    .string()
+    .email(zodMessage.email())
+    .nonempty(zodMessage.required('email'))
+    .max(50, zodMessage.string.max('email', 50)),
   bio: z
     .string()
-    .nonempty(fieldmsg.required('bio'))
-    .min(0, fieldmsg.min('bio', 0))
-    .max(140, fieldmsg.max('bio', 140)),
+    .nonempty(zodMessage.required('bio'))
+    .min(0, zodMessage.string.min('bio', 0))
+    .max(140, zodMessage.string.max('bio', 140)),
 });
 
 type Props = {
@@ -58,173 +59,111 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   const router = useRouter();
   const toast = useToast();
 
-  const [settingsLoading, setSettingsLoading] = useState<boolean>(false);
-  const [pictureLoading, setPictureLoading] = useState<boolean>(false);
-
-  const onError = (e: Error) => {
-    setSettingsLoading(false);
-    setPictureLoading(false);
-    console.log('settings not update', e);
-    toast({ type: 'error', message: 'settings not updated' });
-  };
-
-  const settingsUpdateMutation = useMutation({
-    mutationFn: updateUserProfileSettingsMutation.mutationFn,
-    onSuccess: () => {
-      setSettingsLoading(false);
-      toast({ type: 'success', message: 'settings updated' });
-      router.refresh();
-    },
-    onError,
-  });
-
-  const pictureUpdateMutation = useMutation({
-    mutationFn: updateUserPictureMutation.mutationFn,
-    onSuccess: () => {
-      setPictureLoading(false);
-      router.refresh();
-    },
-    onError,
-  });
+  const [loading, setLoading] = useState<{
+    picture: boolean;
+    settings: boolean;
+  }>({ picture: false, settings: false });
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: data
       ? { ...data }
       : {
-          firstName: '',
-          lastName: '',
+          name: '',
           bio: '',
         },
   });
 
-  const handleAvatarChange = (file: File) => {
-    setPictureLoading(true);
-
-    pictureUpdateMutation.mutate({ query: {}, payload: { file } });
-  };
-
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      setSettingsLoading(true);
-      settingsUpdateMutation.mutate(values);
+      try {
+        const { name, bio } = values;
+
+        setLoading((loading) => ({ ...loading, settings: true }));
+
+        // save the changes
+        await apiClient.updateUserProfileSettings({ name, bio });
+
+        toast({ type: 'success', message: 'settings updated' });
+        setLoading((loading) => ({ ...loading, settings: false }));
+        router.refresh();
+      } catch (e) {
+        setLoading((loading) => ({ ...loading, settings: false }));
+        toast({ type: 'error', message: 'settings not updated' });
+      }
     },
   );
+
+  const handlePictureUpdate = async (file: File) => {
+    try {
+      setLoading((loading) => ({ ...loading, picture: true }));
+
+      // save the changes
+      await apiClient.updateUserPicture({ file });
+
+      setLoading((loading) => ({ ...loading, picture: false }));
+    } catch (e) {
+      setLoading((loading) => ({ ...loading, picture: false }));
+    }
+  };
 
   return (
     <Card className={cn('flex flex-col gap-6')}>
       <CardContent>
         <UserAvatarUploadPicker
           src={data?.picture}
-          loading={pictureLoading}
-          fallback={data?.firstName}
-          onChange={handleAvatarChange}
+          loading={loading.picture}
+          fallback={data?.name}
+          onChange={handlePictureUpdate}
         />
         <Form {...form}>
           <form onSubmit={handleSubmit}>
             <div className="flex flex-col gap-6">
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="mt-8 gap-6 flex flex-col">
+                <div className="w-full flex lg:flex-row flex-col gap-6">
+                  <div className="basis-6/12 lg:basis-full">
+                    <FormField
+                      control={form.control}
+                      name="email"
+                      disabled
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Email</FormLabel>
+                          <FormControl>
+                            <Input required {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="basis-6/12 lg:basis-full">
+                    <FormField
+                      control={form.control}
+                      name="username"
+                      disabled
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Username</FormLabel>
+                          <FormControl>
+                            <Input required {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
                 <FormField
                   control={form.control}
-                  name="firstName"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>First name</FormLabel>
+                      <FormLabel>Name</FormLabel>
                       <FormControl>
-                        <Input disabled={settingsLoading} required {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />{' '}
-                <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last name</FormLabel>
-                      <FormControl>
-                        <Input disabled={settingsLoading} required {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              {/* <div className="grid gap-2">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input disabled={loading} required {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div> */}
-              {/* <div className="grid gap-2">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        disabled={loading}
-                        required
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div> */}
-              {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <FormField
-                control={form.control}
-                name="livesIn"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Lives in</FormLabel>
-                    <FormControl>
-                      <Input disabled={loading} required {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="travelsIn"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Travels in</FormLabel>
-                    <FormControl>
-                      <Input disabled={loading} required {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div> */}
-              <div className="grid gap-2">
-                <FormField
-                  control={form.control}
-                  name="bio"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bio</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          className="min-h-[120px]"
-                          disabled={settingsLoading}
+                        <Input
+                          disabled={loading.settings}
                           required
                           {...field}
                         />
@@ -233,9 +172,30 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                     </FormItem>
                   )}
                 />
+
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="bio"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bio</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            className="min-h-[120px]"
+                            disabled={loading.settings}
+                            required
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
               <div>
-                <Button type="submit" loading={settingsLoading}>
+                <Button type="submit" loading={loading.settings}>
                   Save
                 </Button>
               </div>

@@ -21,8 +21,8 @@ export const LikeButton: React.FC<Props> = ({
     <Button
       variant="ghost"
       className={cn(
-        'transition-all hover:bg-gray-200 rounded-full h-[32px]',
-        disabled ? '' : 'hover:bg-gray-200',
+        'transition-all hover:bg-accent rounded-full h-[32px]',
+        disabled ? '' : 'hover:bg-accent',
       )}
       size="sm"
       disabled={disabled}

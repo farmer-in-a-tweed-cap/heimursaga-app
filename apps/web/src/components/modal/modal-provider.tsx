@@ -10,15 +10,12 @@ import {
   useState,
 } from 'react';
 
-export const MODALS = {
-  WELCOME: 'welcome',
-  PAYMENT_METHOD_ADD: 'payment_method_add',
-  PAYMENT_METHOD_DELETE: 'payment_method_delete',
-};
+import { ModalComponent, modalRegistry } from './modal-registry';
 
 // modal context
 interface IModalContextState<T = any> {
   id: string | null;
+  full?: boolean;
   props?: T;
   onSubmit?: () => void;
   onCancel?: () => void;
@@ -36,24 +33,6 @@ export const ModalContext = createContext<IModalContext>({
   preload: async () => {},
 });
 
-// modal registry
-type ModalComponent<T = any> = React.ComponentType<{
-  props?: T;
-  close: () => void;
-  onSubmit?: () => void;
-  onCancel?: () => void;
-}>;
-
-interface IModalRegistry {
-  [key: string]: () => Promise<{ default: ModalComponent }>;
-}
-
-const modalRegistry: IModalRegistry = {
-  [MODALS.WELCOME]: () => import('./welcome-modal'),
-  [MODALS.PAYMENT_METHOD_ADD]: () => import('./payment-method-add-modal'),
-  [MODALS.PAYMENT_METHOD_DELETE]: () => import('./payment-method-delete-modal'),
-};
-
 // modal cache
 const preloadedComponents: Record<string, ModalComponent> = {};
 
@@ -67,14 +46,15 @@ const preloadModal = async (id: string) => {
 export type ModalBaseProps<T = any> = {
   props?: T;
   close: () => void;
-  onSubmit?: () => void;
-  onCancel?: () => void;
+  onSubmit?: (data?: any) => void;
+  onCancel?: (data?: any) => void;
 };
 
 // modal provider
 export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<IModalContextState>({
     id: null,
+    full: false,
     props: {},
   });
   const [ModalComponent, setModalComponent] = useState<ModalComponent | null>(
@@ -133,7 +113,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ModalContext.Provider value={{ context: state, setContext, preload }}>
       <Dialog open={open}>
-        <DialogContent onClose={handleClose}>
+        <DialogContent full={state.full} onClose={handleClose}>
           <Suspense fallback={<div>Loading...</div>}>{modalContent}</Suspense>
         </DialogContent>
       </Dialog>

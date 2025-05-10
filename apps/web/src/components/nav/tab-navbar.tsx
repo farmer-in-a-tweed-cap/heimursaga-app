@@ -22,8 +22,10 @@ export const TabNavbar: React.FC<Props> = ({
   onChange,
 }) => {
   const handleClick = (tab: string) => {
-    if (onChange) {
-      onChange(tab);
+    if (activeTab !== tab) {
+      if (onChange) {
+        onChange(tab);
+      }
     }
   };
 

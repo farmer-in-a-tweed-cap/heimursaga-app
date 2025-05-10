@@ -1,9 +1,6 @@
 'use client';
 
-import {
-  IPaymentMethodDetail,
-  IPaymentMethodGetAllResponse,
-} from '@repo/types';
+import { IPaymentMethodGetAllResponse } from '@repo/types';
 import { Button, Card, CardContent, LoadingSpinner } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
 import { useQuery } from '@tanstack/react-query';
@@ -79,7 +76,7 @@ export const UserSettingsPaymentMethodView = () => {
       {paymentMethodQuery.isLoading ? (
         <LoadingSpinner />
       ) : paymentMethods.results ? (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2">
           {paymentMethods.data.map(({ label, id, last4 }, key) => (
             <PaymentMethodCard
               key={key}
@@ -87,6 +84,11 @@ export const UserSettingsPaymentMethodView = () => {
               onDelete={() => handlePaymentMethodDelete(id)}
             />
           ))}
+          <div className="mt-2">
+            <Button variant="outline" onClick={handlePaymentMethodCreate}>
+              Add payment method
+            </Button>
+          </div>
         </div>
       ) : (
         <Card>
@@ -97,11 +99,6 @@ export const UserSettingsPaymentMethodView = () => {
           </CardContent>
         </Card>
       )}
-      <div className="mt-4">
-        <Button variant="secondary" onClick={handlePaymentMethodCreate}>
-          Add payment method
-        </Button>
-      </div>
     </div>
   );
 };

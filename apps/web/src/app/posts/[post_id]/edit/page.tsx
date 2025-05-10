@@ -1,14 +1,27 @@
 import { Card, CardContent, CardHeader } from '@repo/ui/components';
+import { Metadata } from 'next';
 import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
 
 import { PostEditForm } from '@/components/post';
 
+import { PageHeaderTitle } from '@/components';
 import { AppLayout } from '@/layouts';
-import type { PageProps } from '@/types';
 
-export default async function Page({ params }: PageProps<{ post_id: string }>) {
+export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Edit post',
+};
+
+type PageProps = {
+  params: {
+    post_id: string;
+  };
+};
+
+export default async function Page({ params }: PageProps) {
   const cookie = cookies().toString();
 
   const { post_id: postId } = await params;
@@ -28,11 +41,9 @@ export default async function Page({ params }: PageProps<{ post_id: string }>) {
 
   return (
     <AppLayout>
-      <div className="w-full max-w-3xl">
+      <div className="w-full max-w-3xl flex flex-col gap-6">
+        <PageHeaderTitle>Edit post</PageHeaderTitle>
         <Card>
-          <CardHeader>
-            <h2 className="text-xl font-medium">Edit post</h2>
-          </CardHeader>
           <CardContent>
             <PostEditForm
               postId={postId}

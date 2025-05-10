@@ -19,7 +19,7 @@ export const FollowButton: React.FC<Props> = ({
       disabled={disabled}
       className={cn(
         followed
-          ? 'transition-all bg-gray-200 hover:bg-gray-300/90 text-gray-800'
+          ? 'transition-all bg-accent hover:bg-accent text-gray-800'
           : '',
       )}
       onClick={disabled ? () => {} : onClick}

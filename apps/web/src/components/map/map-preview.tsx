@@ -1,44 +1,76 @@
 'use client';
 
-import { Button } from '@repo/ui/components';
-import Link from 'next/link';
+import { cn } from '@repo/ui/lib/utils';
+import Image from 'next/image';
 
+import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks';
 
-import { Map } from './map';
+import { Map, MapSource } from './map';
+import { MapPreviewOverlay } from './map-preview-overlay';
 
 type Props = {
   href?: string;
-  coordinates?: {
+  className?: string;
+  lat?: number;
+  lon?: number;
+  alt?: number;
+  overlay?: boolean;
+  markers?: {
     lat: number;
     lon: number;
-  };
+  }[];
   onClick?: () => void;
 };
 
 export const MapPreview: React.FC<Props> = ({
   href,
-  coordinates = { lat: 0, lon: 0 },
+  lat = 0,
+  lon = 0,
+  alt = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
+  markers,
+  className,
+  overlay = true,
   onClick = () => {},
 }) => {
   const mapbox = useMapbox();
 
+  const token = mapbox.token;
+  const width = 600;
+  const height = 240;
+  const style = APP_CONFIG.MAPBOX.STYLE;
+  const color = APP_CONFIG.MAPBOX.BRAND_COLOR;
+  const retina = '@2x';
+
+  const marker = markers?.[0];
+
   return (
-    <div className="relative w-full aspect-5/2 bg-gray-50 rounded-xl overflow-hidden">
-      <MapPreviewOverlay href={href} onClick={onClick} />
+    <div
+      className={cn(
+        'relative w-full h-[220px] bg-gray-50 rounded-xl overflow-hidden',
+        className,
+      )}
+    >
+      {overlay && <MapPreviewOverlay href={href} onClick={onClick} />}
       <div className="z-10 w-full h-full">
-        {mapbox.token && (
+        {token && (
           <Map
-            token={mapbox.token}
+            token={token}
             coordinates={{
-              lat: coordinates.lat,
-              lon: coordinates.lon,
-              alt: 8,
+              lat,
+              lon,
+              alt,
             }}
-            marker={{
-              lat: coordinates.lat,
-              lon: coordinates.lon,
-            }}
+            marker={
+              marker
+                ? {
+                    lat: marker.lat,
+                    lon: marker.lon,
+                  }
+                : undefined
+            }
+            width={width}
+            height={height}
             cursor="pointer"
             controls={false}
             disabled={true}
@@ -49,29 +81,49 @@ export const MapPreview: React.FC<Props> = ({
   );
 };
 
-export const MapPreviewOverlay = ({
+export const MapStaticPreview: React.FC<Props> = ({
   href,
+  lat = 0,
+  lon = 0,
+  alt = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
+  markers = [],
+  overlay = true,
+  className,
   onClick = () => {},
-}: {
-  href?: string;
-  onClick?: () => void;
-}) => (
-  <div className="absolute z-20 transition-all inset-0 w-full h-full flex flex-row justify-center items-center opacity-0 cursor-pointer hover:opacity-100">
-    {href ? (
-      <Link href={href}>
-        <div className="absolute z-10 inset-0 bg-gray-200 opacity-50"></div>
-      </Link>
-    ) : (
-      <div className="absolute z-10 inset-0 bg-gray-200 opacity-50"></div>
-    )}
-    {href ? (
-      <Button variant="outline" className="z-20 bg-white">
-        <Link href={href}>Open map </Link>
-      </Button>
-    ) : (
-      <Button variant="outline" className="z-20" onClick={onClick}>
-        Open map
-      </Button>
-    )}
-  </div>
-);
+}) => {
+  const mapbox = useMapbox();
+
+  const token = mapbox.token;
+  const width = 600;
+  const height = 240;
+  const style = APP_CONFIG.MAPBOX.STYLE;
+  const color = APP_CONFIG.MAPBOX.BRAND_COLOR;
+  const retina = '@2x';
+
+  const pin =
+    markers.length >= 1
+      ? markers.map(({ lon, lat }) => `pin-s+${color}(${lon},${lat})`).join(',')
+      : '';
+
+  const src = `https://api.mapbox.com/styles/v1/${style}/static/${markers.length >= 1 ? `${pin}/` : ''}${lon},${lat},${alt},0,0/${width}x${height}${retina}?access_token=${token}`;
+
+  return (
+    <div
+      className={cn(
+        'relative w-full aspect-5/2 h-auto bg-gray-50 rounded-xl overflow-hidden',
+        className,
+      )}
+    >
+      {overlay && <MapPreviewOverlay href={href} onClick={onClick} />}
+      <div className="z-10 w-full h-full">
+        <Image
+          src={src}
+          alt=""
+          width={width}
+          height={height}
+          className="w-full h-auto"
+        />
+      </div>
+    </div>
+  );
+};

@@ -11,6 +11,7 @@ declare global {
       DATABASE_URL: string;
 
       SESSION_SECRET: string;
+      SESSION_MAX_AGE: number;
       COOKIE_SECRET: string;
 
       STRIPE_SECRET_KEY: string;

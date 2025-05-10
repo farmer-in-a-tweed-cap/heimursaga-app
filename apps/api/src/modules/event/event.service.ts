@@ -5,6 +5,7 @@ import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
 import { EVENTS } from './event.enum';
+import { IEventMessage } from './event.interface';
 
 export interface IEvent<T = any> {
   event: string | keyof typeof EVENTS;
@@ -15,7 +16,6 @@ export interface IEvent<T = any> {
 export class EventService implements OnModuleInit {
   constructor(
     private logger: Logger,
-    private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
   ) {}
 
@@ -23,13 +23,15 @@ export class EventService implements OnModuleInit {
     this.eventEmitter.setMaxListeners(50);
   }
 
-  async trigger<T = any>({ event, data }: { event: string; data?: T }) {
+  async trigger<T = any>(message: IEventMessage<T>) {
     try {
+      const { event, data } = message;
+
       // trigger
       this.eventEmitter.emit(event, data);
 
       // log
-      console.log(JSON.stringify({ event, data }, null, 2));
+      // console.log(JSON.stringify({ event, data }, null, 2));
     } catch (e) {
       this.logger.error(e);
     }

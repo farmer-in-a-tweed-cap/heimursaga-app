@@ -51,6 +51,7 @@ export class UploadService {
       const {
         context,
         thumbnail = true,
+        aspect = 'auto',
         file: { buffer },
       } = payload;
       const { userId } = session;
@@ -104,14 +105,46 @@ export class UploadService {
       };
 
       // convert to webp and resize
+      const size = {
+        original: {
+          width: 0,
+          height: 0,
+        },
+        thumbnail: {
+          width: 0,
+          height: 0,
+        },
+      };
+
+      switch (aspect) {
+        case 'auto':
+          size.original.width = 1200;
+          size.original.height = 900;
+          size.thumbnail.width = 400;
+          size.thumbnail.height = 300;
+          break;
+        case 'square':
+          size.original.width = 800;
+          size.original.height = 800;
+          size.thumbnail.width = 240;
+          size.thumbnail.height = 240;
+          break;
+      }
+
       const buffers = {
         original: await sharp(buffer)
-          .resize(1200, 900, { fit: 'cover', position: 'center' })
+          .resize(size.original.width, size.original.height, {
+            fit: 'cover',
+            position: 'center',
+          })
           .webp()
           .toBuffer(),
         thumbnail: thumbnail
           ? await sharp(buffer)
-              .resize(400, 300, { fit: 'cover', position: 'center' })
+              .resize(size.thumbnail.width, size.thumbnail.height, {
+                fit: 'cover',
+                position: 'center',
+              })
               .webp({ quality: 75 })
               .toBuffer()
           : null,
@@ -132,7 +165,7 @@ export class UploadService {
 
       // upload the files to s3
       await Promise.all(
-        uploads.map(({ key }) =>
+        uploads.map(({ key, buffer }) =>
           this.s3.send(
             new PutObjectCommand({
               Bucket: bucket,
