@@ -20,7 +20,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ForwardRefExoticComponent, RefAttributes } from 'react';
 
-import { CreatePostButton, Logo, UserNavbar } from '@/components';
+import {
+  CreatePostButton,
+  Logo,
+  UserGuestAvatar,
+  UserNavbar,
+} from '@/components';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
@@ -236,9 +241,9 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
             >
               <CreatePostButton
                 variant="secondary"
+                collapsed={collapsed}
                 classNames={{
-                  label: collapsed ? 'hidden' : 'hidden lg:flex',
-                  button: 'min-w-auto bg-white hover:bg-secondary',
+                  button: 'min-w-auto bg-white hover:bg-accent',
                 }}
               >
                 Create
@@ -246,10 +251,14 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
               <UserNavbar collapsed={collapsed} />
             </div>
           ) : (
-            <div className="w-full flex flex-col gap-8 px-3">
-              <Button variant="secondary" asChild>
-                <a href={ROUTER.LOGIN}>Log in</a>
-              </Button>
+            <div className="w-full flex flex-col items-center justify-center gap-8 px-3">
+              {collapsed ? (
+                <UserNavbar collapsed={collapsed} />
+              ) : (
+                <Button variant="secondary" asChild>
+                  <a href={ROUTER.LOGIN}>Log in</a>
+                </Button>
+              )}
             </div>
           )}
         </div>
