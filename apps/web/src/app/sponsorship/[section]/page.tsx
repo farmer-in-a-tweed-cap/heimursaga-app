@@ -21,7 +21,7 @@ export default async function Page({ params }: PageProps) {
 
   return (
     <AppLayout>
-      <div className="w-full max-w-3xl flex flex-col gap-6">
+      <div className="w-full max-w-5xl flex flex-col gap-6">
         <PageHeaderTitle>Sponsorship</PageHeaderTitle>
         <SponsorshipView section={section} />
       </div>

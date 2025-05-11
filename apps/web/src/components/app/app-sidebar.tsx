@@ -187,7 +187,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
   return (
     <div
       className={cn(
-        'hidden sm:max-w-[65px] md:flex relative w-full',
+        'hidden lg:flex relative w-full',
         collapsed ? 'lg:max-w-[65px]' : 'lg:max-w-[240px]',
       )}
     >
