@@ -59,7 +59,7 @@ export class StripeService {
       // handle stripe webhook events
       switch (event.type) {
         case 'payment_intent.succeeded':
-          this.onPaymentIntent(data as Stripe.PaymentIntent);
+          this.onPaymentIntentSucceeded(data as Stripe.PaymentIntent);
           break;
       }
 
@@ -175,47 +175,6 @@ export class StripeService {
     }
   }
 
-  async onPaymentIntent(event: Stripe.PaymentIntent) {
-    try {
-      const { metadata } = event;
-
-      const transaction = metadata?.[
-        StripeMetadataKey.TRANSACTION
-      ] as PaymentTransactionType;
-
-      const userId = metadata?.[StripeMetadataKey.USER_ID];
-      const creatorId = metadata?.[StripeMetadataKey.CREATOR_ID];
-      const subscriptionPlanId =
-        metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID];
-      const checkoutId = metadata?.[StripeMetadataKey.CHECKOUT_ID];
-
-      switch (transaction) {
-        case PaymentTransactionType.SUBSCRIPTION:
-          await this.eventService.trigger<IOnSubscriptionUpgradeCompleteEvent>({
-            event: EVENTS.SUBSCRIPTION.UPGRADE.COMPLETE,
-            data: {
-              userId: parseInt(userId),
-              subscriptionPlanId: parseInt(subscriptionPlanId),
-              checkoutId: parseInt(checkoutId),
-            },
-          });
-          break;
-        case PaymentTransactionType.SPONSORSHIP:
-          await this.eventService.trigger<IOnSponsorCheckoutCompleteEvent>({
-            event: EVENTS.SPONSORSHIP.CHECKOUT_COMPLETE,
-            data: {
-              userId: parseInt(userId),
-              creatorId: parseInt(creatorId),
-              checkoutId: parseInt(checkoutId),
-            },
-          });
-          break;
-      }
-    } catch (e) {
-      this.logger.error(e);
-    }
-  }
-
   async getAccount({ accountId }: { accountId: string }) {
     try {
       // get a stripe account
@@ -312,6 +271,65 @@ export class StripeService {
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('stripe account not linked');
       throw exception;
+    }
+  }
+
+  async onPaymentIntentSucceeded(event: Stripe.PaymentIntent) {
+    try {
+      const { id: paymentIntentId } = event;
+
+      await sleep(1000);
+
+      // retrieve a payment intent
+      const paymentIntent =
+        await this.stripe.paymentIntents.retrieve(paymentIntentId);
+      const metadata = paymentIntent.metadata || {};
+
+      const params = {
+        transaction: metadata?.[
+          StripeMetadataKey.TRANSACTION
+        ] as PaymentTransactionType,
+        checkoutId: metadata?.[StripeMetadataKey.CHECKOUT_ID]
+          ? parseInt(metadata?.[StripeMetadataKey.CHECKOUT_ID])
+          : undefined,
+        userId: metadata?.[StripeMetadataKey.USER_ID]
+          ? parseInt(metadata?.[StripeMetadataKey.USER_ID])
+          : undefined,
+        creatorId: metadata?.[StripeMetadataKey.CREATOR_ID]
+          ? parseInt(metadata?.[StripeMetadataKey.CREATOR_ID])
+          : undefined,
+        subscriptionPlanId: metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID]
+          ? parseInt(metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID])
+          : undefined,
+      };
+
+      const { transaction, userId, checkoutId, creatorId, subscriptionPlanId } =
+        params;
+
+      switch (transaction) {
+        case PaymentTransactionType.SUBSCRIPTION:
+          await this.eventService.trigger<IOnSubscriptionUpgradeCompleteEvent>({
+            event: EVENTS.SUBSCRIPTION.UPGRADE.COMPLETE,
+            data: {
+              userId,
+              subscriptionPlanId,
+              checkoutId,
+            },
+          });
+          break;
+        case PaymentTransactionType.SPONSORSHIP:
+          await this.eventService.trigger<IOnSponsorCheckoutCompleteEvent>({
+            event: EVENTS.SPONSORSHIP.CHECKOUT_COMPLETE,
+            data: {
+              userId,
+              creatorId,
+              checkoutId,
+            },
+          });
+          break;
+      }
+    } catch (e) {
+      this.logger.error(e);
     }
   }
 }

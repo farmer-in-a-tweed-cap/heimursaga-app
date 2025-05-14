@@ -35,7 +35,6 @@ model User {
   profile                     UserProfile?
   plans                       UserPlan[]
   sessions                    UserSession[]
-  checkouts                   Checkout[]
   posts                       Post[]
   trips                       Trip[]
   post_likes                  PostLike[]         @relation("user_post_likes")
@@ -315,11 +314,13 @@ model EmailVerification {
 model Checkout {
   id                       Int            @id @default(autoincrement())
   public_id                String         @unique @db.VarChar(20)
-  transactionType          String?
+  transaction_type         String?
   status                   String?        @default("pending")
   currency                 String?        @default("usd")
   total                    Int
   expiry                   DateTime?
+  sponsorship_type         String?
+  sponsorship_tier_id      Int?
   stripe_subscription_id   String?        @db.VarChar(40)
   stripe_payment_intent_id String?        @db.VarChar(40)
   stripe_product_id        String?        @db.VarChar(40)
@@ -338,8 +339,6 @@ model Checkout {
   created_at               DateTime?      @default(now())
   updated_at               DateTime?      @updatedAt
   deleted_at               DateTime?
-  User                     User?          @relation(fields: [userId], references: [id])
-  userId                   Int?
 
   @@map("checkouts")
 }
