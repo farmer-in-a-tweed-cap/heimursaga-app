@@ -60,7 +60,7 @@ export const SubscriptionPlanCard: React.FC<Props> = ({
       {active && (
         <div className="mt-8">
           <span className="text-base">
-            Next payment: {dateformat(expiry).format('DD/MM/YYYY')}
+            Next payment: {dateformat(expiry).format('MMM DD, YYYY')}
           </span>
         </div>
       )}

@@ -255,7 +255,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
               {collapsed ? (
                 <UserNavbar collapsed={collapsed} />
               ) : (
-                <Button variant="secondary" asChild>
+                <Button variant="secondary" className="w-full" asChild>
                   <a href={ROUTER.LOGIN}>Log in</a>
                 </Button>
               )}

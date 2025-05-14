@@ -58,10 +58,24 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
   };
 
   const { username, picture = '', name = '' } = session || {};
-  const role = getRoleLabel(session?.role || UserRole.USER);
+  const roleLabel = getRoleLabel(session?.role || UserRole.USER);
 
   const links = {
     user: [
+      {
+        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        label: 'Profile',
+      },
+      {
+        href: ROUTER.USER.SETTINGS.HOME,
+        label: 'Settings',
+      },
+      {
+        href: ROUTER.PREMIUM,
+        label: 'Upgrade',
+      },
+    ],
+    creator: [
       {
         href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
         label: 'Profile',
@@ -110,25 +124,28 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
             <div className="hidden lg:flex flex-col items-start text-sm">
               <span className="font-medium text-sm text-white">{name}</span>
               <span className={cn('font-normal text-xs capitalize')}>
-                {role}
+                {roleLabel}
               </span>
             </div>
           )}
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="bg-background min-w-[240px] ml-4 mb-2 p-0 py-2">
-        {(session.logged ? links.user : links.guest).map(
-          ({ href, label }, key) => (
-            <DropdownMenuItem key={key} asChild>
-              <Link
-                href={href}
-                className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
-              >
-                {label}
-              </Link>
-            </DropdownMenuItem>
-          ),
-        )}
+        {(session.logged
+          ? session.role === UserRole.CREATOR
+            ? links.creator
+            : links.user
+          : links.guest
+        ).map(({ href, label }, key) => (
+          <DropdownMenuItem key={key} asChild>
+            <Link
+              href={href}
+              className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
+            >
+              {label}
+            </Link>
+          </DropdownMenuItem>
+        ))}
         <DropdownMenuSeparator />
         {links.info.map(({ href, label }, key) => (
           <DropdownMenuItem key={key} asChild>

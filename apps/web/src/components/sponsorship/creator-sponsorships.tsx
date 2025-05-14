@@ -6,7 +6,6 @@ import {
   DataTable,
   DataTableColumn,
   DataTableRow,
-  LoadingSpinner,
 } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';

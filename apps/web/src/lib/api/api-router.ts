@@ -23,12 +23,12 @@ export const API_ROUTER = {
       POST: '/user/insights/post',
     },
     POSTS: '/user/posts',
-    SPONSORSHIP_TIERS: {
-      GET: `/user/sponsorship-tiers`,
-      GET_BY_ID: (id: string) => `/user/sponsorship-tiers/${id}`,
-      UPDATE: (id: string) => `/user/sponsorship-tiers/${id}`,
-      DELETE: (id: string) => `/user/sponsorship-tiers/${id}`,
-    },
+  },
+  SPONSORSHIP_TIERS: {
+    GET: `/sponsorship-tiers`,
+    GET_BY_ID: (id: string) => `/sponsorship-tiers/${id}`,
+    UPDATE: (id: string) => `/sponsorship-tiers/${id}`,
+    DELETE: (id: string) => `/sponsorship-tiers/${id}`,
   },
   PLAN: {
     UPGRADE: {

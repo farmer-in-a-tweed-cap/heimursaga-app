@@ -125,12 +125,14 @@ export const FormComponent: React.FC<Props> = ({
         setLoading((loading) => ({ ...loading, form: true }));
 
         const { sponsorshipType } = state;
+        const sponsorshipTierId = sponsorship?.id;
         const { oneTimePaymentAmount, paymentMethodId } = values;
         const creatorId = username;
 
         console.log('submit:', {
           creatorId,
           oneTimePaymentAmount,
+          sponsorshipTierId,
           sponsorshipType,
           paymentMethodId,
         });
@@ -138,12 +140,20 @@ export const FormComponent: React.FC<Props> = ({
         // initiate a checkout
         const checkout = await apiClient.sponsorCheckout({
           query: {},
-          payload: {
-            creatorId,
-            oneTimePaymentAmount,
-            sponsorshipType,
-            paymentMethodId,
-          },
+          payload:
+            sponsorshipType === SponsorshipType.SUBSCRIPTION
+              ? {
+                  creatorId,
+                  sponsorshipType,
+                  sponsorshipTierId,
+                  paymentMethodId,
+                }
+              : {
+                  creatorId,
+                  sponsorshipType,
+                  oneTimePaymentAmount,
+                  paymentMethodId,
+                },
         });
         const stripePaymentMethodId = checkout.data?.paymentMethodId;
         const clientSecret = checkout.data?.clientSecret;
@@ -166,8 +176,6 @@ export const FormComponent: React.FC<Props> = ({
           payment_method: stripePaymentMethodId,
         });
 
-        console.log(stripePayment);
-
         // handle a stripe response
         if (stripePayment.paymentIntent) {
           switch (stripePayment.paymentIntent.status) {
@@ -186,7 +194,6 @@ export const FormComponent: React.FC<Props> = ({
             },
           });
           setLoading((loading) => ({ ...loading, form: false }));
-
           return;
         }
 

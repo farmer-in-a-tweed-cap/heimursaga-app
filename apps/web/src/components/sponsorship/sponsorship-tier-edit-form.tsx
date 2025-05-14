@@ -78,33 +78,31 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
         const { price, description } = values;
 
         // update the sponsorship tier
-        const sponsorshipTierUpdate = await apiClient.updateSponsorshipTierById(
-          {
-            query: { id: sponsorshipTierId },
-            payload: {
-              price,
-              description,
-            },
+        const { success } = await apiClient.updateSponsorshipTierById({
+          query: { id: sponsorshipTierId },
+          payload: {
+            price,
+            description,
           },
-        );
+        });
 
-        if (!sponsorshipTierUpdate.success) {
-          toast({ type: 'error', message: 'membership tier not updated' });
-          return;
+        if (success) {
+          toast({ type: 'success', message: 'sponsorship tier updated' });
+
+          if (onSubmit) {
+            onSubmit({
+              price: form.getValues('price'),
+              description: form.getValues('description'),
+            });
+          }
+
+          setLoading(false);
+        } else {
+          toast({ type: 'error', message: 'sponsorship tier not updated' });
+          setLoading(false);
         }
-
-        toast({ type: 'success', message: 'membership tier updated' });
-
-        if (onSubmit) {
-          onSubmit({
-            price: form.getValues('price'),
-            description: form.getValues('description'),
-          });
-        }
-
-        setLoading(false);
       } catch (e) {
-        toast({ type: 'error', message: 'membership tier not updated' });
+        toast({ type: 'error', message: 'sponsorship tier not updated' });
         setLoading(false);
       }
     },

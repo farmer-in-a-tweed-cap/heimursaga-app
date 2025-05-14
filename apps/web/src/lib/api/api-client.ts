@@ -338,9 +338,9 @@ export const apiClient = {
       cookie: config ? config.cookie : undefined,
     }),
   // sponsorships
-  getUserSponsorshipTiers: async (config?: RequestConfig) =>
+  getSponsorshipTiers: async (config?: RequestConfig) =>
     api.request<ISponsorshipTierGetAllResponse>(
-      API_ROUTER.USER.SPONSORSHIP_TIERS.GET,
+      API_ROUTER.SPONSORSHIP_TIERS.GET,
       {
         method: API_METHODS.GET,
         ...config,
@@ -356,7 +356,7 @@ export const apiClient = {
     >,
     config?: RequestConfig,
   ) =>
-    api.request<void>(API_ROUTER.USER.SPONSORSHIP_TIERS.UPDATE(query.id), {
+    api.request<void>(API_ROUTER.SPONSORSHIP_TIERS.UPDATE(query.id), {
       method: API_METHODS.PUT,
       body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,

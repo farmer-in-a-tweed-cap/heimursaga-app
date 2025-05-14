@@ -14,7 +14,7 @@ export const SponsorshipTierView = () => {
 
   const sponsorshipTierQuery = useQuery({
     queryKey: [QUERY_KEYS.SPONSORSHIP_TIERS],
-    queryFn: () => apiClient.getUserSponsorshipTiers().then(({ data }) => data),
+    queryFn: () => apiClient.getSponsorshipTiers().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,
   });
