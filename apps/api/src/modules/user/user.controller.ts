@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -19,10 +18,7 @@ import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
 import { IUploadedFile } from '@/modules/upload';
 
-import {
-  UserMembershipTierUpdateDto,
-  UserSettingsProfileUpdateDto,
-} from './user.dto';
+import { UserSettingsProfileUpdateDto } from './user.dto';
 import { SessionUserService, UserService } from './user.service';
 
 @ApiTags('users')
@@ -223,41 +219,6 @@ export class SessionUserController {
     return await this.sessionUserService.getNotifications({
       session,
       query: {},
-    });
-  }
-
-  @Get('sponsorship-tiers')
-  @HttpCode(HttpStatus.OK)
-  async getSponsorshipTiers(@Session() session: ISession) {
-    return await this.sessionUserService.getSponsorshipTiers({
-      query: {},
-      session,
-    });
-  }
-
-  @Put('sponsorship-tiers/:id')
-  @HttpCode(HttpStatus.OK)
-  async updateSponsorshipTier(
-    @Param() param: ParamPublicIdDto,
-    @Body() body: UserMembershipTierUpdateDto,
-    @Session() session: ISession,
-  ) {
-    return await this.sessionUserService.updateSponsorshipTier({
-      query: { id: param.id },
-      payload: body,
-      session,
-    });
-  }
-
-  @Delete('sponsorship-tiers/:id')
-  @HttpCode(HttpStatus.OK)
-  async deleteSponsorshipTier(
-    @Param() param: ParamPublicIdDto,
-    @Session() session: ISession,
-  ) {
-    return await this.sessionUserService.deleteSponsorshipTier({
-      query: { id: param.id },
-      session,
     });
   }
 

@@ -108,7 +108,7 @@ export class StripeService {
 
       if (!userId) throw new ServiceForbiddenException('customer not found');
 
-      const currency = config.stripe.default_currency;
+      const currency = config.stripe.default.currency;
 
       // get the user
       const user = await this.prisma.user.findFirst({

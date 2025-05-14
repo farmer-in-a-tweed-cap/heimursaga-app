@@ -111,7 +111,7 @@ export class UserService {
     try {
       if (!username) throw new ServiceNotFoundException('user not found');
 
-      let where = {
+      const where = {
         draft: false,
         public: true,
         deleted_at: null,
@@ -120,7 +120,7 @@ export class UserService {
         author: { username },
       } as Prisma.PostWhereInput;
 
-      let select = {
+      const select = {
         public_id: true,
         title: true,
         content: true,
@@ -260,7 +260,6 @@ export class UserService {
 
   async getFollowers({
     username,
-    userId,
   }: {
     username: string;
     userId: number;
@@ -321,7 +320,6 @@ export class UserService {
 
   async getFollowing({
     username,
-    userId,
   }: {
     username: string;
     userId: number;
@@ -630,7 +628,7 @@ export class SessionUserService {
         lon: { not: null },
       } as Prisma.PostWhereInput;
 
-      let select = {
+      const select = {
         public_id: true,
         title: true,
         content: true,
@@ -950,98 +948,6 @@ export class SessionUserService {
     }
   }
 
-  async getSponsorshipTiers({
-    session,
-  }: ISessionQuery): Promise<ISponsorshipTierGetAllResponse> {
-    try {
-      const { userId } = session;
-
-      if (!userId) throw new ServiceForbiddenException();
-
-      const where: Prisma.SponsorshipTierWhereInput = {
-        user_id: userId,
-        deleted_at: null,
-      };
-
-      const response: ISponsorshipTierGetAllResponse = {
-        results: 0,
-        data: [],
-      };
-
-      // get the number of sponsorship tiers
-      const results = await this.prisma.sponsorshipTier.count({ where });
-
-      if (results >= 1) {
-        // get the sponsorship tiers
-        const data = await this.prisma.sponsorshipTier
-          .findMany({
-            where,
-            select: {
-              public_id: true,
-              price: true,
-              description: true,
-              is_available: true,
-            },
-          })
-          .catch(() => {
-            throw new ServiceNotFoundException('sponsorship tiers not found');
-          });
-
-        response.results = results;
-        response.data = data.map(
-          ({ price, description, public_id: id, is_available }) => ({
-            price,
-            description,
-            id,
-            isAvailable: is_available,
-            membersCount: 0,
-          }),
-        );
-      } else {
-        // create a sponsorship tier if it doesn't exist
-        const tier = await this.prisma.sponsorshipTier.create({
-          data: {
-            public_id: generator.publicId(),
-            price: 0,
-            description: '',
-            is_available: true,
-            user: { connect: { id: userId } },
-          },
-          select: {
-            public_id: true,
-            price: true,
-            description: true,
-            is_available: true,
-          },
-        });
-
-        response.results = 1;
-        response.data = [tier].map(
-          ({ price, description, public_id: id, is_available }) => ({
-            price,
-            description,
-            id,
-            membersCount: 0,
-            isAvailable: is_available,
-          }),
-        );
-      }
-
-      response.data = response.data.map(({ price, ...data }) => ({
-        ...data,
-        price: integerToDecimal(price),
-      }));
-
-      return response;
-    } catch (e) {
-      this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorship tiers not found');
-      throw exception;
-    }
-  }
-
   async getSponsorshipByUsername({
     session,
   }: ISessionQuery): Promise<ISponsorshipTierGetAllResponse> {
@@ -1109,87 +1015,6 @@ export class SessionUserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('sponsorship tiers not found');
-      throw exception;
-    }
-  }
-
-  async updateSponsorshipTier({
-    query,
-    payload,
-    session,
-  }: ISessionQueryWithPayload<
-    { id: string },
-    ISponsorshipTierUpdatePayload
-  >): Promise<void> {
-    try {
-      const { userId } = session;
-      const { id } = query;
-
-      if (!userId) throw new ServiceForbiddenException();
-      if (!id) throw new ServiceNotFoundException('sponsorship tier not found');
-
-      // check access
-      const access = await this.prisma.sponsorshipTier
-        .findFirstOrThrow({
-          where: { public_id: id, user_id: userId, deleted_at: null },
-        })
-        .then(() => true)
-        .catch(() => false);
-      if (!access)
-        throw new ServiceNotFoundException('sponsorship tier not found');
-
-      // update the sponsorship tier
-      const { description, isAvailable } = payload;
-      const price = payload.price ? decimalToInteger(payload.price) : undefined;
-
-      await this.prisma.sponsorshipTier.update({
-        where: { public_id: id },
-        data: {
-          price,
-          description,
-          is_available: isAvailable,
-        },
-      });
-    } catch (e) {
-      this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorship tier not updated');
-      throw exception;
-    }
-  }
-
-  async deleteSponsorshipTier({
-    query,
-    session,
-  }: ISessionQuery<{ id: string }>): Promise<void> {
-    try {
-      const { userId } = session;
-      const { id } = query;
-
-      if (!userId) throw new ServiceForbiddenException();
-      if (!id) throw new ServiceNotFoundException('sponsorship tier not found');
-
-      // check access
-      const access = await this.prisma.sponsorshipTier
-        .findFirstOrThrow({
-          where: { public_id: id, user_id: userId, deleted_at: null },
-        })
-        .then(() => true)
-        .catch(() => false);
-      if (!access)
-        throw new ServiceNotFoundException('sponsorship tier not found');
-
-      // delete the sponsorship tier
-      await this.prisma.sponsorshipTier.update({
-        where: { public_id: id },
-        data: { deleted_at: dateformat().toDate() },
-      });
-    } catch (e) {
-      this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorship tier not deleted');
       throw exception;
     }
   }

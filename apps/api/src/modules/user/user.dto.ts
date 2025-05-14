@@ -18,22 +18,3 @@ export class UserSettingsProfileUpdateDto
   @IsOptional()
   bio: string;
 }
-
-export class UserMembershipTierUpdateDto
-  implements ISponsorshipTierUpdatePayload
-{
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  price: number;
-
-  @ApiProperty({ required: false })
-  @IsString()
-  @IsOptional()
-  description: string;
-
-  @ApiProperty({ required: false })
-  @IsBoolean()
-  @IsOptional()
-  isAvailable: boolean;
-}
