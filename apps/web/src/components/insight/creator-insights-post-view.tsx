@@ -41,7 +41,7 @@ export const CreatorInsightsPostView = () => {
         return (
           <Link
             href={postId ? ROUTER.POSTS.DETAIL(postId) : '#'}
-            className="font-medium"
+            className="font-medium underline"
           >
             {title}
           </Link>

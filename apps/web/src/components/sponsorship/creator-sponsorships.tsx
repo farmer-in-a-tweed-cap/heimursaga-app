@@ -42,7 +42,10 @@ export const CreatorSponsorships = () => {
       cell: ({ row }) => {
         const username = row.getValue('username') as string;
         return (
-          <Link href={username ? ROUTER.MEMBERS.MEMBER(username) : '#'}>
+          <Link
+            href={username ? ROUTER.MEMBERS.MEMBER(username) : '#'}
+            className="underline font-medium"
+          >
             @{username}
           </Link>
         );
@@ -68,7 +71,8 @@ export const CreatorSponsorships = () => {
     {
       accessorKey: 'date',
       header: () => 'Date',
-      cell: ({ row }) => dateformat(row.getValue('date')).format('DD/MM/YY'),
+      cell: ({ row }) =>
+        dateformat(row.getValue('date')).format('MMM DD, YYYY'),
     },
   ];
 
@@ -84,28 +88,6 @@ export const CreatorSponsorships = () => {
 
   return (
     <div className="flex flex-col">
-      {/* {sponsorshipQuery.isLoading ? (
-        <LoadingSpinner />
-      ) : sponsorshipResults >= 1 ? (
-        <div className="mt-4 flex flex-col">
-          <span className="text-lg font-medium">
-            {sponsorshipResults} sponsors
-          </span>
-          <div className="mt-2 flex flex-col gap-2">
-            {sponsorships.map(({ id, amount, currency, type, user }, key) => (
-              <CreatorSponsorshipCard
-                key={key}
-                {...{ id, type, amount, currency, user }}
-              />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="mt-2">
-          <span>no sponsors yet</span>
-        </div>
-      )} */}
-
       <DataTable
         columns={columns}
         rows={rows}
