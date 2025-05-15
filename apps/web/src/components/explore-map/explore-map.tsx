@@ -1,7 +1,13 @@
 'use client';
 
 import { Searchbar } from '../search';
-import { LoadingSpinner, NormalizedText, Skeleton } from '@repo/ui/components';
+import { MapQueryFilter } from '@repo/types';
+import {
+  ChipGroup,
+  LoadingSpinner,
+  NormalizedText,
+  Skeleton,
+} from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeftToLineIcon, ArrowRightToLineIcon } from 'lucide-react';
@@ -25,6 +31,7 @@ import {
 import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks';
 import { dateformat, sleep } from '@/lib';
+import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
 type Props = {
@@ -39,6 +46,7 @@ export const ExploreMap: React.FC<Props> = () => {
   const searchParams = useSearchParams();
 
   const params = {
+    filter: searchParams.get('filter'),
     lat: searchParams.get('lat'),
     lon: searchParams.get('lon'),
     alt: searchParams.get('alt'),
@@ -67,12 +75,13 @@ export const ExploreMap: React.FC<Props> = () => {
   const [searchDebounced] = useDebounce(search, 500, { leading: true });
 
   const [sidebar, setSidebar] = useState<boolean>(true);
-
+  const [filter, setFilter] = useState<MapQueryFilter>(MapQueryFilter.GLOBAL);
   const [postId, setPostId] = useState<string | null>(null);
 
   const mapQuery = useQuery({
     queryKey: [
       QUERY_KEYS.MAP.QUERY,
+      filter,
       searchState?.bounds.ne.lat,
       searchState?.bounds.ne.lon,
       searchState?.bounds.sw.lat,
@@ -80,7 +89,10 @@ export const ExploreMap: React.FC<Props> = () => {
     ],
     queryFn: async () =>
       apiClient
-        .mapQuery({ location: { bounds: searchState?.bounds } })
+        .mapQuery({
+          filter,
+          location: { bounds: searchState?.bounds },
+        })
         .then(({ data }) => data),
     enabled: [
       searchState?.bounds.ne.lat,
@@ -128,8 +140,9 @@ export const ExploreMap: React.FC<Props> = () => {
     alt?: number;
     post_id?: string;
     s?: string;
+    filter?: string;
   }) => {
-    const { lat, lon, alt, post_id, s: search } = params;
+    const { lat, lon, alt, post_id, s: search, filter } = params;
 
     const s = new URLSearchParams(searchParams.toString());
 
@@ -151,6 +164,10 @@ export const ExploreMap: React.FC<Props> = () => {
 
     if (search) {
       s.set('s', `${search}`);
+    }
+
+    if (filter) {
+      s.set('filter', `${filter}`);
     }
 
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
@@ -187,8 +204,6 @@ export const ExploreMap: React.FC<Props> = () => {
   const handleMapMove: MapOnMoveHandler = (value) => {
     const { lat, lon, alt, bounds } = value;
 
-    console.log('mapmove');
-
     // update query
     if (bounds) {
       setSearchState((state) => ({
@@ -202,6 +217,12 @@ export const ExploreMap: React.FC<Props> = () => {
 
     // update search params
     updateSearchParams({ lat, lon, alt });
+  };
+
+  const handleFilterChange = (value: string) => {
+    setFilter(value as MapQueryFilter);
+    updateSearchParams({ filter: value });
+    mapQuery.refetch();
   };
 
   const handleSidebarToggle = () => {
@@ -259,7 +280,7 @@ export const ExploreMap: React.FC<Props> = () => {
   }, [searchDebounced.query]);
 
   useEffect(() => {
-    const { lat, lon, alt, postId, s } = params;
+    const { lat, lon, alt, postId, s, filter } = params;
     const coordinateSet = lat && lon;
 
     // open a post if it's set in the url
@@ -271,6 +292,11 @@ export const ExploreMap: React.FC<Props> = () => {
     // set default search
     if (s) {
       setSearch((search) => ({ ...search, query: s }));
+    }
+
+    // set default filter
+    if (filter) {
+      setFilter(filter as MapQueryFilter);
     }
 
     // set default coordinates
@@ -301,15 +327,16 @@ export const ExploreMap: React.FC<Props> = () => {
           <div className="flex flex-row justify-between items-center py-4 px-6 bg-white">
             <div className="flex flex-col gap-0">
               <span className="text-lg font-medium">Explore</span>
-              {mapQuery.isPending || mapQuery.isLoading ? (
-                <div className="mt-1 h-[16] flex flex-row items-center justify-start">
-                  <Skeleton className="h-[10px]" />
-                </div>
-              ) : (
-                <span className="h-[16px] text-sm font-normal text-gray-600">
-                  {mapQueryResults} entries found
-                </span>
-              )}
+
+              <div className="mt-1 h-[16px] flex flex-row items-center justify-start overflow-hidden">
+                {mapQuery.isPending || mapQuery.isLoading ? (
+                  <Skeleton className="h-[12px]" />
+                ) : (
+                  <span className="text-sm font-normal text-gray-600">
+                    {mapQueryResults} {LOCALES.APP.SEARCH.POSTS_FOUND}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="w-full max-w-[280px]">
               <Searchbar
@@ -320,16 +347,37 @@ export const ExploreMap: React.FC<Props> = () => {
               />
             </div>
           </div>
-          <div className="flex flex-col gap-2 overflow-y-scroll no-scrollbar p-6 box-border">
+          <div className="px-6 py-2">
+            <ChipGroup
+              value={filter}
+              items={[
+                {
+                  value: MapQueryFilter.GLOBAL,
+                  label: LOCALES.APP.MAP.FILTER.ALL,
+                },
+                {
+                  value: MapQueryFilter.FOLLOWING,
+                  label: LOCALES.APP.MAP.FILTER.FOLLOWING,
+                },
+              ]}
+              classNames={{
+                chip: 'w-auto min-w-[0px] h-[30px] py-0 px-4 rounded-full',
+              }}
+              onSelect={handleFilterChange}
+            />
+          </div>
+
+          <div className="flex flex-col gap-2 overflow-y-scroll p-6 box-border">
             {mapQueryLoading ? (
               <LoadingSpinner />
             ) : (
-              mapQueryWaypoints.map(({ post }, key) =>
+              mapQueryWaypoints.map(({ date, post }, key) =>
                 post ? (
                   <PostCard
                     key={key}
                     {...post}
                     id={post.id}
+                    date={date}
                     actions={{ like: false, bookmark: true, edit: false }}
                     classNames={{
                       card: isPostSelected(post.id) ? '!border-black' : '',

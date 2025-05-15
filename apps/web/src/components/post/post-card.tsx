@@ -55,7 +55,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     picture: '',
     username: '',
   },
-  date = new Date(),
+  date,
   coordinates,
   liked = false,
   likesCount = 0,

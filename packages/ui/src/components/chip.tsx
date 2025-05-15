@@ -15,7 +15,6 @@ type ChipProps = ChipItem & {
 };
 
 export const Chip: React.FC<ChipProps> = ({
-  children = <></>,
   label,
   value,
   icon: Icon,
@@ -33,7 +32,7 @@ export const Chip: React.FC<ChipProps> = ({
   return (
     <div
       className={cn(
-        'transition-all w-auto min-w-[100px] py-3 px-4 bg-transparent border-2 border-solid rounded-lg text-sm font-medium',
+        'transition-all w-auto min-w-[100px] py-3 px-4 flex items-center justify-center bg-transparent border-2 border-solid rounded-lg text-sm font-medium',
         className,
         selected ? 'border-black text-black' : 'border-gray-200 text-gray-600',
         disabled ? 'cursor-not-allowed' : 'cursor-pointer',
@@ -52,7 +51,11 @@ type ChipGroupProps = {
   children?: React.ReactNode;
   value?: string;
   items?: ChipItem[];
-  className?: string;
+  classNames?: {
+    group?: string;
+    chip?: string;
+  };
+
   disabled?: boolean;
   onSelect?: (value: string) => void;
 };
@@ -60,7 +63,7 @@ type ChipGroupProps = {
 export const ChipGroup: React.FC<ChipGroupProps> = ({
   value,
   items = [],
-  className,
+  classNames,
   disabled = false,
   onSelect,
 }) => {
@@ -71,12 +74,15 @@ export const ChipGroup: React.FC<ChipGroupProps> = ({
     }
   };
   return (
-    <div className={cn('flex flex-row gap-2', className)}>
+    <div className={cn('flex flex-row gap-2', classNames?.group)}>
       {items.map((chip, key) => (
         <Chip
           key={key}
           {...chip}
-          className={cn(disabled ? 'cursor-not-allowed' : 'cursor-pointer')}
+          className={
+            (cn(disabled ? 'cursor-not-allowed' : 'cursor-pointer'),
+            classNames?.chip)
+          }
           selected={value === chip.value}
           onClick={disabled ? () => {} : () => handleSelect(chip.value)}
         />

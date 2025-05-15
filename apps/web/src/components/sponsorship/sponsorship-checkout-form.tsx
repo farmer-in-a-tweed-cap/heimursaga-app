@@ -228,7 +228,7 @@ export const FormComponent: React.FC<Props> = ({
               <h2 className="font-medium text-lg">Choose sponsorship</h2>
               <div className="mt-4 flex flex-col">
                 <ChipGroup
-                  className="w-full grid grid-cols-2"
+                  classNames={{ group: 'w-full grid grid-cols-2' }}
                   value={sponsorshipType}
                   items={
                     sponsorshipEnabled
@@ -292,7 +292,7 @@ export const FormComponent: React.FC<Props> = ({
               <h2 className="font-medium text-lg">Payment method</h2>
               <div className="mt-4 flex flex-col">
                 <ChipGroup
-                  className="w-full grid grid-cols-2"
+                  classNames={{ group: 'w-full grid grid-cols-2' }}
                   value={paymentMethodType}
                   items={DATA.PAYMENT_METHOD_TYPES}
                   disabled
