@@ -1,7 +1,7 @@
 'use client';
 
 import { Searchbar } from '../search';
-import { MapQueryFilter } from '@repo/types';
+import { MapQueryContext } from '@repo/types';
 import {
   ChipGroup,
   LoadingSpinner,
@@ -46,7 +46,7 @@ export const ExploreMap: React.FC<Props> = () => {
   const searchParams = useSearchParams();
 
   const params = {
-    filter: searchParams.get('filter'),
+    context: searchParams.get('context'),
     lat: searchParams.get('lat'),
     lon: searchParams.get('lon'),
     alt: searchParams.get('alt'),
@@ -75,13 +75,15 @@ export const ExploreMap: React.FC<Props> = () => {
   const [searchDebounced] = useDebounce(search, 500, { leading: true });
 
   const [sidebar, setSidebar] = useState<boolean>(true);
-  const [filter, setFilter] = useState<MapQueryFilter>(MapQueryFilter.GLOBAL);
+  const [context, setContex] = useState<MapQueryContext>(
+    MapQueryContext.GLOBAL,
+  );
   const [postId, setPostId] = useState<string | null>(null);
 
   const mapQuery = useQuery({
     queryKey: [
       QUERY_KEYS.MAP.QUERY,
-      filter,
+      context,
       searchState?.bounds.ne.lat,
       searchState?.bounds.ne.lon,
       searchState?.bounds.sw.lat,
@@ -90,7 +92,7 @@ export const ExploreMap: React.FC<Props> = () => {
     queryFn: async () =>
       apiClient
         .mapQuery({
-          filter,
+          context,
           location: { bounds: searchState?.bounds },
         })
         .then(({ data }) => data),
@@ -140,9 +142,9 @@ export const ExploreMap: React.FC<Props> = () => {
     alt?: number;
     post_id?: string;
     s?: string;
-    filter?: string;
+    context?: string;
   }) => {
-    const { lat, lon, alt, post_id, s: search, filter } = params;
+    const { lat, lon, alt, post_id, s: search, context } = params;
 
     const s = new URLSearchParams(searchParams.toString());
 
@@ -166,8 +168,8 @@ export const ExploreMap: React.FC<Props> = () => {
       s.set('s', `${search}`);
     }
 
-    if (filter) {
-      s.set('filter', `${filter}`);
+    if (context) {
+      s.set('context', `${context}`);
     }
 
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
@@ -220,8 +222,8 @@ export const ExploreMap: React.FC<Props> = () => {
   };
 
   const handleFilterChange = (value: string) => {
-    setFilter(value as MapQueryFilter);
-    updateSearchParams({ filter: value });
+    setContex(value as MapQueryContext);
+    updateSearchParams({ context: value });
     mapQuery.refetch();
   };
 
@@ -280,7 +282,7 @@ export const ExploreMap: React.FC<Props> = () => {
   }, [searchDebounced.query]);
 
   useEffect(() => {
-    const { lat, lon, alt, postId, s, filter } = params;
+    const { lat, lon, alt, postId, s, context } = params;
     const coordinateSet = lat && lon;
 
     // open a post if it's set in the url
@@ -294,9 +296,9 @@ export const ExploreMap: React.FC<Props> = () => {
       setSearch((search) => ({ ...search, query: s }));
     }
 
-    // set default filter
-    if (filter) {
-      setFilter(filter as MapQueryFilter);
+    // set default context
+    if (context) {
+      setContex(context as MapQueryContext);
     }
 
     // set default coordinates
@@ -349,14 +351,14 @@ export const ExploreMap: React.FC<Props> = () => {
           </div>
           <div className="px-6 py-2">
             <ChipGroup
-              value={filter}
+              value={context}
               items={[
                 {
-                  value: MapQueryFilter.GLOBAL,
+                  value: MapQueryContext.GLOBAL,
                   label: LOCALES.APP.MAP.FILTER.ALL,
                 },
                 {
-                  value: MapQueryFilter.FOLLOWING,
+                  value: MapQueryContext.FOLLOWING,
                   label: LOCALES.APP.MAP.FILTER.FOLLOWING,
                 },
               ]}

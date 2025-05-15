@@ -26,10 +26,10 @@ export const UserProfilePage: React.FC<Props> = ({
 
   return (
     <div className="w-full flex flex-col justify-start items-center">
-      {/* <div className="z-10 w-full h-auto">
+      <div className="z-10 w-full h-auto">
         <UserMapBanner className="z-30" username={user?.username} />
-      </div> */}
-      <div className="z-20 w-auto flex flex-col items-center rounded-full">
+      </div>
+      <div className="-mt-[40px] z-20 w-auto flex flex-col items-center rounded-full">
         <Avatar className="z-50 w-[80px] h-[80px] overflow-hidden">
           <AvatarFallback>{user?.name?.slice(0, 1)}</AvatarFallback>
           <AvatarImage
@@ -44,7 +44,7 @@ export const UserProfilePage: React.FC<Props> = ({
       <div className="mt-6 flex flex-col justify-center items-center gap-2">
         <div className="flex justify-center items-center gap-1">
           <span className="text-2xl font-semibold">{user?.name}</span>
-          {isCreator && <VerificationBadge />}
+          {isCreator && <VerificationBadge size="lg" />}
         </div>
 
         <span className="text-sm font-normal text-gray-600">{user?.bio}</span>

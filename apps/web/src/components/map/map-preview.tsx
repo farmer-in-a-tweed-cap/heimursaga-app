@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks';
 
-import { Map, MapSource } from './map';
+import { MAP_SOURCES, Map, MapSource } from './map';
 import { MapPreviewOverlay } from './map-preview-overlay';
 
 type Props = {
@@ -16,6 +16,8 @@ type Props = {
   lon?: number;
   alt?: number;
   overlay?: boolean;
+  zoom?: number;
+  sources?: MapSource[];
   markers?: {
     lat: number;
     lon: number;
@@ -30,7 +32,9 @@ export const MapPreview: React.FC<Props> = ({
   alt = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
   markers,
   className,
+  zoom = 0,
   overlay = true,
+  sources = [],
   onClick = () => {},
 }) => {
   const mapbox = useMapbox();
@@ -69,6 +73,8 @@ export const MapPreview: React.FC<Props> = ({
                   }
                 : undefined
             }
+            sources={sources}
+            minZoom={zoom}
             width={width}
             height={height}
             cursor="pointer"

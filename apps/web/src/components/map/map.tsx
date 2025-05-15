@@ -242,8 +242,8 @@ export const Map: React.FC<Props> = ({
     let mapboxConfig: MapOptions = {
       container: mapboxContainerRef.current,
       style: config.style,
-      maxZoom: maxZoom ? maxZoom : config.maxZoom,
-      minZoom: minZoom ? minZoom : config.minZoom,
+      maxZoom: maxZoom >= 0 ? maxZoom : config.maxZoom,
+      minZoom: minZoom >= 0 ? minZoom : config.minZoom,
     };
 
     if (coordinates) {
