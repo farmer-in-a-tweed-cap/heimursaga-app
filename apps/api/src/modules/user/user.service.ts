@@ -147,6 +147,7 @@ export class UserService {
           select: {
             id: true,
             username: true,
+            role: true,
             profile: {
               select: { name: true, picture: true },
             },
@@ -185,13 +186,16 @@ export class UserService {
             content,
             lat,
             lon,
-            author: {
-              name: author.profile?.name,
-              username: author?.username,
-              picture: author?.profile?.picture
-                ? getStaticMediaUrl(author?.profile.picture)
-                : '',
-            },
+            author: author.profile
+              ? {
+                  name: author.profile?.name,
+                  username: author?.username,
+                  picture: author?.profile?.picture
+                    ? getStaticMediaUrl(author?.profile.picture)
+                    : '',
+                  creator: author.role === UserRole.CREATOR,
+                }
+              : undefined,
             liked: userId ? likes.length > 0 : false,
             bookmarked: userId ? bookmarks.length > 0 : false,
             likesCount: likes_count,
@@ -287,6 +291,7 @@ export class UserService {
             select: {
               id: true,
               username: true,
+              role: true,
               profile: {
                 select: {
                   name: true,
@@ -300,10 +305,11 @@ export class UserService {
       });
 
       const response: IUserFollowersQueryResponse = {
-        data: data.map(({ follower: { username, profile } }) => ({
+        data: data.map(({ follower: { role, username, profile } }) => ({
           username,
           name: profile.name,
           picture: profile.picture ? getStaticMediaUrl(profile?.picture) : '',
+          creator: role === UserRole.CREATOR,
         })),
         results,
       };
@@ -346,6 +352,7 @@ export class UserService {
           followee: {
             select: {
               username: true,
+              role: true,
               profile: {
                 select: {
                   name: true,
@@ -359,10 +366,11 @@ export class UserService {
       });
 
       const response: IUserFollowersQueryResponse = {
-        data: data.map(({ followee: { username, profile } }) => ({
+        data: data.map(({ followee: { role, username, profile } }) => ({
           username,
           name: profile.name,
           picture: profile.picture ? getStaticMediaUrl(profile.picture) : '',
+          creator: role === UserRole.CREATOR,
         })),
         results,
       };

@@ -4,6 +4,7 @@ import {
   IPostCreatePayload,
   IPostUpdatePayload,
   UserNotificationContext,
+  UserRole,
 } from '@repo/types';
 import { IPostBookmarkResponse, IPostLikeResponse } from '@repo/types';
 
@@ -75,6 +76,7 @@ export class PostService {
             author: {
               select: {
                 username: true,
+                role: true,
                 profile: {
                   select: { name: true, picture: true },
                 },
@@ -83,7 +85,7 @@ export class PostService {
             created_at: true,
           },
           take,
-          orderBy: [{ id: 'desc' }],
+          orderBy: [{ date: 'desc' }],
         })
         .then((posts) =>
           posts.map((post) => ({
@@ -94,13 +96,16 @@ export class PostService {
             date: post.date,
             title: post.title,
             content: post.content.slice(0, 140),
-            author: {
-              username: post.author?.username,
-              name: post.author?.profile?.name,
-              picture: post.author?.profile?.picture
-                ? getStaticMediaUrl(post.author?.profile?.picture)
-                : undefined,
-            },
+            author: post.author
+              ? {
+                  username: post.author.username,
+                  name: post.author.profile?.name,
+                  picture: post.author.profile?.picture
+                    ? getStaticMediaUrl(post.author.profile.picture)
+                    : undefined,
+                  creator: post.author.role === UserRole.CREATOR,
+                }
+              : undefined,
             liked: userId ? post.likes.length > 0 : false,
             bookmarked: userId ? post.bookmarks.length > 0 : false,
             likesCount: post.likes_count,
@@ -158,6 +163,7 @@ export class PostService {
               select: {
                 id: true,
                 username: true,
+                role: true,
                 profile: {
                   select: { name: true, picture: true },
                 },
@@ -179,14 +185,17 @@ export class PostService {
           likesCount: post.likes_count,
           bookmarksCount: post.bookmarks_count,
           public: post.public,
-          author: {
-            id: post.author?.id,
-            username: post.author?.username,
-            name: post.author?.profile?.name,
-            picture: post.author?.profile?.picture
-              ? getStaticMediaUrl(post.author?.profile?.picture)
-              : undefined,
-          },
+          author: post.author
+            ? {
+                id: post.author.id,
+                username: post.author.username,
+                name: post.author.profile.name,
+                picture: post.author.profile.picture
+                  ? getStaticMediaUrl(post.author.profile.picture)
+                  : undefined,
+                creator: post.author.role === UserRole.CREATOR,
+              }
+            : undefined,
           createdByMe: userId ? userId === post.author?.id : undefined,
           createdAt: post.created_at,
         }));

@@ -4,6 +4,7 @@ import {
   IMapQueryPayload,
   IMapQueryResponse,
   MapQueryFilter,
+  UserRole,
 } from '@repo/types';
 
 import { getStaticMediaUrl } from '@/lib/upload';
@@ -111,6 +112,7 @@ export class MapService {
               author: {
                 select: {
                   username: true,
+                  role: true,
                   profile: {
                     select: {
                       name: true,
@@ -145,6 +147,7 @@ export class MapService {
                       username: post.author.username,
                       name: post.author.profile.name,
                       picture: getStaticMediaUrl(post.author.profile.picture),
+                      creator: post.author.role === UserRole.CREATOR,
                     },
                   }
                 : undefined,

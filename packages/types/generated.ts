@@ -237,6 +237,7 @@ export interface IPostDetail {
     username: string;
     name: string;
     picture: string;
+    creator?: boolean;
   };
 }
 
@@ -317,6 +318,7 @@ export interface IMapQueryResponse {
         username: string;
         name: string;
         picture: string;
+        creator?: boolean;
       };
     };
   }[];
