@@ -9,6 +9,7 @@ import {
 import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
 import { UserProfileButtons } from './user-profile-buttons';
+import { VerificationBadge } from './verification-badge';
 
 type Props = {
   user: IUserProfileDetail;
@@ -41,13 +42,16 @@ export const UserProfilePage: React.FC<Props> = ({
         </Avatar>
       </div>
       <div className="mt-6 flex flex-col justify-center items-center gap-2">
-        <span className="text-2xl font-semibold">{user?.name}</span>
+        <div className="flex justify-center items-center gap-1">
+          <span className="text-2xl font-semibold">{user?.name}</span>
+          {isCreator && <VerificationBadge />}
+        </div>
+
         <span className="text-sm font-normal text-gray-600">{user?.bio}</span>
       </div>
       {/* <div className="mt-4">
         <Badge variant="outline">Sponsored</Badge>
       </div> */}
-
       <UserProfileButtons
         me={user?.you}
         creator={isCreator}

@@ -418,6 +418,7 @@ export const ExploreMap: React.FC<Props> = () => {
                   <UserBar
                     name={post?.author?.name}
                     picture={post.author?.picture}
+                    creator={post.author?.creator}
                     text={dateformat(post?.date).format('MMM DD')}
                   />
                 </Link>

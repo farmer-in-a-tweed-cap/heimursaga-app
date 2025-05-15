@@ -42,6 +42,7 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
             name: author?.name,
             username: author?.username,
             picture: author?.picture,
+            creator: author?.creator,
           }}
           coordinates={{
             lat: post.lat,

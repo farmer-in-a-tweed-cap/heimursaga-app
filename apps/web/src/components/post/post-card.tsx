@@ -25,7 +25,12 @@ export type PostCardProps = {
   content?: string;
   date?: Date;
   thumbnail?: string;
-  author?: { picture?: string; username?: string; name?: string };
+  author?: {
+    picture?: string;
+    username?: string;
+    name?: string;
+    creator?: boolean;
+  };
   coordinates?: {
     lat: number;
     lon: number;
@@ -107,6 +112,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               <UserBar
                 name={author?.name}
                 picture={author?.picture}
+                creator={author?.creator}
                 text={dateformat(date).format('MMM DD')}
               />
             </Link>
