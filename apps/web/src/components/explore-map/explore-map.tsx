@@ -1,7 +1,7 @@
 'use client';
 
 import { Searchbar } from '../search';
-import { LoadingSpinner, Skeleton } from '@repo/ui/components';
+import { LoadingSpinner, NormalizedText, Skeleton } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeftToLineIcon, ArrowRightToLineIcon } from 'lucide-react';
@@ -378,7 +378,7 @@ export const ExploreMap: React.FC<Props> = () => {
                 <h2 className="text-3xl font-medium">{post.title}</h2>
               </div>
               <div className="py-6">
-                <p className="text-base font-normal">{post.content}</p>
+                <NormalizedText text={post.content} />
               </div>
             </div>
           ) : (

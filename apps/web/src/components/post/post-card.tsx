@@ -1,6 +1,6 @@
 'use client';
 
-import { Card } from '@repo/ui/components';
+import { Card, NormalizedText } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -39,6 +39,7 @@ export type PostCardProps = {
   bookmarksCount?: number;
   liked?: boolean;
   likesCount?: number;
+  extended?: boolean;
   onClick?: () => void;
 };
 
@@ -65,7 +66,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     bookmark: true,
     edit: false,
   },
-
+  extended = false,
   onClick,
 }) => {
   const session = useSession();
@@ -149,11 +150,23 @@ export const PostCard: React.FC<PostCardProps> = ({
           />
         </div>
       )}
-      <div className="mt-6 flex flex-col gap-2">
-        <span className="text-base font-medium">{title}</span>
-        <p className="text-sm font-normal text-neutral-700">
-          {content.length <= 140 ? content : `${content.slice(0, 140)}..`}
-        </p>
+      <div className="mt-6 flex flex-col">
+        <span
+          className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
+        >
+          {title}
+        </span>
+        <div className={extended ? 'mt-6' : 'mt-2'}>
+          <NormalizedText
+            text={
+              extended
+                ? content
+                : content.length <= 120
+                  ? content
+                  : `${content.slice(0, 120)}..`
+            }
+          />
+        </div>
       </div>
       {coordinates && (
         <div className="mt-6">

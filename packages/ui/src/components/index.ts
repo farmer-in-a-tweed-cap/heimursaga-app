@@ -22,3 +22,4 @@ export * from './data-table';
 export * from './popover';
 // export * from './calendar';
 export * from './date-picker';
+export * from './text';
