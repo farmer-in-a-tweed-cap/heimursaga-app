@@ -119,6 +119,9 @@ export const ExploreMap: React.FC<Props> = () => {
       : APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT,
   };
 
+  const isPostSelected = (id: string): boolean =>
+    postId ? postId === id : false;
+
   const updateSearchParams = (params: {
     lat?: number;
     lon?: number;
@@ -328,6 +331,9 @@ export const ExploreMap: React.FC<Props> = () => {
                     {...post}
                     id={post.id}
                     actions={{ like: false, bookmark: true, edit: false }}
+                    classNames={{
+                      card: isPostSelected(post.id) ? '!border-black' : '',
+                    }}
                     onClick={() => handlePostOpen(post.id)}
                   />
                 ) : (

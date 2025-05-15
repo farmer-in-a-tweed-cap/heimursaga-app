@@ -1,6 +1,7 @@
 'use client';
 
 import { Card } from '@repo/ui/components';
+import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -16,6 +17,9 @@ import { PostLikeButton } from './post-like-button';
 
 export type PostCardProps = {
   href?: string;
+  classNames?: {
+    card?: string;
+  };
   id?: string;
   title?: string;
   content?: string;
@@ -41,6 +45,7 @@ export type PostCardProps = {
 export const PostCard: React.FC<PostCardProps> = ({
   id,
   href,
+  classNames,
   title = '',
   content = '',
   thumbnail = '',
@@ -69,7 +74,12 @@ export const PostCard: React.FC<PostCardProps> = ({
       ? author.username === session.username
       : false;
   return (
-    <Card className="relative w-full h-auto box-border p-5 flex flex-col shadow-none border border-solid border-accent">
+    <Card
+      className={cn(
+        'relative w-full h-auto box-border p-5 flex flex-col shadow-none border border-solid border-accent',
+        classNames?.card,
+      )}
+    >
       {href ? (
         <Link href={href} className="z-10 absolute inset-0"></Link>
       ) : onClick ? (

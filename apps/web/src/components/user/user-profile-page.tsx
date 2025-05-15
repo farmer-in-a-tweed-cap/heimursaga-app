@@ -1,6 +1,12 @@
 import { IUserProfileDetail } from '@repo/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+} from '@repo/ui/components';
 
+import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
 import { UserProfileButtons } from './user-profile-buttons';
 
@@ -38,6 +44,10 @@ export const UserProfilePage: React.FC<Props> = ({
         <span className="text-2xl font-semibold">{user?.name}</span>
         <span className="text-sm font-normal text-gray-600">{user?.bio}</span>
       </div>
+      {/* <div className="mt-4">
+        <Badge variant="outline">Sponsored</Badge>
+      </div> */}
+
       <UserProfileButtons
         me={user?.you}
         creator={isCreator}
