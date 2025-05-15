@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, NormalizedText } from '@repo/ui/components';
+import { Card, CardContent, NormalizedText } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -80,12 +80,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       ? author.username === session.username
       : false;
   return (
-    <Card
-      className={cn(
-        'relative w-full h-auto box-border p-5 flex flex-col shadow-none border border-solid border-accent',
-        classNames?.card,
-      )}
-    >
+    <Card className={cn('shadow-none', classNames?.card)}>
       {href ? (
         <Link href={href} className="z-10 absolute inset-0"></Link>
       ) : onClick ? (
@@ -96,108 +91,112 @@ export const PostCard: React.FC<PostCardProps> = ({
       ) : (
         <></>
       )}
-      <div className="flex flex-row justify-between items-center">
-        <Link
-          href={
-            author?.username ? ROUTER.MEMBERS.MEMBER(author?.username) : '#'
-          }
-          className="z-20"
-        >
-          <div className="flex flex-row justify-start items-center gap-3">
-            <Link
-              href={
-                author?.username ? ROUTER.MEMBERS.MEMBER(author.username) : '#'
-              }
-            >
-              <UserBar
-                name={author?.name}
-                picture={author?.picture}
-                creator={author?.creator}
-                text={dateformat(date).format('MMM DD')}
-              />
-            </Link>
-          </div>
-        </Link>
-        <div className="z-20 absolute top-3 right-3 flex flex-row items-center gap-2">
-          {me ? (
-            <>
-              {actions?.edit && <PostEditButton postId={id} />}
-              {actions?.bookmark && (
-                <PostBookmarkButton
-                  postId={id}
-                  bookmarked={bookmarked}
-                  bookmarksCount={bookmarksCount}
-                  disableCount={true}
-                />
-              )}
-            </>
-          ) : (
-            <>
-              {actions?.bookmark && (
-                <PostBookmarkButton
-                  postId={id}
-                  bookmarked={bookmarked}
-                  bookmarksCount={bookmarksCount}
-                  disableCount={true}
-                />
-              )}
-            </>
-          )}
-        </div>
-      </div>
-      {thumbnail && (
-        <div className="mt-6 w-full aspect-5/2 overflow-hidden rounded-xl">
-          <Image
-            src={thumbnail || ''}
-            width={400}
-            height={300}
-            className="w-full h-auto"
-            alt=""
-          />
-        </div>
-      )}
-      <div className="mt-6 flex flex-col">
-        <span
-          className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
-        >
-          {title}
-        </span>
-        <div className={extended ? 'mt-6' : 'mt-2'}>
-          <NormalizedText
-            text={
-              extended
-                ? content
-                : content.length <= 120
-                  ? content
-                  : `${content.slice(0, 120)}..`
-            }
-          />
-        </div>
-      </div>
-      {coordinates && (
-        <div className="mt-6">
-          <MapStaticPreview
+      <CardContent>
+        <div className="flex flex-row justify-between items-center">
+          <Link
             href={
-              id
-                ? `${ROUTER.EXPLORE.HOME}?lat=${coordinates.lat}&lon=${coordinates.lon}&alt=12`
-                : '#'
+              author?.username ? ROUTER.MEMBERS.MEMBER(author?.username) : '#'
             }
-            lat={coordinates.lat}
-            lon={coordinates.lon}
-            markers={[
-              {
-                lat: coordinates.lat,
-                lon: coordinates.lon,
-              },
-            ]}
-          />
+            className="z-20"
+          >
+            <div className="flex flex-row justify-start items-center gap-3">
+              <Link
+                href={
+                  author?.username
+                    ? ROUTER.MEMBERS.MEMBER(author.username)
+                    : '#'
+                }
+              >
+                <UserBar
+                  name={author?.name}
+                  picture={author?.picture}
+                  creator={author?.creator}
+                  text={dateformat(date).format('MMM DD')}
+                />
+              </Link>
+            </div>
+          </Link>
+          <div className="z-20 absolute top-3 right-3 flex flex-row items-center gap-2">
+            {me ? (
+              <>
+                {actions?.edit && <PostEditButton postId={id} />}
+                {actions?.bookmark && (
+                  <PostBookmarkButton
+                    postId={id}
+                    bookmarked={bookmarked}
+                    bookmarksCount={bookmarksCount}
+                    disableCount={true}
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                {actions?.bookmark && (
+                  <PostBookmarkButton
+                    postId={id}
+                    bookmarked={bookmarked}
+                    bookmarksCount={bookmarksCount}
+                    disableCount={true}
+                  />
+                )}
+              </>
+            )}
+          </div>
         </div>
-      )}
-      {actions?.like && (
-        <div className="z-50 mt-6 w-auto flex flex-row gap-1">
-          <PostLikeButton postId={id} likesCount={likesCount} liked={liked} />
+        {thumbnail && (
+          <div className="mt-6 w-full aspect-5/2 overflow-hidden rounded-xl">
+            <Image
+              src={thumbnail || ''}
+              width={400}
+              height={300}
+              className="w-full h-auto"
+              alt=""
+            />
+          </div>
+        )}
+        <div className="mt-6 flex flex-col">
+          <span
+            className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
+          >
+            {title}
+          </span>
+          <div className={extended ? 'mt-6' : 'mt-2'}>
+            <NormalizedText
+              text={
+                extended
+                  ? content
+                  : content.length <= 120
+                    ? content
+                    : `${content.slice(0, 120)}..`
+              }
+            />
+          </div>
         </div>
-      )}
+        {coordinates && (
+          <div className="mt-6">
+            <MapStaticPreview
+              href={
+                id
+                  ? `${ROUTER.EXPLORE.HOME}?lat=${coordinates.lat}&lon=${coordinates.lon}&alt=12`
+                  : '#'
+              }
+              lat={coordinates.lat}
+              lon={coordinates.lon}
+              markers={[
+                {
+                  lat: coordinates.lat,
+                  lon: coordinates.lon,
+                },
+              ]}
+            />
+          </div>
+        )}
+        {actions?.like && (
+          <div className="z-50 mt-6 w-auto flex flex-row gap-1">
+            <PostLikeButton postId={id} likesCount={likesCount} liked={liked} />
+          </div>
+        )}
+      </CardContent>
     </Card>
   );
 };

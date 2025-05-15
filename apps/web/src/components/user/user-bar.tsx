@@ -1,3 +1,4 @@
+import { Skeleton } from '@repo/ui/components';
 import { VerifiedIcon } from 'lucide-react';
 
 import { UserAvatar } from './user-avatar';
@@ -8,6 +9,7 @@ type Props = {
   picture?: string;
   text?: string;
   creator?: boolean;
+  loading?: boolean;
 };
 
 export const UserBar: React.FC<Props> = ({
@@ -15,16 +17,38 @@ export const UserBar: React.FC<Props> = ({
   picture = '',
   text = '****',
   creator = false,
-}) => (
-  <div className="flex flex-row gap-2 justify-start items-center">
-    <UserAvatar src={picture} fallback={name} />
-    <div className="flex flex-col justify-start items-start gap-0">
-      <div className="flex flex-row gap-1 justify-start items-center">
-        <span className="text-sm font-medium text-black">{name}</span>
-        {creator && <VerificationBadge />}
+  loading = false,
+}) => {
+  return (
+    <div className="flex flex-row gap-2 justify-start items-center">
+      {loading ? (
+        <div className="w-[36px] h-[36px] flex flex-row items-center justify-start">
+          <Skeleton className="w-[34px] h-[34px] rounded-full" />
+        </div>
+      ) : (
+        <UserAvatar src={picture} fallback={name} />
+      )}
+      <div className="flex flex-col justify-start items-start gap-0">
+        {loading ? (
+          <div className="h-[12px] flex flex-row items-center justify-start">
+            <Skeleton className="w-[40px] h-[8px]" />
+          </div>
+        ) : (
+          <div className="h-[12px] flex flex-row gap-1 justify-start items-center">
+            <span className="text-sm font-medium text-black">{name}</span>
+            {creator && <VerificationBadge />}
+          </div>
+        )}
+        {loading ? (
+          <div className="h-[12px] flex flex-row items-center justify-start">
+            <Skeleton className="w-[100px] h-[8px]" />
+          </div>
+        ) : (
+          <span className="text-[0.75rem] font-normal text-gray-600">
+            {text}
+          </span>
+        )}
       </div>
-
-      <span className="text-[0.75rem] font-normal text-gray-600">{text}</span>
     </div>
-  </div>
-);
+  );
+};

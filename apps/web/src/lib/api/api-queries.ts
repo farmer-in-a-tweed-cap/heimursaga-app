@@ -36,6 +36,7 @@ export const QUERY_KEYS = {
   MAP: {
     QUERY: 'map_query',
   },
+  USERS: 'users',
   USER_FOLLOWERS: 'user_followers',
   USER_FOLLOWING: 'user_following',
   USER_FEED: 'user_feed',
