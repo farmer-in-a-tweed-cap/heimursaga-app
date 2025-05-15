@@ -93,11 +93,11 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
     ],
     info: [
       {
-        href: '#',
+        href: ROUTER.LEGAL.PRIVACY,
         label: 'Privacy policy',
       },
       {
-        href: '#',
+        href: ROUTER.LEGAL.TERMS,
         label: 'Terms of service',
       },
     ],

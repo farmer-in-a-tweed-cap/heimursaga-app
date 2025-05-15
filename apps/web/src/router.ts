@@ -56,4 +56,9 @@ export const ROUTER = {
     ROOT: '/insights',
     HOME: '/insights',
   },
+  HELP: '/help',
+  LEGAL: {
+    PRIVACY: '/legal/privacy',
+    TERMS: '/legal/terms',
+  },
 };
