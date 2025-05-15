@@ -14,6 +14,7 @@ import {
   IAppContextState,
   Logo,
 } from '@/components';
+import { APP_CONFIG } from '@/config';
 import { SessionProvider } from '@/contexts';
 import { ROUTER } from '@/router';
 
@@ -21,12 +22,12 @@ import './../styles.css';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | saga',
-    default: 'saga',
+    template: `%s | ${APP_CONFIG.APP.NAME}`,
+    default: `${APP_CONFIG.APP.NAME}`,
   },
   description: 'a journaling platform for travelers',
   openGraph: {
-    title: 'saga',
+    title: `${APP_CONFIG.APP.NAME}`,
     description: 'a journaling platform for travelers',
   },
 };

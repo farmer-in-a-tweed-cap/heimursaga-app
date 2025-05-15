@@ -1,5 +1,7 @@
 import Image from 'next/image';
 
+import { APP_CONFIG } from '@/config';
+
 type Props = {
   theme?: 'dark' | 'light';
   size?: 'lg' | 'sm';
@@ -28,7 +30,7 @@ export const Logo: React.FC<Props> = ({ theme = 'light', size = 'sm' }) => {
 };
 
 const LogoDark = () => (
-  <div className="text-black text-xl font-medium">saga</div>
+  <div className="text-black text-xl font-medium">{APP_CONFIG.APP.NAME}</div>
 );
 
 const LogoSmall = () => (

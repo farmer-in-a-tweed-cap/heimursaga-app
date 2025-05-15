@@ -1,4 +1,7 @@
 export const APP_CONFIG = {
+  APP: {
+    NAME: 'Heimursaga',
+  },
   MAPBOX: {
     DEFAULT: {
       COORDINATES: {
