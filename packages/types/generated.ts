@@ -2,6 +2,7 @@
 import {
   CheckoutMode,
   CheckoutStatus,
+  MapQueryFilter,
   PlanExpiryPeriod,
   SponsorshipType,
 } from './enums';
@@ -297,6 +298,7 @@ export interface IPostQueryMapResponse {
 export interface IMapQueryPayload {
   location?: IMapQueryLocation;
   limit?: number;
+  filter?: MapQueryFilter;
   page?: number;
   userId?: number;
 }
@@ -306,6 +308,7 @@ export interface IMapQueryResponse {
   waypoints: {
     lat: number;
     lon: number;
+    date: Date;
     post?: {
       id: string;
       title: string;

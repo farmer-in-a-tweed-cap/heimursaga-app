@@ -1,10 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { IMapQueryPayload, IMapQueryResponse } from '@repo/types';
+import {
+  IMapQueryPayload,
+  IMapQueryResponse,
+  MapQueryFilter,
+} from '@repo/types';
 
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
+  ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
 } from '@/common/exceptions';
@@ -24,19 +29,52 @@ export class MapService {
     session,
   }: IQueryWithSession<IMapQueryPayload>): Promise<IMapQueryResponse> {
     try {
-      const { location } = query;
+      const { userId } = session;
+      const { filter, location } = query;
 
       let where = {
         public: true,
-        posts: {
-          every: {
-            public: true,
-            waypoint_id: { not: null },
-          },
-        },
       } as Prisma.WaypointWhereInput;
 
-      const take = 50;
+      const take = 500;
+
+      switch (filter) {
+        case MapQueryFilter.GLOBAL:
+          where = {
+            ...where,
+            posts: {
+              every: {
+                public: true,
+                deleted_at: null,
+                waypoint_id: { not: null },
+              },
+            },
+          };
+          break;
+        case MapQueryFilter.FOLLOWING:
+          if (userId) {
+            where = {
+              ...where,
+              posts: {
+                every: {
+                  public: true,
+                  deleted_at: null,
+                  waypoint_id: { not: null },
+                  author: {
+                    followers: {
+                      some: {
+                        follower_id: userId,
+                      },
+                    },
+                  },
+                },
+              },
+            };
+          }
+          break;
+        default:
+          throw new ServiceBadRequestException('map query filter invalid');
+      }
 
       if (location) {
         const { sw, ne } = location.bounds;
@@ -63,11 +101,13 @@ export class MapService {
         select: {
           lat: true,
           lon: true,
+          date: true,
           posts: {
             select: {
               public_id: true,
               title: true,
               content: true,
+              date: true,
               author: {
                 select: {
                   username: true,
@@ -79,35 +119,40 @@ export class MapService {
                   },
                 },
               },
+              created_at: true,
             },
             take: 1,
           },
         },
         take,
-        orderBy: [{ id: 'desc' }],
       });
 
       const response: IMapQueryResponse = {
         results,
-        waypoints: waypoints.map(({ lat, lon, posts }) => {
-          const post = posts[0];
-          return {
-            lat,
-            lon,
-            post: post
-              ? {
-                  id: post.public_id,
-                  title: post.title,
-                  content: post.content.slice(0, 100),
-                  author: {
-                    username: post.author.username,
-                    name: post.author.profile.name,
-                    picture: getStaticMediaUrl(post.author.profile.picture),
-                  },
-                }
-              : undefined,
-          };
-        }),
+        waypoints: waypoints
+          .map(({ lat, lon, posts }) => {
+            const post = posts[0];
+            return {
+              lat,
+              lon,
+              date: post ? post.date : undefined,
+              post: post
+                ? {
+                    id: post.public_id,
+                    title: post.title,
+                    content: post.content.slice(0, 100),
+                    author: {
+                      username: post.author.username,
+                      name: post.author.profile.name,
+                      picture: getStaticMediaUrl(post.author.profile.picture),
+                    },
+                  }
+                : undefined,
+            };
+          })
+          .sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+          ),
       };
 
       return response;

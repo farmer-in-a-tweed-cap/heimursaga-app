@@ -50,3 +50,8 @@ export enum CurrencyCode {
 export enum CountryCode {
   UNITED_STATES = 'us',
 }
+
+export enum MapQueryFilter {
+  GLOBAL = 'global',
+  FOLLOWING = 'following',
+}

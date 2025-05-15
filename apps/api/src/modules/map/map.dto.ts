@@ -4,13 +4,16 @@ import {
   IMapQueryLocationBound,
   IMapQueryLocationBounds,
   IMapQueryPayload,
+  MapQueryFilter,
 } from '@repo/types';
 import { Type } from 'class-transformer';
 import {
+  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsObject,
   IsOptional,
+  IsString,
   ValidateNested,
 } from 'class-validator';
 
@@ -23,14 +26,20 @@ export class MapQueryDto implements IMapQueryPayload {
   location: IMapQueryLocation;
 
   @ApiProperty({ required: false })
-  @IsNumber()
+  @IsEnum(MapQueryFilter)
+  @IsString()
   @IsOptional()
-  limit: number;
+  filter?: MapQueryFilter;
 
   @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
-  page: number;
+  limit?: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  page?: number;
 }
 
 class MapQueryLocationDto implements IMapQueryLocation {
