@@ -19,6 +19,16 @@ export type GeoJson<T = any> = {
   }[];
 };
 
+// app
+export interface ISitemapGetResponse {
+  sources: {
+    loc: string;
+    lastmod: Date;
+    changefreq: 'daily' | 'monthly' | 'yearly';
+    priority: number;
+  }[];
+}
+
 // session
 export interface ISessionUser {
   role: string;

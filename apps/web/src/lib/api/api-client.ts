@@ -21,6 +21,7 @@ import {
   IPostUpdatePayload,
   ISessionUserGetResponse,
   ISignupPayload,
+  ISitemapGetResponse,
   ISponsorCheckoutPayload,
   ISponsorCheckoutResponse,
   ISponsorshipGetAllResponse,
@@ -83,6 +84,11 @@ export interface IApiClientQueryWithPayload<Q = any, T = any> {
 }
 
 export const apiClient = {
+  generateSitemap: async (config?: RequestConfig) =>
+    api.request<ISitemapGetResponse>(API_ROUTER.SITEMAP, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   test: async () =>
     api.request<{ data: any[]; results: number }>(API_ROUTER.TEST),
   login: async ({ payload }: IApiClientQueryWithPayload<{}, ILoginPayload>) =>

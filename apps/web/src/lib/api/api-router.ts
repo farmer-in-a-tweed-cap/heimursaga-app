@@ -1,4 +1,5 @@
 export const API_ROUTER = {
+  SITEMAP: 'sitemap',
   TEST: 'test',
   LOGIN: 'auth/login',
   SIGNUP: 'auth/signup',

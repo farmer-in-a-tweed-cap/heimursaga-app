@@ -95,10 +95,12 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
       {
         href: ROUTER.LEGAL.PRIVACY,
         label: 'Privacy policy',
+        openNewTab: true,
       },
       {
         href: ROUTER.LEGAL.TERMS,
         label: 'Terms of service',
+        openNewTab: true,
       },
     ],
   };
@@ -147,10 +149,11 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        {links.info.map(({ href, label }, key) => (
+        {links.info.map(({ href, label, openNewTab = false }, key) => (
           <DropdownMenuItem key={key} asChild>
             <Link
               href={href}
+              target={openNewTab ? '_blank' : '_self'}
               className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
             >
               {label}
