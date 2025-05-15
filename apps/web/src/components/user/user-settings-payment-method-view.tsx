@@ -1,39 +1,55 @@
 'use client';
 
-import { IPaymentMethodGetAllResponse } from '@repo/types';
-import { Button, Card, CardContent, LoadingSpinner } from '@repo/ui/components';
+import {
+  IPaymentMethodDetail,
+  IPaymentMethodGetAllResponse,
+} from '@repo/types';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  LoadingSpinner,
+} from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
 import { useQuery } from '@tanstack/react-query';
+import { Trash2Icon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { QUERY_KEYS, getUserPaymentMethods } from '@/lib/api';
+import { QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { MODALS, PaymentMethodModalProps } from '@/components';
-import { PaymentMethodCard } from '@/components';
 import { useModal, useSession } from '@/hooks';
+import { LOCALES } from '@/locales';
 
 export const UserSettingsPaymentMethodView = () => {
-  const router = useRouter();
   const session = useSession();
   const modal = useModal();
   const toast = useToast();
 
-  const paymentMethodQuery = useQuery<IPaymentMethodGetAllResponse, any>({
-    queryKey: [QUERY_KEYS.USER_PAYMENT_METHODS, session?.username],
-    queryFn: () => getUserPaymentMethods.queryFn(),
+  const paymentMethodQuery = useQuery({
+    queryKey: [QUERY_KEYS.USER_PAYMENT_METHODS],
+    queryFn: () => apiClient.getUserPaymentMethods().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,
   });
 
-  const [paymentMethods, setPaymentMethods] =
-    useState<IPaymentMethodGetAllResponse>({ data: [], results: 0 });
+  const paymentMethods = paymentMethodQuery.data?.data || [];
+  const paymentMethodResults = paymentMethodQuery.data?.results || 0;
+  const paymentMethodLoading = paymentMethodQuery.isLoading;
 
   const handlePaymentMethodCreate = () => {
     modal.open(MODALS.PAYMENT_METHOD_ADD, {
       onSubmit: () => {
-        router.refresh();
-        toast({ type: 'success', message: 'Payment method added' });
+        toast({
+          type: 'success',
+          message: LOCALES.APP.PAYMENT_METHOD.PAYMENT_METHOD_ADDED,
+        });
+
+        paymentMethodQuery.refetch();
       },
       onCancel: () => {},
     });
@@ -45,60 +61,62 @@ export const UserSettingsPaymentMethodView = () => {
         paymentMethodId: id,
       },
       onSubmit: () => {
-        setPaymentMethods(({ data, results }) => ({
-          results: results >= 1 ? results - 1 : 0,
-          data: data.filter((method) => method.id !== id),
-        }));
+        toast({
+          type: 'success',
+          message: LOCALES.APP.PAYMENT_METHOD.PAYMENT_METHOD_REMOVED,
+        });
 
-        toast({ type: 'success', message: 'Payment method deleted' });
-        router.refresh();
+        paymentMethodQuery.refetch();
       },
     });
   };
-
-  useEffect(() => {
-    if (!paymentMethodQuery.isSuccess) return;
-    setPaymentMethods({
-      data:
-        paymentMethodQuery.data?.data?.map((i) => ({ ...i, d: Date.now() })) ||
-        [],
-      results: paymentMethodQuery.data?.results || 0,
-    });
-  }, [paymentMethodQuery.data]);
 
   // cache modals
   useEffect(() => {
     modal.preload([MODALS.PAYMENT_METHOD_ADD, MODALS.PAYMENT_METHOD_DELETE]);
   }, [modal.preload]);
 
-  return (
-    <div className="flex flex-col">
-      {paymentMethodQuery.isLoading ? (
-        <LoadingSpinner />
-      ) : paymentMethods.results ? (
-        <div className="flex flex-col gap-2">
-          {paymentMethods.data.map(({ label, id, last4 }, key) => (
-            <PaymentMethodCard
+  return paymentMethodLoading ? (
+    <LoadingSpinner />
+  ) : paymentMethodResults ? (
+    <Card>
+      <CardHeader>
+        <CardTitle>Payment methods</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col">
+          {paymentMethods.map(({ label, id }, key) => (
+            <div
               key={key}
-              {...{ label, id, last4 }}
-              onDelete={() => handlePaymentMethodDelete(id)}
-            />
+              className="w-full flex flex-row justify-between items-center py-4 border-b border-solid border-accent"
+            >
+              <div className="flex flex-col gap-1">
+                <span className="text-sm font-medium">{label}</span>{' '}
+                <Badge variant="secondary">Card</Badge>
+              </div>
+              <Button
+                variant="icon"
+                onClick={() => handlePaymentMethodDelete(id)}
+              >
+                <Trash2Icon size={14} />
+              </Button>
+            </div>
           ))}
-          <div className="mt-2">
-            <Button variant="outline" onClick={handlePaymentMethodCreate}>
+          <div className="mt-6">
+            <Button variant="secondary" onClick={handlePaymentMethodCreate}>
               Add payment method
             </Button>
           </div>
         </div>
-      ) : (
-        <Card>
-          <CardContent>
-            <span className="text-sm">
-              You do not currently have any payment methods.
-            </span>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+      </CardContent>
+    </Card>
+  ) : (
+    <Card>
+      <CardContent>
+        <span className="text-sm">
+          {LOCALES.APP.PAYMENT_METHOD.NO_PAYMENT_METHODS_FOUND}
+        </span>
+      </CardContent>
+    </Card>
   );
 };
