@@ -8,6 +8,7 @@ import {
 import { IPostBookmarkResponse, IPostLikeResponse } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
+import { normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { getStaticMediaUrl } from '@/lib/upload';
 
@@ -208,12 +209,14 @@ export class PostService {
       if (!userId) throw new ServiceForbiddenException();
 
       const { lat, lon } = payload;
+      const content = normalizeText(payload.content);
 
       // create a post
       const post = await this.prisma.post.create({
         data: {
           ...payload,
           public_id: generator.publicId(),
+          content,
           lat,
           lon,
           public: true,
@@ -267,9 +270,11 @@ export class PostService {
         throw new ServiceForbiddenException('post can not be updated');
 
       // update the post
+      const content = normalizeText(payload.content);
+
       await this.prisma.post.updateMany({
         where: { public_id: publicId, author_id: userId },
-        data: payload,
+        data: { ...payload, content },
       });
     } catch (e) {
       this.logger.error(e);
