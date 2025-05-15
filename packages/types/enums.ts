@@ -51,7 +51,8 @@ export enum CountryCode {
   UNITED_STATES = 'us',
 }
 
-export enum MapQueryFilter {
+export enum MapQueryContext {
   GLOBAL = 'global',
   FOLLOWING = 'following',
+  USER = 'user',
 }

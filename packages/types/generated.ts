@@ -2,7 +2,7 @@
 import {
   CheckoutMode,
   CheckoutStatus,
-  MapQueryFilter,
+  MapQueryContext,
   PlanExpiryPeriod,
   SponsorshipType,
 } from './enums';
@@ -299,9 +299,9 @@ export interface IPostQueryMapResponse {
 export interface IMapQueryPayload {
   location?: IMapQueryLocation;
   limit?: number;
-  filter?: MapQueryFilter;
+  context?: MapQueryContext;
   page?: number;
-  userId?: number;
+  username?: string;
 }
 
 export interface IMapQueryResponse {
@@ -314,6 +314,7 @@ export interface IMapQueryResponse {
       id: string;
       title: string;
       content: string;
+      bookmarked: boolean;
       author: {
         username: string;
         name: string;

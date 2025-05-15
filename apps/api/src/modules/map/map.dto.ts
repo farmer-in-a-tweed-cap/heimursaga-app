@@ -4,7 +4,7 @@ import {
   IMapQueryLocationBound,
   IMapQueryLocationBounds,
   IMapQueryPayload,
-  MapQueryFilter,
+  MapQueryContext,
 } from '@repo/types';
 import { Type } from 'class-transformer';
 import {
@@ -26,10 +26,10 @@ export class MapQueryDto implements IMapQueryPayload {
   location: IMapQueryLocation;
 
   @ApiProperty({ required: false })
-  @IsEnum(MapQueryFilter)
+  @IsEnum(MapQueryContext)
   @IsString()
   @IsOptional()
-  filter?: MapQueryFilter;
+  context?: MapQueryContext;
 
   @ApiProperty({ required: false })
   @IsNumber()
@@ -40,6 +40,11 @@ export class MapQueryDto implements IMapQueryPayload {
   @IsNumber()
   @IsOptional()
   page?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  username?: string;
 }
 
 class MapQueryLocationDto implements IMapQueryLocation {

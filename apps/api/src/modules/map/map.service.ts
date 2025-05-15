@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client';
 import {
   IMapQueryPayload,
   IMapQueryResponse,
-  MapQueryFilter,
+  MapQueryContext,
   UserRole,
 } from '@repo/types';
 
@@ -31,16 +31,51 @@ export class MapService {
   }: IQueryWithSession<IMapQueryPayload>): Promise<IMapQueryResponse> {
     try {
       const { userId } = session;
-      const { filter, location } = query;
+      const { context, location, username } = query;
 
       let where = {
         public: true,
+        deleted_at: null,
       } as Prisma.WaypointWhereInput;
+      let select = {
+        lat: true,
+        lon: true,
+        date: true,
+        posts: {
+          select: {
+            public_id: true,
+            title: true,
+            content: true,
+            date: true,
+            bookmarks: userId
+              ? {
+                  where: { user_id: userId },
+                  select: { post_id: true },
+                }
+              : undefined,
+            author: {
+              select: {
+                username: true,
+                role: true,
+                profile: {
+                  select: {
+                    name: true,
+                    picture: true,
+                  },
+                },
+              },
+            },
+            created_at: true,
+          },
+          take: 1,
+        },
+      } satisfies Prisma.WaypointSelect;
 
       const take = 500;
 
-      switch (filter) {
-        case MapQueryFilter.GLOBAL:
+      // filter by context
+      switch (context) {
+        case MapQueryContext.GLOBAL:
           where = {
             ...where,
             posts: {
@@ -52,15 +87,14 @@ export class MapService {
             },
           };
           break;
-        case MapQueryFilter.FOLLOWING:
+        case MapQueryContext.FOLLOWING:
           if (userId) {
             where = {
               ...where,
               posts: {
-                every: {
+                some: {
                   public: true,
                   deleted_at: null,
-                  waypoint_id: { not: null },
                   author: {
                     followers: {
                       some: {
@@ -73,10 +107,26 @@ export class MapService {
             };
           }
           break;
+        case MapQueryContext.USER:
+          where = {
+            ...where,
+            posts: {
+              some: {
+                public_id: { not: null },
+                public: true,
+                deleted_at: null,
+                author: {
+                  username,
+                },
+              },
+            },
+          };
+          break;
         default:
           throw new ServiceBadRequestException('map query filter invalid');
       }
 
+      // filter by location
       if (location) {
         const { sw, ne } = location.bounds;
 
@@ -99,33 +149,7 @@ export class MapService {
       const results = await this.prisma.waypoint.count({ where });
       const waypoints = await this.prisma.waypoint.findMany({
         where,
-        select: {
-          lat: true,
-          lon: true,
-          date: true,
-          posts: {
-            select: {
-              public_id: true,
-              title: true,
-              content: true,
-              date: true,
-              author: {
-                select: {
-                  username: true,
-                  role: true,
-                  profile: {
-                    select: {
-                      name: true,
-                      picture: true,
-                    },
-                  },
-                },
-              },
-              created_at: true,
-            },
-            take: 1,
-          },
-        },
+        select,
         take,
       });
 
@@ -149,6 +173,7 @@ export class MapService {
                       picture: getStaticMediaUrl(post.author.profile.picture),
                       creator: post.author.role === UserRole.CREATOR,
                     },
+                    bookmarked: userId ? post.bookmarks.length > 0 : false,
                   }
                 : undefined,
             };

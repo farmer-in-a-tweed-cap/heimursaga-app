@@ -123,22 +123,23 @@ model Plan {
 }
 
 model Sponsorship {
-  id          Int              @id @default(autoincrement())
-  public_id   String           @unique @db.VarChar(14)
-  type        String           @db.VarChar(500)
-  amount      Int              @default(0) @db.Integer
-  expiry      DateTime?
-  next_charge DateTime?
-  currency    String
-  tier_id     Int?
-  tier        SponsorshipTier? @relation(fields: [tier_id], references: [id], onDelete: Cascade)
-  creator_id  Int
-  creator     User             @relation("creator_sponsorships", fields: [creator_id], references: [id], onDelete: Cascade)
-  user_id     Int
-  user        User             @relation("user_sponsorships", fields: [user_id], references: [id], onDelete: Cascade)
-  created_at  DateTime?        @default(now())
-  updated_at  DateTime?        @updatedAt
-  deleted_at  DateTime?
+  id                     Int              @id @default(autoincrement())
+  public_id              String           @unique @db.VarChar(14)
+  type                   String           @db.VarChar(500)
+  amount                 Int              @default(0) @db.Integer
+  expiry                 DateTime?
+  next_charge            DateTime?
+  currency               String
+  stripe_subscription_id String?          @db.VarChar(30)
+  tier_id                Int?
+  tier                   SponsorshipTier? @relation(fields: [tier_id], references: [id], onDelete: Cascade)
+  creator_id             Int
+  creator                User             @relation("creator_sponsorships", fields: [creator_id], references: [id], onDelete: Cascade)
+  user_id                Int
+  user                   User             @relation("user_sponsorships", fields: [user_id], references: [id], onDelete: Cascade)
+  created_at             DateTime?        @default(now())
+  updated_at             DateTime?        @updatedAt
+  deleted_at             DateTime?
 
   @@map("sponsorships")
 }
