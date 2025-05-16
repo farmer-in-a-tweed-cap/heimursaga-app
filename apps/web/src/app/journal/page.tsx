@@ -6,7 +6,7 @@ import { AppLayout } from '@/layouts';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Insights',
+  title: 'Journal',
 };
 
 type PageProps = {
@@ -16,12 +16,12 @@ type PageProps = {
 };
 
 export default async function Page({ params }: PageProps) {
-  const { section } = params;
+  // const { section } = params;
   return (
     <AppLayout>
       <div className="w-full max-w-5xl flex flex-col gap-6">
-        <PageHeaderTitle>Insights</PageHeaderTitle>
-        <CreatorInsightView section={section} />
+        <PageHeaderTitle>Journal</PageHeaderTitle>
+        <CreatorInsightView section="posts" />
       </div>
     </AppLayout>
   );

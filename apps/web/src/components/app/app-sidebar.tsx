@@ -8,24 +8,20 @@ import {
   BarChart2Icon,
   BellIcon,
   BookmarkIcon,
-  CogIcon,
   CoinsIcon,
-  CompassIcon,
+  HandCoinsIcon,
   HomeIcon,
+  LibraryIcon,
   LucideProps,
+  PencilIcon,
+  PencilLineIcon,
   PlaneTakeoffIcon,
-  StarIcon,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ForwardRefExoticComponent, RefAttributes } from 'react';
 
-import {
-  CreatePostButton,
-  Logo,
-  UserGuestAvatar,
-  UserNavbar,
-} from '@/components';
+import { CreatePostButton, Logo, UserNavbar } from '@/components';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
@@ -110,6 +106,12 @@ const SIDEBAR_LINKS: {
     //   icon: CompassIcon,
     // },
     {
+      href: ROUTER.JOURNAL.HOME,
+      base: ROUTER.JOURNAL.HOME,
+      label: 'Journal',
+      icon: LibraryIcon,
+    },
+    {
       href: ROUTER.TRIPS.HOME,
       base: ROUTER.TRIPS.HOME,
       label: 'Trips',
@@ -119,13 +121,7 @@ const SIDEBAR_LINKS: {
       href: ROUTER.SPONSORSHIP.ROOT,
       base: ROUTER.SPONSORSHIP.ROOT,
       label: 'Sponsorship',
-      icon: CoinsIcon,
-    },
-    {
-      href: ROUTER.INSIGHTS.HOME,
-      base: ROUTER.INSIGHTS.HOME,
-      label: 'Insights',
-      icon: BarChart2Icon,
+      icon: HandCoinsIcon,
     },
     {
       href: ROUTER.PAYOUTS.HOME,

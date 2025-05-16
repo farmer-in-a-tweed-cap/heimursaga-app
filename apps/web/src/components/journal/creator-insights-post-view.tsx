@@ -40,7 +40,7 @@ export const CreatorInsightsPostView = () => {
         const title = row.getValue('title') as string;
         return (
           <Link
-            href={postId ? ROUTER.POSTS.DETAIL(postId) : '#'}
+            href={postId ? ROUTER.POSTS.EDIT(postId) : '#'}
             className="font-medium underline"
           >
             {title}
@@ -50,7 +50,7 @@ export const CreatorInsightsPostView = () => {
     },
     {
       accessorKey: 'likesCount',
-      header: () => 'Likes',
+      header: () => 'Highlights',
     },
     {
       accessorKey: 'bookmarksCount',

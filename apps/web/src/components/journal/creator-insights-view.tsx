@@ -27,7 +27,7 @@ export const CreatorInsightView: React.FC<Props> = ({ section }) => {
 
   const handleTabChange = (tab: string) => {
     setTab(tab);
-    router.push([ROUTER.INSIGHTS.ROOT, tab].join('/'), {
+    router.push([ROUTER.JOURNAL.HOME, tab].join('/'), {
       scroll: false,
     });
   };
