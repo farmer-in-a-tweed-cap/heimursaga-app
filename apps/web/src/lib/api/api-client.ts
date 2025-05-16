@@ -8,6 +8,9 @@ import {
   IPaymentMethodGetAllResponse,
   IPaymentMethodGetByIdResponse,
   IPayoutBalanceGetResponse,
+  IPayoutCreatePayload,
+  IPayoutCreateResponse,
+  IPayoutGetResponse,
   IPayoutMethodCreatePayload,
   IPayoutMethodCreateResponse,
   IPayoutMethodGetAllByUsernameResponse,
@@ -461,10 +464,25 @@ export const apiClient = {
         ...config,
       },
     ),
-  // payout balance
-  getUserPayoutBalance: async (config?: RequestConfig) =>
-    api.request<IPayoutBalanceGetResponse>(API_ROUTER.PAYOUT_BALANCE.GET, {
+  // balance
+  getBalance: async (config?: RequestConfig) =>
+    api.request<IPayoutBalanceGetResponse>(API_ROUTER.BALANCE.GET, {
       method: API_METHODS.GET,
+      ...config,
+    }),
+  // payouts
+  getPayouts: async (config?: RequestConfig) =>
+    api.request<IPayoutGetResponse>(API_ROUTER.PAYOUTS.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
+  createPayout: async (
+    { payload }: IApiClientQueryWithPayload<{}, IPayoutCreatePayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<IPayoutCreateResponse>(API_ROUTER.PAYOUTS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
       ...config,
     }),
   // sponsor

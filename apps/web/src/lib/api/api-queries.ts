@@ -51,7 +51,8 @@ export const QUERY_KEYS = {
   },
   MEMBERSHIPS: 'memberships',
   PAYOUT_METHODS: 'payout_methods',
-  PAYOUT_BALANCE: 'payout_balance',
+  PAYOUTS: 'payouts',
+  BALANCE: 'balance',
   SPONSORSHIPS: 'sponsorships',
   SPONSORSHIP_TIERS: 'sponsorship_tiers',
   INSIGHTS: {

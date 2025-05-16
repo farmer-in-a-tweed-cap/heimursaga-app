@@ -74,8 +74,8 @@ export const API_ROUTER = {
     DELETE: (id: string) => `payout-methods/${id}`,
     PLATFORM_LINK: (id: string) => `payout-methods/${id}/platform-link`,
   },
-  PAYOUT_BALANCE: {
-    GET: 'payout-balance',
+  BALANCE: {
+    GET: 'balance',
   },
   SPONSOR: {
     CHECKOUT: 'sponsor/checkout',
@@ -86,6 +86,10 @@ export const API_ROUTER = {
   STRIPE: {
     CREATE_SETUP_INTENT: 'stripe/create-setup-intent',
     CREATE_PAYMENT_INTENT: 'stripe/create-payment-intent',
+  },
+  PAYOUTS: {
+    GET: '/payouts',
+    CREATE: '/payouts',
   },
   TRIPS: {
     GET: '/trips',
