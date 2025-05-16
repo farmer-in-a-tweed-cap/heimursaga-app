@@ -12,6 +12,7 @@ import {
 import { integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 
+import { CURRENCIES } from '@/common/constants';
 import {
   ServiceBadRequestException,
   ServiceException,
@@ -284,7 +285,7 @@ export class PayoutService {
     }
   }
 
-  async getUserPayoutBalance({
+  async getBalance({
     session,
   }: ISessionQuery): Promise<IPayoutBalanceGetResponse> {
     try {
@@ -309,14 +310,21 @@ export class PayoutService {
         stripeAccount: payoutMethod.stripe_account_id,
       });
 
+      const currencyCode =
+        stripeBalance.available[0].currency ||
+        stripeBalance.pending[0].currency;
+      const currency = CURRENCIES[currencyCode];
+
       const response: IPayoutBalanceGetResponse = {
         available: {
           amount: integerToDecimal(stripeBalance.available[0].amount),
-          currency: stripeBalance.available[0].currency,
+          currency: currency.code,
+          symbol: currency.symbol,
         },
         pending: {
           amount: integerToDecimal(stripeBalance.pending[0].amount),
-          currency: stripeBalance.pending[0].currency,
+          currency: currency.code,
+          symbol: currency.symbol,
         },
       };
 
@@ -325,7 +333,7 @@ export class PayoutService {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payout methods not found');
+        : new ServiceForbiddenException('balance not available');
       throw exception;
     }
   }

@@ -56,15 +56,15 @@ export class PayoutMethodController {
   }
 }
 
-@ApiTags('payout-balance')
-@Controller('payout-balance')
-export class PayoutBalanceController {
+@ApiTags('balance')
+@Controller('balance')
+export class BalanceController {
   constructor(private payoutService: PayoutService) {}
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getUserPayoutBalance(@Session() session: ISession) {
-    return await this.payoutService.getUserPayoutBalance({
+  async getBalance(@Session() session: ISession) {
+    return await this.payoutService.getBalance({
       query: {},
       session,
     });

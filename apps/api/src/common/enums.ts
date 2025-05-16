@@ -6,6 +6,10 @@ export enum UploadedFileType {
 
 export enum CurrencyCode {
   USD = 'usd',
+  EUR = 'eur',
+  SGD = 'sgd',
+  JPY = 'jpy',
+  RUB = 'rub',
 }
 
 export enum CurrencySymbol {

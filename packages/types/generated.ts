@@ -460,10 +460,12 @@ export interface IPayoutBalanceGetResponse {
   pending: {
     amount: number;
     currency: string;
+    symbol: string;
   };
   available: {
     amount: number;
     currency: string;
+    symbol: string;
   };
 }
 

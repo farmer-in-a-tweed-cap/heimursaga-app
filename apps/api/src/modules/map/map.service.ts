@@ -79,7 +79,7 @@ export class MapService {
           where = {
             ...where,
             posts: {
-              every: {
+              some: {
                 public: true,
                 deleted_at: null,
                 waypoint_id: { not: null },
