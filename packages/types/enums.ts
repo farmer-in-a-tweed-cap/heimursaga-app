@@ -22,6 +22,12 @@ export enum CheckoutStatus {
   REQUIRES_ACTION = 'requires_action',
 }
 
+export enum PayoutStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  CANCELED = 'canceled',
+}
+
 export enum PlanExpiryPeriod {
   MONTH = 'month',
   YEAR = 'year',

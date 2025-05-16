@@ -469,6 +469,32 @@ export interface IPayoutBalanceGetResponse {
   };
 }
 
+// payouts
+export interface IPayoutDetail {
+  id: string;
+  amount: number;
+  status: string;
+  currency: {
+    code: string;
+    symbol: string;
+  };
+  created: Date;
+  arrival?: Date;
+}
+
+export interface IPayoutGetResponse {
+  data: IPayoutDetail[];
+  results: number;
+}
+
+export interface IPayoutCreatePayload {
+  amount: number;
+}
+
+export interface IPayoutCreateResponse {
+  payoutId: string;
+}
+
 // sponsor
 export interface ISponsorCheckoutPayload {
   creatorId: string;

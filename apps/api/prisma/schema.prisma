@@ -365,17 +365,18 @@ model PayoutMethod {
   public_id         String    @unique @db.VarChar(14)
   platform          String
   is_verified       Boolean   @default(false)
+  currency          String?
   business_type     String?
   business_name     String?
   email             String?   @db.VarChar(50)
   phone_number      String?   @db.VarChar(20)
   stripe_account_id String?
+  payouts           Payout[]
   user              User?     @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   user_id           Int?
   created_at        DateTime? @default(now())
   updated_at        DateTime? @updatedAt
   deleted_at        DateTime?
-  Payout            Payout[]
 
   @@map("payout_methods")
 }
@@ -385,10 +386,13 @@ model Payout {
   public_id        String       @unique @db.VarChar(14)
   status           String?      @default("pending") @db.VarChar(20)
   amount           Int
+  currency         String?
+  stripe_payout_id String?      @db.VarChar(40)
   payout_method    PayoutMethod @relation(fields: [payout_method_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   payout_method_id Int
   user             User         @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   user_id          Int
+  arrival_date     DateTime?
   confirmed_at     DateTime?    @default(now())
   created_at       DateTime?    @default(now())
   updated_at       DateTime?    @updatedAt

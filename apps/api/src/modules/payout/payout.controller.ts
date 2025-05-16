@@ -13,7 +13,7 @@ import { Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import { PayoutMethodCreateDto } from './payout.dto';
+import { PayoutCreateDto, PayoutMethodCreateDto } from './payout.dto';
 import { PayoutService } from './payout.service';
 
 @ApiTags('payout-methods')
@@ -66,6 +66,34 @@ export class BalanceController {
   async getBalance(@Session() session: ISession) {
     return await this.payoutService.getBalance({
       query: {},
+      session,
+    });
+  }
+}
+
+@ApiTags('payouts')
+@Controller('payouts')
+export class PayoutController {
+  constructor(private payoutService: PayoutService) {}
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getPayouts(@Session() session: ISession) {
+    return await this.payoutService.getPayouts({
+      query: {},
+      session,
+    });
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  async createPayout(
+    @Session() session: ISession,
+    @Body() body: PayoutCreateDto,
+  ) {
+    return await this.payoutService.createPayout({
+      query: {},
+      payload: body,
       session,
     });
   }
