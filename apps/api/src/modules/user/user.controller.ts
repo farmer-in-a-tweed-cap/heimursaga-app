@@ -13,9 +13,10 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public, Session } from '@/common/decorators';
-import { ParamPublicIdDto, ParamUsernameDto } from '@/common/dto';
+import { ParamUsernameDto } from '@/common/dto';
 import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
+import { SponsorService } from '@/modules/sponsor';
 import { IUploadedFile } from '@/modules/upload';
 
 import { UserSettingsProfileUpdateDto } from './user.dto';
@@ -140,7 +141,10 @@ export class UserController {
 @ApiTags('user')
 @Controller('user')
 export class SessionUserController {
-  constructor(private sessionUserService: SessionUserService) {}
+  constructor(
+    private sessionUserService: SessionUserService,
+    private sponsorService: SponsorService,
+  ) {}
 
   @Get('settings/profile')
   @HttpCode(HttpStatus.OK)
@@ -228,6 +232,15 @@ export class SessionUserController {
     return await this.sessionUserService.getPostInsights({
       query: {},
       session,
+    });
+  }
+
+  @Get('sponsorships')
+  @HttpCode(HttpStatus.OK)
+  async getSponsorships(@Session() session: ISession) {
+    return await this.sponsorService.getUserSponsorships({
+      session,
+      query: {},
     });
   }
 }

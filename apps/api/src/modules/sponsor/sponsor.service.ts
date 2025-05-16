@@ -713,13 +713,85 @@ export class SponsorService {
     }
   }
 
+  async getUserSponsorships({
+    session,
+  }: ISessionQuery): Promise<ISponsorshipGetAllResponse> {
+    try {
+      const { userId, userRole } = session;
+
+      // check access
+      const access =
+        !!userId && matchRoles(userRole, [UserRole.USER, UserRole.CREATOR]);
+      if (!access) throw new ServiceForbiddenException();
+
+      const where: Prisma.SponsorshipWhereInput = {
+        user_id: userId,
+        deleted_at: null,
+      };
+
+      // get sponsorships
+      const take = 50;
+      const results = await this.prisma.sponsorship.count({ where });
+      const data = await this.prisma.sponsorship.findMany({
+        where,
+        select: {
+          public_id: true,
+          type: true,
+          amount: true,
+          currency: true,
+          creator: {
+            select: {
+              username: true,
+              profile: {
+                select: { name: true, picture: true },
+              },
+            },
+          },
+          created_at: true,
+        },
+        take,
+        orderBy: [{ id: 'desc' }],
+      });
+
+      const response: ISponsorshipGetAllResponse = {
+        results,
+        data: data.map(
+          ({ public_id: id, amount, currency, creator, type, created_at }) => ({
+            id,
+            type: type as SponsorshipType,
+            amount: integerToDecimal(amount),
+            currency,
+            creator: creator
+              ? {
+                  username: creator.username,
+                  name: creator.profile.name,
+                  picture: creator.profile.picture,
+                }
+              : undefined,
+            createdAt: created_at,
+          }),
+        ),
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('sponsorships not found');
+      throw exception;
+    }
+  }
+
   async getCreatorSponsorships({
     session,
   }: ISessionQuery): Promise<ISponsorshipGetAllResponse> {
     try {
-      const { userId } = session;
+      const { userId, userRole } = session;
 
-      if (!userId) throw new ServiceForbiddenException();
+      // check access
+      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      if (!access) throw new ServiceForbiddenException();
 
       const where: Prisma.SponsorshipWhereInput = {
         creator_id: userId,
@@ -758,11 +830,13 @@ export class SponsorService {
             type: type as SponsorshipType,
             amount: integerToDecimal(amount),
             currency,
-            user: {
-              username: user.username,
-              name: user.profile.name,
-              picture: user.profile.picture,
-            },
+            user: user
+              ? {
+                  username: user.username,
+                  name: user.profile.name,
+                  picture: user.profile.picture,
+                }
+              : undefined,
             createdAt: created_at,
           }),
         ),
