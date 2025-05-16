@@ -1,5 +1,6 @@
 'use client';
 
+import { ActionMenu } from '../menu';
 import { SponsorshipType } from '@repo/types';
 import {
   Badge,
@@ -73,6 +74,34 @@ export const CreatorSponsorships = () => {
       header: () => 'Date',
       cell: ({ row }) =>
         dateformat(row.getValue('date')).format('MMM DD, YYYY'),
+    },
+    {
+      accessorKey: 'menu',
+      header: () => '',
+      cell: ({ row }) => {
+        const subscription =
+          row.original?.type === SponsorshipType.SUBSCRIPTION || false;
+        return (
+          <div className="w-full flex flex-row justify-end">
+            {subscription && (
+              <ActionMenu
+                actions={
+                  subscription
+                    ? [
+                        {
+                          label: 'Cancel',
+                          onClick: () => {
+                            confirm('do you want to cancel this sponsorship?');
+                          },
+                        },
+                      ]
+                    : []
+                }
+              />
+            )}
+          </div>
+        );
+      },
     },
   ];
 

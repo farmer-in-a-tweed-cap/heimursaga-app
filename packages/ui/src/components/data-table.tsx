@@ -162,7 +162,7 @@ export const DataTable: React.FC<Props> = ({
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      className="hover:bg-accent"
+                      className="hover:bg-accent/50"
                       data-state={row.getIsSelected() && 'selected'}
                     >
                       {row.getVisibleCells().map((cell) => (

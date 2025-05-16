@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-import { CreatorInsightView, PageHeaderTitle } from '@/components';
+import { JournalView, PageHeaderTitle } from '@/components';
 import { AppLayout } from '@/layouts';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +21,7 @@ export default async function Page({ params }: PageProps) {
     <AppLayout>
       <div className="w-full max-w-5xl flex flex-col gap-6">
         <PageHeaderTitle>Journal</PageHeaderTitle>
-        <CreatorInsightView section="posts" />
+        <JournalView section="posts" />
       </div>
     </AppLayout>
   );

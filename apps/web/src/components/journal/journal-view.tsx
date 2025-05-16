@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { ROUTER } from '@/router';
 
-import { CreatorInsightsPostView } from './creator-insights-post-view';
+import { JournalPostView } from './journal-post-view';
 
 const TABS = {
   POSTS: 'posts',
@@ -16,7 +16,7 @@ type Props = {
   section: string;
 };
 
-export const CreatorInsightView: React.FC<Props> = ({ section }) => {
+export const JournalView: React.FC<Props> = ({ section }) => {
   const router = useRouter();
 
   const [tab, setTab] = useState<string>(section || TABS.POSTS);
@@ -54,7 +54,7 @@ export const CreatorInsightView: React.FC<Props> = ({ section }) => {
         />
       </div>
       <div className="mt-2 flex flex-col w-full py-4">
-        {tab === TABS.POSTS && <CreatorInsightsPostView />}
+        {tab === TABS.POSTS && <JournalPostView />}
       </div>
     </div>
   );

@@ -1,2 +1,2 @@
-export * from './creator-insights-view';
-export * from './creator-insights-post-view';
+export * from './journal-view';
+export * from './journal-post-view';
