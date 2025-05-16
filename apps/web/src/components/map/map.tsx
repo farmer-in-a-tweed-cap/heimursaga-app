@@ -367,6 +367,7 @@ export const Map: React.FC<Props> = ({
             ['linear'],
             ['zoom'],
             // dynamic point sizes ([zoom, radius])
+            ...[0, 3],
             ...[5, 5],
             ...[8, 8],
             ...[12, 12],

@@ -38,7 +38,7 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
     <Link href={url}>
       <div
         className={cn(
-          'relative w-full h-[180px] lg:h-[200px] bg-accent rounded-lg overflow-hidden',
+          'relative w-full h-[200px] lg:h-[240px] bg-accent rounded-lg overflow-hidden',
           className,
         )}
       >
@@ -46,7 +46,7 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
         <div className="transition-all z-20 absolute cursor-pointer inset-0 bg-black opacity-10 hover:opacity-0 hover:bg-black"></div>
         <div className="transition-all w-full h-full z-10">
           <MapPreview
-            className="w-full h-[220px] lg:h-[200px]"
+            className="w-full h-[200px] lg:h-[240px]"
             lat={APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT}
             lon={APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON}
             alt={0}

@@ -31,6 +31,7 @@ import {
   MapOnSourceClickHandler,
   PostCard,
   UserBar,
+  UserProfileCard,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks';
@@ -434,30 +435,14 @@ export const ExploreMap: React.FC<Props> = () => {
             </>
           )}
           {context === MapQueryContext.USER && (
-            <div className="flex flex-col py-4 px-6">
+            <div className="flex flex-col pt-4 pb-2 px-6">
               <div className="flex flex-row">
-                <Link
-                  href={
-                    user?.username ? ROUTER.MEMBERS.MEMBER(user.username) : '#'
-                  }
-                >
-                  <UserBar
-                    loading={userQuery.isLoading || userQuery.isPending}
-                    name={user?.name}
-                    picture={user?.picture}
-                    text={`@${user?.username}`}
-                  />
-                </Link>
+                <UserProfileCard
+                  name={user?.name}
+                  picture={user?.picture}
+                  username={user?.username}
+                />
               </div>
-              {/* <div className="mt-2 h-[16px] flex flex-row items-center justify-start overflow-hidden">
-                {mapQuery.isPending || mapQuery.isLoading ? (
-                  <Skeleton className="w-[120px] h-[12px]" />
-                ) : (
-                  <span className="text-sm font-normal text-gray-600">
-                    {mapQueryResults} {LOCALES.APP.SEARCH.POSTS_FOUND}
-                  </span>
-                )}
-              </div> */}
             </div>
           )}
           <div className="flex flex-col gap-2 overflow-y-scroll px-6 py-2 box-border">

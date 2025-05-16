@@ -80,7 +80,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       ? author.username === session.username
       : false;
   return (
-    <Card className={cn('shadow-none', classNames?.card)}>
+    <Card className={cn('', classNames?.card)}>
       {href ? (
         <Link href={href} className="z-10 absolute inset-0"></Link>
       ) : onClick ? (
@@ -182,6 +182,8 @@ export const PostCard: React.FC<PostCardProps> = ({
               }
               lat={coordinates.lat}
               lon={coordinates.lon}
+              // className="aspect-auto w-full"
+              zoom={8}
               markers={[
                 {
                   lat: coordinates.lat,

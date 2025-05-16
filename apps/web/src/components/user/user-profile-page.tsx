@@ -25,7 +25,7 @@ export const UserProfilePage: React.FC<Props> = ({
   const isCreator = user.creator ? user.creator : false;
 
   return (
-    <div className="w-full flex flex-col justify-start items-center">
+    <div className="w-full max-w-4xl flex flex-col justify-start items-center">
       <div className="z-10 w-full h-auto">
         <UserMapBanner className="z-30" username={user?.username} />
       </div>
