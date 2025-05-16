@@ -48,6 +48,7 @@ export const QUERY_KEYS = {
     POSTS: 'user_posts',
     NOTIFICATIONS: 'user_notifications',
     MAP: 'user_map',
+    SPONSORSHIPS: 'user_sponsorships',
   },
   MEMBERSHIPS: 'memberships',
   PAYOUT_METHODS: 'payout_methods',

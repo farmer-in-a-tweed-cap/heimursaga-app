@@ -33,6 +33,7 @@ export const ROUTER = {
       HOME: '/user/settings',
       PAGE_KEY: (key: string) => `/user/settings/${key}`,
       PROFILE: '/user/settings/profile',
+      PAYMENT_METHODS: '/user/settings/payment-methods',
       BILLING: '/user/settings/billing',
     },
   },

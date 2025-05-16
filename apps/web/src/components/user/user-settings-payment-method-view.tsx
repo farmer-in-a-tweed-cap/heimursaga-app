@@ -116,6 +116,11 @@ export const UserSettingsPaymentMethodView = () => {
         <span className="text-sm">
           {LOCALES.APP.PAYMENT_METHOD.NO_PAYMENT_METHODS_FOUND}
         </span>
+        <div className="mt-6">
+          <Button variant="secondary" onClick={handlePaymentMethodCreate}>
+            Add payment method
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

@@ -4,6 +4,7 @@ import { TabNavbar } from '../nav';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
+import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
 import { CreatorSponsorships } from './creator-sponsorships';
@@ -20,6 +21,7 @@ type Props = {
 
 export const SponsorshipView: React.FC<Props> = ({ section }) => {
   const router = useRouter();
+  const session = useSession();
 
   const [tab, setTab] = useState<string>(section || TABS.TIERS);
 

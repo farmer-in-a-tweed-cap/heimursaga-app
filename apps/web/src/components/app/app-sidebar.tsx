@@ -13,6 +13,7 @@ import {
   HomeIcon,
   LibraryIcon,
   LucideProps,
+  PenLineIcon,
   PencilIcon,
   PencilLineIcon,
   PlaneTakeoffIcon,
@@ -60,6 +61,12 @@ const SIDEBAR_LINKS: {
       label: 'Home',
       icon: HomeIcon,
     },
+    {
+      href: ROUTER.JOURNAL.HOME,
+      base: ROUTER.JOURNAL.HOME,
+      label: 'Journal',
+      icon: PenLineIcon,
+    },
     // {
     //   href: ROUTER.EXPLORE.HOME,
     //   base: ROUTER.EXPLORE.HOME,
@@ -72,6 +79,12 @@ const SIDEBAR_LINKS: {
       label: 'Bookmarks',
       icon: BookmarkIcon,
     },
+    // {
+    //   href: ROUTER.SPONSORSHIP.ROOT,
+    //   base: ROUTER.SPONSORSHIP.ROOT,
+    //   label: 'Sponsorship',
+    //   icon: HandCoinsIcon,
+    // },
     {
       href: ROUTER.NOTIFICATIONS,
       base: ROUTER.NOTIFICATIONS,
@@ -109,7 +122,7 @@ const SIDEBAR_LINKS: {
       href: ROUTER.JOURNAL.HOME,
       base: ROUTER.JOURNAL.HOME,
       label: 'Journal',
-      icon: LibraryIcon,
+      icon: PenLineIcon,
     },
     {
       href: ROUTER.TRIPS.HOME,

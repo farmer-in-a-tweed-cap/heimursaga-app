@@ -30,7 +30,7 @@ export const Logo: React.FC<Props> = ({ theme = 'light', size = 'sm' }) => {
 };
 
 const LogoDark = () => (
-  <div className="text-black text-xl font-medium">{APP_CONFIG.APP.NAME}</div>
+  <div className="text-black text-lg font-medium">{APP_CONFIG.APP.NAME}</div>
 );
 
 const LogoSmall = () => (

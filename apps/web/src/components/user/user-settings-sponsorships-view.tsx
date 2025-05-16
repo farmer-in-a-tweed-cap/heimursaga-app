@@ -1,0 +1,98 @@
+'use client';
+
+import { SponsorshipType } from '@repo/types';
+import {
+  Badge,
+  DataTable,
+  DataTableColumn,
+  DataTableRow,
+} from '@repo/ui/components';
+import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
+
+import { QUERY_KEYS, apiClient } from '@/lib/api';
+
+import { useSession } from '@/hooks';
+import { dateformat } from '@/lib';
+import { ROUTER } from '@/router';
+
+type SponsorshipTableData = {
+  username: string;
+  type: SponsorshipType;
+  amount: number;
+  date?: Date;
+};
+
+export const UserSettingsSponsorshipsView = () => {
+  const session = useSession();
+
+  const sponsorshipQuery = useQuery({
+    queryKey: [QUERY_KEYS.USER.SPONSORSHIPS],
+    queryFn: () => apiClient.getUserSponsorships().then(({ data }) => data),
+    enabled: !!session?.username,
+    retry: 0,
+  });
+
+  const sponsorships = sponsorshipQuery.data?.data || [];
+
+  const columns: DataTableColumn<SponsorshipTableData>[] = [
+    {
+      accessorKey: 'username',
+      header: () => 'Creator',
+      cell: ({ row }) => {
+        const username = row.original.username;
+        return (
+          <Link
+            href={username ? ROUTER.MEMBERS.MEMBER(username) : '#'}
+            className="underline font-medium"
+          >
+            @{username}
+          </Link>
+        );
+      },
+    },
+    {
+      accessorKey: 'type',
+      header: () => 'Type',
+      cell: ({ row }) => {
+        const value = row.getValue('type');
+        const label =
+          value === SponsorshipType.ONE_TIME_PAYMENT
+            ? 'one-time'
+            : 'subscription';
+        return <Badge variant="outline">{label}</Badge>;
+      },
+    },
+    {
+      accessorKey: 'amount',
+      header: () => 'Amount',
+      cell: ({ row }) => <span>${row.getValue('amount')}</span>,
+    },
+    {
+      accessorKey: 'date',
+      header: () => 'Date',
+      cell: ({ row }) =>
+        dateformat(row.getValue('date')).format('MMM DD, YYYY'),
+    },
+  ];
+
+  const rows: DataTableRow<SponsorshipTableData>[] = sponsorships.map(
+    ({ id, creator, amount, type, createdAt }, key) => ({
+      id: id ? id : `${key}`,
+      type,
+      username: creator?.username || '',
+      amount,
+      date: createdAt,
+    }),
+  );
+
+  return (
+    <div className="flex flex-col">
+      <DataTable
+        columns={columns}
+        rows={rows}
+        loading={sponsorshipQuery.isLoading}
+      />
+    </div>
+  );
+};

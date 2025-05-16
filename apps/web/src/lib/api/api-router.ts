@@ -17,6 +17,7 @@ export const API_ROUTER = {
     DRAFTS: `/user/drafts`,
     UPDATE_PICTURE: '/user/picture',
     NOTIFICATIONS: '/user/notifications',
+    SPONSORSHIPS: '/user/sponsorships',
     SETTINGS: {
       PROFILE: '/user/settings/profile',
     },

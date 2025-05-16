@@ -495,6 +495,11 @@ export const apiClient = {
       body: JSON.stringify(payload),
       ...config,
     }),
+  getUserSponsorships: async (config?: RequestConfig) =>
+    api.request<ISponsorshipGetAllResponse>(API_ROUTER.USER.SPONSORSHIPS, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   getCreatorSponsorships: async (config?: RequestConfig) =>
     api.request<ISponsorshipGetAllResponse>(API_ROUTER.SPONSORSHIPS.GET, {
       method: API_METHODS.GET,
