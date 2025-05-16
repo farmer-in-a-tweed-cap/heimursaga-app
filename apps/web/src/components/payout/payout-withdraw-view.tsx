@@ -7,7 +7,7 @@ import { QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { useSession } from '@/hooks';
 
-export const UserPayoutBalance = () => {
+export const PayoutWithdrawView = () => {
   const session = useSession();
 
   const payoutBalanceQuery = useQuery({

@@ -15,5 +15,11 @@ export const LOCALES = {
       PAYMENT_METHOD_ADDED: 'payment method added',
       PAYMENT_METHOD_REMOVED: 'payment method deleted',
     },
+    PAYOUT: {
+      TABS: {
+        WITHDRAW: 'Withdraw',
+        BILLING: 'Billing',
+      },
+    },
   },
 };

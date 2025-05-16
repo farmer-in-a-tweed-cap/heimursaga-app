@@ -49,6 +49,10 @@ module.exports = {
         destination: `/sponsorship/tiers`,
       },
       {
+        source: '/payouts',
+        destination: `/payouts/withdraw`,
+      },
+      {
         source: '/insights',
         destination: `/insights/posts`,
       },

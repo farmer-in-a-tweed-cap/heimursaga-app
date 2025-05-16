@@ -53,6 +53,8 @@ export const ROUTER = {
   },
   PAYOUTS: {
     HOME: '/payouts',
+    WITHDRAW: '/payouts/withdraw',
+    BILLING: '/payouts/billing',
   },
   INSIGHTS: {
     ROOT: '/insights',
