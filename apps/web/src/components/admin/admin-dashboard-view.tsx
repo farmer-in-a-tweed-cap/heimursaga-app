@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
+import { AdminDashboardPostView } from './admin-dashboard-posts-view';
+
 // import { CreatorSponsorships } from './creator-sponsorships';
 // import { SponsorshipTierView } from './sponsorship-tier-view';
 
@@ -51,8 +53,8 @@ export const AdminDashboardView: React.FC<Props> = ({ section }) => {
         />
       </div>
       <div className="mt-2 flex flex-col w-full py-4">
-        {/* {tab === TABS.TIERS && <SponsorshipTierView />}
-        {tab === TABS.SPONSORS && <CreatorSponsorships />} */}
+        {tab === TABS.POSTS && <AdminDashboardPostView />}
+        {/* {tab === TABS.SPONSORS && <CreatorSponsorships />} */}
       </div>
     </div>
   );

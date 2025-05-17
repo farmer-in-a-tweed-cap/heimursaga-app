@@ -130,12 +130,19 @@ export const apiClient = {
     api.request<void>(API_ROUTER.VALIDATE_TOKEN(token), {
       cookie: config ? config.cookie : undefined,
     }),
-  getPosts: async (query: any, config?: RequestConfig) =>
-    api.request<IPostQueryResponse>(API_ROUTER.POSTS.QUERY, config),
+  getPosts: async (config?: RequestConfig) =>
+    api.request<IPostQueryResponse>(API_ROUTER.POSTS.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   getPostById: async (
     { query }: IApiClientQuery<{ id: string }>,
     config?: RequestConfig,
-  ) => api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(query.id), config),
+  ) =>
+    api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(query.id), {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   createPost: async (body: IPostCreatePayload) =>
     api.request<IPostCreateResponse>(API_ROUTER.POSTS.CREATE, {
       method: API_METHODS.POST,

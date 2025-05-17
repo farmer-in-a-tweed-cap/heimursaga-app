@@ -55,7 +55,7 @@ export const API_ROUTER = {
     GET_BY_SLUG: (slug: string) => `/plans/${slug}`,
   },
   POSTS: {
-    QUERY: '/posts',
+    GET: '/posts',
     GET_BY_ID: (id: string) => `posts/${id}`,
     CREATE: 'posts',
     UPDATE: (id: string) => `posts/${id}`,
