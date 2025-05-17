@@ -43,11 +43,21 @@ export class UserController {
     @Param() param: ParamUsernameDto,
     @Session() session: ISession,
   ) {
-    const { username } = param;
-
     return await this.userService.getByUsername({
-      username,
-      userId: session.userId,
+      query: { username: param.username },
+      session,
+    });
+  }
+
+  @Post(':username/block')
+  @HttpCode(HttpStatus.OK)
+  async blockUser(
+    @Param() param: ParamUsernameDto,
+    @Session() session: ISession,
+  ) {
+    return await this.userService.blockUser({
+      query: { username: param.username },
+      session,
     });
   }
 

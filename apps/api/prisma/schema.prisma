@@ -26,6 +26,7 @@ model User {
   is_premium                  Boolean?           @default(false)
   is_email_verified           Boolean?           @default(false)
   is_stripe_account_connected Boolean?           @default(false)
+  blocked                     Boolean?           @default(false)
   stripe_account_id           String?            @db.VarChar(40)
   stripe_customer_id          String?            @db.VarChar(40)
   followers_count             Int?               @default(0)

@@ -20,6 +20,7 @@ import {
   UserRole,
 } from '@repo/types';
 
+import { dateformat } from '@/lib/date-format';
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { toGeoJson } from '@/lib/geojson';
 import { getStaticMediaUrl } from '@/lib/upload';
@@ -64,6 +65,7 @@ export class UserService {
 
       const select = {
         username: true,
+        blocked: true,
         role: true,
         profile: {
           select: {
@@ -85,9 +87,10 @@ export class UserService {
 
       const response: IUserGetAllResponse = {
         data: data.map(
-          ({ username, role, profile, posts_count, created_at }) => ({
+          ({ username, role, profile, blocked, posts_count, created_at }) => ({
             username,
             role,
+            blocked,
             name: profile.name,
             picture: getStaticMediaUrl(profile.picture),
             postsCount: posts_count,
@@ -107,19 +110,43 @@ export class UserService {
     }
   }
 
-  async getByUsername({
-    username,
-    userId,
-  }: {
-    username: string;
-    userId: number;
-  }) {
+  async getByUsername({ query, session }: ISessionQuery<{ username: string }>) {
     try {
+      const { username } = query;
+      const { userId, userRole } = session;
+
       if (!username) throw new ServiceNotFoundException('user not found');
+
+      let where = { username } as Prisma.UserWhereInput;
+
+      // filter based on user role
+      switch (userRole) {
+        case UserRole.ADMIN:
+          where = { ...where };
+          break;
+        case UserRole.CREATOR:
+          where = {
+            ...where,
+            blocked: false,
+          };
+          break;
+        case UserRole.USER:
+          where = {
+            ...where,
+            blocked: false,
+          };
+          break;
+        default:
+          where = {
+            ...where,
+            blocked: false,
+          };
+          break;
+      }
 
       // get the user
       const user = await this.prisma.user.findFirstOrThrow({
-        where: { username },
+        where,
         select: {
           id: true,
           username: true,
@@ -160,6 +187,58 @@ export class UserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('user not found');
+      throw exception;
+    }
+  }
+
+  async blockUser({
+    query,
+    session,
+  }: ISessionQuery<{ username: string }>): Promise<void> {
+    try {
+      const { username } = query;
+      const { userId, userRole } = session;
+
+      if (!username) throw new ServiceNotFoundException('user not found');
+
+      // check access
+      const access = !!userId && matchRoles(userRole, [UserRole.ADMIN]);
+      if (!access) throw new ServiceForbiddenException();
+
+      // get the user
+      const user = await this.prisma.user.findFirstOrThrow({
+        where: { username },
+        select: { id: true },
+      });
+
+      // update the user
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { blocked: true },
+      });
+
+      // invalidate sessions
+      await this.prisma.userSession.updateMany({
+        where: { user_id: user.id },
+        data: { expired: true, expires_at: dateformat().toDate() },
+      });
+
+      // delete posts
+      await this.prisma.post.updateMany({
+        where: { author_id: user.id },
+        data: { deleted_at: dateformat().toDate() },
+      });
+
+      // delete trips
+      await this.prisma.trip.updateMany({
+        where: { author_id: user.id },
+        data: { deleted_at: dateformat().toDate() },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('user not blocked');
       throw exception;
     }
   }
