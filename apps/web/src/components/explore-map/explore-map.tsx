@@ -383,7 +383,7 @@ export const ExploreMap: React.FC<Props> = () => {
       <div
         className={cn(
           'relative w-full h-full  hidden sm:flex overflow-hidden',
-          sidebar ? 'max-w-[40%]' : 'max-w-[0px]',
+          sidebar ? 'basis-auto max-w-[540px]' : 'max-w-[0px]',
         )}
       >
         <div className="relative flex flex-col w-full h-full ">
@@ -472,9 +472,10 @@ export const ExploreMap: React.FC<Props> = () => {
       </div>
       <div
         className={cn(
-          'z-50 w-[60%] overflow-y-scroll h-screen absolute transform transition-transform duration-300 ease-in-out right-0 top-0 bottom-0 bg-white rounded-l-2xl drop-shadow-lg',
+          'z-50 w-full overflow-y-scroll h-screen absolute transform transition-transform duration-300 ease-in-out right-0 top-0 bottom-0 bg-white rounded-l-2xl drop-shadow-lg',
           drawer ? 'translate-x-0' : 'translate-x-full',
         )}
+        style={{ width: 'calc(100% - 540px) !important;' }}
       >
         <div className="flex flex-col">
           <div className="p-4 h-[60px] sticky top-0 w-full flex flex-row justify-start items-center">
@@ -516,7 +517,7 @@ export const ExploreMap: React.FC<Props> = () => {
       <div
         className={cn(
           'z-40 w-full relative overflow-hidden',
-          sidebar ? 'max-w-[60%] rounded-l-2xl' : 'max-w-[100%] rounded-l-none',
+          sidebar ? 'basis-full rounded-l-2xl' : 'max-w-[100%] rounded-l-none',
         )}
       >
         <button
