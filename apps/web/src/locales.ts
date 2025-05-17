@@ -35,5 +35,10 @@ export const LOCALES = {
         CANCELED: 'sponsorship canceled',
       },
     },
+    USERS: {
+      TOAST: {
+        BLOCKED: 'user blocked',
+      },
+    },
   },
 };

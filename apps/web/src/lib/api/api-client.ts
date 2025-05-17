@@ -181,6 +181,15 @@ export const apiClient = {
       API_ROUTER.USERS.GET_BY_USERNAME(username),
       config,
     ),
+  blockUser: async (
+    { query }: IApiClientQuery<{ username: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.USERS.BLOCK(query.username), {
+      method: API_METHODS.POST,
+      body: JSON.stringify({}),
+      ...config,
+    }),
   getUserPosts: async (config?: RequestConfig) =>
     api.request<IUserPostsQueryResponse>(API_ROUTER.USER.POSTS, config),
   getUserPostsByUsername: async (

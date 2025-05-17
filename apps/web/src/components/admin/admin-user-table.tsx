@@ -29,6 +29,7 @@ type TableData = {
   name: string;
   picture: string;
   posts: number;
+  blocked?: boolean;
   memberDate?: Date;
 };
 
@@ -47,38 +48,38 @@ export const AdminUserTable: React.FC<Props> = ({
   const toast = useToast();
 
   const [rowLoading, setRowLoading] = useState<boolean>(false);
-  const [sponsorshipId, setSponsorshipId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const results = data.length || 0;
 
-  const handleCancelModal = (sponsorshipId: string) => {
+  const handleBlockModal = (userId: string) => {
     modal.open<ActionModalProps>(MODALS.ACTION, {
       props: {
-        title: 'Cancel sponsorship',
-        message: 'Are you sure you want to cancel this sponsorship?',
+        title: 'Block user',
+        message: 'Are you sure you want to block this user?',
         submit: {
-          buttonText: 'Confirm',
-          onClick: () => handleCancelSubmit(sponsorshipId),
+          buttonText: 'Block',
+          onClick: () => handleBlockSubmit(userId),
         },
       },
     });
   };
 
-  const handleCancelSubmit = async (sponsorshipId: string) => {
+  const handleBlockSubmit = async (userId: string) => {
     try {
-      if (!sponsorshipId) return;
+      if (!userId) return;
 
       setRowLoading(true);
-      setSponsorshipId(sponsorshipId);
+      setUserId(userId);
 
-      // cancel the sponsorship
-      const { success, message } = await apiClient.cancelSponsorship({
-        query: { sponsorshipId },
+      // block the user
+      const { success, message } = await apiClient.blockUser({
+        query: { username: userId },
       });
 
       if (success) {
         toast({
           type: 'success',
-          message: LOCALES.APP.SPONSORSHIP.TOAST.CANCELED,
+          message: LOCALES.APP.USERS.TOAST.BLOCKED,
         });
       } else {
         toast({ type: 'error', message: message || LOCALES.APP.ERROR.UNKNOWN });
@@ -118,6 +119,7 @@ export const AdminUserTable: React.FC<Props> = ({
       cell: ({ row }) => {
         const username = row.original.username;
         const name = row.original.name;
+        const blocked = row.original.blocked || false;
         const picture = row.original.picture;
         return username ? (
           <Link
@@ -127,6 +129,7 @@ export const AdminUserTable: React.FC<Props> = ({
           >
             <UserAvatar className="w-7 h-7" src={picture} fallback={name} />
             <span className="underline font-medium">{username}</span>
+            {blocked && <Badge variant="destructive">Blocked</Badge>}
           </Link>
         ) : (
           <span>-</span>
@@ -179,9 +182,17 @@ export const AdminUserTable: React.FC<Props> = ({
       accessorKey: 'menu',
       header: () => '',
       cell: ({ row }) => {
-        const rowId = row.original.id;
-        const loading = rowLoading && rowId === sponsorshipId;
-        const actions = true;
+        const username = row.original.username;
+        const blocked = row.original.blocked || false;
+        const loading = rowLoading && username === userId;
+        const actions = [];
+
+        if (!blocked) {
+          actions.push({
+            label: 'Block',
+            onClick: () => handleBlockModal(username),
+          });
+        }
 
         return (
           <div className="w-full flex flex-row justify-end items-center">
@@ -190,22 +201,9 @@ export const AdminUserTable: React.FC<Props> = ({
                 <Spinner />
               </div>
             ) : (
-              actions && (
+              actions.length >= 1 && (
                 <div className="w-[50px] h-[30px] flex items-center justify-center">
-                  <ActionMenu
-                    actions={[
-                      {
-                        label: 'Edit',
-                        onClick: () => {},
-                      },
-                      {
-                        label: 'Block',
-                        onClick: () => {
-                          confirm('block?');
-                        },
-                      },
-                    ]}
-                  />
+                  <ActionMenu actions={actions} />
                 </div>
               )
             )}
@@ -216,11 +214,20 @@ export const AdminUserTable: React.FC<Props> = ({
   ];
 
   const rows: DataTableRow<TableData>[] = data.map(
-    ({ name, username, role, postsCount = 0, memberDate, picture }) => ({
+    ({
+      name,
+      username,
+      role,
+      postsCount = 0,
+      blocked,
+      memberDate,
+      picture,
+    }) => ({
       id: username,
       username,
       name,
       role,
+      blocked,
       posts: postsCount,
       memberDate,
       picture,

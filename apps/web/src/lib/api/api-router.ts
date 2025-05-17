@@ -50,6 +50,7 @@ export const API_ROUTER = {
     UNFOLLOW: (username: string) => `/users/${username}/unfollow`,
     SPONSORSHIP_TIERS: (username: string) =>
       `/users/${username}/sponsorship-tiers`,
+    BLOCK: (username: string) => `/users/${username}/block`,
   },
   SUBSCRIPTION_PLANS: {
     GET: '/plans',

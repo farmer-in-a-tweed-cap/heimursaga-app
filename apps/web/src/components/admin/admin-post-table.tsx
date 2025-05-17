@@ -72,7 +72,7 @@ export const AdminPostTable: React.FC<Props> = ({
       setRowLoading(true);
       setPostId(postId);
 
-      // cancel the sponsorship
+      // delete the post
       const { success, message } = await apiClient.deletePost({
         query: { postId },
       });

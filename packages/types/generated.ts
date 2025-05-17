@@ -82,6 +82,7 @@ export interface IUserDetail {
   picture: string;
   postsCount?: number;
   memberDate?: Date;
+  blocked?: boolean;
 }
 
 export interface IUserGetAllResponse {
