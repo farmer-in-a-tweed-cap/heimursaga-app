@@ -26,8 +26,8 @@ export class PostController {
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
-  async search(@Session() session: ISession) {
-    return await this.postService.search({ query: {}, session });
+  async getPosts(@Session() session: ISession) {
+    return await this.postService.getPosts({ query: {}, session });
   }
 
   @Public()

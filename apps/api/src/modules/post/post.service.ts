@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   IPostCreatePayload,
+  IPostGetAllResponse,
   IPostUpdatePayload,
   UserNotificationContext,
   UserRole,
@@ -32,19 +33,47 @@ export class PostService {
     private eventService: EventService,
   ) {}
 
-  async search({ session }: IQueryWithSession) {
+  async getPosts({ session }: IQueryWithSession): Promise<IPostGetAllResponse> {
     try {
-      const { userId } = session;
+      const { userId, userRole } = session;
 
-      const where = {
+      let where = {
         public_id: { not: null },
-        public: true,
-        deleted_at: null,
       } as Prisma.PostWhereInput;
 
-      const take = 20;
+      const take = 500;
 
-      // search posts
+      // filter based on role
+      switch (userRole) {
+        case UserRole.ADMIN:
+          where = {
+            ...where,
+          };
+          break;
+        case UserRole.CREATOR:
+          where = {
+            ...where,
+            public: true,
+            deleted_at: null,
+          };
+          break;
+        case UserRole.USER:
+          where = {
+            ...where,
+            public: true,
+            deleted_at: null,
+          };
+          break;
+        default:
+          where = {
+            ...where,
+            public: true,
+            deleted_at: null,
+          };
+          break;
+      }
+
+      // get posts
       const results = await this.prisma.post.count({ where });
       const data = await this.prisma.post
         .findMany({
@@ -53,6 +82,7 @@ export class PostService {
             public_id: true,
             title: true,
             content: true,
+            public: true,
             lat: true,
             lon: true,
             place: true,
@@ -95,6 +125,7 @@ export class PostService {
             place: post.place,
             date: post.date,
             title: post.title,
+            public: post.public,
             content: post.content.slice(0, 140),
             author: post.author
               ? {
@@ -114,12 +145,17 @@ export class PostService {
           })),
         );
 
-      return { results, data };
+      const response: IPostGetAllResponse = {
+        data,
+        results,
+      };
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('post not created');
+        : new ServiceNotFoundException('post not found');
       throw exception;
     }
   }
@@ -241,6 +277,12 @@ export class PostService {
         select: {
           public_id: true,
         },
+      });
+
+      // update the user
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { posts_count: { increment: 1 } },
       });
 
       return {

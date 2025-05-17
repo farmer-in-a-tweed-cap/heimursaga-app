@@ -7,6 +7,7 @@ import {
   ISponsorshipTierUpdatePayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserGetAllResponse,
   IUserMapGetResponse,
   IUserNotificationGetResponse,
   IUserPictureUploadPayload,
@@ -19,11 +20,10 @@ import {
   UserRole,
 } from '@repo/types';
 
-import { dateformat } from '@/lib/date-format';
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
-import { generator } from '@/lib/generator';
 import { toGeoJson } from '@/lib/geojson';
 import { getStaticMediaUrl } from '@/lib/upload';
+import { matchRoles } from '@/lib/utils';
 
 import {
   ServiceBadRequestException,
@@ -35,7 +35,6 @@ import {
   IPayloadWithSession,
   IQueryWithSession,
   ISessionQuery,
-  ISessionQueryWithPayload,
 } from '@/common/interfaces';
 import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
@@ -49,6 +48,64 @@ export class UserService {
     private prisma: PrismaService,
     private eventService: EventService,
   ) {}
+
+  async getUsers({
+    query,
+    session,
+  }: ISessionQuery): Promise<IUserGetAllResponse> {
+    try {
+      const { userId, userRole } = session;
+
+      // check access
+      const access = !!userId && matchRoles(userRole, [UserRole.ADMIN]);
+      if (!access) throw new ServiceForbiddenException();
+
+      const where = {} as Prisma.UserWhereInput;
+
+      const select = {
+        username: true,
+        role: true,
+        profile: {
+          select: {
+            name: true,
+            picture: true,
+          },
+        },
+        posts_count: true,
+        created_at: true,
+      } satisfies Prisma.UserSelect;
+
+      // get users
+      const results = await this.prisma.user.count({ where });
+      const data = await this.prisma.user.findMany({
+        where,
+        select,
+        orderBy: [{ id: 'desc' }],
+      });
+
+      const response: IUserGetAllResponse = {
+        data: data.map(
+          ({ username, role, profile, posts_count, created_at }) => ({
+            username,
+            role,
+            name: profile.name,
+            picture: getStaticMediaUrl(profile.picture),
+            postsCount: posts_count,
+            memberDate: created_at,
+          }),
+        ),
+        results,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('users not found');
+      throw exception;
+    }
+  }
 
   async getByUsername({
     username,

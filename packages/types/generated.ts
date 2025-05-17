@@ -75,6 +75,20 @@ export interface IPasswordUpdatePayload {
 }
 
 // user
+export interface IUserDetail {
+  username: string;
+  role: string;
+  name: string;
+  picture: string;
+  postsCount?: number;
+  memberDate?: Date;
+}
+
+export interface IUserGetAllResponse {
+  data: IUserDetail[];
+  results: number;
+}
+
 export interface IUserProfileDetail {
   username: string;
   name: string;
@@ -239,6 +253,11 @@ export interface IPostDetail {
     picture: string;
     creator?: boolean;
   };
+}
+
+export interface IPostGetAllResponse {
+  data: IPostDetail[];
+  results: number;
 }
 
 export interface IPostQueryResponse {

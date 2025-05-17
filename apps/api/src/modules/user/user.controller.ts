@@ -27,6 +27,15 @@ import { SessionUserService, UserService } from './user.service';
 export class UserController {
   constructor(private userService: UserService) {}
 
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getUsers(@Session() session: ISession) {
+    return await this.userService.getUsers({
+      query: {},
+      session,
+    });
+  }
+
   @Public()
   @Get(':username')
   @HttpCode(HttpStatus.OK)
