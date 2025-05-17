@@ -8,12 +8,12 @@ import { useSession } from '@/hooks';
 
 import { SponsorshipsTable } from './sponsorships-table';
 
-export const CreatorSponsorships = () => {
+export const UserSponsorships = () => {
   const session = useSession();
 
   const sponsorshipQuery = useQuery({
     queryKey: [QUERY_KEYS.SPONSORSHIPS],
-    queryFn: () => apiClient.getCreatorSponsorships().then(({ data }) => data),
+    queryFn: () => apiClient.getUserSponsorships().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,
   });
@@ -23,7 +23,7 @@ export const CreatorSponsorships = () => {
   return (
     <div className="flex flex-col">
       <SponsorshipsTable
-        context="creator"
+        context="user"
         data={sponsorships}
         refetch={() => sponsorshipQuery.refetch()}
         loading={sponsorshipQuery.isLoading}
