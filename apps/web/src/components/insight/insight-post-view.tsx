@@ -20,7 +20,7 @@ type PostInsightTableData = {
   createdAt?: Date;
 };
 
-export const JournalPostView = () => {
+export const InsightPostView = () => {
   const router = useRouter();
   const session = useSession();
 

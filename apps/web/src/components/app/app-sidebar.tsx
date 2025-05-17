@@ -8,6 +8,8 @@ import {
   BarChart2Icon,
   BellIcon,
   BookmarkIcon,
+  ChartBarIcon,
+  ChartLineIcon,
   CoinsIcon,
   HandCoinsIcon,
   HomeIcon,
@@ -35,134 +37,6 @@ type SidebarLink = {
   >;
 };
 
-const SIDEBAR_LINKS: {
-  GUEST: SidebarLink[];
-  USER: SidebarLink[];
-  CREATOR: SidebarLink[];
-} = {
-  GUEST: [
-    {
-      href: ROUTER.HOME,
-      base: ROUTER.HOME,
-      label: 'Home',
-      icon: HomeIcon,
-    },
-    // {
-    //   href: ROUTER.EXPLORE.HOME,
-    //   base: ROUTER.EXPLORE.HOME,
-    //   label: 'Explore',
-    //   icon: CompassIcon,
-    // },
-  ],
-  USER: [
-    {
-      href: ROUTER.HOME,
-      base: ROUTER.HOME,
-      label: 'Home',
-      icon: HomeIcon,
-    },
-    {
-      href: ROUTER.JOURNAL.HOME,
-      base: ROUTER.JOURNAL.HOME,
-      label: 'Journal',
-      icon: PenLineIcon,
-    },
-    // {
-    //   href: ROUTER.EXPLORE.HOME,
-    //   base: ROUTER.EXPLORE.HOME,
-    //   label: 'Explore',
-    //   icon: CompassIcon,
-    // },
-    {
-      href: ROUTER.BOOKMARKS.HOME,
-      base: ROUTER.BOOKMARKS.HOME,
-      label: 'Bookmarks',
-      icon: BookmarkIcon,
-    },
-    // {
-    //   href: ROUTER.SPONSORSHIP.ROOT,
-    //   base: ROUTER.SPONSORSHIP.ROOT,
-    //   label: 'Sponsorship',
-    //   icon: HandCoinsIcon,
-    // },
-    {
-      href: ROUTER.NOTIFICATIONS,
-      base: ROUTER.NOTIFICATIONS,
-      label: 'Notifications',
-      icon: BellIcon,
-    },
-    // {
-    //   href: ROUTER.PREMIUM,
-    //   base: ROUTER.PREMIUM,
-    //   label: 'Premium',
-    //   icon: StarIcon,
-    // },
-    // {
-    //   href: ROUTER.USER.SETTINGS.HOME,
-    //   base: ROUTER.USER.SETTINGS.HOME,
-    //   label: 'Settings',
-    //   icon: CogIcon,
-    // },
-  ],
-  CREATOR: [
-    // { href: ROUTER.HOME, base: ROUTER.HOME, label: 'Home', icon: HomeIcon },
-    {
-      href: ROUTER.HOME,
-      base: ROUTER.HOME,
-      label: 'Home',
-      icon: HomeIcon,
-    },
-    // {
-    //   href: ROUTER.EXPLORE.HOME,
-    //   base: ROUTER.EXPLORE.HOME,
-    //   label: 'Explore',
-    //   icon: CompassIcon,
-    // },
-    {
-      href: ROUTER.JOURNAL.HOME,
-      base: ROUTER.JOURNAL.HOME,
-      label: 'Journal',
-      icon: PenLineIcon,
-    },
-    {
-      href: ROUTER.TRIPS.HOME,
-      base: ROUTER.TRIPS.HOME,
-      label: 'Trips',
-      icon: PlaneTakeoffIcon,
-    },
-    {
-      href: ROUTER.SPONSORSHIP.ROOT,
-      base: ROUTER.SPONSORSHIP.ROOT,
-      label: 'Sponsorship',
-      icon: HandCoinsIcon,
-    },
-    {
-      href: ROUTER.PAYOUTS.HOME,
-      base: ROUTER.PAYOUTS.HOME,
-      label: 'Payouts',
-      icon: BanknoteIcon,
-    },
-    {
-      href: ROUTER.BOOKMARKS.HOME,
-      base: ROUTER.BOOKMARKS.HOME,
-      label: 'Bookmarks',
-      icon: BookmarkIcon,
-    },
-    {
-      href: ROUTER.NOTIFICATIONS,
-      base: ROUTER.NOTIFICATIONS,
-      label: 'Notifications',
-      icon: BellIcon,
-    },
-    // {
-    //   href: ROUTER.USER.SETTINGS.HOME,
-    //   base: ROUTER.USER.SETTINGS.ROOT,
-    //   label: 'Settings',
-    //   icon: CogIcon,
-    // },
-  ],
-};
-
 type Props = {
   collapsed?: boolean;
 };
@@ -171,19 +45,113 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
   const pathname = usePathname();
   const session = useSession();
 
+  const username = session?.username;
   const userRole = session?.role as UserRole;
 
-  let links: SidebarLink[];
+  const LINKS: {
+    guest: SidebarLink[];
+    user: SidebarLink[];
+    creator: SidebarLink[];
+    admin: SidebarLink[];
+  } = {
+    guest: [
+      {
+        href: ROUTER.HOME,
+        base: ROUTER.HOME,
+        label: 'Home',
+        icon: HomeIcon,
+      },
+    ],
+    user: [
+      {
+        href: ROUTER.HOME,
+        base: ROUTER.HOME,
+        label: 'Home',
+        icon: HomeIcon,
+      },
+      {
+        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        base: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        label: 'Journal',
+        icon: PenLineIcon,
+      },
+      {
+        href: ROUTER.BOOKMARKS.HOME,
+        base: ROUTER.BOOKMARKS.HOME,
+        label: 'Bookmarks',
+        icon: BookmarkIcon,
+      },
+      {
+        href: ROUTER.NOTIFICATIONS,
+        base: ROUTER.NOTIFICATIONS,
+        label: 'Notifications',
+        icon: BellIcon,
+      },
+    ],
+    creator: [
+      {
+        href: ROUTER.HOME,
+        base: ROUTER.HOME,
+        label: 'Home',
+        icon: HomeIcon,
+      },
+      {
+        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        base: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        label: 'Journal',
+        icon: PenLineIcon,
+      },
+      {
+        href: ROUTER.TRIPS.HOME,
+        base: ROUTER.TRIPS.HOME,
+        label: 'Trips',
+        icon: PlaneTakeoffIcon,
+      },
+      {
+        href: ROUTER.SPONSORSHIP.ROOT,
+        base: ROUTER.SPONSORSHIP.ROOT,
+        label: 'Sponsorship',
+        icon: HandCoinsIcon,
+      },
+      {
+        href: ROUTER.INSIGHTS.HOME,
+        base: ROUTER.INSIGHTS.HOME,
+        label: 'Insights',
+        icon: ChartLineIcon,
+      },
+      {
+        href: ROUTER.PAYOUTS.HOME,
+        base: ROUTER.PAYOUTS.HOME,
+        label: 'Payouts',
+        icon: BanknoteIcon,
+      },
+      {
+        href: ROUTER.BOOKMARKS.HOME,
+        base: ROUTER.BOOKMARKS.HOME,
+        label: 'Bookmarks',
+        icon: BookmarkIcon,
+      },
+      {
+        href: ROUTER.NOTIFICATIONS,
+        base: ROUTER.NOTIFICATIONS,
+        label: 'Notifications',
+        icon: BellIcon,
+      },
+    ],
+    admin: [],
+  };
+
+  let links: SidebarLink[] = [];
 
   switch (userRole) {
     case UserRole.CREATOR:
-      links = SIDEBAR_LINKS.CREATOR;
+      links = LINKS.creator;
       break;
     case UserRole.USER:
-      links = SIDEBAR_LINKS.USER;
+      links = LINKS.user;
       break;
     default:
-      links = SIDEBAR_LINKS.GUEST;
+      links = LINKS.guest;
       break;
   }
 

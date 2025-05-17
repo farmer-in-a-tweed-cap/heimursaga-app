@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { ROUTER } from '@/router';
 
-import { JournalPostView } from './journal-post-view';
+import { InsightPostView } from './insight-post-view';
 
 const TABS = {
   POSTS: 'posts',
@@ -16,7 +16,7 @@ type Props = {
   section: string;
 };
 
-export const JournalView: React.FC<Props> = ({ section }) => {
+export const InsightView: React.FC<Props> = ({ section }) => {
   const router = useRouter();
 
   const [tab, setTab] = useState<string>(section || TABS.POSTS);
@@ -27,7 +27,7 @@ export const JournalView: React.FC<Props> = ({ section }) => {
 
   const handleTabChange = (tab: string) => {
     setTab(tab);
-    router.push([ROUTER.JOURNAL.HOME, tab].join('/'), {
+    router.push([ROUTER.INSIGHTS.HOME, tab].join('/'), {
       scroll: false,
     });
   };
@@ -54,7 +54,7 @@ export const JournalView: React.FC<Props> = ({ section }) => {
         />
       </div>
       <div className="mt-2 flex flex-col w-full py-4">
-        {tab === TABS.POSTS && <JournalPostView />}
+        {tab === TABS.POSTS && <InsightPostView />}
       </div>
     </div>
   );

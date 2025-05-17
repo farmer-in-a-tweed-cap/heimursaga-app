@@ -16,7 +16,7 @@ export * from './list';
 export * from './subscription';
 export * from './sponsorship';
 export * from './auth';
-export * from './journal';
+export * from './insight';
 export * from './trip';
 export * from './menu';
 export * from './payout';
