@@ -48,6 +48,7 @@ export const AdminUserTable: React.FC<Props> = ({
 
   const [rowLoading, setRowLoading] = useState<boolean>(false);
   const [sponsorshipId, setSponsorshipId] = useState<string | null>(null);
+  const results = data.length || 0;
 
   const handleCancelModal = (sponsorshipId: string) => {
     modal.open<ActionModalProps>(MODALS.ACTION, {
@@ -233,7 +234,12 @@ export const AdminUserTable: React.FC<Props> = ({
 
   return (
     <div className="flex flex-col">
-      <DataTable columns={columns} rows={rows} loading={loading} />
+      <DataTable
+        columns={columns}
+        rows={rows}
+        loading={loading}
+        results={results}
+      />
     </div>
   );
 };

@@ -33,6 +33,7 @@ export const UserProfileCard: React.FC<Props> = ({
             className="w-[50px] h-[50px]"
             src={picture}
             loading={loading}
+            fallback={name}
           />
           <Link href={username ? ROUTER.MEMBERS.MEMBER(username) : '#'}>
             <div className="mt-1 flex flex-col items-center gap-0">

@@ -43,44 +43,44 @@ type Props = {
 export const AdminPostTable: React.FC<Props> = ({
   data = [],
   loading = false,
-
   refetch,
 }) => {
   const modal = useModal();
   const toast = useToast();
 
   const [rowLoading, setRowLoading] = useState<boolean>(false);
-  const [sponsorshipId, setSponsorshipId] = useState<string | null>(null);
+  const [postId, setPostId] = useState<string | null>(null);
+  const results = data.length || 0;
 
-  const handleCancelModal = (sponsorshipId: string) => {
+  const handleDeleteModal = (postId: string) => {
     modal.open<ActionModalProps>(MODALS.ACTION, {
       props: {
-        title: 'Cancel sponsorship',
-        message: 'Are you sure you want to cancel this sponsorship?',
+        title: 'Delete post',
+        message: 'Are you sure you want to delete this post?',
         submit: {
-          buttonText: 'Confirm',
-          onClick: () => handleCancelSubmit(sponsorshipId),
+          buttonText: 'Delete',
+          onClick: () => handleDeleteSubmit(postId),
         },
       },
     });
   };
 
-  const handleCancelSubmit = async (sponsorshipId: string) => {
+  const handleDeleteSubmit = async (postId: string) => {
     try {
-      if (!sponsorshipId) return;
+      if (!postId) return;
 
       setRowLoading(true);
-      setSponsorshipId(sponsorshipId);
+      setPostId(postId);
 
       // cancel the sponsorship
-      const { success, message } = await apiClient.cancelSponsorship({
-        query: { sponsorshipId },
+      const { success, message } = await apiClient.deletePost({
+        query: { postId },
       });
 
       if (success) {
         toast({
           type: 'success',
-          message: LOCALES.APP.SPONSORSHIP.TOAST.CANCELED,
+          message: LOCALES.APP.POSTS.TOAST.DELETED,
         });
       } else {
         toast({ type: 'error', message: message || LOCALES.APP.ERROR.UNKNOWN });
@@ -171,7 +171,7 @@ export const AdminPostTable: React.FC<Props> = ({
       header: () => '',
       cell: ({ row }) => {
         const rowId = row.original.id;
-        const loading = rowLoading && rowId === sponsorshipId;
+        const loading = rowLoading && rowId === postId;
         const actions = true;
 
         return (
@@ -186,14 +186,8 @@ export const AdminPostTable: React.FC<Props> = ({
                   <ActionMenu
                     actions={[
                       {
-                        label: 'Edit',
-                        onClick: () => {},
-                      },
-                      {
                         label: 'Delete',
-                        onClick: () => {
-                          confirm('delete?');
-                        },
+                        onClick: () => handleDeleteModal(rowId),
                       },
                     ]}
                   />
@@ -222,8 +216,13 @@ export const AdminPostTable: React.FC<Props> = ({
   }, []);
 
   return (
-    <div className="flex flex-col">
-      <DataTable columns={columns} rows={rows} loading={loading} />
+    <div className="flex flex-col gap-0">
+      <DataTable
+        columns={columns}
+        rows={rows}
+        loading={loading}
+        results={results}
+      />
     </div>
   );
 };

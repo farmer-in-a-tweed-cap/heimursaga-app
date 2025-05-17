@@ -162,6 +162,11 @@ export const apiClient = {
       body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,
     }),
+  deletePost: async ({ query }: IApiClientQuery<{ postId: string }>) =>
+    api.request<void>(API_ROUTER.POSTS.DELETE(query.postId), {
+      method: API_METHODS.DELETE,
+      body: JSON.stringify({}),
+    }),
   // users
   getUsers: async (config?: RequestConfig) =>
     api.request<IUserGetAllResponse>(API_ROUTER.USERS.GET, {

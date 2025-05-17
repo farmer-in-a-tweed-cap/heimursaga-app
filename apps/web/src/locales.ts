@@ -25,6 +25,11 @@ export const LOCALES = {
         BILLING: 'Billing',
       },
     },
+    POSTS: {
+      TOAST: {
+        DELETED: 'post deleted',
+      },
+    },
     SPONSORSHIP: {
       TOAST: {
         CANCELED: 'sponsorship canceled',

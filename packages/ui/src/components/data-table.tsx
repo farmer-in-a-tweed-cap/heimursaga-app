@@ -3,7 +3,6 @@
 import {
   ColumnDef,
   ColumnFiltersState,
-  RowData,
   SortingState,
   VisibilityState,
   flexRender,
@@ -54,6 +53,7 @@ export type DataTableColumn<T = any> = ColumnDef<T>;
 type Props = {
   columns: DataTableColumn<any>[];
   rows: any[];
+  results?: number;
   loading?: boolean;
   hidePagination?: boolean;
 };
@@ -62,6 +62,7 @@ export const DataTable: React.FC<Props> = ({
   columns = [],
   rows = [],
   loading = false,
+  results = 0,
   hidePagination = false,
 }) => {
   const [sorting, setSorting] = React.useState<SortingState>([]);
@@ -134,7 +135,10 @@ export const DataTable: React.FC<Props> = ({
         <LoadingSpinner />
       ) : (
         <>
-          <div className="rounded-lg border border-solid border-accent">
+          <div>
+            <span className="font-medium text-sm">Results {results}</span>
+          </div>
+          <div className="mt-2 rounded-lg border border-solid border-accent">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
