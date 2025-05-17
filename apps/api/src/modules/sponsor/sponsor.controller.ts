@@ -50,6 +50,18 @@ export class SponsorshipController {
       session,
     });
   }
+
+  @Post(':id/cancel')
+  @HttpCode(HttpStatus.OK)
+  async cancelSponsorship(
+    @Session() session: ISession,
+    @Param() params: ParamPublicIdDto,
+  ) {
+    return await this.sponsorService.cancelSponsorship({
+      query: { sponsorshipId: params.id },
+      session,
+    });
+  }
 }
 
 @ApiTags('sponsorship-tiers')

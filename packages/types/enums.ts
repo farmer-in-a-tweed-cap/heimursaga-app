@@ -45,6 +45,13 @@ export enum PayoutMethodPlatform {
   PAYPAL = 'paypal',
 }
 
+export enum SponsorshipStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  CONFIRMED = 'confirmed',
+  CANCELED = 'canceled',
+}
+
 export enum SponsorshipType {
   ONE_TIME_PAYMENT = 'one_time_payment',
   SUBSCRIPTION = 'subscription',

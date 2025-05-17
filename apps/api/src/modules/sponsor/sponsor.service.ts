@@ -10,6 +10,7 @@ import {
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
   PayoutMethodPlatform,
+  SponsorshipStatus,
   SponsorshipType,
   UserRole,
 } from '@repo/types';
@@ -112,9 +113,9 @@ export class SponsorService {
           .count({
             where: {
               type: SponsorshipType.SUBSCRIPTION,
+              status: SponsorshipStatus.ACTIVE,
               user_id: user.id,
               creator_id: creator.id,
-              expiry: { not: null },
             },
           })
           .then((count) => count >= 1);
@@ -146,6 +147,7 @@ export class SponsorService {
         async (tx) => {
           let amount = 0;
           let stripePaymentIntentId: string | undefined;
+          let stripeSubscriptionId: string | undefined;
           let clientSecret = '';
 
           // get a stripe customer
@@ -225,6 +227,8 @@ export class SponsorService {
                 },
               });
 
+            stripeSubscriptionId = subscription.id;
+
             this.logger.log(`stripe subscription created`);
 
             //retrieve an invoice
@@ -263,6 +267,7 @@ export class SponsorService {
               user_id: user.id,
               creator_id: creator.id,
               stripe_payment_intent_id: stripePaymentIntentId,
+              stripe_subscription_id: stripeSubscriptionId,
             },
             select: {
               id: true,
@@ -333,18 +338,35 @@ export class SponsorService {
             currency: true,
             sponsorship_type: true,
             sponsorship_tier_id: true,
+            stripe_subscription_id: true,
           },
         });
 
         const expiry = dateformat().add(1, 'month').toDate();
+
+        let status: SponsorshipStatus;
+
+        switch (checkout.sponsorship_type) {
+          case SponsorshipType.ONE_TIME_PAYMENT:
+            status = SponsorshipStatus.CONFIRMED;
+            break;
+          case SponsorshipType.SUBSCRIPTION:
+            status = SponsorshipStatus.ACTIVE;
+            break;
+          default:
+            status = SponsorshipStatus.PENDING;
+            break;
+        }
 
         // create a sponsorship
         const sponsorship = await tx.sponsorship.create({
           data: {
             public_id: generator.publicId(),
             type: checkout.sponsorship_type,
+            status,
             amount: checkout.total,
             currency: checkout.currency,
+            stripe_subscription_id: checkout.stripe_subscription_id,
             expiry:
               checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
                 ? expiry
@@ -736,6 +758,7 @@ export class SponsorService {
         where,
         select: {
           public_id: true,
+          status: true,
           type: true,
           amount: true,
           currency: true,
@@ -756,10 +779,19 @@ export class SponsorService {
       const response: ISponsorshipGetAllResponse = {
         results,
         data: data.map(
-          ({ public_id: id, amount, currency, creator, type, created_at }) => ({
+          ({
+            public_id: id,
+            amount,
+            currency,
+            status,
+            creator,
+            type,
+            created_at,
+          }) => ({
             id,
             type: type as SponsorshipType,
             amount: integerToDecimal(amount),
+            status,
             currency,
             creator: creator
               ? {
@@ -807,6 +839,7 @@ export class SponsorService {
           public_id: true,
           type: true,
           amount: true,
+          status: true,
           currency: true,
           user: {
             select: {
@@ -825,9 +858,18 @@ export class SponsorService {
       const response: ISponsorshipGetAllResponse = {
         results,
         data: data.map(
-          ({ public_id: id, amount, currency, user, type, created_at }) => ({
+          ({
+            public_id: id,
+            amount,
+            currency,
+            status,
+            user,
+            type,
+            created_at,
+          }) => ({
             id,
             type: type as SponsorshipType,
+            status,
             amount: integerToDecimal(amount),
             currency,
             user: user
@@ -848,6 +890,69 @@ export class SponsorService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('sponsorships not found');
+      throw exception;
+    }
+  }
+
+  async cancelSponsorship({
+    session,
+    query,
+  }: ISessionQuery<{ sponsorshipId: string }>): Promise<void> {
+    try {
+      const { userId, userRole } = session;
+      const { sponsorshipId } = query;
+
+      if (!sponsorshipId)
+        throw new ServiceNotFoundException('sponsorship not found');
+
+      // check access
+      const access =
+        !!userId && matchRoles(userRole, [UserRole.USER, UserRole.CREATOR]);
+      if (!access) throw new ServiceForbiddenException();
+
+      // get a sponsorship
+      const sponsorship = await this.prisma.sponsorship
+        .findFirst({
+          where: {
+            public_id: sponsorshipId,
+            type: SponsorshipType.SUBSCRIPTION,
+            status: SponsorshipStatus.ACTIVE,
+            stripe_subscription_id: { not: null },
+            deleted_at: null,
+          },
+          select: { id: true, stripe_subscription_id: true },
+        })
+        .catch(() => {
+          throw new ServiceForbiddenException(`sponsorship can't be canceled`);
+        });
+
+      if (!sponsorship.stripe_subscription_id)
+        throw new ServiceForbiddenException(`sponsorship can't be canceled`);
+
+      // retrieve a stripe subscription
+      const stripeSubscription =
+        await this.stripeService.stripe.subscriptions.retrieve(
+          sponsorship.stripe_subscription_id,
+        );
+      if (stripeSubscription.status !== 'active')
+        if (!sponsorship.stripe_subscription_id)
+          throw new ServiceForbiddenException(`sponsorship can't be canceled`);
+
+      // cancel the subscription on stripe
+      await this.stripeService.stripe.subscriptions.cancel(
+        stripeSubscription.id,
+      );
+
+      // update the sponsorship
+      await this.prisma.sponsorship.update({
+        where: { id: sponsorship.id },
+        data: { status: SponsorshipStatus.CANCELED },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceBadRequestException('sponsorship not canceled');
       throw exception;
     }
   }

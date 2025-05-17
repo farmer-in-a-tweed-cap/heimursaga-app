@@ -513,6 +513,7 @@ export interface ISponsorshipDetail {
   id: string;
   type: SponsorshipType;
   amount: number;
+  status: string;
   currency: string;
   user?: {
     username: string;
