@@ -48,6 +48,10 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
   const username = session?.username;
   const userRole = session?.role as UserRole;
 
+  const showCreateButton =
+    session.logged &&
+    (userRole === UserRole.USER || userRole === UserRole.CREATOR);
+
   const LINKS: {
     guest: SidebarLink[];
     user: SidebarLink[];
@@ -138,12 +142,22 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         icon: BellIcon,
       },
     ],
-    admin: [],
+    admin: [
+      {
+        href: ROUTER.DASHBOARD.HOME,
+        base: ROUTER.DASHBOARD.HOME,
+        label: 'Dashboard',
+        icon: HomeIcon,
+      },
+    ],
   };
 
   let links: SidebarLink[] = [];
 
   switch (userRole) {
+    case UserRole.ADMIN:
+      links = LINKS.admin;
+      break;
     case UserRole.CREATOR:
       links = LINKS.creator;
       break;
@@ -216,15 +230,17 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                 collapsed ? 'items-center justify-center' : 'px-3',
               )}
             >
-              <CreatePostButton
-                variant="secondary"
-                collapsed={collapsed}
-                classNames={{
-                  button: 'min-w-auto bg-white hover:bg-accent',
-                }}
-              >
-                Create
-              </CreatePostButton>
+              {showCreateButton && (
+                <CreatePostButton
+                  variant="secondary"
+                  collapsed={collapsed}
+                  classNames={{
+                    button: 'min-w-auto bg-white hover:bg-accent',
+                  }}
+                >
+                  Create
+                </CreatePostButton>
+              )}
               <UserNavbar collapsed={collapsed} />
             </div>
           ) : (

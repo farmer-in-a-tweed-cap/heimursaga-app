@@ -1,5 +1,4 @@
 import { Skeleton } from '@repo/ui/components';
-import { VerifiedIcon } from 'lucide-react';
 
 import { UserAvatar } from './user-avatar';
 import { VerificationBadge } from './verification-badge';

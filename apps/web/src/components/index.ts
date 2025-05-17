@@ -20,3 +20,4 @@ export * from './insight';
 export * from './trip';
 export * from './menu';
 export * from './payout';
+export * from './admin';

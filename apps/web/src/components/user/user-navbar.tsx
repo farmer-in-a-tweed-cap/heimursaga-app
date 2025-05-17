@@ -42,6 +42,8 @@ type Props = {
 export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
   const session = useSession();
 
+  const userRole = session?.role as UserRole;
+
   const handleLogout = async () => {
     try {
       // log out
@@ -60,7 +62,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
   const { username, picture = '', name = '' } = session || {};
   const roleLabel = getRoleLabel(session?.role || UserRole.USER);
 
-  const links = {
+  const LINKS = {
     user: [
       {
         href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
@@ -91,6 +93,16 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
         label: 'Log in',
       },
     ],
+    admin: [
+      {
+        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        label: 'Profile',
+      },
+      {
+        href: ROUTER.USER.SETTINGS.HOME,
+        label: 'Settings',
+      },
+    ],
     info: [
       {
         href: ROUTER.LEGAL.PRIVACY,
@@ -105,6 +117,27 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
     ],
   };
 
+  let links: { href: string; label: string }[] = [];
+  let legalLinks: { href: string; label: string; openNewTab: boolean }[] = [];
+
+  switch (userRole) {
+    case UserRole.ADMIN:
+      links = LINKS.admin;
+      legalLinks = [];
+      break;
+    case UserRole.CREATOR:
+      links = LINKS.creator;
+      legalLinks = LINKS.info;
+      break;
+    case UserRole.USER:
+      links = LINKS.user;
+      legalLinks = LINKS.info;
+      break;
+    default:
+      links = LINKS.guest;
+      legalLinks = LINKS.info;
+      break;
+  }
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -133,12 +166,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="bg-background min-w-[240px] ml-4 mb-2 p-0 py-2">
-        {(session.logged
-          ? session.role === UserRole.CREATOR
-            ? links.creator
-            : links.user
-          : links.guest
-        ).map(({ href, label }, key) => (
+        {links.map(({ href, label }, key) => (
           <DropdownMenuItem key={key} asChild>
             <Link
               href={href}
@@ -149,7 +177,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        {links.info.map(({ href, label, openNewTab = false }, key) => (
+        {legalLinks.map(({ href, label, openNewTab = false }, key) => (
           <DropdownMenuItem key={key} asChild>
             <Link
               href={href}

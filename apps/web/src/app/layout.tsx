@@ -137,6 +137,25 @@ export const AppMapLayout = ({
   );
 };
 
+export const DashboardLayout = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  return (
+    <SessionLayout>
+      <div className="w-full min-h-screen bg-background text-black flex flex-row">
+        <AppSidebar collapsed={true} />
+        <div className="relative w-full flex flex-col justify-start">
+          <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+            {children}
+          </div>
+        </div>
+      </div>
+    </SessionLayout>
+  );
+};
+
 export const CheckoutLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <SessionLayout>

@@ -56,6 +56,10 @@ module.exports = {
         source: '/insights',
         destination: `/insights/posts`,
       },
+      {
+        source: '/dashboard',
+        destination: `/dashboard/posts`,
+      },
     ];
   },
 };
