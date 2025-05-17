@@ -1,24 +1,32 @@
 'use client';
 
 import { ActionMenu } from '../menu';
-import { SponsorshipType } from '@repo/types';
+import { ActionModalProps, MODALS } from '../modal';
+import { SponsorshipStatus, SponsorshipType } from '@repo/types';
 import {
   Badge,
   DataTable,
   DataTableColumn,
   DataTableRow,
+  LoadingSpinner,
+  Spinner,
 } from '@repo/ui/components';
+import { useToast } from '@repo/ui/hooks';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 import { QUERY_KEYS, apiClient } from '@/lib/api';
 
-import { useSession } from '@/hooks';
+import { useModal, useSession } from '@/hooks';
 import { dateformat } from '@/lib';
+import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
 type SponsorshipTableData = {
+  id: string;
   username: string;
+  status: string;
   type: SponsorshipType;
   amount: number;
   date?: Date;
@@ -26,6 +34,11 @@ type SponsorshipTableData = {
 
 export const UserSettingsSponsorshipsView = () => {
   const session = useSession();
+  const modal = useModal();
+  const toast = useToast();
+
+  const [sponsorshipId, setSponsorshipId] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(false);
 
   const sponsorshipQuery = useQuery({
     queryKey: [QUERY_KEYS.USER.SPONSORSHIPS],
@@ -33,6 +46,48 @@ export const UserSettingsSponsorshipsView = () => {
     enabled: !!session?.username,
     retry: 0,
   });
+
+  const handleCancelModal = (sponsorshipId: string) => {
+    modal.open<ActionModalProps>(MODALS.ACTION, {
+      props: {
+        title: 'Cancel sponsorship',
+        message: 'Are you sure you want to cancel this sponsorship?',
+        submit: {
+          buttonText: 'Confirm',
+          onClick: () => handleCancelSubmit(sponsorshipId),
+        },
+      },
+    });
+  };
+
+  const handleCancelSubmit = async (sponsorshipId: string) => {
+    try {
+      if (!sponsorshipId) return;
+
+      setLoading(true);
+      setSponsorshipId(sponsorshipId);
+
+      // cancel the sponsorship
+      const { success, message } = await apiClient.cancelSponsorship({
+        query: { sponsorshipId },
+      });
+
+      if (success) {
+        toast({
+          type: 'success',
+          message: LOCALES.APP.SPONSORSHIP.TOAST.CANCELED,
+        });
+      } else {
+        toast({ type: 'error', message: message || LOCALES.APP.ERROR.UNKNOWN });
+      }
+
+      await sponsorshipQuery.refetch();
+
+      setLoading(false);
+    } catch (e) {
+      setLoading(false);
+    }
+  };
 
   const sponsorships = sponsorshipQuery.data?.data || [];
 
@@ -53,6 +108,32 @@ export const UserSettingsSponsorshipsView = () => {
       },
     },
     {
+      accessorKey: 'amount',
+      header: () => 'Amount',
+      cell: ({ row }) => <span>${row.getValue('amount')}</span>,
+    },
+    {
+      accessorKey: 'status',
+      header: () => 'Status',
+      cell: ({ row }) => {
+        const status = row.original?.status;
+        return (
+          <Badge
+            variant={
+              status === SponsorshipStatus.ACTIVE ||
+              status === SponsorshipStatus.CONFIRMED
+                ? 'success'
+                : status === SponsorshipStatus.CANCELED
+                  ? 'destructive'
+                  : 'outline'
+            }
+          >
+            {status}
+          </Badge>
+        );
+      },
+    },
+    {
       accessorKey: 'type',
       header: () => 'Type',
       cell: ({ row }) => {
@@ -64,11 +145,7 @@ export const UserSettingsSponsorshipsView = () => {
         return <Badge variant="outline">{label}</Badge>;
       },
     },
-    {
-      accessorKey: 'amount',
-      header: () => 'Amount',
-      cell: ({ row }) => <span>${row.getValue('amount')}</span>,
-    },
+
     {
       accessorKey: 'date',
       header: () => 'Date',
@@ -79,25 +156,32 @@ export const UserSettingsSponsorshipsView = () => {
       accessorKey: 'menu',
       header: () => '',
       cell: ({ row }) => {
-        const subscription =
-          row.original?.type === SponsorshipType.SUBSCRIPTION || false;
+        const rowId = row.original.id;
+        const rowLoading = loading && rowId === sponsorshipId;
+        const status = row.original?.status;
+        const actions =
+          row.original?.type === SponsorshipType.SUBSCRIPTION &&
+          status === SponsorshipStatus.ACTIVE;
+
         return (
-          <div className="w-full flex flex-row justify-end">
-            {subscription && (
-              <ActionMenu
-                actions={
-                  subscription
-                    ? [
-                        {
-                          label: 'Cancel',
-                          onClick: () => {
-                            confirm('do you want to cancel this sponsorship?');
-                          },
-                        },
-                      ]
-                    : []
-                }
-              />
+          <div className="w-full flex flex-row justify-end items-center">
+            {rowLoading ? (
+              <div className="w-[50px] h-[30px] flex items-center justify-center">
+                <Spinner />
+              </div>
+            ) : (
+              actions && (
+                <div className="w-[50px] h-[30px] flex items-center justify-center">
+                  <ActionMenu
+                    actions={[
+                      {
+                        label: 'Cancel',
+                        onClick: () => handleCancelModal(rowId),
+                      },
+                    ]}
+                  />
+                </div>
+              )
             )}
           </div>
         );
@@ -106,14 +190,19 @@ export const UserSettingsSponsorshipsView = () => {
   ];
 
   const rows: DataTableRow<SponsorshipTableData>[] = sponsorships.map(
-    ({ id, creator, amount, type, createdAt }, key) => ({
+    ({ id, creator, amount, type, createdAt, status }, key) => ({
       id: id ? id : `${key}`,
       type,
+      status,
       username: creator?.username || '',
       amount,
       date: createdAt,
     }),
   );
+
+  useEffect(() => {
+    modal.preload([MODALS.ACTION]);
+  }, []);
 
   return (
     <div className="flex flex-col">

@@ -212,6 +212,9 @@ export const FormComponent: React.FC<Props> = ({
   );
 
   useEffect(() => {
+    // cache modals
+    modal.preload([MODALS.INFO]);
+
     setLoading((loading) => ({ ...loading, paymentMethods: false }));
   }, []);
 

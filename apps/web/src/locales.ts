@@ -1,5 +1,9 @@
 export const LOCALES = {
   APP: {
+    ERROR: {
+      UNKNOWN: 'unknown error',
+      BAD_REQUEST: 'bad request',
+    },
     SEARCH: {
       POSTS_FOUND: 'posts found',
     },
@@ -19,6 +23,11 @@ export const LOCALES = {
       TABS: {
         WITHDRAW: 'Withdraw',
         BILLING: 'Billing',
+      },
+    },
+    SPONSORSHIP: {
+      TOAST: {
+        CANCELED: 'sponsorship canceled',
       },
     },
   },

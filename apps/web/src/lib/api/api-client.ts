@@ -505,6 +505,15 @@ export const apiClient = {
       method: API_METHODS.GET,
       ...config,
     }),
+  cancelSponsorship: async (
+    { query }: IApiClientQuery<{ sponsorshipId: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.SPONSORSHIPS.CANCEL(query.sponsorshipId), {
+      method: API_METHODS.POST,
+      body: JSON.stringify({}),
+      ...config,
+    }),
   // insights
   getPostInsights: async (config?: RequestConfig) =>
     api.request<IPostInsightsGetResponse>(API_ROUTER.USER.INSIGHTS.POST, {
