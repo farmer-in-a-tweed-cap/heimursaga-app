@@ -515,56 +515,56 @@ export const ExploreMap: React.FC<Props> = () => {
           </div>
         </div>
       </div>
+
       <div
         className={cn(
-          'z-50 w-full overflow-y-scroll h-screen absolute transform transition-transform duration-300 ease-in-out right-0 top-0 bottom-0 bg-white rounded-l-2xl drop-shadow-lg',
-          drawer ? 'translate-x-0' : 'translate-x-full',
+          'z-40 w-full relative overflow-hidden shadow-xl',
+          sidebar ? 'max-w-full rounded-l-2xl' : 'max-w-full rounded-l-none',
         )}
-        style={{ width: 'calc(100% - 540px) !important;' }}
       >
-        <div className="flex flex-col">
-          <div className="p-4 h-[60px] sticky top-0 w-full flex flex-row justify-start items-center">
-            <CloseButton className="bg-white" onClick={handlePostClose} />
-          </div>
-          <div className="-mt-[60px] w-full h-[280px] bg-gray-500 rounded-l-2xl"></div>
-          {postLoading ? (
-            <LoadingSpinner />
-          ) : post ? (
-            <div className="w-full flex flex-col p-8">
-              {post.author && (
-                <Link
-                  href={
-                    post?.author?.username
-                      ? ROUTER.MEMBERS.MEMBER(post?.author?.username)
-                      : '#'
-                  }
-                >
-                  <UserBar
-                    name={post?.author?.name}
-                    picture={post.author?.picture}
-                    creator={post.author?.creator}
-                    text={dateformat(post?.date).format('MMM DD')}
-                  />
-                </Link>
-              )}
-              <div className="mt-8">
-                <h2 className="text-3xl font-medium">{post.title}</h2>
-              </div>
-              <div className="py-6">
-                <NormalizedText text={post.content} />
-              </div>
-            </div>
-          ) : (
-            <>post not found</>
+        <div
+          className={cn(
+            'z-50 w-full overflow-y-scroll h-screen absolute transform transition-transform duration-300 ease-in-out right-0 top-0 bottom-0 bg-white rounded-l-2xl',
+            drawer ? 'translate-x-0' : 'translate-x-full',
           )}
+        >
+          <div className="flex flex-col ">
+            <div className="p-4 h-[60px] sticky top-0 w-full flex flex-row justify-start items-center">
+              <CloseButton className="bg-white" onClick={handlePostClose} />
+            </div>
+            <div className="-mt-[60px] w-full h-[280px] bg-gray-500 rounded-l-2xl"></div>
+            {postLoading ? (
+              <LoadingSpinner />
+            ) : post ? (
+              <div className="w-full flex flex-col p-8">
+                {post.author && (
+                  <Link
+                    href={
+                      post?.author?.username
+                        ? ROUTER.MEMBERS.MEMBER(post?.author?.username)
+                        : '#'
+                    }
+                  >
+                    <UserBar
+                      name={post?.author?.name}
+                      picture={post.author?.picture}
+                      creator={post.author?.creator}
+                      text={dateformat(post?.date).format('MMM DD')}
+                    />
+                  </Link>
+                )}
+                <div className="mt-8">
+                  <h2 className="text-3xl font-medium">{post.title}</h2>
+                </div>
+                <div className="py-6">
+                  <NormalizedText text={post.content} />
+                </div>
+              </div>
+            ) : (
+              <>post not found</>
+            )}
+          </div>
         </div>
-      </div>
-      <div
-        className={cn(
-          'z-40 w-full relative overflow-hidden',
-          sidebar ? 'basis-full rounded-l-2xl' : 'max-w-[100%] rounded-l-none',
-        )}
-      >
         <button
           className="z-20 absolute hidden sm:flex top-4 left-4 drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
           onClick={handleSidebarToggle}
