@@ -71,7 +71,7 @@ export const ExploreMap: React.FC<Props> = () => {
   const searchParams = useSearchParams();
   const mapbox = useMapbox();
 
-  const params: Params = {
+  const [params, setParams] = useState<Params>({
     context: searchParams.get(PARAMS.CONTEXT),
     lat: searchParams.get(PARAMS.LAT),
     lon: searchParams.get(PARAMS.LON),
@@ -79,7 +79,7 @@ export const ExploreMap: React.FC<Props> = () => {
     postId: searchParams.get(PARAMS.POST_ID),
     search: searchParams.get(PARAMS.SEARCH),
     user: searchParams.get(PARAMS.USER),
-  };
+  });
 
   const [_map, setMap] = useState<{
     lat: number;
@@ -124,14 +124,24 @@ export const ExploreMap: React.FC<Props> = () => {
   const [postId, setPostId] = useState<string | null>(params.postId || null);
 
   const mapQuery = useQuery({
-    queryKey: [
-      QUERY_KEYS.MAP.QUERY,
-      context,
-      map?.bounds.ne.lat,
-      map?.bounds.ne.lon,
-      map?.bounds.sw.lat,
-      map?.bounds.sw.lon,
-    ],
+    queryKey: userId
+      ? [
+          QUERY_KEYS.MAP.QUERY,
+          context,
+          userId,
+          map?.bounds.ne.lat,
+          map?.bounds.ne.lon,
+          map?.bounds.sw.lat,
+          map?.bounds.sw.lon,
+        ]
+      : [
+          QUERY_KEYS.MAP.QUERY,
+          context,
+          map?.bounds.ne.lat,
+          map?.bounds.ne.lon,
+          map?.bounds.sw.lat,
+          map?.bounds.sw.lon,
+        ],
     queryFn: async () =>
       apiClient
         .mapQuery({
@@ -173,7 +183,6 @@ export const ExploreMap: React.FC<Props> = () => {
   const postLoading = postQuery.isLoading;
 
   const user = userQuery.data;
-  const userLoading = userQuery.isLoading;
 
   const mapQueryLoading = mapQuery.isPending || mapQuery.isLoading;
   const mapQueryResults = mapQuery.data?.results || 0;
@@ -182,46 +191,38 @@ export const ExploreMap: React.FC<Props> = () => {
   const isPostSelected = (id: string): boolean =>
     postId ? postId === id : false;
 
-  const updateSearchParams = (params: Partial<Params>) => {
-    const { lat, lon, alt, postId, search, context, user } = params;
+  const updateParams = (payload: Partial<Params>) => {
+    const { lat, lon, alt, postId, search, context, user } = payload;
 
     const s = new URLSearchParams(searchParams.toString());
 
-    if (lat) {
-      s.set(PARAMS.LAT, `${lat}`);
-    }
+    // update params state
+    setParams((state) => ({
+      ...state,
+      ...payload,
+    }));
 
-    if (lon) {
-      s.set(PARAMS.LON, `${lon}`);
-    }
+    const paramss = [
+      { key: PARAMS.LAT, value: lat },
+      { key: PARAMS.LON, value: lon },
+      { key: PARAMS.ALT, value: alt },
+      { key: PARAMS.POST_ID, value: postId },
+      { key: PARAMS.SEARCH, value: search },
+      { key: PARAMS.CONTEXT, value: context },
+      { key: PARAMS.USER, value: user },
+    ];
 
-    if (alt) {
-      s.set(PARAMS.ALT, `${alt}`);
-    }
+    paramss.forEach(({ key, value }) => {
+      if (value) {
+        s.set(key, `${value}`);
+      } else {
+        if (value === null) {
+          s.delete(key);
+        }
+      }
+    });
 
-    if (postId) {
-      s.set(PARAMS.POST_ID, `${postId}`);
-    }
-
-    if (search) {
-      s.set(PARAMS.SEARCH, `${search}`);
-    }
-
-    if (context) {
-      s.set(PARAMS.CONTEXT, `${context}`);
-    }
-
-    if (user) {
-      s.set(PARAMS.USER, `${user}`);
-    }
-
-    router.push(`${pathname}?${s.toString()}`, { scroll: false });
-  };
-
-  // @todo: convert into an util function
-  const deleteSearchParams = (fields: string[]) => {
-    const s = new URLSearchParams(searchParams.toString());
-    fields.forEach((field) => s.delete(field));
+    // update the url
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
   };
 
@@ -261,12 +262,18 @@ export const ExploreMap: React.FC<Props> = () => {
     }
 
     // update search params
-    updateSearchParams({ lat: `${lat}`, lon: `${lon}`, alt: `${alt}` });
+    updateParams({
+      lat: `${lat}`,
+      lon: `${lon}`,
+      alt: `${alt}`,
+      user: userId,
+      context,
+    });
   };
 
   const handleFilterChange = (value: string) => {
     setContext(value as MapQueryContext);
-    updateSearchParams({ context: value });
+    updateParams({ context: value });
     mapQuery.refetch();
   };
 
@@ -287,13 +294,13 @@ export const ExploreMap: React.FC<Props> = () => {
   const handlePostOpen = (postId: string) => {
     setDrawer(true);
     setPostId(postId);
-    updateSearchParams({ postId });
+    updateParams({ postId });
   };
 
   const handlePostClose = () => {
     setDrawer(false);
     setPostId(null);
-    deleteSearchParams([PARAMS.POST_ID]);
+    updateParams({ postId: null });
   };
 
   const handleSearchChange = async (query: string) => {
@@ -302,7 +309,33 @@ export const ExploreMap: React.FC<Props> = () => {
 
   const handleSearchSubmit = (query: string) => {
     setSearch((search) => ({ ...search, query }));
-    updateSearchParams({ search: query });
+    updateParams({ search: query });
+  };
+
+  const handleUserClick = (username: string) => {
+    if (!username) return;
+
+    setUserId(username);
+    setContext(MapQueryContext.USER);
+
+    updateParams({
+      context: MapQueryContext.USER,
+      user: username,
+    });
+
+    mapQuery.refetch();
+  };
+
+  const handleUserBack = () => {
+    setUserId(null);
+    setContext(MapQueryContext.GLOBAL);
+
+    updateParams({
+      context: MapQueryContext.GLOBAL,
+      user: null,
+    });
+
+    mapQuery.refetch();
   };
 
   const fetchSearch = async (query: string) => {
@@ -351,14 +384,14 @@ export const ExploreMap: React.FC<Props> = () => {
 
     // set default coordinates
     if (!coordinateSet) {
-      updateSearchParams({
+      updateParams({
         lat: `${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT}`,
         lon: `${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON}`,
         alt: `${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT}`,
       });
     } else {
       if (!params.alt) {
-        updateSearchParams({
+        updateParams({
           alt: `${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT}`,
         });
       }
@@ -366,12 +399,12 @@ export const ExploreMap: React.FC<Props> = () => {
 
     // set default context
     if (params.user) {
-      updateSearchParams({
+      updateParams({
         context: MapQueryContext.USER,
       });
     } else {
       if (!params.context) {
-        updateSearchParams({
+        updateParams({
           context: MapQueryContext.GLOBAL,
         });
       }
@@ -441,6 +474,10 @@ export const ExploreMap: React.FC<Props> = () => {
                   name={user?.name}
                   picture={user?.picture}
                   username={user?.username}
+                  loading={userQuery.isLoading}
+                  backButton={{
+                    click: handleUserBack,
+                  }}
                 />
               </div>
             </div>
@@ -460,6 +497,14 @@ export const ExploreMap: React.FC<Props> = () => {
                     classNames={{
                       card: isPostSelected(post.id) ? '!border-black' : '',
                     }}
+                    userbar={
+                      post?.author
+                        ? {
+                            click: () =>
+                              handleUserClick(post?.author?.username),
+                          }
+                        : undefined
+                    }
                     onClick={() => handlePostOpen(post.id)}
                   />
                 ) : (

@@ -45,6 +45,10 @@ export type PostCardProps = {
   liked?: boolean;
   likesCount?: number;
   extended?: boolean;
+  userbar?: {
+    href?: string;
+    click?: () => void;
+  };
   onClick?: () => void;
 };
 
@@ -71,6 +75,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     bookmark: true,
     edit: false,
   },
+  userbar,
   extended = false,
   onClick,
 }) => {
@@ -93,18 +98,15 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
       <CardContent>
         <div className="flex flex-row justify-between items-center">
-          <Link
-            href={
-              author?.username ? ROUTER.MEMBERS.MEMBER(author?.username) : '#'
-            }
-            className="z-20"
-          >
-            <div className="flex flex-row justify-start items-center gap-3">
+          <div className="flex flex-row justify-start items-center gap-3 z-20">
+            {userbar?.href ? (
               <Link
                 href={
-                  author?.username
-                    ? ROUTER.MEMBERS.MEMBER(author.username)
-                    : '#'
+                  userbar?.href
+                    ? userbar?.href
+                    : author?.username
+                      ? ROUTER.MEMBERS.MEMBER(author.username)
+                      : '#'
                 }
               >
                 <UserBar
@@ -114,8 +116,17 @@ export const PostCard: React.FC<PostCardProps> = ({
                   text={dateformat(date).format('MMM DD')}
                 />
               </Link>
-            </div>
-          </Link>
+            ) : (
+              <div className="cursor-pointer" onClick={userbar?.click}>
+                <UserBar
+                  name={author?.name}
+                  picture={author?.picture}
+                  creator={author?.creator}
+                  text={dateformat(date).format('MMM DD')}
+                />
+              </div>
+            )}
+          </div>
           <div className="z-20 absolute top-3 right-3 flex flex-row items-center gap-2">
             {me ? (
               <>
