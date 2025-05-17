@@ -48,6 +48,7 @@ export class PostService {
         case UserRole.ADMIN:
           where = {
             ...where,
+            deleted_at: null,
           };
           break;
         case UserRole.CREATOR:
@@ -163,12 +164,42 @@ export class PostService {
   async getById({ query, session }: IQueryWithSession<{ publicId: string }>) {
     try {
       const { publicId } = query;
-      const { userId } = session;
+      const { userId, userRole } = session;
+
+      if (!publicId) throw new ServiceNotFoundException('post not found');
+
+      let where = {
+        public_id: publicId,
+      } as Prisma.PostWhereInput;
+
+      // filter based on user role
+      switch (userRole) {
+        case UserRole.ADMIN:
+          where = { ...where, deleted_at: null };
+          break;
+        case UserRole.CREATOR:
+          where = {
+            ...where,
+            deleted_at: null,
+            OR: [{ author_id: userId }, { public: true }],
+          };
+          break;
+        case UserRole.USER:
+          where = {
+            ...where,
+            deleted_at: null,
+            OR: [{ author_id: userId }, { public: true }],
+          };
+          break;
+        default:
+          where = { ...where, deleted_at: null, public: true };
+          break;
+      }
 
       // get the post
       const data = await this.prisma.post
         .findFirstOrThrow({
-          where: { public_id: publicId },
+          where,
           select: {
             public_id: true,
             title: true,
@@ -342,26 +373,48 @@ export class PostService {
   }: IQueryWithSession<{ publicId: string }>): Promise<void> {
     try {
       const { publicId } = query;
-      const { userId } = session;
+      const { userId, userRole } = session;
 
-      // check access
       if (!userId) throw new ServiceForbiddenException();
-
       if (!publicId) throw new ServiceNotFoundException('post not found');
 
-      // access check
-      const access = await this.prisma.post
-        .findFirstOrThrow({
-          where: { public_id: publicId, author_id: userId },
-        })
-        .then(() => true)
-        .catch(() => false);
-      if (!access)
-        throw new ServiceForbiddenException('post can not be deleted');
+      let where = {} as Prisma.PostWhereInput;
+
+      // filter based on user role
+      switch (userRole) {
+        case UserRole.ADMIN:
+          where = { ...where, public_id: publicId, deleted_at: null };
+          break;
+        case UserRole.CREATOR:
+          where = {
+            ...where,
+            public_id: publicId,
+            author_id: userId,
+            deleted_at: null,
+          };
+          break;
+        case UserRole.USER:
+          where = {
+            ...where,
+            public_id: publicId,
+            author_id: userId,
+            deleted_at: null,
+          };
+          break;
+        default:
+          throw new ServiceForbiddenException();
+      }
+
+      // check access
+      const post = await this.prisma.post
+        .findFirstOrThrow({ where, select: { id: true } })
+        .catch(() => {
+          throw new ServiceForbiddenException();
+        });
 
       // update the post
-      await this.prisma.post.updateMany({
-        where: { public_id: publicId, author_id: userId, deleted_at: null },
+      await this.prisma.post.update({
+        where: { id: post.id },
         data: { deleted_at: dateformat().toDate() },
       });
     } catch (e) {

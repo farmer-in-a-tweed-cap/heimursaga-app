@@ -70,7 +70,7 @@ export class PostController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async delete(@Param() param: ParamPublicIdDto, @Session() session: ISession) {
+  async delete(@Session() session: ISession, @Param() param: ParamPublicIdDto) {
     return await this.postService.delete({
       query: { publicId: param.id },
       session,
