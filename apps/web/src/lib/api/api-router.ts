@@ -40,6 +40,7 @@ export const API_ROUTER = {
     DOWNGRADE: '/plan/downgrade',
   },
   USERS: {
+    GET: '/users',
     GET_BY_USERNAME: (username: string) => `/users/${username}`,
     GET_POSTS: (username: string) => `/users/${username}/posts`,
     MAP: (username: string) => `/users/${username}/map`,

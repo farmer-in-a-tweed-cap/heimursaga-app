@@ -2,15 +2,13 @@
 
 import { TabNavbar } from '../nav';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
-import { AdminDashboardPostView } from './admin-dashboard-posts-view';
-
-// import { CreatorSponsorships } from './creator-sponsorships';
-// import { SponsorshipTierView } from './sponsorship-tier-view';
+import { AdminDashboardPostsView } from './admin-dashboard-posts-view';
+import { AdminDashboardUsersView } from './admin-dashboard-users-view';
 
 const TABS = {
   POSTS: 'posts',
@@ -53,8 +51,8 @@ export const AdminDashboardView: React.FC<Props> = ({ section }) => {
         />
       </div>
       <div className="mt-2 flex flex-col w-full py-4">
-        {tab === TABS.POSTS && <AdminDashboardPostView />}
-        {/* {tab === TABS.SPONSORS && <CreatorSponsorships />} */}
+        {tab === TABS.POSTS && <AdminDashboardPostsView />}
+        {tab === TABS.USERS && <AdminDashboardUsersView />}
       </div>
     </div>
   );

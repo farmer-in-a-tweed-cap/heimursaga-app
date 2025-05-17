@@ -134,8 +134,8 @@ export const getPostsQuery = createQuery<{}, IPostQueryResponse>(
 
 export const queryPostMapQuery = createQuery<void, IPostQueryMapResponse>(
   [QUERY_KEYS.GET_POSTS],
-  (query) =>
-    apiClient.getPosts(query).then(({ success, message, data }) => {
+  () =>
+    apiClient.getPosts().then(({ success, message, data }) => {
       if (!success) {
         throw new Error(message);
       }

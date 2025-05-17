@@ -8,7 +8,7 @@ import { useSession } from '@/hooks';
 
 import { AdminPostTable } from './admin-post-table';
 
-export const AdminDashboardPostView = () => {
+export const AdminDashboardPostsView = () => {
   const session = useSession();
 
   const postQuery = useQuery({

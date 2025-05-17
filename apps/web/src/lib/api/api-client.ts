@@ -43,6 +43,7 @@ import {
   ITripUpdatePayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserGetAllResponse,
   IUserMapGetResponse,
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
@@ -130,6 +131,7 @@ export const apiClient = {
     api.request<void>(API_ROUTER.VALIDATE_TOKEN(token), {
       cookie: config ? config.cookie : undefined,
     }),
+  // posts
   getPosts: async (config?: RequestConfig) =>
     api.request<IPostQueryResponse>(API_ROUTER.POSTS.GET, {
       method: API_METHODS.GET,
@@ -159,6 +161,12 @@ export const apiClient = {
       method: API_METHODS.PUT,
       body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,
+    }),
+  // users
+  getUsers: async (config?: RequestConfig) =>
+    api.request<IUserGetAllResponse>(API_ROUTER.USERS.GET, {
+      method: API_METHODS.GET,
+      ...config,
     }),
   getUserByUsername: async (
     { username }: { username: string },

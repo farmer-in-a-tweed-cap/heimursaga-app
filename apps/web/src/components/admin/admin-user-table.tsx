@@ -2,12 +2,8 @@
 
 import { ActionMenu } from '../menu';
 import { ActionModalProps, MODALS } from '../modal';
-import {
-  IPostDetail,
-  ISponsorshipDetail,
-  SponsorshipStatus,
-  SponsorshipType,
-} from '@repo/types';
+import { UserAvatar } from '../user';
+import { IUserDetail } from '@repo/types';
 import {
   Badge,
   DataTable,
@@ -28,22 +24,23 @@ import { ROUTER } from '@/router';
 
 type TableData = {
   id: string;
-  title: string;
-  privacy: string;
-  creator?: string;
-  date: Date;
+  username: string;
+  role: string;
+  name: string;
+  picture: string;
+  posts: number;
+  memberDate?: Date;
 };
 
 type Props = {
-  data: IPostDetail[];
+  data: IUserDetail[];
   refetch: () => void;
   loading?: boolean;
 };
 
-export const AdminPostTable: React.FC<Props> = ({
+export const AdminUserTable: React.FC<Props> = ({
   data = [],
   loading = false,
-
   refetch,
 }) => {
   const modal = useModal();
@@ -95,36 +92,40 @@ export const AdminPostTable: React.FC<Props> = ({
       setRowLoading(false);
     }
   };
+
   const columns: DataTableColumn<TableData>[] = [
+    // {
+    //   accessorKey: 'title',
+    //   header: () => 'Title',
+    //   cell: ({ row }) => {
+    //     const postId = row.original.id;
+    //     const title = row.original.title;
+    //     return (
+    //       <Link
+    //         href={postId ? ROUTER.POSTS.EDIT(postId) : '#'}
+    //         target="_blank"
+    //         className="underline font-medium"
+    //       >
+    //         {title}
+    //       </Link>
+    //     );
+    //   },
+    // },
     {
-      accessorKey: 'title',
-      header: () => 'Title',
+      accessorKey: 'user',
+      header: () => 'User',
       cell: ({ row }) => {
-        const postId = row.original.id;
-        const title = row.original.title;
-        return (
-          <Link
-            href={postId ? ROUTER.POSTS.EDIT(postId) : '#'}
-            target="_blank"
-            className="underline font-medium"
-          >
-            {title}
-          </Link>
-        );
-      },
-    },
-    {
-      accessorKey: 'creator',
-      header: () => 'Author',
-      cell: ({ row }) => {
-        const username = row.original.creator;
+        const username = row.original.username;
+        const name = row.original.name;
+        const picture = row.original.picture;
         return username ? (
           <Link
             href={ROUTER.MEMBERS.MEMBER(username)}
             target="_blank"
-            className="underline font-medium"
+            className="flex flex-row items-center justify-start gap-2"
           >
-            {username}
+            <UserAvatar className="w-7 h-7" src={picture} fallback={name} />
+            <span className="underline font-medium">{username}</span>
           </Link>
         ) : (
           <span>-</span>
@@ -132,12 +133,17 @@ export const AdminPostTable: React.FC<Props> = ({
       },
     },
     {
-      accessorKey: 'privacy',
-      header: () => 'Privacy',
+      accessorKey: 'role',
+      header: () => 'Role',
       cell: ({ row }) => {
-        const privacy = row.original.privacy;
-        return <Badge variant="outline">{privacy}</Badge>;
+        const role = row.original.role;
+        return <Badge variant="outline">{role}</Badge>;
       },
+    },
+    {
+      accessorKey: 'posts',
+      header: () => 'Posts',
+      cell: ({ row }) => row.getValue('posts'),
     },
     // {
     //   accessorKey: 'status',
@@ -162,9 +168,11 @@ export const AdminPostTable: React.FC<Props> = ({
     // },
     {
       accessorKey: 'date',
-      header: () => 'Date',
-      cell: ({ row }) =>
-        dateformat(row.getValue('date')).format('MMM DD, YYYY'),
+      header: () => 'Member date',
+      cell: ({ row }) => {
+        const date = row.original.memberDate;
+        return date ? dateformat(date).format('MMM DD, YYYY') : '-';
+      },
     },
     {
       accessorKey: 'menu',
@@ -190,9 +198,9 @@ export const AdminPostTable: React.FC<Props> = ({
                         onClick: () => {},
                       },
                       {
-                        label: 'Delete',
+                        label: 'Block',
                         onClick: () => {
-                          confirm('delete?');
+                          confirm('block?');
                         },
                       },
                     ]}
@@ -207,12 +215,14 @@ export const AdminPostTable: React.FC<Props> = ({
   ];
 
   const rows: DataTableRow<TableData>[] = data.map(
-    ({ id, title, author, date, ...post }, key) => ({
-      id: id ? id : `${key}`,
-      title,
-      creator: author?.username,
-      privacy: post.public ? 'Public' : 'Private',
-      date: date || new Date(),
+    ({ name, username, role, postsCount = 0, memberDate, picture }) => ({
+      id: username,
+      username,
+      name,
+      role,
+      posts: postsCount,
+      memberDate,
+      picture,
     }),
   );
 
