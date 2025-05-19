@@ -3,6 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
+  DatePicker,
   Form,
   FormControl,
   FormField,
@@ -13,12 +14,12 @@ import {
   Switch,
   Textarea,
 } from '@repo/ui/components';
-import { useMutation } from '@tanstack/react-query';
+import { useToast } from '@repo/ui/hooks';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { postUpdateMutation } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 import {
   MODALS,
@@ -28,7 +29,8 @@ import {
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { useModal } from '@/hooks';
-import { zodMessage } from '@/lib';
+import { dateformat, zodMessage } from '@/lib';
+import { LOCALES } from '@/locales';
 
 const schema = z.object({
   title: z
@@ -39,8 +41,15 @@ const schema = z.object({
   content: z
     .string()
     .nonempty(zodMessage.required('content'))
-    .min(2, zodMessage.string.min('content', 25))
-    .max(3000, zodMessage.string.max('content', 3000)),
+    .min(0, zodMessage.string.min('content', 0))
+    .max(1000, zodMessage.string.max('content', 1000)),
+  place: z
+    .string()
+    .nonempty(zodMessage.required('place'))
+    .min(0, zodMessage.string.min('place', 0))
+    .max(50, zodMessage.string.max('place', 50))
+    .optional(),
+  date: z.date().optional(),
 });
 
 type Props = {
@@ -51,26 +60,40 @@ type Props = {
     lat?: number;
     lon?: number;
     public?: boolean;
+    sponsored?: boolean;
+    date?: Date;
+    place?: string;
   };
 };
 
 export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
   const modal = useModal();
+  const toast = useToast();
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      title: defaultValues?.title,
-      content: defaultValues?.content,
-    },
+    defaultValues: defaultValues
+      ? {
+          title: defaultValues?.title,
+          content: defaultValues?.content,
+          place: defaultValues?.place,
+          date: defaultValues?.date ? new Date(defaultValues?.date) : undefined,
+        }
+      : {},
   });
 
-  const [visibility, setVisibility] = useState<{
-    loading: boolean;
-    public: boolean;
-  }>({ public: defaultValues?.public || false, loading: false });
+  const [loading, setLoading] = useState<{ post: boolean; privacy: boolean }>({
+    post: false,
+    privacy: false,
+  });
 
-  const [loading, setLoading] = useState<boolean>(false);
+  const [privacy, setPrivacy] = useState<{
+    public: boolean;
+    sponsored: boolean;
+  }>({
+    public: defaultValues?.public || false,
+    sponsored: defaultValues?.sponsored || false,
+  });
 
   const [location, setLocation] = useState<{
     lat: number;
@@ -87,22 +110,6 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
     marker: {
       lat: defaultValues?.lat || APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
       lon: defaultValues?.lon || APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
-    },
-  });
-
-  const mutation = useMutation({
-    mutationFn: postUpdateMutation.mutationFn,
-    onSuccess: (response) => {
-      setLoading(false);
-      setVisibility((state) => ({ ...state, loading: false }));
-    },
-    onError: (e) => {
-      setLoading(false);
-      setVisibility((state) => ({
-        ...state,
-        loading: false,
-        public: !state.public,
-      }));
     },
   });
 
@@ -128,31 +135,73 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
     });
   };
 
-  const handleVisibilityUpdate = (checked: boolean) => {
-    setVisibility((state) => ({ ...state, loading: true, public: checked }));
+  const handlePrivacyChange = async (payload: {
+    sponsored?: boolean;
+    public?: boolean;
+  }) => {
+    try {
+      if (!postId) return;
 
-    mutation.mutate({
-      query: { id: postId },
-      payload: { public: checked },
-    });
+      setLoading((loading) => ({ ...loading, privacy: true }));
+
+      setPrivacy((privacy) => ({
+        ...privacy,
+        public:
+          typeof payload?.public === 'undefined'
+            ? privacy.public
+            : payload.public,
+        sponsored:
+          typeof payload?.sponsored === 'undefined'
+            ? privacy.sponsored
+            : payload.sponsored,
+      }));
+
+      // update the post
+      await apiClient.updatePost({
+        query: { id: postId },
+        payload: {
+          public: payload.public,
+          sponsored: payload.sponsored,
+        },
+      });
+
+      setLoading((loading) => ({ ...loading, privacy: false }));
+    } catch (e) {
+      setLoading((loading) => ({ ...loading, privacy: false }));
+    }
   };
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      if (!postId) return;
+      try {
+        if (!postId) return;
 
-      setLoading(true);
+        setLoading((loading) => ({ ...loading, post: true }));
 
-      const { lat, lon } = location;
+        const { lat, lon } = location;
 
-      mutation.mutate({
-        query: { id: postId },
-        payload: {
-          ...values,
-          lat,
-          lon,
-        },
-      });
+        // update the post
+        const { success } = await apiClient.updatePost({
+          query: { id: postId },
+          payload: {
+            ...values,
+            lat,
+            lon,
+          },
+        });
+
+        if (success) {
+          setLoading((loading) => ({ ...loading, post: false }));
+        } else {
+          toast({
+            type: 'error',
+            message: LOCALES.APP.POSTS.TOAST.NOT_UPDATED,
+          });
+          setLoading((loading) => ({ ...loading, post: false }));
+        }
+      } catch (e) {
+        setLoading((loading) => ({ ...loading, post: false }));
+      }
     },
   );
 
@@ -194,7 +243,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
                       <FormItem>
                         <FormLabel>Title</FormLabel>
                         <FormControl>
-                          <Input disabled={loading} required {...field} />
+                          <Input disabled={loading.post} required {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -211,7 +260,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
                         <FormControl>
                           <Textarea
                             className="min-h-[180px]"
-                            disabled={loading}
+                            disabled={loading.post}
                             required
                             {...field}
                           />
@@ -221,22 +270,77 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
                     )}
                   />
                 </div>
-                <FormControl>
-                  <FormItem>
-                    <FormLabel>Public</FormLabel>
-                    <Switch
-                      checked={visibility.public}
-                      aria-readonly
-                      disabled={visibility.loading}
-                      onCheckedChange={handleVisibilityUpdate}
-                    />
-                  </FormItem>
-                </FormControl>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <FormField
+                    control={form.control}
+                    name="date"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Date</FormLabel>
+                        <FormControl>
+                          <DatePicker
+                            format={(date) =>
+                              dateformat(date).format('MMM DD, YYYY')
+                            }
+                            date={form.watch('date')}
+                            onChange={(date) => form.setValue('date', date)}
+                            disabled={loading.post}
+                            inputProps={{
+                              name: field.name,
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="place"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Place</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading.post} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="flex flex-row justify-start items-center gap-14">
+                  <FormControl>
+                    <FormItem>
+                      <FormLabel>Public</FormLabel>
+                      <Switch
+                        checked={privacy.public}
+                        aria-readonly
+                        disabled={loading.privacy}
+                        onCheckedChange={(checked) =>
+                          handlePrivacyChange({ public: checked })
+                        }
+                      />
+                    </FormItem>
+                  </FormControl>
+                  <FormControl>
+                    <FormItem>
+                      <FormLabel>Sponsored</FormLabel>
+                      <Switch
+                        checked={privacy.sponsored}
+                        aria-readonly
+                        disabled={loading.privacy}
+                        onCheckedChange={(checked) =>
+                          handlePrivacyChange({ sponsored: checked })
+                        }
+                      />
+                    </FormItem>
+                  </FormControl>
+                </div>
                 <div className="mt-4">
                   <Button
                     type="submit"
                     className="min-w-[140px]"
-                    loading={loading}
+                    loading={loading.post}
                   >
                     Save
                   </Button>

@@ -31,14 +31,6 @@ export default async function Page({ params }: PageProps) {
     { cookie },
   );
 
-  const {
-    title,
-    content,
-    lat = 0,
-    lon = 0,
-    public: isPublic,
-  } = postQuery.data || {};
-
   return (
     <AppLayout>
       {postQuery.success ? (
@@ -49,11 +41,7 @@ export default async function Page({ params }: PageProps) {
               <PostEditForm
                 postId={postId}
                 defaultValues={{
-                  title,
-                  content,
-                  lat,
-                  lon,
-                  public: isPublic,
+                  ...postQuery.data,
                 }}
               />
             </CardContent>

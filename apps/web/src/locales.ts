@@ -28,6 +28,7 @@ export const LOCALES = {
     POSTS: {
       TOAST: {
         DELETED: 'post deleted',
+        NOT_UPDATED: 'post not updated',
       },
     },
     SPONSORSHIP: {

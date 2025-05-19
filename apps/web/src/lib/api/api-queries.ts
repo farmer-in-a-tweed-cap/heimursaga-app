@@ -308,19 +308,6 @@ export const getUserProfileSettingsQuery = createQuery<
   }),
 );
 
-export const updateUserProfileSettingsMutation = createMutation<
-  IUserSettingsProfileUpdatePayload,
-  void
->((payload) =>
-  apiClient
-    .updateUserProfileSettings(payload)
-    .then(({ success, message, data }) => {
-      if (!success) {
-        throw new Error(message);
-      }
-    }),
-);
-
 export const updateUserPictureMutation = createMutation<
   IApiClientQueryWithPayload<{}, IUserPictureUploadClientPayload>,
   void
