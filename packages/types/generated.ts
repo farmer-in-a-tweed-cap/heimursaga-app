@@ -576,17 +576,16 @@ export interface IPostInsightsGetResponse {
 export interface ITripDetail {
   id: string;
   title: string;
+  startDate: Date;
+  endDate: Date;
   description?: string;
   waypoints: IWaypointDetail[];
+  waypointsCount?: number;
 }
 
 export interface ITripGetAllResponse {
   results: number;
-  data: {
-    id: string;
-    title: string;
-    waypointsCount: number;
-  }[];
+  data: ITripDetail[];
 }
 
 export interface ITripGetByIdResponse extends ITripDetail {}
