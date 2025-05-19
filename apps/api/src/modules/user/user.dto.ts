@@ -1,12 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   ISponsorshipTierUpdatePayload,
-  IUserSettingsProfileUpdateQuery,
+  IUserSettingsProfileUpdatePayload,
 } from '@repo/types';
-import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class UserSettingsProfileUpdateDto
-  implements IUserSettingsProfileUpdateQuery
+  implements IUserSettingsProfileUpdatePayload
 {
   @ApiProperty({ required: false })
   @IsString()
@@ -17,4 +17,14 @@ export class UserSettingsProfileUpdateDto
   @IsString()
   @IsOptional()
   bio: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  from: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  livesIn: string;
 }

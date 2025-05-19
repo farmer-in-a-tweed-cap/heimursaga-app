@@ -78,14 +78,16 @@ model UserSession {
 }
 
 model UserProfile {
-  id         Int       @id @default(autoincrement())
-  name       String?   @db.VarChar(50)
-  picture    String?   @db.VarChar(200)
-  bio        String?   @db.VarChar(200)
-  user       User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  user_id    Int       @unique
-  created_at DateTime? @default(now())
-  updated_at DateTime? @updatedAt
+  id             Int       @id @default(autoincrement())
+  name           String?   @db.VarChar(50)
+  picture        String?   @db.VarChar(200)
+  bio            String?   @db.VarChar(200)
+  location_from  String?   @db.VarChar(200)
+  location_lives String?   @db.VarChar(200)
+  user           User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id        Int       @unique
+  created_at     DateTime? @default(now())
+  updated_at     DateTime? @updatedAt
 
   @@map("user_profiles")
 }

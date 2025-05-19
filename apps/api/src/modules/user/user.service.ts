@@ -13,7 +13,8 @@ import {
   IUserPictureUploadPayload,
   IUserPostsQueryResponse,
   IUserProfileDetail,
-  IUserSettingsProfileResponse,
+  IUserSettingsProfileGetResponse,
+  IUserSettingsProfileUpdatePayload,
   IUserSettingsUpdateQuery,
   MediaUploadContext,
   UserNotificationContext,
@@ -36,6 +37,7 @@ import {
   IPayloadWithSession,
   IQueryWithSession,
   ISessionQuery,
+  ISessionQueryWithPayload,
 } from '@/common/interfaces';
 import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
@@ -156,6 +158,8 @@ export class UserService {
               name: true,
               picture: true,
               bio: true,
+              location_from: true,
+              location_lives: true,
             },
           },
           followers: userId
@@ -179,6 +183,8 @@ export class UserService {
         followed: userId ? user.followers.length > 0 : false,
         you: userId ? userId === user.id : false,
         creator: user.role === UserRole.CREATOR,
+        locationFrom: user.profile?.location_from,
+        locationLives: user.profile?.location_lives,
       };
 
       return response;
@@ -896,19 +902,25 @@ export class SessionUserService {
   }
 
   async getSettings({
-    userId,
-    context,
-  }: {
-    userId: number;
+    query,
+    session,
+  }: ISessionQuery<{
     context: 'profile' | 'billing';
-  }): Promise<IUserSettingsProfileResponse> {
+  }>): Promise<IUserSettingsProfileGetResponse> {
     try {
-      if (!userId) throw new ServiceForbiddenException();
+      const { context } = query;
+      const { userId } = session;
+
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      let response = {} as IUserSettingsProfileGetResponse;
 
       // fetch settings based on context
       switch (context) {
         case 'profile':
-          return this.prisma.user
+          response = await this.prisma.user
             .findFirstOrThrow({
               where: { id: userId },
               select: {
@@ -919,27 +931,32 @@ export class SessionUserService {
                     name: true,
                     bio: true,
                     picture: true,
+                    location_from: true,
+                    location_lives: true,
                   },
                 },
               },
             })
-            .then(
-              ({ email, username, profile }) =>
-                ({
-                  email,
-                  username,
-                  picture: profile?.picture
-                    ? getStaticMediaUrl(profile?.picture)
-                    : '',
-                  name: profile?.name,
-                  bio: profile?.bio,
-                }) as IUserSettingsProfileResponse,
-            );
+            .then(({ email, username, profile }) => {
+              return {
+                email,
+                username,
+                picture: profile?.picture
+                  ? getStaticMediaUrl(profile?.picture)
+                  : '',
+                name: profile?.name,
+                bio: profile?.bio,
+                locationFrom: profile?.location_from,
+                locationLives: profile?.location_lives,
+              } as IUserSettingsProfileGetResponse;
+            });
         case 'billing':
           break;
         default:
           throw new ServiceBadRequestException('settings not found');
       }
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -950,29 +967,30 @@ export class SessionUserService {
   }
 
   async updateSettings({
+    query,
     payload,
     session,
-  }: IPayloadWithSession<IUserSettingsUpdateQuery>): Promise<void> {
+  }: ISessionQueryWithPayload<
+    { context: 'profile' | 'billing' },
+    IUserSettingsProfileUpdatePayload
+  >): Promise<void> {
     try {
+      const { context } = query;
       const { userId } = session;
-      const { context, profile } = payload;
 
-      if (!userId) throw new ServiceForbiddenException();
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      const { name, bio, livesIn, from } = payload;
 
       // update settings based on context
       switch (context) {
         case 'profile':
-          // update user profile
-          await this.prisma.$transaction(async (tx) => {
-            await tx.userProfile.update({
-              where: { user_id: userId },
-              data: {
-                name: profile?.name,
-                bio: profile?.bio,
-              },
-            });
+          await this.prisma.userProfile.update({
+            where: { user_id: userId },
+            data: { name, bio, location_from: from, location_lives: livesIn },
           });
-
           break;
         case 'billing':
           break;
@@ -983,7 +1001,7 @@ export class SessionUserService {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('settings not updated');
+        : new ServiceForbiddenException('settings not updated');
       throw exception;
     }
   }

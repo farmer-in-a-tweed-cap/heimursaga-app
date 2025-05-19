@@ -169,8 +169,8 @@ export class SessionUserController {
   @HttpCode(HttpStatus.OK)
   async getProfileSettings(@Session() session: ISession) {
     return await this.sessionUserService.getSettings({
-      userId: session.userId,
-      context: 'profile',
+      query: { context: 'profile' },
+      session,
     });
   }
 
@@ -181,10 +181,8 @@ export class SessionUserController {
     @Session() session: ISession,
   ) {
     return await this.sessionUserService.updateSettings({
-      payload: {
-        context: 'profile',
-        profile: body,
-      },
+      query: { context: 'profile' },
+      payload: body,
       session,
     });
   }

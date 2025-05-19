@@ -96,6 +96,8 @@ export interface IUserProfileDetail {
   picture: string;
   bio?: string;
   memberDate?: Date;
+  locationFrom?: string;
+  locationLives?: string;
   followed?: boolean;
   you?: boolean;
   creator?: boolean;
@@ -119,18 +121,22 @@ export interface IUserSettingsUpdateQuery {
   };
 }
 
-export interface IUserSettingsProfileResponse {
+export interface IUserSettingsProfileGetResponse {
   username: string;
   email: string;
   name: string;
   bio: string;
   picture: string;
+  locationFrom?: string;
+  locationLives?: string;
 }
 
-export interface IUserSettingsProfileUpdateQuery {
+export interface IUserSettingsProfileUpdatePayload {
   name?: string;
   bio?: string;
   picture?: string;
+  from?: string;
+  livesIn?: string;
 }
 
 export interface IUserPostsQueryResponse {
