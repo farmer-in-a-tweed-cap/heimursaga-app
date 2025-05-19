@@ -13,7 +13,6 @@ import {
   FormMessage,
   Input,
 } from '@repo/ui/components';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -21,6 +20,10 @@ import { dateformat, zodMessage } from '@/lib';
 
 type Props = {
   loading?: boolean;
+  defaultProps?: {
+    lat?: number;
+    lon?: number;
+  };
   onSubmit?: TripWaypointCreateFormSubmitHandler;
   onCancel?: () => void;
 };
@@ -45,6 +48,7 @@ const schema = z.object({
 
 export const TripWaypointCreateForm: React.FC<Props> = ({
   loading = false,
+  defaultProps,
   onSubmit,
   onCancel,
 }) => {
@@ -52,8 +56,8 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
     resolver: zodResolver(schema),
     defaultValues: {
       title: '',
-      lat: '0',
-      lon: '0',
+      lat: defaultProps?.lat ? `${defaultProps.lat}` : '0',
+      lon: defaultProps?.lon ? `${defaultProps.lon}` : '0',
     },
   });
 
@@ -97,7 +101,7 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
                 <FormItem>
                   <FormLabel>Latitude</FormLabel>
                   <FormControl>
-                    <Input disabled={loading} required {...field} />
+                    <Input disabled required {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -110,7 +114,7 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
                 <FormItem>
                   <FormLabel>Longitude</FormLabel>
                   <FormControl>
-                    <Input disabled={loading} required {...field} />
+                    <Input disabled required {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

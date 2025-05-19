@@ -97,7 +97,6 @@ export const TripWaypointEditForm: React.FC<Props> = ({
               </FormItem>
             )}
           />
-
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-2">
             <FormField
               control={form.control}
@@ -106,7 +105,7 @@ export const TripWaypointEditForm: React.FC<Props> = ({
                 <FormItem>
                   <FormLabel>Latitude</FormLabel>
                   <FormControl>
-                    <Input disabled={loading} required {...field} />
+                    <Input disabled required {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -119,7 +118,7 @@ export const TripWaypointEditForm: React.FC<Props> = ({
                 <FormItem>
                   <FormLabel>Longitude</FormLabel>
                   <FormControl>
-                    <Input disabled={loading} required {...field} />
+                    <Input disabled required {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

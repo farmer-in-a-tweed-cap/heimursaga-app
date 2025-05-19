@@ -5,7 +5,12 @@ import { apiClient } from '@/lib/api';
 
 import { AppMapLayout } from '@/app/layout';
 
-import { PageNotFound, PageNotFoundFull, TripCreateView } from '@/components';
+import {
+  PageNotFound,
+  PageNotFoundFull,
+  TripCreateView,
+  TripEditView,
+} from '@/components';
 
 export const metadata: Metadata = {
   title: 'Edit trip',
@@ -28,7 +33,7 @@ export default async function Page({ params }: PageProps) {
   return (
     <AppMapLayout secure={true}>
       {tripQuery.success ? (
-        <TripCreateView mode="edit" trip={tripQuery.data} />
+        <TripEditView trip={tripQuery.data} />
       ) : (
         <PageNotFoundFull />
       )}
