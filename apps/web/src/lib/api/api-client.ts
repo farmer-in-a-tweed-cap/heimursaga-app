@@ -49,8 +49,8 @@ import {
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
   IUserProfileDetail,
-  IUserSettingsProfileResponse,
-  IUserSettingsProfileUpdateQuery,
+  IUserSettingsProfileGetResponse,
+  IUserSettingsProfileUpdatePayload,
   IWaypointCreatePayload,
   IWaypointUpdatePayload,
 } from '@repo/types';
@@ -281,7 +281,7 @@ export const apiClient = {
       cookie: config ? config.cookie : undefined,
     }),
   getUserProfileSettings: async (config?: RequestConfig) =>
-    api.request<IUserSettingsProfileResponse>(
+    api.request<IUserSettingsProfileGetResponse>(
       API_ROUTER.USER.SETTINGS.PROFILE,
       {
         method: API_METHODS.GET,
@@ -289,13 +289,15 @@ export const apiClient = {
       },
     ),
   updateUserProfileSettings: async (
-    payload: IUserSettingsProfileUpdateQuery,
+    {
+      payload,
+    }: IApiClientQueryWithPayload<{}, IUserSettingsProfileUpdatePayload>,
     config?: RequestConfig,
   ) =>
     api.request<void>(API_ROUTER.USER.SETTINGS.PROFILE, {
       method: API_METHODS.PUT,
       body: JSON.stringify(payload),
-      cookie: config ? config.cookie : undefined,
+      ...config,
     }),
   updateUserPicture: async (
     payload: IUserPictureUploadClientPayload,

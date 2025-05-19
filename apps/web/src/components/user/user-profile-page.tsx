@@ -5,6 +5,7 @@ import {
   AvatarImage,
   Badge,
 } from '@repo/ui/components';
+import { MapPinIcon } from 'lucide-react';
 
 import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
@@ -46,8 +47,13 @@ export const UserProfilePage: React.FC<Props> = ({
           <span className="text-2xl font-semibold">{user?.name}</span>
           {isCreator && <VerificationBadge size="lg" />}
         </div>
-
-        <span className="text-sm font-normal text-gray-600">{user?.bio}</span>
+        <span className="text-sm font-normal text-gray-700">{user?.bio}</span>
+        {user?.locationFrom && (
+          <div className="mt-2 flex flex-row gap-1 items-center justify-start text-sm font-normal text-gray-700">
+            <MapPinIcon size={16} />
+            <span> {user?.locationFrom}</span>
+          </div>
+        )}
       </div>
       {/* <div className="mt-4">
         <Badge variant="outline">Sponsored</Badge>

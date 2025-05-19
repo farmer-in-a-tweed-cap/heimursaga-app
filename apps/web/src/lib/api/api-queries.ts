@@ -18,8 +18,8 @@ import {
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
-  IUserSettingsProfileResponse,
-  IUserSettingsProfileUpdateQuery,
+  IUserSettingsProfileGetResponse,
+  IUserSettingsProfileUpdatePayload,
 } from '@repo/types';
 
 import { IApiClientQueryWithPayload, apiClient } from './api-client';
@@ -298,18 +298,18 @@ export const getUserDrafts = createQuery<void, IPostQueryResponse>(
 
 export const getUserProfileSettingsQuery = createQuery<
   void,
-  IUserSettingsProfileResponse
+  IUserSettingsProfileGetResponse
 >([QUERY_KEYS.USER_SETTINGS_PROFILE], () =>
   apiClient.getUserProfileSettings().then(({ success, message, data }) => {
     if (!success) {
       throw new Error(message);
     }
-    return data as IUserSettingsProfileResponse;
+    return data as IUserSettingsProfileGetResponse;
   }),
 );
 
 export const updateUserProfileSettingsMutation = createMutation<
-  IUserSettingsProfileUpdateQuery,
+  IUserSettingsProfileUpdatePayload,
   void
 >((payload) =>
   apiClient
