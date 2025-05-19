@@ -59,13 +59,11 @@ export class PostController {
     @Body() body: PostUpdateDto,
     @Session() session: ISession,
   ) {
-    return await this.postService.update(
-      {
-        query: { publicId: param.id },
-        session,
-      },
-      body,
-    );
+    return await this.postService.update({
+      query: { publicId: param.id },
+      session,
+      payload: body,
+    });
   }
 
   @Delete(':id')

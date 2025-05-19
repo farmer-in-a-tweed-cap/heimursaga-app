@@ -254,7 +254,6 @@ export class UserService {
       if (!username) throw new ServiceNotFoundException('user not found');
 
       const where = {
-        draft: false,
         public: true,
         deleted_at: null,
         lat: { not: null },
@@ -818,7 +817,6 @@ export class SessionUserService {
           where = {
             ...where,
             public: true,
-            draft: false,
             author: { id: userId },
           };
           break;
@@ -826,7 +824,6 @@ export class SessionUserService {
           where = {
             ...where,
             public: true,
-            draft: false,
             bookmarks: {
               some: {
                 user_id: userId,
@@ -838,7 +835,6 @@ export class SessionUserService {
           where = {
             ...where,
             public: false,
-            // draft: true,
             author: { id: userId },
           };
           break;

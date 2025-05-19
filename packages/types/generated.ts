@@ -141,7 +141,7 @@ export interface IUserSettingsProfileUpdatePayload {
 
 export interface IUserPostsQueryResponse {
   results: number;
-  data: IPostDetailResponse[];
+  data: IPostDetail[];
 }
 
 export interface IUserFollowersQueryResponse {
@@ -246,7 +246,7 @@ export interface IPostDetail {
   lat: number;
   lon: number;
   public?: boolean;
-  draft?: boolean;
+  sponsored?: boolean;
   liked?: boolean;
   bookmarked?: boolean;
   likesCount?: number;
@@ -254,6 +254,7 @@ export interface IPostDetail {
   place?: string;
   date?: Date;
   createdByMe?: boolean;
+  createdAt?: Date;
   author?: {
     username: string;
     name: string;
@@ -268,11 +269,11 @@ export interface IPostGetAllResponse {
 }
 
 export interface IPostQueryResponse {
-  data: IPostDetailResponse[];
+  data: IPostDetail[];
   results: number;
 }
 
-export interface IPostDetailResponse extends IPostDetail {}
+export interface IPostGetResponse extends IPostDetail {}
 
 export interface IPostCreatePayload {
   title: string;
@@ -280,7 +281,7 @@ export interface IPostCreatePayload {
   lat?: number;
   lon?: number;
   public?: boolean;
-  draft?: boolean;
+  sponsored?: boolean;
   place?: string;
   date?: Date;
 }
@@ -295,7 +296,7 @@ export interface IPostUpdatePayload {
   lat?: number;
   lon?: number;
   public?: boolean;
-  draft?: boolean;
+  sponsored?: boolean;
   place?: string;
   date?: Date;
 }
@@ -310,7 +311,7 @@ export interface IPostBookmarkResponse {
 
 export interface IPostQueryMapResponse {
   results: number;
-  data: IPostDetailResponse[];
+  data: IPostDetail[];
   geojson?: {
     type: 'FeatureCollection';
     features: {

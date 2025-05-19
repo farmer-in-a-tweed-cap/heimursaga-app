@@ -202,7 +202,7 @@ model Post {
   title                 String?            @db.VarChar(200)
   content               String             @db.Text
   public                Boolean?           @default(false)
-  draft                 Boolean?           @default(false)
+  sponsored             Boolean?           @default(false)
   lat                   Float?
   lon                   Float?
   place                 String?            @db.VarChar(250)

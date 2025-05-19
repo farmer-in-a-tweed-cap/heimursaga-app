@@ -3,6 +3,7 @@ import { IPostCreatePayload, IPostUpdatePayload } from '@repo/types';
 import {
   IsBoolean,
   IsDate,
+  IsDateString,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -38,7 +39,7 @@ export class PostCreateDto implements IPostCreatePayload {
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
-  draft: boolean;
+  sponsored: boolean;
 
   @ApiProperty({ required: false })
   @IsString()
@@ -46,7 +47,7 @@ export class PostCreateDto implements IPostCreatePayload {
   place: string;
 
   @ApiProperty({ required: false })
-  @IsDate()
+  @IsDateString()
   @IsOptional()
   date: Date;
 }
@@ -80,10 +81,15 @@ export class PostUpdateDto implements IPostUpdatePayload {
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
-  draft: boolean;
+  sponsored: boolean;
 
   @ApiProperty({ required: false })
-  @IsDate()
+  @IsString()
+  @IsOptional()
+  place: string;
+
+  @ApiProperty({ required: false })
+  @IsDateString()
   @IsOptional()
   date: Date;
 }
