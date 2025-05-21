@@ -7,21 +7,50 @@ import { ReactNode, createContext, useState } from 'react';
 import { ModalProvider } from '@/components';
 import { TOAST_DURATION } from '@/constants';
 
+export interface IAppContext {
+  context: IAppContextState;
+  setContext?: (context: Partial<IAppContextState>) => void;
+}
+
 export interface IAppContextState {
+  config: IAppContextStateConfig;
+  app: {
+    drawer: boolean;
+  };
+}
+
+export interface IAppContextStateConfig {
   mapbox?: {
     token: string;
   };
 }
 
-export const AppContext = createContext<IAppContextState>({});
+export const AppContext = createContext<IAppContext>({
+  context: { config: {}, app: { drawer: false } },
+  setContext: () => {},
+});
 
 export function AppProvider({
-  state,
+  config,
   children,
 }: {
-  state: IAppContextState;
+  config: IAppContextStateConfig;
   children: ReactNode;
 }) {
+  const [state, setState] = useState<IAppContextState>({
+    config,
+    app: { drawer: false },
+  });
+
+  const setContext = (data: Partial<IAppContextState>) => {
+    setState((prev) => ({ ...prev, ...data }));
+  };
+
+  const context: IAppContext = {
+    context: state,
+    setContext,
+  };
+
   // set react-query client
   const [queryClient] = useState(
     () =>
@@ -35,7 +64,7 @@ export function AppProvider({
   );
 
   return (
-    <AppContext.Provider value={state}>
+    <AppContext.Provider value={context}>
       <QueryClientProvider client={queryClient}>
         <ToastProvider
           theme="light"

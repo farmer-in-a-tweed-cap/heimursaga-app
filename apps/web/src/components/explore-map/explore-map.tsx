@@ -123,6 +123,13 @@ export const ExploreMap: React.FC<Props> = () => {
   const [userId, setUserId] = useState<string | null>(params.user || null);
   const [postId, setPostId] = useState<string | null>(params.postId || null);
 
+  const mapQueryEnabled: boolean = [
+    map?.bounds.ne.lat,
+    map?.bounds.ne.lon,
+    map?.bounds.sw.lat,
+    map?.bounds.sw.lon,
+  ].every((el) => !!el);
+
   const mapQuery = useQuery({
     queryKey: userId
       ? [
@@ -151,12 +158,7 @@ export const ExploreMap: React.FC<Props> = () => {
           location: { bounds: map?.bounds },
         })
         .then(({ data }) => data),
-    enabled: [
-      map?.bounds.ne.lat,
-      map?.bounds.ne.lon,
-      map?.bounds.sw.lat,
-      map?.bounds.sw.lon,
-    ].every((param) => !!param),
+    enabled: mapQueryEnabled,
     retry: 0,
   });
 
@@ -415,7 +417,7 @@ export const ExploreMap: React.FC<Props> = () => {
     <div className="w-full h-full flex flex-row justify-between bg-white">
       <div
         className={cn(
-          'relative w-full h-full  hidden sm:flex overflow-hidden',
+          'relative w-full h-full  hidden mobile:flex overflow-hidden',
           sidebar ? 'basis-auto max-w-[540px]' : 'max-w-[0px]',
         )}
       >
@@ -519,7 +521,9 @@ export const ExploreMap: React.FC<Props> = () => {
       <div
         className={cn(
           'z-40 w-full relative overflow-hidden shadow-xl',
-          sidebar ? 'max-w-full rounded-l-2xl' : 'max-w-full rounded-l-none',
+          sidebar
+            ? 'max-w-full mobile:rounded-l-2xl'
+            : 'max-w-full rounded-l-none',
         )}
       >
         <div
@@ -566,7 +570,7 @@ export const ExploreMap: React.FC<Props> = () => {
           </div>
         </div>
         <button
-          className="z-20 absolute hidden sm:flex top-4 left-4 drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
+          className="z-20 absolute hidden mobile:flex top-4 left-4 drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
           onClick={handleSidebarToggle}
         >
           {sidebar ? (

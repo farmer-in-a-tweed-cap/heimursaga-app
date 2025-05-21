@@ -1,40 +1,51 @@
 import Image from 'next/image';
 
-import { APP_CONFIG } from '@/config';
-
 type Props = {
-  theme?: 'dark' | 'light';
   size?: 'lg' | 'sm';
+  color?: 'dark' | 'light';
 };
 
-export const Logo: React.FC<Props> = ({ theme = 'light', size = 'sm' }) => {
-  if (theme === 'light') {
-    switch (size) {
-      case 'lg':
-        return <LogoDark />;
-      case 'sm':
-        return <LogoDark />;
-      default:
-        return <LogoDark />;
-    }
-  } else {
-    switch (size) {
-      case 'lg':
-        return <LogoSmall />;
-      case 'sm':
-        return <LogoSmall />;
-      default:
-        return <LogoSmall />;
-    }
+export const Logo: React.FC<Props> = ({ color = 'dark', size = 'sm' }) => {
+  switch (color) {
+    case 'dark':
+      switch (size) {
+        case 'lg':
+          return <LogoLgDark />;
+        case 'sm':
+          return <LogoSmDark />;
+      }
+      break;
+    case 'light':
+      switch (size) {
+        case 'lg':
+          return <LogoLgLight />;
+        case 'sm':
+          return <LogoSmLight />;
+      }
+      break;
   }
 };
 
-const LogoDark = () => (
-  <div className="text-black text-lg font-medium">{APP_CONFIG.APP.NAME}</div>
+const LogoLgLight = () => (
+  <div className="w-[140px] h-auto bg-red-500">
+    <Image src="/logo-lg-light.svg" width={140} height={80} alt="logo" />
+  </div>
 );
 
-const LogoSmall = () => (
+const LogoLgDark = () => (
+  <div className="w-[140px] h-auto bg-red-500">
+    <Image src="/logo-lg-dark.svg" width={140} height={80} alt="logo" />
+  </div>
+);
+
+const LogoSmLight = () => (
   <div className="w-[45px] h-auto">
     <Image src="/logo-sm-light.svg" width={80} height={80} alt="" />
+  </div>
+);
+
+const LogoSmDark = () => (
+  <div className="w-[45px] h-auto">
+    <Image src="/logo-sm-dark.svg" width={80} height={80} alt="" />
   </div>
 );

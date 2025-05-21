@@ -104,70 +104,72 @@ export const ChangePasswordForm: React.FC<Props> = ({ token }) => {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-2xl">Reset your password</CardTitle>
-        <CardDescription>Enter your new password below.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={handleSubmit}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          disabled={loading}
-                          required
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+    <div className="w-full flex flex-col gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Reset your password</CardTitle>
+          <CardDescription>Enter your new password below.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={handleSubmit}>
+              <div className="flex flex-col gap-6">
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            disabled={loading}
+                            required
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="passwordConfirmation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Confirm password</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            disabled={loading}
+                            required
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="flex flex-col gap-2 items-center">
+                  <Button type="submit" className="w-full" loading={loading}>
+                    Submit
+                  </Button>
+                  <Link
+                    href={ROUTER.LOGIN}
+                    className="mt-4 text-sm hover:underline"
+                  >
+                    Back to log in
+                  </Link>
+                </div>
               </div>
-              <div className="grid gap-2">
-                <FormField
-                  control={form.control}
-                  name="passwordConfirmation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirm password</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          disabled={loading}
-                          required
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <div className="flex flex-col gap-2 items-center">
-                <Button type="submit" className="w-full" loading={loading}>
-                  Submit
-                </Button>
-                <Link
-                  href={ROUTER.LOGIN}
-                  className="mt-4 text-sm hover:underline"
-                >
-                  Back to log in
-                </Link>
-              </div>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
   );
 };

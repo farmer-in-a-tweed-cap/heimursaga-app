@@ -11,7 +11,10 @@ import {
   AppFooter,
   AppProvider,
   AppSidebar,
+  AppTopNavbar,
+  IAppContext,
   IAppContextState,
+  IAppContextStateConfig,
   Logo,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
@@ -39,7 +42,7 @@ type Props = {
 };
 
 export default async function RootLayout({ children }: Props) {
-  const state: IAppContextState = {
+  const config: IAppContextStateConfig = {
     mapbox: {
       token: MAPBOX_ACCESS_TOKEN as string,
     },
@@ -48,7 +51,7 @@ export default async function RootLayout({ children }: Props) {
   return (
     <html lang="en">
       <body>
-        <AppProvider state={state}>{children}</AppProvider>
+        <AppProvider config={config}>{children}</AppProvider>
       </body>
     </html>
   );
@@ -109,8 +112,13 @@ export const LoginLayout = async ({
 
   return (
     <div className="w-full min-h-screen bg-background text-black flex flex-row">
-      <div className="relative w-full flex flex-col justify-start">
-        <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+      <div className="relative w-full flex flex-col items-center justify-start py-14">
+        <div className="w-full max-w-[140px]">
+          <Link href={ROUTER.HOME}>
+            <Logo size="lg" color="dark" />
+          </Link>
+        </div>
+        <div className="mt-4 w-full h-auto max-w-md flex flex-col items-center justify-start">
           {children}
         </div>
       </div>
@@ -130,6 +138,10 @@ export const AppMapLayout = ({
       <div className="w-full bg-background text-black flex flex-row">
         <AppSidebar collapsed={true} />
         <div className="relative w-full flex flex-col justify-start">
+          <div className="flex mobile:hidden items-center w-full h-[60px] bg-background">
+            <AppTopNavbar />
+          </div>
+
           <div className={cn('app-content-full-container')}>{children}</div>
         </div>
       </div>
@@ -161,7 +173,7 @@ export const CheckoutLayout = ({ children }: { children: React.ReactNode }) => {
     <SessionLayout>
       <div className="w-full h-[55px] bg-white flex flex-row justify-center items-center border-b border-solid border-gray-200">
         <Link href={ROUTER.HOME}>
-          <Logo />
+          <Logo color="dark" size="sm" />
         </Link>
       </div>
       <div className="w-full bg-white text-black flex flex-row justify-center items-start">
