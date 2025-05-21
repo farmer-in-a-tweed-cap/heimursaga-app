@@ -175,79 +175,88 @@ export class Api {
       cache?: 'no-store';
     },
   ): Promise<IApiResponse<R>> {
-    const { baseUrl, headers: globalHeaders } = this;
-    const { cookie, cache, body, contentType, ...options } = config || {};
+    try {
+      const { baseUrl, headers: globalHeaders } = this;
+      const { cookie, cache, body, contentType, ...options } = config || {};
 
-    // parse url
-    const url = new URL(
-      path.startsWith('/') ? path.slice(1, path.length) : path,
-      baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`,
-    ).toString();
+      // parse url
+      const url = new URL(
+        path.startsWith('/') ? path.slice(1, path.length) : path,
+        baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`,
+      ).toString();
 
-    let headers: HeadersInit = {} as HeadersInit;
+      let headers: HeadersInit = {} as HeadersInit;
 
-    // set global headers
-    if (globalHeaders) {
-      headers = {
-        ...globalHeaders,
-        ...headers,
-      };
-    }
+      // set global headers
+      if (globalHeaders) {
+        headers = {
+          ...globalHeaders,
+          ...headers,
+        };
+      }
 
-    // set content type
-    switch (contentType) {
-      case API_CONTENT_TYPES.JSON:
+      // set content type
+      switch (contentType) {
+        case API_CONTENT_TYPES.JSON:
+          headers = {
+            ...headers,
+            'Content-Type': API_HEADERS.CONTENT_TYPE.JSON,
+          };
+          break;
+        case API_CONTENT_TYPES.FORM_DATA:
+          // @ts-ignore
+          delete headers['Content-Type'];
+          break;
+        default:
+          headers = {
+            ...headers,
+            'Content-Type': API_HEADERS.CONTENT_TYPE.JSON,
+          };
+          break;
+      }
+
+      // set cookies
+      if (cookie) {
         headers = {
           ...headers,
-          'Content-Type': API_HEADERS.CONTENT_TYPE.JSON,
+          cookie,
         };
-        break;
-      case API_CONTENT_TYPES.FORM_DATA:
-        // @ts-ignore
-        delete headers['Content-Type'];
-        break;
-      default:
-        headers = {
-          ...headers,
-          'Content-Type': API_HEADERS.CONTENT_TYPE.JSON,
-        };
-        break;
-    }
+      }
 
-    // set cookies
-    if (cookie) {
-      headers = {
-        ...headers,
-        cookie,
+      // fetch
+      const response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
+        body,
+        cache,
+      });
+
+      const json = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        const { message, status } = (json as IApiResponse) || {};
+
+        return {
+          success: false,
+          status,
+          message,
+        } satisfies IApiResponse<R>;
+      }
+
+      const result: IApiResponse<R> = {
+        success: true,
+        data: json,
       };
-    }
 
-    // fetch
-    const response = await fetch(url, {
-      ...options,
-      headers,
-      credentials: 'include',
-      body,
-      cache,
-    });
-
-    const json = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      const { message, status } = (json as IApiResponse) || {};
-
-      return {
+      return result;
+    } catch (e) {
+      const response: IApiResponse = {
         success: false,
-        status,
-        message,
-      } satisfies IApiResponse<R>;
+        message: 'failed to fetch',
+      };
+
+      return response;
     }
-
-    const result: IApiResponse<R> = {
-      success: true,
-      data: json,
-    };
-
-    return result;
   }
 }
