@@ -8,8 +8,13 @@ module.exports = {
   ],
   darkMode: ['class'],
   prefix: '',
+  plugins: [require('tailwindcss-animate')],
   theme: {
     extend: {
+      screens: {
+        mobile: '760px',
+        desktop: '1140px',
+      },
       colors: {
         primary: {
           DEFAULT: 'rgb(var(--color-primary))',
