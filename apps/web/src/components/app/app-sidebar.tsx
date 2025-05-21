@@ -74,8 +74,8 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         icon: HomeIcon,
       },
       {
-        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
-        base: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        href: username ? ROUTER.USERS.DETAIL(username) : '#',
+        base: username ? ROUTER.USERS.DETAIL(username) : '#',
         label: 'Journal',
         icon: PenLineIcon,
       },
@@ -100,8 +100,8 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         icon: HomeIcon,
       },
       {
-        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
-        base: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        href: username ? ROUTER.USERS.DETAIL(username) : '#',
+        base: username ? ROUTER.USERS.DETAIL(username) : '#',
         label: 'Journal',
         icon: PenLineIcon,
       },

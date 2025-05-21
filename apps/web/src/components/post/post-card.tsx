@@ -105,7 +105,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   userbar?.href
                     ? userbar?.href
                     : author?.username
-                      ? ROUTER.MEMBERS.MEMBER(author.username)
+                      ? ROUTER.USERS.DETAIL(author.username)
                       : '#'
                 }
               >

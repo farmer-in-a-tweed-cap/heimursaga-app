@@ -123,7 +123,7 @@ export const AdminUserTable: React.FC<Props> = ({
         const picture = row.original.picture;
         return username ? (
           <Link
-            href={ROUTER.MEMBERS.MEMBER(username)}
+            href={ROUTER.USERS.DETAIL(username)}
             target="_blank"
             className="flex flex-row items-center justify-start gap-2"
           >

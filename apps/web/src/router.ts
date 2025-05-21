@@ -43,8 +43,8 @@ export const ROUTER = {
     EDIT: (id: string) => `/posts/${id}/edit`,
   },
   SPONSOR: ({ username }: { username: string }) => `/sponsor/${username}`,
-  MEMBERS: {
-    MEMBER: (username: string) => `/${username}`,
+  USERS: {
+    DETAIL: (username: string) => `/${username}`,
   },
   TRIPS: {
     HOME: '/trips',

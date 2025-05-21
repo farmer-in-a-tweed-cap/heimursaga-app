@@ -29,7 +29,7 @@ export const SponsorCheckoutSummary: React.FC<Props> = ({ user }) => {
           />
         </div>
         <Link
-          href={user?.username ? ROUTER.MEMBERS.MEMBER(user.username) : '#'}
+          href={user?.username ? ROUTER.USERS.DETAIL(user.username) : '#'}
           className="mt-3 flex flex-col gap-0 justify-start items-start"
         >
           <span className="text-2xl font-medium">{user?.name}</span>

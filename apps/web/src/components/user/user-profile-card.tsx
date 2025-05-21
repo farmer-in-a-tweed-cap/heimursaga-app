@@ -35,7 +35,7 @@ export const UserProfileCard: React.FC<Props> = ({
             loading={loading}
             fallback={name}
           />
-          <Link href={username ? ROUTER.MEMBERS.MEMBER(username) : '#'}>
+          <Link href={username ? ROUTER.USERS.DETAIL(username) : '#'}>
             <div className="mt-1 flex flex-col items-center gap-0">
               {loading ? (
                 <div className="h-7 flex items-center justify-center">
