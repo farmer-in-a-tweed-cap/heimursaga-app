@@ -16,6 +16,7 @@ import {
 } from '@repo/ui/components';
 import { useStripe } from '@stripe/react-stripe-js';
 import { CreditCardIcon, LockIcon } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -31,6 +32,7 @@ import {
 } from '@/components';
 import { useModal } from '@/hooks';
 import { redirect, sleep, zodMessage } from '@/lib';
+import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
 type Props = {
@@ -106,12 +108,14 @@ export const FormComponent: React.FC<Props> = ({
     },
   });
 
-  const { sponsorshipType, paymentMethodId, paymentMethodType } = state;
+  const { sponsorshipType, paymentMethodType } = state;
 
   const oneTimePaymentAmount = form.watch('oneTimePaymentAmount') || 0;
+  const paymentMethodId = form.watch('paymentMethodId');
   const sponsorshipEnabled = !!sponsorship;
   const sponsorshipMonthlyAmount = sponsorship?.price || 0;
-  const currencySymbol = '$';
+  const currency = { symbol: '$' };
+  const payButtonEnabled = !!stripe && !!paymentMethodId;
 
   const handleSponsorshipTypeSelect = (sponsorshipType: string) => {
     setState((state) => ({ ...state, sponsorshipType }));
@@ -125,12 +129,14 @@ export const FormComponent: React.FC<Props> = ({
         setLoading((loading) => ({ ...loading, form: true }));
 
         const { sponsorshipType } = state;
+        const sponsorshipTierId = sponsorship?.id;
         const { oneTimePaymentAmount, paymentMethodId } = values;
         const creatorId = username;
 
         console.log('submit:', {
           creatorId,
           oneTimePaymentAmount,
+          sponsorshipTierId,
           sponsorshipType,
           paymentMethodId,
         });
@@ -138,17 +144,23 @@ export const FormComponent: React.FC<Props> = ({
         // initiate a checkout
         const checkout = await apiClient.sponsorCheckout({
           query: {},
-          payload: {
-            creatorId,
-            oneTimePaymentAmount,
-            sponsorshipType,
-            paymentMethodId,
-          },
+          payload:
+            sponsorshipType === SponsorshipType.SUBSCRIPTION
+              ? {
+                  creatorId,
+                  sponsorshipType,
+                  sponsorshipTierId,
+                  paymentMethodId,
+                }
+              : {
+                  creatorId,
+                  sponsorshipType,
+                  oneTimePaymentAmount,
+                  paymentMethodId,
+                },
         });
         const stripePaymentMethodId = checkout.data?.paymentMethodId;
         const clientSecret = checkout.data?.clientSecret;
-
-        console.log(checkout.data);
 
         if (!checkout.success || !stripePaymentMethodId || !clientSecret) {
           modal.open<InfoModalProps>(MODALS.INFO, {
@@ -165,8 +177,6 @@ export const FormComponent: React.FC<Props> = ({
         const stripePayment = await stripe.confirmCardPayment(clientSecret, {
           payment_method: stripePaymentMethodId,
         });
-
-        console.log(stripePayment);
 
         // handle a stripe response
         if (stripePayment.paymentIntent) {
@@ -186,12 +196,13 @@ export const FormComponent: React.FC<Props> = ({
             },
           });
           setLoading((loading) => ({ ...loading, form: false }));
-
           return;
         }
 
         // redirect to the home page
-        redirect(ROUTER.HOME);
+        if (username) {
+          redirect(ROUTER.MEMBERS.MEMBER(username));
+        }
 
         // setLoading((loading) => ({ ...loading, form: false }));
       } catch (e) {
@@ -201,6 +212,9 @@ export const FormComponent: React.FC<Props> = ({
   );
 
   useEffect(() => {
+    // cache modals
+    modal.preload([MODALS.INFO]);
+
     setLoading((loading) => ({ ...loading, paymentMethods: false }));
   }, []);
 
@@ -221,7 +235,7 @@ export const FormComponent: React.FC<Props> = ({
               <h2 className="font-medium text-lg">Choose sponsorship</h2>
               <div className="mt-4 flex flex-col">
                 <ChipGroup
-                  className="w-full grid grid-cols-2"
+                  classNames={{ group: 'w-full grid grid-cols-2' }}
                   value={sponsorshipType}
                   items={
                     sponsorshipEnabled
@@ -285,7 +299,7 @@ export const FormComponent: React.FC<Props> = ({
               <h2 className="font-medium text-lg">Payment method</h2>
               <div className="mt-4 flex flex-col">
                 <ChipGroup
-                  className="w-full grid grid-cols-2"
+                  classNames={{ group: 'w-full grid grid-cols-2' }}
                   value={paymentMethodType}
                   items={DATA.PAYMENT_METHOD_TYPES}
                   disabled
@@ -313,7 +327,18 @@ export const FormComponent: React.FC<Props> = ({
                       )}
                     />
                   ) : (
-                    <span>no payment methods available</span>
+                    <div className="flex flex-col justify-start items-start">
+                      <span>
+                        {LOCALES.APP.PAYMENT_METHOD.NO_PAYMENT_METHODS_FOUND}
+                      </span>
+                      <div className="mt-4">
+                        <Button variant="secondary" asChild>
+                          <Link href={ROUTER.USER.SETTINGS.PAYMENT_METHODS}>
+                            Add payment method
+                          </Link>
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -322,8 +347,8 @@ export const FormComponent: React.FC<Props> = ({
               <div>
                 <span className="font-medium text-base">
                   {sponsorshipType === SponsorshipType.SUBSCRIPTION
-                    ? `You’ll pay ${currencySymbol}${sponsorshipMonthlyAmount} monthly on the ${dateformat().format('D')}th.`
-                    : `You'll pay ${currencySymbol}${oneTimePaymentAmount}`}
+                    ? `You’ll pay ${currency.symbol}${sponsorshipMonthlyAmount} monthly on the ${dateformat().format('D')}th.`
+                    : `You'll pay ${currency.symbol}${oneTimePaymentAmount}`}
                 </span>
               </div>
               <div className="mt-4">
@@ -336,7 +361,7 @@ export const FormComponent: React.FC<Props> = ({
                 </p>
               </div>
               <div className="mt-8 flex flex-col">
-                <Button loading={loading.form}>
+                <Button loading={loading.form} disabled={!payButtonEnabled}>
                   <div className="flex flex-row items-center justify-center gap-2">
                     <LockIcon />
                     {sponsorshipType === SponsorshipType.SUBSCRIPTION

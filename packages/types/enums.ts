@@ -22,6 +22,12 @@ export enum CheckoutStatus {
   REQUIRES_ACTION = 'requires_action',
 }
 
+export enum PayoutStatus {
+  PENDING = 'pending',
+  CONFIRMED = 'confirmed',
+  CANCELED = 'canceled',
+}
+
 export enum PlanExpiryPeriod {
   MONTH = 'month',
   YEAR = 'year',
@@ -39,6 +45,13 @@ export enum PayoutMethodPlatform {
   PAYPAL = 'paypal',
 }
 
+export enum SponsorshipStatus {
+  PENDING = 'pending',
+  ACTIVE = 'active',
+  CONFIRMED = 'confirmed',
+  CANCELED = 'canceled',
+}
+
 export enum SponsorshipType {
   ONE_TIME_PAYMENT = 'one_time_payment',
   SUBSCRIPTION = 'subscription',
@@ -49,4 +62,10 @@ export enum CurrencyCode {
 
 export enum CountryCode {
   UNITED_STATES = 'us',
+}
+
+export enum MapQueryContext {
+  GLOBAL = 'global',
+  FOLLOWING = 'following',
+  USER = 'user',
 }

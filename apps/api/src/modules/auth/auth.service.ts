@@ -49,6 +49,7 @@ export class AuthService {
       const user = await this.prisma.user.findFirstOrThrow({
         where: {
           id: userId,
+          blocked: false,
         },
         select: {
           id: true,

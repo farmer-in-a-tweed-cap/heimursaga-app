@@ -5,14 +5,15 @@ import { PrismaModule } from '@/modules/prisma';
 import { StripeModule } from '@/modules/stripe';
 
 import {
-  PayoutBalanceController,
+  BalanceController,
+  PayoutController,
   PayoutMethodController,
 } from './payout.controller';
 import { PayoutService } from './payout.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule, StripeModule],
-  controllers: [PayoutMethodController, PayoutBalanceController],
+  controllers: [PayoutController, PayoutMethodController, BalanceController],
   providers: [PayoutService],
   exports: [PayoutService],
 })

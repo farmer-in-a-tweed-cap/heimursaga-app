@@ -7,12 +7,14 @@ import {
   ISponsorshipTierUpdatePayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserGetAllResponse,
   IUserMapGetResponse,
   IUserNotificationGetResponse,
   IUserPictureUploadPayload,
   IUserPostsQueryResponse,
   IUserProfileDetail,
-  IUserSettingsProfileResponse,
+  IUserSettingsProfileGetResponse,
+  IUserSettingsProfileUpdatePayload,
   IUserSettingsUpdateQuery,
   MediaUploadContext,
   UserNotificationContext,
@@ -21,9 +23,9 @@ import {
 
 import { dateformat } from '@/lib/date-format';
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
-import { generator } from '@/lib/generator';
 import { toGeoJson } from '@/lib/geojson';
 import { getStaticMediaUrl } from '@/lib/upload';
+import { matchRoles } from '@/lib/utils';
 
 import {
   ServiceBadRequestException,
@@ -50,19 +52,103 @@ export class UserService {
     private eventService: EventService,
   ) {}
 
-  async getByUsername({
-    username,
-    userId,
-  }: {
-    username: string;
-    userId: number;
-  }) {
+  async getUsers({
+    query,
+    session,
+  }: ISessionQuery): Promise<IUserGetAllResponse> {
     try {
+      const { userId, userRole } = session;
+
+      // check access
+      const access = !!userId && matchRoles(userRole, [UserRole.ADMIN]);
+      if (!access) throw new ServiceForbiddenException();
+
+      const where = {} as Prisma.UserWhereInput;
+
+      const select = {
+        username: true,
+        blocked: true,
+        role: true,
+        profile: {
+          select: {
+            name: true,
+            picture: true,
+          },
+        },
+        posts_count: true,
+        created_at: true,
+      } satisfies Prisma.UserSelect;
+
+      // get users
+      const results = await this.prisma.user.count({ where });
+      const data = await this.prisma.user.findMany({
+        where,
+        select,
+        orderBy: [{ id: 'desc' }],
+      });
+
+      const response: IUserGetAllResponse = {
+        data: data.map(
+          ({ username, role, profile, blocked, posts_count, created_at }) => ({
+            username,
+            role,
+            blocked,
+            name: profile.name,
+            picture: getStaticMediaUrl(profile.picture),
+            postsCount: posts_count,
+            memberDate: created_at,
+          }),
+        ),
+        results,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('users not found');
+      throw exception;
+    }
+  }
+
+  async getByUsername({ query, session }: ISessionQuery<{ username: string }>) {
+    try {
+      const { username } = query;
+      const { userId, userRole } = session;
+
       if (!username) throw new ServiceNotFoundException('user not found');
+
+      let where = { username } as Prisma.UserWhereInput;
+
+      // filter based on user role
+      switch (userRole) {
+        case UserRole.ADMIN:
+          where = { ...where };
+          break;
+        case UserRole.CREATOR:
+          where = {
+            ...where,
+            blocked: false,
+          };
+          break;
+        case UserRole.USER:
+          where = {
+            ...where,
+            blocked: false,
+          };
+          break;
+        default:
+          where = {
+            ...where,
+            blocked: false,
+          };
+          break;
+      }
 
       // get the user
       const user = await this.prisma.user.findFirstOrThrow({
-        where: { username },
+        where,
         select: {
           id: true,
           username: true,
@@ -72,6 +158,8 @@ export class UserService {
               name: true,
               picture: true,
               bio: true,
+              location_from: true,
+              location_lives: true,
             },
           },
           followers: userId
@@ -95,6 +183,8 @@ export class UserService {
         followed: userId ? user.followers.length > 0 : false,
         you: userId ? userId === user.id : false,
         creator: user.role === UserRole.CREATOR,
+        locationFrom: user.profile?.location_from,
+        locationLives: user.profile?.location_lives,
       };
 
       return response;
@@ -107,12 +197,63 @@ export class UserService {
     }
   }
 
+  async blockUser({
+    query,
+    session,
+  }: ISessionQuery<{ username: string }>): Promise<void> {
+    try {
+      const { username } = query;
+      const { userId, userRole } = session;
+
+      if (!username) throw new ServiceNotFoundException('user not found');
+
+      // check access
+      const access = !!userId && matchRoles(userRole, [UserRole.ADMIN]);
+      if (!access) throw new ServiceForbiddenException();
+
+      // get the user
+      const user = await this.prisma.user.findFirstOrThrow({
+        where: { username },
+        select: { id: true },
+      });
+
+      // update the user
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { blocked: true },
+      });
+
+      // invalidate sessions
+      await this.prisma.userSession.updateMany({
+        where: { user_id: user.id },
+        data: { expired: true, expires_at: dateformat().toDate() },
+      });
+
+      // delete posts
+      await this.prisma.post.updateMany({
+        where: { author_id: user.id },
+        data: { deleted_at: dateformat().toDate() },
+      });
+
+      // delete trips
+      await this.prisma.trip.updateMany({
+        where: { author_id: user.id },
+        data: { deleted_at: dateformat().toDate() },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('user not blocked');
+      throw exception;
+    }
+  }
+
   async getPosts({ username, userId }: { username: string; userId: number }) {
     try {
       if (!username) throw new ServiceNotFoundException('user not found');
 
-      let where = {
-        draft: false,
+      const where = {
         public: true,
         deleted_at: null,
         lat: { not: null },
@@ -120,7 +261,7 @@ export class UserService {
         author: { username },
       } as Prisma.PostWhereInput;
 
-      let select = {
+      const select = {
         public_id: true,
         title: true,
         content: true,
@@ -147,6 +288,7 @@ export class UserService {
           select: {
             id: true,
             username: true,
+            role: true,
             profile: {
               select: { name: true, picture: true },
             },
@@ -185,13 +327,16 @@ export class UserService {
             content,
             lat,
             lon,
-            author: {
-              name: author.profile?.name,
-              username: author?.username,
-              picture: author?.profile?.picture
-                ? getStaticMediaUrl(author?.profile.picture)
-                : '',
-            },
+            author: author.profile
+              ? {
+                  name: author.profile?.name,
+                  username: author?.username,
+                  picture: author?.profile?.picture
+                    ? getStaticMediaUrl(author?.profile.picture)
+                    : '',
+                  creator: author.role === UserRole.CREATOR,
+                }
+              : undefined,
             liked: userId ? likes.length > 0 : false,
             bookmarked: userId ? bookmarks.length > 0 : false,
             likesCount: likes_count,
@@ -260,7 +405,6 @@ export class UserService {
 
   async getFollowers({
     username,
-    userId,
   }: {
     username: string;
     userId: number;
@@ -288,6 +432,7 @@ export class UserService {
             select: {
               id: true,
               username: true,
+              role: true,
               profile: {
                 select: {
                   name: true,
@@ -301,10 +446,11 @@ export class UserService {
       });
 
       const response: IUserFollowersQueryResponse = {
-        data: data.map(({ follower: { username, profile } }) => ({
+        data: data.map(({ follower: { role, username, profile } }) => ({
           username,
           name: profile.name,
           picture: profile.picture ? getStaticMediaUrl(profile?.picture) : '',
+          creator: role === UserRole.CREATOR,
         })),
         results,
       };
@@ -321,7 +467,6 @@ export class UserService {
 
   async getFollowing({
     username,
-    userId,
   }: {
     username: string;
     userId: number;
@@ -348,6 +493,7 @@ export class UserService {
           followee: {
             select: {
               username: true,
+              role: true,
               profile: {
                 select: {
                   name: true,
@@ -361,10 +507,11 @@ export class UserService {
       });
 
       const response: IUserFollowersQueryResponse = {
-        data: data.map(({ followee: { username, profile } }) => ({
+        data: data.map(({ followee: { role, username, profile } }) => ({
           username,
           name: profile.name,
           picture: profile.picture ? getStaticMediaUrl(profile.picture) : '',
+          creator: role === UserRole.CREATOR,
         })),
         results,
       };
@@ -630,7 +777,7 @@ export class SessionUserService {
         lon: { not: null },
       } as Prisma.PostWhereInput;
 
-      let select = {
+      const select = {
         public_id: true,
         title: true,
         content: true,
@@ -670,7 +817,6 @@ export class SessionUserService {
           where = {
             ...where,
             public: true,
-            draft: false,
             author: { id: userId },
           };
           break;
@@ -678,7 +824,6 @@ export class SessionUserService {
           where = {
             ...where,
             public: true,
-            draft: false,
             bookmarks: {
               some: {
                 user_id: userId,
@@ -690,7 +835,6 @@ export class SessionUserService {
           where = {
             ...where,
             public: false,
-            // draft: true,
             author: { id: userId },
           };
           break;
@@ -754,19 +898,25 @@ export class SessionUserService {
   }
 
   async getSettings({
-    userId,
-    context,
-  }: {
-    userId: number;
+    query,
+    session,
+  }: ISessionQuery<{
     context: 'profile' | 'billing';
-  }): Promise<IUserSettingsProfileResponse> {
+  }>): Promise<IUserSettingsProfileGetResponse> {
     try {
-      if (!userId) throw new ServiceForbiddenException();
+      const { context } = query;
+      const { userId } = session;
+
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      let response = {} as IUserSettingsProfileGetResponse;
 
       // fetch settings based on context
       switch (context) {
         case 'profile':
-          return this.prisma.user
+          response = await this.prisma.user
             .findFirstOrThrow({
               where: { id: userId },
               select: {
@@ -777,27 +927,32 @@ export class SessionUserService {
                     name: true,
                     bio: true,
                     picture: true,
+                    location_from: true,
+                    location_lives: true,
                   },
                 },
               },
             })
-            .then(
-              ({ email, username, profile }) =>
-                ({
-                  email,
-                  username,
-                  picture: profile?.picture
-                    ? getStaticMediaUrl(profile?.picture)
-                    : '',
-                  name: profile?.name,
-                  bio: profile?.bio,
-                }) as IUserSettingsProfileResponse,
-            );
+            .then(({ email, username, profile }) => {
+              return {
+                email,
+                username,
+                picture: profile?.picture
+                  ? getStaticMediaUrl(profile?.picture)
+                  : '',
+                name: profile?.name,
+                bio: profile?.bio,
+                locationFrom: profile?.location_from,
+                locationLives: profile?.location_lives,
+              } as IUserSettingsProfileGetResponse;
+            });
         case 'billing':
           break;
         default:
           throw new ServiceBadRequestException('settings not found');
       }
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -808,29 +963,30 @@ export class SessionUserService {
   }
 
   async updateSettings({
+    query,
     payload,
     session,
-  }: IPayloadWithSession<IUserSettingsUpdateQuery>): Promise<void> {
+  }: ISessionQueryWithPayload<
+    { context: 'profile' | 'billing' },
+    IUserSettingsProfileUpdatePayload
+  >): Promise<void> {
     try {
+      const { context } = query;
       const { userId } = session;
-      const { context, profile } = payload;
 
-      if (!userId) throw new ServiceForbiddenException();
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      const { name, bio, livesIn, from } = payload;
 
       // update settings based on context
       switch (context) {
         case 'profile':
-          // update user profile
-          await this.prisma.$transaction(async (tx) => {
-            await tx.userProfile.update({
-              where: { user_id: userId },
-              data: {
-                name: profile?.name,
-                bio: profile?.bio,
-              },
-            });
+          await this.prisma.userProfile.update({
+            where: { user_id: userId },
+            data: { name, bio, location_from: from, location_lives: livesIn },
           });
-
           break;
         case 'billing':
           break;
@@ -841,7 +997,7 @@ export class SessionUserService {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('settings not updated');
+        : new ServiceForbiddenException('settings not updated');
       throw exception;
     }
   }
@@ -950,98 +1106,6 @@ export class SessionUserService {
     }
   }
 
-  async getSponsorshipTiers({
-    session,
-  }: ISessionQuery): Promise<ISponsorshipTierGetAllResponse> {
-    try {
-      const { userId } = session;
-
-      if (!userId) throw new ServiceForbiddenException();
-
-      const where: Prisma.SponsorshipTierWhereInput = {
-        user_id: userId,
-        deleted_at: null,
-      };
-
-      const response: ISponsorshipTierGetAllResponse = {
-        results: 0,
-        data: [],
-      };
-
-      // get the number of sponsorship tiers
-      const results = await this.prisma.sponsorshipTier.count({ where });
-
-      if (results >= 1) {
-        // get the sponsorship tiers
-        const data = await this.prisma.sponsorshipTier
-          .findMany({
-            where,
-            select: {
-              public_id: true,
-              price: true,
-              description: true,
-              is_available: true,
-            },
-          })
-          .catch(() => {
-            throw new ServiceNotFoundException('sponsorship tiers not found');
-          });
-
-        response.results = results;
-        response.data = data.map(
-          ({ price, description, public_id: id, is_available }) => ({
-            price,
-            description,
-            id,
-            isAvailable: is_available,
-            membersCount: 0,
-          }),
-        );
-      } else {
-        // create a sponsorship tier if it doesn't exist
-        const tier = await this.prisma.sponsorshipTier.create({
-          data: {
-            public_id: generator.publicId(),
-            price: 0,
-            description: '',
-            is_available: true,
-            user: { connect: { id: userId } },
-          },
-          select: {
-            public_id: true,
-            price: true,
-            description: true,
-            is_available: true,
-          },
-        });
-
-        response.results = 1;
-        response.data = [tier].map(
-          ({ price, description, public_id: id, is_available }) => ({
-            price,
-            description,
-            id,
-            membersCount: 0,
-            isAvailable: is_available,
-          }),
-        );
-      }
-
-      response.data = response.data.map(({ price, ...data }) => ({
-        ...data,
-        price: integerToDecimal(price),
-      }));
-
-      return response;
-    } catch (e) {
-      this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorship tiers not found');
-      throw exception;
-    }
-  }
-
   async getSponsorshipByUsername({
     session,
   }: ISessionQuery): Promise<ISponsorshipTierGetAllResponse> {
@@ -1109,87 +1173,6 @@ export class SessionUserService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('sponsorship tiers not found');
-      throw exception;
-    }
-  }
-
-  async updateSponsorshipTier({
-    query,
-    payload,
-    session,
-  }: ISessionQueryWithPayload<
-    { id: string },
-    ISponsorshipTierUpdatePayload
-  >): Promise<void> {
-    try {
-      const { userId } = session;
-      const { id } = query;
-
-      if (!userId) throw new ServiceForbiddenException();
-      if (!id) throw new ServiceNotFoundException('sponsorship tier not found');
-
-      // check access
-      const access = await this.prisma.sponsorshipTier
-        .findFirstOrThrow({
-          where: { public_id: id, user_id: userId, deleted_at: null },
-        })
-        .then(() => true)
-        .catch(() => false);
-      if (!access)
-        throw new ServiceNotFoundException('sponsorship tier not found');
-
-      // update the sponsorship tier
-      const { description, isAvailable } = payload;
-      const price = payload.price ? decimalToInteger(payload.price) : undefined;
-
-      await this.prisma.sponsorshipTier.update({
-        where: { public_id: id },
-        data: {
-          price,
-          description,
-          is_available: isAvailable,
-        },
-      });
-    } catch (e) {
-      this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorship tier not updated');
-      throw exception;
-    }
-  }
-
-  async deleteSponsorshipTier({
-    query,
-    session,
-  }: ISessionQuery<{ id: string }>): Promise<void> {
-    try {
-      const { userId } = session;
-      const { id } = query;
-
-      if (!userId) throw new ServiceForbiddenException();
-      if (!id) throw new ServiceNotFoundException('sponsorship tier not found');
-
-      // check access
-      const access = await this.prisma.sponsorshipTier
-        .findFirstOrThrow({
-          where: { public_id: id, user_id: userId, deleted_at: null },
-        })
-        .then(() => true)
-        .catch(() => false);
-      if (!access)
-        throw new ServiceNotFoundException('sponsorship tier not found');
-
-      // delete the sponsorship tier
-      await this.prisma.sponsorshipTier.update({
-        where: { public_id: id },
-        data: { deleted_at: dateformat().toDate() },
-      });
-    } catch (e) {
-      this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorship tier not deleted');
       throw exception;
     }
   }

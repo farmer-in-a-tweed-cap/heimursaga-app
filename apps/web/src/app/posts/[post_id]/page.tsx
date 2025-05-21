@@ -55,6 +55,7 @@ export default async function Page({ params }: Props) {
             actions={
               createdByMe ? { edit: true } : { like: true, bookmark: true }
             }
+            extended
           />
         </div>
       ) : (

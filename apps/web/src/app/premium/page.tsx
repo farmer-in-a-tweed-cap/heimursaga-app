@@ -38,6 +38,7 @@ export default async function Page() {
             verification and security.
           </p>
         </div>
+
         {plan && (
           <SubscriptionPlanUpgrade {...plan} features={features.premium} />
         )}

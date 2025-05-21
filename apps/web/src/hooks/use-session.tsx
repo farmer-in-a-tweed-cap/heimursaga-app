@@ -14,8 +14,7 @@ export const useSession = () => {
   const me = (username?: string) =>
     session?.username && username ? session.username === username : false;
 
-  const creator = () =>
-    session?.username ? session.role === UserRole.CREATOR : false;
+  const creator = session?.username ? session.role === UserRole.CREATOR : false;
 
   return { ...session, logged, me, creator };
 };

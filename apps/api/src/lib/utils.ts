@@ -54,3 +54,23 @@ export const matchRoles = (role: UserRole, roles: UserRole[]): boolean => {
   if (!role) return false;
   return roles.some((r) => r === role);
 };
+
+export function sortByKey<T = any>({
+  elements,
+  key,
+  order,
+}: {
+  elements: any[];
+  key: string;
+  order: 'asc' | 'desc';
+}): T[] {
+  return elements.sort((a, b) => {
+    if (a[key] instanceof Date && b[key] instanceof Date) {
+      return order === 'desc'
+        ? b[key].getTime() - a[key].getTime()
+        : a[key].getTime() - b[key].getTime();
+    } else {
+      return -1;
+    }
+  }) as T[];
+}

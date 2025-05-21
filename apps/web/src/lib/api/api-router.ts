@@ -1,4 +1,5 @@
 export const API_ROUTER = {
+  SITEMAP: 'sitemap',
   TEST: 'test',
   LOGIN: 'auth/login',
   SIGNUP: 'auth/signup',
@@ -16,6 +17,7 @@ export const API_ROUTER = {
     DRAFTS: `/user/drafts`,
     UPDATE_PICTURE: '/user/picture',
     NOTIFICATIONS: '/user/notifications',
+    SPONSORSHIPS: '/user/sponsorships',
     SETTINGS: {
       PROFILE: '/user/settings/profile',
     },
@@ -23,12 +25,12 @@ export const API_ROUTER = {
       POST: '/user/insights/post',
     },
     POSTS: '/user/posts',
-    SPONSORSHIP_TIERS: {
-      GET: `/user/sponsorship-tiers`,
-      GET_BY_ID: (id: string) => `/user/sponsorship-tiers/${id}`,
-      UPDATE: (id: string) => `/user/sponsorship-tiers/${id}`,
-      DELETE: (id: string) => `/user/sponsorship-tiers/${id}`,
-    },
+  },
+  SPONSORSHIP_TIERS: {
+    GET: `/sponsorship-tiers`,
+    GET_BY_ID: (id: string) => `/sponsorship-tiers/${id}`,
+    UPDATE: (id: string) => `/sponsorship-tiers/${id}`,
+    DELETE: (id: string) => `/sponsorship-tiers/${id}`,
   },
   PLAN: {
     UPGRADE: {
@@ -38,6 +40,7 @@ export const API_ROUTER = {
     DOWNGRADE: '/plan/downgrade',
   },
   USERS: {
+    GET: '/users',
     GET_BY_USERNAME: (username: string) => `/users/${username}`,
     GET_POSTS: (username: string) => `/users/${username}/posts`,
     MAP: (username: string) => `/users/${username}/map`,
@@ -47,16 +50,18 @@ export const API_ROUTER = {
     UNFOLLOW: (username: string) => `/users/${username}/unfollow`,
     SPONSORSHIP_TIERS: (username: string) =>
       `/users/${username}/sponsorship-tiers`,
+    BLOCK: (username: string) => `/users/${username}/block`,
   },
   SUBSCRIPTION_PLANS: {
     GET: '/plans',
     GET_BY_SLUG: (slug: string) => `/plans/${slug}`,
   },
   POSTS: {
-    QUERY: '/posts',
+    GET: '/posts',
     GET_BY_ID: (id: string) => `posts/${id}`,
     CREATE: 'posts',
     UPDATE: (id: string) => `posts/${id}`,
+    DELETE: (id: string) => `posts/${id}`,
     LIKE: (id: string) => `posts/${id}/like`,
     BOOKMARK: (id: string) => `posts/${id}/bookmark`,
   },
@@ -73,18 +78,23 @@ export const API_ROUTER = {
     DELETE: (id: string) => `payout-methods/${id}`,
     PLATFORM_LINK: (id: string) => `payout-methods/${id}/platform-link`,
   },
-  PAYOUT_BALANCE: {
-    GET: 'payout-balance',
+  BALANCE: {
+    GET: 'balance',
   },
   SPONSOR: {
     CHECKOUT: 'sponsor/checkout',
   },
   SPONSORSHIPS: {
     GET: 'sponsorships',
+    CANCEL: (id: string) => `sponsorships/${id}/cancel`,
   },
   STRIPE: {
     CREATE_SETUP_INTENT: 'stripe/create-setup-intent',
     CREATE_PAYMENT_INTENT: 'stripe/create-payment-intent',
+  },
+  PAYOUTS: {
+    GET: '/payouts',
+    CREATE: '/payouts',
   },
   TRIPS: {
     GET: '/trips',

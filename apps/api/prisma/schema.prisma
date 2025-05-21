@@ -18,43 +18,44 @@ datasource db {
 // models
 
 model User {
-  id                    Int                @id @default(autoincrement())
-  email                 String             @unique @db.VarChar(50)
-  username              String             @unique @db.VarChar(50)
-  password              String
-  role                  String             @db.VarChar(10)
-  is_creator            Boolean?           @default(false)
-  is_premium            Boolean?           @default(false)
-  is_email_verified     Boolean?           @default(false)
-  stripe_customer_id    String?            @db.VarChar(40)
-  followers_count       Int?               @default(0)
-  following_count       Int?               @default(0)
-  bookmarks_count       Int?               @default(0)
-  posts_count           Int?               @default(0)
-  profile               UserProfile?
-  plans                 UserPlan[]
-  sessions              UserSession[]
-  checkouts             Checkout[]
-  posts                 Post[]
-  trips                 Trip[]
-  post_likes            PostLike[]         @relation("user_post_likes")
-  post_bookmarks        PostBookmark[]     @relation("user_post_bookmarks")
-  following             UserFollow[]       @relation("user_follows_follower")
-  followers             UserFollow[]       @relation("user_follows_followee")
-  uploads               Upload[]
-  subscriptions         UserSubscription[]
-  payment_methods       PaymentMethod[]
-  payout_methods        PayoutMethod[]
-  payouts               Payout[]
-  sponsorship_tiers     SponsorshipTier[]
-  notifications         UserNotification[] @relation("user_notifications")
-  notification_mentions UserNotification[] @relation("user_notification_mentions")
-  creator_sponsorships  Sponsorship[]      @relation("creator_sponsorships")
-  user_sponsorships     Sponsorship[]      @relation("user_sponsorships")
-  user_checkouts        Checkout[]         @relation("user_checkouts")
-  creator_checkouts     Checkout[]         @relation("creator_checkouts")
-  created_at            DateTime?          @default(now())
-  updated_at            DateTime?          @updatedAt
+  id                          Int                @id @default(autoincrement())
+  email                       String             @unique @db.VarChar(50)
+  username                    String             @unique @db.VarChar(50)
+  password                    String
+  role                        String             @db.VarChar(10)
+  is_premium                  Boolean?           @default(false)
+  is_email_verified           Boolean?           @default(false)
+  is_stripe_account_connected Boolean?           @default(false)
+  blocked                     Boolean?           @default(false)
+  stripe_account_id           String?            @db.VarChar(40)
+  stripe_customer_id          String?            @db.VarChar(40)
+  followers_count             Int?               @default(0)
+  following_count             Int?               @default(0)
+  bookmarks_count             Int?               @default(0)
+  posts_count                 Int?               @default(0)
+  profile                     UserProfile?
+  plans                       UserPlan[]
+  sessions                    UserSession[]
+  posts                       Post[]
+  trips                       Trip[]
+  post_likes                  PostLike[]         @relation("user_post_likes")
+  post_bookmarks              PostBookmark[]     @relation("user_post_bookmarks")
+  following                   UserFollow[]       @relation("user_follows_follower")
+  followers                   UserFollow[]       @relation("user_follows_followee")
+  uploads                     Upload[]
+  subscriptions               UserSubscription[]
+  payment_methods             PaymentMethod[]
+  payout_methods              PayoutMethod[]
+  payouts                     Payout[]
+  sponsorship_tiers           SponsorshipTier[]
+  notifications               UserNotification[] @relation("user_notifications")
+  notification_mentions       UserNotification[] @relation("user_notification_mentions")
+  creator_sponsorships        Sponsorship[]      @relation("creator_sponsorships")
+  user_sponsorships           Sponsorship[]      @relation("user_sponsorships")
+  user_checkouts              Checkout[]         @relation("user_checkouts")
+  creator_checkouts           Checkout[]         @relation("creator_checkouts")
+  created_at                  DateTime?          @default(now())
+  updated_at                  DateTime?          @updatedAt
 
   @@map("users")
 }
@@ -77,14 +78,16 @@ model UserSession {
 }
 
 model UserProfile {
-  id         Int       @id @default(autoincrement())
-  name       String?   @db.VarChar(50)
-  picture    String?   @db.VarChar(200)
-  bio        String?   @db.VarChar(200)
-  user       User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  user_id    Int       @unique
-  created_at DateTime? @default(now())
-  updated_at DateTime? @updatedAt
+  id             Int       @id @default(autoincrement())
+  name           String?   @db.VarChar(50)
+  picture        String?   @db.VarChar(200)
+  bio            String?   @db.VarChar(200)
+  location_from  String?   @db.VarChar(200)
+  location_lives String?   @db.VarChar(200)
+  user           User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id        Int       @unique
+  created_at     DateTime? @default(now())
+  updated_at     DateTime? @updatedAt
 
   @@map("user_profiles")
 }
@@ -123,33 +126,44 @@ model Plan {
 }
 
 model Sponsorship {
-  id         Int       @id @default(autoincrement())
-  public_id  String    @unique @db.VarChar(14)
-  type       String    @db.VarChar(500)
-  amount     Int       @default(0) @db.Integer
-  currency   String
-  creator_id Int
-  creator    User      @relation("creator_sponsorships", fields: [creator_id], references: [id], onDelete: Cascade)
-  user_id    Int
-  user       User      @relation("user_sponsorships", fields: [user_id], references: [id], onDelete: Cascade)
-  created_at DateTime? @default(now())
-  updated_at DateTime? @updatedAt
-  deleted_at DateTime?
+  id                     Int              @id @default(autoincrement())
+  public_id              String           @unique @db.VarChar(14)
+  type                   String           @db.VarChar(500)
+  status                 String?          @default("pending")
+  amount                 Int              @default(0) @db.Integer
+  expiry                 DateTime?
+  next_charge            DateTime?
+  currency               String
+  stripe_subscription_id String?          @db.VarChar(30)
+  tier_id                Int?
+  tier                   SponsorshipTier? @relation(fields: [tier_id], references: [id], onDelete: Cascade)
+  creator_id             Int
+  creator                User             @relation("creator_sponsorships", fields: [creator_id], references: [id], onDelete: Cascade)
+  user_id                Int
+  user                   User             @relation("user_sponsorships", fields: [user_id], references: [id], onDelete: Cascade)
+  created_at             DateTime?        @default(now())
+  updated_at             DateTime?        @updatedAt
+  deleted_at             DateTime?
 
   @@map("sponsorships")
 }
 
 model SponsorshipTier {
-  id           Int       @id @default(autoincrement())
-  public_id    String    @unique @db.VarChar(14)
-  price        Int       @default(0) @db.Integer
-  description  String?   @db.VarChar(500)
-  is_available Boolean?  @default(false)
-  user_id      Int
-  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  created_at   DateTime? @default(now())
-  updated_at   DateTime? @updatedAt
-  deleted_at   DateTime?
+  id                    Int           @id @default(autoincrement())
+  public_id             String        @unique @db.VarChar(14)
+  price                 Int           @default(0) @db.Integer
+  stripe_product_id     String?       @db.VarChar(30)
+  stripe_price_month_id String?       @db.VarChar(30)
+  stripe_price_year_id  String?       @db.VarChar(30)
+  description           String?       @db.VarChar(500)
+  is_available          Boolean?      @default(false)
+  members_count         Int?          @default(0)
+  sponsorships          Sponsorship[]
+  user_id               Int
+  user                  User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  created_at            DateTime?     @default(now())
+  updated_at            DateTime?     @updatedAt
+  deleted_at            DateTime?
 
   @@map("sponsorship_tiers")
 }
@@ -188,7 +202,7 @@ model Post {
   title                 String?            @db.VarChar(200)
   content               String             @db.Text
   public                Boolean?           @default(false)
-  draft                 Boolean?           @default(false)
+  sponsored             Boolean?           @default(false)
   lat                   Float?
   lon                   Float?
   place                 String?            @db.VarChar(250)
@@ -305,11 +319,13 @@ model EmailVerification {
 model Checkout {
   id                       Int            @id @default(autoincrement())
   public_id                String         @unique @db.VarChar(20)
-  transactionType          String?
+  transaction_type         String?
   status                   String?        @default("pending")
   currency                 String?        @default("usd")
   total                    Int
   expiry                   DateTime?
+  sponsorship_type         String?
+  sponsorship_tier_id      Int?
   stripe_subscription_id   String?        @db.VarChar(40)
   stripe_payment_intent_id String?        @db.VarChar(40)
   stripe_product_id        String?        @db.VarChar(40)
@@ -328,8 +344,6 @@ model Checkout {
   created_at               DateTime?      @default(now())
   updated_at               DateTime?      @updatedAt
   deleted_at               DateTime?
-  User                     User?          @relation(fields: [userId], references: [id])
-  userId                   Int?
 
   @@map("checkouts")
 }
@@ -355,17 +369,18 @@ model PayoutMethod {
   public_id         String    @unique @db.VarChar(14)
   platform          String
   is_verified       Boolean   @default(false)
+  currency          String?
   business_type     String?
   business_name     String?
   email             String?   @db.VarChar(50)
   phone_number      String?   @db.VarChar(20)
   stripe_account_id String?
+  payouts           Payout[]
   user              User?     @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   user_id           Int?
   created_at        DateTime? @default(now())
   updated_at        DateTime? @updatedAt
   deleted_at        DateTime?
-  Payout            Payout[]
 
   @@map("payout_methods")
 }
@@ -375,10 +390,13 @@ model Payout {
   public_id        String       @unique @db.VarChar(14)
   status           String?      @default("pending") @db.VarChar(20)
   amount           Int
+  currency         String?
+  stripe_payout_id String?      @db.VarChar(40)
   payout_method    PayoutMethod @relation(fields: [payout_method_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   payout_method_id Int
   user             User         @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   user_id          Int
+  arrival_date     DateTime?
   confirmed_at     DateTime?    @default(now())
   created_at       DateTime?    @default(now())
   updated_at       DateTime?    @updatedAt

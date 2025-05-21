@@ -1,8 +1,10 @@
 'use client';
 
+import { ActionMenu } from '../menu';
 import { DataTable, DataTableColumn, DataTableRow } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { QUERY_KEYS, apiClient } from '@/lib/api';
 
@@ -18,7 +20,8 @@ type PostInsightTableData = {
   createdAt?: Date;
 };
 
-export const CreatorInsightsPostView = () => {
+export const InsightPostView = () => {
+  const router = useRouter();
   const session = useSession();
 
   const postInsightQuery = useQuery({
@@ -30,6 +33,16 @@ export const CreatorInsightsPostView = () => {
 
   const posts = postInsightQuery.data?.posts || [];
 
+  const handleEdit = (postId: string) => {
+    if (!postId) return;
+    router.push(ROUTER.POSTS.EDIT(postId));
+  };
+
+  const handleDelete = (postId: string) => {
+    if (!postId) return;
+    confirm('do you want to delete this post?');
+  };
+
   const columns: DataTableColumn<PostInsightTableData>[] = [
     {
       accessorKey: 'title',
@@ -40,8 +53,8 @@ export const CreatorInsightsPostView = () => {
         const title = row.getValue('title') as string;
         return (
           <Link
-            href={postId ? ROUTER.POSTS.DETAIL(postId) : '#'}
-            className="font-medium"
+            href={postId ? ROUTER.POSTS.EDIT(postId) : '#'}
+            className="font-medium underline"
           >
             {title}
           </Link>
@@ -50,7 +63,7 @@ export const CreatorInsightsPostView = () => {
     },
     {
       accessorKey: 'likesCount',
-      header: () => 'Likes',
+      header: () => 'Highlights',
     },
     {
       accessorKey: 'bookmarksCount',
@@ -61,6 +74,29 @@ export const CreatorInsightsPostView = () => {
       header: () => 'Date',
       cell: ({ row }) =>
         dateformat(row.getValue('createdAt')).format('MMM DD, YYYY'),
+    },
+    {
+      accessorKey: 'menu',
+      header: () => '',
+      cell: ({ row }) => {
+        const postId = row.original.postId;
+        return (
+          <div className="w-full flex flex-row justify-end">
+            <ActionMenu
+              actions={[
+                {
+                  label: 'Edit',
+                  onClick: () => handleEdit(postId),
+                },
+                {
+                  label: 'Delete',
+                  onClick: () => handleDelete(postId),
+                },
+              ]}
+            />
+          </div>
+        );
+      },
     },
   ];
 

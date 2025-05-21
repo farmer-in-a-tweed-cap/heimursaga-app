@@ -19,8 +19,6 @@ import {
 import { useToast } from '@repo/ui/hooks';
 import { cn } from '@repo/ui/lib/utils';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -79,7 +77,7 @@ export const ResetPasswordForm = () => {
   );
 
   return (
-    <div className={cn('flex flex-col gap-6')}>
+    <div className="w-full flex flex-col gap-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Forgot your password?</CardTitle>

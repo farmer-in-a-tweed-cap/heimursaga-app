@@ -2,16 +2,23 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   IPayoutBalanceGetResponse,
+  IPayoutCreatePayload,
+  IPayoutCreateResponse,
+  IPayoutGetResponse,
   IPayoutMethodCreatePayload,
   IPayoutMethodCreateResponse,
   IPayoutMethodGetAllByUsernameResponse,
   IPayoutMethodPlatformLinkGetResponse,
   PayoutMethodPlatform,
+  PayoutStatus,
+  UserRole,
 } from '@repo/types';
 
-import { integerToDecimal } from '@/lib/formatter';
+import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
+import { matchRoles } from '@/lib/utils';
 
+import { CURRENCIES } from '@/common/constants';
 import {
   ServiceBadRequestException,
   ServiceException,
@@ -284,7 +291,7 @@ export class PayoutService {
     }
   }
 
-  async getUserPayoutBalance({
+  async getBalance({
     session,
   }: ISessionQuery): Promise<IPayoutBalanceGetResponse> {
     try {
@@ -309,14 +316,21 @@ export class PayoutService {
         stripeAccount: payoutMethod.stripe_account_id,
       });
 
+      const currencyCode =
+        stripeBalance.available[0].currency ||
+        stripeBalance.pending[0].currency;
+      const currency = CURRENCIES[currencyCode];
+
       const response: IPayoutBalanceGetResponse = {
         available: {
           amount: integerToDecimal(stripeBalance.available[0].amount),
-          currency: stripeBalance.available[0].currency,
+          currency: currency.code,
+          symbol: currency.symbol,
         },
         pending: {
           amount: integerToDecimal(stripeBalance.pending[0].amount),
-          currency: stripeBalance.pending[0].currency,
+          currency: currency.code,
+          symbol: currency.symbol,
         },
       };
 
@@ -325,7 +339,171 @@ export class PayoutService {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payout methods not found');
+        : new ServiceForbiddenException('balance not available');
+      throw exception;
+    }
+  }
+
+  async getPayouts({ session }: ISessionQuery): Promise<IPayoutGetResponse> {
+    try {
+      const { userId, userRole } = session;
+
+      // check access
+      const access =
+        !!userId && matchRoles(userRole, [UserRole.CREATOR, UserRole.ADMIN]);
+      if (!access) throw new ServiceForbiddenException();
+
+      const where = {
+        user_id: userId,
+        deleted_at: null,
+      } as Prisma.PayoutWhereInput;
+
+      // get payouts
+      const results = await this.prisma.payout.count({ where });
+      const data = await this.prisma.payout.findMany({
+        where,
+        select: {
+          public_id: true,
+          status: true,
+          amount: true,
+          currency: true,
+          created_at: true,
+          arrival_date: true,
+        },
+      });
+
+      const response: IPayoutGetResponse = {
+        results,
+        data: data.map(
+          ({
+            public_id: id,
+            amount,
+            created_at: createdAt,
+            currency,
+            status,
+            arrival_date,
+          }) => ({
+            id,
+            amount: integerToDecimal(amount),
+            status,
+            currency: {
+              code: currency,
+              symbol: CURRENCIES[currency].symbol,
+            },
+            created: createdAt,
+            arrival: arrival_date,
+          }),
+        ),
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('payouts not available');
+      throw exception;
+    }
+  }
+
+  async createPayout({
+    session,
+    payload,
+  }: ISessionQueryWithPayload<
+    {},
+    IPayoutCreatePayload
+  >): Promise<IPayoutCreateResponse> {
+    try {
+      const { userId, userRole } = session;
+
+      // check access
+      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      if (!access) throw new ServiceForbiddenException();
+
+      // get a user
+      const user = await this.prisma.user.findFirstOrThrow({
+        where: {
+          id: userId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      // check a payout method
+      const payoutMethod = await this.prisma.payoutMethod
+        .findFirstOrThrow({
+          where: {
+            user_id: userId,
+            is_verified: true,
+            stripe_account_id: { not: null },
+            deleted_at: null,
+          },
+          select: {
+            id: true,
+            stripe_account_id: true,
+            currency: true,
+          },
+          take: 1,
+        })
+        .catch(() => {
+          throw new ServiceBadRequestException('payout method not available');
+        });
+
+      const { amount } = payload;
+      const { currency } = payoutMethod;
+
+      // get available balance
+      const stripeBalance = await this.stripeService.stripe.balance.retrieve({
+        stripeAccount: payoutMethod.stripe_account_id,
+      });
+      const balance = stripeBalance.available[0].amount;
+      if (balance <= 0) {
+        throw new ServiceBadRequestException(
+          'payout not available, insufficient funds',
+        );
+      }
+
+      // request a payout on stripe
+      const stripePayout = await this.stripeService.stripe.payouts.create(
+        {
+          amount: decimalToInteger(amount),
+          currency,
+        },
+        { stripeAccount: payoutMethod.stripe_account_id },
+      );
+
+      // create a payout
+      const payout = await this.prisma.payout.create({
+        data: {
+          public_id: generator.publicId(),
+          status: PayoutStatus.CONFIRMED,
+          amount: stripePayout.amount,
+          currency: stripePayout.currency,
+          stripe_payout_id: stripePayout.id,
+          payout_method: {
+            connect: { id: payoutMethod.id },
+          },
+          user: {
+            connect: { id: user.id },
+          },
+          arrival_date: new Date(stripePayout.arrival_date * 1000),
+        },
+        select: {
+          public_id: true,
+        },
+      });
+
+      const response: IPayoutCreateResponse = {
+        payoutId: payout.public_id,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('payout not created');
       throw exception;
     }
   }

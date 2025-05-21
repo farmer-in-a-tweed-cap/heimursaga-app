@@ -10,10 +10,7 @@ import mapboxgl, {
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useEffect, useRef, useState } from 'react';
 
-import { dateformat } from '@/lib/date-format';
-
 import { APP_CONFIG } from '@/config';
-import { toGeoJson } from '@/lib';
 
 import { MapNavigationControl } from './map-control';
 import { addSources, updateSources } from './map.utils';
@@ -22,6 +19,7 @@ export type MapOnLoadHandler = (data: MapOnLoadHandlerValue) => void;
 
 export type MapOnLoadHandlerValue = {
   mapbox: mapboxgl.Map | null;
+  viewport: { lat: number; lon: number };
   bounds?: {
     ne: { lat: number; lon: number };
     sw: { lat: number; lon: number };
@@ -242,8 +240,8 @@ export const Map: React.FC<Props> = ({
     let mapboxConfig: MapOptions = {
       container: mapboxContainerRef.current,
       style: config.style,
-      maxZoom: maxZoom ? maxZoom : config.maxZoom,
-      minZoom: minZoom ? minZoom : config.minZoom,
+      maxZoom: maxZoom >= 0 ? maxZoom : config.maxZoom,
+      minZoom: minZoom >= 0 ? minZoom : config.minZoom,
     };
 
     if (coordinates) {
@@ -327,12 +325,13 @@ export const Map: React.FC<Props> = ({
     }
 
     // update mapbox on load
-    mapboxRef.current.on('load', () => {
+    mapboxRef.current.on('load', (e) => {
       setMapLoaded(true);
 
       if (!mapboxRef.current) return;
 
       // get bounds
+      const center = mapboxRef.current.getCenter();
       const bounds = mapboxRef.current.getBounds();
       const ne = bounds?.getNorthEast(); // northeast corner
       const sw = bounds?.getSouthWest(); // southwest corner
@@ -341,6 +340,7 @@ export const Map: React.FC<Props> = ({
       if (onLoad) {
         onLoad({
           mapbox: mapboxRef.current,
+          viewport: { lat: center.lat, lon: center.lng },
           bounds:
             ne && sw
               ? {
@@ -367,6 +367,7 @@ export const Map: React.FC<Props> = ({
             ['linear'],
             ['zoom'],
             // dynamic point sizes ([zoom, radius])
+            ...[0, 3],
             ...[5, 5],
             ...[8, 8],
             ...[12, 12],

@@ -22,6 +22,8 @@ import { useSession } from '@/hooks';
 import { redirect } from '@/lib';
 import { ROUTER } from '@/router';
 
+import { UserGuestAvatar } from './user-avatar';
+
 const getRoleLabel = (role: string) => {
   switch (role) {
     case UserRole.USER:
@@ -40,6 +42,8 @@ type Props = {
 export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
   const session = useSession();
 
+  const userRole = session?.role as UserRole;
+
   const handleLogout = async () => {
     try {
       // log out
@@ -56,10 +60,40 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
   };
 
   const { username, picture = '', name = '' } = session || {};
-  const role = getRoleLabel(session?.role || UserRole.USER);
+  const roleLabel = getRoleLabel(session?.role || UserRole.USER);
 
-  const links = {
+  const LINKS = {
     user: [
+      {
+        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        label: 'Profile',
+      },
+      {
+        href: ROUTER.USER.SETTINGS.HOME,
+        label: 'Settings',
+      },
+      {
+        href: ROUTER.PREMIUM,
+        label: 'Upgrade',
+      },
+    ],
+    creator: [
+      {
+        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        label: 'Profile',
+      },
+      {
+        href: ROUTER.USER.SETTINGS.HOME,
+        label: 'Settings',
+      },
+    ],
+    guest: [
+      {
+        href: ROUTER.LOGIN,
+        label: 'Log in',
+      },
+    ],
+    admin: [
       {
         href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
         label: 'Profile',
@@ -71,17 +105,40 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
     ],
     info: [
       {
-        href: '#',
+        href: ROUTER.LEGAL.PRIVACY,
         label: 'Privacy policy',
+        openNewTab: true,
       },
       {
-        href: '#',
+        href: ROUTER.LEGAL.TERMS,
         label: 'Terms of service',
+        openNewTab: true,
       },
     ],
   };
 
-  return session.logged ? (
+  let links: { href: string; label: string }[] = [];
+  let legalLinks: { href: string; label: string; openNewTab: boolean }[] = [];
+
+  switch (userRole) {
+    case UserRole.ADMIN:
+      links = LINKS.admin;
+      legalLinks = [];
+      break;
+    case UserRole.CREATOR:
+      links = LINKS.creator;
+      legalLinks = LINKS.info;
+      break;
+    case UserRole.USER:
+      links = LINKS.user;
+      legalLinks = LINKS.info;
+      break;
+    default:
+      links = LINKS.guest;
+      legalLinks = LINKS.info;
+      break;
+  }
+  return (
     <DropdownMenu>
       <DropdownMenuTrigger>
         <div
@@ -90,22 +147,26 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
             collapsed ? '' : 'p-2',
           )}
         >
-          <Avatar>
-            <AvatarFallback>{name?.slice(0, 1)}</AvatarFallback>
-            <AvatarImage src={picture} alt="avatar" />
-          </Avatar>
+          {session.logged ? (
+            <Avatar>
+              <AvatarFallback>{name?.slice(0, 1)}</AvatarFallback>
+              <AvatarImage src={picture} alt="avatar" />
+            </Avatar>
+          ) : (
+            <UserGuestAvatar />
+          )}
           {!collapsed && (
             <div className="hidden lg:flex flex-col items-start text-sm">
               <span className="font-medium text-sm text-white">{name}</span>
               <span className={cn('font-normal text-xs capitalize')}>
-                {role}
+                {roleLabel}
               </span>
             </div>
           )}
         </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="bg-background min-w-[240px] ml-4 mb-2 p-0 py-2">
-        {links.user.map(({ href, label }, key) => (
+        {links.map(({ href, label }, key) => (
           <DropdownMenuItem key={key} asChild>
             <Link
               href={href}
@@ -116,30 +177,29 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        {links.info.map(({ href, label }, key) => (
+        {legalLinks.map(({ href, label, openNewTab = false }, key) => (
           <DropdownMenuItem key={key} asChild>
             <Link
               href={href}
+              target={openNewTab ? '_blank' : '_self'}
               className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
             >
               {label}
             </Link>
           </DropdownMenuItem>
         ))}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem
-          className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
-          onClick={handleLogout}
-        >
-          Log out
-        </DropdownMenuItem>
+        {session.logged && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
+              onClick={handleLogout}
+            >
+              Log out
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
-  ) : (
-    <div className="flex flex-col">
-      <Button variant="secondary" asChild>
-        <Link href={ROUTER.LOGIN}>Log in</Link>
-      </Button>
-    </div>
   );
 };

@@ -8,6 +8,9 @@ import {
   IPaymentMethodGetAllResponse,
   IPaymentMethodGetByIdResponse,
   IPayoutBalanceGetResponse,
+  IPayoutCreatePayload,
+  IPayoutCreateResponse,
+  IPayoutGetResponse,
   IPayoutMethodCreatePayload,
   IPayoutMethodCreateResponse,
   IPayoutMethodGetAllByUsernameResponse,
@@ -21,6 +24,7 @@ import {
   IPostUpdatePayload,
   ISessionUserGetResponse,
   ISignupPayload,
+  ISitemapGetResponse,
   ISponsorCheckoutPayload,
   ISponsorCheckoutResponse,
   ISponsorshipGetAllResponse,
@@ -39,13 +43,14 @@ import {
   ITripUpdatePayload,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
+  IUserGetAllResponse,
   IUserMapGetResponse,
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
   IUserProfileDetail,
-  IUserSettingsProfileResponse,
-  IUserSettingsProfileUpdateQuery,
+  IUserSettingsProfileGetResponse,
+  IUserSettingsProfileUpdatePayload,
   IWaypointCreatePayload,
   IWaypointUpdatePayload,
 } from '@repo/types';
@@ -83,6 +88,11 @@ export interface IApiClientQueryWithPayload<Q = any, T = any> {
 }
 
 export const apiClient = {
+  generateSitemap: async (config?: RequestConfig) =>
+    api.request<ISitemapGetResponse>(API_ROUTER.SITEMAP, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   test: async () =>
     api.request<{ data: any[]; results: number }>(API_ROUTER.TEST),
   login: async ({ payload }: IApiClientQueryWithPayload<{}, ILoginPayload>) =>
@@ -121,12 +131,20 @@ export const apiClient = {
     api.request<void>(API_ROUTER.VALIDATE_TOKEN(token), {
       cookie: config ? config.cookie : undefined,
     }),
-  getPosts: async (query: any, config?: RequestConfig) =>
-    api.request<IPostQueryResponse>(API_ROUTER.POSTS.QUERY, config),
+  // posts
+  getPosts: async (config?: RequestConfig) =>
+    api.request<IPostQueryResponse>(API_ROUTER.POSTS.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   getPostById: async (
     { query }: IApiClientQuery<{ id: string }>,
     config?: RequestConfig,
-  ) => api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(query.id), config),
+  ) =>
+    api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(query.id), {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   createPost: async (body: IPostCreatePayload) =>
     api.request<IPostCreateResponse>(API_ROUTER.POSTS.CREATE, {
       method: API_METHODS.POST,
@@ -144,6 +162,17 @@ export const apiClient = {
       body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,
     }),
+  deletePost: async ({ query }: IApiClientQuery<{ postId: string }>) =>
+    api.request<void>(API_ROUTER.POSTS.DELETE(query.postId), {
+      method: API_METHODS.DELETE,
+      body: JSON.stringify({}),
+    }),
+  // users
+  getUsers: async (config?: RequestConfig) =>
+    api.request<IUserGetAllResponse>(API_ROUTER.USERS.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   getUserByUsername: async (
     { username }: { username: string },
     config?: RequestConfig,
@@ -152,6 +181,15 @@ export const apiClient = {
       API_ROUTER.USERS.GET_BY_USERNAME(username),
       config,
     ),
+  blockUser: async (
+    { query }: IApiClientQuery<{ username: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.USERS.BLOCK(query.username), {
+      method: API_METHODS.POST,
+      body: JSON.stringify({}),
+      ...config,
+    }),
   getUserPosts: async (config?: RequestConfig) =>
     api.request<IUserPostsQueryResponse>(API_ROUTER.USER.POSTS, config),
   getUserPostsByUsername: async (
@@ -243,7 +281,7 @@ export const apiClient = {
       cookie: config ? config.cookie : undefined,
     }),
   getUserProfileSettings: async (config?: RequestConfig) =>
-    api.request<IUserSettingsProfileResponse>(
+    api.request<IUserSettingsProfileGetResponse>(
       API_ROUTER.USER.SETTINGS.PROFILE,
       {
         method: API_METHODS.GET,
@@ -251,13 +289,15 @@ export const apiClient = {
       },
     ),
   updateUserProfileSettings: async (
-    payload: IUserSettingsProfileUpdateQuery,
+    {
+      payload,
+    }: IApiClientQueryWithPayload<{}, IUserSettingsProfileUpdatePayload>,
     config?: RequestConfig,
   ) =>
     api.request<void>(API_ROUTER.USER.SETTINGS.PROFILE, {
       method: API_METHODS.PUT,
       body: JSON.stringify(payload),
-      cookie: config ? config.cookie : undefined,
+      ...config,
     }),
   updateUserPicture: async (
     payload: IUserPictureUploadClientPayload,
@@ -338,9 +378,9 @@ export const apiClient = {
       cookie: config ? config.cookie : undefined,
     }),
   // sponsorships
-  getUserSponsorshipTiers: async (config?: RequestConfig) =>
+  getSponsorshipTiers: async (config?: RequestConfig) =>
     api.request<ISponsorshipTierGetAllResponse>(
-      API_ROUTER.USER.SPONSORSHIP_TIERS.GET,
+      API_ROUTER.SPONSORSHIP_TIERS.GET,
       {
         method: API_METHODS.GET,
         ...config,
@@ -356,7 +396,7 @@ export const apiClient = {
     >,
     config?: RequestConfig,
   ) =>
-    api.request<void>(API_ROUTER.USER.SPONSORSHIP_TIERS.UPDATE(query.id), {
+    api.request<void>(API_ROUTER.SPONSORSHIP_TIERS.UPDATE(query.id), {
       method: API_METHODS.PUT,
       body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,
@@ -455,10 +495,25 @@ export const apiClient = {
         ...config,
       },
     ),
-  // payout balance
-  getUserPayoutBalance: async (config?: RequestConfig) =>
-    api.request<IPayoutBalanceGetResponse>(API_ROUTER.PAYOUT_BALANCE.GET, {
+  // balance
+  getBalance: async (config?: RequestConfig) =>
+    api.request<IPayoutBalanceGetResponse>(API_ROUTER.BALANCE.GET, {
       method: API_METHODS.GET,
+      ...config,
+    }),
+  // payouts
+  getPayouts: async (config?: RequestConfig) =>
+    api.request<IPayoutGetResponse>(API_ROUTER.PAYOUTS.GET, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
+  createPayout: async (
+    { payload }: IApiClientQueryWithPayload<{}, IPayoutCreatePayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<IPayoutCreateResponse>(API_ROUTER.PAYOUTS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
       ...config,
     }),
   // sponsor
@@ -471,9 +526,23 @@ export const apiClient = {
       body: JSON.stringify(payload),
       ...config,
     }),
+  getUserSponsorships: async (config?: RequestConfig) =>
+    api.request<ISponsorshipGetAllResponse>(API_ROUTER.USER.SPONSORSHIPS, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   getCreatorSponsorships: async (config?: RequestConfig) =>
     api.request<ISponsorshipGetAllResponse>(API_ROUTER.SPONSORSHIPS.GET, {
       method: API_METHODS.GET,
+      ...config,
+    }),
+  cancelSponsorship: async (
+    { query }: IApiClientQuery<{ sponsorshipId: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.SPONSORSHIPS.CANCEL(query.sponsorshipId), {
+      method: API_METHODS.POST,
+      body: JSON.stringify({}),
       ...config,
     }),
   // insights

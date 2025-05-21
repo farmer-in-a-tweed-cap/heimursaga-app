@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks';
 
-import { Map, MapSource } from './map';
+import { MAP_SOURCES, Map, MapSource } from './map';
 import { MapPreviewOverlay } from './map-preview-overlay';
 
 type Props = {
@@ -16,6 +16,8 @@ type Props = {
   lon?: number;
   alt?: number;
   overlay?: boolean;
+  zoom?: number;
+  sources?: MapSource[];
   markers?: {
     lat: number;
     lon: number;
@@ -30,7 +32,9 @@ export const MapPreview: React.FC<Props> = ({
   alt = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
   markers,
   className,
+  zoom = 0,
   overlay = true,
+  sources = [],
   onClick = () => {},
 }) => {
   const mapbox = useMapbox();
@@ -69,6 +73,8 @@ export const MapPreview: React.FC<Props> = ({
                   }
                 : undefined
             }
+            sources={sources}
+            minZoom={zoom}
             width={width}
             height={height}
             cursor="pointer"
@@ -85,7 +91,7 @@ export const MapStaticPreview: React.FC<Props> = ({
   href,
   lat = 0,
   lon = 0,
-  alt = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
+  zoom = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
   markers = [],
   overlay = true,
   className,
@@ -105,7 +111,7 @@ export const MapStaticPreview: React.FC<Props> = ({
       ? markers.map(({ lon, lat }) => `pin-s+${color}(${lon},${lat})`).join(',')
       : '';
 
-  const src = `https://api.mapbox.com/styles/v1/${style}/static/${markers.length >= 1 ? `${pin}/` : ''}${lon},${lat},${alt},0,0/${width}x${height}${retina}?access_token=${token}`;
+  const src = `https://api.mapbox.com/styles/v1/${style}/static/${markers.length >= 1 ? `${pin}/` : ''}${lon},${lat},${zoom},0,0/${width}x${height}${retina}?access_token=${token}`;
 
   return (
     <div
@@ -115,7 +121,7 @@ export const MapStaticPreview: React.FC<Props> = ({
       )}
     >
       {overlay && <MapPreviewOverlay href={href} onClick={onClick} />}
-      <div className="z-10 w-full h-full">
+      <div className="z-10 w-full aspect-5/2">
         <Image
           src={src}
           alt=""

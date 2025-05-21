@@ -2,6 +2,7 @@
 import {
   CheckoutMode,
   CheckoutStatus,
+  MapQueryContext,
   PlanExpiryPeriod,
   SponsorshipType,
 } from './enums';
@@ -18,6 +19,16 @@ export type GeoJson<T = any> = {
     };
   }[];
 };
+
+// app
+export interface ISitemapGetResponse {
+  sources: {
+    loc: string;
+    lastmod: Date;
+    changefreq: 'daily' | 'monthly' | 'yearly';
+    priority: number;
+  }[];
+}
 
 // session
 export interface ISessionUser {
@@ -64,12 +75,29 @@ export interface IPasswordUpdatePayload {
 }
 
 // user
+export interface IUserDetail {
+  username: string;
+  role: string;
+  name: string;
+  picture: string;
+  postsCount?: number;
+  memberDate?: Date;
+  blocked?: boolean;
+}
+
+export interface IUserGetAllResponse {
+  data: IUserDetail[];
+  results: number;
+}
+
 export interface IUserProfileDetail {
   username: string;
   name: string;
   picture: string;
   bio?: string;
   memberDate?: Date;
+  locationFrom?: string;
+  locationLives?: string;
   followed?: boolean;
   you?: boolean;
   creator?: boolean;
@@ -93,23 +121,27 @@ export interface IUserSettingsUpdateQuery {
   };
 }
 
-export interface IUserSettingsProfileResponse {
+export interface IUserSettingsProfileGetResponse {
   username: string;
   email: string;
   name: string;
   bio: string;
   picture: string;
+  locationFrom?: string;
+  locationLives?: string;
 }
 
-export interface IUserSettingsProfileUpdateQuery {
+export interface IUserSettingsProfileUpdatePayload {
   name?: string;
   bio?: string;
   picture?: string;
+  from?: string;
+  livesIn?: string;
 }
 
 export interface IUserPostsQueryResponse {
   results: number;
-  data: IPostDetailResponse[];
+  data: IPostDetail[];
 }
 
 export interface IUserFollowersQueryResponse {
@@ -214,7 +246,7 @@ export interface IPostDetail {
   lat: number;
   lon: number;
   public?: boolean;
-  draft?: boolean;
+  sponsored?: boolean;
   liked?: boolean;
   bookmarked?: boolean;
   likesCount?: number;
@@ -222,19 +254,26 @@ export interface IPostDetail {
   place?: string;
   date?: Date;
   createdByMe?: boolean;
+  createdAt?: Date;
   author?: {
     username: string;
     name: string;
     picture: string;
+    creator?: boolean;
   };
 }
 
-export interface IPostQueryResponse {
-  data: IPostDetailResponse[];
+export interface IPostGetAllResponse {
+  data: IPostDetail[];
   results: number;
 }
 
-export interface IPostDetailResponse extends IPostDetail {}
+export interface IPostQueryResponse {
+  data: IPostDetail[];
+  results: number;
+}
+
+export interface IPostGetResponse extends IPostDetail {}
 
 export interface IPostCreatePayload {
   title: string;
@@ -242,7 +281,7 @@ export interface IPostCreatePayload {
   lat?: number;
   lon?: number;
   public?: boolean;
-  draft?: boolean;
+  sponsored?: boolean;
   place?: string;
   date?: Date;
 }
@@ -257,7 +296,7 @@ export interface IPostUpdatePayload {
   lat?: number;
   lon?: number;
   public?: boolean;
-  draft?: boolean;
+  sponsored?: boolean;
   place?: string;
   date?: Date;
 }
@@ -272,7 +311,7 @@ export interface IPostBookmarkResponse {
 
 export interface IPostQueryMapResponse {
   results: number;
-  data: IPostDetailResponse[];
+  data: IPostDetail[];
   geojson?: {
     type: 'FeatureCollection';
     features: {
@@ -287,8 +326,9 @@ export interface IPostQueryMapResponse {
 export interface IMapQueryPayload {
   location?: IMapQueryLocation;
   limit?: number;
+  context?: MapQueryContext;
   page?: number;
-  userId?: number;
+  username?: string;
 }
 
 export interface IMapQueryResponse {
@@ -296,14 +336,17 @@ export interface IMapQueryResponse {
   waypoints: {
     lat: number;
     lon: number;
+    date: Date;
     post?: {
       id: string;
       title: string;
       content: string;
+      bookmarked: boolean;
       author: {
         username: string;
         name: string;
         picture: string;
+        creator?: boolean;
       };
     };
   }[];
@@ -444,11 +487,39 @@ export interface IPayoutBalanceGetResponse {
   pending: {
     amount: number;
     currency: string;
+    symbol: string;
   };
   available: {
     amount: number;
     currency: string;
+    symbol: string;
   };
+}
+
+// payouts
+export interface IPayoutDetail {
+  id: string;
+  amount: number;
+  status: string;
+  currency: {
+    code: string;
+    symbol: string;
+  };
+  created: Date;
+  arrival?: Date;
+}
+
+export interface IPayoutGetResponse {
+  data: IPayoutDetail[];
+  results: number;
+}
+
+export interface IPayoutCreatePayload {
+  amount: number;
+}
+
+export interface IPayoutCreateResponse {
+  payoutId: string;
 }
 
 // sponsor
@@ -469,6 +540,7 @@ export interface ISponsorshipDetail {
   id: string;
   type: SponsorshipType;
   amount: number;
+  status: string;
   currency: string;
   user?: {
     username: string;
@@ -504,17 +576,16 @@ export interface IPostInsightsGetResponse {
 export interface ITripDetail {
   id: string;
   title: string;
+  startDate: Date;
+  endDate: Date;
   description?: string;
   waypoints: IWaypointDetail[];
+  waypointsCount?: number;
 }
 
 export interface ITripGetAllResponse {
   results: number;
-  data: {
-    id: string;
-    title: string;
-    waypointsCount: number;
-  }[];
+  data: ITripDetail[];
 }
 
 export interface ITripGetByIdResponse extends ITripDetail {}

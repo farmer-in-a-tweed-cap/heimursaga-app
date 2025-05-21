@@ -7,12 +7,21 @@ type SpinnerProps = {
   size?: number;
 };
 
-export const Spinner: React.FC<SpinnerProps> = ({ size = 20, className }) => {
+export const Spinner: React.FC<SpinnerProps> = ({ size = 18, className }) => {
   return <Loader2 size={size} className={cn('animate-spin', className)} />;
 };
 
-export const LoadingSpinner: React.FC<SpinnerProps> = () => (
-  <div className="w-full h-full flex flex-row justify-center items-center p-6">
+export const LoadingSpinner: React.FC<SpinnerProps> = ({
+  className,
+}: {
+  className?: string;
+}) => (
+  <div
+    className={cn(
+      'w-full h-full flex flex-row justify-center items-center p-6',
+      className,
+    )}
+  >
     <Spinner />
   </div>
 );

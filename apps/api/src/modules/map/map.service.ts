@@ -1,10 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { IMapQueryPayload, IMapQueryResponse } from '@repo/types';
+import {
+  IMapQueryPayload,
+  IMapQueryResponse,
+  MapQueryContext,
+  UserRole,
+} from '@repo/types';
 
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
+  ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
 } from '@/common/exceptions';
@@ -24,20 +30,103 @@ export class MapService {
     session,
   }: IQueryWithSession<IMapQueryPayload>): Promise<IMapQueryResponse> {
     try {
-      const { location } = query;
+      const { userId } = session;
+      const { context, location, username } = query;
 
       let where = {
         public: true,
-        posts: {
-          every: {
-            public: true,
-            waypoint_id: { not: null },
-          },
-        },
+        deleted_at: null,
       } as Prisma.WaypointWhereInput;
+      let select = {
+        lat: true,
+        lon: true,
+        date: true,
+        posts: {
+          select: {
+            public_id: true,
+            title: true,
+            content: true,
+            date: true,
+            bookmarks: userId
+              ? {
+                  where: { user_id: userId },
+                  select: { post_id: true },
+                }
+              : undefined,
+            author: {
+              select: {
+                username: true,
+                role: true,
+                profile: {
+                  select: {
+                    name: true,
+                    picture: true,
+                  },
+                },
+              },
+            },
+            created_at: true,
+          },
+          take: 1,
+        },
+      } satisfies Prisma.WaypointSelect;
 
-      const take = 50;
+      const take = 500;
 
+      // filter by context
+      switch (context) {
+        case MapQueryContext.GLOBAL:
+          where = {
+            ...where,
+            posts: {
+              some: {
+                public: true,
+                deleted_at: null,
+                waypoint_id: { not: null },
+              },
+            },
+          };
+          break;
+        case MapQueryContext.FOLLOWING:
+          if (userId) {
+            where = {
+              ...where,
+              posts: {
+                some: {
+                  public: true,
+                  deleted_at: null,
+                  author: {
+                    followers: {
+                      some: {
+                        follower_id: userId,
+                      },
+                    },
+                  },
+                },
+              },
+            };
+          }
+          break;
+        case MapQueryContext.USER:
+          where = {
+            ...where,
+            posts: {
+              some: {
+                public_id: { not: null },
+                public: true,
+                deleted_at: null,
+                author: {
+                  username,
+                },
+              },
+            },
+          };
+          break;
+        default:
+          throw new ServiceBadRequestException('map query filter invalid');
+      }
+
+      // filter by location
       if (location) {
         const { sw, ne } = location.bounds;
 
@@ -60,54 +149,38 @@ export class MapService {
       const results = await this.prisma.waypoint.count({ where });
       const waypoints = await this.prisma.waypoint.findMany({
         where,
-        select: {
-          lat: true,
-          lon: true,
-          posts: {
-            select: {
-              public_id: true,
-              title: true,
-              content: true,
-              author: {
-                select: {
-                  username: true,
-                  profile: {
-                    select: {
-                      name: true,
-                      picture: true,
-                    },
-                  },
-                },
-              },
-            },
-            take: 1,
-          },
-        },
+        select,
         take,
-        orderBy: [{ id: 'desc' }],
       });
 
       const response: IMapQueryResponse = {
         results,
-        waypoints: waypoints.map(({ lat, lon, posts }) => {
-          const post = posts[0];
-          return {
-            lat,
-            lon,
-            post: post
-              ? {
-                  id: post.public_id,
-                  title: post.title,
-                  content: post.content.slice(0, 100),
-                  author: {
-                    username: post.author.username,
-                    name: post.author.profile.name,
-                    picture: getStaticMediaUrl(post.author.profile.picture),
-                  },
-                }
-              : undefined,
-          };
-        }),
+        waypoints: waypoints
+          .map(({ lat, lon, posts }) => {
+            const post = posts[0];
+            return {
+              lat,
+              lon,
+              date: post ? post.date : undefined,
+              post: post
+                ? {
+                    id: post.public_id,
+                    title: post.title,
+                    content: post.content.slice(0, 100),
+                    author: {
+                      username: post.author.username,
+                      name: post.author.profile.name,
+                      picture: getStaticMediaUrl(post.author.profile.picture),
+                      creator: post.author.role === UserRole.CREATOR,
+                    },
+                    bookmarked: userId ? post.bookmarks.length > 0 : false,
+                  }
+                : undefined,
+            };
+          })
+          .sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+          ),
       };
 
       return response;

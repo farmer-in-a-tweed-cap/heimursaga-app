@@ -20,7 +20,7 @@ import { QUERY_KEYS, apiClient } from '@/lib/api';
 import { useModal, useSession } from '@/hooks';
 import { redirect } from '@/lib';
 
-export const UserSettingsBillingView = () => {
+export const PayoutBillingView = () => {
   const router = useRouter();
   const session = useSession();
   const modal = useModal();

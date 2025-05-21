@@ -5,9 +5,7 @@ import {
   Button,
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
-  CardTitle,
   Form,
   FormControl,
   FormField,
@@ -98,7 +96,7 @@ export const LoginForm = () => {
   );
 
   return (
-    <div className={cn('flex flex-col gap-6')}>
+    <div className="w-full flex flex-col gap-6">
       <Card>
         <CardHeader>
           <h2 className="text-2xl font-bold">Welcome back.</h2>

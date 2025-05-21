@@ -1,6 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ISponsorCheckoutPayload, SponsorshipType } from '@repo/types';
 import {
+  ISponsorCheckoutPayload,
+  ISponsorshipTierUpdatePayload,
+  SponsorshipType,
+} from '@repo/types';
+import {
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsNumber,
@@ -34,4 +39,21 @@ export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
   @IsNumber()
   @IsOptional()
   oneTimePaymentAmount?: number;
+}
+
+export class SponsorshipTierUpdateDto implements ISponsorshipTierUpdatePayload {
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  price: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  description: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isAvailable: boolean;
 }

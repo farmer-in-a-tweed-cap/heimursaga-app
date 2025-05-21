@@ -18,8 +18,8 @@ import {
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
-  IUserSettingsProfileResponse,
-  IUserSettingsProfileUpdateQuery,
+  IUserSettingsProfileGetResponse,
+  IUserSettingsProfileUpdatePayload,
 } from '@repo/types';
 
 import { IApiClientQueryWithPayload, apiClient } from './api-client';
@@ -36,6 +36,7 @@ export const QUERY_KEYS = {
   MAP: {
     QUERY: 'map_query',
   },
+  USERS: 'users',
   USER_FOLLOWERS: 'user_followers',
   USER_FOLLOWING: 'user_following',
   USER_FEED: 'user_feed',
@@ -47,10 +48,12 @@ export const QUERY_KEYS = {
     POSTS: 'user_posts',
     NOTIFICATIONS: 'user_notifications',
     MAP: 'user_map',
+    SPONSORSHIPS: 'user_sponsorships',
   },
   MEMBERSHIPS: 'memberships',
   PAYOUT_METHODS: 'payout_methods',
-  PAYOUT_BALANCE: 'payout_balance',
+  PAYOUTS: 'payouts',
+  BALANCE: 'balance',
   SPONSORSHIPS: 'sponsorships',
   SPONSORSHIP_TIERS: 'sponsorship_tiers',
   INSIGHTS: {
@@ -131,8 +134,8 @@ export const getPostsQuery = createQuery<{}, IPostQueryResponse>(
 
 export const queryPostMapQuery = createQuery<void, IPostQueryMapResponse>(
   [QUERY_KEYS.GET_POSTS],
-  (query) =>
-    apiClient.getPosts(query).then(({ success, message, data }) => {
+  () =>
+    apiClient.getPosts().then(({ success, message, data }) => {
       if (!success) {
         throw new Error(message);
       }
@@ -295,27 +298,14 @@ export const getUserDrafts = createQuery<void, IPostQueryResponse>(
 
 export const getUserProfileSettingsQuery = createQuery<
   void,
-  IUserSettingsProfileResponse
+  IUserSettingsProfileGetResponse
 >([QUERY_KEYS.USER_SETTINGS_PROFILE], () =>
   apiClient.getUserProfileSettings().then(({ success, message, data }) => {
     if (!success) {
       throw new Error(message);
     }
-    return data as IUserSettingsProfileResponse;
+    return data as IUserSettingsProfileGetResponse;
   }),
-);
-
-export const updateUserProfileSettingsMutation = createMutation<
-  IUserSettingsProfileUpdateQuery,
-  void
->((payload) =>
-  apiClient
-    .updateUserProfileSettings(payload)
-    .then(({ success, message, data }) => {
-      if (!success) {
-        throw new Error(message);
-      }
-    }),
 );
 
 export const updateUserPictureMutation = createMutation<

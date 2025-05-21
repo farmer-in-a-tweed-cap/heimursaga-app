@@ -2,12 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   IPostCreatePayload,
+  IPostGetAllResponse,
+  IPostGetResponse,
   IPostUpdatePayload,
   UserNotificationContext,
+  UserRole,
 } from '@repo/types';
 import { IPostBookmarkResponse, IPostLikeResponse } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
+import { normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { getStaticMediaUrl } from '@/lib/upload';
 
@@ -16,7 +20,11 @@ import {
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import { IPayloadWithSession, IQueryWithSession } from '@/common/interfaces';
+import {
+  IPayloadWithSession,
+  ISessionQuery,
+  ISessionQueryWithPayload,
+} from '@/common/interfaces';
 import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { IUserNotificationCreatePayload } from '@/modules/notification';
@@ -30,19 +38,48 @@ export class PostService {
     private eventService: EventService,
   ) {}
 
-  async search({ session }: IQueryWithSession) {
+  async getPosts({ session }: ISessionQuery): Promise<IPostGetAllResponse> {
     try {
-      const { userId } = session;
+      const { userId, userRole } = session;
 
-      const where = {
+      let where = {
         public_id: { not: null },
-        public: true,
-        deleted_at: null,
       } as Prisma.PostWhereInput;
 
-      const take = 20;
+      const take = 500;
 
-      // search posts
+      // filter based on role
+      switch (userRole) {
+        case UserRole.ADMIN:
+          where = {
+            ...where,
+            deleted_at: null,
+          };
+          break;
+        case UserRole.CREATOR:
+          where = {
+            ...where,
+            public: true,
+            deleted_at: null,
+          };
+          break;
+        case UserRole.USER:
+          where = {
+            ...where,
+            public: true,
+            deleted_at: null,
+          };
+          break;
+        default:
+          where = {
+            ...where,
+            public: true,
+            deleted_at: null,
+          };
+          break;
+      }
+
+      // get posts
       const results = await this.prisma.post.count({ where });
       const data = await this.prisma.post
         .findMany({
@@ -51,6 +88,7 @@ export class PostService {
             public_id: true,
             title: true,
             content: true,
+            public: true,
             lat: true,
             lon: true,
             place: true,
@@ -74,6 +112,7 @@ export class PostService {
             author: {
               select: {
                 username: true,
+                role: true,
                 profile: {
                   select: { name: true, picture: true },
                 },
@@ -82,7 +121,7 @@ export class PostService {
             created_at: true,
           },
           take,
-          orderBy: [{ id: 'desc' }],
+          orderBy: [{ date: 'desc' }],
         })
         .then((posts) =>
           posts.map((post) => ({
@@ -92,14 +131,18 @@ export class PostService {
             place: post.place,
             date: post.date,
             title: post.title,
+            public: post.public,
             content: post.content.slice(0, 140),
-            author: {
-              username: post.author?.username,
-              name: post.author?.profile?.name,
-              picture: post.author?.profile?.picture
-                ? getStaticMediaUrl(post.author?.profile?.picture)
-                : undefined,
-            },
+            author: post.author
+              ? {
+                  username: post.author.username,
+                  name: post.author.profile?.name,
+                  picture: post.author.profile?.picture
+                    ? getStaticMediaUrl(post.author.profile.picture)
+                    : undefined,
+                  creator: post.author.role === UserRole.CREATOR,
+                }
+              : undefined,
             liked: userId ? post.likes.length > 0 : false,
             bookmarked: userId ? post.bookmarks.length > 0 : false,
             likesCount: post.likes_count,
@@ -108,89 +151,131 @@ export class PostService {
           })),
         );
 
-      return { results, data };
+      const response: IPostGetAllResponse = {
+        data,
+        results,
+      };
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('post not created');
+        : new ServiceNotFoundException('post not found');
       throw exception;
     }
   }
 
-  async getById({ query, session }: IQueryWithSession<{ publicId: string }>) {
+  async getById({
+    query,
+    session,
+  }: ISessionQuery<{ publicId: string }>): Promise<IPostGetResponse> {
     try {
       const { publicId } = query;
-      const { userId } = session;
+      const { userId, userRole } = session;
 
-      // get the post
-      const data = await this.prisma.post
-        .findFirstOrThrow({
-          where: { public_id: publicId },
-          select: {
-            public_id: true,
-            title: true,
-            content: true,
-            public: true,
-            draft: true,
-            lat: true,
-            lon: true,
-            place: true,
-            date: true,
-            likes_count: true,
-            bookmarks_count: true,
-            // check if the session user has liked this post
-            likes: userId
-              ? {
-                  where: { user_id: userId },
-                  select: { post_id: true },
-                }
-              : undefined,
-            // check if the session user has bookmarked this post
-            bookmarks: userId
-              ? {
-                  where: { user_id: userId },
-                  select: { post_id: true },
-                }
-              : undefined,
-            author: {
-              select: {
-                id: true,
-                username: true,
-                profile: {
-                  select: { name: true, picture: true },
-                },
+      if (!publicId) throw new ServiceNotFoundException('post not found');
+
+      let where = {
+        public_id: publicId,
+      } as Prisma.PostWhereInput;
+
+      // filter based on user role
+      switch (userRole) {
+        case UserRole.ADMIN:
+          where = { ...where, deleted_at: null };
+          break;
+        case UserRole.CREATOR:
+          where = {
+            ...where,
+            deleted_at: null,
+            OR: [{ author_id: userId }, { public: true }],
+          };
+          break;
+        case UserRole.USER:
+          where = {
+            ...where,
+            deleted_at: null,
+            OR: [{ author_id: userId }, { public: true }],
+          };
+          break;
+        default:
+          where = { ...where, deleted_at: null, public: true };
+          break;
+      }
+
+      // get a post
+      const post = await this.prisma.post.findFirstOrThrow({
+        where,
+        select: {
+          public_id: true,
+          title: true,
+          content: true,
+          public: true,
+          sponsored: true,
+          lat: true,
+          lon: true,
+          place: true,
+          date: true,
+          likes_count: true,
+          bookmarks_count: true,
+          // check if the session user has liked this post
+          likes: userId
+            ? {
+                where: { user_id: userId },
+                select: { post_id: true },
+              }
+            : undefined,
+          // check if the session user has bookmarked this post
+          bookmarks: userId
+            ? {
+                where: { user_id: userId },
+                select: { post_id: true },
+              }
+            : undefined,
+          author: {
+            select: {
+              id: true,
+              username: true,
+              role: true,
+              profile: {
+                select: { name: true, picture: true },
               },
             },
-            created_at: true,
           },
-        })
-        .then((post) => ({
-          id: post.public_id,
-          title: post.title,
-          content: post.content,
-          lat: post.lat,
-          lon: post.lon,
-          place: post.place,
-          date: post.date,
-          liked: userId ? post.likes.length > 0 : undefined,
-          bookmarked: userId ? post.bookmarks.length > 0 : undefined,
-          likesCount: post.likes_count,
-          bookmarksCount: post.bookmarks_count,
-          public: post.public,
-          author: {
-            id: post.author?.id,
-            username: post.author?.username,
-            name: post.author?.profile?.name,
-            picture: post.author?.profile?.picture
-              ? getStaticMediaUrl(post.author?.profile?.picture)
-              : undefined,
-          },
-          createdByMe: userId ? userId === post.author?.id : undefined,
-          createdAt: post.created_at,
-        }));
+          created_at: true,
+        },
+      });
 
-      return data;
+      const response: IPostGetResponse = {
+        id: post.public_id,
+        title: post.title,
+        content: post.content,
+        lat: post.lat,
+        lon: post.lon,
+        place: post.place,
+        date: post.date,
+        liked: userId ? post.likes.length > 0 : undefined,
+        bookmarked: userId ? post.bookmarks.length > 0 : undefined,
+        likesCount: post.likes_count,
+        bookmarksCount: post.bookmarks_count,
+        public: post.public,
+        sponsored: post.sponsored,
+        author: post.author
+          ? {
+              username: post.author.username,
+              name: post.author.profile.name,
+              picture: post.author.profile.picture
+                ? getStaticMediaUrl(post.author.profile.picture)
+                : undefined,
+              creator: post.author.role === UserRole.CREATOR,
+            }
+          : undefined,
+        createdByMe: userId ? userId === post.author?.id : undefined,
+        createdAt: post.created_at,
+      };
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -208,16 +293,17 @@ export class PostService {
       if (!userId) throw new ServiceForbiddenException();
 
       const { lat, lon } = payload;
+      const content = normalizeText(payload.content);
 
       // create a post
       const post = await this.prisma.post.create({
         data: {
           ...payload,
           public_id: generator.publicId(),
+          content,
           lat,
           lon,
           public: true,
-          draft: false,
           author: { connect: { id: userId } },
           waypoint: {
             create: {
@@ -229,6 +315,12 @@ export class PostService {
         select: {
           public_id: true,
         },
+      });
+
+      // update the user
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { posts_count: { increment: 1 } },
       });
 
       return {
@@ -243,33 +335,40 @@ export class PostService {
     }
   }
 
-  async update(
-    { query, session }: IQueryWithSession<{ publicId: string }>,
-    payload: IPostUpdatePayload,
-  ): Promise<void> {
+  async update({
+    query,
+    session,
+    payload,
+  }: ISessionQueryWithPayload<
+    { publicId: string },
+    IPostUpdatePayload
+  >): Promise<void> {
     try {
       const { publicId } = query;
       const { userId } = session;
 
-      // check access
       if (!userId) throw new ServiceForbiddenException();
-
       if (!publicId) throw new ServiceNotFoundException('post not found');
 
-      // access check
-      const access = await this.prisma.post
+      // check access
+      const post = await this.prisma.post
         .findFirstOrThrow({
-          where: { public_id: publicId, author_id: userId },
+          where: {
+            public_id: publicId,
+            author_id: userId,
+            deleted_at: null,
+          },
         })
-        .then(() => true)
-        .catch(() => false);
-      if (!access)
-        throw new ServiceForbiddenException('post can not be updated');
+        .catch(() => {
+          throw new ServiceForbiddenException();
+        });
+
+      const content = normalizeText(payload.content);
 
       // update the post
-      await this.prisma.post.updateMany({
-        where: { public_id: publicId, author_id: userId },
-        data: payload,
+      await this.prisma.post.update({
+        where: { id: post.id },
+        data: { ...payload, content },
       });
     } catch (e) {
       this.logger.error(e);
@@ -283,29 +382,50 @@ export class PostService {
   async delete({
     query,
     session,
-  }: IQueryWithSession<{ publicId: string }>): Promise<void> {
+  }: ISessionQuery<{ publicId: string }>): Promise<void> {
     try {
       const { publicId } = query;
-      const { userId } = session;
+      const { userId, userRole } = session;
 
-      // check access
       if (!userId) throw new ServiceForbiddenException();
-
       if (!publicId) throw new ServiceNotFoundException('post not found');
 
-      // access check
-      const access = await this.prisma.post
-        .findFirstOrThrow({
-          where: { public_id: publicId, author_id: userId },
-        })
-        .then(() => true)
-        .catch(() => false);
-      if (!access)
-        throw new ServiceForbiddenException('post can not be deleted');
+      let where = {
+        public_id: publicId,
+        deleted_at: null,
+      } as Prisma.PostWhereInput;
+
+      // filter based on user role
+      switch (userRole) {
+        case UserRole.ADMIN:
+          where = { ...where };
+          break;
+        case UserRole.CREATOR:
+          where = {
+            ...where,
+            author_id: userId,
+          };
+          break;
+        case UserRole.USER:
+          where = {
+            ...where,
+            author_id: userId,
+          };
+          break;
+        default:
+          throw new ServiceForbiddenException();
+      }
+
+      // check access
+      const post = await this.prisma.post
+        .findFirstOrThrow({ where, select: { id: true } })
+        .catch(() => {
+          throw new ServiceForbiddenException();
+        });
 
       // update the post
-      await this.prisma.post.updateMany({
-        where: { public_id: publicId, author_id: userId, deleted_at: null },
+      await this.prisma.post.update({
+        where: { id: post.id },
         data: { deleted_at: dateformat().toDate() },
       });
     } catch (e) {
@@ -320,7 +440,7 @@ export class PostService {
   async like({
     query,
     session,
-  }: IQueryWithSession<{ publicId: string }>): Promise<IPostLikeResponse> {
+  }: ISessionQuery<{ publicId: string }>): Promise<IPostLikeResponse> {
     try {
       const { publicId } = query;
       const { userId } = session;
@@ -408,7 +528,7 @@ export class PostService {
   async bookmark({
     query,
     session,
-  }: IQueryWithSession<{ publicId: string }>): Promise<IPostBookmarkResponse> {
+  }: ISessionQuery<{ publicId: string }>): Promise<IPostBookmarkResponse> {
     try {
       const { publicId } = query;
       const { userId } = session;

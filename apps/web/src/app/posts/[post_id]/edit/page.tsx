@@ -6,7 +6,7 @@ import { apiClient } from '@/lib/api';
 
 import { PostEditForm } from '@/components/post';
 
-import { PageHeaderTitle } from '@/components';
+import { PageHeaderTitle, PageNotFound } from '@/components';
 import { AppLayout } from '@/layouts';
 
 export const dynamic = 'force-dynamic';
@@ -31,33 +31,25 @@ export default async function Page({ params }: PageProps) {
     { cookie },
   );
 
-  const {
-    title,
-    content,
-    lat = 0,
-    lon = 0,
-    public: isPublic,
-  } = postQuery.data || {};
-
   return (
     <AppLayout>
-      <div className="w-full max-w-3xl flex flex-col gap-6">
-        <PageHeaderTitle>Edit post</PageHeaderTitle>
-        <Card>
-          <CardContent>
-            <PostEditForm
-              postId={postId}
-              defaultValues={{
-                title,
-                content,
-                lat,
-                lon,
-                public: isPublic,
-              }}
-            />
-          </CardContent>
-        </Card>
-      </div>
+      {postQuery.success ? (
+        <div className="w-full max-w-3xl flex flex-col gap-6">
+          <PageHeaderTitle>Edit post</PageHeaderTitle>
+          <Card>
+            <CardContent>
+              <PostEditForm
+                postId={postId}
+                defaultValues={{
+                  ...postQuery.data,
+                }}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <PageNotFound />
+      )}
     </AppLayout>
   );
 }

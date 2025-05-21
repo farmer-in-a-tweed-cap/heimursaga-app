@@ -26,8 +26,8 @@ export class PostController {
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
-  async search(@Session() session: ISession) {
-    return await this.postService.search({ query: {}, session });
+  async getPosts(@Session() session: ISession) {
+    return await this.postService.getPosts({ query: {}, session });
   }
 
   @Public()
@@ -59,18 +59,16 @@ export class PostController {
     @Body() body: PostUpdateDto,
     @Session() session: ISession,
   ) {
-    return await this.postService.update(
-      {
-        query: { publicId: param.id },
-        session,
-      },
-      body,
-    );
+    return await this.postService.update({
+      query: { publicId: param.id },
+      session,
+      payload: body,
+    });
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  async delete(@Param() param: ParamPublicIdDto, @Session() session: ISession) {
+  async delete(@Session() session: ISession, @Param() param: ParamPublicIdDto) {
     return await this.postService.delete({
       query: { publicId: param.id },
       session,

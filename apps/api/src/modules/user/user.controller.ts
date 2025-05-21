@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -14,21 +13,28 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public, Session } from '@/common/decorators';
-import { ParamPublicIdDto, ParamUsernameDto } from '@/common/dto';
+import { ParamUsernameDto } from '@/common/dto';
 import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
+import { SponsorService } from '@/modules/sponsor';
 import { IUploadedFile } from '@/modules/upload';
 
-import {
-  UserMembershipTierUpdateDto,
-  UserSettingsProfileUpdateDto,
-} from './user.dto';
+import { UserSettingsProfileUpdateDto } from './user.dto';
 import { SessionUserService, UserService } from './user.service';
 
 @ApiTags('users')
 @Controller('users')
 export class UserController {
   constructor(private userService: UserService) {}
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getUsers(@Session() session: ISession) {
+    return await this.userService.getUsers({
+      query: {},
+      session,
+    });
+  }
 
   @Public()
   @Get(':username')
@@ -37,11 +43,21 @@ export class UserController {
     @Param() param: ParamUsernameDto,
     @Session() session: ISession,
   ) {
-    const { username } = param;
-
     return await this.userService.getByUsername({
-      username,
-      userId: session.userId,
+      query: { username: param.username },
+      session,
+    });
+  }
+
+  @Post(':username/block')
+  @HttpCode(HttpStatus.OK)
+  async blockUser(
+    @Param() param: ParamUsernameDto,
+    @Session() session: ISession,
+  ) {
+    return await this.userService.blockUser({
+      query: { username: param.username },
+      session,
     });
   }
 
@@ -144,14 +160,17 @@ export class UserController {
 @ApiTags('user')
 @Controller('user')
 export class SessionUserController {
-  constructor(private sessionUserService: SessionUserService) {}
+  constructor(
+    private sessionUserService: SessionUserService,
+    private sponsorService: SponsorService,
+  ) {}
 
   @Get('settings/profile')
   @HttpCode(HttpStatus.OK)
   async getProfileSettings(@Session() session: ISession) {
     return await this.sessionUserService.getSettings({
-      userId: session.userId,
-      context: 'profile',
+      query: { context: 'profile' },
+      session,
     });
   }
 
@@ -162,10 +181,8 @@ export class SessionUserController {
     @Session() session: ISession,
   ) {
     return await this.sessionUserService.updateSettings({
-      payload: {
-        context: 'profile',
-        profile: body,
-      },
+      query: { context: 'profile' },
+      payload: body,
       session,
     });
   }
@@ -226,47 +243,21 @@ export class SessionUserController {
     });
   }
 
-  @Get('sponsorship-tiers')
-  @HttpCode(HttpStatus.OK)
-  async getSponsorshipTiers(@Session() session: ISession) {
-    return await this.sessionUserService.getSponsorshipTiers({
-      query: {},
-      session,
-    });
-  }
-
-  @Put('sponsorship-tiers/:id')
-  @HttpCode(HttpStatus.OK)
-  async updateSponsorshipTier(
-    @Param() param: ParamPublicIdDto,
-    @Body() body: UserMembershipTierUpdateDto,
-    @Session() session: ISession,
-  ) {
-    return await this.sessionUserService.updateSponsorshipTier({
-      query: { id: param.id },
-      payload: body,
-      session,
-    });
-  }
-
-  @Delete('sponsorship-tiers/:id')
-  @HttpCode(HttpStatus.OK)
-  async deleteSponsorshipTier(
-    @Param() param: ParamPublicIdDto,
-    @Session() session: ISession,
-  ) {
-    return await this.sessionUserService.deleteSponsorshipTier({
-      query: { id: param.id },
-      session,
-    });
-  }
-
   @Get('insights/post')
   @HttpCode(HttpStatus.OK)
   async getPostInsights(@Session() session: ISession) {
     return await this.sessionUserService.getPostInsights({
       query: {},
       session,
+    });
+  }
+
+  @Get('sponsorships')
+  @HttpCode(HttpStatus.OK)
+  async getSponsorships(@Session() session: ISession) {
+    return await this.sponsorService.getUserSponsorships({
+      session,
+      query: {},
     });
   }
 }

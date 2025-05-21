@@ -24,3 +24,18 @@ export const getCurrencySymbol = (code: string) => {
 export const randomInteger = (min: number, max: number) => {
   return Math.random() * (max - min) + min;
 };
+
+export function sortByDate<T = any>(
+  elements: { date: Date }[],
+  order: 'asc' | 'desc',
+): T[] {
+  return elements.sort((a, b) => {
+    if (a.date instanceof Date && b.date instanceof Date) {
+      return order === 'desc'
+        ? b.date.getTime() - a.date.getTime()
+        : a.date.getTime() - b.date.getTime();
+    } else {
+      return -1;
+    }
+  }) as T[];
+}

@@ -12,11 +12,13 @@ type Props = {
     button?: string;
     label?: string;
   };
+  collapsed?: boolean;
 } & ButtonProps;
 
 export const CreatePostButton: React.FC<Props> = ({
   classNames,
   children,
+  collapsed = false,
   ...props
 }) => {
   const handleClick = () => {
@@ -26,13 +28,20 @@ export const CreatePostButton: React.FC<Props> = ({
   return (
     <Button
       onClick={handleClick}
-      className={cn(classNames?.button, '')}
+      className={cn(collapsed ? 'w-[36px] h-[36px]' : '', classNames?.button)}
       {...props}
     >
       <SquarePenIcon width={20} />
-      <span className={cn('', classNames?.label)}>
-        {children ? children : 'Create post'}
-      </span>
+      {!collapsed && (
+        <span
+          className={cn(
+            collapsed ? 'hidden' : 'hidden lg:flex',
+            classNames?.label,
+          )}
+        >
+          {children ? children : 'Create post'}
+        </span>
+      )}
     </Button>
   );
 };

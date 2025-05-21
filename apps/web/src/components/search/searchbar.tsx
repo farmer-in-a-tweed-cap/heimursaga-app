@@ -8,7 +8,7 @@ type Props = {
   value?: string;
   loading?: boolean;
   onChange?: (query: string) => void;
-  onSubmit: (query: string) => void;
+  onSubmit?: (query: string) => void;
   inputProps?: React.ComponentProps<'input'>;
 };
 

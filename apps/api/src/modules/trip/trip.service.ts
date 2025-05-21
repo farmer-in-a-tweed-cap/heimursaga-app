@@ -7,13 +7,14 @@ import {
   ITripGetByIdResponse,
   ITripUpdatePayload,
   IWaypointCreatePayload,
+  IWaypointDetail,
   IWaypointUpdatePayload,
   UserRole,
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
-import { matchRoles } from '@/lib/utils';
+import { matchRoles, sortByKey } from '@/lib/utils';
 
 import {
   ServiceException,
@@ -52,16 +53,16 @@ export class TripService {
 
       // query based on the user role
       switch (userRole) {
-        case UserRole.USER:
-          where = {
-            ...where,
-            public: true,
-          };
-          break;
         case UserRole.CREATOR:
           where = {
             ...where,
             author_id: userId,
+          };
+          break;
+        case UserRole.USER:
+          where = {
+            ...where,
+            public: true,
           };
           break;
         default:
@@ -78,7 +79,13 @@ export class TripService {
           waypoints: {
             select: {
               waypoint: {
-                select: { id: true, title: true, lat: true, lon: true },
+                select: {
+                  id: true,
+                  title: true,
+                  lat: true,
+                  lon: true,
+                  date: true,
+                },
               },
             },
           },
@@ -89,20 +96,29 @@ export class TripService {
 
       const response: ITripGetAllResponse = {
         results,
-        data: data.map(({ public_id, title, waypoints }) => ({
-          id: public_id,
-          title,
-          description: '',
-          waypointsCount: waypoints.length,
-          // waypoints: waypoints.map(({ waypoint: { id, lat, lon, title } }) => {
-          //   return {
-          //     id,
-          //     lat,
-          //     lon,
-          //     title,
-          //   };
-          // }),
-        })),
+        data: data.map(({ public_id, title, ...trip }) => {
+          const waypoints = sortByKey({
+            elements: trip.waypoints.map(({ waypoint }) => ({ ...waypoint })),
+            key: 'date',
+            order: 'asc',
+          }) as IWaypointDetail[];
+
+          const startDate =
+            waypoints.length >= 1 ? waypoints[0]?.date : undefined;
+          const endDate =
+            waypoints.length >= 1
+              ? waypoints[waypoints.length - 1]?.date
+              : undefined;
+
+          return {
+            id: public_id,
+            title,
+            startDate,
+            endDate,
+            waypointsCount: waypoints.length,
+            waypoints: [],
+          };
+        }),
       };
 
       return response;
@@ -151,7 +167,7 @@ export class TripService {
       }
 
       // get a trip
-      const data = await this.prisma.trip.findFirstOrThrow({
+      const trip = await this.prisma.trip.findFirstOrThrow({
         where,
         select: {
           public_id: true,
@@ -172,12 +188,13 @@ export class TripService {
         },
       });
 
-      const { public_id, title, waypoints } = data;
+      const { public_id, title, waypoints } = trip;
 
       const response: ITripGetByIdResponse = {
         id: public_id,
         title,
-        description: '',
+        startDate: new Date(),
+        endDate: new Date(),
         waypoints: waypoints.map(
           ({ waypoint: { id, lat, lon, title, date } }) => {
             return {

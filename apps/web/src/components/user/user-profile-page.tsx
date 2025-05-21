@@ -1,8 +1,16 @@
 import { IUserProfileDetail } from '@repo/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+  Badge,
+} from '@repo/ui/components';
+import { MapPinIcon } from 'lucide-react';
 
+import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
 import { UserProfileButtons } from './user-profile-buttons';
+import { VerificationBadge } from './verification-badge';
 
 type Props = {
   user: IUserProfileDetail;
@@ -18,11 +26,11 @@ export const UserProfilePage: React.FC<Props> = ({
   const isCreator = user.creator ? user.creator : false;
 
   return (
-    <div className="w-full flex flex-col justify-start items-center">
-      {/* <div className="z-10 w-full h-auto">
+    <div className="w-full max-w-4xl flex flex-col justify-start items-center">
+      <div className="z-10 w-full h-auto">
         <UserMapBanner className="z-30" username={user?.username} />
-      </div> */}
-      <div className="z-20 w-auto flex flex-col items-center rounded-full">
+      </div>
+      <div className="-mt-[40px] z-20 w-auto flex flex-col items-center rounded-full">
         <Avatar className="z-50 w-[80px] h-[80px] overflow-hidden">
           <AvatarFallback>{user?.name?.slice(0, 1)}</AvatarFallback>
           <AvatarImage
@@ -35,9 +43,21 @@ export const UserProfilePage: React.FC<Props> = ({
         </Avatar>
       </div>
       <div className="mt-6 flex flex-col justify-center items-center gap-2">
-        <span className="text-2xl font-semibold">{user?.name}</span>
-        <span className="text-sm font-normal text-gray-600">{user?.bio}</span>
+        <div className="flex justify-center items-center gap-1">
+          <span className="text-2xl font-semibold">{user?.name}</span>
+          {isCreator && <VerificationBadge size="lg" />}
+        </div>
+        <span className="text-sm font-normal text-gray-700">{user?.bio}</span>
+        {user?.locationFrom && (
+          <div className="mt-2 flex flex-row gap-1 items-center justify-start text-sm font-normal text-gray-700">
+            <MapPinIcon size={16} />
+            <span> {user?.locationFrom}</span>
+          </div>
+        )}
       </div>
+      {/* <div className="mt-4">
+        <Badge variant="outline">Sponsored</Badge>
+      </div> */}
       <UserProfileButtons
         me={user?.you}
         creator={isCreator}

@@ -24,13 +24,11 @@ export const CreatorTrips = () => {
       {tripQuery.isLoading ? (
         <LoadingSpinner />
       ) : results >= 1 ? (
-        trips.map(({ id, title, waypointsCount }, key) => (
+        trips.map((trip, key) => (
           <TripCard
             key={key}
-            id={id}
-            href={id ? ROUTER.TRIPS.DETAIL(id) : '#'}
-            title={title}
-            waypointsCount={waypointsCount}
+            href={trip.id ? ROUTER.TRIPS.DETAIL(trip.id) : '#'}
+            {...trip}
           />
         ))
       ) : (

@@ -5,11 +5,11 @@ import { useContext, useRef } from 'react';
 import { AppContext } from '@/components';
 
 export const useMapbox = () => {
-  const { mapbox } = useContext(AppContext);
+  const { context } = useContext(AppContext);
   const ref = useRef<mapboxgl.Map | null>(null);
 
   return {
-    token: mapbox?.token,
+    token: context.config.mapbox?.token,
     ref,
   };
 };

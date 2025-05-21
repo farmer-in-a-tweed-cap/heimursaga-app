@@ -10,7 +10,9 @@ export const ROUTER = {
   DASHBOARD: {
     HOME: '/dashboard',
   },
-  JOURNAL: '/journal',
+  JOURNAL: {
+    HOME: '/journal',
+  },
   BOOKMARKS: {
     HOME: '/bookmarks',
   },
@@ -31,6 +33,7 @@ export const ROUTER = {
       HOME: '/user/settings',
       PAGE_KEY: (key: string) => `/user/settings/${key}`,
       PROFILE: '/user/settings/profile',
+      PAYMENT_METHODS: '/user/settings/payment-methods',
       BILLING: '/user/settings/billing',
     },
   },
@@ -51,9 +54,16 @@ export const ROUTER = {
   },
   PAYOUTS: {
     HOME: '/payouts',
+    WITHDRAW: '/payouts/withdraw',
+    BILLING: '/payouts/billing',
   },
   INSIGHTS: {
     ROOT: '/insights',
     HOME: '/insights',
+  },
+  HELP: '/help',
+  LEGAL: {
+    PRIVACY: '/legal/privacy',
+    TERMS: '/legal/terms',
   },
 };

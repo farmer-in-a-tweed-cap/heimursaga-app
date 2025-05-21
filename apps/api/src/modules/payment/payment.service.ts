@@ -840,6 +840,7 @@ export class PaymentService {
           'plan upgrade not completed, checkout not confirmed',
         );
 
+      // retrieve a stripe subscription
       const stripeSubscription = await this.stripeService.stripe.subscriptions
         .retrieve(checkout.stripe_subscription_id)
         .catch(() => {
@@ -872,9 +873,8 @@ export class PaymentService {
         });
 
         // create a subscription
-        const expiry = dateformat(
-          stripeSubscription.current_period_end,
-        ).toDate();
+        const expiry = new Date(stripeSubscription.current_period_end * 1000);
+
         const subscription = await tx.userSubscription.create({
           data: {
             public_id: generator.publicId(),
@@ -915,6 +915,18 @@ export class PaymentService {
         });
 
         this.logger.log(`user ${user.id} role changed to ${UserRole.CREATOR}`);
+
+        // create a basic sponsorship tier for the user
+        await tx.sponsorshipTier.create({
+          data: {
+            public_id: generator.publicId(),
+            price: 0,
+            is_available: false,
+            user: {
+              connect: { id: user.id },
+            },
+          },
+        });
 
         // complete the checkout
         await tx.checkout.update({
@@ -1010,6 +1022,10 @@ export class PaymentService {
                 'subscription plan downgrade not completed, subscription not canceled',
               );
             });
+
+          this.logger.log(
+            `stripe subscription ${stripeSubscription.id} canceled`,
+          );
         }
       });
     } catch (e) {

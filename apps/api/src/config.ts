@@ -4,8 +4,13 @@ export const config = {
   },
   verification_request_limit: 5,
   stripe: {
-    default_currency: 'usd',
+    default: {
+      currency: 'usd',
+    },
     application_fee: 100,
+  },
+  sponsorship: {
+    default_amount: 500,
   },
   premium: {
     currency: 'usd',

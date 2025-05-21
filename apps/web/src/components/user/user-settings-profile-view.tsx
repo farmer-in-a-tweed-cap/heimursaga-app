@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { IUserSettingsProfileResponse } from '@repo/types';
+import { IUserSettingsProfileGetResponse } from '@repo/types';
 import {
   Button,
   Card,
@@ -49,10 +49,20 @@ const schema = z.object({
     .nonempty(zodMessage.required('bio'))
     .min(0, zodMessage.string.min('bio', 0))
     .max(140, zodMessage.string.max('bio', 140)),
+  location_lives: z
+    .string()
+    .min(0, zodMessage.string.min('lives in', 0))
+    .max(50, zodMessage.string.max('lives in', 50))
+    .optional(),
+  location_from: z
+    .string()
+    .min(0, zodMessage.string.min('from', 0))
+    .max(50, zodMessage.string.max('from', 50))
+    .optional(),
 });
 
 type Props = {
-  data?: IUserSettingsProfileResponse;
+  data?: IUserSettingsProfileGetResponse;
 };
 
 export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
@@ -67,26 +77,48 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: data
-      ? { ...data }
+      ? {
+          email: data.email,
+          username: data.username,
+          name: data.name,
+          bio: data.bio,
+          location_from: data.locationFrom,
+          location_lives: data.locationLives,
+        }
       : {
           name: '',
           bio: '',
+          location_from: '',
+          location_lives: '',
         },
   });
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
-        const { name, bio } = values;
+        const { name, bio, location_from, location_lives } = values;
 
         setLoading((loading) => ({ ...loading, settings: true }));
 
         // save the changes
-        await apiClient.updateUserProfileSettings({ name, bio });
+        const { success } = await apiClient.updateUserProfileSettings({
+          query: {},
+          payload: {
+            name,
+            bio,
+            from: location_from,
+            livesIn: location_lives,
+          },
+        });
 
-        toast({ type: 'success', message: 'settings updated' });
+        if (success) {
+          toast({ type: 'success', message: 'settings updated' });
+          router.refresh();
+        } else {
+          toast({ type: 'error', message: 'settings not updated' });
+        }
+
         setLoading((loading) => ({ ...loading, settings: false }));
-        router.refresh();
       } catch (e) {
         setLoading((loading) => ({ ...loading, settings: false }));
         toast({ type: 'error', message: 'settings not updated' });
@@ -172,7 +204,34 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                     </FormItem>
                   )}
                 />
-
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <FormField
+                    control={form.control}
+                    name="location_from"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>From</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading.settings} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="location_lives"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Lives in</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading.settings} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <div className="grid gap-2">
                   <FormField
                     control={form.control}

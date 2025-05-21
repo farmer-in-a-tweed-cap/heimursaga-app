@@ -140,87 +140,90 @@ const FormComponent: React.FC<Props> = ({
         }
 
         // initiate a subscription plan upgrade checkout
-        const checkout = await apiClient
-          .checkoutSubscriptionPlanUpgrade({
+        const { data: checkout, success } =
+          await apiClient.checkoutSubscriptionPlanUpgrade({
             query: {},
             payload: {
               planId: 'premium',
               period: PlanExpiryPeriod.MONTH,
             },
-          })
-          .then(({ data }) => data)
-          .catch(() => {
+          });
+
+        if (success && checkout) {
+          const { clientSecret } = checkout;
+
+          if (!clientSecret) {
             modal.open<InfoModalProps>(MODALS.INFO, {
               props: {
                 title: 'error',
                 message: 'checkout failed',
               },
             });
-          });
+            setLoading(false);
+            return;
+          }
 
-        if (!checkout?.clientSecret) {
+          // confirm a stripe payment
+          const stripePaymentResponse = await stripe.confirmCardPayment(
+            clientSecret,
+            {
+              payment_method: {
+                card: stripeCardElement,
+                billing_details: {
+                  name,
+                  address: {
+                    postal_code: postcode,
+                    // country: billing.address.country || '',
+                    // city: billing.address.city || '',
+                    // postal_code: billing.address.postal_code || '',
+                    // line1: billing.address.line1 || '',
+                    // line2: billing.address.line2 || '',
+                  },
+                },
+              },
+            },
+          );
+
+          const stripePaymentCompleted =
+            stripePaymentResponse.paymentIntent?.status === 'succeeded' ||
+            false;
+
+          // handle a stripe response
+          if (stripePaymentResponse.paymentIntent) {
+            switch (stripePaymentResponse.paymentIntent.status) {
+              case 'succeeded':
+                break;
+              case 'requires_action':
+                break;
+            }
+          }
+
+          // handle a stripe error
+          if (stripePaymentResponse.error) {
+            modal.open<InfoModalProps>(MODALS.INFO, {
+              props: {
+                title: 'error',
+                message: stripePaymentResponse.error.message,
+              },
+            });
+            setLoading(false);
+            return;
+          }
+
+          // complete the subscription plan upgrade
+          if (stripePaymentCompleted) {
+            await sleep(5000);
+            redirect(ROUTER.PREMIUM);
+            return;
+          }
+        } else {
           modal.open<InfoModalProps>(MODALS.INFO, {
             props: {
               title: 'error',
               message: 'checkout failed',
             },
           });
-          return;
-        }
-
-        const { clientSecret } = checkout;
-
-        // confirm a stripe payment
-        const stripePaymentResponse = await stripe.confirmCardPayment(
-          clientSecret,
-          {
-            payment_method: {
-              card: stripeCardElement,
-              billing_details: {
-                name,
-                address: {
-                  postal_code: postcode,
-                  // country: billing.address.country || '',
-                  // city: billing.address.city || '',
-                  // postal_code: billing.address.postal_code || '',
-                  // line1: billing.address.line1 || '',
-                  // line2: billing.address.line2 || '',
-                },
-              },
-            },
-          },
-        );
-
-        const stripePaymentCompleted =
-          stripePaymentResponse.paymentIntent?.status === 'succeeded' || false;
-
-        // handle a stripe response
-        if (stripePaymentResponse.paymentIntent) {
-          switch (stripePaymentResponse.paymentIntent.status) {
-            case 'succeeded':
-              break;
-            case 'requires_action':
-              break;
-          }
-        }
-
-        if (stripePaymentResponse.error) {
-          modal.open<InfoModalProps>(MODALS.INFO, {
-            props: {
-              title: 'error',
-              message: stripePaymentResponse.error.message,
-            },
-          });
           setLoading(false);
-
-          return;
-        }
-
-        // complete the subscription plan upgrade
-        if (stripePaymentCompleted) {
-          await sleep(5000);
-          redirect(ROUTER.PREMIUM);
-          return;
         }
       } catch (e) {
         modal.open<InfoModalProps>(MODALS.INFO, {

@@ -23,7 +23,7 @@ export const ActionMenu: React.FC<Props> = ({ actions = [] }) => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="w-8 h-8 bg-transparent rounded-full flex flex-row items-center justify-center focus:bg-accent hover:bg-accent">
-          <EllipsisIcon />
+          <EllipsisIcon size={18} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
