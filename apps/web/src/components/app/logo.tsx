@@ -27,25 +27,25 @@ export const Logo: React.FC<Props> = ({ color = 'dark', size = 'sm' }) => {
 };
 
 const LogoLgLight = () => (
-  <div className="w-[140px] h-auto bg-red-500">
+  <div className="w-[140px] h-[50px] flex flex-row items-center justify-center">
     <Image src="/logo-lg-light.svg" width={140} height={80} alt="logo" />
   </div>
 );
 
 const LogoLgDark = () => (
-  <div className="w-[140px] h-auto bg-red-500">
+  <div className="w-[140px] h-[50px] flex flex-row items-center justify-center">
     <Image src="/logo-lg-dark.svg" width={140} height={80} alt="logo" />
   </div>
 );
 
 const LogoSmLight = () => (
-  <div className="w-[45px] h-auto">
+  <div className="w-[45px] h-[45px]">
     <Image src="/logo-sm-light.svg" width={80} height={80} alt="" />
   </div>
 );
 
 const LogoSmDark = () => (
-  <div className="w-[45px] h-auto">
+  <div className="w-[45px] h-[45px]">
     <Image src="/logo-sm-dark.svg" width={80} height={80} alt="" />
   </div>
 );
