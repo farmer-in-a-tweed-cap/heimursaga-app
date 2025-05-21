@@ -10,11 +10,7 @@ import {
 } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowLeftIcon,
-  ArrowLeftToLineIcon,
-  ArrowRightToLineIcon,
-} from 'lucide-react';
+import { ArrowLeftToLineIcon, ArrowRightToLineIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -545,7 +541,7 @@ export const ExploreMap: React.FC<Props> = () => {
                   <Link
                     href={
                       post?.author?.username
-                        ? ROUTER.MEMBERS.MEMBER(post?.author?.username)
+                        ? ROUTER.USERS.DETAIL(post?.author?.username)
                         : '#'
                     }
                   >

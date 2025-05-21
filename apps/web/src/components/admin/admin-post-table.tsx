@@ -120,7 +120,7 @@ export const AdminPostTable: React.FC<Props> = ({
         const username = row.original.creator;
         return username ? (
           <Link
-            href={ROUTER.MEMBERS.MEMBER(username)}
+            href={ROUTER.USERS.DETAIL(username)}
             target="_blank"
             className="underline font-medium"
           >

@@ -65,7 +65,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
   const LINKS = {
     user: [
       {
-        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        href: username ? ROUTER.USERS.DETAIL(username) : '#',
         label: 'Profile',
       },
       {
@@ -79,7 +79,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
     ],
     creator: [
       {
-        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        href: username ? ROUTER.USERS.DETAIL(username) : '#',
         label: 'Profile',
       },
       {
@@ -95,7 +95,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
     ],
     admin: [
       {
-        href: username ? ROUTER.MEMBERS.MEMBER(username) : '#',
+        href: username ? ROUTER.USERS.DETAIL(username) : '#',
         label: 'Profile',
       },
       {

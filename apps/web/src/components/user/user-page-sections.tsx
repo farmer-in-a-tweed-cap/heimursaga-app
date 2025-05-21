@@ -46,7 +46,7 @@ export const UserPageSections: React.FC<Props> = ({
     setState((state) => ({ ...state, section }));
 
     if (username) {
-      router.push([ROUTER.MEMBERS.MEMBER(username), section].join('/'), {
+      router.push([ROUTER.USERS.DETAIL(username), section].join('/'), {
         scroll: false,
       });
     }

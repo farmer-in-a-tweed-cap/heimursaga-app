@@ -36,7 +36,7 @@ export const UserNotificationCard: React.FC<Props> = ({
       notification.mention = mentionUser.name;
       notification.text = 'followed you';
       if (mentionUser?.username) {
-        notification.url = ROUTER.MEMBERS.MEMBER(mentionUser?.username);
+        notification.url = ROUTER.USERS.DETAIL(mentionUser?.username);
       }
       break;
   }
@@ -48,7 +48,7 @@ export const UserNotificationCard: React.FC<Props> = ({
       )}
       <div className="flex flex-row gap-4 items-center">
         <Link
-          href={ROUTER.MEMBERS.MEMBER(mentionUser?.username)}
+          href={ROUTER.USERS.DETAIL(mentionUser?.username)}
           className="z-20"
         >
           <Avatar className="w-[40px] h-[40px]">

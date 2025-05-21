@@ -33,7 +33,7 @@ export const UserFollowingFeed: React.FC<Props> = ({ username }) => {
       {following.map(({ name, username, creator, ...following }, key) => (
         <UserCard
           key={key}
-          href={ROUTER.MEMBERS.MEMBER(username)}
+          href={ROUTER.USERS.DETAIL(username)}
           username={username}
           name={name}
           creator={creator}

@@ -104,7 +104,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
         const username = row.original.username;
         return (
           <Link
-            href={username ? ROUTER.MEMBERS.MEMBER(username) : '#'}
+            href={username ? ROUTER.USERS.DETAIL(username) : '#'}
             target="_blank"
             className="underline font-medium"
           >

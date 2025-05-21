@@ -201,7 +201,7 @@ export const FormComponent: React.FC<Props> = ({
 
         // redirect to the home page
         if (username) {
-          redirect(ROUTER.MEMBERS.MEMBER(username));
+          redirect(ROUTER.USERS.DETAIL(username));
         }
 
         // setLoading((loading) => ({ ...loading, form: false }));
