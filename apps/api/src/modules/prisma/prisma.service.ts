@@ -7,16 +7,10 @@ import { Logger } from '@/modules/logger';
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor(private logger: Logger) {
     const isProduction = process.env.NODE_ENV === 'production';
+    const isStaging = process.env.NODE_ENV === 'staging';
 
     super({
-      log: isProduction
-        ? []
-        : [
-            { emit: 'event', level: 'query' },
-            // { emit: 'stdout', level: 'info' },
-            // { emit: 'stdout', level: 'warn' },
-            // { emit: 'stdout', level: 'error' },
-          ],
+      log: isStaging ? [{ emit: 'event', level: 'query' }] : [],
     });
 
     this.$on('query' as never, (event: Prisma.QueryEvent) => {
