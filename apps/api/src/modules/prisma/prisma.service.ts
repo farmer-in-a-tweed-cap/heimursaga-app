@@ -1,12 +1,29 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 
 import { Logger } from '@/modules/logger';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit {
   constructor(private logger: Logger) {
-    super();
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    super({
+      log: isProduction
+        ? []
+        : [
+            { emit: 'event', level: 'query' },
+            // { emit: 'stdout', level: 'info' },
+            // { emit: 'stdout', level: 'warn' },
+            // { emit: 'stdout', level: 'error' },
+          ],
+    });
+
+    this.$on('query' as never, (event: Prisma.QueryEvent) => {
+      const { query, duration } = event;
+
+      this.logger.log(JSON.stringify({ q: query, d: duration }, null, 2));
+    });
   }
 
   async onModuleInit() {
