@@ -49,13 +49,13 @@ export type PostCardProps = {
     href?: string;
     click?: () => void;
   };
+  selected?: boolean;
   onClick?: () => void;
 };
 
 export const PostCard: React.FC<PostCardProps> = ({
   id,
   href,
-  classNames,
   title = '',
   content = '',
   thumbnail = '',
@@ -77,6 +77,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   },
   userbar,
   extended = false,
+  selected = false,
   onClick,
 }) => {
   const session = useSession();
@@ -85,7 +86,12 @@ export const PostCard: React.FC<PostCardProps> = ({
       ? author.username === session.username
       : false;
   return (
-    <Card className={cn('', classNames?.card)}>
+    <Card
+      className={cn(
+        'border-2 border-solid',
+        selected ? 'border-black' : 'border-transparent',
+      )}
+    >
       {href ? (
         <Link href={href} className="z-10 absolute inset-0"></Link>
       ) : onClick ? (
