@@ -14,6 +14,8 @@ export const addSources = ({
   try {
     if (!mapbox) return;
 
+    console.log('sources:', sources);
+
     sources.forEach(({ sourceId, type, data, config }) => {
       let source: SourceSpecification = {
         type: 'geojson',
@@ -43,12 +45,15 @@ export const updateSources = ({
   try {
     if (!mapbox) return;
 
+    console.log('sources:', sources);
+
     sources.forEach(({ sourceId, type, data }) => {
       const source = mapbox.getSource(sourceId) as mapboxgl.GeoJSONSource;
       source.setData(
         toGeoJson({
           type,
-          data: data.map(({ lat, lon, properties }) => ({
+          data: data.map(({ id, lat, lon, properties }) => ({
+            id,
             lat,
             lon,
             properties,

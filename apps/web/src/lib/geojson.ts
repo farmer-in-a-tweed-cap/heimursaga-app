@@ -1,4 +1,5 @@
 type GeoJsonFeature<T = any> = {
+  id: string;
   lat: number;
   lon: number;
   properties: T;
@@ -15,7 +16,8 @@ export const toGeoJson = <T = any>({
     case 'point':
       return {
         type: 'FeatureCollection',
-        features: data.map(({ lat, lon, properties }) => ({
+        features: data.map(({ id, lat, lon, properties }) => ({
+          id,
           type: 'Feature',
           properties: { ...properties } as any,
           geometry: {
