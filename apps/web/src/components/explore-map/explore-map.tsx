@@ -604,7 +604,7 @@ export const ExploreMap: React.FC<Props> = () => {
                       : {},
                   })),
                   config: {
-                    cluster: false,
+                    cluster: true,
                   },
                 },
               ]}

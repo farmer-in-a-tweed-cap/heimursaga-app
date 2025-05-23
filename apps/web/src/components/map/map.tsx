@@ -61,10 +61,17 @@ const config = {
   style: `mapbox://styles/${APP_CONFIG.MAPBOX.STYLE}`,
   maxZoom: 18,
   minZoom: 2,
-  marker: {
+  point: {
+    radius: 12,
     color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
+    colorHover: `#000`,
     scale: 0.75,
     draggable: false,
+  },
+  cluster: {
+    radius: 12,
+    color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
+    colorHover: `#000`,
   },
 };
 
@@ -80,6 +87,7 @@ const MAP_LAYERS = {
   WAYPOINTS_DRAGGABLE: 'waypoints_draggable',
   LINES: 'lines',
   CLUSTERS: 'clusters',
+  CLUSTER_COUNT: 'cluster_count',
 };
 
 type Props = {
@@ -136,6 +144,8 @@ export const Map: React.FC<Props> = ({
   const showPopupRef = useRef<boolean>(false);
   const hoverPopupRef = useRef<boolean>(false);
   const waypointDraggableRef = useRef(waypointDraggable);
+
+  const hoveredClusterIdRef = useRef<number | null>(null);
 
   // if there is no token, don't render the map
   if (!token) {
@@ -211,7 +221,7 @@ export const Map: React.FC<Props> = ({
 
     // create a marker
     const { lat, lon } = marker;
-    markerRef.current = new mapboxgl.Marker(config.marker)
+    markerRef.current = new mapboxgl.Marker(config.point)
       .setLngLat({ lat, lng: lon })
       .addTo(mapboxRef.current);
   }, [marker]);
@@ -286,7 +296,7 @@ export const Map: React.FC<Props> = ({
 
       // create a marker
       const { lat, lon } = marker;
-      markerRef.current = new mapboxgl.Marker(config.marker)
+      markerRef.current = new mapboxgl.Marker(config.point)
         .setLngLat({ lat, lng: lon })
         .addTo(mapboxRef.current);
     }
@@ -357,24 +367,46 @@ export const Map: React.FC<Props> = ({
       }
 
       // add layers
+      // mapboxRef.current.addLayer({
+      //   id: MAP_LAYERS.WAYPOINTS,
+      //   type: 'circle',
+      //   source: MAP_SOURCES.WAYPOINTS,
+      //   paint: {
+      //     'circle-radius': [
+      //       'interpolate',
+      //       ['linear'],
+      //       ['zoom'],
+      //       // dynamic point sizes ([zoom, radius])
+      //       ...[0, 3],
+      //       ...[5, 5],
+      //       ...[8, 8],
+      //       ...[12, 12],
+      //       ...[15, 12],
+      //     ],
+      //     'circle-stroke-width': 2,
+      //     'circle-color': config.point.color,
+      //     'circle-stroke-color': '#ffffff',
+      //   },
+      // });
+
       mapboxRef.current.addLayer({
         id: MAP_LAYERS.WAYPOINTS,
         type: 'circle',
         source: MAP_SOURCES.WAYPOINTS,
+        filter: ['!', ['has', 'point_count']],
         paint: {
           'circle-radius': [
             'interpolate',
             ['linear'],
             ['zoom'],
-            // dynamic point sizes ([zoom, radius])
-            ...[0, 3],
-            ...[5, 5],
-            ...[8, 8],
-            ...[12, 12],
-            ...[15, 12],
+            ...[0, config.point.radius],
+            ...[5, config.point.radius],
+            // ...[8,config.point.radius],
+            // ...[12, config.point.radius],
+            // ...[15, config.point.radius],
           ],
           'circle-stroke-width': 2,
-          'circle-color': config.marker.color,
+          'circle-color': config.point.color,
           'circle-stroke-color': '#ffffff',
         },
       });
@@ -409,7 +441,7 @@ export const Map: React.FC<Props> = ({
             ...[15, 14],
           ],
           'circle-stroke-width': 2,
-          'circle-color': config.marker.color,
+          'circle-color': config.point.color,
           'circle-stroke-color': '#ffffff',
         },
       });
@@ -439,6 +471,58 @@ export const Map: React.FC<Props> = ({
         },
       });
 
+      mapboxRef.current.addLayer({
+        id: MAP_LAYERS.CLUSTERS,
+        type: 'circle',
+        source: MAP_SOURCES.WAYPOINTS,
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': [
+            'case',
+            ['boolean', ['feature-state', 'hovered'], false],
+            config.cluster.colorHover,
+            [
+              'step',
+              ['get', 'point_count'],
+              config.cluster.color,
+              100,
+              config.cluster.color,
+              750,
+              config.cluster.color,
+            ],
+          ],
+          'circle-radius': config.cluster.radius,
+          //  [
+          //   'step',
+          //   ['get', 'point_count'],
+          //   20,
+          //   100,
+          //   30,
+          //   750,
+          //   40,
+          // ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      mapboxRef.current.addLayer({
+        id: MAP_LAYERS.CLUSTER_COUNT,
+        type: 'symbol',
+        source: MAP_SOURCES.WAYPOINTS,
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': 12,
+        },
+        paint: {
+          'text-color': '#fff',
+          // 'text-halo-color': 'rgba(0, 0, 0, 0.5)',
+          // 'text-halo-width': 1,
+        },
+      });
+
       // set cursor
       if (cursor) {
         mapboxRef.current.getCanvas().style.cursor = cursor;
@@ -464,7 +548,7 @@ export const Map: React.FC<Props> = ({
           }
 
           // create a new marker
-          markerRef.current = new mapboxgl.Marker(config.marker)
+          markerRef.current = new mapboxgl.Marker(config.point)
             .setLngLat({ lat, lng: lon })
             .addTo(mapboxRef.current);
 
@@ -472,6 +556,64 @@ export const Map: React.FC<Props> = ({
           if (onMarkerChange) {
             onMarkerChange({ lat, lon });
           }
+        }
+      });
+
+      // update on map drag
+      mapboxRef.current.on('moveend', () => {
+        // get coordinates
+        const { lng: lon, lat } = mapboxRef.current!.getCenter();
+        const alt = mapboxRef.current!.getZoom();
+
+        // get bounds
+        const bounds = mapboxRef.current!.getBounds();
+        const ne = bounds?.getNorthEast(); // northeast corner
+        const sw = bounds?.getSouthWest(); // southwest corner
+
+        // update state
+        if (onMove) {
+          onMove({
+            lat,
+            lon,
+            alt,
+            bounds:
+              ne && sw
+                ? {
+                    ne: { lat: ne.lat, lon: ne.lng },
+                    sw: { lat: sw.lat, lon: sw.lng },
+                  }
+                : undefined,
+          });
+        }
+      });
+
+      // update on map zoom
+      mapboxRef.current.on('zoomend', (e) => {
+        if (!mapboxRef.current) return;
+
+        // get coordinates
+        const { lng: lon, lat } = mapboxRef.current.getCenter();
+        const alt = mapboxRef.current.getZoom();
+
+        // get bounds
+        const bounds = mapboxRef.current.getBounds();
+        const ne = bounds?.getNorthEast(); // northeast corner
+        const sw = bounds?.getSouthWest(); // southwest corner
+
+        // update state
+        if (onMove) {
+          onMove({
+            lat,
+            lon,
+            alt,
+            bounds:
+              ne && sw
+                ? {
+                    ne: { lat: ne.lat, lon: ne.lng },
+                    sw: { lat: sw.lat, lon: sw.lng },
+                  }
+                : undefined,
+          });
         }
       });
 
@@ -656,61 +798,96 @@ export const Map: React.FC<Props> = ({
         }, 100);
       });
 
-      // update on map drag
-      mapboxRef.current.on('moveend', () => {
-        // get coordinates
-        const { lng: lon, lat } = mapboxRef.current!.getCenter();
-        const alt = mapboxRef.current!.getZoom();
+      mapboxRef.current.on('click', MAP_LAYERS.CLUSTERS, (e) => {
+        if (!mapboxRef.current || !e.features || !e.features.length) return;
 
-        // get bounds
-        const bounds = mapboxRef.current!.getBounds();
-        const ne = bounds?.getNorthEast(); // northeast corner
-        const sw = bounds?.getSouthWest(); // southwest corner
+        const feature = e.features[0];
+        const clusterId = feature.properties?.cluster_id;
+        const geometry = feature.geometry as GeoJSON.Point;
+        const coordinates = geometry.coordinates.slice();
 
-        // update state
-        if (onMove) {
-          onMove({
-            lat,
-            lon,
-            alt,
-            bounds:
-              ne && sw
-                ? {
-                    ne: { lat: ne.lat, lon: ne.lng },
-                    sw: { lat: sw.lat, lon: sw.lng },
-                  }
-                : undefined,
+        const source = mapboxRef.current.getSource(
+          MAP_SOURCES.WAYPOINTS,
+        ) as mapboxgl.GeoJSONSource;
+
+        source.getClusterLeaves(clusterId, Infinity, 0, (e, f) => {
+          if (!mapboxRef.current) return;
+
+          const features = f || [];
+
+          if (e) {
+            console.error('error getting cluster leaves:', e);
+            return;
+          }
+
+          // calculate bounds from cluster points
+          const bounds = new mapboxgl.LngLatBounds();
+          features.forEach((feature) => {
+            const pointGeometry = feature.geometry as GeoJSON.Point;
+            const [lon, lat] = pointGeometry.coordinates;
+            bounds.extend([lon, lat]);
           });
+
+          // extend bounds
+          const buffer = 0.1;
+          const ne = bounds.getNorthEast();
+          const sw = bounds.getSouthWest();
+          const extendedBounds = new mapboxgl.LngLatBounds(
+            [sw.lng - buffer, sw.lat - buffer],
+            [ne.lng + buffer, ne.lat + buffer],
+          );
+
+          // zoom to bounds with padding
+          mapboxRef.current.fitBounds(extendedBounds, {
+            padding: 0,
+            maxZoom: 9,
+            duration: 800,
+          });
+        });
+      });
+
+      mapboxRef.current.on('mouseenter', MAP_LAYERS.CLUSTERS, (e) => {
+        if (!mapboxRef.current || !e.features || !e.features.length) return;
+
+        const feature = e.features[0];
+        const clusterId = feature.properties?.cluster_id;
+
+        // update cursor
+        canvas.style.cursor = 'pointer';
+
+        // update styles
+        if (clusterId) {
+          hoveredClusterIdRef.current = clusterId;
+
+          mapboxRef.current.setFeatureState(
+            {
+              source: MAP_SOURCES.WAYPOINTS,
+              id: clusterId,
+            },
+            { hovered: true },
+          );
         }
       });
 
-      // update on map zoom
-      mapboxRef.current.on('zoomend', (e) => {
+      mapboxRef.current.on('mouseleave', MAP_LAYERS.CLUSTERS, () => {
         if (!mapboxRef.current) return;
 
-        // get coordinates
-        const { lng: lon, lat } = mapboxRef.current.getCenter();
-        const alt = mapboxRef.current.getZoom();
+        const clusterId = hoveredClusterIdRef.current;
 
-        // get bounds
-        const bounds = mapboxRef.current.getBounds();
-        const ne = bounds?.getNorthEast(); // northeast corner
-        const sw = bounds?.getSouthWest(); // southwest corner
+        // update cursor
+        canvas.style.cursor = '';
 
-        // update state
-        if (onMove) {
-          onMove({
-            lat,
-            lon,
-            alt,
-            bounds:
-              ne && sw
-                ? {
-                    ne: { lat: ne.lat, lon: ne.lng },
-                    sw: { lat: sw.lat, lon: sw.lng },
-                  }
-                : undefined,
-          });
+        // update styles
+        if (clusterId) {
+          mapboxRef.current.setFeatureState(
+            {
+              source: MAP_SOURCES.WAYPOINTS,
+              id: clusterId,
+            },
+            { hovered: false },
+          );
+
+          hoveredClusterIdRef.current = null;
         }
       });
     }
