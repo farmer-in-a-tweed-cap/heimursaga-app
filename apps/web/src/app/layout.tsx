@@ -12,8 +12,6 @@ import {
   AppProvider,
   AppSidebar,
   AppTopNavbar,
-  IAppContext,
-  IAppContextState,
   IAppContextStateConfig,
   Logo,
 } from '@/components';
@@ -88,7 +86,10 @@ export const AppLayout = ({
       <div className="w-full min-h-screen bg-background text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
-          <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+          <div className="z-20 hidden desktop:flex items-center w-full h-[60px] bg-background">
+            <AppTopNavbar />
+          </div>
+          <div className="z-10 w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
             {children}
           </div>
         </div>
@@ -137,12 +138,11 @@ export const AppMapLayout = ({
     <SessionLayout secure={secure}>
       <div className="w-full bg-background text-black flex flex-row">
         <AppSidebar collapsed={true} />
-        <div className="relative w-full flex flex-col justify-start">
-          <div className="flex mobile:hidden items-center w-full h-[60px] bg-background">
+        <div className="relative w-full h-screen flex flex-col justify-start">
+          <div className="z-20 sticky desktop:hidden flex items-center w-full h-[60px] bg-background">
             <AppTopNavbar />
           </div>
-
-          <div className={cn('app-content-full-container')}>{children}</div>
+          <div className="z-10 w-full h-full relative">{children}</div>
         </div>
       </div>
     </SessionLayout>
