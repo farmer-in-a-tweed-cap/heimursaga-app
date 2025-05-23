@@ -43,7 +43,7 @@ export type MapOnSourceClickHandler = (sourceId: string) => void;
 export type MapSourceType = 'point' | 'line';
 
 export type MapSourceData<T = any> = {
-  id: number | string;
+  id: string;
   lat: number;
   lon: number;
   properties: T;
@@ -145,7 +145,8 @@ export const Map: React.FC<Props> = ({
   const hoverPopupRef = useRef<boolean>(false);
   const waypointDraggableRef = useRef(waypointDraggable);
 
-  const hoveredClusterIdRef = useRef<number | null>(null);
+  const hoveredPointIdRef = useRef<string | null>(null);
+  const hoveredClusterIdRef = useRef<string | null>(null);
 
   // if there is no token, don't render the map
   if (!token) {
@@ -367,28 +368,6 @@ export const Map: React.FC<Props> = ({
       }
 
       // add layers
-      // mapboxRef.current.addLayer({
-      //   id: MAP_LAYERS.WAYPOINTS,
-      //   type: 'circle',
-      //   source: MAP_SOURCES.WAYPOINTS,
-      //   paint: {
-      //     'circle-radius': [
-      //       'interpolate',
-      //       ['linear'],
-      //       ['zoom'],
-      //       // dynamic point sizes ([zoom, radius])
-      //       ...[0, 3],
-      //       ...[5, 5],
-      //       ...[8, 8],
-      //       ...[12, 12],
-      //       ...[15, 12],
-      //     ],
-      //     'circle-stroke-width': 2,
-      //     'circle-color': config.point.color,
-      //     'circle-stroke-color': '#ffffff',
-      //   },
-      // });
-
       mapboxRef.current.addLayer({
         id: MAP_LAYERS.WAYPOINTS,
         type: 'circle',
@@ -405,8 +384,13 @@ export const Map: React.FC<Props> = ({
             // ...[12, config.point.radius],
             // ...[15, config.point.radius],
           ],
+          'circle-color': [
+            'case',
+            ['==', ['feature-state', 'hovered_point'], true],
+            config.cluster.colorHover,
+            config.cluster.color,
+          ],
           'circle-stroke-width': 2,
-          'circle-color': config.point.color,
           'circle-stroke-color': '#ffffff',
         },
       });
@@ -479,17 +463,9 @@ export const Map: React.FC<Props> = ({
         paint: {
           'circle-color': [
             'case',
-            ['boolean', ['feature-state', 'hovered'], false],
+            ['==', ['feature-state', 'hovered_cluster'], true],
             config.cluster.colorHover,
-            [
-              'step',
-              ['get', 'point_count'],
-              config.cluster.color,
-              100,
-              config.cluster.color,
-              750,
-              config.cluster.color,
-            ],
+            config.cluster.color,
           ],
           'circle-radius': config.cluster.radius,
           //  [
@@ -588,7 +564,7 @@ export const Map: React.FC<Props> = ({
       });
 
       // update on map zoom
-      mapboxRef.current.on('zoomend', (e) => {
+      mapboxRef.current.on('zoomend', () => {
         if (!mapboxRef.current) return;
 
         // get coordinates
@@ -625,7 +601,7 @@ export const Map: React.FC<Props> = ({
         offset: 15,
       });
 
-      // handle waypoint layer click event
+      // waypoints
       mapboxRef.current!.on('click', MAP_LAYERS.WAYPOINTS, (e) => {
         if (mapboxRef.current && onSourceClick) {
           const sourceId = e.features?.[0].properties?.id;
@@ -633,7 +609,7 @@ export const Map: React.FC<Props> = ({
         }
       });
 
-      mapboxRef.current!.on('mouseover', MAP_LAYERS.WAYPOINTS, (e) => {
+      mapboxRef.current!.on('mouseenter', MAP_LAYERS.WAYPOINTS, (e) => {
         if (
           !mapboxRef.current ||
           !mapboxPopupRef.current ||
@@ -642,10 +618,9 @@ export const Map: React.FC<Props> = ({
         )
           return;
 
-        // set cursor
-        canvas.style.cursor = 'pointer';
-
         const feature = e.features[0];
+        const pointId = feature.id as string;
+
         const properties = feature?.properties as {
           id: string;
           title: string;
@@ -653,11 +628,27 @@ export const Map: React.FC<Props> = ({
           date: string;
         };
 
-        const { id, title, content, date } = properties;
-        const coordinates = (feature.geometry as any).coordinates as [
-          number,
-          number,
-        ];
+        // update cursor
+        canvas.style.cursor = 'pointer';
+
+        // update styles
+        if (pointId) {
+          mapboxRef.current.setFeatureState(
+            {
+              source: MAP_SOURCES.WAYPOINTS,
+              id: pointId,
+            },
+            { hovered_point: true },
+          );
+
+          hoveredPointIdRef.current = pointId;
+        }
+
+        // const { id, title, content, date } = properties;
+        // const coordinates = (feature.geometry as any).coordinates as [
+        //   number,
+        //   number,
+        // ];
 
         // @todo
         // set custom popup
@@ -703,10 +694,25 @@ export const Map: React.FC<Props> = ({
       });
 
       mapboxRef.current!.on('mouseleave', MAP_LAYERS.WAYPOINTS, () => {
-        if (!mapboxPopupRef.current) return;
+        if (!mapboxRef.current || !mapboxPopupRef.current) return;
 
-        // reset cursor
+        const pointId = hoveredPointIdRef.current;
+
+        // update cursor
         canvas.style.cursor = '';
+
+        // update styles
+        if (pointId) {
+          mapboxRef.current.setFeatureState(
+            {
+              source: MAP_SOURCES.WAYPOINTS,
+              id: pointId,
+            },
+            { hovered_point: false },
+          );
+
+          hoveredPointIdRef.current = null;
+        }
 
         // remove popup
         setTimeout(() => {
@@ -717,6 +723,7 @@ export const Map: React.FC<Props> = ({
         }, 100);
       });
 
+      // waypoints draggable
       mapboxRef.current!.on(
         'mouseover',
         MAP_LAYERS.WAYPOINTS_DRAGGABLE,
@@ -783,21 +790,7 @@ export const Map: React.FC<Props> = ({
         },
       );
 
-      mapboxRef.current!.on('mouseleave', MAP_LAYERS.WAYPOINTS, () => {
-        if (!mapboxPopupRef.current) return;
-
-        // reset cursor
-        canvas.style.cursor = '';
-
-        // remove popup
-        setTimeout(() => {
-          if (!hoverPopupRef.current) {
-            mapboxPopupRef.current!.remove();
-            showPopupRef.current = false;
-          }
-        }, 100);
-      });
-
+      // clusters
       mapboxRef.current.on('click', MAP_LAYERS.CLUSTERS, (e) => {
         if (!mapboxRef.current || !e.features || !e.features.length) return;
 
@@ -864,7 +857,7 @@ export const Map: React.FC<Props> = ({
               source: MAP_SOURCES.WAYPOINTS,
               id: clusterId,
             },
-            { hovered: true },
+            { hovered_cluster: true },
           );
         }
       });
@@ -884,7 +877,7 @@ export const Map: React.FC<Props> = ({
               source: MAP_SOURCES.WAYPOINTS,
               id: clusterId,
             },
-            { hovered: false },
+            { hovered_cluster: false },
           );
 
           hoveredClusterIdRef.current = null;
