@@ -492,9 +492,6 @@ export const ExploreMap: React.FC<Props> = () => {
                     id={post.id}
                     date={date}
                     actions={{ like: false, bookmark: true, edit: false }}
-                    classNames={{
-                      card: isPostSelected(post.id) ? '!border-black' : '',
-                    }}
                     userbar={
                       post?.author
                         ? {
@@ -503,6 +500,7 @@ export const ExploreMap: React.FC<Props> = () => {
                           }
                         : undefined
                     }
+                    selected={isPostSelected(post.id)}
                     onClick={() => handlePostOpen(post.id)}
                   />
                 ) : (
@@ -524,7 +522,7 @@ export const ExploreMap: React.FC<Props> = () => {
       >
         <div
           className={cn(
-            'z-50 w-full overflow-y-scroll h-screen absolute transform transition-transform duration-300 ease-in-out right-0 top-0 bottom-0 bg-white rounded-l-2xl',
+            'z-50 w-full overflow-y-scroll h-screen absolute transform transition-transform duration-300 ease-in-out right-0 top-0 bottom-0 bg-white',
             drawer ? 'translate-x-0' : 'translate-x-full',
           )}
         >
@@ -532,7 +530,7 @@ export const ExploreMap: React.FC<Props> = () => {
             <div className="p-4 h-[60px] sticky top-0 w-full flex flex-row justify-start items-center">
               <CloseButton className="bg-white" onClick={handlePostClose} />
             </div>
-            <div className="-mt-[60px] w-full h-[280px] bg-gray-500 rounded-l-2xl"></div>
+            <div className="-mt-[60px] w-full h-[280px] bg-gray-500"></div>
             {postLoading ? (
               <LoadingSpinner />
             ) : post ? (
