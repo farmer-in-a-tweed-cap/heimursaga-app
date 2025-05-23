@@ -1,14 +1,7 @@
 'use client';
 
 import { Searchbar } from '../search';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@repo/ui/components';
+import { Sheet, SheetContent, SheetTrigger } from '@repo/ui/components';
 import { MenuIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -33,7 +26,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
   };
 
   return (
-    <div className="relative w-full h-[60px] bg-background flex flex-row items-center justify-between app-container">
+    <div className="z-50 relative w-full h-[60px] bg-background flex flex-row items-center justify-between app-container">
       <Link href={ROUTER.HOME}>
         <Logo size="sm" color="dark" />
       </Link>

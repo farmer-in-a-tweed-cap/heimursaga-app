@@ -410,10 +410,10 @@ export const ExploreMap: React.FC<Props> = () => {
   }, []);
 
   return (
-    <div className="w-full h-full flex flex-row justify-between bg-white">
+    <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
       <div
         className={cn(
-          'relative w-full h-full  hidden mobile:flex overflow-hidden',
+          'relative w-full h-full hidden desktop:flex overflow-hidden',
           sidebar ? 'basis-auto max-w-[540px]' : 'max-w-[0px]',
         )}
       >
@@ -514,9 +514,9 @@ export const ExploreMap: React.FC<Props> = () => {
 
       <div
         className={cn(
-          'z-40 w-full relative overflow-hidden shadow-xl',
+          'z-50 w-full relative overflow-hidden shadow-xl',
           sidebar
-            ? 'max-w-full mobile:rounded-l-2xl'
+            ? 'max-w-full desktop:rounded-l-2xl'
             : 'max-w-full rounded-l-none',
         )}
       >
@@ -564,7 +564,7 @@ export const ExploreMap: React.FC<Props> = () => {
           </div>
         </div>
         <button
-          className="z-20 absolute hidden mobile:flex top-4 left-4 drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
+          className="z-20 absolute hidden desktop:flex top-4 left-4 drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
           onClick={handleSidebarToggle}
         >
           {sidebar ? (
