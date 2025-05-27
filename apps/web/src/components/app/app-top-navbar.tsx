@@ -1,6 +1,6 @@
 'use client';
 
-import { Searchbar } from '../search';
+import { MapSearchbar, Searchbar } from '../search';
 import { Sheet, SheetContent, SheetTrigger } from '@repo/ui/components';
 import { MenuIcon } from 'lucide-react';
 import Link from 'next/link';
@@ -26,14 +26,13 @@ export const AppTopNavbar: React.FC<Props> = () => {
   };
 
   return (
-    <div className="z-50 relative w-full h-[60px] bg-background flex flex-row items-center justify-between app-container">
+    <div className="z-50 relative w-full h-[60px] bg-background flex flex-row items-center justify-between app-container gap-10">
       <Link href={ROUTER.HOME}>
         <Logo size="sm" color="dark" />
       </Link>
-
-      <div>
-        <Searchbar />
-      </div>
+      {/* <div className="w-full max-w-[320px]">
+        <MapSearchbar />
+      </div> */}
       <div>
         <Sheet>
           <SheetTrigger>

@@ -97,6 +97,7 @@ type Props = {
   minZoom?: number;
   maxZoom?: number;
   coordinates?: { lat: number; lon: number; alt: number };
+  bounds?: { sw: [number, number]; ne: [number, number] };
   marker?: { lat: number; lon: number };
   className?: string;
   cursor?: string;
@@ -123,6 +124,7 @@ export const Map: React.FC<Props> = ({
   controls = true,
   markerEnabled = false,
   disabled = false,
+  bounds,
   onLoad,
   onMove,
   onMarkerChange,
@@ -188,6 +190,13 @@ export const Map: React.FC<Props> = ({
       }
     }
   };
+
+  // useEffect(() => {
+  //   if (!bounds) return;
+  //   console.log('bounds:', bounds);
+
+  //   // mapboxRef.current.fitBounds([...bounds.sw, ...bounds.ne]);
+  // }, [bounds]);
 
   useEffect(() => {
     waypointDraggableRef.current = waypointDraggable;
