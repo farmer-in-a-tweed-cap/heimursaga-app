@@ -20,11 +20,7 @@ import {
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import {
-  IPayloadWithSession,
-  ISessionQuery,
-  ISessionQueryWithPayload,
-} from '@/common/interfaces';
+import { ISessionQuery, ISessionQueryWithPayload } from '@/common/interfaces';
 import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { IUserNotificationCreatePayload } from '@/modules/notification';
@@ -285,7 +281,10 @@ export class PostService {
     }
   }
 
-  async create({ session, payload }: IPayloadWithSession<IPostCreatePayload>) {
+  async create({
+    session,
+    payload,
+  }: ISessionQueryWithPayload<{}, IPostCreatePayload>) {
     try {
       const { userId } = session;
 

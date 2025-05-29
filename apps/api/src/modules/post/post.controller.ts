@@ -47,6 +47,7 @@ export class PostController {
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() body: PostCreateDto, @Session() session: ISession) {
     return await this.postService.create({
+      query: {},
       payload: body,
       session,
     });

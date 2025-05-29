@@ -34,7 +34,6 @@ import {
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import {
-  IPayloadWithSession,
   IQueryWithSession,
   ISessionQuery,
   ISessionQueryWithPayload,
@@ -1005,7 +1004,7 @@ export class SessionUserService {
   async updatePicture({
     payload,
     session,
-  }: IPayloadWithSession<IUserPictureUploadPayload>): Promise<void> {
+  }: ISessionQueryWithPayload<{}, IUserPictureUploadPayload>): Promise<void> {
     try {
       const { userId } = session;
 
@@ -1020,6 +1019,7 @@ export class SessionUserService {
 
       // upload picture
       const { thumbnail } = await this.uploadService.upload({
+        query: {},
         payload: {
           file: payload.file,
           context: MediaUploadContext.USER,

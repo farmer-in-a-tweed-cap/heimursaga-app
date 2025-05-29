@@ -38,9 +38,9 @@ import {
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import {
-  IPayloadWithSession,
   IQueryWithSession,
   ISessionQuery,
+  ISessionQueryWithPayload,
 } from '@/common/interfaces';
 import { config } from '@/config';
 import { Logger } from '@/modules/logger';
@@ -151,7 +151,7 @@ export class PaymentService {
   async createPaymentMethod({
     payload,
     session,
-  }: IPayloadWithSession<IPaymentMethodCreatePayload>) {
+  }: ISessionQueryWithPayload<{}, IPaymentMethodCreatePayload>) {
     try {
       const { stripePaymentMethodId } = payload;
       const { userId } = session;
@@ -263,7 +263,7 @@ export class PaymentService {
 
   async createPaymentIntent({
     session,
-  }: IPayloadWithSession<{}>): Promise<IPaymentIntentCreateResponse> {
+  }: ISessionQueryWithPayload<{}>): Promise<IPaymentIntentCreateResponse> {
     try {
       const { userId } = session;
 
@@ -316,7 +316,10 @@ export class PaymentService {
   async createCheckout({
     session,
     payload,
-  }: IPayloadWithSession<ICheckoutPayload>): Promise<ICheckoutResponse> {
+  }: ISessionQueryWithPayload<
+    {},
+    ICheckoutPayload
+  >): Promise<ICheckoutResponse> {
     try {
       const { userId } = session;
       const { mode, donation } = payload;
@@ -605,7 +608,10 @@ export class PaymentService {
   async checkoutSubscriptionPlanUpgrade({
     session,
     payload,
-  }: IPayloadWithSession<ISubscriptionPlanUpgradeCheckoutPayload>): Promise<ISubscriptionPlanUpgradeCheckoutResponse> {
+  }: ISessionQueryWithPayload<
+    {},
+    ISubscriptionPlanUpgradeCheckoutPayload
+  >): Promise<ISubscriptionPlanUpgradeCheckoutResponse> {
     try {
       const { userId } = session;
       const { planId, period } = payload;

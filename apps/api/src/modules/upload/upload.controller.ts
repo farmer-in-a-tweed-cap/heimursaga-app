@@ -38,6 +38,7 @@ export class UploadController {
     @Session() session: ISession,
   ) {
     return this.uploadService.upload({
+      query: {},
       payload: {
         file: { buffer: file.buffer },
         context: MediaUploadContext.UPLOAD,

@@ -202,6 +202,7 @@ export class SessionUserController {
     @Session() session: ISession,
   ) {
     return await this.sessionUserService.updatePicture({
+      query: {},
       payload: { file },
       session,
     });

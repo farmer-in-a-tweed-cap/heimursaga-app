@@ -627,3 +627,8 @@ export interface IWaypointUpdatePayload {
   title?: string;
   description?: string;
 }
+
+// search
+export interface ISearchQueryPayload {
+  search: string;
+}
