@@ -52,6 +52,7 @@ export class PaymentMethodController {
     });
 
     return await this.paymentService.createPaymentMethod({
+      query: {},
       payload: body,
       session,
     });
@@ -79,6 +80,7 @@ export class PaymentIntentController {
   @HttpCode(HttpStatus.CREATED)
   async createPaymentIntent(@Session() session: ISession) {
     return await this.paymentService.createPaymentIntent({
+      query: {},
       session,
       payload: {},
     });
@@ -123,6 +125,7 @@ export class PlanController {
     @Body() body: PlanUpgradeCheckoutDto,
   ) {
     return await this.paymentService.checkoutSubscriptionPlanUpgrade({
+      query: {},
       session,
       payload: body,
     });

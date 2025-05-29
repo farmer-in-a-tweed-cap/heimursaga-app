@@ -14,7 +14,7 @@ import {
   ServiceException,
   ServiceForbiddenException,
 } from '@/common/exceptions';
-import { IPayloadWithSession } from '@/common/interfaces';
+import { ISessionQueryWithPayload } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
@@ -46,7 +46,10 @@ export class UploadService {
   async upload({
     payload,
     session,
-  }: IPayloadWithSession<IMediaUploadPayload>): Promise<IMediaUploadResponse> {
+  }: ISessionQueryWithPayload<
+    {},
+    IMediaUploadPayload
+  >): Promise<IMediaUploadResponse> {
     try {
       const {
         context,

@@ -44,6 +44,7 @@ export class AuthController {
     @Session() session: ISession,
   ) {
     const user = await this.authService.login({
+      query: {},
       payload: body,
       session,
     });

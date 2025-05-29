@@ -8,7 +8,10 @@ import {
   ServiceException,
   ServiceForbiddenException,
 } from '@/common/exceptions';
-import { IPayloadWithSession, IQueryWithSession } from '@/common/interfaces';
+import {
+  IQueryWithSession,
+  ISessionQueryWithPayload,
+} from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
@@ -40,7 +43,10 @@ export class NotificationService {
 
   async create({
     payload,
-  }: IPayloadWithSession<IUserNotificationCreatePayload>): Promise<void> {
+  }: ISessionQueryWithPayload<
+    {},
+    IUserNotificationCreatePayload
+  >): Promise<void> {
     try {
       console.log({ payload });
 
@@ -69,6 +75,6 @@ export class NotificationService {
 
   @OnEvent(EVENTS.NOTIFICATIONS.CREATE)
   async onCreate(payload: IUserNotificationCreatePayload): Promise<void> {
-    this.create({ payload });
+    this.create({ query: {}, payload });
   }
 }

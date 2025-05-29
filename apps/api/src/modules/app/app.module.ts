@@ -11,6 +11,7 @@ import { PaymentModule } from '@/modules/payment';
 import { PayoutModule } from '@/modules/payout';
 import { PostModule } from '@/modules/post';
 import { PrismaModule } from '@/modules/prisma';
+import { SearchModule } from '@/modules/search';
 import { SponsorModule } from '@/modules/sponsor';
 import { StripeModule } from '@/modules/stripe';
 import { TripModule } from '@/modules/trip';
@@ -42,6 +43,7 @@ import { AppService } from './app.service';
     PayoutModule,
     TripModule,
     NotificationModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [AppService],

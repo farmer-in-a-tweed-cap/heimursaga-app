@@ -23,7 +23,7 @@ import {
   ServiceNotFoundException,
   ServiceUnauthorizedException,
 } from '@/common/exceptions';
-import { IPayloadWithSession, ISession } from '@/common/interfaces';
+import { ISession, ISessionQueryWithPayload } from '@/common/interfaces';
 import { config } from '@/config';
 import { IPasswordResetEmailTemplateData } from '@/modules/email';
 import { EVENTS, EventService, IEmailSendEvent } from '@/modules/event';
@@ -98,7 +98,7 @@ export class AuthService {
   async login({
     payload,
     session,
-  }: IPayloadWithSession<ILoginPayload>): Promise<ILoginResponse> {
+  }: ISessionQueryWithPayload<{}, ILoginPayload>): Promise<ILoginResponse> {
     try {
       const { email } = payload;
       const { sid, ip, userAgent } = session || {};
