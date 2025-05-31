@@ -60,7 +60,7 @@ export const Searchbar: React.FC<Props> = ({
   };
 
   return (
-    <div className="flex flex-col relative">
+    <div className="w-full flex flex-col relative">
       <form method="POST" onSubmit={handleSubmit}>
         <div className="relative w-full flex flex-row justify-start items-center">
           <div className="absolute left-0 top-0 bottom-0 w-[36px] flex items-center justify-center">
@@ -71,7 +71,7 @@ export const Searchbar: React.FC<Props> = ({
             )}
           </div>
           <Input
-            className={cn('pl-[32px] rounded-full', className)}
+            className={cn('pl-[32px] rounded-full bg-background', className)}
             value={search}
             placeholder="Search"
             onChange={handleChange}
