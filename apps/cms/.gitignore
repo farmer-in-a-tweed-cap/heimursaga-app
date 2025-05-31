@@ -1,6 +1,0 @@
-data
-extensions
-uploads
-
-*.env.*
-!.env.example
