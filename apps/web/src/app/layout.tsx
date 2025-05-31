@@ -12,6 +12,7 @@ import {
   AppProvider,
   AppSidebar,
   AppTopNavbar,
+  BottomNavbar,
   IAppContextStateConfig,
   Logo,
 } from '@/components';
@@ -86,8 +87,11 @@ export const AppLayout = ({
       <div className="w-full min-h-screen bg-background text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
-          <div className="z-20 hidden desktop:flex items-center w-full h-[60px] bg-background">
+          {/* <div className="z-20 hidden desktop:flex items-center w-full h-[60px] bg-background">
             <AppTopNavbar />
+          </div> */}
+          <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
+            <BottomNavbar />
           </div>
           <div className="z-10 w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
             {children}
@@ -127,7 +131,7 @@ export const LoginLayout = async ({
   );
 };
 
-export const AppMapLayout = ({
+export const MapLayout = ({
   children,
   secure = true,
 }: {
@@ -139,10 +143,15 @@ export const AppMapLayout = ({
       <div className="w-full bg-background text-black flex flex-row">
         <AppSidebar collapsed={true} />
         <div className="relative w-full h-screen flex flex-col justify-start">
-          <div className="z-20 sticky desktop:hidden flex items-center w-full h-[60px] bg-background">
+          {/* <div className="z-20 sticky desktop:hidden flex items-center w-full h-[60px] bg-background">
             <AppTopNavbar />
+          </div> */}
+          <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
+            <BottomNavbar />
           </div>
-          <div className="z-10 w-full h-full relative">{children}</div>
+          <div className="z-10 w-full h-full relative pb-[50px] desktop:pb-0">
+            {children}
+          </div>
         </div>
       </div>
     </SessionLayout>

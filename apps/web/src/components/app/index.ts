@@ -4,3 +4,4 @@ export * from './app-sidebar';
 export * from './app-provider';
 export * from './logo';
 export * from './app-top-navbar';
+export * from './bottom-navbar';
