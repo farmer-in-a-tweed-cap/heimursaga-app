@@ -111,7 +111,7 @@ export const BottomNavbar: React.FC<Props> = () => {
   };
 
   return (
-    <div className="w-full h-[70px] bg-background border-t border-solid border-accent flex flex-row justify-center box-border px-10 gap-20 items-center">
+    <div className="w-full h-[70px] bg-background border-t border-solid border-accent flex flex-row justify-between sm:justify-center sm:gap-14 box-border px-6 items-center">
       {links.map(({ label, href, icon: Icon }, key) => (
         <Link
           key={key}
