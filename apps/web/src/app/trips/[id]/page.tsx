@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
 
-import { AppMapLayout } from '@/app/layout';
+import { MapLayout } from '@/app/layout';
 
 import {
   PageNotFound,
@@ -31,12 +31,12 @@ export default async function Page({ params }: PageProps) {
   );
 
   return (
-    <AppMapLayout secure={true}>
+    <MapLayout secure={true}>
       {tripQuery.success ? (
         <TripEditView trip={tripQuery.data} />
       ) : (
         <PageNotFoundFull />
       )}
-    </AppMapLayout>
+    </MapLayout>
   );
 }

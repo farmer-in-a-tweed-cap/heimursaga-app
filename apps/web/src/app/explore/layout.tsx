@@ -1,5 +1,5 @@
-import { AppMapLayout } from '@/layouts';
+import { MapLayout } from '@/layouts';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <AppMapLayout secure={false}>{children}</AppMapLayout>;
+  return <MapLayout secure={false}>{children}</MapLayout>;
 }

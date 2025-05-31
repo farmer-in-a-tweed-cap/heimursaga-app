@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-import { AppMapLayout } from '@/app/layout';
+import { MapLayout } from '@/app/layout';
 
 import { TripCreateView } from '@/components';
 
@@ -10,8 +10,8 @@ export const metadata: Metadata = {
 
 export default async function Page() {
   return (
-    <AppMapLayout>
+    <MapLayout>
       <TripCreateView />
-    </AppMapLayout>
+    </MapLayout>
   );
 }
