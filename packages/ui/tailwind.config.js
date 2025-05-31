@@ -13,7 +13,7 @@ module.exports = {
     extend: {
       screens: {
         mobile: '760px',
-        desktop: '1140px',
+        desktop: '760px',
       },
       colors: {
         primary: {

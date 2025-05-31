@@ -515,7 +515,10 @@ export const Map: React.FC<Props> = ({
 
       // set controls
       if (controls) {
-        mapboxRef.current.addControl(new MapNavigationControl(), 'top-right');
+        mapboxRef.current.addControl(
+          new MapNavigationControl(),
+          'bottom-right',
+        );
       }
     });
 

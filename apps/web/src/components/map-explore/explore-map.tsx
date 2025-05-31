@@ -599,6 +599,9 @@ export const ExploreMap: React.FC<Props> = () => {
           )}
         </button>
         <div className={cn('z-10 relative !w-full h-full overflow-hidden')}>
+          <div className="absolute top-0 left-0 right-0 z-20 w-full h-[70px] flex justify-between box-border px-10 items-center desktop:hidden">
+            <MapSearchbar />
+          </div>
           {mapbox.token && (
             <Map
               token={mapbox.token}
