@@ -57,6 +57,11 @@ export type MapSource<T = any> = {
   onChange?: (data: MapSourceData[]) => void;
 };
 
+export type MapLayer = {
+  layerId: string;
+  radius?: number;
+};
+
 const config = {
   style: `mapbox://styles/${APP_CONFIG.MAPBOX.STYLE}`,
   maxZoom: 18,
@@ -94,6 +99,14 @@ type Props = {
   token: string;
   mode?: 'basic' | 'trips';
   sources?: MapSource[];
+  styles?: {
+    layer?: {
+      waypoint: {
+        radius: number;
+      };
+    };
+  };
+  layers?: MapLayer[];
   minZoom?: number;
   maxZoom?: number;
   coordinates?: { lat: number; lon: number; alt: number };
@@ -118,6 +131,8 @@ export const Map: React.FC<Props> = ({
   cursor,
   marker,
   sources = [],
+  layers = [],
+  styles,
   minZoom = 4,
   maxZoom = 10,
   coordinates = { lat: 48, lon: 7, alt: 5 },
@@ -383,16 +398,18 @@ export const Map: React.FC<Props> = ({
         source: MAP_SOURCES.WAYPOINTS,
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-radius': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            ...[0, config.point.radius],
-            ...[5, config.point.radius],
-            // ...[8,config.point.radius],
-            // ...[12, config.point.radius],
-            // ...[15, config.point.radius],
-          ],
+          'circle-radius': styles?.layer?.waypoint.radius
+            ? styles?.layer?.waypoint.radius
+            : [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                ...[0, config.point.radius],
+                ...[5, config.point.radius],
+                // ...[8,config.point.radius],
+                // ...[12, config.point.radius],
+                // ...[15, config.point.radius],
+              ],
           'circle-color': [
             'case',
             ['==', ['feature-state', 'hovered_point'], true],

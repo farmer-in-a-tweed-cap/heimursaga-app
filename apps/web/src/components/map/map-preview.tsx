@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { APP_CONFIG } from '@/config';
 import { useMapbox } from '@/hooks';
 
-import { MAP_SOURCES, Map, MapSource } from './map';
+import { Map, MapSource } from './map';
 import { MapPreviewOverlay } from './map-preview-overlay';
 
 type Props = {
@@ -80,6 +80,13 @@ export const MapPreview: React.FC<Props> = ({
             cursor="pointer"
             controls={false}
             disabled={true}
+            styles={{
+              layer: {
+                waypoint: {
+                  radius: 5,
+                },
+              },
+            }}
           />
         )}
       </div>
