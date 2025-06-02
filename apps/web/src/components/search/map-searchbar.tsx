@@ -3,95 +3,136 @@
 import { useEffect, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
+import { apiClient } from '@/lib/api';
+
 import { useMapbox } from '@/hooks';
 
-import { Searchbar } from './searchbar';
+import { SEARCHBAR_CUSTOM_ITEM_ID, Searchbar } from './searchbar';
 
-export type MapSearchbarLocationChangeHandler = (data: {
-  bounds: { sw: [number, number]; ne: [number, number] };
-}) => void;
-
-type MapSearchResult = {
+type MapSearchItem = {
   id: string;
   name: string;
-  context: string;
-  center: [number, number];
-  bounds: [number, number, number, number];
+  context?: string;
+  center?: [number, number];
+  bounds?: [number, number, number, number];
 };
 
-type Props = { onLocationChange?: MapSearchbarLocationChangeHandler };
+export type MapSearchbarChangeHandler = (data: {
+  search: string;
+  items: MapSearchItem[];
+}) => void;
 
-export const MapSearchbar: React.FC<Props> = ({ onLocationChange }) => {
+export type MapSearchbarSubmitHandler = (data: {
+  context: 'text' | 'location';
+  item: MapSearchItem;
+}) => void;
+
+type Props = {
+  value?: string;
+  onChange?: MapSearchbarChangeHandler;
+  onSubmit?: MapSearchbarSubmitHandler;
+};
+
+export const MapSearchbar: React.FC<Props> = ({
+  value,
+  onChange,
+  onSubmit,
+}) => {
   const mapbox = useMapbox();
 
-  const [_search, setSearch] = useState<string | undefined>();
+  const [_search, setSearch] = useState<string | undefined>(value);
   const [search] = useDebounce(_search, 500, { leading: true });
+
   const [loading, setLoading] = useState<boolean>(false);
+  const [results, setResults] = useState<MapSearchItem[]>([]);
 
-  const [results, setResults] = useState<MapSearchResult[]>([]);
+  const handleChange = (search: string) => {
+    if (!search) return;
 
-  const fetchResults = async (query: string) => {
+    setSearch(search);
+
+    // update the state
+    setResults((prev) => {
+      const results = prev.filter(({ id }) => id !== SEARCHBAR_CUSTOM_ITEM_ID);
+      return [{ id: SEARCHBAR_CUSTOM_ITEM_ID, name: search }, ...results];
+    });
+  };
+
+  const handleChangeDebounded = async (search: string) => {
     try {
-      console.log('search:', query);
+      if (!search || !mapbox.token) return;
 
       setLoading(true);
 
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapbox.token}&limit=10&types=country,place&autocomplete=true&language=en`;
-      const response = await fetch(url, { method: 'GET' });
+      // fetch results
+      const results = await apiClient.mapbox
+        .search({
+          token: mapbox.token,
+          search,
+        })
+        .then(({ items }) => items);
 
-      const json = await response.json();
-      const features = (json?.features as any[]) || [];
+      // update the state
+      setResults((prev) => {
+        const searchItem = prev.find(
+          ({ id }) => id === SEARCHBAR_CUSTOM_ITEM_ID,
+        );
+        if (searchItem) {
+          return [searchItem, ...results];
+        } else {
+          return results;
+        }
+      });
 
-      const results = features.map(
-        ({ id, bbox, text, center, context = [] }) =>
-          ({
+      // update the external state
+      if (onChange) {
+        onChange({
+          search,
+          items: results.map(({ id, name, context, center, bounds }) => ({
             id,
-            name: text,
-            context: context.map(({ text }: any) => text).join(', '),
-            bounds: bbox,
+            name,
+            context,
             center,
-          }) satisfies MapSearchResult,
-      );
+            bounds,
+          })),
+        });
+      }
 
-      console.log(features);
-
-      setResults(results);
       setLoading(false);
     } catch (e) {
-      console.log(e);
-
       setLoading(false);
     }
   };
 
-  const handleChange = (value: string) => {
-    if (!value) return;
-    setSearch(value);
-  };
+  const handleResultClick = (resultId: string) => {
+    const result = results.find(({ id }) => id === resultId);
+    if (!result) return;
 
-  const handleResultClick = (id: string) => {
-    const result = results.find((el) => el.id === id);
-
-    if (result && onLocationChange) {
-      onLocationChange({
-        bounds: {
-          sw: [result.bounds[0], result.bounds[1]],
-          ne: [result.bounds[2], result.bounds[3]],
-        },
-      });
+    if (onSubmit) {
+      if (result.id === SEARCHBAR_CUSTOM_ITEM_ID) {
+        onSubmit({
+          context: 'text',
+          item: result,
+        });
+      } else {
+        onSubmit({
+          context: 'location',
+          item: result,
+        });
+      }
     }
   };
 
   useEffect(() => {
     if (!search) return;
-    fetchResults(search);
+    handleChangeDebounded(search);
   }, [search]);
 
   return (
     <Searchbar
       loading={loading}
       value={search}
-      results={results.map(({ id, name, context }) => ({ id, name, context }))}
+      results={results}
       onChange={handleChange}
       onResultClick={handleResultClick}
     />

@@ -652,4 +652,44 @@ export const apiClient = {
         ...config,
       },
     ),
+  // mapbox
+  mapbox: {
+    search: async (query: { token: string; search: string }) => {
+      try {
+        const { search, token } = query;
+
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(search)}.json?access_token=${token}&limit=10&types=country,place&autocomplete=true&language=en`;
+        const response = await fetch(url, { method: 'GET' });
+
+        if (!response.ok) {
+          throw new Error('mapbox request failed');
+        }
+
+        const json = await response.json();
+        const features = (json?.features as any[]) || [];
+
+        const items: {
+          id: string;
+          name: string;
+          context: string;
+          bounds: [number, number, number, number];
+          center: [number, number];
+        }[] = features.map(({ id, bbox, text, center, context = [] }) => ({
+          id,
+          name: text,
+          context: context.map(({ text }: any) => text).join(', '),
+          bounds: bbox,
+          center,
+        }));
+
+        const result = {
+          items,
+        };
+
+        return result;
+      } catch (e) {
+        throw new Error('mapbox request failed');
+      }
+    },
+  },
 };
