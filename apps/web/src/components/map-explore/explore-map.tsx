@@ -2,7 +2,8 @@
 
 import {
   MapSearchbar,
-  MapSearchbarLocationChangeHandler,
+  MapSearchbarChangeHandler,
+  MapSearchbarSubmitHandler,
   Searchbar,
 } from '../search';
 import { MapQueryContext, UserRole } from '@repo/types';
@@ -108,9 +109,9 @@ export const ExploreMap: React.FC<Props> = () => {
 
   const [search, setSearch] = useState<{
     query?: string;
+    context: 'text' | 'location';
     loading: boolean;
-  }>({ loading: false });
-  const [searchDebounced] = useDebounce(search, 500, { leading: true });
+  }>({ context: 'text', loading: false });
 
   const [sidebar, setSidebar] = useState<boolean>(true);
   const [drawer, setDrawer] = useState<boolean>(false);
@@ -306,19 +307,31 @@ export const ExploreMap: React.FC<Props> = () => {
     updateParams({ postId: null });
   };
 
-  const handleSearchLocationChange: MapSearchbarLocationChangeHandler = ({
-    bounds,
-  }) => {
-    setMap((map) => ({
-      ...map,
-      lon: bounds.sw[0],
-      lat: bounds.sw[1],
+  const handleSearchChange: MapSearchbarChangeHandler = (data) => {
+    console.log(data);
 
-      // bounds: {
-      //   sw: { lon: bounds.sw[0], lat: bounds.sw[1] },
-      //   ne: { lon: bounds.ne[0], lat: bounds.ne[1] },
-      // },
-    }));
+    // setMap((map) => ({
+    //   ...map,
+    //   lon: bounds.sw[0],
+    //   lat: bounds.sw[1],
+
+    //   // bounds: {
+    //   //   sw: { lon: bounds.sw[0], lat: bounds.sw[1] },
+    //   //   ne: { lon: bounds.ne[0], lat: bounds.ne[1] },
+    //   // },
+    // }));
+  };
+
+  const handleSearchSubmit: MapSearchbarSubmitHandler = (data) => {
+    const { context, item } = data;
+
+    if (context === 'text') {
+      setSearch((prev) => ({ ...prev, query: item.name, context: 'text' }));
+    }
+
+    if (context === 'location') {
+      setSearch((prev) => ({ ...prev, query: item.name, context: 'location' }));
+    }
   };
 
   // const handleSearchChange = async (query: string) => {
@@ -355,25 +368,6 @@ export const ExploreMap: React.FC<Props> = () => {
 
     mapQuery.refetch();
   };
-
-  // const fetchSearch = async (query: string) => {
-  //   try {
-  //     setSearch((search) => ({ ...search, loading: true }));
-
-  //     // @todo
-  //     await sleep(1500);
-
-  //     setSearch((search) => ({ ...search, loading: false }));
-  //   } catch (e) {
-  //     setSearch((search) => ({ ...search, loading: false }));
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   if (searchDebounced.query) {
-  //     fetchSearch(searchDebounced.query);
-  //   }
-  // }, [searchDebounced.query]);
 
   useEffect(() => {
     const coordinateSet = params.lat && params.lon;
@@ -449,9 +443,12 @@ export const ExploreMap: React.FC<Props> = () => {
                   </div>
                   <div className="mt-4 w-full">
                     <MapSearchbar
-                      onLocationChange={handleSearchLocationChange}
+                      value={search.query}
+                      onChange={handleSearchChange}
+                      onSubmit={handleSearchSubmit}
                     />
                   </div>
+                  {JSON.stringify({ s: search })}
                 </div>
 
                 {/* <div className="flex flex-col gap-0">

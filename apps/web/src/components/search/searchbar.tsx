@@ -1,5 +1,6 @@
 'use client';
 
+import { MagnifyingGlassIcon } from '@repo/ui';
 import { Input, Spinner } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { SearchIcon } from 'lucide-react';
@@ -19,6 +20,8 @@ type Props = {
   onResultClick?: (id: string) => void;
   inputProps?: React.ComponentProps<'input'>;
 };
+
+export const SEARCHBAR_CUSTOM_ITEM_ID = 'search';
 
 export const Searchbar: React.FC<Props> = ({
   className,
@@ -67,7 +70,11 @@ export const Searchbar: React.FC<Props> = ({
             {loading ? (
               <Spinner size={16} className="text-gray-500" />
             ) : (
-              <SearchIcon size={16} className="text-gray-600" />
+              <MagnifyingGlassIcon
+                size={16}
+                weight="bold"
+                className="text-gray-600"
+              />
             )}
           </div>
           <Input
@@ -91,12 +98,30 @@ export const Searchbar: React.FC<Props> = ({
             {results.map(({ id, name, context }, key) => (
               <div
                 key={key}
-                className="h-[50px] cursor-pointer hover:bg-accent px-4 box-border flex flex-col items-start justify-center rounded-xl"
+                className={cn(
+                  'h-[50px] cursor-pointer hover:bg-accent px-4 box-border flex rounded-xl',
+                  id === SEARCHBAR_CUSTOM_ITEM_ID
+                    ? 'flex-row justify-start items-center gap-2'
+                    : 'flex-col items-start justify-center',
+                )}
                 onClick={onResultClick ? () => onResultClick(id) : undefined}
               >
-                <span className="text-sm font-medium text-black">{name}</span>
-                {context && (
-                  <span className="text-xs text-gray-500">{context}</span>
+                {id === SEARCHBAR_CUSTOM_ITEM_ID ? (
+                  <>
+                    <MagnifyingGlassIcon size={18} weight="bold" />
+                    <span className="text-sm font-medium text-black">
+                      {name}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-sm font-medium text-black">
+                      {name}
+                    </span>
+                    {context && (
+                      <span className="text-xs text-gray-500">{context}</span>
+                    )}
+                  </>
                 )}
               </div>
             ))}
