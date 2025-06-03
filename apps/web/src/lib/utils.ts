@@ -25,6 +25,10 @@ export const randomInteger = (min: number, max: number) => {
   return Math.random() * (max - min) + min;
 };
 
+export const getEnv = (): 'development' | 'production' => {
+  return process.env.NODE_ENV as 'development' | 'production';
+};
+
 export function sortByDate<T = any>(
   elements: { date: Date }[],
   order: 'asc' | 'desc',

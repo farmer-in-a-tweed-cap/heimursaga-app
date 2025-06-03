@@ -1,9 +1,8 @@
 'use client';
 
-import { MagnifyingGlassIcon } from '@repo/ui';
 import { Input, Spinner } from '@repo/ui/components';
+import { MagnifyingGlassIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { SearchIcon } from 'lucide-react';
 import { useState } from 'react';
 
 type Props = {

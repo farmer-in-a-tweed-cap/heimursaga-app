@@ -2,24 +2,18 @@
 
 import { UserRole } from '@repo/types';
 import { Button } from '@repo/ui/components';
-import { cn } from '@repo/ui/lib/utils';
 import {
-  BanknoteIcon,
-  BarChart2Icon,
   BellIcon,
-  BookmarkIcon,
-  ChartBarIcon,
-  ChartLineIcon,
-  CoinsIcon,
+  BookmarkSimpleIcon,
+  ChartPieSliceIcon,
   HandCoinsIcon,
-  HomeIcon,
-  LibraryIcon,
-  LucideProps,
-  PenLineIcon,
+  HouseIcon,
+  IconProps,
+  PathIcon,
   PencilIcon,
-  PencilLineIcon,
-  PlaneTakeoffIcon,
-} from 'lucide-react';
+  WalletIcon,
+} from '@repo/ui/icons';
+import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ForwardRefExoticComponent, RefAttributes } from 'react';
@@ -33,7 +27,7 @@ type SidebarLink = {
   base: string;
   label: string;
   icon: ForwardRefExoticComponent<
-    Omit<LucideProps, 'ref'> & RefAttributes<SVGSVGElement>
+    Omit<IconProps, 'ref'> & RefAttributes<SVGSVGElement>
   >;
 };
 
@@ -63,7 +57,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.HOME,
         base: ROUTER.HOME,
         label: 'Home',
-        icon: HomeIcon,
+        icon: HouseIcon,
       },
     ],
     user: [
@@ -71,19 +65,19 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.HOME,
         base: ROUTER.HOME,
         label: 'Home',
-        icon: HomeIcon,
+        icon: HouseIcon,
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
         base: username ? ROUTER.USERS.DETAIL(username) : '#',
         label: 'Journal',
-        icon: PenLineIcon,
+        icon: PencilIcon,
       },
       {
         href: ROUTER.BOOKMARKS.HOME,
         base: ROUTER.BOOKMARKS.HOME,
         label: 'Bookmarks',
-        icon: BookmarkIcon,
+        icon: BookmarkSimpleIcon,
       },
       {
         href: ROUTER.NOTIFICATIONS,
@@ -97,19 +91,19 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.HOME,
         base: ROUTER.HOME,
         label: 'Home',
-        icon: HomeIcon,
+        icon: HouseIcon,
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
         base: username ? ROUTER.USERS.DETAIL(username) : '#',
         label: 'Journal',
-        icon: PenLineIcon,
+        icon: PencilIcon,
       },
       {
         href: ROUTER.TRIPS.HOME,
         base: ROUTER.TRIPS.HOME,
         label: 'Trips',
-        icon: PlaneTakeoffIcon,
+        icon: PathIcon,
       },
       {
         href: ROUTER.SPONSORSHIP.ROOT,
@@ -121,19 +115,19 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.INSIGHTS.HOME,
         base: ROUTER.INSIGHTS.HOME,
         label: 'Insights',
-        icon: ChartLineIcon,
+        icon: ChartPieSliceIcon,
       },
       {
         href: ROUTER.PAYOUTS.HOME,
         base: ROUTER.PAYOUTS.HOME,
         label: 'Payouts',
-        icon: BanknoteIcon,
+        icon: WalletIcon,
       },
       {
         href: ROUTER.BOOKMARKS.HOME,
         base: ROUTER.BOOKMARKS.HOME,
         label: 'Bookmarks',
-        icon: BookmarkIcon,
+        icon: BookmarkSimpleIcon,
       },
       {
         href: ROUTER.NOTIFICATIONS,
@@ -147,7 +141,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.DASHBOARD.HOME,
         base: ROUTER.DASHBOARD.HOME,
         label: 'Dashboard',
-        icon: HomeIcon,
+        icon: HouseIcon,
       },
     ],
   };
@@ -210,7 +204,11 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                     isActiveLink(base) ? 'app-sidebar-link-active' : '',
                   )}
                 >
-                  <Icon size={20} className="app-sidebar-link-icon" />
+                  <Icon
+                    size={20}
+                    weight="bold"
+                    className="app-sidebar-link-icon"
+                  />
                   <span
                     className={cn(
                       'text-sm leading-none',

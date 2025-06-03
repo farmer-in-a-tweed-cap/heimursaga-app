@@ -1,5 +1,5 @@
+import { CheckIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { CheckIcon } from 'lucide-react';
 
 type Props = {
   classNames?: {
@@ -26,7 +26,7 @@ export const BulletList: React.FC<Props> = ({ items = [], classNames }) => (
             classNames?.icon,
           )}
         >
-          <CheckIcon size={20} />
+          <CheckIcon size={20} weight="bold" />
         </div>
 
         <span>{item}</span>

@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@repo/ui/components';
+import { BookmarkSimpleIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { Bookmark } from 'lucide-react';
 
 type Props = {
   bookmarked?: boolean;
@@ -31,7 +31,7 @@ export const BookmarkButton: React.FC<Props> = ({
       disabled={disabled}
       onClick={disabled ? () => {} : onClick}
     >
-      <Bookmark
+      <BookmarkSimpleIcon
         className={cn(bookmarked ? 'fill-black stroke-black' : '')}
         size={18}
       />

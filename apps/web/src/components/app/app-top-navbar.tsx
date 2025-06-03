@@ -1,8 +1,7 @@
 'use client';
 
-import { MapSearchbar, Searchbar } from '../search';
 import { Sheet, SheetContent, SheetTrigger } from '@repo/ui/components';
-import { MenuIcon } from 'lucide-react';
+import { ListIcon } from '@repo/ui/icons';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -36,7 +35,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
       <div>
         <Sheet>
           <SheetTrigger>
-            <MenuIcon />
+            <ListIcon />
           </SheetTrigger>
           <SheetContent side="right" className="min-w-[100vw] h-screen">
             <div className="flex flex-row justify-between">

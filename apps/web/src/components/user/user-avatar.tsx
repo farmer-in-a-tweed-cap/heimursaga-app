@@ -4,8 +4,8 @@ import {
   AvatarImage,
   Skeleton,
 } from '@repo/ui/components';
+// import { UserIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { UserIcon } from 'lucide-react';
 
 type Props = {
   className?: string;
@@ -37,6 +37,6 @@ export const UserAvatar: React.FC<Props> = ({
 
 export const UserGuestAvatar = () => (
   <Avatar className="w-[36px] h-[36px] bg-white hover:bg-accent rounded-full text-black flex items-center justify-center">
-    <UserIcon size={18} />
+    {/* <UserIcon size={18} /> */}
   </Avatar>
 );

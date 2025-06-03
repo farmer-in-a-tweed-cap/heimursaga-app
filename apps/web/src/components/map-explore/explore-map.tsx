@@ -13,9 +13,9 @@ import {
   NormalizedText,
   Skeleton,
 } from '@repo/ui/components';
+import { CaretLineLeftIcon, CaretLineRightIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeftToLineIcon, ArrowRightToLineIcon } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -36,7 +36,7 @@ import {
 } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { useMapbox, useSession } from '@/hooks';
-import { dateformat, sleep } from '@/lib';
+import { dateformat, getEnv, sleep } from '@/lib';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
@@ -448,7 +448,7 @@ export const ExploreMap: React.FC<Props> = () => {
                       onSubmit={handleSearchSubmit}
                     />
                   </div>
-                  {JSON.stringify({ s: search })}
+                  {getEnv() === 'development' && JSON.stringify({ s: search })}
                 </div>
 
                 {/* <div className="flex flex-col gap-0">
@@ -590,9 +590,9 @@ export const ExploreMap: React.FC<Props> = () => {
           onClick={handleSidebarToggle}
         >
           {sidebar ? (
-            <ArrowLeftToLineIcon size={18} />
+            <CaretLineLeftIcon size={18} weight="bold" />
           ) : (
-            <ArrowRightToLineIcon size={18} />
+            <CaretLineRightIcon size={18} weight="bold" />
           )}
         </button>
         <div className={cn('z-10 relative !w-full h-full overflow-hidden')}>

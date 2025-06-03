@@ -1,7 +1,7 @@
 'use client';
 
+import { XIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { XIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 type Props = {

@@ -1,11 +1,6 @@
 import { IUserProfileDetail } from '@repo/types';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-  Badge,
-} from '@repo/ui/components';
-import { MapPinIcon } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components';
+import { MapPinIcon } from '@repo/ui/icons';
 
 import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
@@ -50,7 +45,7 @@ export const UserProfilePage: React.FC<Props> = ({
         <span className="text-sm font-normal text-gray-700">{user?.bio}</span>
         {user?.locationFrom && (
           <div className="mt-2 flex flex-row gap-1 items-center justify-start text-sm font-normal text-gray-700">
-            <MapPinIcon size={16} />
+            <MapPinIcon size={16} weight="bold" />
             <span> {user?.locationFrom}</span>
           </div>
         )}
