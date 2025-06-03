@@ -6,14 +6,21 @@ import {
   MapSearchbarSubmitHandler,
   Searchbar,
 } from '../search';
-import { MapQueryContext, UserRole } from '@repo/types';
+import { IPostDetail, MapQueryContext, UserRole } from '@repo/types';
 import {
+  Button,
   ChipGroup,
   LoadingSpinner,
   NormalizedText,
   Skeleton,
 } from '@repo/ui/components';
-import { CaretLineLeftIcon, CaretLineRightIcon } from '@repo/ui/icons';
+import {
+  CaretLineLeftIcon,
+  CaretLineRightIcon,
+  ListBulletsIcon,
+  ListIcon,
+  MapTrifoldIcon,
+} from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
@@ -35,7 +42,7 @@ import {
   UserProfileCard,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
-import { useMapbox, useSession } from '@/hooks';
+import { useMapbox, useScreen, useSession } from '@/hooks';
 import { dateformat, getEnv, sleep } from '@/lib';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
@@ -64,6 +71,11 @@ const PARAMS = {
   USER: 'user',
 };
 
+const MODE = {
+  LIST: 'list',
+  MAP: 'map',
+};
+
 const SEARCH_DEBOUNCE_INTERVAL = 500;
 
 export const ExploreMap: React.FC<Props> = () => {
@@ -72,6 +84,7 @@ export const ExploreMap: React.FC<Props> = () => {
   const searchParams = useSearchParams();
   const mapbox = useMapbox();
   const session = useSession();
+  const screen = useScreen();
 
   const [params, setParams] = useState<Params>({
     context: searchParams.get(PARAMS.CONTEXT),
@@ -115,6 +128,7 @@ export const ExploreMap: React.FC<Props> = () => {
 
   const [sidebar, setSidebar] = useState<boolean>(true);
   const [drawer, setDrawer] = useState<boolean>(false);
+  const [mode, setMode] = useState<string>(MODE.LIST);
   const [context, setContext] = useState<MapQueryContext>(
     params.context
       ? (params.context as MapQueryContext)
@@ -334,15 +348,6 @@ export const ExploreMap: React.FC<Props> = () => {
     }
   };
 
-  // const handleSearchChange = async (query: string) => {
-  //   setSearch((search) => ({ ...search, query }));
-  // };
-
-  // const handleSearchSubmit = (query: string) => {
-  //   setSearch((search) => ({ ...search, query }));
-  //   updateParams({ search: query });
-  // };
-
   const handleUserClick = (username: string) => {
     if (!username) return;
 
@@ -367,6 +372,10 @@ export const ExploreMap: React.FC<Props> = () => {
     });
 
     mapQuery.refetch();
+  };
+
+  const handleModeToggle = () => {
+    setMode((prev) => (prev === MODE.LIST ? MODE.MAP : MODE.LIST));
   };
 
   useEffect(() => {
@@ -425,10 +434,34 @@ export const ExploreMap: React.FC<Props> = () => {
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
+      <div className="z-40 absolute left-0 right-0 bottom-5 flex desktop:hidden flex-row justify-center items-center">
+        {mode === MODE.LIST && (
+          <Button onClick={handleModeToggle}>
+            <div className="flex flex-row gap-2 items-center justify-center">
+              <MapTrifoldIcon size={18} />
+              <span>Map</span>
+            </div>
+          </Button>
+        )}
+        {mode === MODE.MAP && (
+          <Button onClick={handleModeToggle}>
+            <div className="flex flex-row gap-2 items-center justify-center">
+              <ListBulletsIcon size={18} />
+              <span>List</span>
+            </div>
+          </Button>
+        )}
+      </div>
+
       <div
         className={cn(
-          'relative w-full h-full hidden desktop:flex overflow-hidden',
-          sidebar ? 'basis-auto max-w-[540px]' : 'max-w-[0px]',
+          'w-full h-full overflow-hidden bg-background',
+          sidebar
+            ? `desktop:basis-auto desktop:max-w-[540px]`
+            : 'desktop:max-w-[0px]',
+          mode === MODE.LIST
+            ? 'z-30 absolute flex desktop:relative desktop:flex desktop:inset-auto'
+            : 'hidden desktop:relative desktop:flex',
         )}
       >
         <div className="relative flex flex-col w-full h-full ">
@@ -448,7 +481,7 @@ export const ExploreMap: React.FC<Props> = () => {
                       onSubmit={handleSearchSubmit}
                     />
                   </div>
-                  {getEnv() === 'development' && JSON.stringify({ s: search })}
+                  {/* {getEnv() === 'development' && JSON.stringify({ s: search })} */}
                 </div>
 
                 {/* <div className="flex flex-col gap-0">
@@ -502,7 +535,7 @@ export const ExploreMap: React.FC<Props> = () => {
               </div>
             </div>
           )}
-          <div className="flex flex-col gap-2 overflow-y-scroll px-6 py-2 box-border">
+          <div className="flex flex-col gap-2 overflow-y-scroll no-scrollbar px-6 py-2 box-border">
             {mapQueryLoading ? (
               <LoadingSpinner />
             ) : (
@@ -534,71 +567,37 @@ export const ExploreMap: React.FC<Props> = () => {
         </div>
       </div>
 
+      <PostSidebar
+        loading={postLoading}
+        post={post}
+        drawer={drawer}
+        mobile={screen.mobile}
+        onClose={handlePostClose}
+      />
+
       <div
         className={cn(
-          'z-50 w-full relative overflow-hidden shadow-xl',
-          sidebar
-            ? 'max-w-full desktop:rounded-l-2xl'
-            : 'max-w-full rounded-l-none',
+          'z-20 w-full max-w-full relative overflow-hidden bg-background',
+          sidebar ? 'desktop:rounded-l-2xl' : 'rounded-l-none',
         )}
       >
-        <div
-          className={cn(
-            'z-50 w-full overflow-y-scroll h-screen absolute transform transition-transform duration-300 ease-in-out right-0 top-0 bottom-0 bg-white',
-            drawer ? 'translate-x-0' : 'translate-x-full',
-          )}
-        >
-          <div className="flex flex-col ">
-            <div className="p-4 h-[60px] sticky top-0 w-full flex flex-row justify-start items-center">
-              <CloseButton className="bg-white" onClick={handlePostClose} />
-            </div>
-            <div className="-mt-[60px] w-full h-[280px] bg-gray-500"></div>
-            {postLoading ? (
-              <LoadingSpinner />
-            ) : post ? (
-              <div className="w-full flex flex-col p-8">
-                {post.author && (
-                  <Link
-                    href={
-                      post?.author?.username
-                        ? ROUTER.USERS.DETAIL(post?.author?.username)
-                        : '#'
-                    }
-                  >
-                    <UserBar
-                      name={post?.author?.name}
-                      picture={post.author?.picture}
-                      creator={post.author?.creator}
-                      text={dateformat(post?.date).format('MMM DD')}
-                    />
-                  </Link>
-                )}
-                <div className="mt-8">
-                  <h2 className="text-3xl font-medium">{post.title}</h2>
-                </div>
-                <div className="py-6">
-                  <NormalizedText text={post.content} />
-                </div>
-              </div>
+        <div className="z-20 absolute hidden desktop:flex top-4 left-4">
+          <button
+            className="drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
+            onClick={handleSidebarToggle}
+          >
+            {sidebar ? (
+              <CaretLineLeftIcon size={18} weight="bold" />
             ) : (
-              <>post not found</>
+              <CaretLineRightIcon size={18} weight="bold" />
             )}
-          </div>
+          </button>
         </div>
-        <button
-          className="z-20 absolute hidden desktop:flex top-4 left-4 drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
-          onClick={handleSidebarToggle}
-        >
-          {sidebar ? (
-            <CaretLineLeftIcon size={18} weight="bold" />
-          ) : (
-            <CaretLineRightIcon size={18} weight="bold" />
-          )}
-        </button>
-        <div className={cn('z-10 relative !w-full h-full overflow-hidden')}>
-          <div className="absolute top-0 left-0 right-0 z-20 w-full h-[70px] flex justify-between box-border px-10 items-center desktop:hidden">
+
+        <div className="z-10 relative !w-full h-full overflow-hidden">
+          {/* <div className="absolute top-0 left-0 right-0 z-20 w-full h-[70px] flex justify-between box-border px-10 items-center desktop:hidden">
             <MapSearchbar />
-          </div>
+          </div> */}
           {mapbox.token && (
             <Map
               token={mapbox.token}
@@ -641,6 +640,78 @@ export const ExploreMap: React.FC<Props> = () => {
             />
           )}
         </div>
+      </div>
+    </div>
+  );
+};
+
+type PostSidebarProps = {
+  post?: IPostDetail;
+  drawer?: boolean;
+  loading?: boolean;
+  mobile?: boolean;
+  onClose?: () => void;
+};
+
+const PostSidebar: React.FC<PostSidebarProps> = ({
+  post,
+  drawer = false,
+  loading = false,
+  mobile = false,
+  onClose,
+}) => {
+  return (
+    <div
+      className={cn(
+        'z-50 bg-background w-full desktop:h-screen desktop:max-w-[calc(100%-550px)] rounded-t-2xl desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll absolute right-0 top-4 desktop:top-0 bottom-0',
+        'transform transition-transform duration-300 ease-in-out',
+        drawer
+          ? mobile
+            ? 'translate-y-0'
+            : 'translate-x-0'
+          : mobile
+            ? 'translate-y-full'
+            : 'translate-x-full',
+      )}
+    >
+      <div className="flex flex-col">
+        <div className="p-4 h-[60px] sticky top-0 w-full flex flex-row justify-start items-center">
+          <CloseButton
+            className="bg-white animate-in spin-in"
+            onClick={onClose}
+          />
+        </div>
+        <div className="-mt-[60px] w-full h-[180px] bg-gray-500"></div>
+        {loading ? (
+          <LoadingSpinner />
+        ) : post ? (
+          <div className="w-full flex flex-col p-8">
+            {post.author && (
+              <Link
+                href={
+                  post?.author?.username
+                    ? ROUTER.USERS.DETAIL(post?.author?.username)
+                    : '#'
+                }
+              >
+                <UserBar
+                  name={post?.author?.name}
+                  picture={post.author?.picture}
+                  creator={post.author?.creator}
+                  text={dateformat(post?.date).format('MMM DD')}
+                />
+              </Link>
+            )}
+            <div className="mt-8">
+              <h2 className="text-3xl font-medium">{post.title}</h2>
+            </div>
+            <div className="py-6">
+              <NormalizedText text={post.content} />
+            </div>
+          </div>
+        ) : (
+          <>post not found</>
+        )}
       </div>
     </div>
   );
