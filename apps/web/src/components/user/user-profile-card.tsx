@@ -1,4 +1,5 @@
-import { Card, CardContent, Skeleton } from '@repo/ui/components';
+import { Button, Card, CardContent, Skeleton } from '@repo/ui/components';
+import { UserIcon } from '@repo/ui/icons';
 import Link from 'next/link';
 
 import { BackButton, UserAvatar } from '@/components';
@@ -30,29 +31,38 @@ export const UserProfileCard: React.FC<Props> = ({
         </div>
         <div className="flex flex-col items-center justify-center gap-0">
           <UserAvatar
-            className="w-[50px] h-[50px]"
+            className="w-[40px] h-[40px]"
             src={picture}
             loading={loading}
             fallback={name}
           />
-          <Link href={username ? ROUTER.USERS.DETAIL(username) : '#'}>
-            <div className="mt-1 flex flex-col items-center gap-0">
-              {loading ? (
-                <div className="h-7 flex items-center justify-center">
-                  <Skeleton className="w-[100px] h-4" />
-                </div>
-              ) : (
-                <span className="h-6 font-medium text-lg">{name}</span>
-              )}
-              {loading ? (
-                <Skeleton className="w-[80px] h-2" />
-              ) : (
-                <span className="text-xs font-medium text-gray-600">
-                  @{username}
-                </span>
-              )}
-            </div>
-          </Link>
+
+          <div className="mt-1 flex flex-col items-center gap-0">
+            {loading ? (
+              <div className="h-6 flex items-center justify-center">
+                <Skeleton className="w-[100px] h-4" />
+              </div>
+            ) : (
+              <span className="h-6 font-medium text-base">{name}</span>
+            )}
+            {loading ? (
+              <Skeleton className="w-[80px] h-2" />
+            ) : (
+              <span className="text-xs font-medium text-gray-600">
+                @{username}
+              </span>
+            )}
+          </div>
+          <div className="mt-4">
+            <Button variant="secondary" size="sm" asChild>
+              <Link
+                href={username ? ROUTER.USERS.DETAIL(username) : '#'}
+                className="flex flex-row items-center justify-center gap-1"
+              >
+                Profile
+              </Link>
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
