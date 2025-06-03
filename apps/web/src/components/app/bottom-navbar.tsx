@@ -2,17 +2,14 @@
 
 import { UserAvatar } from '../user';
 import { UserRole } from '@repo/types';
-import { cn } from '@repo/ui/lib/utils';
 import {
-  BookmarkIcon,
-  HomeIcon,
-  MenuIcon,
-  PenIcon,
-  PenLineIcon,
+  BookmarkSimpleIcon,
+  HouseIcon,
+  IconProps,
   PencilIcon,
-  PlusCircleIcon,
   PlusIcon,
-} from 'lucide-react';
+} from '@repo/ui/icons';
+import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
@@ -23,7 +20,7 @@ type Props = {};
 
 type NavLink = {
   href: string;
-  icon: (p?: { size?: number }) => JSX.Element;
+  icon: (props: IconProps) => JSX.Element;
   label?: string;
 };
 
@@ -33,51 +30,51 @@ export const BottomNavbar: React.FC<Props> = () => {
 
   const LINKS: { [role: string]: NavLink[] } = {
     guest: [
-      {
-        href: '#',
-        icon: (props) => <HomeIcon {...props} />,
-        label: 'Home',
-      },
-      {
-        href: '#',
-        icon: (props) => <HomeIcon {...props} />,
-        label: 'Home',
-      },
-      {
-        href: '#',
-        icon: (props) => <HomeIcon {...props} />,
-        label: 'Home',
-      },
-      {
-        href: '#',
-        icon: (props) => <HomeIcon {...props} />,
-        label: 'Home',
-      },
-      {
-        href: '#',
-        icon: (props) => <HomeIcon {...props} />,
-        label: 'Home',
-      },
+      // {
+      //   href: '#',
+      //   icon: (props) => <HouseIcon {...props} />,
+      //   label: 'Home',
+      // },
+      // {
+      //   href: '#',
+      //   icon: (props) => <HomeIcon {...props} />,
+      //   label: 'Home',
+      // },
+      // {
+      //   href: '#',
+      //   icon: (props) => <HomeIcon {...props} />,
+      //   label: 'Home',
+      // },
+      // {
+      //   href: '#',
+      //   icon: (props) => <HomeIcon {...props} />,
+      //   label: 'Home',
+      // },
+      // {
+      //   href: '#',
+      //   icon: (props) => <HomeIcon {...props} />,
+      //   label: 'Home',
+      // },
     ],
     user: [
       {
         href: ROUTER.HOME,
-        icon: (props) => <HomeIcon {...props} />,
+        icon: (props) => <HouseIcon {...props} />,
         label: 'Home',
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
-        icon: (props) => <PenLineIcon {...props} />,
+        icon: (props) => <PencilIcon {...props} />,
         label: 'Journal',
       },
       {
         href: ROUTER.POSTS.CREATE,
-        icon: (props) => <PlusCircleIcon {...props} />,
+        icon: (props) => <PlusIcon {...props} />,
         label: 'Create',
       },
       {
         href: ROUTER.BOOKMARKS.HOME,
-        icon: (props) => <BookmarkIcon {...props} />,
+        icon: (props) => <BookmarkSimpleIcon {...props} />,
         label: 'Saved',
       },
       {
@@ -121,7 +118,7 @@ export const BottomNavbar: React.FC<Props> = () => {
             isActiveLink(href) ? 'text-black' : 'text-gray-500',
           )}
         >
-          <Icon size={22} />
+          <Icon size={20} weight="bold" />
           {label && <span className="text-xs font-medium ">{label}</span>}
         </Link>
       ))}

@@ -1,7 +1,6 @@
 'use client';
 
-import { cn } from '@repo/ui/lib/utils';
-import { ArrowLeft, ArrowLeftCircle } from 'lucide-react';
+import { ArrowLeftIcon } from '@repo/ui/icons';
 import Link from 'next/link';
 
 type Props = {
@@ -32,7 +31,7 @@ export const BackButton: React.FC<Props> = ({ href, onClick }) => {
 
   return (
     <ParentComponent>
-      <ArrowLeft size={18} />
+      <ArrowLeftIcon size={18} />
     </ParentComponent>
   );
 };

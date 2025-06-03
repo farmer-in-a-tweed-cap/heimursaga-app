@@ -1,5 +1,5 @@
+import { SealCheckIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { VerifiedIcon } from 'lucide-react';
 
 type Props = {
   size?: 'lg' | 'base';
@@ -24,7 +24,7 @@ export const VerificationBadge: React.FC<Props> = ({ size = 'base' }) => {
         className,
       )}
     >
-      <VerifiedIcon size={14} />
+      <SealCheckIcon size={14} weight="bold" />
     </div>
   );
 };

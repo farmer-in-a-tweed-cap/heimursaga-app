@@ -1,10 +1,6 @@
 'use client';
 
 import {
-  IPaymentMethodDetail,
-  IPaymentMethodGetAllResponse,
-} from '@repo/types';
-import {
   Badge,
   Button,
   Card,
@@ -14,8 +10,8 @@ import {
   LoadingSpinner,
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
+import { TrashIcon } from '@repo/ui/icons';
 import { useQuery } from '@tanstack/react-query';
-import { Trash2Icon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
@@ -98,7 +94,7 @@ export const UserSettingsPaymentMethodView = () => {
                 variant="icon"
                 onClick={() => handlePaymentMethodDelete(id)}
               >
-                <Trash2Icon size={14} />
+                <TrashIcon size={14} />
               </Button>
             </div>
           ))}

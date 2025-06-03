@@ -1,5 +1,5 @@
 import { Badge, Button, Card, CardContent } from '@repo/ui/components';
-import { Trash2Icon } from 'lucide-react';
+import { TrashIcon } from '@repo/ui/icons';
 
 type Props = {
   id: string;
@@ -23,7 +23,7 @@ export const PaymentMethodCard: React.FC<Props> = ({ id, label, onDelete }) => {
             <Badge variant="secondary">Card</Badge>
           </div>
           <Button variant="icon" onClick={handleDelete}>
-            <Trash2Icon size={14} />
+            <TrashIcon size={14} weight="bold" />
           </Button>
         </div>
       </CardContent>

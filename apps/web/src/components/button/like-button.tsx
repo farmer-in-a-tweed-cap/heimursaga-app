@@ -1,8 +1,8 @@
 'use client';
 
 import { Button } from '@repo/ui/components';
+import { HeartIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { Heart } from 'lucide-react';
 
 type Props = {
   liked?: boolean;
@@ -28,7 +28,11 @@ export const LikeButton: React.FC<Props> = ({
       disabled={disabled}
       onClick={disabled ? () => {} : onClick}
     >
-      <Heart className={cn(liked ? 'fill-black stroke-black' : '')} size={18} />
+      <HeartIcon
+        className={cn(liked ? 'fill-black stroke-black' : '')}
+        size={24}
+        weight="bold"
+      />
       <span>{likesCount}</span>
     </Button>
   );

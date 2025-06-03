@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui';
-import { EllipsisIcon } from 'lucide-react';
+import { DotsThreeIcon } from '@repo/ui/icons';
 
 type Props = {
   actions?: ActionMenuItem[];
@@ -23,7 +23,7 @@ export const ActionMenu: React.FC<Props> = ({ actions = [] }) => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button className="w-8 h-8 bg-transparent rounded-full flex flex-row items-center justify-center focus:bg-accent hover:bg-accent">
-          <EllipsisIcon size={18} />
+          <DotsThreeIcon size={18} weight="bold" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

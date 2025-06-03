@@ -14,8 +14,8 @@ import {
   NumberInput,
   SelectInput,
 } from '@repo/ui/components';
+import { CreditCardIcon, LockSimpleIcon } from '@repo/ui/icons';
 import { useStripe } from '@stripe/react-stripe-js';
-import { CreditCardIcon, LockIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -31,7 +31,7 @@ import {
   StripeProvider,
 } from '@/components';
 import { useModal } from '@/hooks';
-import { redirect, sleep, zodMessage } from '@/lib';
+import { redirect, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
@@ -363,7 +363,7 @@ export const FormComponent: React.FC<Props> = ({
               <div className="mt-8 flex flex-col">
                 <Button loading={loading.form} disabled={!payButtonEnabled}>
                   <div className="flex flex-row items-center justify-center gap-2">
-                    <LockIcon />
+                    <LockSimpleIcon />
                     {sponsorshipType === SponsorshipType.SUBSCRIPTION
                       ? 'Subscribe'
                       : 'Pay'}
