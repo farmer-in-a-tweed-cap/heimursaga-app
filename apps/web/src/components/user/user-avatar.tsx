@@ -4,6 +4,7 @@ import {
   AvatarImage,
   Skeleton,
 } from '@repo/ui/components';
+import { UserIcon } from '@repo/ui/icons';
 // import { UserIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 
@@ -30,13 +31,15 @@ export const UserAvatar: React.FC<Props> = ({
   ) : (
     <Avatar className={styles}>
       <AvatarImage src={src} alt={fallback} />
-      <AvatarFallback>{fallback.slice(0, 1)}</AvatarFallback>
+      <AvatarFallback>
+        <UserIcon size={18} weight="bold" />
+      </AvatarFallback>
     </Avatar>
   );
 };
 
 export const UserGuestAvatar = () => (
   <Avatar className="w-[36px] h-[36px] bg-white hover:bg-accent rounded-full text-black flex items-center justify-center">
-    {/* <UserIcon size={18} /> */}
+    <UserIcon size={18} weight="bold" />
   </Avatar>
 );

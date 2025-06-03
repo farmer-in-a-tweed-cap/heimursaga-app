@@ -1,5 +1,4 @@
 import { IUserProfileDetail } from '@repo/types';
-import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components';
 import { MapPinIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 
@@ -7,7 +6,6 @@ import { UserAvatar } from './user-avatar';
 import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
 import { UserProfileButtons } from './user-profile-buttons';
-import { VerificationBadge } from './verification-badge';
 
 type Props = {
   user: IUserProfileDetail;
