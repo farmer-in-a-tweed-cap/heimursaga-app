@@ -92,19 +92,9 @@ export const PostCard: React.FC<PostCardProps> = ({
         selected ? 'border-black' : 'border-transparent',
       )}
     >
-      {href ? (
-        <Link href={href} className="z-10 absolute inset-0"></Link>
-      ) : onClick ? (
-        <div
-          className="z-10 absolute inset-0 cursor-pointer"
-          onClick={onClick}
-        ></div>
-      ) : (
-        <></>
-      )}
       <CardContent>
-        <div className="flex flex-row justify-between items-center">
-          <div className="flex flex-row justify-start items-center gap-3 z-20">
+        <div className="relative flex flex-row justify-between items-center">
+          <div className="w-full flex flex-row justify-start items-center gap-3 z-20">
             {userbar?.href ? (
               <Link
                 href={
@@ -133,7 +123,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               </div>
             )}
           </div>
-          <div className="z-20 absolute top-3 right-3 flex flex-row items-center gap-2">
+          <div className="z-20 flex flex-row items-center gap-2">
             {me ? (
               <>
                 {actions?.edit && <PostEditButton postId={id} />}
@@ -160,58 +150,72 @@ export const PostCard: React.FC<PostCardProps> = ({
             )}
           </div>
         </div>
-        {thumbnail && (
-          <div className="mt-6 w-full aspect-5/2 overflow-hidden rounded-xl">
-            <Image
-              src={thumbnail || ''}
-              width={400}
-              height={300}
-              className="w-full h-auto"
-              alt=""
-            />
-          </div>
-        )}
-        <div className="mt-6 flex flex-col">
-          <span
-            className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
-          >
-            {title}
-          </span>
-          <div className={extended ? 'mt-6' : 'mt-2'}>
-            <NormalizedText
-              text={
-                extended
-                  ? content
-                  : content.length <= 120
+        <div className="relative flex flex-col overflow-hidden">
+          {href ? (
+            <Link href={href} className="z-10 absolute inset-0"></Link>
+          ) : onClick ? (
+            <div
+              className="z-10 absolute inset-0 cursor-pointer"
+              onClick={onClick}
+            ></div>
+          ) : (
+            <></>
+          )}
+
+          {thumbnail && (
+            <div className="mt-6 w-full aspect-5/2 overflow-hidden rounded-xl">
+              <Image
+                src={thumbnail || ''}
+                width={400}
+                height={300}
+                className="w-full h-auto"
+                alt=""
+              />
+            </div>
+          )}
+          <div className="mt-6 flex flex-col">
+            <span
+              className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
+            >
+              {title}
+            </span>
+            <div className={extended ? 'mt-6' : 'mt-2'}>
+              <NormalizedText
+                text={
+                  extended
                     ? content
-                    : `${content.slice(0, 120)}..`
-              }
-            />
+                    : content.length <= 120
+                      ? content
+                      : `${content.slice(0, 120)}..`
+                }
+              />
+            </div>
           </div>
+          {coordinates && (
+            <div className="mt-6">
+              <MapStaticPreview
+                href={
+                  id
+                    ? `${ROUTER.EXPLORE.HOME}?lat=${coordinates.lat}&lon=${coordinates.lon}&alt=12`
+                    : '#'
+                }
+                lat={coordinates.lat}
+                lon={coordinates.lon}
+                // className="aspect-auto w-full"
+                zoom={8}
+                markers={[
+                  {
+                    lat: coordinates.lat,
+                    lon: coordinates.lon,
+                  },
+                ]}
+              />
+            </div>
+          )}
         </div>
-        {coordinates && (
-          <div className="mt-6">
-            <MapStaticPreview
-              href={
-                id
-                  ? `${ROUTER.EXPLORE.HOME}?lat=${coordinates.lat}&lon=${coordinates.lon}&alt=12`
-                  : '#'
-              }
-              lat={coordinates.lat}
-              lon={coordinates.lon}
-              // className="aspect-auto w-full"
-              zoom={8}
-              markers={[
-                {
-                  lat: coordinates.lat,
-                  lon: coordinates.lon,
-                },
-              ]}
-            />
-          </div>
-        )}
+
         {actions?.like && (
-          <div className="z-50 mt-6 w-auto flex flex-row gap-1">
+          <div className="z-20 mt-6 w-auto flex flex-row gap-1">
             <PostLikeButton postId={id} likesCount={likesCount} liked={liked} />
           </div>
         )}

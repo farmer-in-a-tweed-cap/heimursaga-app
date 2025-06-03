@@ -44,6 +44,13 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
             picture: author?.picture,
             creator: author?.creator,
           }}
+          userbar={
+            author?.username
+              ? {
+                  href: ROUTER.USERS.DETAIL(author.username),
+                }
+              : undefined
+          }
           coordinates={{
             lat: post.lat,
             lon: post.lon,

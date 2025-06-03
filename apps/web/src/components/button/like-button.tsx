@@ -31,7 +31,7 @@ export const LikeButton: React.FC<Props> = ({
       <HeartIcon
         className={cn(liked ? 'fill-black stroke-black' : '')}
         size={24}
-        weight="bold"
+        weight={liked ? 'fill' : 'bold'}
       />
       <span>{likesCount}</span>
     </Button>
