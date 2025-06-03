@@ -8,6 +8,7 @@ import {
   IconProps,
   PencilIcon,
   PlusIcon,
+  UserIcon,
 } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
@@ -30,31 +31,18 @@ export const BottomNavbar: React.FC<Props> = () => {
 
   const LINKS: { [role: string]: NavLink[] } = {
     guest: [
-      // {
-      //   href: '#',
-      //   icon: (props) => <HouseIcon {...props} />,
-      //   label: 'Home',
-      // },
-      // {
-      //   href: '#',
-      //   icon: (props) => <HomeIcon {...props} />,
-      //   label: 'Home',
-      // },
-      // {
-      //   href: '#',
-      //   icon: (props) => <HomeIcon {...props} />,
-      //   label: 'Home',
-      // },
-      // {
-      //   href: '#',
-      //   icon: (props) => <HomeIcon {...props} />,
-      //   label: 'Home',
-      // },
-      // {
-      //   href: '#',
-      //   icon: (props) => <HomeIcon {...props} />,
-      //   label: 'Home',
-      // },
+      {
+        href: ROUTER.HOME,
+        icon: (props) => <HouseIcon {...props} />,
+        label: 'Home',
+      },
+      {
+        href: username ? ROUTER.USERS.DETAIL(username) : '#',
+        icon: () => (
+          <UserAvatar src={user?.picture} className="w-[24px] h-[24px]" />
+        ),
+        label: 'Log in',
+      },
     ],
     user: [
       {
@@ -108,17 +96,20 @@ export const BottomNavbar: React.FC<Props> = () => {
   };
 
   return (
-    <div className="w-full h-[70px] bg-background border-t border-solid border-accent flex flex-row justify-between sm:justify-center sm:gap-14 box-border px-6 items-center">
+    <div className="w-full h-[70px] bg-background border-t border-solid border-accent flex flex-row justify-center gap-10 sm:justify-center sm:gap-14 box-border px-6 items-center">
       {links.map(({ label, href, icon: Icon }, key) => (
         <Link
           key={key}
           href={href}
           className={cn(
-            'flex flex-col items-center justify-center gap-2 text-gray-500',
+            'flex flex-col items-center justify-center gap-1 text-gray-500',
             isActiveLink(href) ? 'text-black' : 'text-gray-500',
           )}
         >
-          <Icon size={20} weight="bold" />
+          <div className="w-[24px] h-[24px] flex items-center justify-center">
+            <Icon size={20} weight="bold" />
+          </div>
+
           {label && <span className="text-xs font-medium ">{label}</span>}
         </Link>
       ))}
