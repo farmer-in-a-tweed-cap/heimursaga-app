@@ -33,7 +33,8 @@ export const BookmarkButton: React.FC<Props> = ({
     >
       <BookmarkSimpleIcon
         className={cn(bookmarked ? 'fill-black stroke-black' : '')}
-        size={18}
+        size={20}
+        weight="bold"
       />
       {!disableCount && <span>{bookmarksCount}</span>}
     </Button>
