@@ -851,7 +851,7 @@ export const Map: React.FC<Props> = ({
           });
 
           // extend bounds
-          const buffer = 0.1;
+          const buffer = 0.4;
           const ne = bounds.getNorthEast();
           const sw = bounds.getSouthWest();
           const extendedBounds = new mapboxgl.LngLatBounds(

@@ -180,15 +180,15 @@ export const PostCard: React.FC<PostCardProps> = ({
               {title}
             </span>
             <div className={extended ? 'mt-6' : 'mt-2'}>
-              <NormalizedText
-                text={
-                  extended
-                    ? content
-                    : content.length <= 120
-                      ? content
-                      : `${content.slice(0, 120)}..`
-                }
-              />
+              {extended ? (
+                <NormalizedText text={content} />
+              ) : (
+                <p className="break-all">
+                  {content.length <= 80
+                    ? content.split('\\n').join('')
+                    : `${content.split('\\n').join('').slice(0, 80)}..`}
+                </p>
+              )}
             </div>
           </div>
           {coordinates && (
