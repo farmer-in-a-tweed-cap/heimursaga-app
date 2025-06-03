@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, ButtonProps } from '@repo/ui/components';
-import { PlusIcon } from '@repo/ui/icons';
+import { PencilSimpleLineIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 
 import { redirect } from '@/lib';
@@ -31,7 +31,7 @@ export const CreatePostButton: React.FC<Props> = ({
       className={cn(collapsed ? 'w-[36px] h-[36px]' : '', classNames?.button)}
       {...props}
     >
-      <PlusIcon width={20} weight="regular" />
+      <PencilSimpleLineIcon width={20} weight="bold" />
       {!collapsed && (
         <span
           className={cn(

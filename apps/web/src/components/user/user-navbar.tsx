@@ -5,7 +5,6 @@ import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -13,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
-import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 
 import { apiClient } from '@/lib/api';
@@ -22,7 +20,7 @@ import { useSession } from '@/hooks';
 import { redirect } from '@/lib';
 import { ROUTER } from '@/router';
 
-import { UserGuestAvatar } from './user-avatar';
+import { UserAvatar, UserGuestAvatar } from './user-avatar';
 
 const getRoleLabel = (role: string) => {
   switch (role) {
@@ -43,6 +41,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
   const session = useSession();
 
   const userRole = session?.role as UserRole;
+  const isCreator = session.creator;
 
   const handleLogout = async () => {
     try {
@@ -148,10 +147,10 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
           )}
         >
           {session.logged ? (
-            <Avatar>
-              <AvatarFallback>{name?.slice(0, 1)}</AvatarFallback>
-              <AvatarImage src={picture} alt="avatar" />
-            </Avatar>
+            <UserAvatar
+              src={picture}
+              className={cn(isCreator ? 'border-2 border-primary' : '')}
+            />
           ) : (
             <UserGuestAvatar />
           )}

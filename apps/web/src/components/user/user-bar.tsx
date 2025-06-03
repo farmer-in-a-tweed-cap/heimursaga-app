@@ -1,4 +1,5 @@
 import { Skeleton } from '@repo/ui/components';
+import { cn } from '@repo/ui/lib/utils';
 
 import { UserAvatar } from './user-avatar';
 import { VerificationBadge } from './verification-badge';
@@ -25,7 +26,11 @@ export const UserBar: React.FC<Props> = ({
           <Skeleton className="w-[34px] h-[34px] rounded-full" />
         </div>
       ) : (
-        <UserAvatar src={picture} fallback={name} />
+        <UserAvatar
+          src={picture}
+          fallback={name}
+          className={cn(creator ? 'border-2 border-primary' : '')}
+        />
       )}
       <div className="flex flex-col justify-start items-start gap-0">
         {loading ? (
@@ -35,7 +40,7 @@ export const UserBar: React.FC<Props> = ({
         ) : (
           <div className="h-[12px] flex flex-row gap-1 justify-start items-center">
             <span className="text-sm font-medium text-black">{name}</span>
-            {creator && <VerificationBadge />}
+            {/* {creator && <VerificationBadge />} */}
           </div>
         )}
         {loading ? (
