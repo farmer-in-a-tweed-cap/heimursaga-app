@@ -1,7 +1,9 @@
 import { IUserProfileDetail } from '@repo/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components';
 import { MapPinIcon } from '@repo/ui/icons';
+import { cn } from '@repo/ui/lib/utils';
 
+import { UserAvatar } from './user-avatar';
 import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
 import { UserProfileButtons } from './user-profile-buttons';
@@ -26,21 +28,17 @@ export const UserProfilePage: React.FC<Props> = ({
         <UserMapBanner className="z-30" username={user?.username} />
       </div>
       <div className="-mt-[40px] z-20 w-auto flex flex-col items-center rounded-full">
-        <Avatar className="z-50 w-[80px] h-[80px] overflow-hidden">
-          <AvatarFallback>{user?.name?.slice(0, 1)}</AvatarFallback>
-          <AvatarImage
-            width={80}
-            height={80}
-            src={user?.picture}
-            className="w-full h-auto"
-            alt="avatar"
-          />
-        </Avatar>
+        <UserAvatar
+          src={user?.picture}
+          className={cn(
+            'z-50 w-[80px] h-[80px] overflow-hidden',
+            isCreator ? 'border-4 border-primary' : '',
+          )}
+        />
       </div>
       <div className="mt-6 flex flex-col justify-center items-center gap-2">
         <div className="flex justify-center items-center gap-1">
           <span className="text-2xl font-semibold">{user?.name}</span>
-          {isCreator && <VerificationBadge size="lg" />}
         </div>
         <span className="text-sm font-normal text-gray-700">{user?.bio}</span>
         {user?.locationFrom && (
