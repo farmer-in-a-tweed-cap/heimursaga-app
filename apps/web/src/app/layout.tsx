@@ -1,6 +1,7 @@
 import '@repo/ui/globals.css';
 import { cn } from '@repo/ui/lib/utils';
-import { Metadata } from 'next';
+import { Metadata, Viewport } from 'next';
+import Head from 'next/head';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -11,7 +12,6 @@ import {
   AppFooter,
   AppProvider,
   AppSidebar,
-  AppTopNavbar,
   BottomNavbar,
   IAppContextStateConfig,
   Logo,
@@ -32,6 +32,12 @@ export const metadata: Metadata = {
     title: `${APP_CONFIG.APP.NAME}`,
     description: 'a journaling platform for travelers',
   },
+};
+
+export const viewport: Viewport = {
+  initialScale: 1,
+  width: 'device-width',
+  viewportFit: 'cover',
 };
 
 const { MAPBOX_ACCESS_TOKEN } = process.env;
@@ -143,10 +149,10 @@ export const MapLayout = ({
       <div className="w-full bg-background text-black flex flex-row">
         <AppSidebar collapsed={true} />
         <div className="relative w-full h-screen flex flex-col justify-start">
-          <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
+          <div className="z-20 fixed left-0 right-0 bottom-safe w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
             <BottomNavbar />
           </div>
-          <div className="z-10 w-full h-full relative pb-[70px] desktop:pb-0">
+          <div className="z-10 w-full h-full relative pb-safe-70 desktop:pb-0">
             {children}
           </div>
         </div>
