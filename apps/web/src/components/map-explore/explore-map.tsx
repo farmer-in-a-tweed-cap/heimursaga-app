@@ -67,7 +67,7 @@ const PARAMS = {
   LON: 'lon',
   ALT: 'alt',
   POST_ID: 'post_id',
-  SEARCH: 's',
+  SEARCH: 'search',
   USER: 'user',
 };
 
@@ -144,12 +144,17 @@ export const ExploreMap: React.FC<Props> = () => {
     query?: string;
     context: 'text' | 'location';
     loading: boolean;
-  }>({ context: 'text', loading: false });
+  }>({
+    context: 'text',
+    loading: false,
+    query: params.search || undefined,
+  });
 
   const [sidebar, setSidebar] = useState<boolean>(true);
   const [drawer, setDrawer] = useState<boolean>(false);
   const [mode, setMode] = useState<string>(DEFAULT_MODE);
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
+
   const [context, setContext] = useState<MapQueryContext>(
     params.context
       ? (params.context as MapQueryContext)
@@ -225,9 +230,8 @@ export const ExploreMap: React.FC<Props> = () => {
 
   const user = userQuery.data;
 
-  const mapQueryLoading = mapQuery.isPending || mapQuery.isLoading;
-  const mapQueryResults = mapQuery.data?.results || 0;
-  const mapQueryWaypoints = mapQuery.data?.waypoints || [];
+  const waypointLoading = mapQuery.isPending || mapQuery.isLoading;
+  const waypointResults = mapQuery.data?.results || 0;
 
   const isPostSelected = (id: string): boolean =>
     postId ? postId === id : false;
@@ -347,30 +351,40 @@ export const ExploreMap: React.FC<Props> = () => {
     updateParams({ postId: null });
   };
 
-  const handleSearchChange: MapSearchbarChangeHandler = (data) => {
-    console.log(data);
-
-    // setMap((map) => ({
-    //   ...map,
-    //   lon: bounds.sw[0],
-    //   lat: bounds.sw[1],
-
-    //   // bounds: {
-    //   //   sw: { lon: bounds.sw[0], lat: bounds.sw[1] },
-    //   //   ne: { lon: bounds.ne[0], lat: bounds.ne[1] },
-    //   // },
-    // }));
-  };
-
   const handleSearchSubmit: MapSearchbarSubmitHandler = (data) => {
     const { context, item } = data;
+    const query = item.name;
 
     if (context === 'text') {
-      setSearch((prev) => ({ ...prev, query: item.name, context: 'text' }));
+      setSearch((prev) => ({ ...prev, query, context: 'text' }));
+      updateParams({ search: query });
     }
 
     if (context === 'location') {
-      setSearch((prev) => ({ ...prev, query: item.name, context: 'location' }));
+      setSearch((prev) => ({ ...prev, query, context: 'location' }));
+
+      // update map
+      if (item.bounds) {
+        const lon = item.center?.[0];
+        const lat = item.center?.[1];
+
+        const bbox = {
+          sw: {
+            lat: item.bounds[1],
+            lon: item.bounds[0],
+          },
+          ne: {
+            lat: item.bounds[3],
+            lon: item.bounds[2],
+          },
+        };
+
+        if (query && lon && lat) {
+          updateParams({ search: query, lon: `${lon}`, lat: `${lat}` });
+        }
+
+        setMap((prev) => ({ ...prev, bounds: bbox }));
+      }
     }
   };
 
@@ -471,6 +485,14 @@ export const ExploreMap: React.FC<Props> = () => {
         });
       }
     }
+
+    // set default search
+    if (params.search) {
+      setSearch((prev) => ({
+        ...prev,
+        query: decodeURI(params.search as string),
+      }));
+    }
   }, []);
 
   return (
@@ -498,7 +520,7 @@ export const ExploreMap: React.FC<Props> = () => {
         className={cn(
           'h-dvh bg-background overflow-hidden',
           sidebar
-            ? `desktop:w-full desktop:min-w-[540px] desktop:max-w-[540px]`
+            ? `w-full desktop:min-w-[540px] desktop:max-w-[540px]`
             : 'desktop:max-w-[0px]',
           mode === MODE.LIST
             ? 'z-30 absolute flex desktop:relative desktop:flex desktop:inset-auto'
@@ -518,25 +540,11 @@ export const ExploreMap: React.FC<Props> = () => {
                   <div className="mt-4 w-full">
                     <MapSearchbar
                       value={search.query}
-                      onChange={handleSearchChange}
                       onSubmit={handleSearchSubmit}
                     />
                   </div>
                   {/* {getEnv() === 'development' && JSON.stringify({ s: search })} */}
                 </div>
-
-                {/* <div className="flex flex-col gap-0">
-                  <span className="text-lg font-medium">Explore</span>
-                  <div className="mt-1 h-[16px] flex flex-row items-center justify-start overflow-hidden">
-                    {mapQuery.isPending || mapQuery.isLoading ? (
-                      <Skeleton className="w-[120px] h-[12px]" />
-                    ) : (
-                      <span className="text-sm font-normal text-gray-600">
-                        {mapQueryResults} {LOCALES.APP.SEARCH.POSTS_FOUND}
-                      </span>
-                    )}
-                  </div>
-                </div> */}
               </div>
               {session.logged && (
                 <div className="px-6 py-2">
@@ -577,10 +585,10 @@ export const ExploreMap: React.FC<Props> = () => {
             </div>
           )}
           <div className="w-full h-auto flex flex-col gap-2 overflow-y-scroll no-scrollbar px-6 py-4 box-border">
-            {mapQueryLoading ? (
+            {waypointLoading ? (
               <LoadingSpinner />
-            ) : (
-              mapQueryWaypoints.map(({ date, post }, key) =>
+            ) : waypointResults >= 1 ? (
+              waypoints.map(({ date, post }, key) =>
                 post ? (
                   <PostCard
                     key={key}
@@ -603,6 +611,8 @@ export const ExploreMap: React.FC<Props> = () => {
                   <></>
                 ),
               )
+            ) : (
+              <>no posts found</>
             )}
           </div>
         </div>
@@ -637,7 +647,7 @@ export const ExploreMap: React.FC<Props> = () => {
 
         <div className="z-10 relative !w-full h-full overflow-hidden">
           {/* <div className="absolute top-0 left-0 right-0 z-20 w-full h-[70px] flex justify-between box-border px-10 items-center desktop:hidden">
-            <MapSearchbar />
+            <MapSearchbar value={search.query} onSubmit={handleSearchSubmit} />
           </div> */}
           {mapbox.token && (
             <Map
@@ -647,10 +657,12 @@ export const ExploreMap: React.FC<Props> = () => {
                 lon: map.lon,
                 alt: map.alt,
               }}
-              // bounds={{
-              //   sw: [map.bounds.sw.lon, map.bounds.sw.lat],
-              //   ne: [map.bounds.ne.lon, map.bounds.ne.lat],
-              // }}
+              bounds={[
+                map.bounds.sw.lon,
+                map.bounds.sw.lat,
+                map.bounds.ne.lon,
+                map.bounds.ne.lat,
+              ]}
               minZoom={1}
               maxZoom={15}
               sources={[

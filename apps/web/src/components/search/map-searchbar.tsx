@@ -108,6 +108,9 @@ export const MapSearchbar: React.FC<Props> = ({
     const result = results.find(({ id }) => id === resultId);
     if (!result) return;
 
+    const query = result.name;
+    setSearch(query);
+
     if (onSubmit) {
       if (result.id === SEARCHBAR_CUSTOM_ITEM_ID) {
         onSubmit({
