@@ -3,7 +3,7 @@
 import { Input, Spinner } from '@repo/ui/components';
 import { MagnifyingGlassIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 type Props = {
   className?: string;
@@ -32,7 +32,7 @@ export const Searchbar: React.FC<Props> = ({
   onResultClick,
   inputProps,
 }) => {
-  const [search, setSearch] = useState<string | undefined>();
+  const [search, setSearch] = useState<string | undefined>(value);
   const [focused, setFocused] = useState(false);
 
   const handleChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
@@ -60,6 +60,12 @@ export const Searchbar: React.FC<Props> = ({
       setFocused(false);
     }, 200);
   };
+
+  useEffect(() => {
+    if (value) {
+      setSearch(value);
+    }
+  }, [value]);
 
   return (
     <div className="w-full flex flex-col relative">
