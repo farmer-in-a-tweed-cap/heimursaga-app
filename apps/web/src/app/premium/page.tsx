@@ -25,7 +25,7 @@ export default async function Page() {
   };
 
   return (
-    <div className="bg-background relative w-full min-h-screen flex flex-col justify-start items-center p-8">
+    <div className="bg-background relative w-full min-h-dvh flex flex-col justify-start items-center p-8">
       <div className="absolute top-3 right-3 lg:top-4 lg:left-4">
         <CloseButton redirect={ROUTER.HOME} />
       </div>

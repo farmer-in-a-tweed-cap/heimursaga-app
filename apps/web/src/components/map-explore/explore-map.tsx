@@ -704,7 +704,7 @@ const PostSidebar: React.FC<PostSidebarProps> = ({
   return (
     <div
       className={cn(
-        'z-50 bg-background w-full desktop:h-screen desktop:max-w-[calc(100%-550px)] desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll absolute right-0 top-0 desktop:top-0 bottom-0',
+        'z-50 bg-background w-full desktop:h-dvh desktop:max-w-[calc(100%-550px)] desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll absolute right-0 top-0 desktop:top-0 bottom-0',
         'transform transition-transform duration-300 ease-in-out',
         drawer ? 'translate-x-0' : 'translate-x-full',
         // drawer

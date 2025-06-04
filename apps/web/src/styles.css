@@ -15,7 +15,7 @@
   }
 
   .app-content-full-container {
-    @apply w-full h-screen relative;
+    @apply w-full h-dvh relative;
 
     /* height: calc(100vh - var(--app-header-height)); */
     /* margin-top: var(--app-header-height); */
@@ -84,5 +84,5 @@
 }
 
 .map-control button {
-  @apply transition-all w-[48px] h-[48px] bg-white drop-shadow flex items-center justify-center rounded-full text-lg cursor-pointer scale-100 active:scale-95 hover:!bg-white hover:!opacity-100;
+  @apply transition-all w-[40px] h-[40px] pointer-events-none select-none bg-white drop-shadow flex items-center justify-center rounded-full text-lg cursor-pointer scale-100 active:scale-95 hover:!bg-white hover:!opacity-100;
 }

@@ -7,7 +7,7 @@ import { ROUTER } from '@/router';
 export const PageNotFound = () => <>page not found</>;
 
 export const PageNotFoundFull = () => (
-  <div className="w-full h-screen flex flex-row items-center justify-center">
+  <div className="w-full h-dvh flex flex-row items-center justify-center">
     <div className="flex flex-col items-center justify-center">
       <LinkBreakIcon size={60} weight="bold" />
       <div className="mt-4 flex flex-col items-center justify-center gap-4">
