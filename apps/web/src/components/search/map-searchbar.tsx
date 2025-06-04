@@ -29,7 +29,7 @@ export type MapSearchbarSubmitHandler = (data: {
 
 type Props = {
   value?: string;
-  onChange?: MapSearchbarChangeHandler;
+  onChange?: (value: string) => void;
   onSubmit?: MapSearchbarSubmitHandler;
 };
 
@@ -40,25 +40,11 @@ export const MapSearchbar: React.FC<Props> = ({
 }) => {
   const mapbox = useMapbox();
 
-  const [_search, setSearch] = useState<string | undefined>(value);
-  const [search] = useDebounce(_search, 500, { leading: true });
-
+  const [search] = useDebounce(value, 500, { leading: true });
   const [loading, setLoading] = useState<boolean>(false);
   const [results, setResults] = useState<MapSearchItem[]>([]);
 
-  const handleChange = (search: string) => {
-    if (!search) return;
-
-    setSearch(search);
-
-    // update the state
-    setResults((prev) => {
-      const results = prev.filter(({ id }) => id !== SEARCHBAR_CUSTOM_ITEM_ID);
-      return [{ id: SEARCHBAR_CUSTOM_ITEM_ID, name: search }, ...results];
-    });
-  };
-
-  const handleChangeDebounded = async (search: string) => {
+  const handleSearch = async (search: string) => {
     try {
       if (!search || !mapbox.token) return;
 
@@ -84,32 +70,21 @@ export const MapSearchbar: React.FC<Props> = ({
         }
       });
 
-      // update the external state
-      if (onChange) {
-        onChange({
-          search,
-          items: results.map(({ id, name, context, center, bounds }) => ({
-            id,
-            name,
-            context,
-            center,
-            bounds,
-          })),
-        });
-      }
-
       setLoading(false);
     } catch (e) {
       setLoading(false);
     }
   };
 
-  const handleResultClick = (resultId: string) => {
+  const handleSubmit = (resultId: string) => {
     const result = results.find(({ id }) => id === resultId);
     if (!result) return;
 
     const query = result.name;
-    setSearch(query);
+
+    if (onChange) {
+      onChange(query);
+    }
 
     if (onSubmit) {
       if (result.id === SEARCHBAR_CUSTOM_ITEM_ID) {
@@ -127,17 +102,27 @@ export const MapSearchbar: React.FC<Props> = ({
   };
 
   useEffect(() => {
+    if (value) {
+      setResults((prev) => {
+        const results =
+          prev.filter(({ id }) => id !== SEARCHBAR_CUSTOM_ITEM_ID) || [];
+        return [{ id: SEARCHBAR_CUSTOM_ITEM_ID, name: value }, ...results];
+      });
+    }
+  }, [value]);
+
+  useEffect(() => {
     if (!search) return;
-    handleChangeDebounded(search);
+    handleSearch(search);
   }, [search]);
 
   return (
     <Searchbar
       loading={loading}
-      value={search}
+      value={value}
       results={results}
-      onChange={handleChange}
-      onResultClick={handleResultClick}
+      onResultClick={handleSubmit}
+      onChange={onChange}
     />
   );
 };

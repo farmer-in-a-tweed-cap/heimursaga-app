@@ -351,6 +351,12 @@ export const ExploreMap: React.FC<Props> = () => {
     updateParams({ postId: null });
   };
 
+  const handleSearchChange = (value: string) => {
+    if (value) {
+      setSearch((prev) => ({ ...prev, query: value }));
+    }
+  };
+
   const handleSearchSubmit: MapSearchbarSubmitHandler = (data) => {
     const { context, item } = data;
     const query = item.name;
@@ -532,14 +538,15 @@ export const ExploreMap: React.FC<Props> = () => {
             (ctx) => ctx === context,
           ) && (
             <>
-              <div className="flex flex-row justify-between items-center py-4 px-6 bg-white">
+              <div className="flex flex-row justify-between items-center py-4 px-4 desktop:px-6 bg-white">
                 <div className="w-full flex flex-col">
                   <div>
                     <span className="text-xl font-medium">Explore</span>
                   </div>
-                  <div className="mt-4 w-full">
+                  <div className={cn('mt-4 w-full')}>
                     <MapSearchbar
                       value={search.query}
+                      onChange={handleSearchChange}
                       onSubmit={handleSearchSubmit}
                     />
                   </div>
@@ -547,7 +554,7 @@ export const ExploreMap: React.FC<Props> = () => {
                 </div>
               </div>
               {session.logged && (
-                <div className="px-6 py-2">
+                <div className="px-4 desktop:px-6 py-2">
                   <ChipGroup
                     value={context}
                     items={[
@@ -561,7 +568,7 @@ export const ExploreMap: React.FC<Props> = () => {
                       },
                     ]}
                     classNames={{
-                      chip: 'w-auto min-w-[0px] h-[30px] py-0 px-4 rounded-full',
+                      chip: 'w-auto min-w-[0px] h-[30px] py-0 px-4 desktop:px-6 rounded-full',
                     }}
                     onSelect={handleFilterChange}
                   />
@@ -584,7 +591,7 @@ export const ExploreMap: React.FC<Props> = () => {
               </div>
             </div>
           )}
-          <div className="w-full h-auto flex flex-col gap-2 overflow-y-scroll no-scrollbar px-6 py-4 box-border">
+          <div className="w-full h-auto flex flex-col gap-2 overflow-y-scroll no-scrollbar px-4 desktop:px-6 py-4 box-border">
             {waypointLoading ? (
               <LoadingSpinner />
             ) : waypointResults >= 1 ? (
@@ -646,9 +653,13 @@ export const ExploreMap: React.FC<Props> = () => {
         </div>
 
         <div className="z-10 relative !w-full h-full overflow-hidden">
-          {/* <div className="absolute top-0 left-0 right-0 z-20 w-full h-[70px] flex justify-between box-border px-10 items-center desktop:hidden">
-            <MapSearchbar value={search.query} onSubmit={handleSearchSubmit} />
-          </div> */}
+          <div className="absolute top-0 left-0 right-0 z-20 w-full h-[70px] flex justify-between box-border px-10 items-center desktop:hidden">
+            <MapSearchbar
+              value={search.query}
+              onChange={handleSearchChange}
+              onSubmit={handleSearchSubmit}
+            />
+          </div>
           {mapbox.token && (
             <Map
               token={mapbox.token}
