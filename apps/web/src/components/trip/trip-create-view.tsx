@@ -99,7 +99,7 @@ export const TripCreateView: React.FC<Props> = () => {
   return (
     <div className="w-full h-full flex flex-row justify-between bg-white">
       <div className="w-full relative h-full hidden sm:flex overflow-hidden">
-        <div className="basis-4/12 relative flex flex-col h-screen">
+        <div className="basis-4/12 relative flex flex-col h-dvh">
           <div className="relative h-full flex flex-col justify-start items-start px-6 bg-white overflow-y-scroll">
             <div className="w-full h-full flex flex-col justify-between gap-10 box-border">
               <div className="flex flex-col gap-10">

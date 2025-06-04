@@ -37,7 +37,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
           <SheetTrigger>
             <ListIcon />
           </SheetTrigger>
-          <SheetContent side="right" className="min-w-[100vw] h-screen">
+          <SheetContent side="right" className="min-w-[100vw] h-dvh">
             <div className="flex flex-row justify-between">
               <Logo size="lg" color="dark" />
             </div>

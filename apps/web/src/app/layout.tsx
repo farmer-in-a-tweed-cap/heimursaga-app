@@ -90,16 +90,39 @@ export const AppLayout = ({
 }) => {
   return (
     <SessionLayout secure={secure}>
-      <div className="w-full min-h-screen bg-background text-black flex flex-row">
+      <div className="w-full min-h-dvh bg-background text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
-          {/* <div className="z-20 hidden desktop:flex items-center w-full h-[60px] bg-background">
-            <AppTopNavbar />
-          </div> */}
           <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
             <BottomNavbar />
           </div>
-          <div className="z-10 w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+          <div className="z-10 w-full h-auto flex flex-col pb-[70px]">
+            <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+              {children}
+            </div>
+          </div>
+        </div>
+      </div>
+    </SessionLayout>
+  );
+};
+
+export const MapLayout = ({
+  children,
+  secure = true,
+}: {
+  children: React.ReactNode;
+  secure?: boolean;
+}) => {
+  return (
+    <SessionLayout secure={secure}>
+      <div className="w-full bg-background text-black flex flex-row">
+        <AppSidebar collapsed={true} />
+        <div className="relative w-full h-dvh flex flex-col justify-start">
+          <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
+            <BottomNavbar />
+          </div>
+          <div className="z-10 w-full h-full relative pb-[70px] desktop:pb-0">
             {children}
           </div>
         </div>
@@ -122,42 +145,18 @@ export const LoginLayout = async ({
   if (logged) return redirect(ROUTER.HOME);
 
   return (
-    <div className="w-full min-h-screen bg-background text-black flex flex-row">
+    <div className="w-full min-h-dvh bg-background text-black flex flex-row">
       <div className="relative w-full flex flex-col items-center justify-start py-14">
         <div className="w-full max-w-[140px]">
           <Link href={ROUTER.HOME}>
             <Logo size="lg" color="dark" />
           </Link>
         </div>
-        <div className="mt-4 w-full h-auto max-w-md flex flex-col items-center justify-start">
+        <div className="mt-4 w-full h-auto max-w-md flex flex-col items-center justify-start p-4 desktop:p-0">
           {children}
         </div>
       </div>
     </div>
-  );
-};
-
-export const MapLayout = ({
-  children,
-  secure = true,
-}: {
-  children: React.ReactNode;
-  secure?: boolean;
-}) => {
-  return (
-    <SessionLayout secure={secure}>
-      <div className="w-full bg-background text-black flex flex-row">
-        <AppSidebar collapsed={true} />
-        <div className="relative w-full h-screen flex flex-col justify-start">
-          <div className="z-20 fixed left-0 right-0 bottom-safe w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
-            <BottomNavbar />
-          </div>
-          <div className="z-10 w-full h-full relative pb-safe-70 desktop:pb-0">
-            {children}
-          </div>
-        </div>
-      </div>
-    </SessionLayout>
   );
 };
 
@@ -168,7 +167,7 @@ export const DashboardLayout = ({
 }) => {
   return (
     <SessionLayout>
-      <div className="w-full min-h-screen bg-background text-black flex flex-row">
+      <div className="w-full min-h-dvh bg-background text-black flex flex-row">
         <AppSidebar collapsed={true} />
         <div className="relative w-full flex flex-col justify-start">
           <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
@@ -202,8 +201,8 @@ export const AppLayoutWithoutSidebar = ({
 }) => {
   return (
     <SessionLayout>
-      <div className="w-full min-h-screen bg-background text-black flex flex-col justify-start">
-        <div className="w-full h-auto min-h-screen flex flex-col py-6 items-center justify-start">
+      <div className="w-full min-h-dvh bg-background text-black flex flex-col justify-start">
+        <div className="w-full h-auto min-h-dvh flex flex-col py-6 items-center justify-start">
           {children}
         </div>
         <AppFooter />
