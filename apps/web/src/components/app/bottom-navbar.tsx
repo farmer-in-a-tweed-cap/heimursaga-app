@@ -38,9 +38,7 @@ export const BottomNavbar: React.FC<Props> = () => {
       },
       {
         href: ROUTER.LOGIN,
-        icon: () => (
-          <UserAvatar src={user?.picture} className="w-[24px] h-[24px]" />
-        ),
+        icon: (props) => <UserIcon {...props} />,
         label: 'Log in',
       },
     ],

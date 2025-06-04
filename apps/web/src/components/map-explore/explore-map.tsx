@@ -25,7 +25,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
 import { QUERY_KEYS, apiClient } from '@/lib/api';
@@ -76,7 +76,27 @@ const MODE = {
   MAP: 'map',
 };
 
+const DEFAULT_MODE = MODE.MAP;
+
 const SEARCH_DEBOUNCE_INTERVAL = 500;
+
+type Waypoint = {
+  lat: number;
+  lon: number;
+  date: Date;
+  post?: {
+    id: string;
+    title: string;
+    content: string;
+    bookmarked: boolean;
+    author: {
+      username: string;
+      name: string;
+      picture: string;
+      creator?: boolean;
+    };
+  };
+};
 
 export const ExploreMap: React.FC<Props> = () => {
   const router = useRouter();
@@ -128,7 +148,8 @@ export const ExploreMap: React.FC<Props> = () => {
 
   const [sidebar, setSidebar] = useState<boolean>(true);
   const [drawer, setDrawer] = useState<boolean>(false);
-  const [mode, setMode] = useState<string>(MODE.LIST);
+  const [mode, setMode] = useState<string>(DEFAULT_MODE);
+  const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [context, setContext] = useState<MapQueryContext>(
     params.context
       ? (params.context as MapQueryContext)
@@ -138,6 +159,8 @@ export const ExploreMap: React.FC<Props> = () => {
   );
   const [userId, setUserId] = useState<string | null>(params.user || null);
   const [postId, setPostId] = useState<string | null>(params.postId || null);
+
+  const modeRef = useRef(mode);
 
   const mapQueryEnabled: boolean = [
     map?.bounds.ne.lat,
@@ -266,6 +289,9 @@ export const ExploreMap: React.FC<Props> = () => {
   };
 
   const handleMapMove: MapOnMoveHandler = (value) => {
+    // ignore map move if it is list mode
+    if (modeRef.current === MODE.LIST) return;
+
     const { lat, lon, alt, bounds } = value;
 
     // update query
@@ -377,6 +403,21 @@ export const ExploreMap: React.FC<Props> = () => {
   const handleModeToggle = () => {
     setMode((prev) => (prev === MODE.LIST ? MODE.MAP : MODE.LIST));
   };
+
+  // update mode
+  useEffect(() => {
+    if (mode) {
+      modeRef.current = mode;
+    }
+  }, [mode]);
+
+  // update waypoints
+  useEffect(() => {
+    if (mapQuery.isFetched) {
+      const waypoints = mapQuery.data?.waypoints || [];
+      setWaypoints(waypoints);
+    }
+  }, [mapQuery]);
 
   useEffect(() => {
     const coordinateSet = params.lat && params.lon;
@@ -616,7 +657,7 @@ export const ExploreMap: React.FC<Props> = () => {
                 {
                   sourceId: MAP_SOURCES.WAYPOINTS,
                   type: 'point',
-                  data: mapQueryWaypoints.map(({ lat, lon, post }, key) => ({
+                  data: waypoints.map(({ lat, lon, post }, key) => ({
                     id: `${key}`,
                     lat,
                     lon,
@@ -663,15 +704,16 @@ const PostSidebar: React.FC<PostSidebarProps> = ({
   return (
     <div
       className={cn(
-        'z-50 bg-background w-full desktop:h-screen desktop:max-w-[calc(100%-550px)] rounded-t-2xl desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll absolute right-0 top-4 desktop:top-0 bottom-0',
+        'z-50 bg-background w-full desktop:h-screen desktop:max-w-[calc(100%-550px)] desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll absolute right-0 top-0 desktop:top-0 bottom-0',
         'transform transition-transform duration-300 ease-in-out',
-        drawer
-          ? mobile
-            ? 'translate-y-0'
-            : 'translate-x-0'
-          : mobile
-            ? 'translate-y-full'
-            : 'translate-x-full',
+        drawer ? 'translate-x-0' : 'translate-x-full',
+        // drawer
+        //   ? mobile
+        //     ? 'translate-y-0'
+        //     : 'translate-x-0'
+        //   : mobile
+        //     ? 'translate-y-full'
+        //     : 'translate-x-full',
       )}
     >
       <div className="flex flex-col">
