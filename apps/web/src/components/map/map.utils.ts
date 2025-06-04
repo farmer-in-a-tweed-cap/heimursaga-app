@@ -14,7 +14,7 @@ export const addSources = ({
   try {
     if (!mapbox) return;
 
-    console.log('sources:', sources);
+    // console.log('add sources:', sources);
 
     sources.forEach(({ sourceId, type, data, config }) => {
       let source: SourceSpecification = {
@@ -45,7 +45,7 @@ export const updateSources = ({
   try {
     if (!mapbox) return;
 
-    console.log('sources:', sources);
+    // console.log('update sources:', sources);
 
     sources.forEach(({ sourceId, type, data }) => {
       const source = mapbox.getSource(sourceId) as mapboxgl.GeoJSONSource;
