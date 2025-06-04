@@ -10,19 +10,19 @@ export class MapNavigationControl implements mapboxgl.IControl {
   onAdd(map: mapboxgl.Map): HTMLElement {
     this.map = map;
 
-    // Zoom In Button with SVG
+    // zoom in buttom
     const zoomIn = document.createElement('button');
     zoomIn.innerHTML = '+';
     zoomIn.addEventListener('click', () => this.map?.zoomIn());
     this.container.appendChild(zoomIn);
 
-    // Zoom Out Button with SVG
+    // zoom out button
     const zoomOut = document.createElement('button');
     zoomOut.innerHTML = '-';
     zoomOut.addEventListener('click', () => this.map?.zoomOut());
     this.container.appendChild(zoomOut);
 
-    // Geolocate Button with SVG
+    // geolocate button
     const geolocate = document.createElement('button');
     geolocate.className = 'geolocate-btn';
     geolocate.innerHTML = '📍';

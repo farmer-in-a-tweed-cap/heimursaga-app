@@ -496,16 +496,16 @@ export const ExploreMap: React.FC<Props> = () => {
 
       <div
         className={cn(
-          'w-full h-full overflow-hidden bg-background',
+          'h-dvh bg-background overflow-hidden',
           sidebar
-            ? `desktop:basis-auto desktop:max-w-[540px]`
+            ? `desktop:w-full desktop:min-w-[540px] desktop:max-w-[540px]`
             : 'desktop:max-w-[0px]',
           mode === MODE.LIST
             ? 'z-30 absolute flex desktop:relative desktop:flex desktop:inset-auto'
             : 'hidden desktop:relative desktop:flex',
         )}
       >
-        <div className="relative flex flex-col w-full h-full ">
+        <div className="relative flex flex-col w-full h-full">
           {[MapQueryContext.GLOBAL, MapQueryContext.FOLLOWING].some(
             (ctx) => ctx === context,
           ) && (
@@ -576,7 +576,7 @@ export const ExploreMap: React.FC<Props> = () => {
               </div>
             </div>
           )}
-          <div className="flex flex-col gap-2 overflow-y-scroll no-scrollbar px-6 py-2 box-border">
+          <div className="w-full h-auto flex flex-col gap-2 overflow-y-scroll no-scrollbar px-6 py-4 box-border">
             {mapQueryLoading ? (
               <LoadingSpinner />
             ) : (
@@ -704,9 +704,14 @@ const PostSidebar: React.FC<PostSidebarProps> = ({
   return (
     <div
       className={cn(
-        'z-50 bg-background w-full desktop:h-dvh desktop:max-w-[calc(100%-550px)] desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll absolute right-0 top-0 desktop:top-0 bottom-0',
+        'z-50 bg-background w-full desktop:h-dvh desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll absolute right-0 top-0 desktop:top-0 bottom-0',
+        'desktop:max-w-[calc(100%-540px)]',
         'transform transition-transform duration-300 ease-in-out',
         drawer ? 'translate-x-0' : 'translate-x-full',
+
+        // 'hidden lg:flex relative w-full',
+        // collapsed ? 'lg:max-w-[65px]' : 'lg:max-w-[240px]',
+
         // drawer
         //   ? mobile
         //     ? 'translate-y-0'

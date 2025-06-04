@@ -173,13 +173,13 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
     <div
       className={cn(
         'hidden lg:flex relative w-full',
-        collapsed ? 'lg:max-w-[65px]' : 'lg:max-w-[240px]',
+        collapsed ? 'desktop:max-w-[65px]' : 'desktop:max-w-[240px]',
       )}
     >
       <div
         className={cn(
           'md:flex w-full h-dvh fixed top-0 bottom-0 left-0 bg-white flex-col',
-          collapsed ? 'lg:max-w-[65px]' : 'lg:max-w-[240px]',
+          collapsed ? 'desktop:max-w-[65px]' : 'desktop:max-w-[240px]',
         )}
       >
         <div className="bg-dark text-dark-foreground flex flex-col items-center w-full h-full py-4">
