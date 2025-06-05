@@ -17,6 +17,7 @@ import { ParamUsernameDto } from '@/common/dto';
 import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
 import { SponsorService } from '@/modules/sponsor';
+import { TripService } from '@/modules/trip';
 import { IUploadedFile } from '@/modules/upload';
 
 import { UserSettingsProfileUpdateDto } from './user.dto';
@@ -25,7 +26,10 @@ import { SessionUserService, UserService } from './user.service';
 @ApiTags('users')
 @Controller('users')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(
+    private userService: UserService,
+    private tripService: TripService,
+  ) {}
 
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -73,6 +77,21 @@ export class UserController {
     return await this.userService.getPosts({
       username,
       userId: session.userId,
+    });
+  }
+
+  @Public()
+  @Get(':username/trips')
+  @HttpCode(HttpStatus.OK)
+  async getTripsByUsername(
+    @Param() param: ParamUsernameDto,
+    @Session() session: ISession,
+  ) {
+    const { username } = param;
+
+    return await this.tripService.getTripsByUsername({
+      query: { username },
+      session,
     });
   }
 

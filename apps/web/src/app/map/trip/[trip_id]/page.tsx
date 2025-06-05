@@ -1,0 +1,35 @@
+import { Metadata } from 'next';
+import { cookies } from 'next/headers';
+
+import { apiClient } from '@/lib/api';
+
+import { MapLayout } from '@/app/layout';
+
+import { MapTripView, PageNotFound } from '@/components';
+
+export const metadata: Metadata = {
+  title: 'Trip',
+};
+
+type Props = {
+  params: {
+    trip_id: string;
+  };
+};
+
+export default async function Page({ params }: Props) {
+  const cookie = await cookies().toString();
+  const tripId = params.trip_id;
+
+  const trip = await apiClient
+    .getTripById({ query: { tripId } }, { cookie })
+    .then(({ data }) => data);
+
+  return (
+    <MapLayout secure={false}>
+      <div className="w-full h-full flex flex-col justify-start items-center">
+        {trip ? <MapTripView trip={trip} /> : <PageNotFound />}
+      </div>
+    </MapLayout>
+  );
+}

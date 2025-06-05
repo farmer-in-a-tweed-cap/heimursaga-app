@@ -131,43 +131,30 @@ export class TripService {
     }
   }
 
-  async getTripById({
+  async getTripsByUsername({
     session,
     query,
-  }: IQueryWithSession<{ id: string }>): Promise<ITripGetByIdResponse> {
+  }: IQueryWithSession<{ username: string }>): Promise<ITripGetAllResponse> {
     try {
-      const { id } = query;
-      const { userId, userRole } = session;
+      const { username } = query;
+      const { userRole } = session;
 
-      // check access
-      const access = !!userId;
-      if (!access) throw new ServiceForbiddenException();
+      if (!username) throw new ServiceNotFoundException('user not found');
 
+      // get the user
+      const user = await this.prisma.user.findFirstOrThrow({
+        where: { username },
+      });
+
+      // get trips
       let where: Prisma.TripWhereInput = {
-        public_id: id,
         deleted_at: null,
       };
 
-      // query based on the user role
-      switch (userRole) {
-        case UserRole.USER:
-          where = {
-            ...where,
-            public: true,
-          };
-          break;
-        case UserRole.CREATOR:
-          where = {
-            ...where,
-            author_id: userId,
-          };
-          break;
-        default:
-          throw new ServiceForbiddenException();
-      }
+      const take = 50;
 
-      // get a trip
-      const trip = await this.prisma.trip.findFirstOrThrow({
+      const results = await this.prisma.trip.count({ where });
+      const data = await this.prisma.trip.findMany({
         where,
         select: {
           public_id: true,
@@ -186,9 +173,100 @@ export class TripService {
             },
           },
         },
+        take,
+        orderBy: [{ id: 'desc' }],
       });
 
+      const response: ITripGetAllResponse = {
+        results,
+        data: data.map(({ public_id, title, ...trip }) => {
+          const waypoints = sortByKey({
+            elements: trip.waypoints.map(({ waypoint }) => ({ ...waypoint })),
+            key: 'date',
+            order: 'asc',
+          }) as IWaypointDetail[];
+
+          const startDate =
+            waypoints.length >= 1 ? waypoints[0]?.date : undefined;
+          const endDate =
+            waypoints.length >= 1
+              ? waypoints[waypoints.length - 1]?.date
+              : undefined;
+
+          return {
+            id: public_id,
+            title,
+            startDate,
+            endDate,
+            waypointsCount: waypoints.length,
+            waypoints: [],
+          };
+        }),
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('trips not found');
+      throw exception;
+    }
+  }
+
+  async getTripById({
+    session,
+    query,
+  }: IQueryWithSession<{ id: string }>): Promise<ITripGetByIdResponse> {
+    try {
+      const { id } = query;
+      const { userId, userRole } = session;
+
+      if (!id) throw new ServiceNotFoundException('trip not found');
+
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      let where: Prisma.TripWhereInput = {
+        public_id: id,
+        deleted_at: null,
+      };
+
+      // get a trip
+      const trip = await this.prisma.trip
+        .findFirstOrThrow({
+          where,
+          select: {
+            public_id: true,
+            public: true,
+            title: true,
+            author_id: true,
+            waypoints: {
+              select: {
+                waypoint: {
+                  select: {
+                    id: true,
+                    title: true,
+                    lat: true,
+                    lon: true,
+                    date: true,
+                  },
+                },
+              },
+            },
+          },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('trip not found');
+        });
+
       const { public_id, title, waypoints } = trip;
+
+      // access control
+      if (!trip.public && userId !== trip.author_id) {
+        throw new ServiceForbiddenException();
+      }
 
       const response: ITripGetByIdResponse = {
         id: public_id,
@@ -213,7 +291,7 @@ export class TripService {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('trips not found');
+        : new ServiceForbiddenException('trip not found');
       throw exception;
     }
   }
