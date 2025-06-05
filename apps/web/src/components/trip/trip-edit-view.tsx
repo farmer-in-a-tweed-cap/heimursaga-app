@@ -443,7 +443,7 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
                     },
                   },
                   {
-                    sourceId: MAP_SOURCES.TRIPS,
+                    sourceId: MAP_SOURCES.TRIP_WAYPOINTS,
                     type: 'line',
                     data: waypoints.map(({ id, lat, lon }) => ({
                       id: `${id}`,

@@ -83,16 +83,23 @@ const config = {
 export const MAP_SOURCES = {
   WAYPOINTS: 'waypoints',
   WAYPOINTS_DRAGGABLE: 'waypoints_draggable',
-  TRIPS: 'trips',
+  TRIP_WAYPOINTS: 'trip_waypoints',
 };
 
 const MAP_LAYERS = {
   WAYPOINTS: 'waypoints',
-  WAYPOINTS_ORDER_NUMBER: 'waypoint_order_number',
   WAYPOINTS_DRAGGABLE: 'waypoints_draggable',
-  LINES: 'lines',
+  WAYPOINTS_DRAGGABLE_ORDER_NUMBER: 'waypoint_draggable_order_number',
+  TRIP_WAYPOINTS: 'trip_waypoints',
+  TRIP_WAYPOINT_ORDER_NUMBERS: 'trip_waypoint_order_numbers',
+  TRIP_LINES: 'trip_lines',
   CLUSTERS: 'clusters',
   CLUSTER_COUNT: 'cluster_count',
+};
+
+const MAP_FEATURE_STATE = {
+  WAYPOINT_HOVER: 'waypoint_hover',
+  TRIP_WAYPOINT_HOVER: 'trip_waypoint_hover',
 };
 
 type Props = {
@@ -211,6 +218,137 @@ export const Map: React.FC<Props> = ({
     setTimeout(() => {
       mapUpdatingInternallyRef.current = false;
     }, 500);
+  };
+
+  const handleWaypointMouseEnter = ({
+    event,
+    source,
+    state = {},
+  }: {
+    event: MapMouseEvent;
+    source: string;
+    state?: { [key: string]: number | string | boolean };
+  }) => {
+    if (
+      !mapboxRef.current ||
+      !mapboxPopupRef.current ||
+      !event.features ||
+      !event.features?.length
+    )
+      return;
+
+    const canvas = mapboxRef.current.getCanvasContainer();
+    const feature = event.features[0];
+    const pointId = feature.id as string;
+
+    const properties = feature?.properties as {
+      id: string;
+      title: string;
+      content: string;
+      date: string;
+    };
+
+    // update cursor
+    canvas.style.cursor = 'pointer';
+
+    // update styles
+    if (pointId) {
+      mapboxRef.current.setFeatureState(
+        {
+          source,
+          id: pointId,
+        },
+        state,
+      );
+
+      hoveredPointIdRef.current = pointId;
+    }
+
+    // const { id, title, content, date } = properties;
+    // const coordinates = (feature.geometry as any).coordinates as [
+    //   number,
+    //   number,
+    // ];
+
+    // @todo
+    // set custom popup
+    // const popupContent = `
+    //   <div class="map-popup cursor-pointer">
+    //     <div class="flex flex-col justify-start gap-0">
+    //       <span class="text-base font-medium">${title}</span>
+    //       <span class="text-[0.7rem] font-normal text-gray-800">${dateformat(date).format('MMM DD')}</span>
+    //     </div>
+    //     <div class="">
+    //       <p class="text-sm font-normal text-gray-600">${content ? (content.length < 80 ? content : `${content.slice(0, 80)}..`) : ''}</p>
+    //     </div>
+    //   </div>
+    // `;
+
+    // setTimeout(() => {
+    //   mapboxPopupRef
+    //     .current!.setLngLat([coordinates[0], coordinates[1]])
+    //     .setHTML(popupContent)
+    //     .addTo(mapboxRef.current!);
+
+    //   const popupElement = mapboxPopupRef.current!._content;
+
+    //   if (popupElement) {
+    //     popupElement.addEventListener('mouseenter', () => {
+    //       hoverPopupRef.current = true;
+    //     });
+
+    //     popupElement.addEventListener('mouseleave', () => {
+    //       hoverPopupRef.current = false;
+
+    //       setTimeout(() => {
+    //         if (!hoverPopupRef.current) {
+    //           showPopupRef.current = false;
+    //           mapboxPopupRef.current!.remove();
+    //         }
+    //       }, 250);
+    //     });
+    //   }
+
+    //   showPopupRef.current = true;
+    // }, 250);
+  };
+
+  const handleWaypointMouseLeave = ({
+    source,
+    state = {},
+  }: {
+    event: MapMouseEvent;
+    source: string;
+    state?: { [key: string]: number | string | boolean };
+  }) => {
+    if (!mapboxRef.current || !mapboxPopupRef.current) return;
+
+    const canvas = mapboxRef.current.getCanvasContainer();
+    const pointId = hoveredPointIdRef.current;
+
+    // update cursor
+    canvas.style.cursor = '';
+
+    // update styles
+    if (pointId) {
+      mapboxRef.current.setFeatureState(
+        {
+          source,
+          id: pointId,
+        },
+        state,
+      );
+
+      hoveredPointIdRef.current = null;
+    }
+
+    // remove popup
+    setTimeout(() => {
+      if (!hoverPopupRef.current) {
+        mapboxPopupRef.current!.remove();
+        showPopupRef.current = false;
+      }
+    }, 100);
   };
 
   const handleWaypointMove = ({
@@ -481,7 +619,7 @@ export const Map: React.FC<Props> = ({
               ],
           'circle-color': [
             'case',
-            ['==', ['feature-state', 'hovered_point'], true],
+            ['==', ['feature-state', MAP_FEATURE_STATE.WAYPOINT_HOVER], true],
             config.cluster.colorHover,
             config.cluster.color,
           ],
@@ -491,9 +629,9 @@ export const Map: React.FC<Props> = ({
       });
 
       mapboxRef.current.addLayer({
-        id: MAP_LAYERS.LINES,
+        id: MAP_LAYERS.TRIP_LINES,
         type: 'line',
-        source: MAP_SOURCES.TRIPS,
+        source: MAP_SOURCES.TRIP_WAYPOINTS,
         layout: {
           'line-join': 'round',
           'line-cap': 'round',
@@ -503,6 +641,64 @@ export const Map: React.FC<Props> = ({
           'line-width': 3,
         },
       });
+
+      mapboxRef.current.addLayer({
+        id: MAP_LAYERS.TRIP_WAYPOINTS,
+        type: 'circle',
+        source: MAP_SOURCES.TRIP_WAYPOINTS,
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-radius': styles?.layer?.waypoint.radius
+            ? styles?.layer?.waypoint.radius
+            : [
+                'interpolate',
+                ['linear'],
+                ['zoom'],
+                ...[0, config.point.radius],
+                ...[5, config.point.radius],
+                // ...[8,config.point.radius],
+                // ...[12, config.point.radius],
+                // ...[15, config.point.radius],
+              ],
+          'circle-color': [
+            'case',
+            [
+              '==',
+              ['feature-state', MAP_FEATURE_STATE.TRIP_WAYPOINT_HOVER],
+              true,
+            ],
+            config.cluster.colorHover,
+            config.cluster.color,
+          ],
+          'circle-stroke-width': 2,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // mapboxRef.current.addLayer({
+      //   id: MAP_LAYERS.TRIP_WAYPOINT_ORDER_NUMBERS,
+      //   type: 'symbol',
+      //   source: MAP_SOURCES.TRIP_WAYPOINTS,
+      //   layout: {
+      //     'text-field': ['get', 'index'],
+      //     'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+      //     'text-size': [
+      //       'interpolate',
+      //       ['linear'],
+      //       ['zoom'],
+      //       // dynamic font size ([zoom, radius])
+      //       ...[5, 10],
+      //       ...[8, 10],
+      //       ...[12, 14],
+      //       ...[15, 14],
+      //     ],
+      //     'text-anchor': 'center',
+      //     'text-offset': [0, 0],
+      //   },
+      //   paint: {
+      //     'text-color': '#ffffff',
+      //   },
+      // });
 
       mapboxRef.current.addLayer({
         id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
@@ -526,7 +722,7 @@ export const Map: React.FC<Props> = ({
       });
 
       mapboxRef.current.addLayer({
-        id: MAP_LAYERS.WAYPOINTS_ORDER_NUMBER,
+        id: MAP_LAYERS.WAYPOINTS_DRAGGABLE_ORDER_NUMBER,
         type: 'symbol',
         source: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
         layout: {
@@ -656,121 +852,38 @@ export const Map: React.FC<Props> = ({
       }
     });
 
-    mapboxRef.current!.on('mouseenter', MAP_LAYERS.WAYPOINTS, (e) => {
-      if (
-        !mapboxRef.current ||
-        !mapboxPopupRef.current ||
-        !e.features ||
-        !e.features?.length
-      )
-        return;
+    mapboxRef.current!.on('mouseenter', MAP_LAYERS.WAYPOINTS, (event) =>
+      handleWaypointMouseEnter({
+        event,
+        source: MAP_LAYERS.WAYPOINTS,
+        state: { [MAP_FEATURE_STATE.WAYPOINT_HOVER]: true },
+      }),
+    );
 
-      const feature = e.features[0];
-      const pointId = feature.id as string;
+    mapboxRef.current!.on('mouseleave', MAP_LAYERS.WAYPOINTS, (event) =>
+      handleWaypointMouseLeave({
+        event,
+        source: MAP_LAYERS.WAYPOINTS,
+        state: { [MAP_FEATURE_STATE.WAYPOINT_HOVER]: false },
+      }),
+    );
 
-      const properties = feature?.properties as {
-        id: string;
-        title: string;
-        content: string;
-        date: string;
-      };
+    mapboxRef.current!.on('mouseenter', MAP_LAYERS.TRIP_WAYPOINTS, (event) =>
+      handleWaypointMouseEnter({
+        event,
+        source: MAP_LAYERS.TRIP_WAYPOINTS,
+        state: { [MAP_FEATURE_STATE.TRIP_WAYPOINT_HOVER]: true },
+      }),
+    );
 
-      // update cursor
-      canvas.style.cursor = 'pointer';
+    mapboxRef.current!.on('mouseleave', MAP_LAYERS.TRIP_WAYPOINTS, (event) =>
+      handleWaypointMouseLeave({
+        event,
+        source: MAP_LAYERS.TRIP_WAYPOINTS,
+        state: { [MAP_FEATURE_STATE.TRIP_WAYPOINT_HOVER]: false },
+      }),
+    );
 
-      // update styles
-      if (pointId) {
-        mapboxRef.current.setFeatureState(
-          {
-            source: MAP_SOURCES.WAYPOINTS,
-            id: pointId,
-          },
-          { hovered_point: true },
-        );
-
-        hoveredPointIdRef.current = pointId;
-      }
-
-      // const { id, title, content, date } = properties;
-      // const coordinates = (feature.geometry as any).coordinates as [
-      //   number,
-      //   number,
-      // ];
-
-      // @todo
-      // set custom popup
-      // const popupContent = `
-      //   <div class="map-popup cursor-pointer">
-      //     <div class="flex flex-col justify-start gap-0">
-      //       <span class="text-base font-medium">${title}</span>
-      //       <span class="text-[0.7rem] font-normal text-gray-800">${dateformat(date).format('MMM DD')}</span>
-      //     </div>
-      //     <div class="">
-      //       <p class="text-sm font-normal text-gray-600">${content ? (content.length < 80 ? content : `${content.slice(0, 80)}..`) : ''}</p>
-      //     </div>
-      //   </div>
-      // `;
-
-      // setTimeout(() => {
-      //   mapboxPopupRef
-      //     .current!.setLngLat([coordinates[0], coordinates[1]])
-      //     .setHTML(popupContent)
-      //     .addTo(mapboxRef.current!);
-
-      //   const popupElement = mapboxPopupRef.current!._content;
-
-      //   if (popupElement) {
-      //     popupElement.addEventListener('mouseenter', () => {
-      //       hoverPopupRef.current = true;
-      //     });
-
-      //     popupElement.addEventListener('mouseleave', () => {
-      //       hoverPopupRef.current = false;
-
-      //       setTimeout(() => {
-      //         if (!hoverPopupRef.current) {
-      //           showPopupRef.current = false;
-      //           mapboxPopupRef.current!.remove();
-      //         }
-      //       }, 250);
-      //     });
-      //   }
-
-      //   showPopupRef.current = true;
-      // }, 250);
-    });
-
-    mapboxRef.current!.on('mouseleave', MAP_LAYERS.WAYPOINTS, () => {
-      if (!mapboxRef.current || !mapboxPopupRef.current) return;
-
-      const pointId = hoveredPointIdRef.current;
-
-      // update cursor
-      canvas.style.cursor = '';
-
-      // update styles
-      if (pointId) {
-        mapboxRef.current.setFeatureState(
-          {
-            source: MAP_SOURCES.WAYPOINTS,
-            id: pointId,
-          },
-          { hovered_point: false },
-        );
-
-        hoveredPointIdRef.current = null;
-      }
-
-      // remove popup
-      setTimeout(() => {
-        if (!hoverPopupRef.current) {
-          mapboxPopupRef.current!.remove();
-          showPopupRef.current = false;
-        }
-      }, 100);
-    });
-
-    // waypoints draggable
     mapboxRef.current!.on('mouseover', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
       if (
         !mapboxRef.current ||

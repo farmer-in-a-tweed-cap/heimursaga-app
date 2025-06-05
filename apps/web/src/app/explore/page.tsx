@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-import { ExploreMap } from '@/components';
+import { MapExploreView } from '@/components';
 
 export const metadata: Metadata = {
   title: 'Explore',
@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 export default async function Page() {
   return (
     <div className="w-full h-full flex flex-col justify-start items-center">
-      <ExploreMap />
+      <MapExploreView />
     </div>
   );
 }
