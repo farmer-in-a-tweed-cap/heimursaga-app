@@ -1,16 +1,21 @@
 'use client';
 
+import { BackButton } from '../button';
 import {
+  MAP_LAYERS,
   MAP_SOURCES,
   Map,
   MapOnSourceClickHandler,
   MapSidebar,
   MapViewContainer,
 } from '../map-ui';
+import { PostCard } from '../post';
 import { ITripDetail } from '@repo/types';
 import { useEffect, useState } from 'react';
 
 import { useMapbox } from '@/hooks';
+import { dateformat } from '@/lib';
+import { ROUTER } from '@/router';
 
 type Props = {
   trip?: ITripDetail;
@@ -49,25 +54,56 @@ export const MapTripView: React.FC<Props> = ({ trip }) => {
   return (
     <div className="relative w-full h-dvh overflow-hidden flex flex-row justify-between bg-white">
       <MapSidebar opened={sidebar}>
-        <div className="text-xs">{JSON.stringify({ trip })}</div>
+        {trip && (
+          <div className="sticky top-0 left-0 right-0 w-full">
+            <MapTripCard
+              title={trip.title}
+              startDate={trip.startDate}
+              endDate={trip.endDate}
+              backUrl={ROUTER.HOME}
+            />
+          </div>
+        )}
+        <div className="w-full h-full flex flex-col justify-start items-start gap-4 box-border p-4 overflow-y-scroll">
+          {trip?.waypoints?.map(({ title, id, post }, key) => (
+            <PostCard
+              key={key}
+              id="#"
+              title="post"
+              content="Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like)."
+              date={dateformat().subtract(10, 'd').toDate()}
+              author={{
+                username: 'username',
+                name: 'name',
+                picture:
+                  'https://heimursaga-photos.s3.us-east-2.amazonaws.com/user/ab82d01d75f68c5efcb63f626f094f5a27e69521118f06e9_thumbnail.webp',
+              }}
+              actions={{ like: false, bookmark: true }}
+            />
+          ))}
+        </div>
       </MapSidebar>
       <MapViewContainer extended={!sidebar} onExtend={handleSidebarToggle}>
         {mapbox.token && (
           <Map
             token={mapbox.token}
-            sources={[
-              // {
-              //   sourceId: MAP_SOURCES.TRIP_WAYPOINTS,
-              //   type: 'line',
-              //   data: waypoints.map(({ id, lat, lon }) => ({
-              //     id: `${id}`,
-              //     lat,
-              //     lon,
-              //     properties: {},
-              //   })),
-              // },
+            layers={[
               {
-                sourceId: MAP_SOURCES.TRIP_WAYPOINTS,
+                id: MAP_LAYERS.WAYPOINT_LINES,
+                source: MAP_SOURCES.WAYPOINT_LINES,
+              },
+              {
+                id: MAP_LAYERS.WAYPOINTS,
+                source: MAP_SOURCES.WAYPOINTS,
+              },
+              {
+                id: MAP_LAYERS.WAYPOINT_ORDER_NUMBERS,
+                source: MAP_SOURCES.WAYPOINTS,
+              },
+            ]}
+            sources={[
+              {
+                sourceId: MAP_SOURCES.WAYPOINTS,
                 type: 'point',
                 data: waypoints.map(({ id, title, date, lat, lon }, key) => ({
                   id: `${id}`,
@@ -84,6 +120,41 @@ export const MapTripView: React.FC<Props> = ({ trip }) => {
                   cluster: false,
                 },
               },
+              {
+                sourceId: MAP_SOURCES.WAYPOINT_LINES,
+                type: 'line',
+                data: waypoints.map(({ id, title, date, lat, lon }, key) => ({
+                  id: `${id}`,
+                  lat,
+                  lon,
+                  properties: {
+                    index: key + 1,
+                    id,
+                    title,
+                    date,
+                  },
+                })),
+              },
+              // {
+              //   sourceId: MAP_SOURCES.WAYPOINTS,
+              //   type: 'point',
+              //   data: waypoints.map(({ id, lat, lon }) => ({
+              //     id: `${id}`,
+              //     lat,
+              //     lon,
+              //     properties: {},
+              //   })),
+              // },
+              // {
+              //   sourceId: MAP_SOURCES.TRIP_WAYPOINT_ORDER_NUMBERS,
+              //   type: 'point',
+              //   data: waypoints.map(({ id, lat, lon }) => ({
+              //     id: `${id}`,
+              //     lat,
+              //     lon,
+              //     properties: {},
+              //   })),
+              // },
             ]}
             // coordinates={{
             //   lat: map.lat,
@@ -126,6 +197,25 @@ export const MapTripView: React.FC<Props> = ({ trip }) => {
           />
         )}
       </MapViewContainer>
+    </div>
+  );
+};
+
+const MapTripCard: React.FC<{
+  title: string;
+  startDate?: Date;
+  endDate?: Date;
+  backUrl?: string;
+  onBack?: () => void;
+}> = ({ title, backUrl, onBack }) => {
+  return (
+    <div className="flex flex-row items-center justify-start box-border p-4 gap-4">
+      <div className="">
+        <BackButton href={backUrl} onClick={onBack} />
+      </div>
+      <div>
+        <h1 className="text-lg font-medium">{title}</h1>
+      </div>
     </div>
   );
 };

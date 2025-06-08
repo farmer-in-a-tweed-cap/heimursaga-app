@@ -13,6 +13,7 @@ import {
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
+import { normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { matchRoles, sortByKey } from '@/lib/utils';
 
@@ -251,6 +252,13 @@ export class TripService {
                     lat: true,
                     lon: true,
                     date: true,
+                    posts: {
+                      select: {
+                        public_id: true,
+                        title: true,
+                        content: true,
+                      },
+                    },
                   },
                 },
               },
@@ -274,13 +282,21 @@ export class TripService {
         startDate: new Date(),
         endDate: new Date(),
         waypoints: waypoints.map(
-          ({ waypoint: { id, lat, lon, title, date } }) => {
+          ({ waypoint: { id, lat, lon, title, date, posts } }) => {
+            const post = posts?.[0];
             return {
               id,
               lat,
               lon,
               title,
               date,
+              post: post
+                ? {
+                    id: post.public_id,
+                    title: post.title,
+                    content: normalizeText(post.content),
+                  }
+                : undefined,
             };
           },
         ),

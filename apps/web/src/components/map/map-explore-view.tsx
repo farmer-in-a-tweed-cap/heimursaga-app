@@ -32,6 +32,7 @@ import { QUERY_KEYS, apiClient } from '@/lib/api';
 
 import {
   CloseButton,
+  MAP_LAYERS,
   MAP_SOURCES,
   Map,
   MapOnLoadHandler,
@@ -528,7 +529,7 @@ export const MapExploreView: React.FC<Props> = () => {
         opened={sidebar}
         className={cn(
           mode === MODE.LIST
-            ? 'z-30 absolute flex desktop:relative desktop:flex desktop:inset-auto'
+            ? 'z-30 absolute pb-[70px] flex desktop:pb-[0px] desktop:relative desktop:flex desktop:inset-auto'
             : 'hidden desktop:relative desktop:flex',
         )}
       >
@@ -657,6 +658,11 @@ export const MapExploreView: React.FC<Props> = () => {
               ]}
               minZoom={1}
               maxZoom={15}
+              layers={[
+                { id: MAP_LAYERS.WAYPOINTS, source: MAP_SOURCES.WAYPOINTS },
+                { id: MAP_LAYERS.CLUSTERS, source: MAP_SOURCES.WAYPOINTS },
+                { id: MAP_LAYERS.CLUSTER_COUNT, source: MAP_SOURCES.WAYPOINTS },
+              ]}
               sources={[
                 {
                   sourceId: MAP_SOURCES.WAYPOINTS,

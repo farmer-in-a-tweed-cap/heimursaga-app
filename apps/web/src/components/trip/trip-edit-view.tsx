@@ -21,6 +21,7 @@ import { z } from 'zod';
 import { apiClient } from '@/lib/api';
 
 import {
+  MAP_LAYERS,
   MAP_SOURCES,
   Map,
   MapOnMoveHandler,
@@ -408,9 +409,23 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
             {mapbox.token && (
               <Map
                 token={mapbox.token}
+                layers={[
+                  {
+                    id: MAP_LAYERS.WAYPOINT_LINES,
+                    source: MAP_SOURCES.WAYPOINT_LINES,
+                  },
+                  {
+                    id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
+                    source: MAP_SOURCES.WAYPOINTS,
+                  },
+                  {
+                    id: MAP_LAYERS.WAYPOINT_ORDER_NUMBERS,
+                    source: MAP_SOURCES.WAYPOINTS,
+                  },
+                ]}
                 sources={[
                   {
-                    sourceId: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
+                    sourceId: MAP_SOURCES.WAYPOINTS,
                     type: 'point',
                     data: waypoints.map(
                       ({ id, title, date, lat, lon }, key) => ({
@@ -443,7 +458,7 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
                     },
                   },
                   {
-                    sourceId: MAP_SOURCES.TRIP_WAYPOINTS,
+                    sourceId: MAP_SOURCES.WAYPOINT_LINES,
                     type: 'line',
                     data: waypoints.map(({ id, lat, lon }) => ({
                       id: `${id}`,

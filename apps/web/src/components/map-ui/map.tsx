@@ -82,12 +82,17 @@ const config = {
 
 export const MAP_SOURCES = {
   WAYPOINTS: 'waypoints',
+  WAYPOINT_LINES: 'waypoint_lines',
   WAYPOINTS_DRAGGABLE: 'waypoints_draggable',
   TRIP_WAYPOINTS: 'trip_waypoints',
+  TRIP_WAYPOINT_ORDER_NUMBERS: 'trip_waypoint_order_numbers',
+  TRIP_LINES: 'trip_lines',
 };
 
-const MAP_LAYERS = {
+export const MAP_LAYERS = {
   WAYPOINTS: 'waypoints',
+  WAYPOINT_ORDER_NUMBERS: 'waypoint_order_numbers',
+  WAYPOINT_LINES: 'waypoint_lines',
   WAYPOINTS_DRAGGABLE: 'waypoints_draggable',
   WAYPOINTS_DRAGGABLE_ORDER_NUMBER: 'waypoint_draggable_order_number',
   TRIP_WAYPOINTS: 'trip_waypoints',
@@ -113,7 +118,7 @@ type Props = {
       };
     };
   };
-  layers?: MapLayer[];
+  layers?: { id: string; source: string }[];
   minZoom?: number;
   maxZoom?: number;
   coordinates?: { lat: number; lon: number; alt: number };
@@ -218,6 +223,21 @@ export const Map: React.FC<Props> = ({
     setTimeout(() => {
       mapUpdatingInternallyRef.current = false;
     }, 500);
+  };
+
+  const handleWaypointClick = ({
+    event,
+    source,
+  }: {
+    event: MapMouseEvent;
+    source: string;
+  }) => {
+    if (!mapboxRef.current) return;
+
+    if (onSourceClick) {
+      const sourceId = event.features?.[0].properties?.id;
+      onSourceClick(sourceId);
+    }
   };
 
   const handleWaypointMouseEnter = ({
@@ -599,196 +619,202 @@ export const Map: React.FC<Props> = ({
       }
 
       // add layers
-      mapboxRef.current.addLayer({
-        id: MAP_LAYERS.WAYPOINTS,
-        type: 'circle',
-        source: MAP_SOURCES.WAYPOINTS,
-        filter: ['!', ['has', 'point_count']],
-        paint: {
-          'circle-radius': styles?.layer?.waypoint.radius
-            ? styles?.layer?.waypoint.radius
-            : [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                ...[0, config.point.radius],
-                ...[5, config.point.radius],
-                // ...[8,config.point.radius],
-                // ...[12, config.point.radius],
-                // ...[15, config.point.radius],
-              ],
-          'circle-color': [
-            'case',
-            ['==', ['feature-state', MAP_FEATURE_STATE.WAYPOINT_HOVER], true],
-            config.cluster.colorHover,
-            config.cluster.color,
-          ],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
-        },
-      });
+      if (layers.length) {
+        layers.forEach(({ id, source }) => {
+          if (!mapboxRef.current) return;
 
-      mapboxRef.current.addLayer({
-        id: MAP_LAYERS.TRIP_LINES,
-        type: 'line',
-        source: MAP_SOURCES.TRIP_WAYPOINTS,
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
-        paint: {
-          'line-color': `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
-          'line-width': 3,
-        },
-      });
-
-      mapboxRef.current.addLayer({
-        id: MAP_LAYERS.TRIP_WAYPOINTS,
-        type: 'circle',
-        source: MAP_SOURCES.TRIP_WAYPOINTS,
-        filter: ['!', ['has', 'point_count']],
-        paint: {
-          'circle-radius': styles?.layer?.waypoint.radius
-            ? styles?.layer?.waypoint.radius
-            : [
-                'interpolate',
-                ['linear'],
-                ['zoom'],
-                ...[0, config.point.radius],
-                ...[5, config.point.radius],
-                // ...[8,config.point.radius],
-                // ...[12, config.point.radius],
-                // ...[15, config.point.radius],
-              ],
-          'circle-color': [
-            'case',
-            [
-              '==',
-              ['feature-state', MAP_FEATURE_STATE.TRIP_WAYPOINT_HOVER],
-              true,
-            ],
-            config.cluster.colorHover,
-            config.cluster.color,
-          ],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
-        },
-      });
-
-      // mapboxRef.current.addLayer({
-      //   id: MAP_LAYERS.TRIP_WAYPOINT_ORDER_NUMBERS,
-      //   type: 'symbol',
-      //   source: MAP_SOURCES.TRIP_WAYPOINTS,
-      //   layout: {
-      //     'text-field': ['get', 'index'],
-      //     'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-      //     'text-size': [
-      //       'interpolate',
-      //       ['linear'],
-      //       ['zoom'],
-      //       // dynamic font size ([zoom, radius])
-      //       ...[5, 10],
-      //       ...[8, 10],
-      //       ...[12, 14],
-      //       ...[15, 14],
-      //     ],
-      //     'text-anchor': 'center',
-      //     'text-offset': [0, 0],
-      //   },
-      //   paint: {
-      //     'text-color': '#ffffff',
-      //   },
-      // });
-
-      mapboxRef.current.addLayer({
-        id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
-        type: 'circle',
-        source: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
-        paint: {
-          'circle-radius': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            // dynamic point sizes ([zoom, radius])
-            ...[5, 10],
-            ...[8, 10],
-            ...[12, 14],
-            ...[15, 14],
-          ],
-          'circle-stroke-width': 2,
-          'circle-color': config.point.color,
-          'circle-stroke-color': '#ffffff',
-        },
-      });
-
-      mapboxRef.current.addLayer({
-        id: MAP_LAYERS.WAYPOINTS_DRAGGABLE_ORDER_NUMBER,
-        type: 'symbol',
-        source: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
-        layout: {
-          'text-field': ['get', 'index'],
-          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          'text-size': [
-            'interpolate',
-            ['linear'],
-            ['zoom'],
-            // dynamic font size ([zoom, radius])
-            ...[5, 10],
-            ...[8, 10],
-            ...[12, 14],
-            ...[15, 14],
-          ],
-          'text-anchor': 'center',
-          'text-offset': [0, 0],
-        },
-        paint: {
-          'text-color': '#ffffff',
-        },
-      });
-
-      mapboxRef.current.addLayer({
-        id: MAP_LAYERS.CLUSTERS,
-        type: 'circle',
-        source: MAP_SOURCES.WAYPOINTS,
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': [
-            'case',
-            ['==', ['feature-state', 'hovered_cluster'], true],
-            config.cluster.colorHover,
-            config.cluster.color,
-          ],
-          'circle-radius': config.cluster.radius,
-          //  [
-          //   'step',
-          //   ['get', 'point_count'],
-          //   20,
-          //   100,
-          //   30,
-          //   750,
-          //   40,
-          // ],
-          'circle-stroke-width': 2,
-          'circle-stroke-color': '#ffffff',
-        },
-      });
-
-      mapboxRef.current.addLayer({
-        id: MAP_LAYERS.CLUSTER_COUNT,
-        type: 'symbol',
-        source: MAP_SOURCES.WAYPOINTS,
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': '{point_count_abbreviated}',
-          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          'text-size': 12,
-        },
-        paint: {
-          'text-color': '#fff',
-          // 'text-halo-color': 'rgba(0, 0, 0, 0.5)',
-          // 'text-halo-width': 1,
-        },
-      });
+          switch (id) {
+            case MAP_LAYERS.WAYPOINTS:
+              mapboxRef.current.addLayer({
+                id,
+                source,
+                type: 'circle',
+                filter: ['!', ['has', 'point_count']],
+                paint: {
+                  'circle-radius': styles?.layer?.waypoint.radius
+                    ? styles?.layer?.waypoint.radius
+                    : [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        ...[0, config.point.radius],
+                        ...[5, config.point.radius],
+                      ],
+                  'circle-color': [
+                    'case',
+                    [
+                      '==',
+                      ['feature-state', MAP_FEATURE_STATE.WAYPOINT_HOVER],
+                      true,
+                    ],
+                    config.cluster.colorHover,
+                    config.cluster.color,
+                  ],
+                  'circle-stroke-width': 1,
+                  'circle-stroke-color': '#ffffff',
+                },
+              });
+              break;
+            case MAP_LAYERS.WAYPOINTS_DRAGGABLE:
+              mapboxRef.current.addLayer({
+                id,
+                source,
+                type: 'circle',
+                paint: {
+                  'circle-radius': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    // dynamic point sizes ([zoom, radius])
+                    ...[5, 10],
+                    ...[8, 10],
+                    ...[12, 14],
+                    ...[15, 14],
+                  ],
+                  'circle-stroke-width': 1,
+                  'circle-color': config.point.color,
+                  'circle-stroke-color': '#ffffff',
+                },
+              });
+              break;
+            case MAP_LAYERS.WAYPOINT_ORDER_NUMBERS:
+              mapboxRef.current.addLayer({
+                id,
+                source,
+                type: 'symbol',
+                layout: {
+                  'text-field': ['get', 'index'],
+                  'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                  'text-size': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    // dynamic font size ([zoom, radius])
+                    ...[5, 10],
+                    ...[8, 10],
+                    ...[12, 14],
+                    ...[15, 14],
+                  ],
+                  'text-anchor': 'center',
+                  'text-offset': [0, 0],
+                },
+                paint: {
+                  'text-color': '#ffffff',
+                },
+              });
+              break;
+            case MAP_LAYERS.WAYPOINTS_DRAGGABLE_ORDER_NUMBER:
+              mapboxRef.current.addLayer({
+                id,
+                source,
+                type: 'symbol',
+                layout: {
+                  'text-field': ['get', 'index'],
+                  'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                  'text-size': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    // dynamic font size ([zoom, radius])
+                    ...[5, 10],
+                    ...[8, 10],
+                    ...[12, 14],
+                    ...[15, 14],
+                  ],
+                  'text-anchor': 'center',
+                  'text-offset': [0, 0],
+                },
+                paint: {
+                  'text-color': '#ffffff',
+                },
+              });
+              break;
+            case MAP_LAYERS.WAYPOINT_LINES:
+              mapboxRef.current.addLayer({
+                id,
+                source,
+                type: 'line',
+                layout: {
+                  'line-join': 'round',
+                  'line-cap': 'round',
+                },
+                paint: {
+                  'line-color': `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
+                  'line-width': 3,
+                },
+              });
+              break;
+            case MAP_LAYERS.TRIP_WAYPOINTS:
+              mapboxRef.current.addLayer({
+                id,
+                source,
+                type: 'circle',
+                filter: ['!', ['has', 'point_count']],
+                paint: {
+                  'circle-radius': styles?.layer?.waypoint.radius
+                    ? styles?.layer?.waypoint.radius
+                    : [
+                        'interpolate',
+                        ['linear'],
+                        ['zoom'],
+                        ...[0, config.point.radius],
+                        ...[5, config.point.radius],
+                      ],
+                  'circle-color': [
+                    'case',
+                    [
+                      '==',
+                      ['feature-state', MAP_FEATURE_STATE.TRIP_WAYPOINT_HOVER],
+                      true,
+                    ],
+                    config.cluster.colorHover,
+                    config.cluster.color,
+                  ],
+                  'circle-stroke-width': 1,
+                  'circle-stroke-color': '#ffffff',
+                },
+              });
+              break;
+            case MAP_LAYERS.CLUSTERS:
+              mapboxRef.current.addLayer({
+                id,
+                source,
+                type: 'circle',
+                filter: ['has', 'point_count'],
+                paint: {
+                  'circle-color': [
+                    'case',
+                    ['==', ['feature-state', 'hovered_cluster'], true],
+                    config.cluster.colorHover,
+                    config.cluster.color,
+                  ],
+                  'circle-radius': config.cluster.radius,
+                  'circle-stroke-width': 2,
+                  'circle-stroke-color': '#ffffff',
+                },
+              });
+              break;
+            case MAP_LAYERS.CLUSTER_COUNT:
+              mapboxRef.current.addLayer({
+                id,
+                source,
+                type: 'symbol',
+                filter: ['has', 'point_count'],
+                layout: {
+                  'text-field': '{point_count_abbreviated}',
+                  'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+                  'text-size': 12,
+                },
+                paint: {
+                  'text-color': '#fff',
+                  // 'text-halo-color': 'rgba(0, 0, 0, 0.5)',
+                  // 'text-halo-width': 1,
+                },
+              });
+              break;
+          }
+        });
+      }
 
       // set cursor
       if (cursor) {
@@ -806,7 +832,15 @@ export const Map: React.FC<Props> = ({
 
     if (disabled) return;
 
-    // handle click event
+    // set popup
+    mapboxPopupRef.current = new mapboxgl.Popup({
+      closeOnMove: true,
+      closeButton: false,
+      anchor: 'top',
+      offset: 15,
+    });
+
+    // handle events
     mapboxRef.current.on('click', (e) => {
       if (!mapboxRef.current) return;
 
@@ -830,32 +864,22 @@ export const Map: React.FC<Props> = ({
       }
     });
 
-    // update on drag event
     mapboxRef.current.on('moveend', handleMapMove);
 
-    // update on zoom event
     mapboxRef.current.on('zoomend', handleMapMove);
 
-    // set popup
-    mapboxPopupRef.current = new mapboxgl.Popup({
-      closeOnMove: true,
-      closeButton: false,
-      anchor: 'top',
-      offset: 15,
-    });
+    mapboxRef.current!.on('click', MAP_LAYERS.WAYPOINTS, (event) =>
+      handleWaypointClick({ event, source: MAP_SOURCES.WAYPOINTS }),
+    );
 
-    // waypoints
-    mapboxRef.current!.on('click', MAP_LAYERS.WAYPOINTS, (e) => {
-      if (mapboxRef.current && onSourceClick) {
-        const sourceId = e.features?.[0].properties?.id;
-        onSourceClick(sourceId);
-      }
-    });
+    mapboxRef.current!.on('click', MAP_LAYERS.TRIP_WAYPOINTS, (event) =>
+      handleWaypointClick({ event, source: MAP_SOURCES.TRIP_WAYPOINTS }),
+    );
 
     mapboxRef.current!.on('mouseenter', MAP_LAYERS.WAYPOINTS, (event) =>
       handleWaypointMouseEnter({
         event,
-        source: MAP_LAYERS.WAYPOINTS,
+        source: MAP_SOURCES.WAYPOINTS,
         state: { [MAP_FEATURE_STATE.WAYPOINT_HOVER]: true },
       }),
     );
@@ -863,7 +887,7 @@ export const Map: React.FC<Props> = ({
     mapboxRef.current!.on('mouseleave', MAP_LAYERS.WAYPOINTS, (event) =>
       handleWaypointMouseLeave({
         event,
-        source: MAP_LAYERS.WAYPOINTS,
+        source: MAP_SOURCES.WAYPOINTS,
         state: { [MAP_FEATURE_STATE.WAYPOINT_HOVER]: false },
       }),
     );
@@ -871,7 +895,7 @@ export const Map: React.FC<Props> = ({
     mapboxRef.current!.on('mouseenter', MAP_LAYERS.TRIP_WAYPOINTS, (event) =>
       handleWaypointMouseEnter({
         event,
-        source: MAP_LAYERS.TRIP_WAYPOINTS,
+        source: MAP_SOURCES.TRIP_WAYPOINTS,
         state: { [MAP_FEATURE_STATE.TRIP_WAYPOINT_HOVER]: true },
       }),
     );
@@ -879,10 +903,12 @@ export const Map: React.FC<Props> = ({
     mapboxRef.current!.on('mouseleave', MAP_LAYERS.TRIP_WAYPOINTS, (event) =>
       handleWaypointMouseLeave({
         event,
-        source: MAP_LAYERS.TRIP_WAYPOINTS,
+        source: MAP_SOURCES.TRIP_WAYPOINTS,
         state: { [MAP_FEATURE_STATE.TRIP_WAYPOINT_HOVER]: false },
       }),
     );
+
+    // --
 
     mapboxRef.current!.on('mouseover', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
       if (
