@@ -86,7 +86,7 @@ export const MapSidebar: React.FC<{
   return (
     <div
       className={cn(
-        'h-dvh bg-background overflow-hidden',
+        'relative flex flex-col justify-start items-start h-dvh bg-background overflow-hidden',
         opened
           ? `w-full desktop:min-w-[540px] desktop:max-w-[540px]`
           : 'desktop:max-w-[0px]',

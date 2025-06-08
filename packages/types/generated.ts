@@ -610,6 +610,11 @@ export interface IWaypointDetail {
   title: string;
   date?: Date;
   description?: string;
+  post?: {
+    id: string;
+    title: string;
+    content: string;
+  };
 }
 
 export interface IWaypointCreatePayload {
