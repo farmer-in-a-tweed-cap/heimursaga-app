@@ -243,8 +243,10 @@ export interface IPostDetail {
   id: string;
   title: string;
   content?: string;
-  lat: number;
-  lon: number;
+  waypoint?: {
+    lat: number;
+    lon: number;
+  };
   public?: boolean;
   sponsored?: boolean;
   liked?: boolean;
@@ -273,7 +275,7 @@ export interface IPostQueryResponse {
   results: number;
 }
 
-export interface IPostGetResponse extends IPostDetail {}
+export interface IPostGetByIdResponse extends IPostDetail {}
 
 export interface IPostCreatePayload {
   title: string;
@@ -284,6 +286,7 @@ export interface IPostCreatePayload {
   sponsored?: boolean;
   place?: string;
   date?: Date;
+  waypointId?: number;
 }
 
 export interface IPostCreateResponse {

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
@@ -31,7 +32,7 @@ export class MapController {
   }
 
   @Public()
-  @Post('waypoints/:id')
+  @Get('waypoints/:id')
   @HttpCode(HttpStatus.OK)
   async getWaypointById(
     @Param() param: ParamIdDto,
