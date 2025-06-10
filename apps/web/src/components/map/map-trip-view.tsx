@@ -65,22 +65,19 @@ export const MapTripView: React.FC<Props> = ({ trip }) => {
           </div>
         )}
         <div className="w-full h-full flex flex-col justify-start items-start gap-4 box-border p-4 overflow-y-scroll">
-          {trip?.waypoints?.map(({ title, id, post }, key) => (
-            <PostCard
-              key={key}
-              id="#"
-              title="post"
-              content="Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like)."
-              date={dateformat().subtract(10, 'd').toDate()}
-              author={{
-                username: 'username',
-                name: 'name',
-                picture:
-                  'https://heimursaga-photos.s3.us-east-2.amazonaws.com/user/ab82d01d75f68c5efcb63f626f094f5a27e69521118f06e9_thumbnail.webp',
-              }}
-              actions={{ like: false, bookmark: true }}
-            />
-          ))}
+          {trip?.waypoints
+            ?.filter(({ post }) => !!post?.id)
+            ?.map(({ post }, key) => (
+              <PostCard
+                key={key}
+                id={post?.id}
+                title={post?.title}
+                content={post?.content}
+                date={post?.date}
+                author={post?.author}
+                actions={{ like: false, bookmark: true }}
+              />
+            ))}
         </div>
       </MapSidebar>
       <MapViewContainer extended={!sidebar} onExtend={handleSidebarToggle}>

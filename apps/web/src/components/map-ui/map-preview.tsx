@@ -55,8 +55,12 @@ export const MapPreview: React.FC<Props> = ({
         className,
       )}
     >
-      {overlay && <MapPreviewOverlay href={href} onClick={onClick} />}
-      <div className="z-10 w-full h-full">
+      {overlay ? (
+        <MapPreviewOverlay href={href} onClick={onClick} />
+      ) : (
+        <div className="absolute inset-0 z-20 cursor-default"></div>
+      )}
+      <div className="z-10 w-full h-full cursor-not-allowed">
         {token && (
           <Map
             token={token}

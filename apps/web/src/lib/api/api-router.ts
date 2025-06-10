@@ -10,6 +10,9 @@ export const API_ROUTER = {
   GET_SESSION_USER: 'auth/user',
   MAP: {
     QUERY: '/map/query',
+    WAYPOINTS: {
+      GET_BY_ID: (id: number) => `/map/waypoints/${id}`,
+    },
   },
   USER: {
     FEED: `/user/feed`,

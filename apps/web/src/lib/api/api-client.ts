@@ -18,6 +18,7 @@ import {
   IPostCreatePayload,
   IPostCreateResponse,
   IPostDetail,
+  IPostGetByIdResponse,
   IPostInsightsGetResponse,
   IPostQueryMapResponse,
   IPostQueryResponse,
@@ -52,6 +53,7 @@ import {
   IUserSettingsProfileGetResponse,
   IUserSettingsProfileUpdatePayload,
   IWaypointCreatePayload,
+  IWaypointGetByIdResponse,
   IWaypointUpdatePayload,
 } from '@repo/types';
 
@@ -141,7 +143,7 @@ export const apiClient = {
     { query }: IApiClientQuery<{ id: string }>,
     config?: RequestConfig,
   ) =>
-    api.request<IPostDetail>(API_ROUTER.POSTS.GET_BY_ID(query.id), {
+    api.request<IPostGetByIdResponse>(API_ROUTER.POSTS.GET_BY_ID(query.id), {
       method: API_METHODS.GET,
       ...config,
     }),
@@ -649,6 +651,18 @@ export const apiClient = {
       {
         method: API_METHODS.DELETE,
         body: JSON.stringify({}),
+        ...config,
+      },
+    ),
+  // waypoints
+  getWaypointById: async (
+    { query }: IApiClientQuery<{ id: number }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<IWaypointGetByIdResponse>(
+      API_ROUTER.MAP.WAYPOINTS.GET_BY_ID(query.id),
+      {
+        method: API_METHODS.GET,
         ...config,
       },
     ),
