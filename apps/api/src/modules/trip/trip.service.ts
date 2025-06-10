@@ -15,6 +15,7 @@ import {
 import { dateformat } from '@/lib/date-format';
 import { normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
+import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles, sortByKey } from '@/lib/utils';
 
 import {
@@ -257,6 +258,19 @@ export class TripService {
                         public_id: true,
                         title: true,
                         content: true,
+                        date: true,
+                        place: true,
+                        author: {
+                          select: {
+                            username: true,
+                            profile: {
+                              select: {
+                                name: true,
+                                picture: true,
+                              },
+                            },
+                          },
+                        },
                       },
                     },
                   },
@@ -295,6 +309,15 @@ export class TripService {
                     id: post.public_id,
                     title: post.title,
                     content: normalizeText(post.content),
+                    author: post.author
+                      ? {
+                          username: post.author.username,
+                          name: post.author.profile.name,
+                          picture: getStaticMediaUrl(
+                            post.author.profile.picture,
+                          ),
+                        }
+                      : undefined,
                   }
                 : undefined,
             };
