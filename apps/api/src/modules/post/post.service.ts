@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
   IPostCreatePayload,
+  IPostCreateResponse,
   IPostGetAllResponse,
-  IPostGetResponse,
+  IPostGetByIdResponse,
   IPostUpdatePayload,
   UserNotificationContext,
   UserRole,
@@ -16,6 +17,7 @@ import { generator } from '@/lib/generator';
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
+  ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
   ServiceNotFoundException,
@@ -165,7 +167,7 @@ export class PostService {
   async getById({
     query,
     session,
-  }: ISessionQuery<{ publicId: string }>): Promise<IPostGetResponse> {
+  }: ISessionQuery<{ publicId: string }>): Promise<IPostGetByIdResponse> {
     try {
       const { publicId } = query;
       const { userId, userRole } = session;
@@ -209,10 +211,9 @@ export class PostService {
           content: true,
           public: true,
           sponsored: true,
-          lat: true,
-          lon: true,
           place: true,
           date: true,
+          waypoint: { select: { lat: true, lon: true } },
           likes_count: true,
           bookmarks_count: true,
           // check if the session user has liked this post
@@ -243,12 +244,10 @@ export class PostService {
         },
       });
 
-      const response: IPostGetResponse = {
+      const response: IPostGetByIdResponse = {
         id: post.public_id,
         title: post.title,
         content: post.content,
-        lat: post.lat,
-        lon: post.lon,
         place: post.place,
         date: post.date,
         liked: userId ? post.likes.length > 0 : undefined,
@@ -257,6 +256,7 @@ export class PostService {
         bookmarksCount: post.bookmarks_count,
         public: post.public,
         sponsored: post.sponsored,
+        waypoint: post.waypoint,
         author: post.author
           ? {
               username: post.author.username,
@@ -284,32 +284,54 @@ export class PostService {
   async create({
     session,
     payload,
-  }: ISessionQueryWithPayload<{}, IPostCreatePayload>) {
+  }: ISessionQueryWithPayload<
+    {},
+    IPostCreatePayload
+  >): Promise<IPostCreateResponse> {
     try {
       const { userId } = session;
 
       // check access
-      if (!userId) throw new ServiceForbiddenException();
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
 
-      const { lat, lon } = payload;
+      const { title, lat, lon, date, place, waypointId } = payload;
+      const privacy = {
+        public: payload.public,
+        sponsored: payload.sponsored,
+      };
       const content = normalizeText(payload.content);
+
+      if (waypointId) {
+        // get the waypoint
+        await this.prisma.waypoint
+          .findFirstOrThrow({ where: { id: waypointId, deleted_at: null } })
+          .catch(() => {
+            throw new ServiceBadRequestException('waypoint is not available');
+          });
+
+        // check if the waypoint attached already
+        await this.prisma.post
+          .count({ where: { waypoint: { id: waypointId } } })
+          .catch(() => {
+            throw new ServiceBadRequestException('waypoint is not available');
+          });
+      }
 
       // create a post
       const post = await this.prisma.post.create({
         data: {
-          ...payload,
           public_id: generator.publicId(),
+          title,
           content,
-          lat,
-          lon,
-          public: true,
+          date,
+          place,
+          public: privacy.public,
+          sponsored: privacy.sponsored,
           author: { connect: { id: userId } },
-          waypoint: {
-            create: {
-              lat,
-              lon,
-            },
-          },
+          waypoint: waypointId
+            ? { connect: { id: waypointId } }
+            : { create: { lat, lon } },
         },
         select: {
           public_id: true,
@@ -322,9 +344,11 @@ export class PostService {
         data: { posts_count: { increment: 1 } },
       });
 
-      return {
+      const response: IPostCreateResponse = {
         id: post.public_id,
       };
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status

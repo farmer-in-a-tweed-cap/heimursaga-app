@@ -50,6 +50,11 @@ export class PostCreateDto implements IPostCreatePayload {
   @IsDateString()
   @IsOptional()
   date: Date;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  waypointId: number;
 }
 
 export class PostUpdateDto implements IPostUpdatePayload {
