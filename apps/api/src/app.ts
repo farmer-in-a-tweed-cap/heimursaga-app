@@ -107,7 +107,7 @@ export async function app() {
     );
 
     app.use(async (req: IRequest, res: IResponse, next: () => void) => {
-      if (IS_DEVELOPMENT) await sleep(500);
+      // if (IS_DEVELOPMENT) await sleep(500);
       next();
     });
 

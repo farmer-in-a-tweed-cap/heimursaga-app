@@ -15,7 +15,6 @@ import {
   IUserProfileDetail,
   IUserSettingsProfileGetResponse,
   IUserSettingsProfileUpdatePayload,
-  IUserSettingsUpdateQuery,
   MediaUploadContext,
   UserNotificationContext,
   UserRole,
@@ -266,6 +265,9 @@ export class UserService {
         content: true,
         lat: true,
         lon: true,
+        waypoint: {
+          select: { lat: true, lon: true },
+        },
         date: true,
         place: true,
         created_at: true,
@@ -293,7 +295,7 @@ export class UserService {
             },
           },
         },
-      };
+      } satisfies Prisma.PostSelect;
 
       // fetch results
       const results = await this.prisma.post.count({
@@ -314,6 +316,7 @@ export class UserService {
             content,
             lat,
             lon,
+            waypoint,
             author,
             likes,
             likes_count,
@@ -326,6 +329,7 @@ export class UserService {
             content,
             lat,
             lon,
+            waypoint: waypoint ? waypoint : { lat, lon },
             author: author.profile
               ? {
                   name: author.profile?.name,
@@ -782,6 +786,9 @@ export class SessionUserService {
         content: true,
         lat: true,
         lon: true,
+        waypoint: {
+          select: { lat: true, lon: true },
+        },
         date: true,
         place: true,
         created_at: true,
@@ -808,7 +815,7 @@ export class SessionUserService {
             },
           },
         },
-      };
+      } satisfies Prisma.PostSelect;
 
       // filter based on context
       switch (context) {
@@ -859,6 +866,7 @@ export class SessionUserService {
             lat,
             lon,
             author,
+            waypoint,
             likes,
             likes_count,
             bookmarks,
@@ -870,6 +878,7 @@ export class SessionUserService {
             content,
             lat,
             lon,
+            waypoint: waypoint ? waypoint : { lat, lon },
             author: {
               name: author.profile?.name,
               username: author?.username,
