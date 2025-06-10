@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 import { QUERY_KEYS, apiClient } from '@/lib/api';
 
-import { MAP_SOURCES, MapPreview } from '@/components';
+import { MAP_LAYERS, MAP_SOURCES, MapPreview } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { ROUTER } from '@/router';
 
@@ -31,7 +31,10 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
   const loading = mapQuery.isLoading;
   const waypoints = mapQuery.data?.waypoints || [];
   const url = username
-    ? [ROUTER.HOME, `?user=${username}&alt=1`].join('/')
+    ? [
+        ROUTER.HOME,
+        `context=user&user=${username}&lat=${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT}&lon=${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON}&alt=1`,
+      ].join('?')
     : '#';
 
   return (
@@ -51,6 +54,12 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
             lon={APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON}
             alt={0}
             zoom={0}
+            layers={[
+              {
+                id: MAP_LAYERS.WAYPOINTS,
+                source: MAP_SOURCES.WAYPOINTS,
+              },
+            ]}
             sources={[
               {
                 sourceId: MAP_SOURCES.WAYPOINTS,
@@ -66,7 +75,7 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
                 },
               },
             ]}
-            overlay={false}
+            overlay={true}
           />
         </div>
       </div>
