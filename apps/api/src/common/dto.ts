@@ -1,4 +1,13 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+
+import { ToNumber } from './decorators';
+
+export class ParamIdDto {
+  @IsNumber()
+  @ToNumber()
+  @IsNotEmpty()
+  id: number;
+}
 
 export class ParamPublicIdDto {
   @IsString()
