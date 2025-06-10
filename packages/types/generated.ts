@@ -617,6 +617,8 @@ export interface IWaypointDetail {
   };
 }
 
+export interface IWaypointGetByIdResponse extends IWaypointDetail {}
+
 export interface IWaypointCreatePayload {
   lat: number;
   lon: number;

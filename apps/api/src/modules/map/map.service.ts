@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import {
   IMapQueryPayload,
   IMapQueryResponse,
+  IWaypointGetByIdResponse,
   MapQueryContext,
   UserRole,
 } from '@repo/types';
@@ -13,6 +14,7 @@ import {
   ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
+  ServiceNotFoundException,
 } from '@/common/exceptions';
 import { IQueryWithSession } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
@@ -189,6 +191,45 @@ export class MapService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('no posts found');
+      throw exception;
+    }
+  }
+
+  async getWaypointById({
+    query,
+    session,
+  }: IQueryWithSession<{ id: number }>): Promise<IWaypointGetByIdResponse> {
+    try {
+      const { userId } = session;
+      const { id } = query;
+
+      if (!id) throw new ServiceNotFoundException('waypoint not found');
+
+      const waypoint = await this.prisma.waypoint
+        .findFirstOrThrow({
+          where: { id },
+          select: {
+            id: true,
+            title: true,
+            date: true,
+            lat: true,
+            lon: true,
+          },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('waypoint not found');
+        });
+
+      const response: IWaypointGetByIdResponse = {
+        ...waypoint,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('waypoint not found');
       throw exception;
     }
   }
