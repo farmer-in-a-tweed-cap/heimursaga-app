@@ -28,7 +28,7 @@ import {
 } from '@/components';
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
-import { useModal } from '@/hooks';
+import { useModal, useSession } from '@/hooks';
 import { dateformat, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
 
@@ -69,6 +69,7 @@ type Props = {
 export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
   const modal = useModal();
   const toast = useToast();
+  const session = useSession();
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -322,19 +323,21 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
                       />
                     </FormItem>
                   </FormControl>
-                  <FormControl>
-                    <FormItem>
-                      <FormLabel>Sponsored</FormLabel>
-                      <Switch
-                        checked={privacy.sponsored}
-                        aria-readonly
-                        disabled={loading.privacy}
-                        onCheckedChange={(checked) =>
-                          handlePrivacyChange({ sponsored: checked })
-                        }
-                      />
-                    </FormItem>
-                  </FormControl>
+                  {session.creator && (
+                    <FormControl>
+                      <FormItem>
+                        <FormLabel>Sponsored</FormLabel>
+                        <Switch
+                          checked={privacy.sponsored}
+                          aria-readonly
+                          disabled={loading.privacy}
+                          onCheckedChange={(checked) =>
+                            handlePrivacyChange({ sponsored: checked })
+                          }
+                        />
+                      </FormItem>
+                    </FormControl>
+                  )}
                 </div>
                 <div className="mt-4">
                   <Button

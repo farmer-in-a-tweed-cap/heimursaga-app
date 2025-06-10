@@ -37,11 +37,14 @@ import { useMapbox } from '@/hooks';
 import { dateformat, sortByDate, zodMessage } from '@/lib';
 
 type WaypointElement = {
-  id: string;
+  id: number;
   title: string;
   lat: number;
   lon: number;
   date: Date;
+  post?: {
+    id: string;
+  };
 };
 
 const FORM_ID = 'trip_edit_form';
@@ -69,7 +72,7 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
   const [state, setState] = useState<{
     waypointCreating: boolean;
     waypointEditing: boolean;
-    waypointEditingId?: string;
+    waypointEditingId?: number;
   }>({
     waypointCreating: false,
     waypointEditing: false,
@@ -89,12 +92,13 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
     trip?.waypoints
       ? sortByDate(
           trip.waypoints.map(
-            ({ id, title = '', date = new Date(), lat, lon }) => ({
-              id: `${id}`,
+            ({ id, title = '', date = new Date(), lat, lon, post }) => ({
+              id,
               title,
               date: dateformat(date).toDate(),
               lat,
               lon,
+              post,
             }),
           ),
           'asc',
@@ -140,7 +144,7 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
           setLoading((state) => ({ ...state, waypoint: false }));
           setWaypoints((waypoints) =>
             sortByDate(
-              [...waypoints, { ...data, id: `${waypoints.length + 1}` }],
+              [...waypoints, { ...data, id: waypoints.length + 1 }],
               'asc',
             ),
           );
@@ -165,13 +169,14 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
   };
 
   const handleWaypointEditSubmit = async (
-    id: string,
+    id: number,
     data: Partial<TripWaypointEditFormState>,
   ) => {
     try {
-      const waypointId = state.waypointEditingId
-        ? parseInt(state.waypointEditingId)
-        : undefined;
+      // const waypointId = state.waypointEditingId
+      //   ? state.waypointEditingId
+      //   : undefined;
+      const waypointId = id;
       const { lat, lon, date, title } = data;
 
       if (!trip?.id || !waypointId) return;
@@ -221,7 +226,7 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
   const handleWaypointDelete: TripWaypointCardClickHandler = async (id) => {
     if (confirm(`delete this waypoint?`)) {
       try {
-        const waypointId = parseInt(id);
+        const waypointId = id;
 
         if (!trip?.id || !waypointId) return;
 
@@ -286,9 +291,6 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
                   </span>
                 </div>
                 <div className="flex flex-col">
-                  {/* <span className="text-xs">
-                  {JSON.stringify({ v: viewport })}
-                </span> */}
                   <h2 className="text-xl font-medium">Trip</h2>
                   <div className="mt-6 flex flex-col gap-6">
                     <Form {...form}>
@@ -331,34 +333,36 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
                   <h2 className="text-xl font-medium">Waypoints</h2>
                   <div className="mt-4 flex flex-col">
                     <div className="flex flex-col gap-2">
-                      {waypoints.map(({ id, title, lat, lon, date }, key) =>
-                        waypointEditingId === id ? (
-                          <div
-                            key={key}
-                            className="py-4 border-b border-solid border-accent"
-                          >
-                            <TripWaypointEditForm
-                              defaultValues={{ title, lat, lon, date }}
-                              loading={loading.waypoint}
-                              onSubmit={(data) =>
-                                handleWaypointEditSubmit(id, data)
-                              }
-                              onCancel={handleWaypointEditCancel}
+                      {waypoints.map(
+                        ({ id, title, lat, lon, date, post }, key) =>
+                          waypointEditingId === id ? (
+                            <div
+                              key={key}
+                              className="py-4 border-b border-solid border-accent"
+                            >
+                              <TripWaypointEditForm
+                                defaultValues={{ title, lat, lon, date }}
+                                loading={loading.waypoint}
+                                onSubmit={(data) =>
+                                  handleWaypointEditSubmit(id, data)
+                                }
+                                onCancel={handleWaypointEditCancel}
+                              />
+                            </div>
+                          ) : (
+                            <TripWaypointCard
+                              key={key + 1}
+                              id={id}
+                              orderIndex={key + 1}
+                              title={title}
+                              lat={lat}
+                              lon={lon}
+                              date={date}
+                              post={post}
+                              onEdit={handleWaypointEdit}
+                              onDelete={handleWaypointDelete}
                             />
-                          </div>
-                        ) : (
-                          <TripWaypointCard
-                            key={key + 1}
-                            id={id}
-                            orderIndex={key + 1}
-                            title={title}
-                            lat={lat}
-                            lon={lon}
-                            date={date}
-                            onEdit={handleWaypointEdit}
-                            onDelete={handleWaypointDelete}
-                          />
-                        ),
+                          ),
                       )}
                     </div>
                     {waypointCreating && (
@@ -429,7 +433,7 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
                     type: 'point',
                     data: waypoints.map(
                       ({ id, title, date, lat, lon }, key) => ({
-                        id,
+                        id: `${id}`,
                         lat,
                         lon,
                         properties: {
@@ -444,13 +448,17 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
                       cluster: false,
                     },
                     onChange: (
-                      data: MapSourceData<{ title: string; date: Date }>[],
+                      data: MapSourceData<{
+                        id: number;
+                        title: string;
+                        date: Date;
+                      }>[],
                     ) => {
                       setWaypoints(
                         data.map(({ id, lat, lon, properties }) => ({
-                          id: `${id}`,
                           lat,
                           lon,
+                          id: properties.id,
                           title: properties.title,
                           date: properties.date,
                         })),

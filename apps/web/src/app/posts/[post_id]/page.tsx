@@ -30,30 +30,23 @@ export default async function Page({ params }: Props) {
 
   const { post_id: postId } = await params;
 
-  const postQuery = await apiClient.getPostById(
+  const { success, data } = await apiClient.getPostById(
     { query: { id: postId } },
     { cookie },
   );
 
-  const {
-    id,
-    title,
-    content,
-    lat = 0,
-    lon = 0,
-    author,
-    createdByMe = false,
-  } = postQuery.data || {};
-
   return (
     <AppLayout secure={true}>
-      {postQuery.success ? (
+      {success && data ? (
         <div className="w-full max-w-3xl">
           <PostCard
-            {...{ id, title, content, lat, lon, author }}
-            coordinates={{ lat, lon }}
+            id={data.id}
+            title={data.title}
+            content={data.content}
+            author={data.author}
+            waypoint={data.waypoint}
             actions={
-              createdByMe ? { edit: true } : { like: true, bookmark: true }
+              data.createdByMe ? { edit: true } : { like: true, bookmark: true }
             }
             extended
           />

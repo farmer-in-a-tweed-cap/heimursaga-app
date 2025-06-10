@@ -616,7 +616,14 @@ export interface IWaypointDetail {
   post?: {
     id: string;
     title: string;
-    content: string;
+    content?: string;
+    date?: Date;
+    place?: string;
+    author?: {
+      username: string;
+      name?: string;
+      picture?: string;
+    };
   };
 }
 

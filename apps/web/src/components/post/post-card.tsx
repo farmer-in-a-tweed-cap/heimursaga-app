@@ -31,7 +31,7 @@ export type PostCardProps = {
     name?: string;
     creator?: boolean;
   };
-  coordinates?: {
+  waypoint?: {
     lat: number;
     lon: number;
   };
@@ -65,7 +65,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     username: '',
   },
   date,
-  coordinates,
+  waypoint,
   liked = false,
   likesCount = 0,
   bookmarked = false,
@@ -191,22 +191,22 @@ export const PostCard: React.FC<PostCardProps> = ({
               )}
             </div>
           </div>
-          {coordinates && (
+          {waypoint && (
             <div className="mt-6">
               <MapStaticPreview
                 href={
                   id
-                    ? `${ROUTER.EXPLORE.HOME}?lat=${coordinates.lat}&lon=${coordinates.lon}&alt=12`
+                    ? `${ROUTER.EXPLORE.HOME}?lat=${waypoint.lat}&lon=${waypoint.lon}&alt=12`
                     : '#'
                 }
-                lat={coordinates.lat}
-                lon={coordinates.lon}
+                lat={waypoint.lat}
+                lon={waypoint.lon}
                 // className="aspect-auto w-full"
                 zoom={8}
                 markers={[
                   {
-                    lat: coordinates.lat,
-                    lon: coordinates.lon,
+                    lat: waypoint.lat,
+                    lon: waypoint.lon,
                   },
                 ]}
               />

@@ -1,43 +1,60 @@
+import { LinkIcon } from '@repo/ui/icons';
+import Link from 'next/link';
+
 import { ActionMenu, ActionMenuItem } from '@/components';
-import { dateformat } from '@/lib';
+import { dateformat, redirect } from '@/lib';
+import { ROUTER } from '@/router';
 
 type Props = {
-  id: string;
+  id: number;
   orderIndex: number;
   title: string;
   lat: number;
   lon: number;
   date: Date;
+  post?: { id: string };
   onEdit?: TripWaypointCardClickHandler;
   onDelete?: TripWaypointCardClickHandler;
 };
 
-export type TripWaypointCardClickHandler = (id: string) => void;
+export type TripWaypointCardClickHandler = (id: number) => void;
 
 export const TripWaypointCard: React.FC<Props> = ({
   id,
   orderIndex,
   title,
-  lat,
-  lon,
   date,
+  post,
   onEdit,
   onDelete,
 }) => {
+  const waypointId = id;
   const actions: ActionMenuItem[] = [];
+
+  if (!post) {
+    actions.push({
+      label: 'Create post',
+      onClick: () => {
+        // redirect to the post page
+        if (waypointId) {
+          redirect([ROUTER.POSTS.CREATE, `waypoint=${waypointId}`].join('?'));
+        }
+      },
+    });
+  }
 
   if (onEdit) {
     actions.push({
       label: 'Edit',
       onClick: () => onEdit(id),
     });
-  }
 
-  if (onDelete) {
-    actions.push({
-      label: 'Delete',
-      onClick: () => onDelete(id),
-    });
+    if (onDelete) {
+      actions.push({
+        label: 'Delete',
+        onClick: () => onDelete(id),
+      });
+    }
   }
 
   return (
@@ -48,7 +65,18 @@ export const TripWaypointCard: React.FC<Props> = ({
             {orderIndex}
           </span>
           <div className="flex flex-col gap-0 justify-start items-start">
-            <span className="text-base font-medium text-black">{title}</span>
+            <div className="flex flex-row items-center justify-start gap-2">
+              <span className="text-base font-medium text-black">{title}</span>
+              {post && (
+                <Link
+                  href={ROUTER.POSTS.EDIT(post.id)}
+                  target="_blank"
+                  className="flex items-center flex-row justify-start gap-1 text-sm"
+                >
+                  <LinkIcon size={16} weight="bold" />
+                </Link>
+              )}
+            </div>
             <span className="text-xs font-normal text-gray-500">
               {dateformat(date).format('MMM DD, YYYY')}
               {/* {lon.toFixed(4)}, {lat.toFixed(4)} */}
