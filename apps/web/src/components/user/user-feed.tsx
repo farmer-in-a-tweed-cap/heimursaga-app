@@ -103,12 +103,6 @@ export const UserFeed: React.FC<Props> = ({ username }) => {
       <TabsContent value={tabs.following.key}>
         <UserFollowingFeed username={username} />
       </TabsContent>
-      {/* <TabsContent value={tabs.bookmarks.key}>
-        <UserBookmarksFeed />
-      </TabsContent> */}
-      {/* <TabsContent value={tabs.drafts.key}>
-        <UserDraftsFeed />
-      </TabsContent> */}
     </Tabs>
   );
 };

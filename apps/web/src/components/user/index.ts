@@ -1,7 +1,6 @@
 export * from './user-feed';
 
 export * from './user-posts';
-export * from './user-journal-posts';
 
 export * from './user-profile-card';
 export * from './user-follow-button';
@@ -10,7 +9,6 @@ export * from './user-followers-feed';
 export * from './user-following-feed';
 export * from './user-bookmarks';
 export * from './user-memberships';
-export * from './user-drafts-feed';
 export * from './user-settings';
 export * from './user-settings-profile-view';
 export * from './user-avatar-upload-picker';

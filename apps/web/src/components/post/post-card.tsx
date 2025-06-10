@@ -201,7 +201,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                 }
                 lat={waypoint.lat}
                 lon={waypoint.lon}
-                // className="aspect-auto w-full"
                 zoom={8}
                 markers={[
                   {
