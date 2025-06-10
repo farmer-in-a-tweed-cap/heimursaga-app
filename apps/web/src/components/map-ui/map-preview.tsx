@@ -17,6 +17,7 @@ type Props = {
   alt?: number;
   overlay?: boolean;
   zoom?: number;
+  layers?: { id: string; source: string }[];
   sources?: MapSource[];
   markers?: {
     lat: number;
@@ -34,6 +35,7 @@ export const MapPreview: React.FC<Props> = ({
   className,
   zoom = 0,
   overlay = true,
+  layers = [],
   sources = [],
   onClick = () => {},
 }) => {
@@ -77,6 +79,7 @@ export const MapPreview: React.FC<Props> = ({
                   }
                 : undefined
             }
+            layers={layers}
             sources={sources}
             minZoom={zoom}
             width={width}

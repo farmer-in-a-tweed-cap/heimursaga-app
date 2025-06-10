@@ -267,18 +267,8 @@ export const apiClient = {
       body: JSON.stringify({}),
       cookie: config ? config.cookie : undefined,
     }),
-  getUserFeed: async (config?: RequestConfig) =>
-    api.request<IPostQueryMapResponse>(API_ROUTER.USER.FEED, {
-      method: API_METHODS.GET,
-      cookie: config ? config.cookie : undefined,
-    }),
   getUserBookmarks: async (config?: RequestConfig) =>
-    api.request<IPostQueryMapResponse>(API_ROUTER.USER.BOOKMARKS, {
-      method: API_METHODS.GET,
-      cookie: config ? config.cookie : undefined,
-    }),
-  getUserDrafts: async (config?: RequestConfig) =>
-    api.request<IPostQueryMapResponse>(API_ROUTER.USER.DRAFTS, {
+    api.request<IUserPostsQueryResponse>(API_ROUTER.USER.BOOKMARKS, {
       method: API_METHODS.GET,
       cookie: config ? config.cookie : undefined,
     }),
