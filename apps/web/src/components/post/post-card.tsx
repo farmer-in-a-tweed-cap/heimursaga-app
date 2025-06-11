@@ -93,8 +93,19 @@ export const PostCard: React.FC<PostCardProps> = ({
       )}
     >
       <CardContent>
+        {href ? (
+          <Link href={href} className="z-10 absolute inset-0"></Link>
+        ) : onClick ? (
+          <div
+            className="z-10 absolute inset-0 cursor-pointer"
+            onClick={onClick}
+          ></div>
+        ) : (
+          <></>
+        )}
+
         <div className="relative flex flex-row justify-between items-center">
-          <div className="w-full flex flex-row justify-start items-center gap-3 z-20">
+          <div className="w-auto flex flex-row justify-start items-center gap-3 z-20">
             {userbar?.href ? (
               <Link
                 href={
@@ -151,17 +162,6 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
         </div>
         <div className="relative flex flex-col overflow-hidden">
-          {href ? (
-            <Link href={href} className="z-10 absolute inset-0"></Link>
-          ) : onClick ? (
-            <div
-              className="z-10 absolute inset-0 cursor-pointer"
-              onClick={onClick}
-            ></div>
-          ) : (
-            <></>
-          )}
-
           {thumbnail && (
             <div className="mt-6 w-full aspect-5/2 overflow-hidden rounded-xl">
               <Image
