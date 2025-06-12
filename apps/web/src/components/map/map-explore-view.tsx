@@ -6,7 +6,12 @@ import {
   MapSearchbarSubmitHandler,
   Searchbar,
 } from '../search';
-import { IPostDetail, MapQueryContext, UserRole } from '@repo/types';
+import {
+  IPostDetail,
+  MapQueryContext,
+  MapQueryFilterParam,
+  UserRole,
+} from '@repo/types';
 import {
   Button,
   ChipGroup,
@@ -42,6 +47,7 @@ import {
   MapSidebar,
   MapViewContainer,
   PostCard,
+  TripCard,
   UserBar,
   UserProfileCard,
 } from '@/components';
@@ -63,6 +69,7 @@ type Params = {
   postId: string | null;
   search: string | null;
   user: string | null;
+  filter: string | null;
 };
 
 const PARAMS = {
@@ -73,6 +80,7 @@ const PARAMS = {
   POST_ID: 'post_id',
   SEARCH: 'search',
   USER: 'user',
+  FILTER: 'filter',
 };
 
 const MODE = {
@@ -118,6 +126,7 @@ export const MapExploreView: React.FC<Props> = () => {
     postId: searchParams.get(PARAMS.POST_ID),
     search: searchParams.get(PARAMS.SEARCH),
     user: searchParams.get(PARAMS.USER),
+    filter: searchParams.get(PARAMS.FILTER),
   });
 
   const [_map, setMap] = useState<{
@@ -166,6 +175,12 @@ export const MapExploreView: React.FC<Props> = () => {
         ? MapQueryContext.USER
         : MapQueryContext.GLOBAL,
   );
+  const [filter, setFilter] = useState<MapQueryFilterParam>(
+    params.filter
+      ? (params.filter as MapQueryFilterParam)
+      : MapQueryFilterParam.POST,
+  );
+
   const [userId, setUserId] = useState<string | null>(params.user || null);
   const [postId, setPostId] = useState<string | null>(params.postId || null);
 
@@ -241,7 +256,7 @@ export const MapExploreView: React.FC<Props> = () => {
     postId ? postId === id : false;
 
   const updateParams = (payload: Partial<Params>) => {
-    const { lat, lon, alt, postId, search, context, user } = payload;
+    const { lat, lon, alt, postId, search, context, user, filter } = payload;
 
     const s = new URLSearchParams(searchParams.toString());
 
@@ -251,7 +266,7 @@ export const MapExploreView: React.FC<Props> = () => {
       ...payload,
     }));
 
-    const paramss = [
+    const params = [
       { key: PARAMS.LAT, value: lat },
       { key: PARAMS.LON, value: lon },
       { key: PARAMS.ALT, value: alt },
@@ -259,9 +274,10 @@ export const MapExploreView: React.FC<Props> = () => {
       { key: PARAMS.SEARCH, value: search },
       { key: PARAMS.CONTEXT, value: context },
       { key: PARAMS.USER, value: user },
+      { key: PARAMS.FILTER, value: filter },
     ];
 
-    paramss.forEach(({ key, value }) => {
+    params.forEach(({ key, value }) => {
       if (value) {
         s.set(key, `${value}`);
       } else {
@@ -323,9 +339,15 @@ export const MapExploreView: React.FC<Props> = () => {
     });
   };
 
-  const handleFilterChange = (value: string) => {
+  const handleContextChange = (value: string) => {
     setContext(value as MapQueryContext);
     updateParams({ context: value });
+    mapQuery.refetch();
+  };
+
+  const handleFilterChange = (value: string) => {
+    setFilter(value as MapQueryFilterParam);
+    updateParams({ filter: value });
     mapQuery.refetch();
   };
 
@@ -560,7 +582,7 @@ export const MapExploreView: React.FC<Props> = () => {
                     items={[
                       {
                         value: MapQueryContext.GLOBAL,
-                        label: LOCALES.APP.MAP.FILTER.ALL,
+                        label: LOCALES.APP.MAP.FILTER.GLOBAL,
                       },
                       {
                         value: MapQueryContext.FOLLOWING,
@@ -570,7 +592,7 @@ export const MapExploreView: React.FC<Props> = () => {
                     classNames={{
                       chip: 'w-auto min-w-[0px] h-[30px] py-0 px-4 desktop:px-6 rounded-full',
                     }}
-                    onSelect={handleFilterChange}
+                    onSelect={handleContextChange}
                   />
                 </div>
               )}
@@ -578,7 +600,7 @@ export const MapExploreView: React.FC<Props> = () => {
           )}
           {context === MapQueryContext.USER && (
             <div className="flex flex-col pt-4 pb-2 px-6">
-              <div className="flex flex-row">
+              <div className="flex flex-col justify-start items-start gap-3">
                 <UserProfileCard
                   name={user?.name}
                   picture={user?.picture}
@@ -588,38 +610,98 @@ export const MapExploreView: React.FC<Props> = () => {
                     click: handleUserBack,
                   }}
                 />
+                <ChipGroup
+                  value={filter}
+                  items={[
+                    {
+                      value: MapQueryFilterParam.POST,
+                      label: LOCALES.APP.MAP.FILTER.POSTS,
+                    },
+                    {
+                      value: MapQueryFilterParam.TRIP,
+                      label: LOCALES.APP.MAP.FILTER.TRIPS,
+                    },
+                  ]}
+                  classNames={{
+                    chip: 'w-auto min-w-[0px] h-[30px] py-0 px-4 desktop:px-6 rounded-full',
+                  }}
+                  onSelect={handleFilterChange}
+                />
               </div>
             </div>
           )}
           <div className="w-full h-auto flex flex-col gap-2 overflow-y-scroll no-scrollbar px-4 desktop:px-6 py-4 box-border">
-            {waypointLoading ? (
-              <LoadingSpinner />
-            ) : waypointResults >= 1 ? (
-              waypoints.map(({ date, post }, key) =>
-                post ? (
-                  <PostCard
-                    key={key}
-                    {...post}
-                    id={post.id}
-                    date={date}
-                    actions={{ like: false, bookmark: true, edit: false }}
-                    userbar={
-                      post?.author
-                        ? {
-                            click: () =>
-                              handleUserClick(post?.author?.username),
-                          }
-                        : undefined
-                    }
-                    selected={isPostSelected(post.id)}
-                    onClick={() => handlePostOpen(post.id)}
-                  />
+            {filter === MapQueryFilterParam.POST && (
+              <>
+                {waypointLoading ? (
+                  <LoadingSpinner />
+                ) : waypointResults >= 1 ? (
+                  waypoints.map(({ date, post }, key) =>
+                    post ? (
+                      <PostCard
+                        key={key}
+                        {...post}
+                        id={post.id}
+                        date={date}
+                        actions={{ like: false, bookmark: true, edit: false }}
+                        userbar={
+                          post?.author
+                            ? {
+                                click: () =>
+                                  handleUserClick(post?.author?.username),
+                              }
+                            : undefined
+                        }
+                        selected={isPostSelected(post.id)}
+                        onClick={() => handlePostOpen(post.id)}
+                      />
+                    ) : (
+                      <></>
+                    ),
+                  )
                 ) : (
-                  <></>
-                ),
-              )
-            ) : (
-              <>no posts found</>
+                  <>no posts found</>
+                )}
+              </>
+            )}
+
+            {filter === MapQueryFilterParam.TRIP && (
+              <>
+                {waypointLoading ? (
+                  <LoadingSpinner />
+                ) : waypointResults >= 1 ? (
+                  waypoints.map(({ date, post }, key) =>
+                    post ? (
+                      <TripCard
+                        key={key}
+                        variant="public"
+                        {...post}
+                        id={post.id}
+                        title="trip"
+                        startDate={dateformat().toDate()}
+                        endDate={dateformat().add(7, 'd').toDate()}
+                        waypoints={[]}
+                        // date={date}
+                        // actions={{ like: false, bookmark: true, edit: false }}
+                        // userbar={
+                        //   post?.author
+                        //     ? {
+                        //         click: () =>
+                        //           handleUserClick(post?.author?.username),
+                        //       }
+                        //     : undefined
+                        // }
+                        // selected={isPostSelected(post.id)}
+                        // onClick={() => handlePostOpen(post.id)}
+                      />
+                    ) : (
+                      <></>
+                    ),
+                  )
+                ) : (
+                  <>no trips found</>
+                )}
+              </>
             )}
           </div>
         </div>
