@@ -22,7 +22,7 @@ export class MapController {
   constructor(private mapService: MapService) {}
 
   @Public()
-  @Post('query')
+  @Post()
   @HttpCode(HttpStatus.OK)
   async query(@Body() body: MapQueryDto, @Session() session: ISession) {
     return await this.mapService.query({
