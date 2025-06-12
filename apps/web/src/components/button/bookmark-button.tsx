@@ -22,6 +22,7 @@ export const BookmarkButton: React.FC<Props> = ({
   return (
     <Button
       variant="ghost"
+      title="Bookmark"
       className={cn(
         'transition-all hover:bg-accent rounded-full',
         disabled ? '' : 'hover:bg-accent',

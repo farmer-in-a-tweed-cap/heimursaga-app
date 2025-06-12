@@ -4,7 +4,7 @@ import { CaretLineLeftIcon, CaretLineRightIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 
-import { CloseButton, UserBar } from '@/components';
+import { CloseButton, PostButtons, UserBar } from '@/components';
 import { dateformat } from '@/lib';
 import { ROUTER } from '@/router';
 
@@ -68,6 +68,15 @@ export const MapPostDrawer: React.FC<{
             </div>
             <div className="py-6">
               <NormalizedText text={post.content} />
+            </div>
+            <div>
+              <PostButtons
+                postId={post.id}
+                liked={post.liked}
+                likesCount={post.likesCount}
+                bookmarked={post.bookmarked}
+                bookmarksCount={post.bookmarksCount}
+              />
             </div>
           </div>
         ) : (
