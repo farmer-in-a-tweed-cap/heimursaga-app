@@ -92,6 +92,8 @@ const DEFAULT_MODE = MODE.MAP;
 
 const SEARCH_DEBOUNCE_INTERVAL = 500;
 
+const MAP_CHANGE_DEBOUNCE_INTERVAL = 500;
+
 type Waypoint = {
   lat: number;
   lon: number;
@@ -129,15 +131,7 @@ export const MapExploreView: React.FC<Props> = () => {
     filter: searchParams.get(PARAMS.FILTER),
   });
 
-  const [_map, setMap] = useState<{
-    lat: number;
-    lon: number;
-    alt: number;
-    bounds: {
-      sw: { lat: number; lon: number };
-      ne: { lat: number; lon: number };
-    };
-  }>({
+  const [_coordinates, setCoordinates] = useState({
     lat: params.lat
       ? parseFloat(params.lat)
       : APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
@@ -147,11 +141,14 @@ export const MapExploreView: React.FC<Props> = () => {
     alt: params.alt
       ? parseFloat(params.alt)
       : APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT,
-    bounds: { sw: { lat: 0, lon: 0 }, ne: { lat: 0, lon: 0 } },
   });
-  const [map] = useDebounce(_map, SEARCH_DEBOUNCE_INTERVAL, {
-    leading: true,
+  const [coordinates] = useDebounce(_coordinates, MAP_CHANGE_DEBOUNCE_INTERVAL);
+
+  const [_bounds, setBounds] = useState({
+    sw: { lat: 0, lon: 0 },
+    ne: { lat: 0, lon: 0 },
   });
+  const [bounds] = useDebounce(_bounds, MAP_CHANGE_DEBOUNCE_INTERVAL);
 
   const [search, setSearch] = useState<{
     query?: string;
@@ -187,10 +184,10 @@ export const MapExploreView: React.FC<Props> = () => {
   const modeRef = useRef(mode);
 
   const mapQueryEnabled: boolean = [
-    map?.bounds.ne.lat,
-    map?.bounds.ne.lon,
-    map?.bounds.sw.lat,
-    map?.bounds.sw.lon,
+    bounds.ne.lat,
+    bounds.ne.lon,
+    bounds.sw.lat,
+    bounds.sw.lon,
   ].every((el) => !!el);
 
   const mapQuery = useQuery({
@@ -199,18 +196,18 @@ export const MapExploreView: React.FC<Props> = () => {
           QUERY_KEYS.MAP.QUERY,
           context,
           userId,
-          map?.bounds.ne.lat,
-          map?.bounds.ne.lon,
-          map?.bounds.sw.lat,
-          map?.bounds.sw.lon,
+          bounds.ne.lat,
+          bounds.ne.lon,
+          bounds.sw.lat,
+          bounds.sw.lon,
         ]
       : [
           QUERY_KEYS.MAP.QUERY,
           context,
-          map?.bounds.ne.lat,
-          map?.bounds.ne.lon,
-          map?.bounds.sw.lat,
-          map?.bounds.sw.lon,
+          bounds.ne.lat,
+          bounds.ne.lon,
+          bounds.sw.lat,
+          bounds.sw.lon,
         ],
     queryFn: async () =>
       apiClient
@@ -218,7 +215,7 @@ export const MapExploreView: React.FC<Props> = () => {
           context,
           username:
             context === MapQueryContext.USER ? (userId as string) : undefined,
-          location: { bounds: map?.bounds },
+          location: { bounds },
         })
         .then(({ data }) => data),
     enabled: mapQueryEnabled,
@@ -297,18 +294,12 @@ export const MapExploreView: React.FC<Props> = () => {
 
     // set mapbox ref
     if (mapboxInstance && mapbox.ref) {
-      mapbox.ref!.current = mapboxInstance;
+      mapbox.ref.current = mapboxInstance;
     }
 
     // update query
     if (bounds) {
-      setMap((map) => ({
-        ...map,
-        bounds: {
-          sw: bounds.sw,
-          ne: bounds.ne,
-        },
-      }));
+      setBounds(bounds);
     }
   };
 
@@ -318,25 +309,17 @@ export const MapExploreView: React.FC<Props> = () => {
 
     const { lat, lon, alt, bounds } = value;
 
-    // update query
-    if (bounds) {
-      setMap((map) => ({
-        ...map,
-        bounds: {
-          sw: bounds.sw,
-          ne: bounds.ne,
-        },
-      }));
-    }
-
-    // update search params
+    // update params
     updateParams({
       lat: `${lat}`,
       lon: `${lon}`,
       alt: `${alt}`,
-      user: userId,
-      context,
     });
+
+    // update bounds
+    if (bounds) {
+      setBounds(bounds);
+    }
   };
 
   const handleContextChange = (value: string) => {
@@ -415,7 +398,7 @@ export const MapExploreView: React.FC<Props> = () => {
           updateParams({ search: query, lon: `${lon}`, lat: `${lat}` });
         }
 
-        setMap((prev) => ({ ...prev, bounds: bbox }));
+        // setMap((prev) => ({ ...prev, bounds: bbox }));
       }
     }
   };
@@ -728,15 +711,15 @@ export const MapExploreView: React.FC<Props> = () => {
             <Map
               token={mapbox.token}
               coordinates={{
-                lat: map.lat,
-                lon: map.lon,
-                alt: map.alt,
+                lat: coordinates.lat,
+                lon: coordinates.lon,
+                alt: coordinates.alt,
               }}
               bounds={[
-                map.bounds.sw.lon,
-                map.bounds.sw.lat,
-                map.bounds.ne.lon,
-                map.bounds.ne.lat,
+                bounds.sw.lon,
+                bounds.sw.lat,
+                bounds.ne.lon,
+                bounds.ne.lat,
               ]}
               minZoom={1}
               maxZoom={15}

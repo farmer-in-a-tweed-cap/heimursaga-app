@@ -9,7 +9,7 @@ export const API_ROUTER = {
   VALIDATE_TOKEN: (token: string) => `/auth/tokens/${token}`,
   GET_SESSION_USER: 'auth/user',
   MAP: {
-    QUERY: '/map/query',
+    QUERY: '/map',
     WAYPOINTS: {
       GET_BY_ID: (id: number) => `/map/waypoints/${id}`,
     },
