@@ -217,19 +217,21 @@ export const PostCard: React.FC<PostCardProps> = ({
             </div>
           )}
         </div>
-        <div className="mt-4">
-          <PostButtons
-            postId={id}
-            actions={{
-              ...actions,
-              bookmark: false,
-            }}
-            liked={liked}
-            likesCount={likesCount}
-            bookmarked={bookmarked}
-            bookmarksCount={bookmarksCount}
-          />
-        </div>
+        {(actions.like || actions.share) && (
+          <div className="mt-4">
+            <PostButtons
+              postId={id}
+              actions={{
+                ...actions,
+                bookmark: false,
+              }}
+              liked={liked}
+              likesCount={likesCount}
+              bookmarked={bookmarked}
+              bookmarksCount={bookmarksCount}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

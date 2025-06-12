@@ -35,10 +35,10 @@ const TripPublicCard: React.FC<Props> = ({
 }) => {
   return (
     <Card
-      className={cn(
-        'border-2 border-solid',
-        //  selected ? 'border-black' : 'border-transparent',
-      )}
+    // className={cn(
+    //   // 'border-2 border-solid',
+    //   //  selected ? 'border-black' : 'border-transparent',
+    // )}
     >
       <CardContent>
         {href ? (
