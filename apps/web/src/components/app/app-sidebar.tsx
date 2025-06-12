@@ -7,8 +7,8 @@ import {
   BookmarkSimpleIcon,
   ChartPieSliceIcon,
   HandCoinsIcon,
-  HouseIcon,
   IconProps,
+  MagnifyingGlassIcon,
   PathIcon,
   PencilIcon,
   WalletIcon,
@@ -56,16 +56,16 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
       {
         href: ROUTER.HOME,
         base: ROUTER.HOME,
-        label: 'Home',
-        icon: HouseIcon,
+        label: 'Explore',
+        icon: MagnifyingGlassIcon,
       },
     ],
     user: [
       {
         href: ROUTER.HOME,
         base: ROUTER.HOME,
-        label: 'Home',
-        icon: HouseIcon,
+        label: 'Explore',
+        icon: MagnifyingGlassIcon,
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
@@ -90,8 +90,8 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
       {
         href: ROUTER.HOME,
         base: ROUTER.HOME,
-        label: 'Home',
-        icon: HouseIcon,
+        label: 'Explore',
+        icon: MagnifyingGlassIcon,
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
@@ -141,7 +141,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.DASHBOARD.HOME,
         base: ROUTER.DASHBOARD.HOME,
         label: 'Dashboard',
-        icon: HouseIcon,
+        icon: MagnifyingGlassIcon,
       },
     ],
   };

@@ -4,8 +4,8 @@ import { UserAvatar } from '../user';
 import { UserRole } from '@repo/types';
 import {
   BookmarkSimpleIcon,
-  HouseIcon,
   IconProps,
+  MagnifyingGlassIcon,
   PencilIcon,
   PlusIcon,
   UserIcon,
@@ -33,8 +33,8 @@ export const BottomNavbar: React.FC<Props> = () => {
     guest: [
       {
         href: ROUTER.HOME,
-        icon: (props) => <HouseIcon {...props} />,
-        label: 'Home',
+        icon: (props) => <MagnifyingGlassIcon {...props} />,
+        label: 'Explore',
       },
       {
         href: ROUTER.LOGIN,
@@ -45,8 +45,8 @@ export const BottomNavbar: React.FC<Props> = () => {
     user: [
       {
         href: ROUTER.HOME,
-        icon: (props) => <HouseIcon {...props} />,
-        label: 'Home',
+        icon: (props) => <MagnifyingGlassIcon {...props} />,
+        label: 'Explore',
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
