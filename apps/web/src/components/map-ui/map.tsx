@@ -2,6 +2,7 @@
 
 import { cn } from '@repo/ui/lib/utils';
 import mapboxgl, {
+  MapEvent,
   MapMouseEvent,
   MapOptions,
   MapTouchEvent,
@@ -177,8 +178,11 @@ export const Map: React.FC<Props> = ({
   const showPopupRef = useRef<boolean>(false);
   const hoverPopupRef = useRef<boolean>(false);
   const waypointDraggableRef = useRef(waypointDraggable);
-  const mapUpdatingExternallyRef = useRef(mapUpdatingExternally);
-  const mapUpdatingInternallyRef = useRef(mapUpdatingInternally);
+
+  const isInternalUpdate = useRef<boolean>(false);
+
+  // const mapUpdatingExternallyRef = useRef(mapUpdatingExternally);
+  // const mapUpdatingInternallyRef = useRef(mapUpdatingInternally);
 
   const hoveredPointIdRef = useRef<string | null>(null);
   const hoveredClusterIdRef = useRef<string | null>(null);
@@ -188,41 +192,46 @@ export const Map: React.FC<Props> = ({
     return <></>;
   }
 
-  const handleMapMove = () => {
+  const handleLoad: MapOnLoadHandler = (data) => {
     if (!mapboxRef.current) return;
 
-    // skip if map is updating externally
-    if (mapUpdatingExternallyRef.current) return;
+    const { viewport, bounds } = data;
 
-    mapUpdatingInternallyRef.current = true;
+    if (onLoad) {
+      onLoad({
+        mapbox: mapboxRef.current,
+        viewport,
+        bounds,
+      });
+    }
+  };
+
+  const handleMove = () => {
+    if (!mapboxRef.current) return;
+
+    isInternalUpdate.current = true;
 
     // get coordinates
-    const { lng: lon, lat } = mapboxRef.current!.getCenter();
-    const alt = mapboxRef.current!.getZoom();
+    const { lng: lon, lat } = mapboxRef.current.getCenter();
+    const alt = mapboxRef.current.getZoom();
 
-    // get bounds
-    const bounds = mapboxRef.current!.getBounds();
-    const ne = bounds?.getNorthEast(); // northeast corner
-    const sw = bounds?.getSouthWest(); // southwest corner
+    // // get bounds
+    const bbx = mapboxRef.current!.getBounds();
+    const ne = bbx?.getNorthEast();
+    const sw = bbx?.getSouthWest();
+    const bounds =
+      ne && sw
+        ? {
+            ne: { lat: ne.lat, lon: ne.lng },
+            sw: { lat: sw.lat, lon: sw.lng },
+          }
+        : undefined;
 
     // update state
     if (onMove) {
-      onMove({
-        lat,
-        lon,
-        alt,
-        bounds:
-          ne && sw
-            ? {
-                ne: { lat: ne.lat, lon: ne.lng },
-                sw: { lat: sw.lat, lon: sw.lng },
-              }
-            : undefined,
-      });
+      console.log('map: onmove', bounds);
+      onMove({ lat, lon, alt, bounds });
     }
-    setTimeout(() => {
-      mapUpdatingInternallyRef.current = false;
-    }, 500);
   };
 
   const handleWaypointClick = ({
@@ -420,42 +429,21 @@ export const Map: React.FC<Props> = ({
   // update bounds on change
   useEffect(() => {
     if (!mapboxRef.current || !mapLoaded || !bounds) return;
-    if (mapUpdatingInternallyRef.current) return;
 
-    mapUpdatingExternallyRef.current = true;
+    // @todo
+    // fit bounds
+    if (!isInternalUpdate.current) {
+      console.log('map: bounds', bounds);
 
-    console.log('bounds:', bounds);
-
-    mapboxRef.current.fitBounds(bounds, {
-      duration: 200,
-      easing: (t) => t,
-      padding: 0,
-    });
-
-    setTimeout(() => {
-      mapUpdatingExternallyRef.current = false;
-    }, 500);
-  }, [bounds]);
-
-  // update coordinates on change
-  useEffect(() => {
-    if (!mapboxRef.current || !mapLoaded) return;
-
-    const { lat, lon, alt } = coordinates;
-
-    if (disabled) {
-      mapboxRef.current.setCenter([lon, lat]);
-      mapboxRef.current.setZoom(alt);
+      // mapboxRef.current.bounds(bounds, {
+      //   duration: 100,
+      //   padding: 0,
+      //   // easing: (t) => t,
+      // });
     }
-  }, [coordinates]);
 
-  // useEffect(() => {
-  //   mapUpdatingExternallyRef.current = mapUpdatingExternally;
-  // }, [mapUpdatingExternally]);
-
-  // useEffect(() => {
-  //   mapUpdatingInternallyRef.current = mapUpdatingInternally;
-  // }, [mapUpdatingInternally]);
+    isInternalUpdate.current = false;
+  }, [bounds]);
 
   // update a marker on change
   useEffect(() => {
@@ -599,19 +587,17 @@ export const Map: React.FC<Props> = ({
       const sw = bounds?.getSouthWest(); // southwest corner
 
       // set initial props
-      if (onLoad) {
-        onLoad({
-          mapbox: mapboxRef.current,
-          viewport: { lat: center.lat, lon: center.lng },
-          bounds:
-            ne && sw
-              ? {
-                  ne: { lat: ne.lat, lon: ne.lng },
-                  sw: { lat: sw.lat, lon: sw.lng },
-                }
-              : undefined,
-        });
-      }
+      handleLoad({
+        mapbox: mapboxRef.current,
+        viewport: { lat: center.lat, lon: center.lng },
+        bounds:
+          ne && sw
+            ? {
+                ne: { lat: ne.lat, lon: ne.lng },
+                sw: { lat: sw.lat, lon: sw.lng },
+              }
+            : undefined,
+      });
 
       // add sources
       if (sources) {
@@ -864,9 +850,9 @@ export const Map: React.FC<Props> = ({
       }
     });
 
-    mapboxRef.current.on('moveend', handleMapMove);
+    mapboxRef.current.on('moveend', handleMove);
 
-    mapboxRef.current.on('zoomend', handleMapMove);
+    mapboxRef.current.on('zoomend', handleMove);
 
     mapboxRef.current!.on('click', MAP_LAYERS.WAYPOINTS, (event) =>
       handleWaypointClick({ event, source: MAP_SOURCES.WAYPOINTS }),
@@ -1073,9 +1059,9 @@ export const Map: React.FC<Props> = ({
 
   return (
     <div className={cn(className, 'relative w-full h-full')}>
-      <div className="absolute bottom-5 right-5 z-20 bg-white text-black text-xs">
-        {/* {JSON.stringify({ d: waypointDraggable })} */}
-      </div>
+      {/* <div className="absolute bottom-5 right-5 z-20 bg-white text-black text-xs">
+        {JSON.stringify({ d: waypointDraggable })}
+      </div> */}
       <div
         id="map-container"
         ref={mapboxContainerRef}
