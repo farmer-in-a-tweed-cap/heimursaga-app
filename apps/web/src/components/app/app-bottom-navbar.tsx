@@ -25,7 +25,7 @@ type NavLink = {
   label?: string;
 };
 
-export const BottomNavbar: React.FC<Props> = () => {
+export const AppBottomNavbar: React.FC<Props> = () => {
   const { role, logged, username, ...user } = useSession();
   const pathname = usePathname();
 

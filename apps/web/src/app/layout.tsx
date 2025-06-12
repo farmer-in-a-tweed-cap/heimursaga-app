@@ -9,10 +9,10 @@ import { redirect } from 'next/navigation';
 import { apiClient } from '@/lib/api';
 
 import {
+  AppBottomNavbar,
   AppFooter,
   AppProvider,
   AppSidebar,
-  BottomNavbar,
   IAppContextStateConfig,
   Logo,
 } from '@/components';
@@ -94,7 +94,7 @@ export const AppLayout = ({
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
           <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
-            <BottomNavbar />
+            <AppBottomNavbar />
           </div>
           <div className="z-10 w-full h-auto flex flex-col pb-[70px]">
             <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
@@ -116,13 +116,13 @@ export const MapLayout = ({
 }) => {
   return (
     <SessionLayout secure={secure}>
-      <div className="w-full bg-background text-black flex flex-row">
+      <div className="w-full h-dvh bg-background text-black flex flex-row overflow-hidden">
         <AppSidebar collapsed={true} />
         <div className="relative w-full h-dvh flex flex-col justify-start">
           <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
-            <BottomNavbar />
+            <AppBottomNavbar />
           </div>
-          <div className="z-10 w-full h-full relative pb-[70px] desktop:pb-0">
+          <div className="z-10 w-full h-dvh relative pb-[70px] desktop:pb-0">
             {children}
           </div>
         </div>
