@@ -134,24 +134,19 @@ export class TripService {
   }
 
   async getTripsByUsername({
-    session,
     query,
   }: IQueryWithSession<{ username: string }>): Promise<ITripGetAllResponse> {
     try {
       const { username } = query;
-      const { userRole } = session;
 
       if (!username) throw new ServiceNotFoundException('user not found');
 
-      // get the user
-      const user = await this.prisma.user.findFirstOrThrow({
-        where: { username },
-      });
-
       // get trips
-      let where: Prisma.TripWhereInput = {
+      const where = {
+        author: { username },
+        public: true,
         deleted_at: null,
-      };
+      } satisfies Prisma.TripWhereInput;
 
       const take = 50;
 
@@ -174,6 +169,12 @@ export class TripService {
               },
             },
           },
+          author: {
+            select: {
+              username: true,
+              profile: { select: { picture: true, name: true } },
+            },
+          },
         },
         take,
         orderBy: [{ id: 'desc' }],
@@ -181,29 +182,38 @@ export class TripService {
 
       const response: ITripGetAllResponse = {
         results,
-        data: data.map(({ public_id, title, ...trip }) => {
-          const waypoints = sortByKey({
-            elements: trip.waypoints.map(({ waypoint }) => ({ ...waypoint })),
-            key: 'date',
-            order: 'asc',
-          }) as IWaypointDetail[];
+        data: data
+          .filter(({ waypoints }) => waypoints.length > 1)
+          .map(({ public_id, title, author, ...trip }) => {
+            const waypoints = sortByKey({
+              elements: trip.waypoints.map(({ waypoint }) => ({ ...waypoint })),
+              key: 'date',
+              order: 'asc',
+            }) as IWaypointDetail[];
 
-          const startDate =
-            waypoints.length >= 1 ? waypoints[0]?.date : undefined;
-          const endDate =
-            waypoints.length >= 1
-              ? waypoints[waypoints.length - 1]?.date
-              : undefined;
+            const startDate =
+              waypoints.length >= 1 ? waypoints[0]?.date : undefined;
+            const endDate =
+              waypoints.length >= 1
+                ? waypoints[waypoints.length - 1]?.date
+                : undefined;
 
-          return {
-            id: public_id,
-            title,
-            startDate,
-            endDate,
-            waypointsCount: waypoints.length,
-            waypoints: [],
-          };
-        }),
+            return {
+              id: public_id,
+              title,
+              startDate,
+              endDate,
+              waypointsCount: waypoints.length,
+              waypoints: [],
+              author: author
+                ? {
+                    username: author.username,
+                    picture: getStaticMediaUrl(author.profile.picture),
+                    name: author.profile.name,
+                  }
+                : undefined,
+            };
+          }),
       };
 
       return response;
