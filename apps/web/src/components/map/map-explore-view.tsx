@@ -433,6 +433,7 @@ export const MapExploreView: React.FC<Props> = () => {
     updateParams({
       context: MapQueryContext.GLOBAL,
       user: null,
+      filter: null,
     });
 
     mapQuery.refetch();
