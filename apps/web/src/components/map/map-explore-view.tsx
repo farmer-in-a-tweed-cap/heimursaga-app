@@ -241,6 +241,15 @@ export const MapExploreView: React.FC<Props> = () => {
     enabled: !!postId,
   });
 
+  const tripQuery = useQuery({
+    queryKey: [QUERY_KEYS.TRIPS, userId],
+    queryFn: async () =>
+      apiClient
+        .getTripsByUsername({ username: userId as string })
+        .then(({ data }) => data),
+    enabled: !!userId && filter === MapQueryFilterParam.TRIP,
+  });
+
   const post = postQuery?.data;
   const postLoading = postQuery.isLoading;
 
@@ -650,20 +659,21 @@ export const MapExploreView: React.FC<Props> = () => {
 
             {filter === MapQueryFilterParam.TRIP && (
               <>
-                {waypointLoading ? (
+                {tripQuery.isLoading || tripQuery.isPending ? (
                   <LoadingSpinner />
-                ) : waypointResults >= 1 ? (
-                  waypoints.map(({ date, post }, key) =>
-                    post ? (
+                ) : (tripQuery.data?.results || 0) >= 1 ? (
+                  (tripQuery.data?.data || []).map(
+                    ({ id, title, startDate, endDate, author }, key) => (
                       <TripCard
                         key={key}
+                        href={ROUTER.MAP.TRIPS.DETAIL(id)}
                         variant="public"
-                        {...post}
-                        id={post.id}
-                        title="trip"
-                        startDate={dateformat().toDate()}
-                        endDate={dateformat().add(7, 'd').toDate()}
+                        id={id}
+                        title={title}
+                        startDate={startDate}
+                        endDate={endDate}
                         waypoints={[]}
+                        author={author}
                         // date={date}
                         // actions={{ like: false, bookmark: true, edit: false }}
                         // userbar={
@@ -677,8 +687,6 @@ export const MapExploreView: React.FC<Props> = () => {
                         // selected={isPostSelected(post.id)}
                         // onClick={() => handlePostOpen(post.id)}
                       />
-                    ) : (
-                      <></>
                     ),
                   )
                 ) : (

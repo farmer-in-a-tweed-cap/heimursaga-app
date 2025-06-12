@@ -7,18 +7,29 @@ import { MapLayout } from '@/app/layout';
 
 import { MapTripView, PageNotFound } from '@/components';
 
-export const metadata: Metadata = {
-  title: 'Trip',
-};
-
 type Props = {
   params: {
     trip_id: string;
   };
 };
 
+export const generateMetadata = async ({
+  params,
+}: Props): Promise<Metadata> => {
+  const tripId = params.trip_id;
+  const cookie = cookies().toString();
+
+  const trip = await apiClient
+    .getTripById({ query: { tripId } }, { cookie })
+    .then(({ data }) => data);
+
+  return {
+    title: trip ? `${trip.title}` : 'Trip',
+  };
+};
+
 export default async function Page({ params }: Props) {
-  const cookie = await cookies().toString();
+  const cookie = cookies().toString();
   const tripId = params.trip_id;
 
   const trip = await apiClient

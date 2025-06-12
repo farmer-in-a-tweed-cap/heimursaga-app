@@ -36,7 +36,7 @@ export default async function Page({ params }: Props) {
   );
 
   return (
-    <AppLayout secure={true}>
+    <AppLayout secure={false}>
       {success && data ? (
         <div className="w-full max-w-3xl">
           <PostCard

@@ -8,6 +8,7 @@ import { dateformat } from '@/lib';
 
 type Props = {
   href?: string;
+  userbar?: boolean;
   onClick?: () => void;
 } & ITripDetail;
 
@@ -29,6 +30,7 @@ const TripPublicCard: React.FC<Props> = ({
   startDate,
   endDate,
   author,
+  userbar,
   onClick,
 }) => {
   return (
@@ -52,12 +54,14 @@ const TripPublicCard: React.FC<Props> = ({
 
         <div className="relative flex flex-row justify-between items-center">
           <div className="w-auto flex flex-row justify-start items-center gap-3 z-20">
-            <UserBar
-              name={author?.name}
-              picture={author?.picture}
-              creator={author?.creator}
-              text={dateformat(startDate).format('MMM DD')}
-            />
+            {userbar && (
+              <UserBar
+                name={author?.name}
+                picture={author?.picture}
+                creator={author?.creator}
+                text={`${dateformat(startDate).format('MMM DD')}-${dateformat(endDate).format('MMM DD')}`}
+              />
+            )}
 
             {/* {userbar?.href ? (
                <Link
@@ -87,90 +91,14 @@ const TripPublicCard: React.FC<Props> = ({
                </div>
              )} */}
           </div>
-          {/* <div className="z-20 flex flex-row items-center gap-2">
-             {me ? (
-               <>
-                 {actions?.edit && <PostEditButton postId={id} />}
-                 {actions?.bookmark && (
-                   <PostBookmarkButton
-                     postId={id}
-                     bookmarked={bookmarked}
-                     bookmarksCount={bookmarksCount}
-                     disableCount={true}
-                   />
-                 )}
-               </>
-             ) : (
-               <>
-                 {actions?.bookmark && (
-                   <PostBookmarkButton
-                     postId={id}
-                     bookmarked={bookmarked}
-                     bookmarksCount={bookmarksCount}
-                     disableCount={true}
-                   />
-                 )}
-               </>
-             )}
-           </div> */}
         </div>
-        <div className="relative flex flex-col overflow-hidden">
-          {/* {thumbnail && (
-             <div className="mt-6 w-full aspect-5/2 overflow-hidden rounded-xl">
-               <Image
-                 src={thumbnail || ''}
-                 width={400}
-                 height={300}
-                 className="w-full h-auto"
-                 alt=""
-               />
-             </div>
-           )} */}
-          <div className="mt-6 flex flex-col">
-            <span
-            //  className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
-            >
-              {title}
-            </span>
-            {/* <div className={extended ? 'mt-6' : 'mt-2'}>
-               {extended ? (
-                 <NormalizedText text={content} />
-               ) : (
-                 <p className="break-all">
-                   {content.length <= 80
-                     ? content.split('\\n').join('')
-                     : `${content.split('\\n').join('').slice(0, 80)}..`}
-                 </p>
-               )}
-             </div> */}
-          </div>
-          {/* {waypoint && (
-             <div className="mt-6">
-               <MapStaticPreview
-                 href={
-                   id
-                     ? `${ROUTER.EXPLORE.HOME}?lat=${waypoint.lat}&lon=${waypoint.lon}&alt=12`
-                     : '#'
-                 }
-                 lat={waypoint.lat}
-                 lon={waypoint.lon}
-                 zoom={8}
-                 markers={[
-                   {
-                     lat: waypoint.lat,
-                     lon: waypoint.lon,
-                   },
-                 ]}
-               />
-             </div>
-           )} */}
+        <div className="flex flex-col gap-1 justify-start items-start">
+          <span className="font-medium text-lg text-black">{title}</span>
+          <span className="text-xs text-gray-500">
+            {dateformat(startDate).format('MMM DD')} -{' '}
+            {dateformat(endDate).format('MMM DD')}
+          </span>
         </div>
-
-        {/* {actions?.like && (
-           <div className="z-20 mt-6 w-auto flex flex-row gap-1">
-             <PostLikeButton postId={id} likesCount={likesCount} liked={liked} />
-           </div>
-         )} */}
       </CardContent>
     </Card>
   );
