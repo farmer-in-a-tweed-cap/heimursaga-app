@@ -87,6 +87,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     session.username && author.username
       ? author.username === session.username
       : false;
+
   return (
     <Card
       className={cn(
@@ -136,32 +137,34 @@ export const PostCard: React.FC<PostCardProps> = ({
               </div>
             )}
           </div>
-          <div className="z-20 flex flex-row items-center gap-2">
-            {me ? (
-              <>
-                {actions?.edit && <PostEditButton postId={id} />}
-                {actions?.bookmark && (
-                  <PostBookmarkButton
-                    postId={id}
-                    bookmarked={bookmarked}
-                    bookmarksCount={bookmarksCount}
-                    disableCount={true}
-                  />
-                )}
-              </>
-            ) : (
-              <>
-                {actions?.bookmark && (
-                  <PostBookmarkButton
-                    postId={id}
-                    bookmarked={bookmarked}
-                    bookmarksCount={bookmarksCount}
-                    disableCount={true}
-                  />
-                )}
-              </>
-            )}
-          </div>
+          {session.logged && (
+            <div className="z-20 flex flex-row items-center gap-2">
+              {me ? (
+                <>
+                  {actions?.edit && <PostEditButton postId={id} />}
+                  {actions?.bookmark && (
+                    <PostBookmarkButton
+                      postId={id}
+                      bookmarked={bookmarked}
+                      bookmarksCount={bookmarksCount}
+                      disableCount={true}
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  {actions?.bookmark && (
+                    <PostBookmarkButton
+                      postId={id}
+                      bookmarked={bookmarked}
+                      bookmarksCount={bookmarksCount}
+                      disableCount={true}
+                    />
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
         <div className="relative flex flex-col overflow-hidden">
           {thumbnail && (
@@ -198,7 +201,7 @@ export const PostCard: React.FC<PostCardProps> = ({
               <MapStaticPreview
                 href={
                   id
-                    ? `${ROUTER.EXPLORE.HOME}?lat=${waypoint.lat}&lon=${waypoint.lon}&alt=12`
+                    ? `${ROUTER.HOME}?lat=${waypoint.lat}&lon=${waypoint.lon}&alt=12`
                     : '#'
                 }
                 lat={waypoint.lat}

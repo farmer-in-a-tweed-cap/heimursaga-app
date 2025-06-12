@@ -16,6 +16,11 @@ export const ROUTER = {
   BOOKMARKS: {
     HOME: '/bookmarks',
   },
+  MAP: {
+    TRIPS: {
+      DETAIL: (id: string) => `/map/trip/${id}`,
+    },
+  },
   SPONSORSHIP: {
     ROOT: '/sponsorship',
     HOME: '/sponsorship/tiers',

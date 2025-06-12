@@ -553,6 +553,14 @@ export const apiClient = {
       method: API_METHODS.GET,
       ...config,
     }),
+  getTripsByUsername: async (
+    { username }: { username: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<ITripGetAllResponse>(API_ROUTER.USERS.TRIPS(username), {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   getTripById: async (
     { query }: IApiClientQuery<{ tripId: string }>,
     config?: RequestConfig,
