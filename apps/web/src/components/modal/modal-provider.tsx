@@ -38,8 +38,8 @@ const preloadedComponents: Record<string, ModalComponent> = {};
 
 const preloadModal = async (id: string) => {
   if (!preloadedComponents[id] && modalRegistry[id]) {
-    const module = await modalRegistry[id]();
-    preloadedComponents[id] = module.default;
+    const modal = await modalRegistry[id]();
+    preloadedComponents[id] = modal.default;
   }
 };
 
