@@ -3,8 +3,8 @@ import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
 import { ToNumber } from './decorators';
 
 export class ParamIdDto {
-  @IsNumber()
   @ToNumber()
+  @IsNumber()
   @IsNotEmpty()
   id: number;
 }
