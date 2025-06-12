@@ -187,7 +187,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-4">
-        <div>
+        <div className="w-full h-auto">
           <MapPreview
             lat={location.marker ? location.marker?.lat : location.lat}
             lon={location.marker ? location.marker?.lon : location.lon}

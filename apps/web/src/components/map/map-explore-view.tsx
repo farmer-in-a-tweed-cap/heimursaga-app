@@ -511,7 +511,7 @@ export const MapExploreView: React.FC<Props> = () => {
   }, []);
 
   return (
-    <div className="relative w-full h-dvh overflow-hidden flex flex-row justify-between bg-white">
+    <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
       <div className="z-40 absolute left-0 right-0 bottom-5 flex desktop:hidden flex-row justify-center items-center">
         {mode === MODE.LIST && (
           <Button onClick={handleModeToggle}>
