@@ -584,6 +584,12 @@ export interface ITripDetail {
   description?: string;
   waypoints: IWaypointDetail[];
   waypointsCount?: number;
+  author?: {
+    username: string;
+    name: string;
+    picture: string;
+    creator?: boolean;
+  };
 }
 
 export interface ITripGetAllResponse {

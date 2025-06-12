@@ -9,8 +9,10 @@ export const LOCALES = {
     },
     MAP: {
       FILTER: {
-        ALL: 'Global',
+        GLOBAL: 'Global',
         FOLLOWING: 'Following',
+        POSTS: 'Posts',
+        TRIPS: 'Trips',
       },
     },
     PAYMENT_METHOD: {

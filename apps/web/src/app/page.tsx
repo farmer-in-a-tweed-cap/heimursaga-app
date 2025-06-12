@@ -11,9 +11,7 @@ export const metadata: Metadata = {
 export default async function Page() {
   return (
     <MapLayout secure={false}>
-      <div className="w-full h-full flex flex-col justify-start items-center">
-        <MapExploreView />
-      </div>
+      <MapExploreView />
     </MapLayout>
   );
 }
