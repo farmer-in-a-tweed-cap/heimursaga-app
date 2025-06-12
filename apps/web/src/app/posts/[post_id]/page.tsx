@@ -45,8 +45,14 @@ export default async function Page({ params }: Props) {
             content={data.content}
             author={data.author}
             waypoint={data.waypoint}
+            liked={data.liked}
+            likesCount={data.likesCount}
+            bookmarked={data.bookmarked}
+            bookmarksCount={data.bookmarksCount}
             actions={
-              data.createdByMe ? { edit: true } : { like: true, bookmark: true }
+              data.createdByMe
+                ? { edit: true }
+                : { like: true, bookmark: true, share: true }
             }
             extended
           />

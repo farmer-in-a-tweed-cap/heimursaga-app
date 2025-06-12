@@ -24,6 +24,7 @@ export const LikeButton: React.FC<Props> = ({
         'transition-all hover:bg-accent rounded-full h-[32px]',
         disabled ? '' : 'hover:bg-accent',
       )}
+      title="Like"
       size="sm"
       disabled={disabled}
       onClick={disabled ? () => {} : onClick}

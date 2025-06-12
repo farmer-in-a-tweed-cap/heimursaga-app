@@ -7,7 +7,7 @@ import Link from 'next/link';
 
 import { dateformat } from '@/lib/date-format';
 
-import { MapStaticPreview, UserBar } from '@/components';
+import { MapStaticPreview, PostButtons, UserBar } from '@/components';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
@@ -39,6 +39,7 @@ export type PostCardProps = {
     like?: boolean;
     bookmark?: boolean;
     edit?: boolean;
+    share?: boolean;
   };
   bookmarked?: boolean;
   bookmarksCount?: number;
@@ -74,6 +75,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     like: true,
     bookmark: true,
     edit: false,
+    share: false,
   },
   userbar,
   extended = false,
@@ -212,12 +214,19 @@ export const PostCard: React.FC<PostCardProps> = ({
             </div>
           )}
         </div>
-
-        {actions?.like && (
-          <div className="z-20 mt-6 w-auto flex flex-row gap-1">
-            <PostLikeButton postId={id} likesCount={likesCount} liked={liked} />
-          </div>
-        )}
+        <div className="mt-4">
+          <PostButtons
+            postId={id}
+            actions={{
+              ...actions,
+              bookmark: false,
+            }}
+            liked={liked}
+            likesCount={likesCount}
+            bookmarked={bookmarked}
+            bookmarksCount={bookmarksCount}
+          />
+        </div>
       </CardContent>
     </Card>
   );
