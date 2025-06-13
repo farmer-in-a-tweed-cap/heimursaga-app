@@ -329,7 +329,7 @@ export interface IPostQueryMapResponse {
 export interface IMapQueryPayload {
   location?: IMapQueryLocation;
   limit?: number;
-  context?: MapQueryContext;
+  context?: string;
   page?: number;
   username?: string;
 }

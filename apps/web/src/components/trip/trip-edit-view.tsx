@@ -25,7 +25,9 @@ import {
   MAP_SOURCES,
   Map,
   MapOnMoveHandler,
+  MapSidebar,
   MapSourceData,
+  MapViewContainer,
   TripWaypointCard,
   TripWaypointCardClickHandler,
   TripWaypointCreateForm,
@@ -33,7 +35,7 @@ import {
   TripWaypointEditForm,
   TripWaypointEditFormState,
 } from '@/components';
-import { useMapbox } from '@/hooks';
+import { useMap, useMapbox } from '@/hooks';
 import { dateformat, sortByDate, zodMessage } from '@/lib';
 
 type WaypointElement = {
@@ -67,7 +69,10 @@ type Props = {
 
 export const TripEditView: React.FC<Props> = ({ trip }) => {
   const mapbox = useMapbox();
-  const router = useRouter();
+  const map = useMap({
+    mapbox: mapbox.ref.current,
+    sidebar: true,
+  });
 
   const [state, setState] = useState<{
     waypointCreating: boolean;
@@ -106,7 +111,9 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
       : [],
   );
 
-  const { waypointCreating, waypointEditing, waypointEditingId } = state;
+  const [waypointEditing, setWaypointEditing] = useState<WaypointElement>();
+
+  const { waypointCreating, waypointEditingId } = state;
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -278,217 +285,228 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
   );
 
   return (
-    <div className="w-full h-full flex flex-row justify-between bg-white">
-      <div className="w-full relative h-full hidden sm:flex overflow-hidden">
-        <div className="basis-4/12 relative flex flex-col h-dvh">
-          <div className="relative h-full flex flex-col justify-start items-start px-6 bg-white overflow-y-scroll">
-            <div className="w-full h-full flex flex-col justify-between gap-10 box-border">
-              <div className="flex flex-col gap-10">
-                <div className="flex flex-col justify-start pt-6 items-start gap-2">
-                  <h1 className="text-xl font-medium">Edit trip</h1>
-                  <span className="font-normal text-base text-gray-700">
-                    Easily plan the perfect path for your next trip.
-                  </span>
-                </div>
-                <div className="flex flex-col">
-                  <h2 className="text-xl font-medium">Trip</h2>
-                  <div className="mt-6 flex flex-col gap-6">
-                    <Form {...form}>
-                      <form id={FORM_ID} onSubmit={handleSubmit}>
-                        <FormField
-                          control={form.control}
-                          name="title"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Title</FormLabel>
-                              <FormControl>
-                                <Input
-                                  disabled={loading.trip}
-                                  required
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        {/* <FormField
-                        control={form.control}
-                        name="description"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Description</FormLabel>
-                            <FormControl>
-                              <Input disabled={loading} required {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      /> */}
-                      </form>
-                    </Form>
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <h2 className="text-xl font-medium">Waypoints</h2>
-                  <div className="mt-4 flex flex-col">
-                    <div className="flex flex-col gap-2">
-                      {waypoints.map(
-                        ({ id, title, lat, lon, date, post }, key) =>
-                          waypointEditingId === id ? (
-                            <div
-                              key={key}
-                              className="py-4 border-b border-solid border-accent"
-                            >
-                              <TripWaypointEditForm
-                                defaultValues={{ title, lat, lon, date }}
-                                loading={loading.waypoint}
-                                onSubmit={(data) =>
-                                  handleWaypointEditSubmit(id, data)
-                                }
-                                onCancel={handleWaypointEditCancel}
-                              />
-                            </div>
-                          ) : (
-                            <TripWaypointCard
-                              key={key + 1}
-                              id={id}
-                              orderIndex={key + 1}
-                              title={title}
-                              lat={lat}
-                              lon={lon}
-                              date={date}
-                              post={post}
-                              onEdit={handleWaypointEdit}
-                              onDelete={handleWaypointDelete}
-                            />
-                          ),
-                      )}
-                    </div>
-                    {waypointCreating && (
-                      <div className="py-4 border-b border-solid border-accent">
-                        <TripWaypointCreateForm
-                          loading={loading.waypoint}
-                          defaultProps={{
-                            lat: viewport.lat,
-                            lon: viewport.lon,
-                          }}
-                          onSubmit={handleWaypointCreateSubmit}
-                          onCancel={handleWaypointCreateCancel}
-                        />
-                      </div>
-                    )}
-                    {!waypointCreating && !waypointEditing && (
-                      <div className="mt-6 flex flex-col">
-                        <Button
-                          variant="secondary"
-                          onClick={handleWaypointCreate}
-                        >
-                          Add waypoint
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background py-4 box-border">
-                <Button
-                  size="lg"
-                  type="submit"
-                  form={FORM_ID}
-                  loading={loading.trip}
-                >
-                  Save changes
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div
-          className={cn(
-            'basis-8/12 z-40 relative overflow-hidden rounded-l-2xl',
-          )}
-        >
-          <div className={cn('z-10 relative !w-full h-full overflow-hidden')}>
-            {mapbox.token && (
-              <Map
-                token={mapbox.token}
-                layers={[
-                  {
-                    id: MAP_LAYERS.WAYPOINT_LINES,
-                    source: MAP_SOURCES.WAYPOINT_LINES,
-                  },
-                  {
-                    id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
-                    source: MAP_SOURCES.WAYPOINTS,
-                  },
-                  {
-                    id: MAP_LAYERS.WAYPOINT_ORDER_NUMBERS,
-                    source: MAP_SOURCES.WAYPOINTS,
-                  },
-                ]}
-                sources={[
-                  {
-                    sourceId: MAP_SOURCES.WAYPOINTS,
-                    type: 'point',
-                    data: waypoints.map(
-                      ({ id, title, date, lat, lon }, key) => ({
-                        id: `${id}`,
-                        lat,
-                        lon,
-                        properties: {
-                          index: key + 1,
-                          id,
-                          title,
-                          date,
-                        },
-                      }),
-                    ),
-                    config: {
-                      cluster: false,
-                    },
-                    onChange: (
-                      data: MapSourceData<{
-                        id: number;
-                        title: string;
-                        date: Date;
-                      }>[],
-                    ) => {
-                      setWaypoints(
-                        data.map(({ id, lat, lon, properties }) => ({
-                          lat,
-                          lon,
-                          id: properties.id,
-                          title: properties.title,
-                          date: properties.date,
-                        })),
-                      );
-                    },
-                  },
-                  {
-                    sourceId: MAP_SOURCES.WAYPOINT_LINES,
-                    type: 'line',
-                    data: waypoints.map(({ id, lat, lon }) => ({
-                      id: `${id}`,
-                      lat,
-                      lon,
-                      properties: {},
-                    })),
-                  },
-                ]}
-                onLoad={({ viewport }) =>
-                  handleViewportChange({
-                    lat: viewport.lat,
-                    lon: viewport.lon,
-                    alt: 0,
-                  })
-                }
-                onMove={handleViewportChange}
-              />
-            )}
-          </div>
-        </div>
-      </div>
+    <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
+      <MapSidebar opened={map.sidebar} view={map.view}>
+        sidebar
+      </MapSidebar>
+      <MapViewContainer
+        extended={!map.sidebar}
+        onExtend={map.handleSidebarToggle}
+      >
+        {mapbox.token && <Map token={mapbox.token} />}
+      </MapViewContainer>
     </div>
+    // <div className="w-full h-full flex flex-row justify-between bg-white">
+    //   <div className="w-full relative h-full hidden sm:flex overflow-hidden">
+    //     <div className="basis-4/12 relative flex flex-col h-dvh">
+    //       <div className="relative h-full flex flex-col justify-start items-start px-6 bg-white overflow-y-scroll">
+    //         <div className="w-full h-full flex flex-col justify-between gap-10 box-border">
+    //           <div className="flex flex-col gap-10">
+    //             <div className="flex flex-col justify-start pt-6 items-start gap-2">
+    //               <h2 className="text-xl font-medium">Trip</h2>
+    //             </div>
+    //             <span className="break-all text-xs">
+    //               {JSON.stringify({ v: viewport })}
+    //             </span>
+    //             <div className="flex flex-col">
+    //               <h2 className="text-xl font-medium">Trip</h2>
+    //               <div className="mt-6 flex flex-col gap-6">
+    //                 <Form {...form}>
+    //                   <form id={FORM_ID} onSubmit={handleSubmit}>
+    //                     <FormField
+    //                       control={form.control}
+    //                       name="title"
+    //                       render={({ field }) => (
+    //                         <FormItem>
+    //                           <FormLabel>Title</FormLabel>
+    //                           <FormControl>
+    //                             <Input
+    //                               disabled={loading.trip}
+    //                               required
+    //                               {...field}
+    //                             />
+    //                           </FormControl>
+    //                           <FormMessage />
+    //                         </FormItem>
+    //                       )}
+    //                     />
+    //                     {/* <FormField
+    //                     control={form.control}
+    //                     name="description"
+    //                     render={({ field }) => (
+    //                       <FormItem>
+    //                         <FormLabel>Description</FormLabel>
+    //                         <FormControl>
+    //                           <Input disabled={loading} required {...field} />
+    //                         </FormControl>
+    //                         <FormMessage />
+    //                       </FormItem>
+    //                     )}
+    //                   /> */}
+    //                   </form>
+    //                 </Form>
+    //               </div>
+    //             </div>
+    //             <div className="flex flex-col">
+    //               <h2 className="text-xl font-medium">Waypoints</h2>
+    //               <div className="mt-4 flex flex-col">
+    //                 <div className="flex flex-col gap-2">
+    //                   {waypoints.map(
+    //                     ({ id, title, lat, lon, date, post }, key) =>
+    //                       waypointEditingId === id ? (
+    //                         <div
+    //                           key={key}
+    //                           className="py-4 border-b border-solid border-accent"
+    //                         >
+    //                           <TripWaypointEditForm
+    //                             defaultValues={{ title, lat, lon, date }}
+    //                             loading={loading.waypoint}
+    //                             onSubmit={(data) =>
+    //                               handleWaypointEditSubmit(id, data)
+    //                             }
+    //                             onCancel={handleWaypointEditCancel}
+    //                           />
+    //                         </div>
+    //                       ) : (
+    //                         <TripWaypointCard
+    //                           key={key + 1}
+    //                           id={id}
+    //                           orderIndex={key + 1}
+    //                           title={title}
+    //                           lat={lat}
+    //                           lon={lon}
+    //                           date={date}
+    //                           post={post}
+    //                           onEdit={handleWaypointEdit}
+    //                           onDelete={handleWaypointDelete}
+    //                         />
+    //                       ),
+    //                   )}
+    //                 </div>
+    //                 {waypointCreating && (
+    //                   <div className="py-4 border-b border-solid border-accent">
+    //                     <TripWaypointCreateForm
+    //                       loading={loading.waypoint}
+    //                       defaultProps={{
+    //                         lat: viewport.lat,
+    //                         lon: viewport.lon,
+    //                       }}
+    //                       onSubmit={handleWaypointCreateSubmit}
+    //                       onCancel={handleWaypointCreateCancel}
+    //                     />
+    //                   </div>
+    //                 )}
+    //                 {!waypointCreating && !waypointEditing && (
+    //                   <div className="mt-6 flex flex-col">
+    //                     <Button
+    //                       variant="secondary"
+    //                       onClick={handleWaypointCreate}
+    //                     >
+    //                       Add waypoint
+    //                     </Button>
+    //                   </div>
+    //                 )}
+    //               </div>
+    //             </div>
+    //           </div>
+    //           <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background py-4 box-border">
+    //             <Button
+    //               size="lg"
+    //               type="submit"
+    //               form={FORM_ID}
+    //               loading={loading.trip}
+    //             >
+    //               Save changes
+    //             </Button>
+    //           </div>
+    //         </div>
+    //       </div>
+    //     </div>
+    //     <div
+    //       className={cn(
+    //         'basis-8/12 z-40 relative overflow-hidden rounded-l-2xl',
+    //       )}
+    //     >
+    //       <div className={cn('z-10 relative !w-full h-full overflow-hidden')}>
+    //         {mapbox.token && (
+    //           <Map
+    //             token={mapbox.token}
+    //             // layers={[
+    //             //   {
+    //             //     id: MAP_LAYERS.WAYPOINT_LINES,
+    //             //     source: MAP_SOURCES.WAYPOINT_LINES,
+    //             //   },
+    //             //   {
+    //             //     id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
+    //             //     source: MAP_SOURCES.WAYPOINTS,
+    //             //   },
+    //             //   {
+    //             //     id: MAP_LAYERS.WAYPOINT_ORDER_NUMBERS,
+    //             //     source: MAP_SOURCES.WAYPOINTS,
+    //             //   },
+    //             // ]}
+    //             // sources={[
+    //             //   {
+    //             //     sourceId: MAP_SOURCES.WAYPOINTS,
+    //             //     type: 'point',
+    //             //     data: waypoints.map(
+    //             //       ({ id, title, date, lat, lon }, key) => ({
+    //             //         id: `${id}`,
+    //             //         lat,
+    //             //         lon,
+    //             //         properties: {
+    //             //           index: key + 1,
+    //             //           id,
+    //             //           title,
+    //             //           date,
+    //             //         },
+    //             //       }),
+    //             //     ),
+    //             //     config: {
+    //             //       cluster: false,
+    //             //     },
+    //             //     onChange: (
+    //             //       data: MapSourceData<{
+    //             //         id: number;
+    //             //         title: string;
+    //             //         date: Date;
+    //             //       }>[],
+    //             //     ) => {
+    //             //       setWaypoints(
+    //             //         data.map(({ lat, lon, properties }) => ({
+    //             //           lat,
+    //             //           lon,
+    //             //           id: properties.id,
+    //             //           title: properties.title,
+    //             //           date: properties.date,
+    //             //         })),
+    //             //       );
+    //             //     },
+    //             //   },
+    //             //   {
+    //             //     sourceId: MAP_SOURCES.WAYPOINT_LINES,
+    //             //     type: 'line',
+    //             //     data: waypoints.map(({ id, lat, lon }) => ({
+    //             //       id: `${id}`,
+    //             //       lat,
+    //             //       lon,
+    //             //       properties: {},
+    //             //     })),
+    //             //   },
+    //             // ]}
+    //             // onLoad={({ viewport }) =>
+    //             //   handleViewportChange({
+    //             //     lat: viewport.lat,
+    //             //     lon: viewport.lon,
+    //             //     alt: 0,
+    //             //   })
+    //             // }
+    //             onMove={handleViewportChange}
+    //           />
+    //         )}
+    //       </div>
+    //     </div>
+    //   </div>
+    // </div>
   );
 };

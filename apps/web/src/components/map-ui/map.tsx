@@ -194,6 +194,7 @@ export const Map: React.FC<Props> = ({
 
   const handleLoad: MapOnLoadHandler = (data) => {
     if (!mapboxRef.current) return;
+    console.log('map: onload');
 
     const { viewport, bounds } = data;
 

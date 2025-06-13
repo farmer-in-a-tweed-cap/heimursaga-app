@@ -1,34 +1,9 @@
 'use client';
 
-import {
-  MapSearchbar,
-  MapSearchbarChangeHandler,
-  MapSearchbarSubmitHandler,
-  Searchbar,
-} from '../search';
-import {
-  IPostDetail,
-  MapQueryContext,
-  MapQueryFilterParam,
-  UserRole,
-} from '@repo/types';
-import {
-  Button,
-  ChipGroup,
-  LoadingSpinner,
-  NormalizedText,
-  Skeleton,
-} from '@repo/ui/components';
-import {
-  CaretLineLeftIcon,
-  CaretLineRightIcon,
-  ListBulletsIcon,
-  ListIcon,
-  MapTrifoldIcon,
-} from '@repo/ui/icons';
+import { MapSearchbar, MapSearchbarSubmitHandler } from '../search';
+import { ChipGroup, LoadingSpinner } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
@@ -40,19 +15,28 @@ import {
   MAP_LAYERS,
   MAP_SOURCES,
   Map,
+  MapDrawer,
   MapOnLoadHandler,
   MapOnMoveHandler,
   MapOnSourceClickHandler,
-  MapPostDrawer,
   MapSidebar,
   MapViewContainer,
+  MapViewSwitch,
   PostCard,
   TripCard,
   UserBar,
   UserProfileCard,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
-import { useMapbox, useScreen, useSession } from '@/hooks';
+import {
+  MAP_CONTEXT_PARAMS,
+  MAP_FILTER_PARAMS,
+  MAP_VIEW_PARAMS,
+  useMap,
+  useMapbox,
+  useScreen,
+  useSession,
+} from '@/hooks';
 import { dateformat, getEnv, sleep } from '@/lib';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
@@ -82,15 +66,6 @@ const PARAMS = {
   USER: 'user',
   FILTER: 'filter',
 };
-
-const MODE = {
-  LIST: 'list',
-  MAP: 'map',
-};
-
-const DEFAULT_MODE = MODE.MAP;
-
-const SEARCH_DEBOUNCE_INTERVAL = 500;
 
 const MAP_CHANGE_DEBOUNCE_INTERVAL = 500;
 
@@ -131,6 +106,17 @@ export const MapExploreView: React.FC<Props> = () => {
     filter: searchParams.get(PARAMS.FILTER),
   });
 
+  const map = useMap({
+    mapbox: mapbox.ref.current,
+    sidebar: true,
+    context: params.context
+      ? params.context
+      : params.user
+        ? MAP_CONTEXT_PARAMS.USER
+        : MAP_CONTEXT_PARAMS.GLOBAL,
+    filter: params.filter || MAP_FILTER_PARAMS.POST,
+  });
+
   const [_coordinates, setCoordinates] = useState({
     lat: params.lat
       ? parseFloat(params.lat)
@@ -160,28 +146,10 @@ export const MapExploreView: React.FC<Props> = () => {
     query: params.search || undefined,
   });
 
-  const [sidebar, setSidebar] = useState<boolean>(true);
-  const [drawer, setDrawer] = useState<boolean>(false);
-  const [mode, setMode] = useState<string>(DEFAULT_MODE);
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
-
-  const [context, setContext] = useState<MapQueryContext>(
-    params.context
-      ? (params.context as MapQueryContext)
-      : params.user
-        ? MapQueryContext.USER
-        : MapQueryContext.GLOBAL,
-  );
-  const [filter, setFilter] = useState<MapQueryFilterParam>(
-    params.filter
-      ? (params.filter as MapQueryFilterParam)
-      : MapQueryFilterParam.POST,
-  );
 
   const [userId, setUserId] = useState<string | null>(params.user || null);
   const [postId, setPostId] = useState<string | null>(params.postId || null);
-
-  const modeRef = useRef(mode);
 
   const mapQueryEnabled: boolean = [
     bounds.ne.lat,
@@ -194,7 +162,7 @@ export const MapExploreView: React.FC<Props> = () => {
     queryKey: userId
       ? [
           QUERY_KEYS.MAP.QUERY,
-          context,
+          map.context,
           userId,
           bounds.ne.lat,
           bounds.ne.lon,
@@ -203,7 +171,7 @@ export const MapExploreView: React.FC<Props> = () => {
         ]
       : [
           QUERY_KEYS.MAP.QUERY,
-          context,
+          map.context,
           bounds.ne.lat,
           bounds.ne.lon,
           bounds.sw.lat,
@@ -212,9 +180,11 @@ export const MapExploreView: React.FC<Props> = () => {
     queryFn: async () =>
       apiClient
         .mapQuery({
-          context,
+          context: map.context,
           username:
-            context === MapQueryContext.USER ? (userId as string) : undefined,
+            map.context === MAP_CONTEXT_PARAMS.USER
+              ? (userId as string)
+              : undefined,
           location: { bounds },
         })
         .then(({ data }) => data),
@@ -247,7 +217,7 @@ export const MapExploreView: React.FC<Props> = () => {
       apiClient
         .getTripsByUsername({ username: userId as string })
         .then(({ data }) => data),
-    enabled: !!userId && filter === MapQueryFilterParam.TRIP,
+    enabled: !!userId && map.filter === MAP_FILTER_PARAMS.TRIP,
   });
 
   const post = postQuery?.data;
@@ -313,8 +283,9 @@ export const MapExploreView: React.FC<Props> = () => {
   };
 
   const handleMapMove: MapOnMoveHandler = (value) => {
+    // @todo
     // ignore map move if it is list mode
-    if (modeRef.current === MODE.LIST) return;
+    // if (map.viewRef.current === MAP_VIEW_PARAMS.LIST) return;
 
     const { lat, lon, alt, bounds } = value;
 
@@ -331,43 +302,29 @@ export const MapExploreView: React.FC<Props> = () => {
     }
   };
 
-  const handleContextChange = (value: string) => {
-    setContext(value as MapQueryContext);
-    updateParams({ context: value });
-    mapQuery.refetch();
-  };
-
-  const handleFilterChange = (value: string) => {
-    setFilter(value as MapQueryFilterParam);
-    updateParams({ filter: value });
-    mapQuery.refetch();
-  };
-
-  const handleSidebarToggle = () => {
-    // update sidebar
-    setSidebar((sidebar) => !sidebar);
-
-    // resize the map
-    if (mapbox.ref.current) {
-      mapbox.ref.current.resize();
-    }
-  };
-
-  const handleSourceClick: MapOnSourceClickHandler = (sourceId) => {
-    handlePostOpen(sourceId);
-  };
-
-  const handlePostOpen = (postId: string) => {
-    setDrawer(true);
+  const handlePostDrawerOpen = ({ postId }: { postId: string }) => {
+    map.handleDrawerOpen();
     setPostId(postId);
     updateParams({ postId });
   };
 
-  const handlePostClose = () => {
-    setDrawer(false);
+  const handlePostDrawerClose = () => {
+    map.handleDrawerClose();
     setPostId(null);
     updateParams({ postId: null });
   };
+
+  const handleContextChange = (context: string) =>
+    map.handleContextChange(context, () => {
+      updateParams({ context });
+      mapQuery.refetch();
+    });
+
+  const handleFilterChange = (filter: string) =>
+    map.handleFilterChange(filter, () => {
+      updateParams({ filter });
+      mapQuery.refetch();
+    });
 
   const handleSearchChange = (value: string) => {
     if (value) {
@@ -416,10 +373,10 @@ export const MapExploreView: React.FC<Props> = () => {
     if (!username) return;
 
     setUserId(username);
-    setContext(MapQueryContext.USER);
+    map.setContext(MAP_CONTEXT_PARAMS.USER);
 
     updateParams({
-      context: MapQueryContext.USER,
+      context: MAP_CONTEXT_PARAMS.USER,
       user: username,
     });
 
@@ -428,27 +385,16 @@ export const MapExploreView: React.FC<Props> = () => {
 
   const handleUserBack = () => {
     setUserId(null);
-    setContext(MapQueryContext.GLOBAL);
+    map.setContext(MAP_CONTEXT_PARAMS.GLOBAL);
 
     updateParams({
-      context: MapQueryContext.GLOBAL,
+      context: MAP_CONTEXT_PARAMS.GLOBAL,
       user: null,
       filter: null,
     });
 
     mapQuery.refetch();
   };
-
-  const handleModeToggle = () => {
-    setMode((prev) => (prev === MODE.LIST ? MODE.MAP : MODE.LIST));
-  };
-
-  // update mode
-  useEffect(() => {
-    if (mode) {
-      modeRef.current = mode;
-    }
-  }, [mode]);
 
   // update waypoints
   useEffect(() => {
@@ -464,7 +410,7 @@ export const MapExploreView: React.FC<Props> = () => {
     // open a post if it's set in the url
     if (params.postId) {
       setPostId(postId);
-      setDrawer(true);
+      map.handleDrawerOpen();
     }
 
     // set default search
@@ -474,13 +420,13 @@ export const MapExploreView: React.FC<Props> = () => {
 
     // set default context
     if (params.context) {
-      setContext(params.context as MapQueryContext);
+      map.setContext(params.context);
     }
 
     // set default user
     if (params.user) {
       setUserId(params.user);
-      setContext(MapQueryContext.USER);
+      map.setContext(MAP_CONTEXT_PARAMS.USER);
     }
 
     // set default coordinates
@@ -501,12 +447,12 @@ export const MapExploreView: React.FC<Props> = () => {
     // set default context
     if (params.user) {
       updateParams({
-        context: MapQueryContext.USER,
+        context: MAP_CONTEXT_PARAMS.USER,
       });
     } else {
       if (!params.context) {
         updateParams({
-          context: MapQueryContext.GLOBAL,
+          context: MAP_CONTEXT_PARAMS.GLOBAL,
         });
       }
     }
@@ -522,35 +468,11 @@ export const MapExploreView: React.FC<Props> = () => {
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
-      <div className="z-40 absolute left-0 right-0 bottom-5 flex desktop:hidden flex-row justify-center items-center">
-        {mode === MODE.LIST && (
-          <Button onClick={handleModeToggle}>
-            <div className="flex flex-row gap-2 items-center justify-center">
-              <MapTrifoldIcon size={18} />
-              <span>Map</span>
-            </div>
-          </Button>
-        )}
-        {mode === MODE.MAP && (
-          <Button onClick={handleModeToggle}>
-            <div className="flex flex-row gap-2 items-center justify-center">
-              <ListBulletsIcon size={18} />
-              <span>List</span>
-            </div>
-          </Button>
-        )}
-      </div>
-      <MapSidebar
-        opened={sidebar}
-        className={cn(
-          mode === MODE.LIST
-            ? 'z-30 absolute pb-[70px] flex desktop:pb-[0px] desktop:relative desktop:flex desktop:inset-auto'
-            : 'hidden desktop:relative desktop:flex',
-        )}
-      >
+      <MapViewSwitch view={map.view} onToggle={map.handleViewToggle} />
+      <MapSidebar opened={map.sidebar} view={map.view}>
         <div className="relative flex flex-col w-full h-full">
-          {[MapQueryContext.GLOBAL, MapQueryContext.FOLLOWING].some(
-            (ctx) => ctx === context,
+          {[MAP_CONTEXT_PARAMS.GLOBAL, MAP_CONTEXT_PARAMS.FOLLOWING].some(
+            (context) => context === map.context,
           ) && (
             <>
               <div className="flex flex-row justify-between items-center py-4 px-4 desktop:px-6 bg-white">
@@ -565,20 +487,19 @@ export const MapExploreView: React.FC<Props> = () => {
                       onSubmit={handleSearchSubmit}
                     />
                   </div>
-                  {/* {getEnv() === 'development' && JSON.stringify({ s: search })} */}
                 </div>
               </div>
               {session.logged && (
                 <div className="px-4 desktop:px-6 py-2">
                   <ChipGroup
-                    value={context}
+                    value={map.context}
                     items={[
                       {
-                        value: MapQueryContext.GLOBAL,
+                        value: MAP_CONTEXT_PARAMS.GLOBAL,
                         label: LOCALES.APP.MAP.FILTER.GLOBAL,
                       },
                       {
-                        value: MapQueryContext.FOLLOWING,
+                        value: MAP_CONTEXT_PARAMS.FOLLOWING,
                         label: LOCALES.APP.MAP.FILTER.FOLLOWING,
                       },
                     ]}
@@ -591,7 +512,7 @@ export const MapExploreView: React.FC<Props> = () => {
               )}
             </>
           )}
-          {context === MapQueryContext.USER && (
+          {map.context === MAP_CONTEXT_PARAMS.USER && (
             <div className="flex flex-col pt-4 pb-2 px-6">
               <div className="flex flex-col justify-start items-start gap-3">
                 <UserProfileCard
@@ -604,14 +525,14 @@ export const MapExploreView: React.FC<Props> = () => {
                   }}
                 />
                 <ChipGroup
-                  value={filter}
+                  value={map.filter}
                   items={[
                     {
-                      value: MapQueryFilterParam.POST,
+                      value: MAP_FILTER_PARAMS.POST,
                       label: LOCALES.APP.MAP.FILTER.POSTS,
                     },
                     {
-                      value: MapQueryFilterParam.TRIP,
+                      value: MAP_FILTER_PARAMS.TRIP,
                       label: LOCALES.APP.MAP.FILTER.TRIPS,
                     },
                   ]}
@@ -624,7 +545,7 @@ export const MapExploreView: React.FC<Props> = () => {
             </div>
           )}
           <div className="w-full h-auto flex flex-col gap-2 overflow-y-scroll no-scrollbar px-4 desktop:px-6 py-4 box-border">
-            {filter === MapQueryFilterParam.POST && (
+            {map.filter === MAP_FILTER_PARAMS.POST && (
               <>
                 {waypointLoading ? (
                   <LoadingSpinner />
@@ -646,7 +567,9 @@ export const MapExploreView: React.FC<Props> = () => {
                             : undefined
                         }
                         selected={isPostSelected(post.id)}
-                        onClick={() => handlePostOpen(post.id)}
+                        onClick={() =>
+                          handlePostDrawerOpen({ postId: post.id })
+                        }
                       />
                     ) : (
                       <></>
@@ -658,7 +581,7 @@ export const MapExploreView: React.FC<Props> = () => {
               </>
             )}
 
-            {filter === MapQueryFilterParam.TRIP && (
+            {map.filter === MAP_FILTER_PARAMS.TRIP && (
               <>
                 {tripQuery.isLoading || tripQuery.isPending ? (
                   <LoadingSpinner />
@@ -699,15 +622,18 @@ export const MapExploreView: React.FC<Props> = () => {
         </div>
       </MapSidebar>
 
-      <MapPostDrawer
+      <MapDrawer
+        opened={map.drawer}
         loading={postLoading}
         post={post}
-        drawer={drawer}
         mobile={screen.mobile}
-        onClose={handlePostClose}
+        onClose={handlePostDrawerClose}
       />
 
-      <MapViewContainer extended={!sidebar} onExtend={handleSidebarToggle}>
+      <MapViewContainer
+        extended={!map.sidebar}
+        onExtend={map.handleSidebarToggle}
+      >
         <div className="z-10 relative !w-full h-full overflow-hidden">
           <div className="absolute top-0 left-0 right-0 z-20 w-full h-[70px] flex justify-between box-border px-10 items-center desktop:hidden">
             <MapSearchbar
@@ -759,7 +685,7 @@ export const MapExploreView: React.FC<Props> = () => {
                   },
                 },
               ]}
-              onSourceClick={handleSourceClick}
+              onSourceClick={(postId) => handlePostDrawerOpen({ postId })}
               onLoad={handleMapLoad}
               onMove={handleMapMove}
             />
