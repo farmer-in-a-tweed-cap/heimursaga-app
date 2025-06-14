@@ -198,7 +198,7 @@ export const MapTripView: React.FC<Props> = ({ trip }) => {
   );
 };
 
-const MapTripCard: React.FC<{
+export const MapTripCard: React.FC<{
   title: string;
   startDate?: Date;
   endDate?: Date;

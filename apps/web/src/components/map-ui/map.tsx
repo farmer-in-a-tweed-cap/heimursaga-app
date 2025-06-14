@@ -12,32 +12,36 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useEffect, useRef, useState } from 'react';
 
 import { APP_CONFIG } from '@/config';
+import {
+  MapBoundsValue,
+  MapCoordinatesValue,
+  MapLoadHandler,
+  MapMoveHandler,
+} from '@/hooks';
 
 import { MapNavigationControl } from './map-control';
 import { addSources, updateSources } from './map.utils';
 
-export type MapOnLoadHandler = (data: MapOnLoadHandlerValue) => void;
+// export type MapOnLoadHandler = (data: MapOnLoadHandlerValue) => void;
 
-export type MapOnLoadHandlerValue = {
-  mapbox: mapboxgl.Map | null;
-  viewport: { lat: number; lon: number };
-  bounds?: {
-    ne: { lat: number; lon: number };
-    sw: { lat: number; lon: number };
-  };
-};
+// export type MapOnLoadHandlerValue = {
+//   mapbox: mapboxgl.Map | null;
+//   viewport: { lat: number; lon: number };
+//   bounds?: {
+//     ne: { lat: number; lon: number };
+//     sw: { lat: number; lon: number };
+//   };
+// };
 
-export type MapOnMoveHandlerValue = {
-  lat: number;
-  lon: number;
-  alt: number;
-  bounds?: {
-    ne: { lat: number; lon: number };
-    sw: { lat: number; lon: number };
-  };
-};
-
-export type MapOnMoveHandler = (data: MapOnMoveHandlerValue) => void;
+// export type MapOnMoveHandlerValue = {
+//   lat: number;
+//   lon: number;
+//   alt: number;
+//   bounds?: {
+//     ne: { lat: number; lon: number };
+//     sw: { lat: number; lon: number };
+//   };
+// };
 
 export type MapOnSourceClickHandler = (sourceId: string) => void;
 
@@ -120,11 +124,12 @@ type Props = {
     };
   };
   layers?: { id: string; source: string }[];
+  zoom?: number;
   minZoom?: number;
   maxZoom?: number;
-  coordinates?: { lat: number; lon: number; alt: number };
-  bounds?: [number, number, number, number];
-  marker?: { lat: number; lon: number };
+  center?: MapCoordinatesValue;
+  marker?: MapCoordinatesValue;
+  bounds?: MapBoundsValue;
   className?: string;
   cursor?: string;
   controls?: boolean;
@@ -132,8 +137,8 @@ type Props = {
   markerEnabled?: boolean;
   width?: number;
   height?: number;
-  onLoad?: MapOnLoadHandler;
-  onMove?: MapOnMoveHandler;
+  onLoad?: MapLoadHandler;
+  onMove?: MapMoveHandler;
   onSourceClick?: MapOnSourceClickHandler;
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
@@ -146,9 +151,10 @@ export const Map: React.FC<Props> = ({
   sources = [],
   layers = [],
   styles,
+  zoom = 1,
   minZoom = 4,
   maxZoom = 10,
-  coordinates = { lat: 48, lon: 7, alt: 5 },
+  center,
   controls = true,
   markerEnabled = false,
   disabled = false,
@@ -159,6 +165,8 @@ export const Map: React.FC<Props> = ({
   onSourceClick,
 }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
+  const isInternalUpdate = useRef<boolean>(false);
+
   const [mapUpdatingExternally, setMapUpdatingExternally] =
     useState<boolean>(false);
   const [mapUpdatingInternally, setMapUpdatingInternally] =
@@ -179,8 +187,6 @@ export const Map: React.FC<Props> = ({
   const hoverPopupRef = useRef<boolean>(false);
   const waypointDraggableRef = useRef(waypointDraggable);
 
-  const isInternalUpdate = useRef<boolean>(false);
-
   // const mapUpdatingExternallyRef = useRef(mapUpdatingExternally);
   // const mapUpdatingInternallyRef = useRef(mapUpdatingInternally);
 
@@ -192,16 +198,17 @@ export const Map: React.FC<Props> = ({
     return <></>;
   }
 
-  const handleLoad: MapOnLoadHandler = (data) => {
+  const handleLoad: MapLoadHandler = (data) => {
     if (!mapboxRef.current) return;
     console.log('map: onload');
 
-    const { viewport, bounds } = data;
+    const { center, zoom, bounds } = data;
 
     if (onLoad) {
       onLoad({
         mapbox: mapboxRef.current,
-        viewport,
+        center,
+        zoom,
         bounds,
       });
     }
@@ -214,7 +221,7 @@ export const Map: React.FC<Props> = ({
 
     // get coordinates
     const { lng: lon, lat } = mapboxRef.current.getCenter();
-    const alt = mapboxRef.current.getZoom();
+    const zoom = mapboxRef.current.getZoom();
 
     // // get bounds
     const bbx = mapboxRef.current!.getBounds();
@@ -231,7 +238,11 @@ export const Map: React.FC<Props> = ({
     // update state
     if (onMove) {
       console.log('map: onmove', bounds);
-      onMove({ lat, lon, alt, bounds });
+      onMove({
+        center: { lat, lon },
+        zoom,
+        bounds,
+      });
     }
   };
 
@@ -433,17 +444,22 @@ export const Map: React.FC<Props> = ({
 
     // @todo
     // fit bounds
-    if (!isInternalUpdate.current) {
-      console.log('map: bounds', bounds);
+    // if (isInternalUpdate.current) {
+    //   console.log('[int] map: bounds', bounds);
+    // } else {
+    //   console.log('[ext] map: bounds', bounds);
+    // }
+    // if (!isInternalUpdate.current) {
+    //   console.log('[ext] map: bounds', bounds);
 
-      // mapboxRef.current.bounds(bounds, {
-      //   duration: 100,
-      //   padding: 0,
-      //   // easing: (t) => t,
-      // });
-    }
+    //   // mapboxRef.current.bounds(bounds, {
+    // duration: 100,
+    // padding: 0,
+    // // easing: (t) => t,
+    //   // });
+    // } else {}
 
-    isInternalUpdate.current = false;
+    // isInternalUpdate.current = false;
   }, [bounds]);
 
   // update a marker on change
@@ -486,6 +502,7 @@ export const Map: React.FC<Props> = ({
     let mapboxConfig: MapOptions = {
       container: mapboxContainerRef.current,
       style: config.style,
+      zoom,
       maxZoom: maxZoom >= 0 ? maxZoom : config.maxZoom,
       minZoom: minZoom >= 0 ? minZoom : config.minZoom,
       bearing: 0,
@@ -495,21 +512,18 @@ export const Map: React.FC<Props> = ({
       touchPitch: false,
     };
 
-    if (coordinates) {
+    if (center) {
       mapboxConfig = {
         ...mapboxConfig,
-        center: [coordinates.lon, coordinates.lat],
-        zoom: coordinates.alt,
+        center: [center.lon, center.lat],
       };
     } else {
-      mapboxConfig = {
-        ...mapboxConfig,
-        center: [
-          APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
-          APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
-        ],
-        zoom: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT,
-      };
+      if (bounds) {
+        mapboxConfig = {
+          ...mapboxConfig,
+          bounds: [bounds.sw.lon, bounds.sw.lat, bounds.ne.lon, bounds.ne.lat],
+        };
+      }
     }
 
     if (disabled) {
@@ -525,8 +539,8 @@ export const Map: React.FC<Props> = ({
     const canvas = mapboxRef.current.getCanvasContainer();
 
     // set max bounds
-    const bounds = new mapboxgl.LngLatBounds([-180, -85], [180, 85]);
-    mapboxRef.current.setMaxBounds(bounds);
+    const maxBounds = new mapboxgl.LngLatBounds([-180, -85], [180, 85]);
+    mapboxRef.current.setMaxBounds(maxBounds);
 
     // create a marker
     if (marker) {
@@ -581,6 +595,9 @@ export const Map: React.FC<Props> = ({
 
       if (!mapboxRef.current) return;
 
+      // get zoom
+      const zoom = mapboxRef.current.getZoom();
+
       // get bounds
       const center = mapboxRef.current.getCenter();
       const bounds = mapboxRef.current.getBounds();
@@ -590,7 +607,8 @@ export const Map: React.FC<Props> = ({
       // set initial props
       handleLoad({
         mapbox: mapboxRef.current,
-        viewport: { lat: center.lat, lon: center.lng },
+        center: { lat: center.lat, lon: center.lng },
+        zoom,
         bounds:
           ne && sw
             ? {
