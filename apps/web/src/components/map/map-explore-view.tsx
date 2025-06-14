@@ -16,9 +16,6 @@ import {
   MAP_SOURCES,
   Map,
   MapDrawer,
-  MapOnLoadHandler,
-  MapOnMoveHandler,
-  MapOnSourceClickHandler,
   MapSidebar,
   MapViewContainer,
   MapViewSwitch,
@@ -31,7 +28,11 @@ import { APP_CONFIG } from '@/config';
 import {
   MAP_CONTEXT_PARAMS,
   MAP_FILTER_PARAMS,
+  MAP_SEARCH_PARAMS,
   MAP_VIEW_PARAMS,
+  MapLoadHandler,
+  MapMoveHandler,
+  MapSearchParams,
   useMap,
   useMapbox,
   useScreen,
@@ -49,7 +50,7 @@ type Params = {
   context: string | null;
   lat: string | null;
   lon: string | null;
-  alt: string | null;
+  zoom: string | null;
   postId: string | null;
   search: string | null;
   user: string | null;
@@ -60,7 +61,7 @@ const PARAMS = {
   CONTEXT: 'context',
   LAT: 'lat',
   LON: 'lon',
-  ALT: 'alt',
+  ZOOM: 'zoom',
   POST_ID: 'post_id',
   SEARCH: 'search',
   USER: 'user',
@@ -95,46 +96,49 @@ export const MapExploreView: React.FC<Props> = () => {
   const session = useSession();
   const screen = useScreen();
 
-  const [params, setParams] = useState<Params>({
+  const params = {
     context: searchParams.get(PARAMS.CONTEXT),
     lat: searchParams.get(PARAMS.LAT),
     lon: searchParams.get(PARAMS.LON),
-    alt: searchParams.get(PARAMS.ALT),
+    zoom: searchParams.get(PARAMS.ZOOM),
     postId: searchParams.get(PARAMS.POST_ID),
     search: searchParams.get(PARAMS.SEARCH),
     user: searchParams.get(PARAMS.USER),
     filter: searchParams.get(PARAMS.FILTER),
-  });
+  };
 
-  const map = useMap({
-    mapbox: mapbox.ref.current,
-    sidebar: true,
-    context: params.context
-      ? params.context
-      : params.user
-        ? MAP_CONTEXT_PARAMS.USER
-        : MAP_CONTEXT_PARAMS.GLOBAL,
-    filter: params.filter || MAP_FILTER_PARAMS.POST,
-  });
-
-  const [_coordinates, setCoordinates] = useState({
-    lat: params.lat
-      ? parseFloat(params.lat)
-      : APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
-    lon: params.lon
-      ? parseFloat(params.lon)
-      : APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
-    alt: params.alt
-      ? parseFloat(params.alt)
-      : APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT,
-  });
-  const [coordinates] = useDebounce(_coordinates, MAP_CHANGE_DEBOUNCE_INTERVAL);
-
-  const [_bounds, setBounds] = useState({
-    sw: { lat: 0, lon: 0 },
-    ne: { lat: 0, lon: 0 },
-  });
-  const [bounds] = useDebounce(_bounds, MAP_CHANGE_DEBOUNCE_INTERVAL);
+  const map = useMap(
+    {
+      mapbox: mapbox.ref.current,
+      sidebar: true,
+      context: params.context
+        ? params.context
+        : params.user
+          ? MAP_CONTEXT_PARAMS.USER
+          : MAP_CONTEXT_PARAMS.GLOBAL,
+      filter: params.filter || MAP_FILTER_PARAMS.POST,
+      bounds: {
+        ne: {
+          lon: APP_CONFIG.MAP.DEFAULT.BOUNDS.NE.LON,
+          lat: APP_CONFIG.MAP.DEFAULT.BOUNDS.NE.LON,
+        },
+        sw: {
+          lon: APP_CONFIG.MAP.DEFAULT.BOUNDS.SW.LON,
+          lat: APP_CONFIG.MAP.DEFAULT.BOUNDS.SW.LON,
+        },
+      },
+      center: {
+        lat: params.lat
+          ? parseFloat(params.lat)
+          : APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
+        lon: params.lon
+          ? parseFloat(params.lon)
+          : APP_CONFIG.MAP.DEFAULT.CENTER.LON,
+      },
+      zoom: params.zoom ? parseFloat(params.zoom) : APP_CONFIG.MAP.DEFAULT.ZOOM,
+    },
+    { updateSearchParams: true },
+  );
 
   const [search, setSearch] = useState<{
     query?: string;
@@ -151,31 +155,24 @@ export const MapExploreView: React.FC<Props> = () => {
   const [userId, setUserId] = useState<string | null>(params.user || null);
   const [postId, setPostId] = useState<string | null>(params.postId || null);
 
-  const mapQueryEnabled: boolean = [
-    bounds.ne.lat,
-    bounds.ne.lon,
-    bounds.sw.lat,
-    bounds.sw.lon,
-  ].every((el) => !!el);
-
   const mapQuery = useQuery({
     queryKey: userId
       ? [
           QUERY_KEYS.MAP.QUERY,
-          map.context,
           userId,
-          bounds.ne.lat,
-          bounds.ne.lon,
-          bounds.sw.lat,
-          bounds.sw.lon,
+          map.context,
+          map.bounds.ne.lat,
+          map.bounds.ne.lon,
+          map.bounds.sw.lat,
+          map.bounds.sw.lon,
         ]
       : [
           QUERY_KEYS.MAP.QUERY,
           map.context,
-          bounds.ne.lat,
-          bounds.ne.lon,
-          bounds.sw.lat,
-          bounds.sw.lon,
+          map.bounds.ne.lat,
+          map.bounds.ne.lon,
+          map.bounds.sw.lat,
+          map.bounds.sw.lon,
         ],
     queryFn: async () =>
       apiClient
@@ -185,10 +182,10 @@ export const MapExploreView: React.FC<Props> = () => {
             map.context === MAP_CONTEXT_PARAMS.USER
               ? (userId as string)
               : undefined,
-          location: { bounds },
+          location: { bounds: map.bounds },
         })
         .then(({ data }) => data),
-    enabled: mapQueryEnabled,
+    enabled: !!map.bounds,
     retry: 0,
   });
 
@@ -231,26 +228,20 @@ export const MapExploreView: React.FC<Props> = () => {
   const isPostSelected = (id: string): boolean =>
     postId ? postId === id : false;
 
-  const updateParams = (payload: Partial<Params>) => {
-    const { lat, lon, alt, postId, search, context, user, filter } = payload;
+  const updateSearchParams = (payload: Partial<MapSearchParams>) => {
+    const { lat, lon, zoom, post_id, search, context, user, filter } = payload;
 
     const s = new URLSearchParams(searchParams.toString());
 
-    // update params state
-    setParams((state) => ({
-      ...state,
-      ...payload,
-    }));
-
     const params = [
-      { key: PARAMS.LAT, value: lat },
-      { key: PARAMS.LON, value: lon },
-      { key: PARAMS.ALT, value: alt },
-      { key: PARAMS.POST_ID, value: postId },
-      { key: PARAMS.SEARCH, value: search },
-      { key: PARAMS.CONTEXT, value: context },
-      { key: PARAMS.USER, value: user },
-      { key: PARAMS.FILTER, value: filter },
+      { key: MAP_SEARCH_PARAMS.LAT, value: lat },
+      { key: MAP_SEARCH_PARAMS.LON, value: lon },
+      { key: MAP_SEARCH_PARAMS.ZOOM, value: zoom },
+      { key: MAP_SEARCH_PARAMS.POST_ID, value: post_id },
+      { key: MAP_SEARCH_PARAMS.SEARCH, value: search },
+      { key: MAP_SEARCH_PARAMS.CONTEXT, value: context },
+      { key: MAP_SEARCH_PARAMS.USER, value: user },
+      { key: MAP_SEARCH_PARAMS.FILTER, value: filter },
     ];
 
     params.forEach(({ key, value }) => {
@@ -267,62 +258,65 @@ export const MapExploreView: React.FC<Props> = () => {
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
   };
 
-  const handleMapLoad: MapOnLoadHandler = (value) => {
-    const { bounds } = value;
-    const mapboxInstance = value.mapbox;
+  // const handleMapLoad: MapLoadHandler = (value) => {
+  //   const { bounds } = value;
+  //   const mapboxInstance = value.mapbox;
 
-    // set mapbox ref
-    if (mapboxInstance && mapbox.ref) {
-      mapbox.ref.current = mapboxInstance;
-    }
+  //   // set mapbox ref
+  //   // if (mapboxInstance && mapbox.ref) {
+  //   //   mapbox.ref.current = mapboxInstance;
+  //   // }
 
-    // update query
-    if (bounds) {
-      setBounds(bounds);
-    }
-  };
+  //   // update query
+  //   if (bounds) {
+  //     setBounds(bounds);
+  //   }
+  // };
 
-  const handleMapMove: MapOnMoveHandler = (value) => {
-    // @todo
-    // ignore map move if it is list mode
-    // if (map.viewRef.current === MAP_VIEW_PARAMS.LIST) return;
+  // const handleMapMove: MapMoveHandler = (data) => {
+  //   // @todo
+  //   // ignore map move if it is list mode
+  //   // if (map.viewRef.current === MAP_VIEW_PARAMS.LIST) return;
 
-    const { lat, lon, alt, bounds } = value;
+  //   const {
+  //     zoom,
+  //     center: { lat, lon },
+  //   } = data;
 
-    // update params
-    updateParams({
-      lat: `${lat}`,
-      lon: `${lon}`,
-      alt: `${alt}`,
-    });
+  //   // update params
+  // updateSearchParams({
+  //   lat: `${lat}`,
+  //   lon: `${lon}`,
+  //   alt: `${zoom}`,
+  // });
 
-    // update bounds
-    if (bounds) {
-      setBounds(bounds);
-    }
-  };
+  //   // update bounds
+  //   if (bounds) {
+  //     setBounds(bounds);
+  //   }
+  // };
 
   const handlePostDrawerOpen = ({ postId }: { postId: string }) => {
     map.handleDrawerOpen();
     setPostId(postId);
-    updateParams({ postId });
+    updateSearchParams({ post_id: postId });
   };
 
   const handlePostDrawerClose = () => {
     map.handleDrawerClose();
     setPostId(null);
-    updateParams({ postId: null });
+    updateSearchParams({ post_id: null });
   };
 
   const handleContextChange = (context: string) =>
     map.handleContextChange(context, () => {
-      updateParams({ context });
+      updateSearchParams({ context });
       mapQuery.refetch();
     });
 
   const handleFilterChange = (filter: string) =>
     map.handleFilterChange(filter, () => {
-      updateParams({ filter });
+      updateSearchParams({ filter });
       mapQuery.refetch();
     });
 
@@ -338,7 +332,7 @@ export const MapExploreView: React.FC<Props> = () => {
 
     if (context === 'text') {
       setSearch((prev) => ({ ...prev, query, context: 'text' }));
-      updateParams({ search: query });
+      updateSearchParams({ search: query });
     }
 
     if (context === 'location') {
@@ -361,7 +355,7 @@ export const MapExploreView: React.FC<Props> = () => {
         };
 
         if (query && lon && lat) {
-          updateParams({ search: query, lon: `${lon}`, lat: `${lat}` });
+          updateSearchParams({ search: query, lon: `${lon}`, lat: `${lat}` });
         }
 
         // setMap((prev) => ({ ...prev, bounds: bbox }));
@@ -375,7 +369,7 @@ export const MapExploreView: React.FC<Props> = () => {
     setUserId(username);
     map.setContext(MAP_CONTEXT_PARAMS.USER);
 
-    updateParams({
+    updateSearchParams({
       context: MAP_CONTEXT_PARAMS.USER,
       user: username,
     });
@@ -387,7 +381,7 @@ export const MapExploreView: React.FC<Props> = () => {
     setUserId(null);
     map.setContext(MAP_CONTEXT_PARAMS.GLOBAL);
 
-    updateParams({
+    updateSearchParams({
       context: MAP_CONTEXT_PARAMS.GLOBAL,
       user: null,
       filter: null,
@@ -431,27 +425,27 @@ export const MapExploreView: React.FC<Props> = () => {
 
     // set default coordinates
     if (!coordinateSet) {
-      updateParams({
-        lat: `${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT}`,
-        lon: `${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON}`,
-        alt: `${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT}`,
+      updateSearchParams({
+        lat: `${APP_CONFIG.MAP.DEFAULT.CENTER.LAT}`,
+        lon: `${APP_CONFIG.MAP.DEFAULT.CENTER.LON}`,
+        zoom: `${APP_CONFIG.MAP.DEFAULT.ZOOM}`,
       });
     } else {
-      if (!params.alt) {
-        updateParams({
-          alt: `${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT}`,
+      if (!params.zoom) {
+        updateSearchParams({
+          zoom: `${APP_CONFIG.MAP.DEFAULT.ZOOM}`,
         });
       }
     }
 
     // set default context
     if (params.user) {
-      updateParams({
+      updateSearchParams({
         context: MAP_CONTEXT_PARAMS.USER,
       });
     } else {
       if (!params.context) {
-        updateParams({
+        updateSearchParams({
           context: MAP_CONTEXT_PARAMS.GLOBAL,
         });
       }
@@ -470,6 +464,7 @@ export const MapExploreView: React.FC<Props> = () => {
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
       <MapViewSwitch view={map.view} onToggle={map.handleViewToggle} />
       <MapSidebar opened={map.sidebar} view={map.view}>
+        {JSON.stringify({ c: map.center, bbx: map.bounds, z: map.zoom })}
         <div className="relative flex flex-col w-full h-full">
           {[MAP_CONTEXT_PARAMS.GLOBAL, MAP_CONTEXT_PARAMS.FOLLOWING].some(
             (context) => context === map.context,
@@ -645,17 +640,9 @@ export const MapExploreView: React.FC<Props> = () => {
           {mapbox.token && (
             <Map
               token={mapbox.token}
-              coordinates={{
-                lat: coordinates.lat,
-                lon: coordinates.lon,
-                alt: coordinates.alt,
-              }}
-              bounds={[
-                bounds.sw.lon,
-                bounds.sw.lat,
-                bounds.ne.lon,
-                bounds.ne.lat,
-              ]}
+              center={map.center}
+              bounds={map.bounds}
+              zoom={map.zoom}
               minZoom={1}
               maxZoom={15}
               layers={[
@@ -686,8 +673,8 @@ export const MapExploreView: React.FC<Props> = () => {
                 },
               ]}
               onSourceClick={(postId) => handlePostDrawerOpen({ postId })}
-              onLoad={handleMapLoad}
-              onMove={handleMapMove}
+              onLoad={map.handleLoad}
+              onMove={map.handleMove}
             />
           )}
         </div>

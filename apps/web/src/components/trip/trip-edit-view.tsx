@@ -24,10 +24,11 @@ import {
   MAP_LAYERS,
   MAP_SOURCES,
   Map,
-  MapOnMoveHandler,
   MapSidebar,
   MapSourceData,
+  MapTripCard,
   MapViewContainer,
+  TripEditForm,
   TripWaypointCard,
   TripWaypointCardClickHandler,
   TripWaypointCreateForm,
@@ -72,441 +73,174 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
   const map = useMap({
     mapbox: mapbox.ref.current,
     sidebar: true,
-  });
-
-  const [state, setState] = useState<{
-    waypointCreating: boolean;
-    waypointEditing: boolean;
-    waypointEditingId?: number;
-  }>({
-    waypointCreating: false,
-    waypointEditing: false,
-  });
-
-  const [loading, setLoading] = useState({
-    trip: false,
-    waypoint: false,
-  });
-
-  const [viewport, setViewport] = useState<{ lat: number; lon: number }>({
-    lat: 0,
-    lon: 0,
-  });
-
-  const [waypoints, setWaypoints] = useState<WaypointElement[]>(
-    trip?.waypoints
-      ? sortByDate(
-          trip.waypoints.map(
-            ({ id, title = '', date = new Date(), lat, lon, post }) => ({
-              id,
-              title,
-              date: dateformat(date).toDate(),
-              lat,
-              lon,
-              post,
-            }),
-          ),
-          'asc',
-        )
-      : [],
-  );
-
-  const [waypointEditing, setWaypointEditing] = useState<WaypointElement>();
-
-  const { waypointCreating, waypointEditingId } = state;
-
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: trip
-      ? { title: trip.title, description: trip.description }
-      : {
-          title: '',
-          description: '',
-        },
-  });
-
-  const handleWaypointCreate = () => {
-    setState((state) => ({ ...state, waypointCreating: true }));
-  };
-
-  const handleWaypointCreateSubmit: TripWaypointCreateFormSubmitHandler =
-    async (data) => {
-      try {
-        setLoading((state) => ({ ...state, waypoint: true }));
-
-        if (!trip?.id) return;
-
-        const { date, title, lat, lon } = data;
-
-        // create a point
-        const { success } = await apiClient.createTripWaypoint({
-          query: { tripId: trip.id },
-          payload: { lat, lon, date, title },
-        });
-
-        if (success) {
-          alert('waypoint created');
-
-          setState((state) => ({ ...state, waypointCreating: false }));
-          setLoading((state) => ({ ...state, waypoint: false }));
-          setWaypoints((waypoints) =>
-            sortByDate(
-              [...waypoints, { ...data, id: waypoints.length + 1 }],
-              'asc',
-            ),
-          );
-        } else {
-          setLoading((state) => ({ ...state, waypoint: false }));
-        }
-      } catch (e) {
-        setLoading((state) => ({ ...state, waypoint: false }));
-      }
-    };
-
-  const handleWaypointCreateCancel = () => {
-    setState((state) => ({ ...state, waypointCreating: false }));
-  };
-
-  const handleWaypointEdit: TripWaypointCardClickHandler = (id) => {
-    setState((state) => ({
-      ...state,
-      waypointEditing: true,
-      waypointEditingId: id,
-    }));
-  };
-
-  const handleWaypointEditSubmit = async (
-    id: number,
-    data: Partial<TripWaypointEditFormState>,
-  ) => {
-    try {
-      // const waypointId = state.waypointEditingId
-      //   ? state.waypointEditingId
-      //   : undefined;
-      const waypointId = id;
-      const { lat, lon, date, title } = data;
-
-      if (!trip?.id || !waypointId) return;
-
-      setLoading((state) => ({ ...state, waypoint: true }));
-
-      // update the waypoint
-      const { success } = await apiClient.updateTripWaypoint({
-        query: { tripId: trip.id, waypointId },
-        payload: { lat, lon, date, title },
-      });
-
-      if (success) {
-        setState((state) => ({
-          ...state,
-          waypointEditing: false,
-          waypointEditingId: undefined,
-        }));
-        setWaypoints((waypoints) => {
-          const waypointIndex = waypoints.findIndex(
-            (el) => el.id === waypointEditingId,
-          );
-          if (waypointIndex > -1) {
-            const prev = waypoints[waypointIndex];
-            waypoints[waypointIndex] = { ...prev, ...data };
-          }
-
-          return sortByDate(waypoints, 'asc');
-        });
-        setLoading((state) => ({ ...state, waypoint: false }));
-      } else {
-        setLoading((state) => ({ ...state, waypoint: false }));
-      }
-    } catch (e) {
-      setLoading((state) => ({ ...state, waypoint: false }));
-    }
-  };
-
-  const handleWaypointEditCancel = () => {
-    setState((state) => ({
-      ...state,
-      waypointEditing: false,
-      waypointEditingId: undefined,
-    }));
-  };
-
-  const handleWaypointDelete: TripWaypointCardClickHandler = async (id) => {
-    if (confirm(`delete this waypoint?`)) {
-      try {
-        const waypointId = id;
-
-        if (!trip?.id || !waypointId) return;
-
-        // delete the waypoint
-        const { success } = await apiClient.deleteTripWaypoint({
-          query: { tripId: trip.id, waypointId },
-        });
-
-        if (success) {
-          setWaypoints((waypoints) => waypoints.filter((el) => el.id !== id));
-        } else {
-          //
-        }
-      } catch (e) {
-        //
-      }
-    }
-  };
-
-  const handleViewportChange: MapOnMoveHandler = ({ lat, lon }) => {
-    setViewport({ lat, lon });
-  };
-
-  const handleSubmit = form.handleSubmit(
-    async (values: z.infer<typeof schema>) => {
-      try {
-        const { title } = values;
-
-        const tripId = trip?.id;
-        if (!tripId) return;
-
-        setLoading((state) => ({ ...state, trip: true }));
-
-        // update the trip
-        const { success } = await apiClient.updateTrip({
-          query: { tripId },
-          payload: { title },
-        });
-
-        if (success) {
-          setLoading((state) => ({ ...state, trip: false }));
-        } else {
-          setLoading((state) => ({ ...state, trip: false }));
-        }
-      } catch (e) {
-        setLoading((state) => ({ ...state, trip: false }));
-      }
+    bounds: {
+      ne: { lat: 56.109059951256256, lon: 38.10823094563034 },
+      sw: { lat: 55.25372511584288, lon: 37.174747411366155 },
     },
-  );
+  });
+
+  // const [state, setState] = useState<{
+  //   waypointCreating: boolean;
+  //   waypointEditing: boolean;
+  //   waypointEditingId?: number;
+  // }>({
+  //   waypointCreating: false,
+  //   waypointEditing: false,
+  // });
+
+  // const [loading, setLoading] = useState({
+  //   trip: false,
+  //   waypoint: false,
+  // });
+
+  // const [viewport, setViewport] = useState<{ lat: number; lon: number }>({
+  //   lat: 0,
+  //   lon: 0,
+  // });
+
+  // const [waypoints, setWaypoints] = useState<WaypointElement[]>(
+  //   trip?.waypoints
+  //     ? sortByDate(
+  //         trip.waypoints.map(
+  //           ({ id, title = '', date = new Date(), lat, lon, post }) => ({
+  //             id,
+  //             title,
+  //             date: dateformat(date).toDate(),
+  //             lat,
+  //             lon,
+  //             post,
+  //           }),
+  //         ),
+  //         'asc',
+  //       )
+  //     : [],
+  // );
+
+  // const [waypointEditing, setWaypointEditing] = useState<WaypointElement>();
+
+  // const { waypointCreating, waypointEditingId } = state;
+
+  // const form = useForm<z.infer<typeof schema>>({
+  //   resolver: zodResolver(schema),
+  //   defaultValues: trip
+  //     ? { title: trip.title, description: trip.description }
+  //     : {
+  //         title: '',
+  //         description: '',
+  //       },
+  // });
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
       <MapSidebar opened={map.sidebar} view={map.view}>
-        sidebar
+        {/* <div className="break-all text-xs">
+          {JSON.stringify({
+            center: map.center,
+            zoom: map.zoom,
+            bbx: map.bounds,
+          })}
+        </div> */}
+        {trip && (
+          <MapTripCard
+            title={trip.title}
+            startDate={trip.startDate}
+            endDate={trip.endDate}
+            // backUrl={ROUTER.HOME}
+          />
+        )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            const bounds = {
+              ne: { lat: 56.109059951256256, lon: 38.10823094563034 },
+              sw: { lat: 55.25372511584288, lon: 37.174747411366155 },
+            };
+
+            map.mapbox.updateBounds(bounds);
+          }}
+        >
+          bounds
+        </Button>
+        <TripEditForm />
       </MapSidebar>
       <MapViewContainer
         extended={!map.sidebar}
         onExtend={map.handleSidebarToggle}
       >
-        {mapbox.token && <Map token={mapbox.token} />}
+        {mapbox.token && (
+          <Map
+            token={mapbox.token}
+            marker={{
+              lat: 48.74555174206296,
+              lon: 6.6642343574329175,
+            }}
+            bounds={map.bounds}
+            layers={[
+              {
+                id: MAP_LAYERS.WAYPOINTS,
+                source: MAP_SOURCES.WAYPOINTS,
+              },
+              {
+                id: MAP_LAYERS.WAYPOINT_LINES,
+                source: MAP_SOURCES.WAYPOINT_LINES,
+              },
+            ]}
+            sources={[
+              {
+                sourceId: MAP_SOURCES.WAYPOINTS,
+                type: 'point',
+                data: [
+                  {
+                    id: `1`,
+                    lat: 47.713906575004074,
+                    lon: 2.143926023187305,
+                    properties: {},
+                  },
+                  {
+                    id: `2`,
+                    lat: 49.713906575004074,
+                    lon: 2.143926023187305,
+                    properties: {},
+                  },
+                  {
+                    id: `3`,
+                    lat: 50.713906575004074,
+                    lon: 3.243926023187305,
+                    properties: {},
+                  },
+                ],
+              },
+              {
+                sourceId: MAP_SOURCES.WAYPOINT_LINES,
+                type: 'line',
+                data: [
+                  {
+                    id: `1`,
+                    lat: 47.713906575004074,
+                    lon: 2.143926023187305,
+                    properties: {},
+                  },
+                  {
+                    id: `2`,
+                    lat: 49.713906575004074,
+                    lon: 2.143926023187305,
+                    properties: {},
+                  },
+                  {
+                    id: `3`,
+                    lat: 50.713906575004074,
+                    lon: 3.243926023187305,
+                    properties: {},
+                  },
+                ],
+              },
+            ]}
+            onLoad={map.handleLoad}
+            onMove={map.handleMove}
+          />
+        )}
       </MapViewContainer>
     </div>
-    // <div className="w-full h-full flex flex-row justify-between bg-white">
-    //   <div className="w-full relative h-full hidden sm:flex overflow-hidden">
-    //     <div className="basis-4/12 relative flex flex-col h-dvh">
-    //       <div className="relative h-full flex flex-col justify-start items-start px-6 bg-white overflow-y-scroll">
-    //         <div className="w-full h-full flex flex-col justify-between gap-10 box-border">
-    //           <div className="flex flex-col gap-10">
-    //             <div className="flex flex-col justify-start pt-6 items-start gap-2">
-    //               <h2 className="text-xl font-medium">Trip</h2>
-    //             </div>
-    //             <span className="break-all text-xs">
-    //               {JSON.stringify({ v: viewport })}
-    //             </span>
-    //             <div className="flex flex-col">
-    //               <h2 className="text-xl font-medium">Trip</h2>
-    //               <div className="mt-6 flex flex-col gap-6">
-    //                 <Form {...form}>
-    //                   <form id={FORM_ID} onSubmit={handleSubmit}>
-    //                     <FormField
-    //                       control={form.control}
-    //                       name="title"
-    //                       render={({ field }) => (
-    //                         <FormItem>
-    //                           <FormLabel>Title</FormLabel>
-    //                           <FormControl>
-    //                             <Input
-    //                               disabled={loading.trip}
-    //                               required
-    //                               {...field}
-    //                             />
-    //                           </FormControl>
-    //                           <FormMessage />
-    //                         </FormItem>
-    //                       )}
-    //                     />
-    //                     {/* <FormField
-    //                     control={form.control}
-    //                     name="description"
-    //                     render={({ field }) => (
-    //                       <FormItem>
-    //                         <FormLabel>Description</FormLabel>
-    //                         <FormControl>
-    //                           <Input disabled={loading} required {...field} />
-    //                         </FormControl>
-    //                         <FormMessage />
-    //                       </FormItem>
-    //                     )}
-    //                   /> */}
-    //                   </form>
-    //                 </Form>
-    //               </div>
-    //             </div>
-    //             <div className="flex flex-col">
-    //               <h2 className="text-xl font-medium">Waypoints</h2>
-    //               <div className="mt-4 flex flex-col">
-    //                 <div className="flex flex-col gap-2">
-    //                   {waypoints.map(
-    //                     ({ id, title, lat, lon, date, post }, key) =>
-    //                       waypointEditingId === id ? (
-    //                         <div
-    //                           key={key}
-    //                           className="py-4 border-b border-solid border-accent"
-    //                         >
-    //                           <TripWaypointEditForm
-    //                             defaultValues={{ title, lat, lon, date }}
-    //                             loading={loading.waypoint}
-    //                             onSubmit={(data) =>
-    //                               handleWaypointEditSubmit(id, data)
-    //                             }
-    //                             onCancel={handleWaypointEditCancel}
-    //                           />
-    //                         </div>
-    //                       ) : (
-    //                         <TripWaypointCard
-    //                           key={key + 1}
-    //                           id={id}
-    //                           orderIndex={key + 1}
-    //                           title={title}
-    //                           lat={lat}
-    //                           lon={lon}
-    //                           date={date}
-    //                           post={post}
-    //                           onEdit={handleWaypointEdit}
-    //                           onDelete={handleWaypointDelete}
-    //                         />
-    //                       ),
-    //                   )}
-    //                 </div>
-    //                 {waypointCreating && (
-    //                   <div className="py-4 border-b border-solid border-accent">
-    //                     <TripWaypointCreateForm
-    //                       loading={loading.waypoint}
-    //                       defaultProps={{
-    //                         lat: viewport.lat,
-    //                         lon: viewport.lon,
-    //                       }}
-    //                       onSubmit={handleWaypointCreateSubmit}
-    //                       onCancel={handleWaypointCreateCancel}
-    //                     />
-    //                   </div>
-    //                 )}
-    //                 {!waypointCreating && !waypointEditing && (
-    //                   <div className="mt-6 flex flex-col">
-    //                     <Button
-    //                       variant="secondary"
-    //                       onClick={handleWaypointCreate}
-    //                     >
-    //                       Add waypoint
-    //                     </Button>
-    //                   </div>
-    //                 )}
-    //               </div>
-    //             </div>
-    //           </div>
-    //           <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background py-4 box-border">
-    //             <Button
-    //               size="lg"
-    //               type="submit"
-    //               form={FORM_ID}
-    //               loading={loading.trip}
-    //             >
-    //               Save changes
-    //             </Button>
-    //           </div>
-    //         </div>
-    //       </div>
-    //     </div>
-    //     <div
-    //       className={cn(
-    //         'basis-8/12 z-40 relative overflow-hidden rounded-l-2xl',
-    //       )}
-    //     >
-    //       <div className={cn('z-10 relative !w-full h-full overflow-hidden')}>
-    //         {mapbox.token && (
-    //           <Map
-    //             token={mapbox.token}
-    //             // layers={[
-    //             //   {
-    //             //     id: MAP_LAYERS.WAYPOINT_LINES,
-    //             //     source: MAP_SOURCES.WAYPOINT_LINES,
-    //             //   },
-    //             //   {
-    //             //     id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
-    //             //     source: MAP_SOURCES.WAYPOINTS,
-    //             //   },
-    //             //   {
-    //             //     id: MAP_LAYERS.WAYPOINT_ORDER_NUMBERS,
-    //             //     source: MAP_SOURCES.WAYPOINTS,
-    //             //   },
-    //             // ]}
-    //             // sources={[
-    //             //   {
-    //             //     sourceId: MAP_SOURCES.WAYPOINTS,
-    //             //     type: 'point',
-    //             //     data: waypoints.map(
-    //             //       ({ id, title, date, lat, lon }, key) => ({
-    //             //         id: `${id}`,
-    //             //         lat,
-    //             //         lon,
-    //             //         properties: {
-    //             //           index: key + 1,
-    //             //           id,
-    //             //           title,
-    //             //           date,
-    //             //         },
-    //             //       }),
-    //             //     ),
-    //             //     config: {
-    //             //       cluster: false,
-    //             //     },
-    //             //     onChange: (
-    //             //       data: MapSourceData<{
-    //             //         id: number;
-    //             //         title: string;
-    //             //         date: Date;
-    //             //       }>[],
-    //             //     ) => {
-    //             //       setWaypoints(
-    //             //         data.map(({ lat, lon, properties }) => ({
-    //             //           lat,
-    //             //           lon,
-    //             //           id: properties.id,
-    //             //           title: properties.title,
-    //             //           date: properties.date,
-    //             //         })),
-    //             //       );
-    //             //     },
-    //             //   },
-    //             //   {
-    //             //     sourceId: MAP_SOURCES.WAYPOINT_LINES,
-    //             //     type: 'line',
-    //             //     data: waypoints.map(({ id, lat, lon }) => ({
-    //             //       id: `${id}`,
-    //             //       lat,
-    //             //       lon,
-    //             //       properties: {},
-    //             //     })),
-    //             //   },
-    //             // ]}
-    //             // onLoad={({ viewport }) =>
-    //             //   handleViewportChange({
-    //             //     lat: viewport.lat,
-    //             //     lon: viewport.lon,
-    //             //     alt: 0,
-    //             //   })
-    //             // }
-    //             onMove={handleViewportChange}
-    //           />
-    //         )}
-    //       </div>
-    //     </div>
-    //   </div>
-    // </div>
   );
 };
