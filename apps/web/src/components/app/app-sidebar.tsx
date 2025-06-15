@@ -7,6 +7,7 @@ import {
   BookmarkSimpleIcon,
   ChartPieSliceIcon,
   HandCoinsIcon,
+  HouseIcon,
   IconProps,
   MagnifyingGlassIcon,
   PathIcon,
@@ -138,10 +139,10 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
     ],
     admin: [
       {
-        href: ROUTER.DASHBOARD.HOME,
-        base: ROUTER.DASHBOARD.HOME,
-        label: 'Dashboard',
-        icon: MagnifyingGlassIcon,
+        href: ROUTER.ADMIN.HOME,
+        base: ROUTER.ADMIN.HOME,
+        label: 'Admin',
+        icon: HouseIcon,
       },
     ],
   };

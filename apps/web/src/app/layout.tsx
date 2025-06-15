@@ -1,3 +1,4 @@
+import { UserRole } from '@repo/types';
 import '@repo/ui/globals.css';
 import { cn } from '@repo/ui/lib/utils';
 import { Metadata, Viewport } from 'next';
@@ -65,20 +66,27 @@ export default async function RootLayout({ children }: Props) {
 export const SessionLayout = async ({
   children,
   secure = true,
-}: Props & { secure?: boolean }) => {
+  roles = [],
+}: Props & { roles?: string[]; secure?: boolean }) => {
   const cookie = cookies().toString();
-  const sessionQuery = await apiClient.getSession({ cookie });
-  const logged = !!sessionQuery.data || null;
+  const session = await apiClient
+    .getSession({ cookie })
+    .then(({ data }) => data);
 
-  // protect private routes
   if (secure) {
-    // if not logged, redirect to the login page
-    if (!logged) return redirect(ROUTER.LOGIN);
+    // redirect to the login page
+    if (!session) return redirect(ROUTER.LOGIN);
+
+    // check roles
+    if (session && roles) {
+      const access = roles.some((role) => role === session.role);
+      if (!access) {
+        return redirect(ROUTER.HOME);
+      }
+    }
   }
 
-  return (
-    <SessionProvider state={sessionQuery.data}>{children}</SessionProvider>
-  );
+  return <SessionProvider state={session}>{children}</SessionProvider>;
 };
 
 export const AppLayout = ({
@@ -160,13 +168,9 @@ export const LoginLayout = async ({
   );
 };
 
-export const DashboardLayout = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
+export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <SessionLayout>
+    <SessionLayout roles={[UserRole.ADMIN]}>
       <div className="w-full min-h-dvh bg-background text-black flex flex-row">
         <AppSidebar collapsed={true} />
         <div className="relative w-full flex flex-col justify-start">

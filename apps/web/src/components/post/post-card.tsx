@@ -23,6 +23,7 @@ export type PostCardProps = {
   id?: string;
   title?: string;
   content?: string;
+  place?: string;
   date?: Date;
   thumbnail?: string;
   author?: {
@@ -66,6 +67,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     username: '',
   },
   date,
+  place,
   waypoint,
   liked = false,
   likesCount = 0,
