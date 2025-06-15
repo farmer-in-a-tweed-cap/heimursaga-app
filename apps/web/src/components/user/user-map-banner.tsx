@@ -10,6 +10,7 @@ import { QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { MAP_LAYERS, MAP_SOURCES, MapPreview } from '@/components';
 import { APP_CONFIG } from '@/config';
+import { SEARCH_PARAMS } from '@/constants';
 import { ROUTER } from '@/router';
 
 type Props = {
@@ -28,12 +29,10 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
     retry: 0,
   });
 
-  const loading = mapQuery.isLoading;
-  const waypoints = mapQuery.data?.waypoints || [];
   const url = username
     ? [
         ROUTER.HOME,
-        `context=user&user=${username}&lat=${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT}&lon=${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON}&alt=1`,
+        `${SEARCH_PARAMS.CONTEXT}=user&${SEARCH_PARAMS.USER}=${username}&${SEARCH_PARAMS.LAT}=${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT}&${SEARCH_PARAMS.LON}=${APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON}&${SEARCH_PARAMS.ZOOM}=1`,
       ].join('?')
     : '#';
 
@@ -45,39 +44,42 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
           className,
         )}
       >
-        {loading && <LoadingOverlay />}
+        {/* {mapQuery.isLoading && <LoadingOverlay />} */}
         <div className="transition-all z-20 absolute cursor-pointer inset-0 bg-black opacity-10 hover:opacity-0 hover:bg-black"></div>
         <div className="transition-all w-full h-full z-10">
-          <MapPreview
-            className="w-full h-[200px] lg:h-[240px]"
-            center={{
-              lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
-              lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON,
-            }}
-            zoom={0}
-            layers={[
-              {
-                id: MAP_LAYERS.WAYPOINTS,
-                source: MAP_SOURCES.WAYPOINTS,
-              },
-            ]}
-            sources={[
-              {
-                sourceId: MAP_SOURCES.WAYPOINTS,
-                type: 'point',
-                data: waypoints.map(({ lat, lon }, key) => ({
-                  id: `${key}`,
-                  lat,
-                  lon,
-                  properties: {},
-                })),
-                config: {
-                  cluster: false,
+          {mapQuery.isFetched && (
+            <MapPreview
+              className="w-full h-[200px] lg:h-[240px]"
+              center={{
+                lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
+                lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON,
+              }}
+              zoom={1}
+              layers={[
+                {
+                  id: MAP_LAYERS.WAYPOINTS,
+                  source: MAP_SOURCES.WAYPOINTS,
                 },
-              },
-            ]}
-            overlay={true}
-          />
+              ]}
+              sources={[
+                {
+                  sourceId: MAP_SOURCES.WAYPOINTS,
+                  type: 'point',
+                  data:
+                    mapQuery.data?.waypoints.map(({ lat, lon }, key) => ({
+                      id: `${key}`,
+                      lat,
+                      lon,
+                      properties: {},
+                    })) || [],
+                  config: {
+                    cluster: false,
+                  },
+                },
+              ]}
+              overlay={true}
+            />
+          )}
         </div>
       </div>
     </Link>

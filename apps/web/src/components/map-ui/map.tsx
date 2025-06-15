@@ -151,7 +151,7 @@ export const Map: React.FC<Props> = ({
   sources = [],
   layers = [],
   styles,
-  minZoom = 4,
+  minZoom = 0,
   maxZoom = 15,
   center = {
     lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
@@ -170,11 +170,6 @@ export const Map: React.FC<Props> = ({
   const [mapLoaded, setMapLoaded] = useState(false);
   const isInternalUpdate = useRef<boolean>(false);
 
-  const [mapUpdatingExternally, setMapUpdatingExternally] =
-    useState<boolean>(false);
-  const [mapUpdatingInternally, setMapUpdatingInternally] =
-    useState<boolean>(false);
-
   const [waypointDraggable, setWaypointDraggable] = useState<{
     id: string;
     lat: number;
@@ -189,9 +184,6 @@ export const Map: React.FC<Props> = ({
   const showPopupRef = useRef<boolean>(false);
   const hoverPopupRef = useRef<boolean>(false);
   const waypointDraggableRef = useRef(waypointDraggable);
-
-  // const mapUpdatingExternallyRef = useRef(mapUpdatingExternally);
-  // const mapUpdatingInternallyRef = useRef(mapUpdatingInternally);
 
   const hoveredPointIdRef = useRef<string | null>(null);
   const hoveredClusterIdRef = useRef<string | null>(null);
@@ -242,6 +234,7 @@ export const Map: React.FC<Props> = ({
     // update state
     if (onMove) {
       console.log('map: onmove', bounds);
+
       onMove({
         center: { lat, lon },
         zoom,
