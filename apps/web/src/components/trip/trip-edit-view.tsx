@@ -71,7 +71,6 @@ type Props = {
 export const TripEditView: React.FC<Props> = ({ trip }) => {
   const mapbox = useMapbox();
   const map = useMap({
-    mapbox: mapbox.ref.current,
     sidebar: true,
     bounds: {
       ne: { lat: 56.109059951256256, lon: 38.10823094563034 },

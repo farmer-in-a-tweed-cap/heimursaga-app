@@ -9,9 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { Map } from '@/components';
+import { useMap } from '@/hooks';
 import { useMapbox } from '@/hooks/use-mapbox';
 
 type Props = {
@@ -46,49 +47,61 @@ export const MapDialog: React.FC<Props> = ({
 }) => {
   const mapbox = useMapbox();
 
-  const [map, setMap] = useState<{
-    lat: number;
-    lon: number;
-    alt: number;
-    marker?: {
-      lat: number;
-      lon: number;
-    };
-  }>({
-    lat: coordinates?.lat,
-    lon: coordinates?.lon,
-    alt: coordinates?.alt,
+  const map = useMap({
+    center: {
+      lat: coordinates?.lat,
+      lon: coordinates?.lon,
+    },
+    zoom: coordinates?.alt,
   });
 
-  const handleMapMove = (data: { lat: number; lon: number; alt: number }) => {
-    const { lat, lon, alt } = data;
+  // const [map, setMap] = useState<{
+  //   lat: number;
+  //   lon: number;
+  //   alt: number;
+  //   marker?: {
+  //     lat: number;
+  //     lon: number;
+  //   };
+  // }>({
+  //   lat: coordinates?.lat,
+  //   lon: coordinates?.lon,
+  //   alt: coordinates?.alt,
+  // });
 
-    setMap((map) => ({
-      ...map,
-      lat,
-      lon,
-      alt,
-    }));
-  };
+  // const handleMapMove = (data: { lat: number; lon: number; alt: number }) => {
+  //   const { lat, lon, alt } = data;
 
-  const handleMarkerChange = (marker: { lat: number; lon: number }) => {
-    const { lat, lon } = marker;
+  //   setMap((map) => ({
+  //     ...map,
+  //     lat,
+  //     lon,
+  //     alt,
+  //   }));
+  // };
 
-    setMap((map) => ({
-      ...map,
-      lat,
-      lon,
-      marker: {
-        lat,
-        lon,
-      },
-    }));
-  };
+  // const handleMarkerChange = (marker: { lat: number; lon: number }) => {
+  //   const { lat, lon } = marker;
+
+  //   setMap((map) => ({
+  //     ...map,
+  //     lat,
+  //     lon,
+  //     marker: {
+  //       lat,
+  //       lon,
+  //     },
+  //   }));
+  // };
 
   const handleSubmit = () => {
-    const { lat, lon, alt, marker } = map;
+    const {
+      center: { lat, lon },
+      zoom,
+    } = map;
+
     if (onSubmit) {
-      onSubmit({ lat, lon, alt, marker });
+      onSubmit({ lat, lon, alt: zoom, marker });
     }
   };
 
@@ -96,23 +109,18 @@ export const MapDialog: React.FC<Props> = ({
     <DialogContent full={true}>
       <DialogHeader>
         <DialogTitle>Location</DialogTitle>
-        <DialogDescription>
-          Select the location you want to attach to your post.
-        </DialogDescription>
+        <DialogDescription>Select location</DialogDescription>
       </DialogHeader>
       <div className="w-full h-full flex items-center space-x-2 bg-accent">
         {mapbox.token && (
           <Map
             token={mapbox.token}
             marker={marker}
-            coordinates={{
-              lat: coordinates.lat,
-              lon: coordinates.lon,
-              alt: coordinates.alt,
-            }}
+            center={map.center}
             markerEnabled={true}
-            onMove={handleMapMove}
-            onMarkerChange={handleMarkerChange}
+            onLoad={map.handleLoad}
+            onMove={map.handleMove}
+            onMarkerChange={map.handleMarkerChange}
           />
         )}
       </div>

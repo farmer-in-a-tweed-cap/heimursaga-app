@@ -33,3 +33,14 @@ export const ERROR_CODES = {
 export const CURRENCY_SYMBOLS = {
   USD: '$',
 };
+
+export const SEARCH_PARAMS = {
+  CONTEXT: 'context',
+  LAT: 'lat',
+  LON: 'lon',
+  ZOOM: 'zoom',
+  POST_ID: 'post_id',
+  SEARCH: 'search',
+  USER: 'user',
+  FILTER: 'filter',
+};
