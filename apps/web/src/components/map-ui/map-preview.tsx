@@ -45,15 +45,15 @@ export const MapPreview: React.FC<Props> = ({
   const retina = '@2x';
 
   useEffect(() => {
-    if (center && map.mapbox.ref) {
-      map.mapbox.ref.setCenter(center);
+    if (center && map.mapbox) {
+      map.mapbox.setCenter(center);
     }
   }, [center]);
 
   useEffect(() => {
-    if (map.mapbox.ref) {
+    if (map.mapbox) {
       if (typeof zoom === 'number') {
-        map.mapbox.ref.setZoom(zoom);
+        map.mapbox.setZoom(zoom);
       }
     }
   }, [zoom]);

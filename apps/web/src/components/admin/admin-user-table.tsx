@@ -217,7 +217,7 @@ export const AdminUserTable: React.FC<Props> = ({
     ({
       name,
       username,
-      role,
+      role = '',
       postsCount = 0,
       blocked,
       memberDate,

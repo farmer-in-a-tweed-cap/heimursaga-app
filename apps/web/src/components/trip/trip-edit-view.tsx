@@ -25,19 +25,12 @@ import {
   MAP_SOURCES,
   Map,
   MapSidebar,
-  MapSourceData,
   MapTripCard,
   MapViewContainer,
   TripEditForm,
-  TripWaypointCard,
-  TripWaypointCardClickHandler,
-  TripWaypointCreateForm,
-  TripWaypointCreateFormSubmitHandler,
-  TripWaypointEditForm,
-  TripWaypointEditFormState,
 } from '@/components';
 import { useMap, useMapbox } from '@/hooks';
-import { dateformat, sortByDate, zodMessage } from '@/lib';
+import { zodMessage } from '@/lib';
 
 type WaypointElement = {
   id: number;
@@ -156,7 +149,7 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
               sw: { lat: 55.25372511584288, lon: 37.174747411366155 },
             };
 
-            map.mapbox.updateBounds(bounds);
+            map.updateBounds(bounds);
           }}
         >
           bounds
