@@ -51,8 +51,10 @@ export const MapPreview: React.FC<Props> = ({
   }, [center]);
 
   useEffect(() => {
-    if (zoom && map.mapbox.ref) {
-      map.mapbox.ref.setZoom(zoom);
+    if (map.mapbox.ref) {
+      if (typeof zoom === 'number') {
+        map.mapbox.ref.setZoom(zoom);
+      }
     }
   }, [zoom]);
 
@@ -72,7 +74,9 @@ export const MapPreview: React.FC<Props> = ({
         {token && (
           <Map
             token={token}
-            zoom={zoom}
+            zoom={0}
+            minZoom={0}
+            maxZoom={10}
             center={center}
             marker={marker}
             layers={layers}
