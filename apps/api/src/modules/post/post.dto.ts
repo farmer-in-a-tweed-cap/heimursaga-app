@@ -1,13 +1,20 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IPostCreatePayload, IPostUpdatePayload } from '@repo/types';
+import {
+  IPostCreatePayload,
+  IPostUpdatePayload,
+  IWaypointCreatePayload,
+} from '@repo/types';
+import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDate,
   IsDateString,
   IsNotEmpty,
   IsNumber,
+  IsObject,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 
 export class PostCreateDto implements IPostCreatePayload {
@@ -57,6 +64,18 @@ export class PostCreateDto implements IPostCreatePayload {
   waypointId: number;
 }
 
+class PostWaypointUpdateDto implements IWaypointCreatePayload {
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lat: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lon: number;
+}
+
 export class PostUpdateDto implements IPostUpdatePayload {
   @ApiProperty({ required: false })
   @IsString()
@@ -68,15 +87,11 @@ export class PostUpdateDto implements IPostUpdatePayload {
   @IsOptional()
   content: string;
 
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  lat: number;
-
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  lon: number;
+  @ApiProperty({ required: true })
+  @IsObject()
+  @ValidateNested()
+  @Type(() => PostWaypointUpdateDto)
+  waypoint: IWaypointCreatePayload;
 
   @ApiProperty({ required: false })
   @IsBoolean()
