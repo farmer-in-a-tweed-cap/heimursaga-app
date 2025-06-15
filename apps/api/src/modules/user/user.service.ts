@@ -5,14 +5,15 @@ import {
   IPostInsightsGetResponse,
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
+  IUserDetail,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserGetAllResponse,
+  IUserGetByUsernameResponse,
   IUserMapGetResponse,
   IUserNotificationGetResponse,
   IUserPictureUploadPayload,
   IUserPostsQueryResponse,
-  IUserProfileDetail,
   IUserSettingsProfileGetResponse,
   IUserSettingsProfileUpdatePayload,
   MediaUploadContext,
@@ -110,7 +111,10 @@ export class UserService {
     }
   }
 
-  async getByUsername({ query, session }: ISessionQuery<{ username: string }>) {
+  async getByUsername({
+    query,
+    session,
+  }: ISessionQuery<{ username: string }>): Promise<IUserGetByUsernameResponse> {
     try {
       const { username } = query;
       const { userId, userRole } = session;
@@ -170,7 +174,7 @@ export class UserService {
         },
       });
 
-      const response: IUserProfileDetail = {
+      const response: IUserGetByUsernameResponse = {
         username: user.username,
         picture: user.profile.picture
           ? getStaticMediaUrl(user.profile.picture)
