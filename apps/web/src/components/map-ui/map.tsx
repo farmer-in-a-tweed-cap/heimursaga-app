@@ -151,10 +151,13 @@ export const Map: React.FC<Props> = ({
   sources = [],
   layers = [],
   styles,
-  zoom = 1,
   minZoom = 4,
   maxZoom = 10,
-  center,
+  center = {
+    lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
+    lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON,
+  },
+  zoom = APP_CONFIG.MAP.DEFAULT.ZOOM,
   controls = true,
   markerEnabled = false,
   disabled = false,
@@ -200,9 +203,10 @@ export const Map: React.FC<Props> = ({
 
   const handleLoad: MapLoadHandler = (data) => {
     if (!mapboxRef.current) return;
-    console.log('map: onload');
 
     const { center, zoom, bounds } = data;
+
+    console.log('map: onload', { center, zoom, bounds });
 
     if (onLoad) {
       onLoad({
@@ -432,36 +436,6 @@ export const Map: React.FC<Props> = ({
     waypointDraggableRef.current = waypointDraggable;
   }, [waypointDraggable]);
 
-  // update sources on change
-  useEffect(() => {
-    if (!mapboxRef.current || !mapLoaded || !sources) return;
-    updateSources({ mapbox: mapboxRef.current, sources });
-  }, [sources]);
-
-  // update bounds on change
-  useEffect(() => {
-    if (!mapboxRef.current || !mapLoaded || !bounds) return;
-
-    // @todo
-    // fit bounds
-    // if (isInternalUpdate.current) {
-    //   console.log('[int] map: bounds', bounds);
-    // } else {
-    //   console.log('[ext] map: bounds', bounds);
-    // }
-    // if (!isInternalUpdate.current) {
-    //   console.log('[ext] map: bounds', bounds);
-
-    //   // mapboxRef.current.bounds(bounds, {
-    // duration: 100,
-    // padding: 0,
-    // // easing: (t) => t,
-    //   // });
-    // } else {}
-
-    // isInternalUpdate.current = false;
-  }, [bounds]);
-
   // update a marker on change
   useEffect(() => {
     if (!mapboxRef.current || !mapLoaded || !marker) return;
@@ -477,6 +451,12 @@ export const Map: React.FC<Props> = ({
       .setLngLat({ lat, lng: lon })
       .addTo(mapboxRef.current);
   }, [marker]);
+
+  // update sources on change
+  useEffect(() => {
+    if (!mapboxRef.current || !mapLoaded || !sources) return;
+    updateSources({ mapbox: mapboxRef.current, sources });
+  }, [sources]);
 
   // render the map
   useEffect(() => {
@@ -534,9 +514,14 @@ export const Map: React.FC<Props> = ({
       };
     }
 
+    // create a map
     mapboxRef.current = new mapboxgl.Map(mapboxConfig);
 
     const canvas = mapboxRef.current.getCanvasContainer();
+
+    // set center
+    mapboxRef.current.setCenter({ lat: center.lat, lon: center.lon });
+    mapboxRef.current.setZoom(zoom);
 
     // set max bounds
     const maxBounds = new mapboxgl.LngLatBounds([-180, -85], [180, 85]);
@@ -595,19 +580,15 @@ export const Map: React.FC<Props> = ({
 
       if (!mapboxRef.current) return;
 
-      // get zoom
-      const zoom = mapboxRef.current.getZoom();
-
       // get bounds
-      const center = mapboxRef.current.getCenter();
       const bounds = mapboxRef.current.getBounds();
-      const ne = bounds?.getNorthEast(); // northeast corner
-      const sw = bounds?.getSouthWest(); // southwest corner
+      const ne = bounds?.getNorthEast();
+      const sw = bounds?.getSouthWest();
 
       // set initial props
       handleLoad({
         mapbox: mapboxRef.current,
-        center: { lat: center.lat, lon: center.lng },
+        center: { lat: center.lat, lon: center.lon },
         zoom,
         bounds:
           ne && sw

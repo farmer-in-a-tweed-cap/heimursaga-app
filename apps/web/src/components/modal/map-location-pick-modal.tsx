@@ -9,7 +9,7 @@ import {
 import { useState } from 'react';
 
 import { Map } from '@/components';
-import { useMapbox } from '@/hooks';
+import { useMap, useMapbox } from '@/hooks';
 import { sleep } from '@/lib';
 
 import { ModalBaseProps } from './modal-provider';
@@ -37,62 +37,23 @@ export type MapLocationPickModalOnSubmitHandler = (data: {
 const MapLocationPickModal: React.FC<
   ModalBaseProps<MapLocationPickModalProps>
 > = ({ props, close, onSubmit, onCancel }) => {
-  const { lat, lon, alt, marker } = props || {};
+  const { lat = 0, lon = 0, alt = 0, marker } = props || {};
 
   const mapbox = useMapbox();
-
-  const [map, setMap] = useState<{
-    lat?: number;
-    lon?: number;
-    alt?: number;
-    marker?: { lat: number; lon: number };
-  }>({
-    lat,
-    lon,
-    alt,
-    marker:
-      marker?.lat && marker?.lon
-        ? { lat: marker.lat, lon: marker.lon }
-        : undefined,
-  });
+  const map = useMap({ center: { lat, lon }, zoom: alt, marker });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    const { lat = 0, lon = 0, alt = 0, marker } = map;
+    const { center, zoom, marker } = map;
 
     const handler = onSubmit as MapLocationPickModalOnSubmitHandler;
 
     if (handler) {
       setLoading(true);
-      handler({ lat, lon, alt, marker });
+      handler({ lat: center.lat, lon: center.lon, alt: zoom, marker });
       await sleep(500);
       close();
     }
-  };
-
-  const handleMapMove = (data: { lat: number; lon: number; alt: number }) => {
-    const { lat, lon, alt } = data;
-
-    setMap((map) => ({
-      ...map,
-      lat,
-      lon,
-      alt,
-    }));
-  };
-
-  const handleMapMarkerChange = (marker: { lat: number; lon: number }) => {
-    const { lat, lon } = marker;
-
-    setMap((map) => ({
-      ...map,
-      lat,
-      lon,
-      marker: {
-        lat,
-        lon,
-      },
-    }));
   };
 
   const handleCancel = () => {
@@ -110,26 +71,11 @@ const MapLocationPickModal: React.FC<
         {mapbox.token && (
           <Map
             token={mapbox.token}
-            marker={
-              map?.marker?.lat && map?.marker?.lon
-                ? {
-                    lat: map?.marker?.lat,
-                    lon: map?.marker?.lon,
-                  }
-                : undefined
-            }
-            coordinates={
-              map?.lat && map?.lon && map?.alt
-                ? {
-                    lat: map?.lat,
-                    lon: map?.lon,
-                    alt: map?.alt,
-                  }
-                : undefined
-            }
+            marker={map.marker}
+            center={map.center}
             markerEnabled={true}
-            onMove={handleMapMove}
-            onMarkerChange={handleMapMarkerChange}
+            onMove={map.handleMove}
+            onMarkerChange={map.handleMarkerChange}
           />
         )}
         {/* <div className="absolute z-50 bottom-2 right-2 bg-white text-black">

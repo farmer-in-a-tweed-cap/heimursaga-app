@@ -66,11 +66,11 @@ export const MapPreview: React.FC<Props> = ({
         {token && (
           <Map
             token={token}
-            coordinates={{
+            center={{
               lat,
               lon,
-              alt,
             }}
+            zoom={alt}
             marker={
               marker
                 ? {

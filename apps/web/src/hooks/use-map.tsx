@@ -71,8 +71,8 @@ export type MapMoveHandler = (data: {
 }) => void;
 
 export const useMap = (
-  state: {
-    mapbox: mapboxgl.Map | null;
+  state?: {
+    // mapbox: mapboxgl.Map | null;
     zoom?: number;
     view?: string;
     sidebar?: boolean;
@@ -80,59 +80,46 @@ export const useMap = (
     context?: string;
     filter?: string;
     center?: MapCoordinatesValue;
+    marker?: MapCoordinatesValue;
     bounds?: MapBoundsValue;
   },
   _config?: MapHookConfig,
 ) => {
   const router = useRouter();
   const pathname = usePathname();
-  const _searchParams = useSearchParams();
+  const searchParams = useSearchParams();
 
   const config: MapHookConfig = _config
     ? _config
     : { updateSearchParams: false };
 
-  const [searchParams] = useState<MapSearchParams>({
-    context: _searchParams.get(MAP_SEARCH_PARAMS.CONTEXT),
-    lat: _searchParams.get(MAP_SEARCH_PARAMS.LAT),
-    lon: _searchParams.get(MAP_SEARCH_PARAMS.LON),
-    zoom: _searchParams.get(MAP_SEARCH_PARAMS.ZOOM),
-    post_id: _searchParams.get(MAP_SEARCH_PARAMS.POST_ID),
-    search: _searchParams.get(MAP_SEARCH_PARAMS.SEARCH),
-    user: _searchParams.get(MAP_SEARCH_PARAMS.USER),
-    filter: _searchParams.get(MAP_SEARCH_PARAMS.FILTER),
-  });
-
-  const [view, setView] = useState<string>(state.view || MAP_VIEW_PARAMS.LIST);
-  const [sidebar, setSidebar] = useState<boolean>(state.sidebar || false);
-  const [drawer, setDrawer] = useState<boolean>(state.drawer || false);
+  const [loaded, setLoaded] = useState<boolean>(false);
+  const [view, setView] = useState<string>(state?.view || MAP_VIEW_PARAMS.LIST);
+  const [sidebar, setSidebar] = useState<boolean>(state?.sidebar || false);
+  const [drawer, setDrawer] = useState<boolean>(state?.drawer || false);
   const [context, setContext] = useState<string>(
-    state.context || MAP_CONTEXT_PARAMS.GLOBAL,
+    state?.context || MAP_CONTEXT_PARAMS.GLOBAL,
   );
-  const [filter, setFilter] = useState<string | undefined>(state.filter);
-  const [zoom, setZoom] = useState<number>(0);
+  const [filter, setFilter] = useState<string | undefined>(state?.filter);
+  const [zoom, setZoom] = useState<number>(
+    state?.zoom || APP_CONFIG.MAP.DEFAULT.ZOOM,
+  );
+  const [marker, setMarker] = useState<MapCoordinatesValue | undefined>(
+    state?.marker,
+  );
   const [center, setCenter] = useState<MapCoordinatesValue>(
-    state.center || {
-      lon: 0,
-      lat: 0,
+    state?.center || {
+      lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON,
+      lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
     },
   );
-  const [_bounds, setBounds] = useState<MapBoundsValue>(
-    state.bounds || {
-      ne: {
-        lon: APP_CONFIG.MAP.DEFAULT.BOUNDS.NE.LON,
-        lat: APP_CONFIG.MAP.DEFAULT.BOUNDS.NE.LON,
-      },
-      sw: {
-        lon: APP_CONFIG.MAP.DEFAULT.BOUNDS.SW.LON,
-        lat: APP_CONFIG.MAP.DEFAULT.BOUNDS.SW.LON,
-      },
-    },
+  const [_bounds, setBounds] = useState<MapBoundsValue | undefined>(
+    state?.bounds,
   );
   const [bounds] = useDebounce(_bounds, MAP_MOVE_DEBOUNCE_TIMEOUT);
 
-  const mapboxRef = useRef<mapboxgl.Map | null>(state.mapbox || null);
-  const viewRef = useRef<string>(state.view || MAP_VIEW_PARAMS.LIST);
+  const mapboxRef = useRef<mapboxgl.Map | null>(null);
+  const viewRef = useRef<string>(state?.view || MAP_VIEW_PARAMS.LIST);
 
   const updateSearchParams = (payload: Partial<MapSearchParams>) => {
     const { lat, lon, zoom, post_id, search, context, user, filter } = payload;
@@ -161,7 +148,7 @@ export const useMap = (
     });
 
     // update the url
-    router.push(`${pathname}?${s.toString()}`, { scroll: false });
+    router.push([pathname, s.toString()].join('?'), { scroll: false });
   };
 
   const mapboxUpdateBounds = (bounds: MapBoundsValue) => {
@@ -197,6 +184,8 @@ export const useMap = (
     if (bounds) {
       setBounds(bounds);
     }
+
+    setLoaded(true);
   };
 
   const handleMove: MapMoveHandler = (data) => {
@@ -219,6 +208,7 @@ export const useMap = (
     // update search params
     if (config.updateSearchParams) {
       const { lat, lon } = center;
+
       updateSearchParams({
         lat: `${lat}`,
         lon: `${lon}`,
@@ -272,7 +262,12 @@ export const useMap = (
     }
   };
 
+  const handleMarkerChange = (marker: MapCoordinatesValue) => {
+    setMarker(marker);
+  };
+
   return {
+    loaded,
     view,
     sidebar,
     drawer,
@@ -286,6 +281,8 @@ export const useMap = (
     setCenter,
     bounds,
     setBounds,
+    marker,
+    setMarker,
     handleLoad,
     handleMove,
     handleSidebarToggle,
@@ -294,6 +291,7 @@ export const useMap = (
     handleViewToggle,
     handleContextChange,
     handleFilterChange,
+    handleMarkerChange,
     mapbox: {
       ref: mapboxRef.current,
       updateBounds: mapboxUpdateBounds,

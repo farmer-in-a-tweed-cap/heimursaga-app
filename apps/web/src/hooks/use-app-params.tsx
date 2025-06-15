@@ -8,20 +8,6 @@ import {
 } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { SEARCH_PARAMS } from '@/constants';
-
-const PARAM_KEYS = [
-  SEARCH_PARAMS.CONTEXT,
-  SEARCH_PARAMS.FILTER,
-  SEARCH_PARAMS.CONTEXT,
-  SEARCH_PARAMS.LAT,
-  SEARCH_PARAMS.LON,
-  SEARCH_PARAMS.ZOOM,
-  SEARCH_PARAMS.POST_ID,
-  SEARCH_PARAMS.SEARCH,
-  SEARCH_PARAMS.USER,
-];
-
 type ParamKey =
   | 'context'
   | 'filter'
@@ -39,7 +25,7 @@ const parseSearchParams = (
   defaultParams?: ParamState,
 ): ParamState => {
   try {
-    const paramKeys = searchParams.keys().toArray() as ParamKey[];
+    const paramKeys = Array.from(searchParams.keys()) as ParamKey[];
     const params: ParamState = { ...defaultParams };
 
     paramKeys.forEach((key) => {
@@ -60,20 +46,9 @@ export function useAppParams(defaultParams?: ParamState) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const params: ParamState = {
-    lat: searchParams.get(SEARCH_PARAMS.LAT),
-    lon: searchParams.get(SEARCH_PARAMS.LON),
-    zoom: searchParams.get(SEARCH_PARAMS.ZOOM),
-  };
-
-  // const [params, setParams] = useState<ParamState>(
-  //   {
-  //     lat: searchParams.get(SEARCH_PARAMS.LAT),
-  //     lon: searchParams.get(SEARCH_PARAMS.LON),
-  //     zoom: searchParams.get(SEARCH_PARAMS.ZOOM),
-  //   },
-  //   // parseSearchParams(searchParams, defaultParams),
-  // );
+  const [params, setParams] = useState<ParamState>(
+    parseSearchParams(searchParams, defaultParams),
+  );
 
   const updateParams = (state: Partial<ParamState>) => {
     const keys = Object.keys(state) as ParamKey[];
@@ -95,15 +70,18 @@ export function useAppParams(defaultParams?: ParamState) {
     router.push(`${pathname}?${s.toString()}`, { scroll: false });
   };
 
-  // useEffect(() => {
-  //   setParams(parseSearchParams(searchParams, defaultParams));
-  // }, [searchParams, defaultParams]);
+  useEffect(() => {
+    if (searchParams) {
+      setParams(parseSearchParams(searchParams));
+    }
+  }, [searchParams]);
 
-  // useEffect(() => {
-  //   if (defaultParams) {
-  //     updateParams({ ...defaultParams, ...params });
-  //   }
-  // }, []);
+  useEffect(() => {
+    if (defaultParams) {
+      setParams({ ...defaultParams, ...params });
+      updateParams({ ...defaultParams, ...params });
+    }
+  }, []);
 
   return {
     params,
