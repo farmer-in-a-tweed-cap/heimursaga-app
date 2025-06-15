@@ -77,21 +77,7 @@ export interface IPasswordUpdatePayload {
 // user
 export interface IUserDetail {
   username: string;
-  role: string;
-  name: string;
-  picture: string;
-  postsCount?: number;
-  memberDate?: Date;
-  blocked?: boolean;
-}
-
-export interface IUserGetAllResponse {
-  data: IUserDetail[];
-  results: number;
-}
-
-export interface IUserProfileDetail {
-  username: string;
+  role?: string;
   name: string;
   picture: string;
   bio?: string;
@@ -101,7 +87,17 @@ export interface IUserProfileDetail {
   followed?: boolean;
   you?: boolean;
   creator?: boolean;
+
+  postsCount?: number;
+  blocked?: boolean;
 }
+
+export interface IUserGetAllResponse {
+  data: IUserDetail[];
+  results: number;
+}
+
+export interface IUserGetByUsernameResponse extends IUserDetail {}
 
 export interface IUserSettingsResponse {
   context: 'profile' | 'billing';
@@ -146,12 +142,12 @@ export interface IUserPostsQueryResponse {
 
 export interface IUserFollowersQueryResponse {
   results: number;
-  data: IUserProfileDetail[];
+  data: IUserDetail[];
 }
 
 export interface IUserFollowingQueryResponse {
   results: number;
-  data: IUserProfileDetail[];
+  data: IUserDetail[];
 }
 
 export interface IUserPictureUploadPayload {

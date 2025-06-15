@@ -1,5 +1,5 @@
-import { IUserProfileDetail } from '@repo/types';
-import { MapPinIcon } from '@repo/ui/icons';
+import { IUserDetail } from '@repo/types';
+import { FlagIcon, MapPinIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 
 import { UserAvatar } from './user-avatar';
@@ -8,7 +8,7 @@ import { UserPageSections } from './user-page-sections';
 import { UserProfileButtons } from './user-profile-buttons';
 
 type Props = {
-  user: IUserProfileDetail;
+  user: IUserDetail;
   section?: string;
   me?: boolean;
 };
@@ -19,6 +19,12 @@ export const UserProfilePage: React.FC<Props> = ({
   me = false,
 }) => {
   const isCreator = user.creator ? user.creator : false;
+
+  const location = {
+    visible: user.locationFrom || user.locationLives,
+    from: user.locationFrom,
+    lives: user.locationLives,
+  };
 
   return (
     <div className="w-full max-w-4xl flex flex-col justify-start items-center">
@@ -39,10 +45,20 @@ export const UserProfilePage: React.FC<Props> = ({
           <span className="text-2xl font-semibold">{user?.name}</span>
         </div>
         <span className="text-sm font-normal text-gray-700">{user?.bio}</span>
-        {user?.locationFrom && (
-          <div className="mt-2 flex flex-row gap-1 items-center justify-start text-sm font-normal text-gray-700">
-            <MapPinIcon size={16} weight="bold" />
-            <span> {user?.locationFrom}</span>
+        {location.visible && (
+          <div className="flex flex-row items-center justify-center gap-3">
+            {location.from && (
+              <div className="mt-2 flex flex-row gap-1 items-center justify-start text-sm font-normal text-gray-700">
+                <FlagIcon size={16} weight="bold" />
+                <span>{location.from}</span>
+              </div>
+            )}
+            {location.lives && (
+              <div className="mt-2 flex flex-row gap-1 items-center justify-start text-sm font-normal text-gray-700">
+                <MapPinIcon size={16} weight="bold" />
+                <span>{location.lives}</span>
+              </div>
+            )}
           </div>
         )}
       </div>

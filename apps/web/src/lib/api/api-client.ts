@@ -42,6 +42,7 @@ import {
   ITripGetAllResponse,
   ITripGetByIdResponse,
   ITripUpdatePayload,
+  IUserDetail,
   IUserFollowersQueryResponse,
   IUserFollowingQueryResponse,
   IUserGetAllResponse,
@@ -49,7 +50,6 @@ import {
   IUserNotificationGetResponse,
   IUserPictureUploadClientPayload,
   IUserPostsQueryResponse,
-  IUserProfileDetail,
   IUserSettingsProfileGetResponse,
   IUserSettingsProfileUpdatePayload,
   IWaypointCreatePayload,
@@ -179,7 +179,7 @@ export const apiClient = {
     { username }: { username: string },
     config?: RequestConfig,
   ) =>
-    api.request<IUserProfileDetail>(
+    api.request<IUserDetail>(
       API_ROUTER.USERS.GET_BY_USERNAME(username),
       config,
     ),
