@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { dateformat } from '@/lib/date-format';
 
 import { MapStaticPreview, PostButtons, UserBar } from '@/components';
+import { APP_CONFIG } from '@/config';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 
@@ -201,18 +202,12 @@ export const PostCard: React.FC<PostCardProps> = ({
               <MapStaticPreview
                 href={
                   id
-                    ? `${ROUTER.HOME}?lat=${waypoint.lat}&lon=${waypoint.lon}&alt=12`
+                    ? `${ROUTER.HOME}?lat=${waypoint.lat}&lon=${waypoint.lon}&zoom=${APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM}`
                     : '#'
                 }
-                lat={waypoint.lat}
-                lon={waypoint.lon}
+                marker={waypoint}
+                center={waypoint}
                 zoom={8}
-                markers={[
-                  {
-                    lat: waypoint.lat,
-                    lon: waypoint.lon,
-                  },
-                ]}
               />
             </div>
           )}

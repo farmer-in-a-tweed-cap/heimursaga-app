@@ -40,7 +40,7 @@ export default async function Page({ params }: PageProps) {
             <CardContent>
               <PostEditForm
                 postId={postId}
-                defaultValues={{
+                values={{
                   ...postQuery.data,
                 }}
               />

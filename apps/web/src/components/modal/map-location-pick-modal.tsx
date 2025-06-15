@@ -9,38 +9,30 @@ import {
 import { useState } from 'react';
 
 import { Map } from '@/components';
-import { useMap, useMapbox } from '@/hooks';
+import { MapCoordinatesValue, useMap, useMapbox } from '@/hooks';
 import { sleep } from '@/lib';
 
 import { ModalBaseProps } from './modal-provider';
 
-export type MapLocationPickModalProps = {
-  lat: number;
-  lon: number;
-  alt: number;
-  marker?: {
-    lat: number;
-    lon: number;
-  };
+type MapLocationPickModalState = {
+  center: MapCoordinatesValue;
+  zoom: number;
+  marker?: MapCoordinatesValue;
 };
 
-export type MapLocationPickModalOnSubmitHandler = (data: {
-  lat: number;
-  lon: number;
-  alt: number;
-  marker?: {
-    lat: number;
-    lon: number;
-  };
-}) => void;
+export type MapLocationPickModalProps = MapLocationPickModalState;
+
+export type MapLocationPickModalOnSubmitHandler = (
+  data: MapLocationPickModalState,
+) => void;
 
 const MapLocationPickModal: React.FC<
   ModalBaseProps<MapLocationPickModalProps>
 > = ({ props, close, onSubmit, onCancel }) => {
-  const { lat = 0, lon = 0, alt = 0, marker } = props || {};
+  const { center, marker, zoom } = props || {};
 
   const mapbox = useMapbox();
-  const map = useMap({ center: { lat, lon }, zoom: alt, marker });
+  const map = useMap({ center, marker, zoom });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
@@ -50,7 +42,7 @@ const MapLocationPickModal: React.FC<
 
     if (handler) {
       setLoading(true);
-      handler({ lat: center.lat, lon: center.lon, alt: zoom, marker });
+      handler({ center, zoom, marker });
       await sleep(500);
       close();
     }
@@ -73,6 +65,7 @@ const MapLocationPickModal: React.FC<
             token={mapbox.token}
             marker={map.marker}
             center={map.center}
+            zoom={map.zoom}
             markerEnabled={true}
             onMove={map.handleMove}
             onMarkerChange={map.handleMarkerChange}

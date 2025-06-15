@@ -4,6 +4,9 @@ export const APP_CONFIG = {
   },
   MAP: {
     DEFAULT: {
+      PREVIEW: {
+        ZOOM: 10,
+      },
       ZOOM: 3,
       CENTER: {
         LAT: 46.50069923496966,

@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { IPostDetail } from '@repo/types';
 import {
   Button,
   DatePicker,
@@ -28,8 +29,8 @@ import {
 } from '@/components';
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
-import { useModal, useSession } from '@/hooks';
-import { dateformat, zodMessage } from '@/lib';
+import { useMap, useModal, useSession } from '@/hooks';
+import { dateformat, normalizeText, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
 
 const schema = z.object({
@@ -42,7 +43,7 @@ const schema = z.object({
     .string()
     .nonempty(zodMessage.required('content'))
     .min(0, zodMessage.string.min('content', 0))
-    .max(1000, zodMessage.string.max('content', 1000)),
+    .max(3000, zodMessage.string.max('content', 3000)),
   place: z
     .string()
     .nonempty(zodMessage.required('place'))
@@ -54,33 +55,23 @@ const schema = z.object({
 
 type Props = {
   postId: string;
-  defaultValues?: {
-    title?: string;
-    content?: string;
-    lat?: number;
-    lon?: number;
-    public?: boolean;
-    sponsored?: boolean;
-    date?: Date;
-    place?: string;
-  };
+  values?: Partial<IPostDetail>;
 };
 
-export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
+export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
   const modal = useModal();
   const toast = useToast();
   const session = useSession();
 
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: defaultValues
+  const { waypoint } = values || {};
+
+  const map = useMap({
+    marker: waypoint
       ? {
-          title: defaultValues?.title,
-          content: defaultValues?.content,
-          place: defaultValues?.place,
-          date: defaultValues?.date ? new Date(defaultValues?.date) : undefined,
+          lat: waypoint.lat,
+          lon: waypoint.lon,
         }
-      : {},
+      : undefined,
   });
 
   const [loading, setLoading] = useState<{ post: boolean; privacy: boolean }>({
@@ -92,25 +83,17 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
     public: boolean;
     sponsored: boolean;
   }>({
-    public: defaultValues?.public || false,
-    sponsored: defaultValues?.sponsored || false,
+    public: values?.public || false,
+    sponsored: values?.sponsored || false,
   });
 
-  const [location, setLocation] = useState<{
-    lat: number;
-    lon: number;
-    alt: number;
-    marker?: {
-      lat: number;
-      lon: number;
-    };
-  }>({
-    lat: defaultValues?.lat || APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
-    lon: defaultValues?.lon || APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
-    alt: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.ALT,
-    marker: {
-      lat: defaultValues?.lat || APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
-      lon: defaultValues?.lon || APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    values: {
+      title: values?.title || '',
+      content: normalizeText(values?.content || ''),
+      place: values?.place || '',
+      date: values?.date ? new Date(values?.date) : new Date(),
     },
   });
 
@@ -118,19 +101,16 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
     modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_PICK, {
       full: true,
       props: {
-        lat: location.marker ? location.marker?.lat : location.lat,
-        lon: location.marker ? location.marker?.lon : location.lon,
-        alt: APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
-        marker: location?.marker
-          ? {
-              lat: location?.marker?.lat,
-              lon: location?.marker?.lon,
-            }
-          : undefined,
+        center: map.marker ? map.marker : map.center,
+        zoom: map.marker ? APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM : 4,
+        marker: map.marker,
       },
       onSubmit: ((data) => {
-        const { lat, lon, alt, marker } = data || {};
-        setLocation((location) => ({ ...location, lat, lon, alt, marker }));
+        const { center, marker, zoom } = data || {};
+
+        map.setMarker(marker);
+        map.setZoom(zoom);
+        map.setCenter(center);
       }) as MapLocationPickModalOnSubmitHandler,
       onCancel: () => {},
     });
@@ -177,17 +157,19 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
       try {
         if (!postId) return;
 
-        setLoading((loading) => ({ ...loading, post: true }));
+        const { marker } = map;
 
-        const { lat, lon } = location;
+        setLoading((loading) => ({ ...loading, post: true }));
 
         // update the post
         const { success } = await apiClient.updatePost({
           query: { id: postId },
           payload: {
             ...values,
-            lat,
-            lon,
+            waypoint: {
+              lat: marker?.lat,
+              lon: marker?.lon,
+            },
           },
         });
 
@@ -214,24 +196,12 @@ export const PostEditForm: React.FC<Props> = ({ postId, defaultValues }) => {
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-4">
-        <div>
-          <MapPreview
-            lat={location.marker ? location.marker?.lat : location.lat}
-            lon={location.marker ? location.marker?.lon : location.lon}
-            alt={APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM}
-            markers={
-              location.marker
-                ? [
-                    {
-                      lat: location.marker?.lat,
-                      lon: location.marker?.lon,
-                    },
-                  ]
-                : undefined
-            }
-            onClick={handleLocationPickModal}
-          />
-        </div>
+        <MapPreview
+          zoom={map.marker ? APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM : 4}
+          center={map.marker}
+          marker={map.marker}
+          onClick={handleLocationPickModal}
+        />
         <div className="mt-4">
           <Form {...form}>
             <form onSubmit={handleSubmit}>

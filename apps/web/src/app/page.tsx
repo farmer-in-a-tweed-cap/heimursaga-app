@@ -1,12 +1,7 @@
-import { Metadata } from 'next';
-
 import { MapExploreView } from '@/components';
 
 import { MapLayout } from './layout';
-
-export const metadata: Metadata = {
-  title: 'Home',
-};
+import { metadata as _metadata } from './layout';
 
 export default async function Page() {
   return (
