@@ -32,7 +32,7 @@ export const AdminDashboardView: React.FC<Props> = ({ section }) => {
 
   const handleTabChange = (tab: string) => {
     setTab(tab);
-    router.push([ROUTER.DASHBOARD.HOME, tab].join('/'), {
+    router.push([ROUTER.ADMIN.HOME, tab].join('/'), {
       scroll: false,
     });
   };
