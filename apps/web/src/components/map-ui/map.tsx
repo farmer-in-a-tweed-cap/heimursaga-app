@@ -152,7 +152,7 @@ export const Map: React.FC<Props> = ({
   layers = [],
   styles,
   minZoom = 4,
-  maxZoom = 10,
+  maxZoom = 15,
   center = {
     lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
     lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON,

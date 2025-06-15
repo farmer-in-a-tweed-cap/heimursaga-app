@@ -29,7 +29,7 @@ import {
   MapPreview,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
-import { useModal, useSession } from '@/hooks';
+import { MapCoordinatesValue, useMap, useModal, useSession } from '@/hooks';
 import { dateformat, redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
@@ -42,7 +42,7 @@ const schema = z.object({
   content: z
     .string()
     .nonempty(zodMessage.required('content'))
-    .min(2, zodMessage.string.min('content', 25))
+    .min(0, zodMessage.string.min('content', 0))
     .max(3000, zodMessage.string.max('content', 3000)),
   place: z
     .string()
@@ -79,34 +79,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
 
   const [loading, setLoading] = useState<boolean>(false);
 
-  const [location, setLocation] = useState<{
-    lat: number;
-    lon: number;
-    alt: number;
-    selected: boolean;
-    marker?: {
-      lat: number;
-      lon: number;
-    };
-  }>(
-    waypoint
-      ? {
-          lat: waypoint.lat,
-          lon: waypoint.lon,
-          alt: APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
-          selected: false,
-          marker: {
-            lat: waypoint.lat,
-            lon: waypoint.lon,
-          },
-        }
-      : {
-          lat: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT,
-          lon: APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON,
-          alt: APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
-          selected: false,
-        },
-  );
+  const map = useMap();
 
   const [privacy, setPrivacy] = useState<{
     public: boolean;
@@ -120,27 +93,16 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_PICK, {
       full: true,
       props: {
-        lat: location.marker ? location.marker?.lat : location.lat,
-        lon: location.marker ? location.marker?.lon : location.lon,
-        alt: location.selected ? APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM : 6,
-        marker: location?.marker
-          ? {
-              lat: location?.marker?.lat,
-              lon: location?.marker?.lon,
-            }
-          : undefined,
+        center: map.marker ? map.marker : map.center,
+        zoom: map.marker ? APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM : 4,
+        marker: map.marker,
       },
       onSubmit: ((data) => {
-        const { lat, lon, alt, marker } = data || {};
+        const { center, marker, zoom } = data || {};
 
-        setLocation((location) => ({
-          ...location,
-          selected: true,
-          lat,
-          lon,
-          alt,
-          marker,
-        }));
+        map.setMarker(marker);
+        map.setZoom(zoom);
+        map.setCenter(center);
       }) as MapLocationPickModalOnSubmitHandler,
       onCancel: () => {},
     });
@@ -150,6 +112,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     async (values: z.infer<typeof schema>) => {
       try {
         const { title, content, place, date } = values;
+        const { marker } = map;
 
         setLoading(true);
 
@@ -159,8 +122,8 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
           content,
           place,
           date,
-          lat: location.lat,
-          lon: location.lon,
+          lat: marker?.lat,
+          lon: marker?.lon,
           public: privacy.public,
           sponsored: privacy.sponsored,
           waypointId: waypoint?.id,
@@ -187,25 +150,13 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-4">
-        <div className="w-full h-auto">
-          <MapPreview
-            lat={location.marker ? location.marker?.lat : location.lat}
-            lon={location.marker ? location.marker?.lon : location.lon}
-            alt={location.selected ? APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM : 6}
-            overlay={waypoint ? false : true}
-            markers={
-              location.marker
-                ? [
-                    {
-                      lat: location.marker?.lat,
-                      lon: location.marker?.lon,
-                    },
-                  ]
-                : undefined
-            }
-            onClick={handleLocationPickModal}
-          />
-        </div>
+        <MapPreview
+          zoom={map.marker ? APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM : 4}
+          center={map.marker}
+          marker={map.marker}
+          overlay={waypoint ? false : true}
+          onClick={handleLocationPickModal}
+        />
         {waypoint && (
           <div className="flex flex-row items-center justify-start gap-1">
             <MapPinIcon weight="bold" size={18} />

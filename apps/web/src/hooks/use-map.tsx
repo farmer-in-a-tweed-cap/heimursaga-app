@@ -151,6 +151,22 @@ export const useMap = (
     router.push([pathname, s.toString()].join('?'), { scroll: false });
   };
 
+  const updateCenter = (center: MapCoordinatesValue) => {
+    setCenter(center);
+
+    if (mapboxRef.current) {
+      mapboxRef.current.setCenter(center);
+    }
+  };
+
+  const updateZoom = (zoom: number) => {
+    setZoom(zoom);
+
+    if (mapboxRef.current) {
+      mapboxRef.current.setZoom(zoom);
+    }
+  };
+
   const mapboxUpdateBounds = (bounds: MapBoundsValue) => {
     if (!mapboxRef.current) return;
 
@@ -277,8 +293,11 @@ export const useMap = (
     context,
     setContext,
     zoom,
+    setZoom,
+    updateZoom,
     center,
     setCenter,
+    updateCenter,
     bounds,
     setBounds,
     marker,

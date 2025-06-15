@@ -50,9 +50,10 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
         <div className="transition-all w-full h-full z-10">
           <MapPreview
             className="w-full h-[200px] lg:h-[240px]"
-            lat={APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LAT}
-            lon={APP_CONFIG.MAPBOX.DEFAULT.COORDINATES.LON}
-            alt={0}
+            center={{
+              lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
+              lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON,
+            }}
             zoom={0}
             layers={[
               {

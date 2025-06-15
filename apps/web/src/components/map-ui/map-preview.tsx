@@ -2,9 +2,10 @@
 
 import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
+import { useEffect } from 'react';
 
 import { APP_CONFIG } from '@/config';
-import { useMapbox } from '@/hooks';
+import { MapCoordinatesValue, useMap, useMapbox } from '@/hooks';
 
 import { Map, MapSource } from './map';
 import { MapPreviewOverlay } from './map-preview-overlay';
@@ -12,34 +13,29 @@ import { MapPreviewOverlay } from './map-preview-overlay';
 type Props = {
   href?: string;
   className?: string;
-  lat?: number;
-  lon?: number;
-  alt?: number;
-  overlay?: boolean;
+  center?: MapCoordinatesValue;
+  marker?: MapCoordinatesValue;
   zoom?: number;
+  overlay?: boolean;
   layers?: { id: string; source: string }[];
   sources?: MapSource[];
-  markers?: {
-    lat: number;
-    lon: number;
-  }[];
+
   onClick?: () => void;
 };
 
 export const MapPreview: React.FC<Props> = ({
   href,
-  lat = 0,
-  lon = 0,
-  alt = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
-  markers,
+  center,
+  marker,
+  zoom = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
   className,
-  zoom = 0,
   overlay = true,
   layers = [],
   sources = [],
   onClick = () => {},
 }) => {
   const mapbox = useMapbox();
+  const map = useMap();
 
   const token = mapbox.token;
   const width = 600;
@@ -48,7 +44,17 @@ export const MapPreview: React.FC<Props> = ({
   const color = APP_CONFIG.MAPBOX.BRAND_COLOR;
   const retina = '@2x';
 
-  const marker = markers?.[0];
+  useEffect(() => {
+    if (center && map.mapbox.ref) {
+      map.mapbox.ref.setCenter(center);
+    }
+  }, [center]);
+
+  useEffect(() => {
+    if (zoom && map.mapbox.ref) {
+      map.mapbox.ref.setZoom(zoom);
+    }
+  }, [zoom]);
 
   return (
     <div
@@ -66,22 +72,11 @@ export const MapPreview: React.FC<Props> = ({
         {token && (
           <Map
             token={token}
-            center={{
-              lat,
-              lon,
-            }}
-            zoom={alt}
-            marker={
-              marker
-                ? {
-                    lat: marker.lat,
-                    lon: marker.lon,
-                  }
-                : undefined
-            }
+            zoom={zoom}
+            center={center}
+            marker={marker}
             layers={layers}
             sources={sources}
-            minZoom={zoom}
             width={width}
             height={height}
             cursor="pointer"
@@ -94,6 +89,7 @@ export const MapPreview: React.FC<Props> = ({
                 },
               },
             }}
+            onLoad={map.handleLoad}
           />
         )}
       </div>
@@ -103,10 +99,8 @@ export const MapPreview: React.FC<Props> = ({
 
 export const MapStaticPreview: React.FC<Props> = ({
   href,
-  lat = 0,
-  lon = 0,
+  marker,
   zoom = APP_CONFIG.MAPBOX.MAP_PREVIEW.ZOOM,
-  markers = [],
   overlay = true,
   className,
   onClick = () => {},
@@ -120,12 +114,10 @@ export const MapStaticPreview: React.FC<Props> = ({
   const color = APP_CONFIG.MAPBOX.BRAND_COLOR;
   const retina = '@2x';
 
-  const pin =
-    markers.length >= 1
-      ? markers.map(({ lon, lat }) => `pin-s+${color}(${lon},${lat})`).join(',')
-      : '';
+  const { lat = 0, lon = 0 } = marker || {};
+  const pin = marker ? `pin-s+${color}(${marker.lon},${marker.lat})` : '';
 
-  const src = `https://api.mapbox.com/styles/v1/${style}/static/${markers.length >= 1 ? `${pin}/` : ''}${lon},${lat},${zoom},0,0/${width}x${height}${retina}?access_token=${token}`;
+  const src = `https://api.mapbox.com/styles/v1/${style}/static/${pin}/${lon},${lat},${zoom},0,0/${width}x${height}${retina}?access_token=${token}`;
 
   return (
     <div
