@@ -381,17 +381,44 @@ export class PostService {
             author_id: userId,
             deleted_at: null,
           },
+          select: {
+            id: true,
+            waypoint_id: true,
+          },
         })
         .catch(() => {
           throw new ServiceForbiddenException();
         });
 
-      const content = normalizeText(payload.content);
+      const { waypoint } = payload;
 
       // update the post
-      await this.prisma.post.update({
-        where: { id: post.id },
-        data: { ...payload, content },
+      await this.prisma.$transaction(async (tx) => {
+        // update the post
+        await tx.post.update({
+          where: { id: post.id },
+          data: {
+            title: payload.title,
+            content: normalizeText(payload.content),
+            public: payload.public,
+            sponsored: payload.sponsored,
+            place: payload.place,
+            date: payload.date,
+          },
+        });
+
+        // update the waypoint
+        if (waypoint) {
+          if (post.waypoint_id) {
+            await tx.waypoint.update({
+              where: { id: post.waypoint_id },
+              data: {
+                lat: waypoint.lat,
+                lon: waypoint.lon,
+              },
+            });
+          }
+        }
       });
     } catch (e) {
       this.logger.error(e);

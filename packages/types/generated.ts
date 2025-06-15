@@ -296,8 +296,7 @@ export interface IPostCreateResponse {
 export interface IPostUpdatePayload {
   title?: string;
   content?: string;
-  lat?: number;
-  lon?: number;
+  waypoint?: IWaypointUpdatePayload;
   public?: boolean;
   sponsored?: boolean;
   place?: string;
