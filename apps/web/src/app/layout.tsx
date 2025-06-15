@@ -78,10 +78,12 @@ export const SessionLayout = async ({
     if (!session) return redirect(ROUTER.LOGIN);
 
     // check roles
-    if (session && roles) {
-      const access = roles.some((role) => role === session.role);
-      if (!access) {
-        return redirect(ROUTER.HOME);
+    if (session) {
+      if (roles.length >= 1) {
+        const access = roles.some((role) => role === session.role);
+        if (!access) {
+          return redirect(ROUTER.HOME);
+        }
       }
     }
   }
