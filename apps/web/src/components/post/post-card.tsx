@@ -14,7 +14,6 @@ import { ROUTER } from '@/router';
 
 import { PostBookmarkButton } from './post-bookmark-button';
 import { PostEditButton } from './post-edit-button';
-import { PostLikeButton } from './post-like-button';
 
 export type PostCardProps = {
   href?: string;

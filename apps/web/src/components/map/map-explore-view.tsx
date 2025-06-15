@@ -255,7 +255,7 @@ export const MapExploreView: React.FC<Props> = () => {
           updateParams({ search: query, lon: `${lon}`, lat: `${lat}` });
         }
 
-        // setMap((prev) => ({ ...prev, bounds: bbox }));
+        map.updateBounds(bbox);
       }
     }
   };
@@ -313,20 +313,6 @@ export const MapExploreView: React.FC<Props> = () => {
       setPostId(postId);
       map.handleDrawerOpen();
     }
-
-    // @todo: search
-    // // set default search
-    // if (params.search) {
-    //   setSearch((search) => ({ ...search, query: params.search || '' }));
-    // }
-
-    // set default search
-    // if (params.search) {
-    //   setSearch((prev) => ({
-    //     ...prev,
-    //     query: decodeURI(params.search as string),
-    //   }));
-    // }
   }, []);
 
   return (

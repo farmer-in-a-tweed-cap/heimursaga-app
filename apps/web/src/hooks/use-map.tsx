@@ -72,7 +72,6 @@ export type MapMoveHandler = (data: {
 
 export const useMap = (
   state?: {
-    // mapbox: mapboxgl.Map | null;
     zoom?: number;
     view?: string;
     sidebar?: boolean;
@@ -167,7 +166,7 @@ export const useMap = (
     }
   };
 
-  const mapboxUpdateBounds = (bounds: MapBoundsValue) => {
+  const updateBounds = (bounds: MapBoundsValue) => {
     if (!mapboxRef.current) return;
 
     mapboxRef.current.fitBounds(
@@ -302,6 +301,7 @@ export const useMap = (
     setBounds,
     marker,
     setMarker,
+    updateBounds,
     handleLoad,
     handleMove,
     handleSidebarToggle,
@@ -311,9 +311,6 @@ export const useMap = (
     handleContextChange,
     handleFilterChange,
     handleMarkerChange,
-    mapbox: {
-      ref: mapboxRef.current,
-      updateBounds: mapboxUpdateBounds,
-    },
+    mapbox: mapboxRef.current,
   };
 };
