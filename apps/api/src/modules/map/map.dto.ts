@@ -1,13 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiHideProperty, ApiProperty } from '@nestjs/swagger';
 import {
   IMapQueryLocation,
   IMapQueryLocationBound,
   IMapQueryLocationBounds,
   IMapQueryPayload,
+  IWaypointCreatePayload,
+  IWaypointUpdatePayload,
   MapQueryContext,
 } from '@repo/types';
 import { Type } from 'class-transformer';
 import {
+  IsDateString,
   IsEnum,
   IsNotEmpty,
   IsNumber,
@@ -16,6 +19,8 @@ import {
   IsString,
   ValidateNested,
 } from 'class-validator';
+
+import { ToNumber } from '@/common/decorators';
 
 export class MapQueryDto implements IMapQueryPayload {
   @ApiProperty({ required: false })
@@ -79,4 +84,58 @@ class MapQueryLocationBoundDto implements IMapQueryLocationBound {
   @IsNumber()
   @IsNotEmpty()
   lon: number;
+}
+
+export class WaypointCreateDto implements IWaypointCreatePayload {
+  @ApiProperty({ required: true, default: 0 })
+  @IsNumber()
+  @IsNotEmpty()
+  lat: number;
+
+  @ApiProperty({ required: true, default: 0 })
+  @IsNumber()
+  @IsNotEmpty()
+  lon: number;
+
+  @ApiProperty({ required: false, default: '' })
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @ApiProperty({ required: false, default: new Date() })
+  @IsDateString()
+  @IsOptional()
+  date?: Date;
+
+  @ApiProperty({ required: false, default: '' })
+  @IsString()
+  @IsOptional()
+  tripId?: string;
+}
+
+export class WaypointUpdateDto implements IWaypointUpdatePayload {
+  @ApiProperty({ required: false, default: 0 })
+  @IsNumber()
+  @IsOptional()
+  lat?: number;
+
+  @ApiProperty({ required: false, default: 0 })
+  @IsNumber()
+  @IsOptional()
+  lon?: number;
+
+  @ApiProperty({ required: false, default: '' })
+  @IsString()
+  @IsOptional()
+  title?: string;
+
+  @ApiProperty({ required: false, default: new Date() })
+  @IsDateString()
+  @IsOptional()
+  date?: Date;
+
+  @ApiProperty({ required: false, default: '' })
+  @IsString()
+  @IsOptional()
+  tripId?: string;
 }
