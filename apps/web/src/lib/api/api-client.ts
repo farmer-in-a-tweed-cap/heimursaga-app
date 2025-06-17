@@ -601,57 +601,68 @@ export const apiClient = {
       method: API_METHODS.DELETE,
       ...config,
     }),
-  createTripWaypoint: async (
-    {
-      query,
-      payload,
-    }: IApiClientQueryWithPayload<{ tripId: string }, IWaypointCreatePayload>,
+  createWaypoint: async (
+    { payload }: IApiClientQueryWithPayload<{}, IWaypointCreatePayload>,
     config?: RequestConfig,
   ) =>
-    api.request<void>(
-      API_ROUTER.TRIPS.WAYPOINTS.CREATE({ trip_id: query.tripId }),
-      {
-        method: API_METHODS.POST,
-        body: JSON.stringify(payload),
-        ...config,
-      },
-    ),
-  updateTripWaypoint: async (
-    {
-      query,
-      payload,
-    }: IApiClientQueryWithPayload<
-      { tripId: string; waypointId: number },
-      IWaypointUpdatePayload
-    >,
-    config?: RequestConfig,
-  ) =>
-    api.request<void>(
-      API_ROUTER.TRIPS.WAYPOINTS.UPDATE({
-        trip_id: query.tripId,
-        waypoint_id: query.waypointId,
-      }),
-      {
-        method: API_METHODS.PUT,
-        body: JSON.stringify(payload),
-        ...config,
-      },
-    ),
-  deleteTripWaypoint: async (
-    { query }: IApiClientQuery<{ tripId: string; waypointId: number }>,
-    config?: RequestConfig,
-  ) =>
-    api.request<void>(
-      API_ROUTER.TRIPS.WAYPOINTS.DELETE({
-        trip_id: query.tripId,
-        waypoint_id: query.waypointId,
-      }),
-      {
-        method: API_METHODS.DELETE,
-        body: JSON.stringify({}),
-        ...config,
-      },
-    ),
+    api.request<void>(API_ROUTER.MAP.WAYPOINTS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
+
+  // @todo remove trip waypoint methods
+  // createTripWaypoint: async (
+  //   {
+  //     query,
+  //     payload,
+  //   }: IApiClientQueryWithPayload<{ tripId: string }, IWaypointCreatePayload>,
+  //   config?: RequestConfig,
+  // ) =>
+  //   api.request<void>(
+  //     API_ROUTER.JOURNEYS.WAYPOINTS.CREATE({ trip_id: query.tripId }),
+  //     {
+  //       method: API_METHODS.POST,
+  //       body: JSON.stringify(payload),
+  //       ...config,
+  //     },
+  //   ),
+  // updateTripWaypoint: async (
+  //   {
+  //     query,
+  //     payload,
+  //   }: IApiClientQueryWithPayload<
+  //     { tripId: string; waypointId: number },
+  //     IWaypointUpdatePayload
+  //   >,
+  //   config?: RequestConfig,
+  // ) =>
+  //   api.request<void>(
+  //     API_ROUTER.JOURNEYS.WAYPOINTS.UPDATE({
+  //       trip_id: query.tripId,
+  //       waypoint_id: query.waypointId,
+  //     }),
+  //     {
+  //       method: API_METHODS.PUT,
+  //       body: JSON.stringify(payload),
+  //       ...config,
+  //     },
+  //   ),
+  // deleteTripWaypoint: async (
+  //   { query }: IApiClientQuery<{ tripId: string; waypointId: number }>,
+  //   config?: RequestConfig,
+  // ) =>
+  //   api.request<void>(
+  //     API_ROUTER.JOURNEYS.WAYPOINTS.DELETE({
+  //       trip_id: query.tripId,
+  //       waypoint_id: query.waypointId,
+  //     }),
+  //     {
+  //       method: API_METHODS.DELETE,
+  //       body: JSON.stringify({}),
+  //       ...config,
+  //     },
+  //   ),
   // waypoints
   getWaypointById: async (
     { query }: IApiClientQuery<{ id: number }>,

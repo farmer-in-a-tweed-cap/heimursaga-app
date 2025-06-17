@@ -12,7 +12,7 @@ export const LOCALES = {
         GLOBAL: 'Global',
         FOLLOWING: 'Following',
         POSTS: 'Posts',
-        TRIPS: 'Trips',
+        JOURNEYS: 'Journeys',
       },
     },
     PAYMENT_METHOD: {

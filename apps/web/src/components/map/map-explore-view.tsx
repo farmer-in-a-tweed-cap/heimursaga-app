@@ -25,12 +25,9 @@ import {
   UserProfileCard,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
-import { SEARCH_PARAMS } from '@/constants';
 import {
   MAP_CONTEXT_PARAMS,
   MAP_FILTER_PARAMS,
-  MAP_SEARCH_PARAMS,
-  MapSearchParams,
   useAppParams,
   useMap,
   useMapbox,
@@ -179,7 +176,7 @@ export const MapExploreView: React.FC<Props> = () => {
       apiClient
         .getTripsByUsername({ username: userId as string })
         .then(({ data }) => data),
-    enabled: !!userId && map.filter === MAP_FILTER_PARAMS.TRIP,
+    enabled: !!userId && map.filter === MAP_FILTER_PARAMS.JOURNEY,
   });
 
   const post = postQuery?.data;
@@ -387,8 +384,8 @@ export const MapExploreView: React.FC<Props> = () => {
                       label: LOCALES.APP.MAP.FILTER.POSTS,
                     },
                     {
-                      value: MAP_FILTER_PARAMS.TRIP,
-                      label: LOCALES.APP.MAP.FILTER.TRIPS,
+                      value: MAP_FILTER_PARAMS.JOURNEY,
+                      label: LOCALES.APP.MAP.FILTER.JOURNEYS,
                     },
                   ]}
                   classNames={{
@@ -436,7 +433,7 @@ export const MapExploreView: React.FC<Props> = () => {
               </>
             )}
 
-            {map.filter === MAP_FILTER_PARAMS.TRIP && (
+            {map.filter === MAP_FILTER_PARAMS.JOURNEY && (
               <>
                 {tripQuery.isLoading || tripQuery.isPending ? (
                   <LoadingSpinner />
@@ -469,7 +466,7 @@ export const MapExploreView: React.FC<Props> = () => {
                     ),
                   )
                 ) : (
-                  <>no trips found</>
+                  <>no journeys found</>
                 )}
               </>
             )}

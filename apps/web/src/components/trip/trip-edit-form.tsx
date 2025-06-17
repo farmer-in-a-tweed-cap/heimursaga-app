@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ITripDetail } from '@repo/types';
 import {
   Button,
   Form,
@@ -17,7 +18,15 @@ import { z } from 'zod';
 
 import { apiClient } from '@/lib/api';
 
+import { MapCoordinatesValue, useMap } from '@/hooks';
 import { zodMessage } from '@/lib';
+
+import { TripWaypointCard } from './trip-waypoint-card';
+import {
+  TripWaypointCreateForm,
+  TripWaypointCreateFormSubmitHandler,
+} from './trip-waypoint-create-form';
+import { TripWaypointEditForm } from './trip-waypoint-edit-form';
 
 const schema = z.object({
   title: z
@@ -25,86 +34,128 @@ const schema = z.object({
     .nonempty(zodMessage.required('title'))
     .min(0, zodMessage.string.min('title', 0))
     .max(100, zodMessage.string.max('title', 100)),
-  //   description: z
-  //     .string()
-  //     .max(500, zodMessage.string.max('description', 500))
-  //     .optional(),
 });
 
-const FORM_ID = 'trip_edit_form';
+export const TRIP_EDIT_FORM_ID = 'trip_edit_form';
 
 type Props = {
-  trip?: {
-    id: string;
-    title: string;
+  trip?: ITripDetail;
+  map?: {
+    center: MapCoordinatesValue;
   };
-  onSubmit?: (values: { title: string }) => void;
+  onLoading?: (loading: boolean) => void;
+  onWaypointCreateStart?: TripEditFormWaypointAddHandler;
+  onWaypointCreateCancel?: () => void;
+  onSubmit?: TripEditFormSubmitHandler;
 };
 
-export const TripEditForm: React.FC<Props> = ({ trip }) => {
+export type TripEditFormWaypointAddHandler = (
+  waypoint: MapCoordinatesValue & { id: number },
+) => void;
+
+export type TripEditFormSubmitHandler = (values: { title: string }) => void;
+
+export const TripEditForm: React.FC<Props> = ({
+  trip,
+  map,
+  onWaypointCreateStart,
+  onWaypointCreateCancel,
+  onLoading = () => {},
+  onSubmit = () => {},
+}) => {
   const [loading, setLoading] = useState<{ trip: boolean; waypoint: boolean }>({
     trip: false,
     waypoint: false,
   });
 
+  const [waypoint, setWaypoint] = useState<MapCoordinatesValue | null>(null);
+  const [waypointCreating, setWaypointCreating] = useState<boolean>(false);
+  const [waypointEditing, setWaypointEditing] = useState<boolean>(false);
+  const [waypointEditingId, setWaypointEditingId] = useState<number | null>(
+    null,
+  );
+
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
-    defaultValues: trip
-      ? { title: trip.title }
-      : {
-          title: '',
-        },
+    defaultValues: {
+      title: trip?.title || '',
+    },
   });
 
-  // const handleWaypointCreate = () => {
-  //   setState((state) => ({ ...state, waypointCreating: true }));
-  // };
+  const waypoints = trip?.waypoints || [];
 
-  // const handleWaypointCreateSubmit: TripWaypointCreateFormSubmitHandler =
-  //   async (data) => {
-  //     try {
-  //       setLoading((state) => ({ ...state, waypoint: true }));
+  const handleWaypointCreateStart = () => {
+    setWaypointCreating(true);
 
-  //       if (!trip?.id) return;
+    if (map?.center && onWaypointCreateStart) {
+      onWaypointCreateStart({
+        id: Date.now(),
+        lat: map.center.lat,
+        lon: map.center.lon,
+      });
+    }
+  };
 
-  //       const { date, title, lat, lon } = data;
+  const handleWaypointCreateCancel = () => {
+    setWaypointCreating(false);
 
-  //       // create a point
-  //       const { success } = await apiClient.createTripWaypoint({
-  //         query: { tripId: trip.id },
-  //         payload: { lat, lon, date, title },
-  //       });
+    if (onWaypointCreateCancel) {
+      onWaypointCreateCancel();
+    }
+  };
 
-  //       if (success) {
-  //         alert('waypoint created');
+  const handleWaypointCreateSubmit: TripWaypointCreateFormSubmitHandler =
+    async (data) => {
+      try {
+        const { date, title, lat, lon } = data;
+        const tripId = trip?.id;
 
-  //         setState((state) => ({ ...state, waypointCreating: false }));
-  //         setLoading((state) => ({ ...state, waypoint: false }));
-  //         setWaypoints((waypoints) =>
-  //           sortByDate(
-  //             [...waypoints, { ...data, id: waypoints.length + 1 }],
-  //             'asc',
-  //           ),
-  //         );
-  //       } else {
-  //         setLoading((state) => ({ ...state, waypoint: false }));
-  //       }
-  //     } catch (e) {
-  //       setLoading((state) => ({ ...state, waypoint: false }));
-  //     }
-  //   };
+        if (!tripId) return;
 
-  // const handleWaypointCreateCancel = () => {
-  //   setState((state) => ({ ...state, waypointCreating: false }));
-  // };
+        setLoading((state) => ({ ...state, waypoint: true }));
 
-  // const handleWaypointEdit: TripWaypointCardClickHandler = (id) => {
-  //   setState((state) => ({
-  //     ...state,
-  //     waypointEditing: true,
-  //     waypointEditingId: id,
-  //   }));
-  // };
+        // create a point
+        const { success } = await apiClient.createWaypoint({
+          query: {},
+          payload: {
+            lat,
+            lon,
+            date,
+            title,
+            tripId,
+          },
+        });
+
+        if (success) {
+          alert('waypoint created');
+
+          setWaypointCreating(false);
+          setLoading((state) => ({ ...state, waypoint: false }));
+
+          // @todo
+          // setWaypoints((waypoints) =>
+          //   sortByDate(
+          //     [...waypoints, { ...data, id: waypoints.length + 1 }],
+          //     'asc',
+          //   ),
+          // );
+        } else {
+          setLoading((state) => ({ ...state, waypoint: false }));
+        }
+      } catch (e) {
+        setLoading((state) => ({ ...state, waypoint: false }));
+      }
+    };
+
+  const handleWaypointEditStart = (id: number) => {
+    setWaypointEditing(true);
+    setWaypointEditingId(id);
+  };
+
+  const handleWaypointEditCancel = () => {
+    setWaypointEditing(false);
+    setWaypointEditingId(null);
+  };
 
   // const handleWaypointEditSubmit = async (
   //   id: number,
@@ -192,11 +243,12 @@ export const TripEditForm: React.FC<Props> = ({ trip }) => {
     async (values: z.infer<typeof schema>) => {
       try {
         const { title } = values;
-
         const tripId = trip?.id;
+
         if (!tripId) return;
 
         setLoading((state) => ({ ...state, trip: true }));
+        onLoading(true);
 
         // update the trip
         const { success } = await apiClient.updateTrip({
@@ -206,48 +258,38 @@ export const TripEditForm: React.FC<Props> = ({ trip }) => {
 
         if (success) {
           setLoading((state) => ({ ...state, trip: false }));
+          onLoading(false);
         } else {
           setLoading((state) => ({ ...state, trip: false }));
+          onLoading(false);
         }
       } catch (e) {
         setLoading((state) => ({ ...state, trip: false }));
+        onLoading(false);
       }
     },
   );
 
   return (
-    <div className="w-full h-full flex flex-row justify-between bg-white">
-      <div className="w-full relative h-full hidden sm:flex overflow-hidden">
-        <div className="basis-4/12 relative flex flex-col h-dvh">
-          <div className="relative h-full flex flex-col justify-start items-start px-6 bg-white overflow-y-scroll">
-            <div className="w-full h-full flex flex-col justify-between gap-10 box-border">
-              <div className="w-full flex flex-col gap-10">
-                <div className="w-full flex flex-col justify-start pt-6 items-start gap-2">
-                  <h2 className="text-xl font-medium">Trip</h2>
-                </div>
-                <div className="flex flex-col">
-                  <h2 className="text-xl font-medium">Trip</h2>
-                  <div className="mt-6 flex flex-col gap-6">
-                    <Form {...form}>
-                      <form id={FORM_ID} onSubmit={handleSubmit}>
-                        <FormField
-                          control={form.control}
-                          name="title"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Title</FormLabel>
-                              <FormControl>
-                                <Input
-                                  disabled={loading.trip}
-                                  required
-                                  {...field}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        {/* <FormField
+    <div className="relative w-full h-auto flex flex-col">
+      <div className="w-full h-auto flex flex-col gap-10">
+        <Section title="Journey">
+          <Form {...form}>
+            <form id={TRIP_EDIT_FORM_ID} onSubmit={handleSubmit}>
+              <FormField
+                control={form.control}
+                name="title"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Title</FormLabel>
+                    <FormControl>
+                      <Input disabled={loading.trip} required {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* <FormField
                   control={form.control}
                   name="description"
                   render={({ field }) => (
@@ -260,170 +302,78 @@ export const TripEditForm: React.FC<Props> = ({ trip }) => {
                     </FormItem>
                   )}
                 /> */}
-                      </form>
-                    </Form>
-                  </div>
-                </div>
-                <div className="flex flex-col">
-                  <h2 className="text-xl font-medium">Waypoints</h2>
-                  {/* <div className="mt-4 flex flex-col">
-              <div className="flex flex-col gap-2">
-                {waypoints.map(
-                  ({ id, title, lat, lon, date, post }, key) =>
-                    waypointEditingId === id ? (
-                      <div
-                        key={key}
-                        className="py-4 border-b border-solid border-accent"
-                      >
-                        <TripWaypointEditForm
-                          defaultValues={{ title, lat, lon, date }}
-                          loading={loading.waypoint}
-                          onSubmit={(data) =>
-                            handleWaypointEditSubmit(id, data)
-                          }
-                          onCancel={handleWaypointEditCancel}
-                        />
-                      </div>
-                    ) : (
-                      <TripWaypointCard
-                        key={key + 1}
-                        id={id}
-                        orderIndex={key + 1}
-                        title={title}
-                        lat={lat}
-                        lon={lon}
-                        date={date}
-                        post={post}
-                        onEdit={handleWaypointEdit}
-                        onDelete={handleWaypointDelete}
-                      />
-                    ),
-                )}
-              </div>
-              {waypointCreating && (
-                <div className="py-4 border-b border-solid border-accent">
-                  <TripWaypointCreateForm
-                    loading={loading.waypoint}
-                    defaultProps={{
-                      lat: viewport.lat,
-                      lon: viewport.lon,
-                    }}
-                    onSubmit={handleWaypointCreateSubmit}
-                    onCancel={handleWaypointCreateCancel}
-                  />
-                </div>
-              )}
-              {!waypointCreating && !waypointEditing && (
-                <div className="mt-6 flex flex-col">
-                  <Button
-                    variant="secondary"
-                    onClick={handleWaypointCreate}
+            </form>
+          </Form>
+        </Section>
+
+        <Section title="Waypoints">
+          {waypoints.length >= 1 && (
+            <div className="w-full h-auto flex flex-col gap-2">
+              {waypoints.map(({ id, title, lat, lon, date, post }, key) =>
+                waypointEditingId === id ? (
+                  <div
+                    key={key}
+                    className="py-4 border-b border-solid border-accent"
                   >
-                    Add waypoint
-                  </Button>
-                </div>
+                    <TripWaypointEditForm
+                      defaultValues={{ title, lat, lon, date }}
+                      loading={loading.waypoint}
+                      onSubmit={(data) => {
+                        // handleWaypointEditSubmit(id, data)
+                      }}
+                      onCancel={handleWaypointEditCancel}
+                    />
+                  </div>
+                ) : (
+                  <TripWaypointCard
+                    key={key + 1}
+                    id={id}
+                    orderIndex={key + 1}
+                    lat={lat}
+                    lon={lon}
+                    title={title || ''}
+                    date={date || new Date()}
+                    post={post}
+                    onEdit={handleWaypointEditStart}
+                    // onDelete={handleWaypointDelete}
+                  />
+                ),
               )}
-            </div> */}
-                </div>
-              </div>
-              <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background py-4 box-border">
-                <Button
-                  size="lg"
-                  type="submit"
-                  form={FORM_ID}
-                  loading={loading.trip}
-                >
-                  Save changes
-                </Button>
-              </div>
             </div>
-          </div>
-        </div>
-        {/* <div
-    className={cn(
-      'basis-8/12 z-40 relative overflow-hidden rounded-l-2xl',
-    )}
-  >
-    <div className={cn('z-10 relative !w-full h-full overflow-hidden')}>
-      {mapbox.token && (
-        <Map
-          token={mapbox.token}
-          // layers={[
-          //   {
-          //     id: MAP_LAYERS.WAYPOINT_LINES,
-          //     source: MAP_SOURCES.WAYPOINT_LINES,
-          //   },
-          //   {
-          //     id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
-          //     source: MAP_SOURCES.WAYPOINTS,
-          //   },
-          //   {
-          //     id: MAP_LAYERS.WAYPOINT_ORDER_NUMBERS,
-          //     source: MAP_SOURCES.WAYPOINTS,
-          //   },
-          // ]}
-          // sources={[
-          //   {
-          //     sourceId: MAP_SOURCES.WAYPOINTS,
-          //     type: 'point',
-          //     data: waypoints.map(
-          //       ({ id, title, date, lat, lon }, key) => ({
-          //         id: `${id}`,
-          //         lat,
-          //         lon,
-          //         properties: {
-          //           index: key + 1,
-          //           id,
-          //           title,
-          //           date,
-          //         },
-          //       }),
-          //     ),
-          //     config: {
-          //       cluster: false,
-          //     },
-          //     onChange: (
-          //       data: MapSourceData<{
-          //         id: number;
-          //         title: string;
-          //         date: Date;
-          //       }>[],
-          //     ) => {
-          //       setWaypoints(
-          //         data.map(({ lat, lon, properties }) => ({
-          //           lat,
-          //           lon,
-          //           id: properties.id,
-          //           title: properties.title,
-          //           date: properties.date,
-          //         })),
-          //       );
-          //     },
-          //   },
-          //   {
-          //     sourceId: MAP_SOURCES.WAYPOINT_LINES,
-          //     type: 'line',
-          //     data: waypoints.map(({ id, lat, lon }) => ({
-          //       id: `${id}`,
-          //       lat,
-          //       lon,
-          //       properties: {},
-          //     })),
-          //   },
-          // ]}
-          // onLoad={({ viewport }) =>
-          //   handleViewportChange({
-          //     lat: viewport.lat,
-          //     lon: viewport.lon,
-          //     alt: 0,
-          //   })
-          // }
-          onMove={handleViewportChange}
-        />
-      )}
-    </div>
-  </div> */}
+          )}
+
+          {waypointCreating && (
+            <div className="w-full py-4">
+              <TripWaypointCreateForm
+                loading={loading.waypoint}
+                lat={map?.center?.lat}
+                lon={map?.center?.lon}
+                onSubmit={handleWaypointCreateSubmit}
+                onCancel={handleWaypointCreateCancel}
+              />
+            </div>
+          )}
+          {!waypointCreating && !waypointEditing && (
+            <div className="flex flex-col">
+              <Button variant="secondary" onClick={handleWaypointCreateStart}>
+                Add waypoint
+              </Button>
+            </div>
+          )}
+        </Section>
       </div>
+    </div>
+  );
+};
+
+const Section: React.FC<{ title: string; children?: React.ReactNode }> = ({
+  title,
+  children,
+}) => {
+  return (
+    <div className="flex flex-col">
+      <h2 className="text-xl font-medium">{title}</h2>
+      <div className="mt-6 flex flex-col gap-6">{children}</div>
     </div>
   );
 };

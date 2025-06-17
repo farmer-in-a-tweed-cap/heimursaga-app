@@ -14,7 +14,6 @@ import { ITripDetail } from '@repo/types';
 import { useEffect, useState } from 'react';
 
 import { useMapbox } from '@/hooks';
-import { dateformat } from '@/lib';
 import { ROUTER } from '@/router';
 
 type Props = {

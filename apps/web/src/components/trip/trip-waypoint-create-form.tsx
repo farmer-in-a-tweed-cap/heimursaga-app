@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
   DatePicker,
-  // DatePicker,
   Form,
   FormControl,
   FormField,
@@ -20,10 +19,8 @@ import { dateformat, zodMessage } from '@/lib';
 
 type Props = {
   loading?: boolean;
-  defaultProps?: {
-    lat?: number;
-    lon?: number;
-  };
+  lat?: number;
+  lon?: number;
   onSubmit?: TripWaypointCreateFormSubmitHandler;
   onCancel?: () => void;
 };
@@ -48,7 +45,8 @@ const schema = z.object({
 
 export const TripWaypointCreateForm: React.FC<Props> = ({
   loading = false,
-  defaultProps,
+  lat,
+  lon,
   onSubmit,
   onCancel,
 }) => {
@@ -56,8 +54,8 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
     resolver: zodResolver(schema),
     defaultValues: {
       title: '',
-      lat: defaultProps?.lat ? `${defaultProps.lat}` : '0',
-      lon: defaultProps?.lon ? `${defaultProps.lon}` : '0',
+      lat: lat ? `${lat}` : '0',
+      lon: lon ? `${lon}` : '0',
     },
   });
 
