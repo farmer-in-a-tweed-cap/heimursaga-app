@@ -364,6 +364,54 @@ export interface IMapQueryLocationBound {
   lon: number;
 }
 
+export interface IWaypoint {
+  id: number;
+  lat: number;
+  lon: number;
+  title?: string;
+  description?: string;
+  date?: Date;
+}
+
+export interface IWaypointDetail extends IWaypoint {
+  post?: {
+    id: string;
+    title: string;
+    content?: string;
+    date?: Date;
+    place?: string;
+    author?: {
+      username: string;
+      name?: string;
+      picture?: string;
+    };
+  };
+}
+
+export interface IWaypointCreatePayload {
+  lat: number;
+  lon: number;
+  title?: string;
+  date?: Date;
+  postId?: string;
+  tripId?: string;
+}
+
+export interface IWaypointUpdatePayload extends Partial<IWaypoint> {
+  postId?: string;
+  tripId?: string;
+}
+
+export interface IWaypointGetByIdResponse extends IWaypointDetail {}
+
+export interface IWaypointUpdatePayload {
+  lat?: number;
+  lon?: number;
+  date?: Date;
+  title?: string;
+  description?: string;
+}
+
 // upload
 export enum MediaUploadContext {
   UPLOAD = 'upload',
@@ -604,46 +652,6 @@ export interface ITripCreateResponse {
 
 export interface ITripUpdatePayload {
   title: string;
-}
-
-// waypoints
-export interface IWaypointDetail {
-  id: number;
-  lat: number;
-  lon: number;
-  title: string;
-  date?: Date;
-  description?: string;
-  post?: {
-    id: string;
-    title: string;
-    content?: string;
-    date?: Date;
-    place?: string;
-    author?: {
-      username: string;
-      name?: string;
-      picture?: string;
-    };
-  };
-}
-
-export interface IWaypointGetByIdResponse extends IWaypointDetail {}
-
-export interface IWaypointCreatePayload {
-  lat: number;
-  lon: number;
-  date?: Date;
-  title?: string;
-  description?: string;
-}
-
-export interface IWaypointUpdatePayload {
-  lat?: number;
-  lon?: number;
-  date?: Date;
-  title?: string;
-  description?: string;
 }
 
 // search

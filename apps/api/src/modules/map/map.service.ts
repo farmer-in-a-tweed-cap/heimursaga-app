@@ -3,11 +3,14 @@ import { Prisma } from '@prisma/client';
 import {
   IMapQueryPayload,
   IMapQueryResponse,
+  IWaypointCreatePayload,
   IWaypointGetByIdResponse,
+  IWaypointUpdatePayload,
   MapQueryContext,
   UserRole,
 } from '@repo/types';
 
+import { dateformat } from '@/lib/date-format';
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
@@ -16,7 +19,11 @@ import {
   ServiceForbiddenException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import { IQueryWithSession } from '@/common/interfaces';
+import {
+  IQueryWithSession,
+  ISessionQuery,
+  ISessionQueryWithPayload,
+} from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
@@ -39,7 +46,7 @@ export class MapService {
         public: true,
         deleted_at: null,
       } as Prisma.WaypointWhereInput;
-      let select = {
+      const select = {
         lat: true,
         lon: true,
         date: true,
@@ -200,14 +207,14 @@ export class MapService {
     session,
   }: IQueryWithSession<{ id: number }>): Promise<IWaypointGetByIdResponse> {
     try {
-      const { userId } = session;
       const { id } = query;
 
       if (!id) throw new ServiceNotFoundException('waypoint not found');
 
+      // get a waypoint
       const waypoint = await this.prisma.waypoint
         .findFirstOrThrow({
-          where: { id },
+          where: { id, deleted_at: null },
           select: {
             id: true,
             title: true,
@@ -230,6 +237,159 @@ export class MapService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('waypoint not found');
+      throw exception;
+    }
+  }
+
+  async createWaypoint({
+    payload,
+    session,
+  }: ISessionQueryWithPayload<{}, IWaypointCreatePayload>): Promise<{
+    id: number;
+  }> {
+    try {
+      const { userId } = session;
+
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      const { lat, lon, title, date, tripId } = payload;
+      let trip: { id: number } | null = null;
+
+      // get a trip
+      if (tripId) {
+        trip = await this.prisma.trip
+          .findFirstOrThrow({
+            where: { public_id: tripId },
+            select: { id: true },
+          })
+          .catch(() => null);
+      }
+
+      // create a waypoint
+      const waypoint = await this.prisma.$transaction(async (tx) => {
+        const waypoint = await tx.waypoint
+          .create({
+            data: {
+              lat,
+              lon,
+              title,
+              date,
+              author: {
+                connect: { id: userId },
+              },
+              trips: trip ? { create: { trip_id: trip.id } } : undefined,
+            },
+            select: { id: true },
+          })
+          .catch(() => {
+            throw new ServiceBadRequestException('waypoint not created');
+          });
+
+        return { id: waypoint.id };
+      });
+
+      return { id: waypoint.id };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceBadRequestException('waypoint not created');
+      throw exception;
+    }
+  }
+
+  async updateWaypoint({
+    query,
+    payload,
+    session,
+  }: ISessionQueryWithPayload<
+    { id: number },
+    IWaypointUpdatePayload
+  >): Promise<void> {
+    try {
+      const { id } = query;
+      const { userId } = session;
+
+      if (!id) throw new ServiceNotFoundException('waypoint not found');
+
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      // get a waypoint
+      const waypoint = await this.prisma.waypoint
+        .findFirstOrThrow({
+          where: { id, deleted_at: null, author_id: userId },
+          select: { id: true },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('waypoint not found');
+        });
+      const { lat, lon, title, date } = payload;
+
+      // update the waypoint
+      await this.prisma.waypoint
+        .update({
+          where: { id: waypoint.id },
+          data: {
+            lat,
+            lon,
+            title,
+            date,
+          },
+        })
+        .catch(() => {
+          throw new ServiceBadRequestException('waypoint not updated');
+        });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceBadRequestException('waypoint not updated');
+      throw exception;
+    }
+  }
+
+  async deleteWaypoint({
+    query,
+    session,
+  }: ISessionQuery<{ id: number }>): Promise<void> {
+    try {
+      const { id } = query;
+      const { userId } = session;
+
+      if (!id) throw new ServiceNotFoundException('waypoint not found');
+
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      // get a waypoint
+      const waypoint = await this.prisma.waypoint
+        .findFirstOrThrow({
+          where: { id, deleted_at: null, author_id: userId },
+          select: { id: true },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('waypoint not found');
+        });
+
+      // delete the waypoint
+      await this.prisma.waypoint
+        .update({
+          where: { id: waypoint.id },
+          data: { deleted_at: dateformat().toDate() },
+        })
+        .catch(() => {
+          throw new ServiceBadRequestException('waypoint not deleted');
+        });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceBadRequestException('waypoint not deleted');
       throw exception;
     }
   }
