@@ -14,7 +14,7 @@ type ParamKey =
   | 'lat'
   | 'lon'
   | 'zoom'
-  | 'post_id'
+  | 'entry_id'
   | 'search'
   | 'user';
 

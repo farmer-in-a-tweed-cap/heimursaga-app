@@ -10,7 +10,7 @@ import { PageHeaderTitle } from '@/components';
 import { AppLayout } from '@/layouts';
 
 export const metadata: Metadata = {
-  title: 'Create post',
+  title: 'Create entry',
 };
 
 type PageProps = {
@@ -32,7 +32,7 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <AppLayout>
       <div className="w-full max-w-3xl flex flex-col gap-6">
-        <PageHeaderTitle>Create a post</PageHeaderTitle>
+        <PageHeaderTitle>Create entry</PageHeaderTitle>
         <Card>
           <CardContent>
             <PostCreateForm waypoint={waypoint} />

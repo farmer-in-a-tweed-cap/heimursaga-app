@@ -37,7 +37,7 @@ export const TripWaypointCard: React.FC<Props> = ({
       onClick: () => {
         // redirect to the post page
         if (waypointId) {
-          redirect([ROUTER.POSTS.CREATE, `waypoint=${waypointId}`].join('?'));
+          redirect([ROUTER.ENTRIES.CREATE, `waypoint=${waypointId}`].join('?'));
         }
       },
     });
@@ -69,7 +69,7 @@ export const TripWaypointCard: React.FC<Props> = ({
               <span className="text-base font-medium text-black">{title}</span>
               {post && (
                 <Link
-                  href={ROUTER.POSTS.EDIT(post.id)}
+                  href={ROUTER.ENTRIES.EDIT(post.id)}
                   target="_blank"
                   className="flex items-center flex-row justify-start gap-1 text-sm"
                 >

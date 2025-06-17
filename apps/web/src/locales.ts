@@ -11,7 +11,7 @@ export const LOCALES = {
       FILTER: {
         GLOBAL: 'Global',
         FOLLOWING: 'Following',
-        POSTS: 'Posts',
+        POSTS: 'Entries',
         JOURNEYS: 'Journeys',
       },
     },

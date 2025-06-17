@@ -37,7 +37,7 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
         <PostCard
           key={key}
           {...post}
-          href={post.id ? ROUTER.POSTS.DETAIL(post.id) : '#'}
+          href={post.id ? ROUTER.ENTRIES.DETAIL(post.id) : '#'}
           author={{
             name: author?.name,
             username: author?.username,

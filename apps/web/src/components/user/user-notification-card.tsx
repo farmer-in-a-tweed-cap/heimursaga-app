@@ -27,9 +27,9 @@ export const UserNotificationCard: React.FC<Props> = ({
   switch (context) {
     case UserNotificationContext.LIKE:
       notification.mention = mentionUser.name;
-      notification.text = 'liked your post';
+      notification.text = 'liked your entry';
       if (postId) {
-        notification.url = ROUTER.POSTS.DETAIL(postId);
+        notification.url = ROUTER.ENTRIES.DETAIL(postId);
       }
       break;
     case UserNotificationContext.FOLLOW:

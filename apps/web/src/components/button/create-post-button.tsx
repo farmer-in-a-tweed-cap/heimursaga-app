@@ -22,7 +22,7 @@ export const CreatePostButton: React.FC<Props> = ({
   ...props
 }) => {
   const handleClick = () => {
-    redirect(ROUTER.POSTS.CREATE);
+    redirect(ROUTER.ENTRIES.CREATE);
   };
 
   return (

@@ -11,7 +11,7 @@ type Props = {
 export const PostEditButton: React.FC<Props> = ({ postId }) => {
   return (
     <Button variant="outline" asChild>
-      <Link href={postId ? ROUTER.POSTS.EDIT(postId) : '#'}>Edit</Link>
+      <Link href={postId ? ROUTER.ENTRIES.EDIT(postId) : '#'}>Edit</Link>
     </Button>
   );
 };

@@ -104,7 +104,7 @@ export const AdminPostTable: React.FC<Props> = ({
         const title = row.original.title;
         return (
           <Link
-            href={postId ? ROUTER.POSTS.EDIT(postId) : '#'}
+            href={postId ? ROUTER.ENTRIES.EDIT(postId) : '#'}
             target="_blank"
             className="underline font-medium"
           >
