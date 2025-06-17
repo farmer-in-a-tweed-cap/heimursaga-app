@@ -12,6 +12,7 @@ export const API_ROUTER = {
     QUERY: '/map',
     WAYPOINTS: {
       GET_BY_ID: (id: number) => `/map/waypoints/${id}`,
+      CREATE: `/map/waypoints`,
     },
   },
   USER: {

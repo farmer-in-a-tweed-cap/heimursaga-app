@@ -54,6 +54,12 @@ export const ROUTER = {
   USERS: {
     DETAIL: (username: string) => `/${username}`,
   },
+  JOURNEYS: {
+    HOME: '/journeys',
+    CREATE: `/journeys/create`,
+    DETAIL: (id: string) => `/journeys/${id}`,
+    EDIT: (id: string) => `/journeys/${id}/edit`,
+  },
   TRIPS: {
     HOME: '/trips',
     CREATE: `/trips/create`,

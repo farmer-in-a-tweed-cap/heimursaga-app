@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ITripDetail } from '@repo/types';
+import { ITripDetail, IWaypoint } from '@repo/types';
 import {
   Button,
   Form,
@@ -27,10 +27,13 @@ import {
   MapSidebar,
   MapTripCard,
   MapViewContainer,
+  TRIP_EDIT_FORM_ID,
   TripEditForm,
+  TripEditFormWaypointAddHandler,
 } from '@/components';
-import { useMap, useMapbox } from '@/hooks';
+import { MapCoordinatesValue, useMap, useMapbox } from '@/hooks';
 import { zodMessage } from '@/lib';
+import { ROUTER } from '@/router';
 
 type WaypointElement = {
   id: number;
@@ -59,9 +62,10 @@ const schema = z.object({
 
 type Props = {
   trip?: ITripDetail;
+  source?: 'map' | 'trip';
 };
 
-export const TripEditView: React.FC<Props> = ({ trip }) => {
+export const TripEditView: React.FC<Props> = ({ source, trip }) => {
   const mapbox = useMapbox();
   const map = useMap({
     sidebar: true,
@@ -70,6 +74,22 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
       sw: { lat: 55.25372511584288, lon: 37.174747411366155 },
     },
   });
+
+  const [loading, setLoading] = useState<boolean>(false);
+
+  const [waypoint, setWaypoint] = useState<MapCoordinatesValue | null>(null);
+  const [waypoints, setWaypoints] = useState<IWaypoint[]>(
+    trip?.waypoints || [],
+  );
+  const [waypointIndex, setWaypointIndex] = useState<number>(
+    waypoints.length || 1,
+  );
+
+  const backUrl = source
+    ? source === 'trip'
+      ? ROUTER.JOURNEYS.HOME
+      : ROUTER.HOME
+    : undefined;
 
   // const [state, setState] = useState<{
   //   waypointCreating: boolean;
@@ -122,39 +142,49 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
   //       },
   // });
 
+  const handleWaypointCreateStart: TripEditFormWaypointAddHandler = (
+    waypoint,
+  ) => {
+    setWaypoint(waypoint);
+  };
+
+  const handleWaypointCreateCancel = () => {
+    setWaypoint(null);
+  };
+
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
       <MapSidebar opened={map.sidebar} view={map.view}>
-        {/* <div className="break-all text-xs">
-          {JSON.stringify({
-            center: map.center,
-            zoom: map.zoom,
-            bbx: map.bounds,
-          })}
-        </div> */}
         {trip && (
           <MapTripCard
             title={trip.title}
             startDate={trip.startDate}
             endDate={trip.endDate}
-            // backUrl={ROUTER.HOME}
+            backUrl={backUrl}
           />
         )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            const bounds = {
-              ne: { lat: 56.109059951256256, lon: 38.10823094563034 },
-              sw: { lat: 55.25372511584288, lon: 37.174747411366155 },
-            };
-
-            map.updateBounds(bounds);
-          }}
-        >
-          bounds
-        </Button>
-        <TripEditForm />
+        <div className="w-full h-full flex flex-col overflow-y-scroll">
+          <div className="w-full h-full px-6">
+            {JSON.stringify({ center: map.center, waypoint })}
+            <TripEditForm
+              trip={trip}
+              map={{ center: map.center }}
+              onLoading={(loading: boolean) => setLoading(loading)}
+              onWaypointCreateStart={handleWaypointCreateStart}
+              onWaypointCreateCancel={handleWaypointCreateCancel}
+            />
+          </div>
+          {/* <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background px-4 py-4 box-border">
+            <Button
+              size="lg"
+              type="submit"
+              form={TRIP_EDIT_FORM_ID}
+              loading={loading}
+            >
+              Save changes
+            </Button>
+          </div> */}
+        </div>
       </MapSidebar>
       <MapViewContainer
         extended={!map.sidebar}
@@ -163,73 +193,76 @@ export const TripEditView: React.FC<Props> = ({ trip }) => {
         {mapbox.token && (
           <Map
             token={mapbox.token}
-            marker={{
-              lat: 48.74555174206296,
-              lon: 6.6642343574329175,
-            }}
-            bounds={map.bounds}
             layers={[
+              {
+                id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
+                source: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
+              },
+              {
+                id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
+                source: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
+              },
+              // {
+              //   id: MAP_LAYERS.WAYPOINT_LINES,
+              //   source: MAP_SOURCES.WAYPOINT_LINES,
+              // },
               {
                 id: MAP_LAYERS.WAYPOINTS,
                 source: MAP_SOURCES.WAYPOINTS,
               },
               {
-                id: MAP_LAYERS.WAYPOINT_LINES,
-                source: MAP_SOURCES.WAYPOINT_LINES,
+                id: MAP_LAYERS.WAYPOINT_ORDER_NUMBERS,
+                source: MAP_SOURCES.WAYPOINTS,
               },
             ]}
             sources={[
               {
-                sourceId: MAP_SOURCES.WAYPOINTS,
+                sourceId: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
                 type: 'point',
-                data: [
-                  {
-                    id: `1`,
-                    lat: 47.713906575004074,
-                    lon: 2.143926023187305,
-                    properties: {},
-                  },
-                  {
-                    id: `2`,
-                    lat: 49.713906575004074,
-                    lon: 2.143926023187305,
-                    properties: {},
-                  },
-                  {
-                    id: `3`,
-                    lat: 50.713906575004074,
-                    lon: 3.243926023187305,
-                    properties: {},
-                  },
-                ],
+                data: waypoint
+                  ? [
+                      {
+                        id: `${Date.now()}`,
+                        lat: waypoint.lat,
+                        lon: waypoint.lon,
+                        properties: {
+                          index: waypointIndex,
+                        },
+                      },
+                    ]
+                  : [],
               },
               {
-                sourceId: MAP_SOURCES.WAYPOINT_LINES,
-                type: 'line',
-                data: [
-                  {
-                    id: `1`,
-                    lat: 47.713906575004074,
-                    lon: 2.143926023187305,
-                    properties: {},
+                sourceId: MAP_SOURCES.WAYPOINTS,
+                type: 'point',
+                data: waypoints.map(({ id, lat, lon, title, date }, key) => ({
+                  id: `${id}`,
+                  lat,
+                  lon,
+                  properties: {
+                    index: key + 1,
+                    id,
+                    title,
+                    date,
                   },
-                  {
-                    id: `2`,
-                    lat: 49.713906575004074,
-                    lon: 2.143926023187305,
-                    properties: {},
-                  },
-                  {
-                    id: `3`,
-                    lat: 50.713906575004074,
-                    lon: 3.243926023187305,
-                    properties: {},
-                  },
-                ],
+                })),
               },
+              // {
+              //   sourceId: MAP_SOURCES.WAYPOINT_LINES,
+              //   type: 'line',
+              //   data: waypoints.map(({ id, lat, lon }) => ({
+              //     id: `${id}`,
+              //     lat,
+              //     lon,
+              //     properties: {},
+              //   })),
+              // },
             ]}
             onLoad={map.handleLoad}
             onMove={map.handleMove}
+            onWaypointDrag={(waypoint) => {
+              setWaypoint(waypoint);
+            }}
           />
         )}
       </MapViewContainer>

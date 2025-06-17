@@ -16,7 +16,7 @@ export const MAP_CONTEXT_PARAMS = {
 
 export const MAP_FILTER_PARAMS = {
   POST: 'post',
-  TRIP: 'trip',
+  JOURNEY: 'journey',
 };
 
 export const MAP_VIEW_PARAMS = {

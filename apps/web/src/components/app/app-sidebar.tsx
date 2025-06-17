@@ -101,9 +101,9 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         icon: PencilIcon,
       },
       {
-        href: ROUTER.TRIPS.HOME,
-        base: ROUTER.TRIPS.HOME,
-        label: 'Trips',
+        href: ROUTER.JOURNEYS.HOME,
+        base: ROUTER.JOURNEYS.HOME,
+        label: 'Journeys',
         icon: PathIcon,
       },
       {

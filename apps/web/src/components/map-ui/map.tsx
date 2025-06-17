@@ -43,8 +43,6 @@ import { addSources, updateSources } from './map.utils';
 //   };
 // };
 
-export type MapOnSourceClickHandler = (sourceId: string) => void;
-
 export type MapSourceType = 'point' | 'line';
 
 export type MapSourceData<T = any> = {
@@ -140,8 +138,15 @@ type Props = {
   onLoad?: MapLoadHandler;
   onMove?: MapMoveHandler;
   onSourceClick?: MapOnSourceClickHandler;
+  onWaypointDrag?: MapWaypointDragHandler;
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
+
+export type MapWaypointDragHandler = (
+  waypoint: MapCoordinatesValue & { id: string },
+) => void;
+
+export type MapOnSourceClickHandler = (sourceId: string) => void;
 
 export const Map: React.FC<Props> = ({
   className,
@@ -164,6 +169,7 @@ export const Map: React.FC<Props> = ({
   bounds,
   onLoad,
   onMove,
+  onWaypointDrag,
   onMarkerChange,
   onSourceClick,
 }) => {
@@ -402,6 +408,8 @@ export const Map: React.FC<Props> = ({
   }) => {
     const { id, lat, lon } = data;
 
+    console.log('waypoint drag', { id, lat, lon });
+
     const source = sources.find((source) => source.sourceId === sourceId);
 
     if (source) {
@@ -417,6 +425,14 @@ export const Map: React.FC<Props> = ({
           lat,
           lon,
         };
+      }
+
+      if (onWaypointDrag) {
+        onWaypointDrag({
+          id,
+          lat,
+          lon,
+        });
       }
 
       if (onChange) {

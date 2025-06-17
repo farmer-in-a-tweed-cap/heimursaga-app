@@ -28,12 +28,12 @@ export const CreatorTrips = () => {
           <TripCard
             key={key}
             variant="private"
-            href={trip.id ? ROUTER.TRIPS.DETAIL(trip.id) : '#'}
+            href={trip.id ? ROUTER.JOURNEYS.DETAIL(trip.id) : '#'}
             {...trip}
           />
         ))
       ) : (
-        <>no trips</>
+        <>no journeys</>
       )}
     </div>
   );

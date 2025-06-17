@@ -9,7 +9,7 @@ import { ROUTER } from '@/router';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Trips',
+  title: 'Journeys',
 };
 
 export default async function Page() {
@@ -17,10 +17,10 @@ export default async function Page() {
     <AppLayout>
       <div className="w-full max-w-3xl flex flex-col gap-6">
         <div className="w-full flex flex-row items-end justify-between">
-          <PageHeaderTitle>Trips</PageHeaderTitle>
+          <PageHeaderTitle>Journeys</PageHeaderTitle>
           <div>
             <Button asChild>
-              <Link href={ROUTER.TRIPS.CREATE}>Create</Link>
+              <Link href={ROUTER.JOURNEYS.CREATE}>Create</Link>
             </Button>
           </div>
         </div>

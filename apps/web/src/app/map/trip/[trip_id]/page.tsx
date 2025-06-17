@@ -24,7 +24,7 @@ export const generateMetadata = async ({
     .then(({ data }) => data);
 
   return {
-    title: trip ? `${trip.title}` : 'Trip',
+    title: trip ? `${trip.title}` : 'Journey',
   };
 };
 

@@ -85,7 +85,7 @@ export const TripCreateView: React.FC<Props> = () => {
         if (success) {
           const tripId = data?.tripId;
           if (tripId) {
-            router.push(ROUTER.TRIPS.DETAIL(tripId));
+            router.push(ROUTER.JOURNEYS.DETAIL(tripId));
           }
         } else {
           setLoading(false);
@@ -104,13 +104,13 @@ export const TripCreateView: React.FC<Props> = () => {
             <div className="w-full h-full flex flex-col justify-between gap-10 box-border">
               <div className="flex flex-col gap-10">
                 <div className="flex flex-col justify-start pt-6 items-start gap-2">
-                  <h1 className="text-xl font-medium">Create a trip</h1>
-                  <span className="font-normal text-base text-gray-700">
+                  <h1 className="text-xl font-medium">Create a journey</h1>
+                  {/* <span className="font-normal text-base text-gray-700">
                     Easily plan the perfect path for your next trip.
-                  </span>
+                  </span> */}
                 </div>
                 <div className="flex flex-col">
-                  <h2 className="text-xl font-medium">Trip</h2>
+                  <h2 className="text-xl font-medium">Journey</h2>
                   <div className="mt-6 flex flex-col gap-6">
                     <Form {...form}>
                       <form onSubmit={handleSubmit}>
@@ -135,7 +135,7 @@ export const TripCreateView: React.FC<Props> = () => {
 
               <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background py-4 box-border">
                 <Button size="lg" loading={loading} onClick={handleSubmit}>
-                  Create trip
+                  Create
                 </Button>
               </div>
             </div>
