@@ -9,14 +9,14 @@ import { PostCard } from '@/components';
 import { AppLayout } from '@/layouts';
 
 type Props = {
-  params: { post_id: string };
+  params: { id: string };
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { post_id } = await params;
+  const { id } = await params;
 
   const post = await apiClient
-    .getPostById({ query: { id: post_id } })
+    .getPostById({ query: { id } })
     .then(({ data }) => data)
     .catch(() => null);
 
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const cookie = cookies().toString();
 
-  const { post_id: postId } = await params;
+  const { id: postId } = await params;
 
   const { success, data } = await apiClient.getPostById(
     { query: { id: postId } },

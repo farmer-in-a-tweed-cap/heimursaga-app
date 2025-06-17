@@ -35,7 +35,7 @@ export const InsightPostView = () => {
 
   const handleEdit = (postId: string) => {
     if (!postId) return;
-    router.push(ROUTER.POSTS.EDIT(postId));
+    router.push(ROUTER.ENTRIES.EDIT(postId));
   };
 
   const handleDelete = (postId: string) => {
@@ -53,7 +53,7 @@ export const InsightPostView = () => {
         const title = row.getValue('title') as string;
         return (
           <Link
-            href={postId ? ROUTER.POSTS.EDIT(postId) : '#'}
+            href={postId ? ROUTER.ENTRIES.EDIT(postId) : '#'}
             className="font-medium underline"
           >
             {title}

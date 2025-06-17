@@ -45,6 +45,11 @@ export const ROUTER = {
       BILLING: '/user/settings/billing',
     },
   },
+  ENTRIES: {
+    DETAIL: (id: string) => `/entries/${id}`,
+    CREATE: '/entries/create',
+    EDIT: (id: string) => `/entries/${id}/edit`,
+  },
   POSTS: {
     DETAIL: (id: string) => `/posts/${id}`,
     CREATE: '/posts/create',

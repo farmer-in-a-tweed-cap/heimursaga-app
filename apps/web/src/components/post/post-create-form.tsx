@@ -134,7 +134,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
 
           // redirect to post detail page
           if (postId) {
-            redirect(ROUTER.POSTS.DETAIL(postId));
+            redirect(ROUTER.ENTRIES.DETAIL(postId));
           }
         } else {
           setLoading(false);

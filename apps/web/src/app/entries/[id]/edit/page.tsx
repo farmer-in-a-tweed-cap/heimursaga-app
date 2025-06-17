@@ -12,19 +12,19 @@ import { AppLayout } from '@/layouts';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Edit post',
+  title: 'Edit entry',
 };
 
 type PageProps = {
   params: {
-    post_id: string;
+    id: string;
   };
 };
 
 export default async function Page({ params }: PageProps) {
   const cookie = cookies().toString();
 
-  const { post_id: postId } = await params;
+  const { id: postId } = await params;
 
   const postQuery = await apiClient.getPostById(
     { query: { id: postId } },
@@ -35,7 +35,7 @@ export default async function Page({ params }: PageProps) {
     <AppLayout>
       {postQuery.success ? (
         <div className="w-full max-w-3xl flex flex-col gap-6">
-          <PageHeaderTitle>Edit post</PageHeaderTitle>
+          <PageHeaderTitle>Edit entry</PageHeaderTitle>
           <Card>
             <CardContent>
               <PostEditForm

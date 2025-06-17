@@ -29,7 +29,7 @@ export const MAP_SEARCH_PARAMS = {
   LAT: 'lat',
   LON: 'lon',
   ZOOM: 'zoom',
-  POST_ID: 'post_id',
+  POST_ID: 'entry_id',
   SEARCH: 'search',
   USER: 'user',
   FILTER: 'filter',

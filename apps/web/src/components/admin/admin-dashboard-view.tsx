@@ -26,7 +26,7 @@ export const AdminDashboardView: React.FC<Props> = ({ section }) => {
   const [tab, setTab] = useState<string>(section || TABS.POSTS);
 
   const tabs: { key: string; label: string }[] = [
-    { key: TABS.POSTS, label: 'Posts' },
+    { key: TABS.POSTS, label: 'Entries' },
     { key: TABS.USERS, label: 'Users' },
   ];
 

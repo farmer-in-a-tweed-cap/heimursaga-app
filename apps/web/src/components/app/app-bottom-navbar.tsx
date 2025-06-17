@@ -54,7 +54,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
         label: 'Journal',
       },
       {
-        href: ROUTER.POSTS.CREATE,
+        href: ROUTER.ENTRIES.CREATE,
         icon: (props) => <PlusIcon {...props} />,
         label: 'Create',
       },

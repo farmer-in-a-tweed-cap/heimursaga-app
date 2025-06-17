@@ -19,7 +19,7 @@ export const PostShareButton: React.FC<Props> = ({ postId }) => {
     if (!postId) return;
 
     const url = new URL(
-      ROUTER.POSTS.DETAIL(postId),
+      ROUTER.ENTRIES.DETAIL(postId),
       process.env.NEXT_PUBLIC_APP_BASE_URL,
     ).toString();
     navigator.clipboard.writeText(url);

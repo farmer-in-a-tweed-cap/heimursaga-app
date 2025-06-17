@@ -107,7 +107,7 @@ export const MapExploreView: React.FC<Props> = () => {
 
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [userId, setUserId] = useState<string | null>(params.user || null);
-  const [postId, setPostId] = useState<string | null>(params.post_id || null);
+  const [postId, setPostId] = useState<string | null>(params.entry_id || null);
 
   const mapQuery = useQuery({
     queryKey: userId
@@ -193,13 +193,13 @@ export const MapExploreView: React.FC<Props> = () => {
   const handlePostDrawerOpen = ({ postId }: { postId: string }) => {
     map.handleDrawerOpen();
     setPostId(postId);
-    updateParams({ post_id: postId });
+    updateParams({ entry_id: postId });
   };
 
   const handlePostDrawerClose = () => {
     map.handleDrawerClose();
     setPostId(null);
-    updateParams({ post_id: null });
+    updateParams({ entry_id: null });
   };
 
   const handleContextChange = (context: string) =>
@@ -306,7 +306,7 @@ export const MapExploreView: React.FC<Props> = () => {
     }
 
     // set default post id
-    if (params.post_id) {
+    if (params.entry_id) {
       setPostId(postId);
       map.handleDrawerOpen();
     }
