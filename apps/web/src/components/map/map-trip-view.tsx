@@ -102,7 +102,7 @@ export const MapTripView: React.FC<Props> = ({ trip }) => {
                 sourceId: MAP_SOURCES.WAYPOINTS,
                 type: 'point',
                 data: waypoints.map(({ id, title, date, lat, lon }, key) => ({
-                  id: `${id}`,
+                  id,
                   lat,
                   lon,
                   properties: {
@@ -120,7 +120,7 @@ export const MapTripView: React.FC<Props> = ({ trip }) => {
                 sourceId: MAP_SOURCES.WAYPOINT_LINES,
                 type: 'line',
                 data: waypoints.map(({ id, title, date, lat, lon }, key) => ({
-                  id: `${id}`,
+                  id,
                   lat,
                   lon,
                   properties: {

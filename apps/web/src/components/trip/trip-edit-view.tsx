@@ -228,6 +228,7 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
                 })),
               },
             ]}
+            minZoom={3}
             onLoad={map.handleLoad}
             onMove={map.handleMove}
             onWaypointMove={handleWaypointMove}

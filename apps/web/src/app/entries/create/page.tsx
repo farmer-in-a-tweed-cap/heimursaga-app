@@ -25,7 +25,7 @@ export default async function Page({ searchParams }: PageProps) {
   const waypointId = searchParams.waypoint;
   const waypoint = waypointId
     ? await apiClient
-        .getWaypointById({ query: { id: waypointId } })
+        .getWaypointById({ query: { id: waypointId } }, { cookie })
         .then(({ data }) => data)
     : undefined;
 

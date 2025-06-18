@@ -2,7 +2,7 @@
 
 import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { APP_CONFIG } from '@/config';
 import { MapCoordinatesValue, useMap, useMapbox } from '@/hooks';
@@ -40,21 +40,24 @@ export const MapPreview: React.FC<Props> = ({
   const token = mapbox.token;
   const width = 600;
   const height = 240;
-  const style = APP_CONFIG.MAPBOX.STYLE;
-  const color = APP_CONFIG.MAPBOX.BRAND_COLOR;
-  const retina = '@2x';
 
   useEffect(() => {
-    if (center && map.mapbox) {
+    // if (!loaded) return;
+
+    console.log('center', { mapbox: !!map.mapbox, center });
+
+    if (map.mapbox && center) {
       map.mapbox.setCenter(center);
     }
   }, [center]);
 
   useEffect(() => {
-    if (map.mapbox) {
-      if (typeof zoom === 'number') {
-        map.mapbox.setZoom(zoom);
-      }
+    // if (!loaded) return;
+
+    console.log('zoom', { mapbox: !!map.mapbox, zoom });
+
+    if (map.mapbox && typeof zoom === 'number') {
+      map.mapbox.setZoom(zoom);
     }
   }, [zoom]);
 
@@ -74,7 +77,7 @@ export const MapPreview: React.FC<Props> = ({
         {token && (
           <Map
             token={token}
-            zoom={0}
+            zoom={zoom}
             minZoom={0}
             maxZoom={10}
             center={center}

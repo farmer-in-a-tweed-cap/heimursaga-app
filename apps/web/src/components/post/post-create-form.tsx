@@ -79,7 +79,10 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
 
   const [loading, setLoading] = useState<boolean>(false);
 
-  const map = useMap();
+  const map = useMap({
+    marker: waypoint ? waypoint : undefined,
+    zoom: waypoint ? APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM : 0,
+  });
 
   const [privacy, setPrivacy] = useState<{
     public: boolean;
@@ -94,15 +97,18 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
       full: true,
       props: {
         center: map.marker ? map.marker : map.center,
-        zoom: map.marker ? APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM : 4,
+        zoom: map.marker ? APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM : 0,
         marker: map.marker,
       },
       onSubmit: ((data) => {
         const { center, marker, zoom } = data || {};
 
         map.setMarker(marker);
-        map.setZoom(zoom);
         map.setCenter(center);
+
+        if (marker) {
+          map.setZoom(APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM);
+        }
       }) as MapLocationPickModalOnSubmitHandler,
       onCancel: () => {},
     });
@@ -151,7 +157,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     <div className="flex flex-col">
       <div className="flex flex-col gap-4">
         <MapPreview
-          zoom={map.marker ? APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM : 4}
+          zoom={map.zoom}
           center={map.marker}
           marker={map.marker}
           overlay={waypoint ? false : true}

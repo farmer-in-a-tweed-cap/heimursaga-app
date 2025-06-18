@@ -71,9 +71,6 @@ const MapLocationPickModal: React.FC<
             onMarkerChange={map.handleMarkerChange}
           />
         )}
-        {/* <div className="absolute z-50 bottom-2 right-2 bg-white text-black">
-          <span className="text-xs">{JSON.stringify({ map })}</span>
-        </div> */}
       </div>
       <DialogFooter>
         <Button variant="outline" onClick={handleCancel}>
