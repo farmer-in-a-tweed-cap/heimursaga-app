@@ -4,6 +4,7 @@ import {
   IMapQueryPayload,
   IMapQueryResponse,
   IWaypointCreatePayload,
+  IWaypointCreateResponse,
   IWaypointGetByIdResponse,
   IWaypointUpdatePayload,
   MapQueryContext,
@@ -244,9 +245,10 @@ export class MapService {
   async createWaypoint({
     payload,
     session,
-  }: ISessionQueryWithPayload<{}, IWaypointCreatePayload>): Promise<{
-    id: number;
-  }> {
+  }: ISessionQueryWithPayload<
+    {},
+    IWaypointCreatePayload
+  >): Promise<IWaypointCreateResponse> {
     try {
       const { userId } = session;
 

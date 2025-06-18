@@ -55,8 +55,8 @@ export const matchRoles = (role: UserRole, roles: UserRole[]): boolean => {
   return roles.some((r) => r === role);
 };
 
-export function sortByKey<T = any>({
-  elements,
+export function sortByDate<T = any>({
+  elements = [],
   key,
   order,
 }: {
@@ -64,6 +64,8 @@ export function sortByKey<T = any>({
   key: string;
   order: 'asc' | 'desc';
 }): T[] {
+  if (elements.length <= 0) return [];
+
   return elements.sort((a, b) => {
     if (a[key] instanceof Date && b[key] instanceof Date) {
       return order === 'desc'

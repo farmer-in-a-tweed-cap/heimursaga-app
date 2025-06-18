@@ -16,7 +16,7 @@ import { dateformat } from '@/lib/date-format';
 import { normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { getStaticMediaUrl } from '@/lib/upload';
-import { matchRoles, sortByKey } from '@/lib/utils';
+import { matchRoles, sortByDate } from '@/lib/utils';
 
 import {
   ServiceException,
@@ -99,7 +99,7 @@ export class TripService {
       const response: ITripGetAllResponse = {
         results,
         data: data.map(({ public_id, title, ...trip }) => {
-          const waypoints = sortByKey({
+          const waypoints = sortByDate({
             elements: trip.waypoints.map(({ waypoint }) => ({ ...waypoint })),
             key: 'date',
             order: 'asc',
@@ -157,6 +157,11 @@ export class TripService {
           public_id: true,
           title: true,
           waypoints: {
+            where: {
+              waypoint: {
+                deleted_at: null,
+              },
+            },
             select: {
               waypoint: {
                 select: {
@@ -185,7 +190,7 @@ export class TripService {
         data: data
           .filter(({ waypoints }) => waypoints.length > 1)
           .map(({ public_id, title, author, ...trip }) => {
-            const waypoints = sortByKey({
+            const waypoints = sortByDate({
               elements: trip.waypoints.map(({ waypoint }) => ({ ...waypoint })),
               key: 'date',
               order: 'asc',
@@ -240,7 +245,7 @@ export class TripService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      let where: Prisma.TripWhereInput = {
+      const where: Prisma.TripWhereInput = {
         public_id: id,
         deleted_at: null,
       };
@@ -255,6 +260,11 @@ export class TripService {
             title: true,
             author_id: true,
             waypoints: {
+              where: {
+                waypoint: {
+                  deleted_at: null,
+                },
+              },
               select: {
                 waypoint: {
                   select: {
@@ -305,34 +315,38 @@ export class TripService {
         title,
         startDate: new Date(),
         endDate: new Date(),
-        waypoints: waypoints.map(
-          ({ waypoint: { id, lat, lon, title, date, posts } }) => {
-            const post = posts?.[0];
-            return {
-              id,
-              lat,
-              lon,
-              title,
-              date,
-              post: post
-                ? {
-                    id: post.public_id,
-                    title: post.title,
-                    content: normalizeText(post.content),
-                    author: post.author
-                      ? {
-                          username: post.author.username,
-                          name: post.author.profile.name,
-                          picture: getStaticMediaUrl(
-                            post.author.profile.picture,
-                          ),
-                        }
-                      : undefined,
-                  }
-                : undefined,
-            };
-          },
-        ),
+        waypoints: sortByDate({
+          elements: waypoints.map(
+            ({ waypoint: { id, lat, lon, title, date, posts } }) => {
+              const post = posts?.[0];
+              return {
+                id,
+                lat,
+                lon,
+                title,
+                date,
+                post: post
+                  ? {
+                      id: post.public_id,
+                      title: post.title,
+                      content: normalizeText(post.content),
+                      author: post.author
+                        ? {
+                            username: post.author.username,
+                            name: post.author.profile.name,
+                            picture: getStaticMediaUrl(
+                              post.author.profile.picture,
+                            ),
+                          }
+                        : undefined,
+                    }
+                  : undefined,
+              };
+            },
+          ),
+          key: 'date',
+          order: 'asc',
+        }),
       };
 
       return response;
