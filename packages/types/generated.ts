@@ -397,6 +397,10 @@ export interface IWaypointCreatePayload {
   tripId?: string;
 }
 
+export interface IWaypointCreateResponse {
+  id: number;
+}
+
 export interface IWaypointUpdatePayload extends Partial<IWaypoint> {
   postId?: string;
   tripId?: string;
