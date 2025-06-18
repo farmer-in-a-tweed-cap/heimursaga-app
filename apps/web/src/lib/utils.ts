@@ -29,21 +29,6 @@ export const getEnv = (): 'development' | 'production' => {
   return process.env.NODE_ENV as 'development' | 'production';
 };
 
-export function sortByDate<T = any>(
-  elements: { date: Date }[],
-  order: 'asc' | 'desc',
-): T[] {
-  return elements.sort((a, b) => {
-    if (a.date instanceof Date && b.date instanceof Date) {
-      return order === 'desc'
-        ? b.date.getTime() - a.date.getTime()
-        : a.date.getTime() - b.date.getTime();
-    } else {
-      return -1;
-    }
-  }) as T[];
-}
-
 export const normalizeText = (text: string = '') => {
   return (
     text
@@ -53,3 +38,29 @@ export const normalizeText = (text: string = '') => {
   // .filter((line) => line.trim() !== '')
   // .map((line, key) => <p key={key}>{line}</p>);
 };
+
+export const randomIntegerId = (): number => {
+  return parseInt(Date.now() + Math.random().toFixed(0));
+};
+
+export function sortByDate<T = any>({
+  elements = [],
+  key,
+  order,
+}: {
+  elements: any[];
+  key: string;
+  order: 'asc' | 'desc';
+}): T[] {
+  if (elements.length <= 0) return [];
+
+  return elements.sort((a, b) => {
+    if (a[key] instanceof Date && b[key] instanceof Date) {
+      return order === 'desc'
+        ? b[key].getTime() - a[key].getTime()
+        : a[key].getTime() - b[key].getTime();
+    } else {
+      return -1;
+    }
+  }) as T[];
+}

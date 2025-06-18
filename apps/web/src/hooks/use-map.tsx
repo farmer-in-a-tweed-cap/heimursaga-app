@@ -52,6 +52,12 @@ export type MapHookConfig = {
 
 export type MapCoordinatesValue = { lat: number; lon: number };
 
+export type MapWaypointValue = MapCoordinatesValue & {
+  id: number;
+  title?: string;
+  date?: Date;
+};
+
 export type MapBoundsValue = {
   sw: MapCoordinatesValue;
   ne: MapCoordinatesValue;

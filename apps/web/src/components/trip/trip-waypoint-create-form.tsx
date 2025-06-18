@@ -12,6 +12,7 @@ import {
   FormMessage,
   Input,
 } from '@repo/ui/components';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -54,25 +55,33 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
     resolver: zodResolver(schema),
     defaultValues: {
       title: '',
-      lat: lat ? `${lat}` : '0',
-      lon: lon ? `${lon}` : '0',
     },
   });
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      const { title, lat, lon, date } = values;
+      const { title, date } = values;
 
       if (onSubmit) {
         onSubmit({
           title,
-          lat: parseFloat(lat),
-          lon: parseFloat(lon),
+          lat: lat ? lat : 0,
+          lon: lon ? lon : 0,
           date,
         });
       }
     },
   );
+
+  useEffect(() => {
+    if (lat) {
+      form.setValue('lat', `${lat}`);
+    }
+
+    if (lon) {
+      form.setValue('lon', `${lon}`);
+    }
+  }, [lat, lon]);
 
   return (
     <Form {...form}>
@@ -99,7 +108,7 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
                 <FormItem>
                   <FormLabel>Latitude</FormLabel>
                   <FormControl>
-                    <Input disabled required {...field} />
+                    <Input {...field} value={`${lat}`} disabled required />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -112,7 +121,7 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
                 <FormItem>
                   <FormLabel>Longitude</FormLabel>
                   <FormControl>
-                    <Input disabled required {...field} />
+                    <Input {...field} value={`${lon}`} disabled required />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
