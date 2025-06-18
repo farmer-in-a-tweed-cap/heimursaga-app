@@ -512,7 +512,7 @@ export const MapExploreView: React.FC<Props> = () => {
                   sourceId: MAP_SOURCES.WAYPOINTS,
                   type: 'point',
                   data: waypoints.map(({ lat, lon, post }, key) => ({
-                    id: `${key}`,
+                    id: key,
                     lat,
                     lon,
                     properties: post

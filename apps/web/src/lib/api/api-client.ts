@@ -53,6 +53,7 @@ import {
   IUserSettingsProfileGetResponse,
   IUserSettingsProfileUpdatePayload,
   IWaypointCreatePayload,
+  IWaypointCreateResponse,
   IWaypointGetByIdResponse,
   IWaypointUpdatePayload,
 } from '@repo/types';
@@ -545,10 +546,7 @@ export const apiClient = {
     }),
 
   // trips
-  getTrips: async (
-    // { payload }: IApiClientQueryWithPayload<{}>,
-    config?: RequestConfig,
-  ) =>
+  getTrips: async (config?: RequestConfig) =>
     api.request<ITripGetAllResponse>(API_ROUTER.TRIPS.GET, {
       method: API_METHODS.GET,
       ...config,
@@ -601,13 +599,36 @@ export const apiClient = {
       method: API_METHODS.DELETE,
       ...config,
     }),
+
+  // map
   createWaypoint: async (
     { payload }: IApiClientQueryWithPayload<{}, IWaypointCreatePayload>,
     config?: RequestConfig,
   ) =>
-    api.request<void>(API_ROUTER.MAP.WAYPOINTS.CREATE, {
+    api.request<IWaypointCreateResponse>(API_ROUTER.MAP.WAYPOINTS.CREATE, {
       method: API_METHODS.POST,
       body: JSON.stringify(payload),
+      ...config,
+    }),
+  updateWaypoint: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<{ id: number }, IWaypointUpdatePayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.MAP.WAYPOINTS.UPDATE(query.id), {
+      method: API_METHODS.PUT,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
+  deleteWaypoint: async (
+    { query }: IApiClientQuery<{ id: number }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.MAP.WAYPOINTS.DELETE(query.id), {
+      method: API_METHODS.DELETE,
+      body: JSON.stringify({}),
       ...config,
     }),
 

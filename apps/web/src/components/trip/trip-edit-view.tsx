@@ -1,24 +1,8 @@
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
 import { ITripDetail, IWaypoint } from '@repo/types';
-import {
-  Button,
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Input,
-} from '@repo/ui/components';
-import { cn } from '@repo/ui/lib/utils';
-import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-
-import { apiClient } from '@/lib/api';
+import { Button } from '@repo/ui/components';
+import { useState } from 'react';
 
 import {
   MAP_LAYERS,
@@ -27,38 +11,13 @@ import {
   MapSidebar,
   MapTripCard,
   MapViewContainer,
-  TRIP_EDIT_FORM_ID,
   TripEditForm,
-  TripEditFormWaypointAddHandler,
 } from '@/components';
-import { MapCoordinatesValue, useMap, useMapbox } from '@/hooks';
-import { zodMessage } from '@/lib';
+import { MapWaypointValue, useMap, useMapbox } from '@/hooks';
+import { dateformat, sortByDate } from '@/lib';
 import { ROUTER } from '@/router';
 
-type WaypointElement = {
-  id: number;
-  title: string;
-  lat: number;
-  lon: number;
-  date: Date;
-  post?: {
-    id: string;
-  };
-};
-
-const FORM_ID = 'trip_edit_form';
-
-const schema = z.object({
-  title: z
-    .string()
-    .nonempty(zodMessage.required('title'))
-    .min(0, zodMessage.string.min('title', 0))
-    .max(100, zodMessage.string.max('title', 100)),
-  description: z
-    .string()
-    .max(500, zodMessage.string.max('description', 500))
-    .optional(),
-});
+const TRIP_EDIT_FORM_ID = 'trip_edit_form';
 
 type Props = {
   trip?: ITripDetail;
@@ -76,13 +35,9 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
   });
 
   const [loading, setLoading] = useState<boolean>(false);
-
-  const [waypoint, setWaypoint] = useState<MapCoordinatesValue | null>(null);
+  const [waypoint, setWaypoint] = useState<MapWaypointValue | null>(null);
   const [waypoints, setWaypoints] = useState<IWaypoint[]>(
     trip?.waypoints || [],
-  );
-  const [waypointIndex, setWaypointIndex] = useState<number>(
-    waypoints.length || 1,
   );
 
   const backUrl = source
@@ -142,14 +97,32 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
   //       },
   // });
 
-  const handleWaypointCreateStart: TripEditFormWaypointAddHandler = (
-    waypoint,
-  ) => {
+  const handleWaypointMove = (waypoint: MapWaypointValue) => {
+    setWaypoint(waypoint);
+  };
+
+  const handleWaypointCreateStart = (waypoint: MapWaypointValue) => {
     setWaypoint(waypoint);
   };
 
   const handleWaypointCreateCancel = () => {
     setWaypoint(null);
+  };
+
+  const handleWaypointCreateSubmit = (waypoint: MapWaypointValue) => {
+    setWaypoints((waypoints) =>
+      sortByDate({
+        elements: [...waypoints, waypoint],
+        order: 'asc',
+        key: 'date',
+      }),
+    );
+  };
+
+  const handleWaypointDelete = (id: number) => {
+    setWaypoints((waypoints) => {
+      return waypoints.filter((waypoint) => waypoint.id !== id);
+    });
   };
 
   return (
@@ -164,17 +137,20 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
           />
         )}
         <div className="w-full h-full flex flex-col overflow-y-scroll">
-          <div className="w-full h-full px-6">
-            {JSON.stringify({ center: map.center, waypoint })}
+          <div className="w-full h-auto px-6 py-4">
             <TripEditForm
               trip={trip}
+              waypoint={waypoint}
+              waypoints={waypoints}
               map={{ center: map.center }}
               onLoading={(loading: boolean) => setLoading(loading)}
+              onWaypointCreateSubmit={handleWaypointCreateSubmit}
               onWaypointCreateStart={handleWaypointCreateStart}
               onWaypointCreateCancel={handleWaypointCreateCancel}
+              onWaypointDelete={handleWaypointDelete}
             />
           </div>
-          {/* <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background px-4 py-4 box-border">
+          <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background px-4 py-4 box-border">
             <Button
               size="lg"
               type="submit"
@@ -183,7 +159,7 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
             >
               Save changes
             </Button>
-          </div> */}
+          </div>
         </div>
       </MapSidebar>
       <MapViewContainer
@@ -199,13 +175,9 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
                 source: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
               },
               {
-                id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
-                source: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
+                id: MAP_LAYERS.WAYPOINT_LINES,
+                source: MAP_SOURCES.WAYPOINT_LINES,
               },
-              // {
-              //   id: MAP_LAYERS.WAYPOINT_LINES,
-              //   source: MAP_SOURCES.WAYPOINT_LINES,
-              // },
               {
                 id: MAP_LAYERS.WAYPOINTS,
                 source: MAP_SOURCES.WAYPOINTS,
@@ -222,12 +194,10 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
                 data: waypoint
                   ? [
                       {
-                        id: `${Date.now()}`,
+                        id: waypoint.id,
                         lat: waypoint.lat,
                         lon: waypoint.lon,
-                        properties: {
-                          index: waypointIndex,
-                        },
+                        properties: {},
                       },
                     ]
                   : [],
@@ -236,7 +206,7 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
                 sourceId: MAP_SOURCES.WAYPOINTS,
                 type: 'point',
                 data: waypoints.map(({ id, lat, lon, title, date }, key) => ({
-                  id: `${id}`,
+                  id,
                   lat,
                   lon,
                   properties: {
@@ -247,22 +217,20 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
                   },
                 })),
               },
-              // {
-              //   sourceId: MAP_SOURCES.WAYPOINT_LINES,
-              //   type: 'line',
-              //   data: waypoints.map(({ id, lat, lon }) => ({
-              //     id: `${id}`,
-              //     lat,
-              //     lon,
-              //     properties: {},
-              //   })),
-              // },
+              {
+                sourceId: MAP_SOURCES.WAYPOINT_LINES,
+                type: 'line',
+                data: waypoints.map(({ id, lat, lon }) => ({
+                  id,
+                  lat,
+                  lon,
+                  properties: {},
+                })),
+              },
             ]}
             onLoad={map.handleLoad}
             onMove={map.handleMove}
-            onWaypointDrag={(waypoint) => {
-              setWaypoint(waypoint);
-            }}
+            onWaypointMove={handleWaypointMove}
           />
         )}
       </MapViewContainer>

@@ -1,5 +1,5 @@
 type GeoJsonFeature<T = any> = {
-  id: string;
+  id: number;
   lat: number;
   lon: number;
   properties: T;

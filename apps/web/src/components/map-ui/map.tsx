@@ -10,6 +10,7 @@ import mapboxgl, {
 } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useEffect, useRef, useState } from 'react';
+import { useDebounce } from 'use-debounce';
 
 import { APP_CONFIG } from '@/config';
 import {
@@ -46,7 +47,7 @@ import { addSources, updateSources } from './map.utils';
 export type MapSourceType = 'point' | 'line';
 
 export type MapSourceData<T = any> = {
-  id: string;
+  id: number;
   lat: number;
   lon: number;
   properties: T;
@@ -138,12 +139,12 @@ type Props = {
   onLoad?: MapLoadHandler;
   onMove?: MapMoveHandler;
   onSourceClick?: MapOnSourceClickHandler;
-  onWaypointDrag?: MapWaypointDragHandler;
+  onWaypointMove?: MapWaypointMoveHandler;
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
 };
 
-export type MapWaypointDragHandler = (
-  waypoint: MapCoordinatesValue & { id: string },
+export type MapWaypointMoveHandler = (
+  waypoint: MapCoordinatesValue & { id: number },
 ) => void;
 
 export type MapOnSourceClickHandler = (sourceId: string) => void;
@@ -169,18 +170,21 @@ export const Map: React.FC<Props> = ({
   bounds,
   onLoad,
   onMove,
-  onWaypointDrag,
   onMarkerChange,
+  onWaypointMove,
   onSourceClick,
 }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
   const isInternalUpdate = useRef<boolean>(false);
 
-  const [waypointDraggable, setWaypointDraggable] = useState<{
-    id: string;
+  const [_waypointDraggable, setWaypointDraggable] = useState<{
+    id: number;
     lat: number;
     lon: number;
-  }>();
+  } | null>(null);
+  const [waypointDraggable] = useDebounce(_waypointDraggable, 100);
+  const waypointDraggableId = useRef<number | null>(null);
+  const waypointDragging = useRef<boolean>(false);
 
   // refs
   const mapboxRef = useRef<mapboxgl.Map | null>(null);
@@ -395,49 +399,157 @@ export const Map: React.FC<Props> = ({
     }, 100);
   };
 
-  const handleWaypointMove = ({
-    sourceId,
-    data,
-  }: {
-    sourceId: string;
-    data: {
-      id: string;
-      lat: number;
-      lon: number;
-    };
-  }) => {
-    const { id, lat, lon } = data;
+  // const handleWaypointMove = ({
+  //   sourceId,
+  //   data,
+  // }: {
+  //   sourceId: string;
+  //   data: {
+  //     id: string;
+  //     lat: number;
+  //     lon: number;
+  //   };
+  // }) => {
+  //   const { id, lat, lon } = data;
 
-    console.log('waypoint drag', { id, lat, lon });
+  //   console.log('waypoint drag', { sourceId, id, lat, lon });
 
-    const source = sources.find((source) => source.sourceId === sourceId);
+  //   const source = sources.find((source) => source.sourceId === sourceId);
 
-    if (source) {
-      const { onChange } = source;
-      let data = source.data;
+  //   if (source) {
+  //     const { onChange } = source;
+  //     let data = source.data;
 
-      const index = data.findIndex((e) => e.id === id);
-      const element = index > -1 ? data[index] : null;
+  //     const index = data.findIndex((e) => e.id === id);
+  //     const element = index > -1 ? data[index] : null;
 
-      if (element) {
-        data[index] = {
-          ...element,
-          lat,
-          lon,
-        };
-      }
+  //     if (element) {
+  //       data[index] = {
+  //         ...element,
+  //         lat,
+  //         lon,
+  //       };
+  //     }
 
-      if (onWaypointDrag) {
-        onWaypointDrag({
-          id,
+  //     if (onWaypointMove) {
+  //       onWaypointMove({
+  //         id,
+  //         lat,
+  //         lon,
+  //       });
+  //     }
+
+  //     if (onChange) {
+  //       onChange(data);
+  //     }
+  //   }
+  // };
+
+  const handleWaypointMouseMove = (e: MapMouseEvent | MapTouchEvent) => {
+    if (!mapboxRef.current) return;
+
+    const canvas = mapboxRef.current.getCanvasContainer();
+    const { lat, lng: lon } = e.lngLat;
+
+    canvas.style.cursor = 'grabbing';
+
+    if (waypointDraggableRef.current) {
+      const id = waypointDraggableRef.current.id;
+
+      console.log('move', { id, lat, lon });
+    }
+
+    // geojson.features[0].geometry.coordinates = [coords.lng, coords.lat];
+    // mapRef.current.getSource('point').setData(geojson);
+  };
+
+  const handleWaypointMouseUp = (e: MapMouseEvent | MapTouchEvent) => {
+    if (!mapboxRef.current) return;
+
+    const canvas = mapboxRef.current.getCanvasContainer();
+    const { lat, lng: lon } = e.lngLat;
+
+    console.log('waypoint: mouseup', { lat, lon });
+
+    return;
+
+    canvas.style.cursor = '';
+
+    // if (waypointDraggableRef.current) {
+    //   handleWaypointMove({
+    //     sourceId: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
+    //     data: { id: waypointDraggableRef.current.id, lat, lon },
+    //   });
+    // }
+
+    mapboxRef.current!.off('mousemove', handleWaypointMouseMove);
+    mapboxRef.current!.off('touchmove', handleWaypointMouseMove);
+  };
+
+  const handleWaypointDraggableMouseDown = (
+    e: MapMouseEvent | MapTouchEvent,
+  ) => {
+    e.preventDefault();
+
+    if (!mapboxRef.current) return;
+
+    console.log('waypoint: mousedown');
+
+    waypointDragging.current = true;
+
+    const canvas = mapboxRef.current.getCanvasContainer();
+    canvas.style.cursor = 'grabbing';
+
+    const feature = e.features?.[0];
+    const waypointId = feature?.id as number;
+    const { lat, lng: lon } = e.lngLat;
+
+    // update waypoint
+    if (waypointId) {
+      waypointDraggableId.current = waypointId;
+      setWaypointDraggable(() => ({ id: waypointId, lat, lon }));
+    }
+  };
+
+  const handleWaypointDraggableMouseUp = (e: MapMouseEvent | MapTouchEvent) => {
+    if (!mapboxRef.current) return;
+    if (!waypointDragging.current) return;
+
+    const { lat, lng: lon } = e.lngLat;
+    const canvas = mapboxRef.current.getCanvasContainer();
+    const waypointId = waypointDraggableId.current;
+
+    console.log('waypoint: mouseup');
+
+    if (waypointId) {
+      // update waypoint
+      if (onWaypointMove) {
+        onWaypointMove({
+          id: waypointId,
           lat,
           lon,
         });
       }
+    }
 
-      if (onChange) {
-        onChange(data);
-      }
+    waypointDragging.current = false;
+    waypointDraggableId.current = null;
+    canvas.style.cursor = '';
+  };
+
+  const handleWaypointDraggableMouseMove = (
+    e: MapMouseEvent | MapTouchEvent,
+  ) => {
+    if (!mapboxRef.current) return;
+    if (!waypointDragging.current) return;
+
+    const waypointId = waypointDraggableId.current;
+    const { lat, lng: lon } = e.lngLat;
+
+    console.log('waypoint: mousemove', { waypointId, lat, lon });
+
+    if (waypointId) {
+      setWaypointDraggable(() => ({ id: waypointId, lat, lon }));
     }
   };
 
@@ -548,39 +660,6 @@ export const Map: React.FC<Props> = ({
       markerRef.current = new mapboxgl.Marker(config.point)
         .setLngLat({ lat, lng: lon })
         .addTo(mapboxRef.current);
-    }
-
-    function onWaypointMouseMove(e: MapMouseEvent | MapTouchEvent) {
-      const { lat, lng: lon } = e.lngLat;
-
-      canvas.style.cursor = 'grabbing';
-
-      if (waypointDraggableRef.current) {
-        const id = waypointDraggableRef.current.id;
-
-        console.log('move', { id, lat, lon });
-      }
-
-      // geojson.features[0].geometry.coordinates = [coords.lng, coords.lat];
-      // mapRef.current.getSource('point').setData(geojson);
-    }
-
-    function onWaypointMouseUp(e: MapMouseEvent | MapTouchEvent) {
-      const { lat, lng: lon } = e.lngLat;
-
-      console.log('up', { id: waypointDraggableRef.current?.id, lat, lon });
-
-      canvas.style.cursor = '';
-
-      if (waypointDraggableRef.current) {
-        handleWaypointMove({
-          sourceId: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
-          data: { id: waypointDraggableRef.current.id, lat, lon },
-        });
-      }
-
-      mapboxRef.current!.off('mousemove', onWaypointMouseMove);
-      mapboxRef.current!.off('touchmove', onWaypointMouseMove);
     }
 
     // update mapbox on load
@@ -903,63 +982,83 @@ export const Map: React.FC<Props> = ({
       }),
     );
 
-    // --
+    // mapboxRef.current!.on('mouseover', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
+    //   if (
+    //     !mapboxRef.current ||
+    //     !mapboxPopupRef.current ||
+    //     !e.features ||
+    //     !e.features?.length
+    //   )
+    //     return;
 
-    mapboxRef.current!.on('mouseover', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
-      if (
-        !mapboxRef.current ||
-        !mapboxPopupRef.current ||
-        !e.features ||
-        !e.features?.length
-      )
-        return;
+    //   // set cursor
+    //   canvas.style.cursor = 'move';
 
-      // set cursor
-      canvas.style.cursor = 'move';
+    //   const feature = e.features[0];
+    //   const [lon, lat] = (feature.geometry as any).coordinates as [
+    //     number,
+    //     number,
+    //   ];
 
-      // const feature = e.features[0];
-      // const properties = feature?.properties as {
-      //   id: string;
-      //   title: string;
-      //   content: string;
-      //   date: string;
-      // };
+    //   // console.log('waypoint drag', { lon, lat });
 
-      // const { id, title, content, date } = properties;
-      // const coordinates = (feature.geometry as any).coordinates as [
-      //   number,
-      //   number,
-      // ];
-    });
+    //   // const feature = e.features[0];
+    //   // const properties = feature?.properties as {
+    //   //   id: string;
+    //   //   title: string;
+    //   //   content: string;
+    //   //   date: string;
+    //   // };
 
-    mapboxRef.current!.on('mouseleave', MAP_LAYERS.WAYPOINTS_DRAGGABLE, () => {
-      // reset cursor
-      canvas.style.cursor = '';
-    });
+    //   // const { id, title, content, date } = properties;
+    //   // const coordinates = (feature.geometry as any).coordinates as [
+    //   //   number,
+    //   //   number,
+    //   // ];
+    // });
 
-    mapboxRef.current!.on('mousedown', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
-      e.preventDefault();
-      canvas.style.cursor = 'grab';
+    // mapboxRef.current!.on('mouseleave', MAP_LAYERS.WAYPOINTS_DRAGGABLE, () => {
+    //   // reset cursor
+    //   canvas.style.cursor = '';
+    // });
 
-      const { lat, lng: lon } = e.lngLat;
-      const properties = e.features?.[0]?.properties as { id: string };
-      const waypointId = properties.id;
+    mapboxRef.current!.on(
+      'mousedown',
+      MAP_LAYERS.WAYPOINTS_DRAGGABLE,
+      handleWaypointDraggableMouseDown,
+    );
 
-      if (waypointId) {
-        setWaypointDraggable({ id: waypointId, lat, lon });
-        mapboxRef.current!.on('mousemove', onWaypointMouseMove);
-        mapboxRef.current!.once('mouseup', onWaypointMouseUp);
-      }
-    });
+    mapboxRef.current!.on('mouseup', handleWaypointDraggableMouseUp);
 
-    mapboxRef.current!.on('touchstart', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
-      if (e.points.length !== 1) return;
-      e.preventDefault();
-      mapboxRef.current!.on('touchmove', onWaypointMouseMove);
-      mapboxRef.current!.once('touchend', onWaypointMouseUp);
-    });
+    mapboxRef.current!.on('mousemove', handleWaypointDraggableMouseMove);
 
-    // clusters
+    // mapboxRef.current!.on('mousedown', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
+    //   e.preventDefault();
+
+    //   // ch
+    //   canvas.style.cursor = 'grab';
+
+    //   console.log('grab');
+
+    //   const { lat, lng: lon } = e.lngLat;
+    //   const properties = e.features?.[0]?.properties as { id: string };
+    //   const waypointId = properties.id;
+
+    //   if (waypointId) {
+    //     setWaypointDraggable({ id: waypointId, lat, lon });
+    //     mapboxRef.current!.on('mousemove', handleWaypointMouseMove);
+    //     mapboxRef.current!.once('mouseup', handleWaypointMouseUp);
+    //   }
+    // });
+
+    // @todo
+    // mapboxRef.current!.on('touchstart', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
+    //   if (e.points.length !== 1) return;
+    //   e.preventDefault();
+    //   mapboxRef.current!.on('touchmove', handleWaypointMouseMove);
+    //   mapboxRef.current!.once('touchend', handleWaypointMouseUp);
+    // });
+
     mapboxRef.current!.on('click', MAP_LAYERS.CLUSTERS, (e) => {
       if (!mapboxRef.current || !e.features || !e.features.length) return;
 
@@ -1068,9 +1167,9 @@ export const Map: React.FC<Props> = ({
 
   return (
     <div className={cn(className, 'relative w-full h-full')}>
-      {/* <div className="absolute bottom-5 right-5 z-20 bg-white text-black text-xs">
+      <div className="absolute bottom-5 right-5 z-20 bg-white text-black text-xs">
         {JSON.stringify({ d: waypointDraggable })}
-      </div> */}
+      </div>
       <div
         id="map-container"
         ref={mapboxContainerRef}

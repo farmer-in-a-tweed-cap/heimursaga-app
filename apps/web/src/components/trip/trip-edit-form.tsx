@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ITripDetail } from '@repo/types';
+import { ITripDetail, IWaypointDetail } from '@repo/types';
 import {
   Button,
   Form,
@@ -18,8 +18,8 @@ import { z } from 'zod';
 
 import { apiClient } from '@/lib/api';
 
-import { MapCoordinatesValue, useMap } from '@/hooks';
-import { zodMessage } from '@/lib';
+import { MapCoordinatesValue, MapWaypointValue } from '@/hooks';
+import { randomIntegerId, zodMessage } from '@/lib';
 
 import { TripWaypointCard } from './trip-waypoint-card';
 import {
@@ -40,26 +40,30 @@ export const TRIP_EDIT_FORM_ID = 'trip_edit_form';
 
 type Props = {
   trip?: ITripDetail;
+  waypoint?: MapWaypointValue | null;
+  waypoints?: IWaypointDetail[];
   map?: {
     center: MapCoordinatesValue;
   };
   onLoading?: (loading: boolean) => void;
-  onWaypointCreateStart?: TripEditFormWaypointAddHandler;
+  onWaypointCreateSubmit?: (waypoint: MapWaypointValue) => void;
+  onWaypointCreateStart?: (waypoint: MapWaypointValue) => void;
   onWaypointCreateCancel?: () => void;
+  onWaypointDelete?: (id: number) => void;
   onSubmit?: TripEditFormSubmitHandler;
 };
-
-export type TripEditFormWaypointAddHandler = (
-  waypoint: MapCoordinatesValue & { id: number },
-) => void;
 
 export type TripEditFormSubmitHandler = (values: { title: string }) => void;
 
 export const TripEditForm: React.FC<Props> = ({
   trip,
+  waypoint,
+  waypoints = [],
   map,
   onWaypointCreateStart,
   onWaypointCreateCancel,
+  onWaypointCreateSubmit,
+  onWaypointDelete,
   onLoading = () => {},
   onSubmit = () => {},
 }) => {
@@ -68,7 +72,6 @@ export const TripEditForm: React.FC<Props> = ({
     waypoint: false,
   });
 
-  const [waypoint, setWaypoint] = useState<MapCoordinatesValue | null>(null);
   const [waypointCreating, setWaypointCreating] = useState<boolean>(false);
   const [waypointEditing, setWaypointEditing] = useState<boolean>(false);
   const [waypointEditingId, setWaypointEditingId] = useState<number | null>(
@@ -82,14 +85,12 @@ export const TripEditForm: React.FC<Props> = ({
     },
   });
 
-  const waypoints = trip?.waypoints || [];
-
   const handleWaypointCreateStart = () => {
     setWaypointCreating(true);
 
     if (map?.center && onWaypointCreateStart) {
       onWaypointCreateStart({
-        id: Date.now(),
+        id: randomIntegerId(),
         lat: map.center.lat,
         lon: map.center.lon,
       });
@@ -105,9 +106,9 @@ export const TripEditForm: React.FC<Props> = ({
   };
 
   const handleWaypointCreateSubmit: TripWaypointCreateFormSubmitHandler =
-    async (data) => {
+    async (values) => {
       try {
-        const { date, title, lat, lon } = data;
+        const { date, title, lat, lon } = values;
         const tripId = trip?.id;
 
         if (!tripId) return;
@@ -115,7 +116,7 @@ export const TripEditForm: React.FC<Props> = ({
         setLoading((state) => ({ ...state, waypoint: true }));
 
         // create a point
-        const { success } = await apiClient.createWaypoint({
+        const { success, data } = await apiClient.createWaypoint({
           query: {},
           payload: {
             lat,
@@ -125,20 +126,25 @@ export const TripEditForm: React.FC<Props> = ({
             tripId,
           },
         });
+        const waypointId = data?.id;
 
         if (success) {
-          alert('waypoint created');
-
           setWaypointCreating(false);
           setLoading((state) => ({ ...state, waypoint: false }));
 
-          // @todo
-          // setWaypoints((waypoints) =>
-          //   sortByDate(
-          //     [...waypoints, { ...data, id: waypoints.length + 1 }],
-          //     'asc',
-          //   ),
-          // );
+          if (waypointId) {
+            const waypoint = {
+              id: waypointId,
+              title,
+              lat,
+              lon,
+              date,
+            };
+
+            if (onWaypointCreateSubmit) {
+              onWaypointCreateSubmit(waypoint);
+            }
+          }
         } else {
           setLoading((state) => ({ ...state, waypoint: false }));
         }
@@ -157,87 +163,28 @@ export const TripEditForm: React.FC<Props> = ({
     setWaypointEditingId(null);
   };
 
-  // const handleWaypointEditSubmit = async (
-  //   id: number,
-  //   data: Partial<TripWaypointEditFormState>,
-  // ) => {
-  //   try {
-  //     // const waypointId = state.waypointEditingId
-  //     //   ? state.waypointEditingId
-  //     //   : undefined;
-  //     const waypointId = id;
-  //     const { lat, lon, date, title } = data;
+  const handleWaypointDelete = async (id: number) => {
+    if (confirm(`delete this waypoint?`)) {
+      try {
+        const waypointId = id;
 
-  //     if (!trip?.id || !waypointId) return;
+        if (!waypointId) return;
 
-  //     setLoading((state) => ({ ...state, waypoint: true }));
+        // delete the waypoint
+        const { success } = await apiClient.deleteWaypoint({
+          query: { id },
+        });
 
-  //     // update the waypoint
-  //     const { success } = await apiClient.updateTripWaypoint({
-  //       query: { tripId: trip.id, waypointId },
-  //       payload: { lat, lon, date, title },
-  //     });
-
-  //     if (success) {
-  //       setState((state) => ({
-  //         ...state,
-  //         waypointEditing: false,
-  //         waypointEditingId: undefined,
-  //       }));
-  //       setWaypoints((waypoints) => {
-  //         const waypointIndex = waypoints.findIndex(
-  //           (el) => el.id === waypointEditingId,
-  //         );
-  //         if (waypointIndex > -1) {
-  //           const prev = waypoints[waypointIndex];
-  //           waypoints[waypointIndex] = { ...prev, ...data };
-  //         }
-
-  //         return sortByDate(waypoints, 'asc');
-  //       });
-  //       setLoading((state) => ({ ...state, waypoint: false }));
-  //     } else {
-  //       setLoading((state) => ({ ...state, waypoint: false }));
-  //     }
-  //   } catch (e) {
-  //     setLoading((state) => ({ ...state, waypoint: false }));
-  //   }
-  // };
-
-  // const handleWaypointEditCancel = () => {
-  //   setState((state) => ({
-  //     ...state,
-  //     waypointEditing: false,
-  //     waypointEditingId: undefined,
-  //   }));
-  // };
-
-  // const handleWaypointDelete: TripWaypointCardClickHandler = async (id) => {
-  //   if (confirm(`delete this waypoint?`)) {
-  //     try {
-  //       const waypointId = id;
-
-  //       if (!trip?.id || !waypointId) return;
-
-  //       // delete the waypoint
-  //       const { success } = await apiClient.deleteTripWaypoint({
-  //         query: { tripId: trip.id, waypointId },
-  //       });
-
-  //       if (success) {
-  //         setWaypoints((waypoints) => waypoints.filter((el) => el.id !== id));
-  //       } else {
-  //         //
-  //       }
-  //     } catch (e) {
-  //       //
-  //     }
-  //   }
-  // };
-
-  // const handleViewportChange: MapOnMoveHandler = ({ lat, lon }) => {
-  //   setViewport({ lat, lon });
-  // };
+        if (success) {
+          if (onWaypointDelete) {
+            onWaypointDelete(waypointId);
+          }
+        }
+      } catch (e) {
+        //
+      }
+    }
+  };
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
@@ -318,10 +265,10 @@ export const TripEditForm: React.FC<Props> = ({
                     <TripWaypointEditForm
                       defaultValues={{ title, lat, lon, date }}
                       loading={loading.waypoint}
+                      onCancel={handleWaypointEditCancel}
                       onSubmit={(data) => {
                         // handleWaypointEditSubmit(id, data)
                       }}
-                      onCancel={handleWaypointEditCancel}
                     />
                   </div>
                 ) : (
@@ -335,7 +282,7 @@ export const TripEditForm: React.FC<Props> = ({
                     date={date || new Date()}
                     post={post}
                     onEdit={handleWaypointEditStart}
-                    // onDelete={handleWaypointDelete}
+                    onDelete={handleWaypointDelete}
                   />
                 ),
               )}
@@ -346,8 +293,8 @@ export const TripEditForm: React.FC<Props> = ({
             <div className="w-full py-4">
               <TripWaypointCreateForm
                 loading={loading.waypoint}
-                lat={map?.center?.lat}
-                lon={map?.center?.lon}
+                lat={waypoint?.lat || 0}
+                lon={waypoint?.lon || 0}
                 onSubmit={handleWaypointCreateSubmit}
                 onCancel={handleWaypointCreateCancel}
               />
