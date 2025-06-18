@@ -67,7 +67,7 @@ export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
                   type: 'point',
                   data:
                     mapQuery.data?.waypoints.map(({ lat, lon }, key) => ({
-                      id: `${key}`,
+                      id: key,
                       lat,
                       lon,
                       properties: {},

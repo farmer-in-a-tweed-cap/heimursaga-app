@@ -1167,9 +1167,9 @@ export const Map: React.FC<Props> = ({
 
   return (
     <div className={cn(className, 'relative w-full h-full')}>
-      <div className="absolute bottom-5 right-5 z-20 bg-white text-black text-xs">
+      {/* <div className="absolute bottom-5 right-5 z-20 bg-white text-black text-xs">
         {JSON.stringify({ d: waypointDraggable })}
-      </div>
+      </div> */}
       <div
         id="map-container"
         ref={mapboxContainerRef}

@@ -5,7 +5,7 @@ export const APP_CONFIG = {
   MAP: {
     DEFAULT: {
       PREVIEW: {
-        ZOOM: 10,
+        ZOOM: 6,
       },
       ZOOM: 3,
       CENTER: {
