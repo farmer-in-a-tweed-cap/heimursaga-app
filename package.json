@@ -14,9 +14,7 @@
     "build:web": "turbo run build --filter=web",
     "build:api": "turbo run build --filter=api",
     "start:web": "turbo run start --filter=web",
-    "start:api": "turbo run start --filter=api",
-    "api:start": "turbo run start --filter=api",
-    "api:db:migrate": "turbo run db:migrate --filter=api"
+    "start:api": "turbo run start --filter=api"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^5.2.2",
