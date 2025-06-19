@@ -4,13 +4,13 @@ import { cookies } from 'next/headers';
 import { apiClient } from '@/lib/api';
 
 import { CloseButton, SubscriptionPlanUpgrade } from '@/components';
-import { DEMO_DATA } from '@/constants';
+import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Upgrade to premium',
+  title: 'Upgrade',
 };
 
 export default async function Page() {
@@ -21,7 +21,7 @@ export default async function Page() {
   const plan = plansQuery.data?.data?.[0];
   const features = {
     free: [],
-    premium: DEMO_DATA.PLANS?.[0]?.features || [],
+    premium: LOCALES.APP.UPGRADE.PAGE.FEATURES,
   };
 
   return (
@@ -32,15 +32,20 @@ export default async function Page() {
 
       <div className="flex flex-col py-8 items-center">
         <div className="w-full max-w-xl flex flex-col items-center text-base gap-6">
-          <h2 className="font-medium text-5xl">Upgrade to Premium</h2>
+          <h2 className="font-medium text-5xl">
+            {LOCALES.APP.UPGRADE.PAGE.CTA.TITLE}
+          </h2>
           <p className="text-center">
-            Enjoy an enhanced experience, exclusive creator tools, top-tier
-            verification and security.
+            {LOCALES.APP.UPGRADE.PAGE.CTA.DESCRIPTION}
           </p>
         </div>
 
         {plan && (
-          <SubscriptionPlanUpgrade {...plan} features={features.premium} />
+          <SubscriptionPlanUpgrade
+            {...plan}
+            name={LOCALES.APP.UPGRADE.PLAN.TITLE}
+            features={features.premium}
+          />
         )}
       </div>
     </div>

@@ -12,6 +12,7 @@ import {
   SubscriptionPlanUpgradeCheckoutForm,
 } from '@/components';
 import { DEMO_DATA } from '@/constants';
+import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
 export const dynamic = 'force-dynamic';
@@ -35,7 +36,7 @@ export default async function Page() {
 
   // redirect to the subscription page if plan is active
   if (isPlanActive) {
-    redirect(ROUTER.PREMIUM);
+    redirect(ROUTER.UPGRADE);
   }
 
   return (
@@ -44,10 +45,11 @@ export default async function Page() {
         <div className="w-full h-auto flex flex-col lg:flex-row lg:justify-between gap-10 py-10">
           <div className="basis-6/12">
             <div className="flex flex-col gap-4 py-6">
-              <span className="text-3xl font-medium">Upgrade to Premium</span>
+              <span className="text-3xl font-medium">
+                {LOCALES.APP.UPGRADE_CHECKOUT.PAGE.CTA.TITLE}
+              </span>
               <p className="text-sm">
-                Then just $50 a year after your trial. No commitment, cancel
-                anytime.
+                {LOCALES.APP.UPGRADE_CHECKOUT.PAGE.CTA.DESCRIPTION}
               </p>
             </div>
             <div className="mt-6">
@@ -57,7 +59,7 @@ export default async function Page() {
                   icon: 'bg-gray-500 text-white',
                   item: 'text-gray-600 text-sm',
                 }}
-                items={features}
+                items={LOCALES.APP.UPGRADE.PAGE.FEATURES}
               />
             </div>
             <div className="mt-14">
@@ -79,11 +81,7 @@ export default async function Page() {
             <SubscriptionPlanUpgradeCheckoutForm>
               <div className="mt-6">
                 <p className="text-xs font-normal text-gray-500">
-                  By clicking Subscribe now, you agree to Patreon’s Terms of Use
-                  and Privacy Policy. This Patreon subscription automatically
-                  renews monthly, and you’ll be notified in advance if the
-                  monthly amount increases. Cancel anytime in your membership
-                  settings.
+                  {LOCALES.APP.CHECKOUT.PAGE.TERMS}
                 </p>
               </div>
             </SubscriptionPlanUpgradeCheckoutForm>
