@@ -9,8 +9,12 @@ import {
 import * as crypto from 'node:crypto';
 import * as sharp from 'sharp';
 
+import { generator } from '@/lib/generator';
+import { getStaticMediaUrl } from '@/lib/upload';
+
 import { UploadedFileType } from '@/common/enums';
 import {
+  ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
 } from '@/common/exceptions';
@@ -181,22 +185,25 @@ export class UploadService {
       );
 
       // save the upload to the database
-      await this.prisma.upload
+      const upload = await this.prisma.upload
         .create({
           data: {
+            public_id: generator.secureId(),
             file_type: 'image',
             original: paths.original,
             thumbnail: paths.thumbnail,
           },
+          select: { public_id: true },
         })
-        .catch((e) => {
-          this.logger.error(e);
+        .catch(() => {
+          throw new ServiceBadRequestException('upload failed');
         });
 
       // return original and thumbnail files
       return {
-        original: paths.original,
-        thumbnail: paths.thumbnail,
+        uploadId: upload.public_id,
+        original: getStaticMediaUrl(paths.original),
+        thumbnail: getStaticMediaUrl(paths.thumbnail),
       };
     } catch (e) {
       this.logger.error(e);

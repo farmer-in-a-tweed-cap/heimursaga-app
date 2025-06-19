@@ -21,7 +21,9 @@ export const generator = {
 
     return hash;
   },
-
+  secureId: () => {
+    return crypto.randomBytes(20).toString('hex');
+  },
   sessionId: (): string => {
     return crypto.randomBytes(16).toString('hex');
   },

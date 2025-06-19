@@ -243,6 +243,7 @@ export interface IPostDetail {
     lat: number;
     lon: number;
   };
+  media?: { thumbnail: string }[];
   public?: boolean;
   sponsored?: boolean;
   liked?: boolean;
@@ -283,6 +284,7 @@ export interface IPostCreatePayload {
   place?: string;
   date?: Date;
   waypointId?: number;
+  uploads?: string[];
 }
 
 export interface IPostCreateResponse {
@@ -297,6 +299,7 @@ export interface IPostUpdatePayload {
   sponsored?: boolean;
   place?: string;
   date?: Date;
+  uploads?: string[];
 }
 
 export interface IPostLikeResponse {
@@ -435,8 +438,9 @@ export interface IMediaUploadQueryParams {
 }
 
 export interface IMediaUploadResponse {
-  thumbnail: string;
+  uploadId: string;
   original: string;
+  thumbnail: string;
 }
 
 // stripe
