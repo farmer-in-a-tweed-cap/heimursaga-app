@@ -45,7 +45,7 @@ export interface ISessionUserGetResponse extends ISessionUser {}
 
 // login
 export interface ILoginPayload {
-  email: string;
+  login: string;
   password: string;
 }
 

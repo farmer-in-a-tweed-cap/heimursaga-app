@@ -8,11 +8,10 @@ import {
 import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class LoginDto implements ILoginPayload {
-  @ApiProperty({ required: false })
-  @IsEmail()
+  @ApiProperty({ required: true })
+  @IsString()
   @IsNotEmpty()
-  @IsOptional()
-  email: string;
+  login: string;
 
   @ApiProperty({ required: true })
   @IsString()
