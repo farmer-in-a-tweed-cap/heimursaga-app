@@ -42,6 +42,9 @@ export class MapService {
     try {
       const { userId } = session;
       const { context, location, username } = query;
+      const search = query?.search
+        ? query.search.toLowerCase().trim()
+        : undefined;
 
       let where = {
         public: true,
@@ -90,12 +93,14 @@ export class MapService {
             ...where,
             posts: {
               some: {
+                title: search ? { contains: search } : undefined,
                 public: true,
                 deleted_at: null,
                 waypoint_id: { not: null },
               },
             },
           };
+
           break;
         case MapQueryContext.FOLLOWING:
           if (userId) {
@@ -103,6 +108,7 @@ export class MapService {
               ...where,
               posts: {
                 some: {
+                  title: search ? { contains: search } : undefined,
                   public: true,
                   deleted_at: null,
                   author: {

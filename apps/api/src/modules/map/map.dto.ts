@@ -50,6 +50,11 @@ export class MapQueryDto implements IMapQueryPayload {
   @IsString()
   @IsOptional()
   username?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  search?: string;
 }
 
 class MapQueryLocationDto implements IMapQueryLocation {

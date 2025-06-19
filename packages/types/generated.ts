@@ -327,6 +327,7 @@ export interface IMapQueryPayload {
   context?: string;
   page?: number;
   username?: string;
+  search?: string;
 }
 
 export interface IMapQueryResponse {
