@@ -28,14 +28,18 @@ export type MapSearchbarSubmitHandler = (data: {
 }) => void;
 
 type Props = {
-  value?: string;
+  value?: string | null;
+  query: string | null;
   onChange?: (value: string) => void;
+  onClear?: () => void;
   onSubmit?: MapSearchbarSubmitHandler;
 };
 
 export const MapSearchbar: React.FC<Props> = ({
-  value,
+  value = null,
+  query = null,
   onChange,
+  onClear,
   onSubmit,
 }) => {
   const mapbox = useMapbox();
@@ -119,10 +123,12 @@ export const MapSearchbar: React.FC<Props> = ({
   return (
     <Searchbar
       loading={loading}
-      value={value}
+      value={value || undefined}
       results={results}
+      clear={query ? true : false}
       onResultClick={handleSubmit}
       onChange={onChange}
+      onClear={onClear}
     />
   );
 };
