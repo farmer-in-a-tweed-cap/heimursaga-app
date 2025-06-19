@@ -10,6 +10,7 @@ import { apiClient } from '@/lib/api';
 import { ActionModalProps, MODALS } from '@/components';
 import { useModal } from '@/hooks';
 import { redirect, sleep } from '@/lib';
+import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
 import { SubscriptionPlanCard } from './subscription-plan-card';
@@ -42,7 +43,7 @@ export const SubscriptionPlanUpgrade: React.FC<Props> = ({
   const [loading, setLoading] = useState<boolean>(false);
 
   const handleUpgrade = () => {
-    redirect(ROUTER.PREMIUM_CHECKOUT);
+    redirect(ROUTER.UPGRADE_CHECKOUT);
   };
 
   const handleDowngrade = async () => {
@@ -126,10 +127,7 @@ export const SubscriptionPlanUpgrade: React.FC<Props> = ({
         )}
         <div className="mt-10">
           <p className="text-xs text-gray-500 text-center">
-            By subscribing, you agree to our Purchaser Terms of Service.
-            Subscriptions auto-renew until canceled. Cancel anytime, at least 24
-            hours prior to renewal to avoid additional charges. Manage your
-            subscription through the platform you subscribed on.
+            {LOCALES.APP.UPGRADE.PAGE.TERMS}
           </p>
         </div>
       </div>

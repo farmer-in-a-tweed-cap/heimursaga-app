@@ -353,11 +353,7 @@ export const FormComponent: React.FC<Props> = ({
               </div>
               <div className="mt-4">
                 <p className="text-xs text-gray-600 font-normal">
-                  By clicking Subscribe now, you agree to Patreon’s Terms of Use
-                  and Privacy Policy. This Patreon subscription automatically
-                  renews monthly, and you’ll be notified in advance if the
-                  monthly amount increases. Cancel anytime in your membership
-                  settings.
+                  {LOCALES.APP.CHECKOUT.PAGE.TERMS}
                 </p>
               </div>
               <div className="mt-8 flex flex-col">

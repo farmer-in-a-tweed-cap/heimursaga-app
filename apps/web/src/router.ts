@@ -31,8 +31,8 @@ export const ROUTER = {
     SPONSORS: '/sponsorship/sponsors',
   },
   AUDIENCE: '/audience',
-  PREMIUM: '/premium',
-  PREMIUM_CHECKOUT: '/premium/checkout',
+  UPGRADE: '/upgrade',
+  UPGRADE_CHECKOUT: '/upgrade/checkout',
   NOTIFICATIONS: '/notifications',
   USER: {
     PROFILE: '/user/profile',

@@ -43,5 +43,40 @@ export const LOCALES = {
         BLOCKED: 'user blocked',
       },
     },
+    UPGRADE: {
+      PLAN: {
+        TITLE: 'Explorer Pro',
+      },
+      PAGE: {
+        CTA: {
+          TITLE: 'Upgrade to Explorer Pro',
+          DESCRIPTION:
+            'Enjoy an enhanced experience, exclusive creator tools, top-tier verification and security.',
+        },
+        FEATURES: [
+          `Download offline maps`,
+          `Watch immersive trail previews`,
+          `Get alerts for wrong turns`,
+          `Print maps for backup`,
+          `Explore ad free`,
+          `Bring trails to life with 3D maps`,
+        ],
+        TERMS: `By subscribing, you agree to our Purchaser Terms of Service. Subscriptions auto-renew until canceled. Cancel anytime, at least 24 hours prior to renewal to avoid additional charges. Manage your subscription through the platform you subscribed on.`,
+      },
+    },
+    UPGRADE_CHECKOUT: {
+      PAGE: {
+        CTA: {
+          TITLE: 'Upgrade to Explorer Pro',
+          DESCRIPTION:
+            'Enjoy an enhanced experience, exclusive creator tools, top-tier verification and security.',
+        },
+      },
+    },
+    CHECKOUT: {
+      PAGE: {
+        TERMS: `By clicking Subscribe now, you agree to Terms of Use and Privacy Policy. This subscription automatically renews monthly, and you’ll be notified in advance if the monthly amount increases. Cancel anytime in your membership settings.`,
+      },
+    },
   },
 };

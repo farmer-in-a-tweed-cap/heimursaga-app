@@ -2,9 +2,6 @@
 
 import { UserRole } from '@repo/types';
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -72,7 +69,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
         label: 'Settings',
       },
       {
-        href: ROUTER.PREMIUM,
+        href: ROUTER.UPGRADE,
         label: 'Upgrade',
       },
     ],
@@ -80,6 +77,10 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
         label: 'Profile',
+      },
+      {
+        href: ROUTER.UPGRADE,
+        label: 'Upgrade',
       },
       {
         href: ROUTER.USER.SETTINGS.HOME,

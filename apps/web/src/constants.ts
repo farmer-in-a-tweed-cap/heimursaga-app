@@ -9,14 +9,7 @@ export const DEMO_DATA = {
     {
       name: 'Premium',
       slug: 'premium',
-      features: [
-        'Download offline maps',
-        'Watch immersive trail previews',
-        'Get alerts for wrong turns',
-        'Print maps for backup',
-        'Explore ad free',
-        'Bring trails to life with 3D maps',
-      ],
+      features: [],
       currency: 'usd',
       currencySymbol: '$',
       monthlyPrice: 5,
