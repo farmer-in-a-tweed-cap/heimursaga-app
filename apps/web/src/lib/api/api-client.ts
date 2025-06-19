@@ -32,6 +32,7 @@ import {
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
   IStripeCreateSetupIntentResponse,
+  IStripePlatformAccountLinkGeneratePayload,
   ISubscriptionPlanGetAllResponse,
   ISubscriptionPlanGetBySlugResponse,
   ISubscriptionPlanUpgradeCheckoutPayload,
@@ -477,14 +478,22 @@ export const apiClient = {
       body: JSON.stringify(payload),
       ...config,
     }),
-  getPayoutMethodPlatformLink: async (
-    { query }: IApiClientQuery<{ id: string }>,
+
+  // stripe-account-links
+  generateStripePlatformAccountLink: async (
+    {
+      payload,
+    }: IApiClientQueryWithPayload<
+      {},
+      IStripePlatformAccountLinkGeneratePayload
+    >,
     config?: RequestConfig,
   ) =>
     api.request<IPayoutMethodPlatformLinkGetResponse>(
-      API_ROUTER.PAYOUT_METHODS.PLATFORM_LINK(query.id),
+      API_ROUTER.STRIPE_ACCOUNT_LINKS.GENERATE,
       {
-        method: API_METHODS.GET,
+        method: API_METHODS.POST,
+        body: JSON.stringify(payload),
         ...config,
       },
     ),

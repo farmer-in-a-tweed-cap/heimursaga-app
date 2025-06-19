@@ -23,7 +23,6 @@ export default async function Page({ params }: PageProps) {
       <div className="w-full max-w-3xl flex flex-col gap-6">
         <PageHeaderTitle>Payouts</PageHeaderTitle>
         <PayoutView section={section} />
-        {/* <UserPayoutBalance /> */}
       </div>
     </AppLayout>
   );

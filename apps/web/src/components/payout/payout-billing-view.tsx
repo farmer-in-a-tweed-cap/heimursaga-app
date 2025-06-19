@@ -1,6 +1,10 @@
 'use client';
 
-import { CountryCode, PayoutMethodPlatform } from '@repo/types';
+import {
+  CountryCode,
+  PayoutMethodPlatform,
+  StripePlayformAccountLinkMode,
+} from '@repo/types';
 import {
   Badge,
   Button,
@@ -18,7 +22,8 @@ import { useState } from 'react';
 import { QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { useModal, useSession } from '@/hooks';
-import { redirect } from '@/lib';
+import { getBaseAppUrl, redirect } from '@/lib';
+import { ROUTER } from '@/router';
 
 export const PayoutBillingView = () => {
   const router = useRouter();
@@ -38,27 +43,46 @@ export const PayoutBillingView = () => {
   const payoutMethod = payoutMethodQuery?.data?.data?.[0];
   const updateAvailable = !!payoutMethod?.id;
 
+  const stripeBackUrl = process?.env?.NEXT_PUBLIC_APP_BASE_URL
+    ? new URL(
+        ROUTER.PAYOUTS.BILLING,
+        process?.env?.NEXT_PUBLIC_APP_BASE_URL,
+      ).toString()
+    : '';
+
   const handlePayoutMethodCreate = async () => {
     try {
       setLoading((loading) => ({ ...loading, button: true }));
 
       // create a payout method
-      const response = await apiClient.createPayoutMethod({
-        platform: PayoutMethodPlatform.STRIPE,
+      const payoutMethodResponse = await apiClient.createPayoutMethod({
         country: CountryCode.UNITED_STATES,
       });
 
-      if (!response.success) {
+      if (payoutMethodResponse.success) {
+        const payoutMethodId = payoutMethodResponse.data?.payoutMethodId;
+
+        // get a stripe platform account link
+        if (payoutMethodId) {
+          const stripePlatformAccountLinkResponse =
+            await apiClient.generateStripePlatformAccountLink({
+              query: {},
+              payload: {
+                mode: StripePlayformAccountLinkMode.UPDATE,
+                payoutMethodId,
+                backUrl: stripeBackUrl,
+              },
+            });
+          const stripeUrl = stripePlatformAccountLinkResponse.data?.url;
+
+          // redirect to the stripe platform account link
+          if (stripeUrl) {
+            return redirect(stripeUrl);
+          }
+        }
+      } else {
         toast({ type: 'error', message: 'payout method not created' });
         setLoading((loading) => ({ ...loading, button: false }));
-        return;
-      }
-
-      const onboardingUrl = response.data?.platform?.onboardingUrl;
-
-      // redirect to the payout method platform onboarding page
-      if (onboardingUrl) {
-        return redirect(onboardingUrl);
       }
     } catch (e) {
       setLoading((loading) => ({ ...loading, button: false }));
@@ -81,14 +105,20 @@ export const PayoutBillingView = () => {
       setLoading((loading) => ({ ...loading, button: true }));
 
       // get a payout method platform link
-      const response = await apiClient.getPayoutMethodPlatformLink({
-        query: { id: payoutMethodId },
-      });
+      const { success, data } =
+        await apiClient.generateStripePlatformAccountLink({
+          query: {},
+          payload: {
+            mode: StripePlayformAccountLinkMode.UPDATE,
+            payoutMethodId,
+            backUrl: stripeBackUrl,
+          },
+        });
 
-      if (response.success) {
-        const url = response.data?.url;
+      if (success) {
+        const url = data?.url;
 
-        // redirect to the payout method platform link
+        // redirect to the stripe platform account link
         if (url) {
           return redirect(url);
         }
@@ -98,6 +128,8 @@ export const PayoutBillingView = () => {
 
       setLoading((loading) => ({ ...loading, button: false }));
     } catch (e) {
+      console.log(e);
+
       setLoading((loading) => ({ ...loading, button: false }));
       toast({ type: 'error', message: 'payout method not updated' });
     }
