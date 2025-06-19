@@ -100,23 +100,25 @@ export class AuthService {
     session,
   }: ISessionQueryWithPayload<{}, ILoginPayload>): Promise<ILoginResponse> {
     try {
-      const { email } = payload;
+      const { login } = payload;
       const { sid, ip, userAgent } = session || {};
-
       const password = hashPassword(payload.password);
-
-      // @todo
-      // const method: 'username' | 'email' | 'unknown' = email
-      //   ? 'email'
-      //   : username
-      //     ? 'username'
-      //     : 'unknown';
 
       // validate the user
       const user = await this.prisma.user
-        .findFirstOrThrow({ where: { email, password } })
-        .catch(() => null);
-      if (!user) throw new ServiceBadRequestException('bad email or password');
+        .findFirstOrThrow({
+          where: {
+            OR: [
+              { email: login, password },
+              { username: login, password },
+            ],
+            blocked: false,
+          },
+          select: { id: true },
+        })
+        .catch(() => {
+          throw new ServiceForbiddenException('login or password invalid');
+        });
 
       // create a session
       const userSession = await this.createSession({
@@ -124,19 +126,23 @@ export class AuthService {
         userId: user.id,
         ip,
         userAgent,
+      }).catch(() => {
+        throw new ServiceForbiddenException('login or password invalid');
       });
 
-      // @todo
-      // trigger the login event
-
-      return {
-        session: userSession,
+      const response: ILoginResponse = {
+        session: {
+          sid: userSession.sid,
+          expiredAt: userSession.expiredAt,
+        },
       };
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('login failed');
+        : new ServiceForbiddenException('login or password invalid');
       throw exception;
     }
   }
