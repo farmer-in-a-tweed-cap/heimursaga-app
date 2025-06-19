@@ -1,6 +1,6 @@
 'use client';
 
-import { ActionMenu } from '../menu';
+import { ActionMenu } from '../list/menu';
 import { DataTable, DataTableColumn, DataTableRow } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
