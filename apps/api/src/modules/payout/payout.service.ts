@@ -9,8 +9,11 @@ import {
   IPayoutMethodCreateResponse,
   IPayoutMethodGetAllByUsernameResponse,
   IPayoutMethodPlatformLinkGetResponse,
+  IStripePlatformAccountLinkGeneratePayload,
+  IStripePlatformAccountLinkGenerateResponse,
   PayoutMethodPlatform,
   PayoutStatus,
+  StripePlayformAccountLinkMode,
   UserRole,
 } from '@repo/types';
 
@@ -130,24 +133,27 @@ export class PayoutService {
     }
   }
 
-  async getPayoutMethodPlatformLink({
-    query,
+  async generateStripePlatformAccountLink({
+    payload,
     session,
-  }: IQueryWithSession<{
-    publicId: string;
-    mode: 'account_onboarding' | 'account_update';
-  }>): Promise<IPayoutMethodPlatformLinkGetResponse> {
+  }: ISessionQueryWithPayload<
+    {},
+    IStripePlatformAccountLinkGeneratePayload
+  >): Promise<IStripePlatformAccountLinkGenerateResponse> {
     try {
-      const { publicId, mode } = query;
+      // const { publicId, mode } = query;
       const { userId } = session;
+      const { mode, payoutMethodId, backUrl } = payload;
 
-      if (!publicId || !userId) throw new ServiceForbiddenException();
+      // check access
+      const access = !!payoutMethodId && !!userId;
+      if (!access) throw new ServiceForbiddenException();
 
-      // verify access
+      // get a payout method
       const payoutMethod = await this.prisma.payoutMethod
         .findFirstOrThrow({
           where: {
-            public_id: publicId,
+            public_id: payoutMethodId,
             user_id: userId,
           },
           select: {
@@ -157,40 +163,35 @@ export class PayoutService {
           },
         })
         .catch(() => {
-          throw new ServiceForbiddenException();
+          throw new ServiceNotFoundException('payout method not found');
         });
-
-      // compose an app return link
-      const appOrigin = process.env.APP_BASE_URL;
-      const appRoute = 'user/settings/billing';
-      const returnUrl = [appOrigin, appRoute].join('/');
 
       // get the payout method platform url
       let url = '';
 
-      switch (payoutMethod.platform) {
-        case PayoutMethodPlatform.STRIPE:
-          if (payoutMethod.stripe_account_id) {
-            // get a stripe account update link
-            url = await this.stripeService.stripe.accountLinks
-              .create({
-                account: payoutMethod.stripe_account_id,
-                return_url: returnUrl,
-                refresh_url: returnUrl,
-                type: mode,
-              })
-              .then(({ url }) => url);
-          } else {
-            throw new ServiceNotFoundException(
-              'payout method platform link not found',
-            );
-          }
+      if (payoutMethod.stripe_account_id) {
+        let stripeMode: 'account_onboarding' | 'account_update';
 
-          break;
-        default:
-          throw new ServiceNotFoundException(
-            'payout method platform link not found',
-          );
+        switch (mode) {
+          case StripePlayformAccountLinkMode.ONBOARDING:
+            stripeMode = 'account_onboarding';
+            break;
+          case StripePlayformAccountLinkMode.UPDATE:
+            stripeMode = 'account_update';
+            break;
+        }
+
+        // get a stripe platform account link
+        url = await this.stripeService.stripe.accountLinks
+          .create({
+            account: payoutMethod.stripe_account_id,
+            return_url: backUrl,
+            refresh_url: backUrl,
+            type: stripeMode,
+          })
+          .then(({ url }) => url);
+      } else {
+        throw new ServiceNotFoundException('payout method not found');
       }
 
       const response = {
@@ -202,9 +203,7 @@ export class PayoutService {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException(
-            'payout method platform link not found',
-          );
+        : new ServiceForbiddenException('payout method not found');
       throw exception;
     }
   }
@@ -218,69 +217,53 @@ export class PayoutService {
   >): Promise<IPayoutMethodCreateResponse> {
     try {
       const { userId } = session;
-      const { platform, country } = payload;
+      const { country } = payload;
 
-      if (!userId) throw new ServiceForbiddenException();
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
 
-      // @todo
-      switch (platform) {
-      }
+      // check if the user already has a payout method
+      const payoutMethod = await this.prisma.payoutMethod.findFirst({
+        where: { user_id: userId },
+        select: {
+          id: true,
+          public_id: true,
+          stripe_account_id: true,
+        },
+      });
 
-      if (platform === PayoutMethodPlatform.STRIPE) {
-        // check if the user already has a payout method
-        const payoutMethod = await this.prisma.payoutMethod.findFirst({
-          where: { user_id: userId },
+      if (payoutMethod) {
+        throw new ServiceBadRequestException(
+          'user already has a payout method',
+        );
+      } else {
+        // create a stripe account
+        const stripeAccount = await this.stripeService
+          .createAccount({ country })
+          .catch(() => {
+            throw new ServiceForbiddenException('payout method not created');
+          });
+
+        // create a payout method
+        const payoutMethod = await this.prisma.payoutMethod.create({
+          data: {
+            public_id: generator.publicId(),
+            is_verified: false,
+            platform: PayoutMethodPlatform.STRIPE,
+            stripe_account_id: stripeAccount.accountId,
+            user_id: userId,
+          },
           select: {
-            id: true,
             public_id: true,
-            stripe_account_id: true,
           },
         });
 
-        if (payoutMethod) {
-          throw new ServiceBadRequestException(
-            'user already has a payout method',
-          );
-        } else {
-          // create a stripe account
-          const stripeAccount = await this.stripeService
-            .createAccount({ country })
-            .catch(() => {
-              throw new ServiceForbiddenException('payout method not created');
-            });
+        const response: IPayoutMethodCreateResponse = {
+          payoutMethodId: payoutMethod.public_id,
+        };
 
-          // create a payout method
-          const payoutMethod = await this.prisma.payoutMethod.create({
-            data: {
-              public_id: generator.publicId(),
-              is_verified: false,
-              platform,
-              stripe_account_id: stripeAccount.accountId,
-              user_id: userId,
-            },
-            select: {
-              public_id: true,
-            },
-          });
-
-          // get a stripe onboarding url
-          const stripeAccountLink = await this.stripeService
-            .linkAccount({ accountId: stripeAccount.accountId })
-            .catch(() => {
-              throw new ServiceForbiddenException('payout method not created');
-            });
-
-          const response: IPayoutMethodCreateResponse = {
-            payoutMethodId: payoutMethod.public_id,
-            platform: {
-              onboardingUrl: stripeAccountLink.url,
-            },
-          };
-
-          return response;
-        }
-      } else {
-        throw new ServiceBadRequestException('payout method not created');
+        return response;
       }
     } catch (e) {
       this.logger.error(e);

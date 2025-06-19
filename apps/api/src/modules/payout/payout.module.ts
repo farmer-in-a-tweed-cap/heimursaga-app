@@ -8,12 +8,18 @@ import {
   BalanceController,
   PayoutController,
   PayoutMethodController,
+  StripeAccountLinkController,
 } from './payout.controller';
 import { PayoutService } from './payout.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule, StripeModule],
-  controllers: [PayoutController, PayoutMethodController, BalanceController],
+  controllers: [
+    PayoutController,
+    PayoutMethodController,
+    BalanceController,
+    StripeAccountLinkController,
+  ],
   providers: [PayoutService],
   exports: [PayoutService],
 })

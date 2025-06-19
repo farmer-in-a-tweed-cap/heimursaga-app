@@ -4,16 +4,18 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Post,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Session } from '@/common/decorators';
-import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import { PayoutCreateDto, PayoutMethodCreateDto } from './payout.dto';
+import {
+  PayoutCreateDto,
+  PayoutMethodCreateDto,
+  StripePlatformAccountLinkGenerateDto,
+} from './payout.dto';
 import { PayoutService } from './payout.service';
 
 @ApiTags('payout-methods')
@@ -30,18 +32,6 @@ export class PayoutMethodController {
     });
   }
 
-  @Get(':id/platform-link')
-  @HttpCode(HttpStatus.OK)
-  async getPayoutMethodPlatformLink(
-    @Session() session: ISession,
-    @Param() param: ParamPublicIdDto,
-  ) {
-    return await this.payoutService.getPayoutMethodPlatformLink({
-      query: { publicId: param.id, mode: 'account_update' },
-      session,
-    });
-  }
-
   @Post()
   @HttpCode(HttpStatus.OK)
   async createPayoutMethod(
@@ -49,6 +39,25 @@ export class PayoutMethodController {
     @Body() body: PayoutMethodCreateDto,
   ) {
     return await this.payoutService.createPayoutMethod({
+      query: {},
+      payload: body,
+      session,
+    });
+  }
+}
+
+@ApiTags('stripe account links')
+@Controller('stripe-account-links')
+export class StripeAccountLinkController {
+  constructor(private payoutService: PayoutService) {}
+
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  async generate(
+    @Session() session: ISession,
+    @Body() body: StripePlatformAccountLinkGenerateDto,
+  ) {
+    return await this.payoutService.generateStripePlatformAccountLink({
       query: {},
       payload: body,
       session,

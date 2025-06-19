@@ -524,14 +524,10 @@ export interface IPayoutMethodPlatformLinkGetResponse {
 
 export interface IPayoutMethodCreatePayload {
   country: string;
-  platform: string;
 }
 
 export interface IPayoutMethodCreateResponse {
   payoutMethodId: string;
-  platform: {
-    onboardingUrl: string;
-  };
 }
 
 export interface IPayoutBalanceGetResponse {
@@ -567,6 +563,20 @@ export interface IPayoutGetResponse {
 
 export interface IPayoutCreatePayload {
   amount: number;
+}
+
+export enum StripePlayformAccountLinkMode {
+  ONBOARDING = 'onboarding',
+  UPDATE = 'update',
+}
+export interface IStripePlatformAccountLinkGeneratePayload {
+  mode: StripePlayformAccountLinkMode;
+  payoutMethodId: string;
+  backUrl: string;
+}
+
+export interface IStripePlatformAccountLinkGenerateResponse {
+  url: string;
 }
 
 export interface IPayoutCreateResponse {
