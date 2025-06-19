@@ -26,10 +26,8 @@
       "dependsOn": ["^build"]
     },
     "dev": {
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "cache": false,
-      "persistent": true,
-      "dependsOn": ["^migrate"]
+      "persistent": true
     },
     "clean": {
       "cache": false
