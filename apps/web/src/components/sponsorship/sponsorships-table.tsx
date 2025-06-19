@@ -1,6 +1,6 @@
 'use client';
 
-import { ActionMenu } from '../menu';
+import { ActionMenu } from '../list/menu';
 import { ActionModalProps, MODALS } from '../modal';
 import {
   ISponsorshipDetail,

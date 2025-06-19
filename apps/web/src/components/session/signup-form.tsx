@@ -1,6 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { AppErrorCode } from '@repo/types';
 import {
   Button,
   Card,
@@ -13,54 +14,49 @@ import {
   FormLabel,
   FormMessage,
   Input,
-  Label,
 } from '@repo/ui/components';
-import { useToast } from '@repo/ui/hooks';
-import { cn } from '@repo/ui/lib/utils';
-import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { apiClient, loginMutation } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 import { redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
 const schema = z.object({
+  name: z
+    .string()
+    .nonempty(zodMessage.required('name'))
+    .min(2, zodMessage.string.min('name', 2))
+    .max(50, zodMessage.string.max('name', 20)),
+  username: z
+    .string()
+    .nonempty(zodMessage.required('username'))
+    .min(2, zodMessage.string.min('username', 2))
+    .max(50, zodMessage.string.max('username', 20)),
   email: z
     .string()
     .email(zodMessage.email())
     .nonempty(zodMessage.required('email'))
-    .min(2, zodMessage.string.min('email', 8))
+    .min(2, zodMessage.string.min('email', 2))
     .max(50, zodMessage.string.max('email', 30)),
   password: z
     .string()
     .nonempty(zodMessage.required('password'))
-    .min(2, zodMessage.string.min('password', 8))
+    .min(2, zodMessage.string.min('password', 2))
     .max(50, zodMessage.string.max('password', 20)),
 });
 
-export const LoginForm = () => {
-  const toast = useToast();
+export const SignupForm = () => {
   const [loading, setLoading] = useState<boolean>(false);
-
-  const mutation = useMutation({
-    mutationFn: loginMutation.mutationFn,
-    onSuccess: () => {
-      // redirect to home page
-      redirect(ROUTER.HOME);
-    },
-    onError: (e) => {
-      console.log(e);
-      setLoading(false);
-    },
-  });
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
+      name: '',
+      username: '',
       email: '',
       password: '',
     },
@@ -69,27 +65,33 @@ export const LoginForm = () => {
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
-        const { email, password } = values;
+        const { email, password, name, username } = values;
 
         setLoading(true);
 
-        // login
-        const { success } = await apiClient.login({
+        // sign up
+        const { success, message } = await apiClient.signup({
           query: {},
-          payload: { email, password },
+          payload: { email, password, username, name },
         });
 
         if (success) {
-          // redirect to home page
-          redirect(ROUTER.HOME);
+          // redirect to login page
+          redirect(ROUTER.LOGIN);
         } else {
-          form.setError('password', {
-            message: `Email or password not correct`,
-          });
+          switch (message) {
+            case AppErrorCode.EMAIL_ALREADY_IN_USE:
+              form.setError('email', { message: 'Email already in use' });
+              break;
+            case AppErrorCode.USERNAME_ALREADY_IN_USE:
+              form.setError('username', { message: 'Username already in use' });
+              break;
+          }
+
           setLoading(false);
         }
       } catch (e) {
-        form.setError('password', { message: `Email or password not correct` });
+        form.setError('password', { message: 'Sign up failed' });
         setLoading(false);
       }
     },
@@ -99,13 +101,42 @@ export const LoginForm = () => {
     <div className="w-full flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <h2 className="text-2xl font-bold">Welcome back.</h2>
-          <span className="text-sm">Log in and start exploring.</span>
+          <h2 className="text-2xl font-bold">Sign up.</h2>
+          <span className="text-sm">Create your free account today.</span>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={handleSubmit}>
               <div className="flex flex-col gap-6">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Name</FormLabel>
+                      <FormControl>
+                        <Input disabled={loading} required {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid gap-2">
+                  <FormField
+                    control={form.control}
+                    name="username"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Username</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading} required {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <div className="grid gap-2">
                   <FormField
                     control={form.control}
@@ -132,15 +163,7 @@ export const LoginForm = () => {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <div className="flex items-center">
-                          <Label htmlFor="password">Password</Label>
-                          <Link
-                            href={ROUTER.RESET_PASSWORD}
-                            className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                          >
-                            Forgot your password?
-                          </Link>
-                        </div>
+                        <FormLabel>Password</FormLabel>
                         <FormControl>
                           <Input
                             type="password"
@@ -155,19 +178,16 @@ export const LoginForm = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full" loading={loading}>
-                  Login
+                  Sign up
                 </Button>
-                {/* <Button variant="outline" className="w-full" disabled>
-                Login with Google
-              </Button> */}
               </div>
               <div className="mt-4 text-center text-sm">
-                Don&apos;t have an account?{' '}
+                Already have an account?{' '}
                 <Link
-                  href={ROUTER.SIGNUP}
+                  href={ROUTER.LOGIN}
                   className="underline underline-offset-4"
                 >
-                  Sign up
+                  Log in
                 </Link>
               </div>
             </form>
