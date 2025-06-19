@@ -78,6 +78,7 @@ export const API_ROUTER = {
     CREATE: 'payment-methods',
     DELETE: (id: string) => `payment-methods/${id}`,
   },
+  STRIPE_ACCOUNT_LINKS: { GENERATE: `/stripe-account-links` },
   PAYOUT_METHODS: {
     GET_ALL: 'payout-methods',
     GET_BY_ID: (id: string) => `payout-methods/${id}`,

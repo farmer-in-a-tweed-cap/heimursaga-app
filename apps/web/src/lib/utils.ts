@@ -64,3 +64,7 @@ export function sortByDate<T = any>({
     }
   }) as T[];
 }
+
+export const getBaseAppUrl = (): string => {
+  return process?.env?.NEXT_PUBLIC_APP_BASE_URL || '';
+};
