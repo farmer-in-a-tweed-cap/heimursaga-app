@@ -20,6 +20,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:migrate": "npx prisma migrate deploy",
     "db:migrate:production": "cross-env NODE_ENV=production npx env-cmd -f ./.env.production prisma migrate deploy --schema=./prisma/schema.prisma;",
     "db:migrate:staging": "cross-env NODE_ENV=staging npx env-cmd -f ./.env.staging prisma migrate deploy --schema=./prisma/schema.prisma;",
     "db:migrate:development": "cross-env NODE_ENV=development npx env-cmd -f ./.env.development prisma migrate dev --skip-seed",
