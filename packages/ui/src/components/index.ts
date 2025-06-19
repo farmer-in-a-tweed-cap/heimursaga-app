@@ -22,3 +22,4 @@ export * from './popover';
 export * from './sheet';
 export * from './date-picker';
 export * from './text';
+export * from './file-picker';
