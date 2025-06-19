@@ -4,14 +4,11 @@ import { MapSearchbar, MapSearchbarSubmitHandler } from '../search';
 import { ChipGroup, LoadingSpinner } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
-import { useDebounce } from 'use-debounce';
+import { useEffect, useState } from 'react';
 
 import { QUERY_KEYS, apiClient } from '@/lib/api';
 
 import {
-  CloseButton,
   MAP_LAYERS,
   MAP_SOURCES,
   Map,
@@ -21,7 +18,6 @@ import {
   MapViewSwitch,
   PostCard,
   TripCard,
-  UserBar,
   UserProfileCard,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
@@ -37,8 +33,6 @@ import {
 import { dateformat, getEnv, sleep } from '@/lib';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
-
-const MAP_CHANGE_DEBOUNCE_INTERVAL = 500;
 
 type Waypoint = {
   lat: number;
@@ -96,13 +90,15 @@ export const MapExploreView: React.FC<Props> = () => {
   );
 
   const [search, setSearch] = useState<{
-    query?: string;
+    value?: string;
     context: 'text' | 'location';
+    query: string | null;
     loading: boolean;
   }>({
     context: 'text',
     loading: false,
-    query: params.search || undefined,
+    value: params.search || undefined,
+    query: params.search || null,
   });
 
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
@@ -123,6 +119,7 @@ export const MapExploreView: React.FC<Props> = () => {
                 map.bounds.sw.lon,
               ].join(':')
             : 'no_bounds',
+          search.query || 'search',
         ]
       : [
           QUERY_KEYS.MAP.QUERY,
@@ -135,6 +132,7 @@ export const MapExploreView: React.FC<Props> = () => {
                 map.bounds.sw.lon,
               ].join(':')
             : 'no_bounds',
+          search.query || 'search',
         ],
     queryFn: async () =>
       apiClient
@@ -145,6 +143,12 @@ export const MapExploreView: React.FC<Props> = () => {
               ? (userId as string)
               : undefined,
           location: { bounds: map.bounds },
+          search:
+            search.context === 'text'
+              ? search.query
+                ? search.query
+                : undefined
+              : undefined,
         })
         .then(({ data }) => data),
     enabled: map.loaded && !!map.bounds,
@@ -216,8 +220,13 @@ export const MapExploreView: React.FC<Props> = () => {
 
   const handleSearchChange = (value: string) => {
     if (value) {
-      setSearch((prev) => ({ ...prev, query: value }));
+      setSearch((prev) => ({ ...prev, value }));
     }
+  };
+
+  const handleSearchClear = () => {
+    setSearch((prev) => ({ ...prev, value: '', query: null }));
+    updateParams({ search: null });
   };
 
   const handleSearchSubmit: MapSearchbarSubmitHandler = (data) => {
@@ -316,12 +325,6 @@ export const MapExploreView: React.FC<Props> = () => {
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
       <MapViewSwitch view={map.view} onToggle={map.handleViewToggle} />
       <MapSidebar opened={map.sidebar} view={map.view}>
-        {/* {JSON.stringify({
-          c: map.center,
-          loaded: map.loaded,
-          z: map.zoom,
-          p: params,
-        })} */}
         <div className="relative flex flex-col w-full h-full">
           {[MAP_CONTEXT_PARAMS.GLOBAL, MAP_CONTEXT_PARAMS.FOLLOWING].some(
             (context) => context === map.context,
@@ -334,8 +337,10 @@ export const MapExploreView: React.FC<Props> = () => {
                   </div>
                   <div className={cn('mt-4 w-full')}>
                     <MapSearchbar
-                      value={search.query}
+                      value={search.value}
+                      query={search.query}
                       onChange={handleSearchChange}
+                      onClear={handleSearchClear}
                       onSubmit={handleSearchSubmit}
                     />
                   </div>
@@ -489,7 +494,9 @@ export const MapExploreView: React.FC<Props> = () => {
         <div className="z-10 relative !w-full h-full overflow-hidden">
           <div className="absolute top-0 left-0 right-0 z-20 w-full h-[70px] flex justify-between box-border px-10 items-center desktop:hidden">
             <MapSearchbar
-              value={search.query}
+              value={search.value}
+              query={search.query}
+              onClear={handleSearchClear}
               onChange={handleSearchChange}
               onSubmit={handleSearchSubmit}
             />

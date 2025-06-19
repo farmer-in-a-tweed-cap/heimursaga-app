@@ -1,7 +1,7 @@
 'use client';
 
 import { Input, Spinner } from '@repo/ui/components';
-import { MagnifyingGlassIcon } from '@repo/ui/icons';
+import { MagnifyingGlassIcon, XIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useEffect, useState } from 'react';
 
@@ -13,9 +13,11 @@ type Props = {
     name: string;
     context?: string;
   }[];
+  clear?: boolean;
   loading?: boolean;
-  onChange?: (query: string) => void;
-  onSubmit?: (query: string) => void;
+  onChange?: (value: string) => void;
+  onSubmit?: (value: string) => void;
+  onClear?: () => void;
   onResultClick?: (id: string) => void;
   inputProps?: React.ComponentProps<'input'>;
 };
@@ -27,9 +29,11 @@ export const Searchbar: React.FC<Props> = ({
   loading = false,
   value,
   results = [],
+  clear = false,
   onChange,
   onSubmit,
   onResultClick,
+  onClear,
   inputProps,
 }) => {
   const [search, setSearch] = useState<string | undefined>(value);
@@ -59,6 +63,14 @@ export const Searchbar: React.FC<Props> = ({
     setTimeout(() => {
       setFocused(false);
     }, 200);
+  };
+
+  const handleClear = () => {
+    setSearch('');
+
+    if (onClear) {
+      onClear();
+    }
   };
 
   useEffect(() => {
@@ -91,6 +103,13 @@ export const Searchbar: React.FC<Props> = ({
             onBlur={handleFocusOut}
             {...inputProps}
           />
+          {clear && (
+            <div className="absolute right-0 top-0 bottom-0 w-[36px] flex items-center justify-center">
+              <button onClick={handleClear}>
+                <XIcon size={16} weight="bold" className="text-gray-600" />
+              </button>
+            </div>
+          )}
         </div>
       </form>
       {search && focused && (
