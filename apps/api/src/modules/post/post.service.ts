@@ -216,6 +216,15 @@ export class PostService {
           waypoint: { select: { lat: true, lon: true } },
           likes_count: true,
           bookmarks_count: true,
+          media: {
+            select: {
+              upload: {
+                select: {
+                  thumbnail: true,
+                },
+              },
+            },
+          },
           // check if the session user has liked this post
           likes: userId
             ? {
@@ -257,6 +266,11 @@ export class PostService {
         public: post.public,
         sponsored: post.sponsored,
         waypoint: post.waypoint,
+        media: post.media
+          ? post.media.map(({ upload }) => ({
+              thumbnail: getStaticMediaUrl(upload?.thumbnail),
+            }))
+          : [],
         author: post.author
           ? {
               username: post.author.username,
@@ -295,7 +309,15 @@ export class PostService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      const { title, lat, lon, date, place, waypointId } = payload;
+      const {
+        title,
+        lat,
+        lon,
+        date,
+        place,
+        waypointId,
+        uploads = [],
+      } = payload;
       const privacy = {
         public: payload.public,
         sponsored: payload.sponsored,
@@ -319,29 +341,48 @@ export class PostService {
       }
 
       // create a post
-      const post = await this.prisma.post.create({
-        data: {
-          public_id: generator.publicId(),
-          title,
-          content,
-          date,
-          place,
-          public: privacy.public,
-          sponsored: privacy.sponsored,
-          author: { connect: { id: userId } },
-          waypoint: waypointId
-            ? { connect: { id: waypointId } }
-            : { create: { lat, lon } },
-        },
-        select: {
-          public_id: true,
-        },
-      });
+      const { post } = await this.prisma.$transaction(async (tx) => {
+        // create a post
+        const post = await tx.post.create({
+          data: {
+            public_id: generator.publicId(),
+            title,
+            content,
+            date,
+            place,
+            public: privacy.public,
+            sponsored: privacy.sponsored,
+            author: { connect: { id: userId } },
+            waypoint: waypointId
+              ? { connect: { id: waypointId } }
+              : { create: { lat, lon } },
+          },
+          select: { id: true, public_id: true },
+        });
 
-      // update the user
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { posts_count: { increment: 1 } },
+        // create post media
+        const media = await tx.upload.findMany({
+          where: { public_id: { in: uploads } },
+          select: { id: true },
+        });
+        console.log({ media });
+
+        if (media.length >= 1) {
+          await tx.postMedia.createMany({
+            data: media.map((upload) => ({
+              post_id: post.id,
+              upload_id: upload.id,
+            })),
+          });
+        }
+
+        // update the user
+        await tx.user.update({
+          where: { id: userId },
+          data: { posts_count: { increment: 1 } },
+        });
+
+        return { post };
       });
 
       const response: IPostCreateResponse = {

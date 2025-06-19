@@ -6,6 +6,7 @@ import {
 } from '@repo/types';
 import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsDate,
   IsDateString,
@@ -62,18 +63,12 @@ export class PostCreateDto implements IPostCreatePayload {
   @IsNumber()
   @IsOptional()
   waypointId: number;
-}
-
-class PostWaypointUpdateDto implements IWaypointCreatePayload {
-  @ApiProperty({ required: false })
-  @IsNumber()
-  @IsOptional()
-  lat: number;
 
   @ApiProperty({ required: false })
-  @IsNumber()
+  @IsArray()
+  @IsString({ each: true })
   @IsOptional()
-  lon: number;
+  uploads?: string[];
 }
 
 export class PostUpdateDto implements IPostUpdatePayload {
@@ -90,7 +85,7 @@ export class PostUpdateDto implements IPostUpdatePayload {
   @ApiProperty({ required: true })
   @IsObject()
   @ValidateNested()
-  @Type(() => PostWaypointUpdateDto)
+  @Type(() => PostWaypointCreateDto)
   waypoint: IWaypointCreatePayload;
 
   @ApiProperty({ required: false })
@@ -112,4 +107,22 @@ export class PostUpdateDto implements IPostUpdatePayload {
   @IsDateString()
   @IsOptional()
   date: Date;
+
+  @ApiProperty({ required: false })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  uploads?: string[];
+}
+
+class PostWaypointCreateDto implements IWaypointCreatePayload {
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lat: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lon: number;
 }
