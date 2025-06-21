@@ -1178,8 +1178,7 @@ const Popup: React.FC<{
 
     // create a container div for the popup content
     const popupContainer = document.createElement('div');
-    popupContainer.className =
-      'map-popup bg-red-500 animate-in fade-in duration-300';
+    popupContainer.className = 'map-popup animate-in fade-in duration-300';
     popupContainer.innerHTML = content;
     popupRef.current = popupContainer;
 
