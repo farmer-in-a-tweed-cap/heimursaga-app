@@ -30,7 +30,6 @@ import {
   useScreen,
   useSession,
 } from '@/hooks';
-import { dateformat, getEnv, sleep } from '@/lib';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
@@ -100,6 +99,18 @@ export const MapExploreView: React.FC<Props> = () => {
     value: params.search || undefined,
     query: params.search || null,
   });
+
+  const contexts = {
+    map: [MAP_CONTEXT_PARAMS.GLOBAL, MAP_CONTEXT_PARAMS.FOLLOWING].some(
+      (ctx) => ctx === map.context,
+    ),
+    user: map.context === MAP_CONTEXT_PARAMS.USER,
+  };
+
+  const filters = {
+    post: map.filter === MAP_FILTER_PARAMS.POST,
+    journey: map.filter === MAP_FILTER_PARAMS.JOURNEY,
+  };
 
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [userId, setUserId] = useState<string | null>(params.user || null);
@@ -283,14 +294,15 @@ export const MapExploreView: React.FC<Props> = () => {
   const handleUserBack = () => {
     setUserId(null);
     map.setContext(MAP_CONTEXT_PARAMS.GLOBAL);
+    map.setFilter(MAP_FILTER_PARAMS.POST);
+
+    mapQuery.refetch();
 
     updateParams({
       context: MAP_CONTEXT_PARAMS.GLOBAL,
+      filter: MAP_FILTER_PARAMS.POST,
       user: null,
-      filter: null,
     });
-
-    mapQuery.refetch();
   };
 
   // update waypoints
@@ -326,9 +338,7 @@ export const MapExploreView: React.FC<Props> = () => {
       <MapViewSwitch view={map.view} onToggle={map.handleViewToggle} />
       <MapSidebar opened={map.sidebar} view={map.view}>
         <div className="relative flex flex-col w-full h-full">
-          {[MAP_CONTEXT_PARAMS.GLOBAL, MAP_CONTEXT_PARAMS.FOLLOWING].some(
-            (context) => context === map.context,
-          ) && (
+          {contexts.map && (
             <>
               <div className="flex flex-row justify-between items-center py-4 px-4 desktop:px-6 bg-white">
                 <div className="w-full flex flex-col">
@@ -369,7 +379,7 @@ export const MapExploreView: React.FC<Props> = () => {
               )}
             </>
           )}
-          {map.context === MAP_CONTEXT_PARAMS.USER && (
+          {contexts.user && (
             <div className="flex flex-col pt-4 pb-2 px-6">
               <div className="flex flex-col justify-start items-start gap-3">
                 <UserProfileCard
@@ -402,7 +412,7 @@ export const MapExploreView: React.FC<Props> = () => {
             </div>
           )}
           <div className="w-full h-auto flex flex-col gap-2 overflow-y-scroll no-scrollbar px-4 desktop:px-6 py-4 box-border">
-            {map.filter === MAP_FILTER_PARAMS.POST && (
+            {filters.post && (
               <>
                 {waypointLoading ? (
                   <LoadingSpinner />
@@ -438,7 +448,7 @@ export const MapExploreView: React.FC<Props> = () => {
               </>
             )}
 
-            {map.filter === MAP_FILTER_PARAMS.JOURNEY && (
+            {filters.journey && (
               <>
                 {tripQuery.isLoading || tripQuery.isPending ? (
                   <LoadingSpinner />
