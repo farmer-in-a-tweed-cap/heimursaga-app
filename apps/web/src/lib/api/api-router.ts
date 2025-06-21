@@ -17,6 +17,7 @@ export const API_ROUTER = {
       DELETE: (id: number) => `/map/waypoints/${id}`,
     },
   },
+  UPLOAD: `/upload`,
   USER: {
     FEED: `/user/feed`,
     BOOKMARKS: `/user/bookmarks`,

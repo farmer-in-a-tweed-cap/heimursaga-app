@@ -49,6 +49,7 @@ export default async function Page({ params }: Props) {
             likesCount={data.likesCount}
             bookmarked={data.bookmarked}
             bookmarksCount={data.bookmarksCount}
+            media={data?.media || []}
             actions={
               data.createdByMe
                 ? { edit: true }

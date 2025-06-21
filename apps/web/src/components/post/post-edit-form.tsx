@@ -5,6 +5,7 @@ import { IPostDetail } from '@repo/types';
 import {
   Button,
   DatePicker,
+  FilePicker,
   Form,
   FormControl,
   FormField,
@@ -29,8 +30,8 @@ import {
 } from '@/components';
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
-import { useMap, useModal, useSession } from '@/hooks';
-import { dateformat, normalizeText, zodMessage } from '@/lib';
+import { useMap, useModal, useSession, useUploads } from '@/hooks';
+import { dateformat, normalizeText, randomIntegerId, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
 
 const schema = z.object({
@@ -72,6 +73,17 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
           lon: waypoint.lon,
         }
       : undefined,
+  });
+
+  const media = values?.media || [];
+
+  const uploader = useUploads({
+    files: media.map(({ thumbnail }, key) => ({
+      id: key,
+      src: thumbnail,
+    })),
+    maxFiles: session.creator ? 3 : 1,
+    maxSize: 2,
   });
 
   const [loading, setLoading] = useState<{ post: boolean; privacy: boolean }>({
@@ -240,6 +252,22 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                       </FormItem>
                     )}
                   />
+                </div>
+                <div>
+                  <FormItem>
+                    <FormLabel>
+                      Photos ({uploader.files.length}/{uploader.maxFiles})
+                    </FormLabel>
+                    <FilePicker
+                      files={uploader.files}
+                      maxFiles={uploader.maxFiles}
+                      maxSize={uploader.maxSize}
+                      loader={uploader.loader}
+                      onChange={uploader.handleFileChange}
+                      onLoad={uploader.handleFileLoad}
+                      onRemove={uploader.handleFileRemove}
+                    />
+                  </FormItem>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <FormField
