@@ -50,7 +50,7 @@
 }
 
 .map-popup {
-  @apply w-[320px] bg-white p-4 text-black rounded-lg drop-shadow text-sm flex flex-col justify-start items-start gap-2;
+  @apply w-[320px] bg-white p-4 text-black rounded-lg drop-shadow text-sm flex flex-col justify-start items-start gap-2 overflow-hidden;
 }
 
 .map-popup-title {

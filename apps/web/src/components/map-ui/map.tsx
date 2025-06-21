@@ -2,6 +2,7 @@
 
 import { cn } from '@repo/ui/lib/utils';
 import mapboxgl, {
+  LngLat,
   MapEvent,
   MapMouseEvent,
   MapOptions,
@@ -9,7 +10,7 @@ import mapboxgl, {
   Marker,
 } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { useEffect, useRef, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
 import { APP_CONFIG } from '@/config';
@@ -19,6 +20,7 @@ import {
   MapLoadHandler,
   MapMoveHandler,
 } from '@/hooks';
+import { dateformat } from '@/lib';
 
 import { MapNavigationControl } from './map-control';
 import { addSources, updateSources } from './map.utils';
@@ -128,6 +130,14 @@ export type MapWaypointMoveHandler = (
 
 export type MapOnSourceClickHandler = (sourceId: string) => void;
 
+type PopupState = {
+  visible?: boolean;
+  hovered?: boolean;
+  content?: string;
+  lon?: number;
+  lat?: number;
+};
+
 export const Map: React.FC<Props> = ({
   className,
   token,
@@ -165,6 +175,14 @@ export const Map: React.FC<Props> = ({
   const waypointDraggableId = useRef<number | null>(null);
   const waypointDragging = useRef<boolean>(false);
 
+  const [popup, setPopup] = useState<PopupState>({
+    visible: false,
+    hovered: false,
+    content: '',
+    lon: 0,
+    lat: 0,
+  });
+
   // refs
   const mapboxRef = useRef<mapboxgl.Map | null>(null);
   const mapboxContainerRef = useRef<any>(null);
@@ -174,6 +192,7 @@ export const Map: React.FC<Props> = ({
   const hoverPopupRef = useRef<boolean>(false);
   const waypointDraggableRef = useRef(waypointDraggable);
 
+  const popupHovered = useRef<boolean>(false);
   const hoveredPointIdRef = useRef<string | null>(null);
   const hoveredClusterIdRef = useRef<string | null>(null);
 
@@ -267,6 +286,8 @@ export const Map: React.FC<Props> = ({
     const canvas = mapboxRef.current.getCanvasContainer();
     const feature = event.features[0];
     const pointId = feature.id as string;
+    const geometry = feature.geometry as GeoJSON.Point;
+    const [lon, lat] = (geometry.coordinates as [number, number]) || [];
 
     const properties = feature?.properties as {
       id: string;
@@ -290,6 +311,30 @@ export const Map: React.FC<Props> = ({
 
       hoveredPointIdRef.current = pointId;
     }
+
+    // show popup
+    popupHovered.current = true;
+
+    const { title = '', content = '', date = new Date() } = properties || {};
+    const popupContent = `
+      <div class="flex flex-col justify-start">
+        <div class="flex flex-col justify-start gap-0">
+          <span class="text-base font-medium">${title}</span>
+          <span class="text-[0.7rem] font-normal text-gray-500">${dateformat(date).format('MMM DD')}</span>
+        </div>
+        <div class="mt-2">
+          <p class="text-sm font-normal text-gray-500">${content ? (content.length < 50 ? content : `${content.slice(0, 50)}..`) : ''}</p>
+        </div>
+      </div>
+    `;
+
+    setPopup((prev) => ({
+      ...prev,
+      visible: true,
+      lat,
+      lon,
+      content: popupContent,
+    }));
 
     // const { id, title, content, date } = properties;
     // const coordinates = (feature.geometry as any).coordinates as [
@@ -371,10 +416,17 @@ export const Map: React.FC<Props> = ({
 
     // remove popup
     setTimeout(() => {
-      if (!hoverPopupRef.current) {
-        mapboxPopupRef.current!.remove();
-        showPopupRef.current = false;
-      }
+      setPopup((prev) =>
+        prev?.hovered
+          ? prev
+          : {
+              ...prev,
+              visible: false,
+              lat: 0,
+              lon: 0,
+              content: '',
+            },
+      );
     }, 100);
   };
 
@@ -489,7 +541,6 @@ export const Map: React.FC<Props> = ({
     updateSources({ mapbox: mapboxRef.current, sources });
   }, [sources]);
 
-  // render the map
   useEffect(() => {
     mapboxgl.accessToken = token;
 
@@ -1062,15 +1113,17 @@ export const Map: React.FC<Props> = ({
       }
     });
 
+    // clear
     return () => {
       resizeObserver.disconnect();
       cancelAnimationFrame(rafId);
 
-      if (markerRef.current) {
-        markerRef.current.remove();
-      }
       if (mapboxRef.current) {
         mapboxRef.current.remove();
+      }
+
+      if (markerRef.current) {
+        markerRef.current.remove();
       }
     };
   }, []);
@@ -1084,7 +1137,72 @@ export const Map: React.FC<Props> = ({
         id="map-container"
         ref={mapboxContainerRef}
         className="z-10 w-full h-full"
-      ></div>
+      >
+        {mapboxRef.current && popup.visible && (
+          <Popup
+            lat={popup.lat}
+            lon={popup.lon}
+            content={popup.content}
+            map={mapboxRef.current}
+            setPopup={setPopup}
+          />
+        )}
+      </div>
     </div>
   );
+};
+
+const Popup: React.FC<{
+  map: mapboxgl.Map | null;
+  content?: string;
+  lat?: number;
+  lon?: number;
+  setPopup?: Dispatch<SetStateAction<PopupState>>;
+}> = ({ content = '', lat = 0, lon = 0, map, setPopup }) => {
+  const popupRef = useRef<HTMLDivElement | null>(null);
+  const popupInstance = useRef<mapboxgl.Popup | null>(null);
+
+  const handleMouseEnter = () => {
+    if (setPopup) {
+      setPopup((prev) => ({ ...prev, hovered: true }));
+    }
+  };
+  const handleMouseLeave = () => {
+    if (setPopup) {
+      setPopup((prev) => ({ ...prev, visible: false, hovered: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (!map) return;
+
+    // create a container div for the popup content
+    const popupContainer = document.createElement('div');
+    popupContainer.className =
+      'map-popup bg-red-500 animate-in fade-in duration-300';
+    popupContainer.innerHTML = content;
+    popupRef.current = popupContainer;
+
+    popupContainer.addEventListener('mouseenter', handleMouseEnter);
+    popupContainer.addEventListener('mouseleave', handleMouseLeave);
+
+    // create mapbox popup
+    popupInstance.current = new mapboxgl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      offset: 15,
+    })
+      .setLngLat({ lon, lat })
+      .setDOMContent(popupContainer)
+      .addTo(map);
+
+    return () => {
+      if (popupInstance.current) {
+        popupInstance.current.remove();
+        popupInstance.current = null;
+      }
+    };
+  }, [lon, lat, map]);
+
+  return null;
 };
