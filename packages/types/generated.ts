@@ -243,7 +243,7 @@ export interface IPostDetail {
     lat: number;
     lon: number;
   };
-  media?: { thumbnail: string }[];
+  media?: { id: string; thumbnail: string }[];
   public?: boolean;
   sponsored?: boolean;
   liked?: boolean;
