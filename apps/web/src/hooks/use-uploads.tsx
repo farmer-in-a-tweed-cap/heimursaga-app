@@ -5,21 +5,36 @@ import { useState } from 'react';
 
 import { apiClient } from '@/lib/api';
 
+import { randomIntegerId } from '@/lib';
+
 type State = {
   files?: FilePickerFile[];
+  maxFiles?: number;
+  maxSize?: number;
 };
 
 export const useUploads = (state?: State) => {
   const [files, setFiles] = useState<FilePickerFile[]>(state?.files || []);
 
-  const uploadFile = async (file: FilePickerFile) => {
+  const maxFiles = state?.maxFiles || 4;
+  const maxSize = state?.maxSize || 2;
+
+  const loader = async ({ id, file }: FilePickerFile) => {
+    console.log('file:', { id, file });
+
+    if (!file) return;
+
+    console.log('file uploading..', file);
+
     // upload
     const { success, data } = await apiClient.uploadImage({ file });
     const uploadId = data?.uploadId;
 
     if (success) {
+      console.log('file uploaded', data);
+
       setFiles((files) => {
-        const index = files.findIndex(({ id }) => id === file.id);
+        const index = files.findIndex((file) => file.id === id);
         const list = [...files];
         const element = list[index];
         list[index] = { ...element, uploadId };
@@ -54,7 +69,9 @@ export const useUploads = (state?: State) => {
   return {
     files,
     setFiles,
-    uploadFile,
+    maxFiles,
+    maxSize,
+    loader,
     handleFileLoad,
     handleFileChange,
     handleFileRemove,

@@ -4,6 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Button,
   DatePicker,
+  FilePicker,
+  FilePickerFile,
+  FilePickerLoadHandler,
   Form,
   FormControl,
   FormField,
@@ -29,7 +32,7 @@ import {
   MapPreview,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
-import { MapCoordinatesValue, useMap, useModal, useSession } from '@/hooks';
+import { useMap, useModal, useSession, useUploads } from '@/hooks';
 import { dateformat, redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
@@ -84,6 +87,11 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     zoom: waypoint ? APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM : 0,
   });
 
+  const uploader = useUploads({
+    maxFiles: session.creator ? 3 : 1,
+    maxSize: 2,
+  });
+
   const [privacy, setPrivacy] = useState<{
     public: boolean;
     sponsored: boolean;
@@ -120,6 +128,10 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
         const { title, content, place, date } = values;
         const { marker } = map;
 
+        const uploads: string[] = uploader.files
+          .map(({ uploadId }) => uploadId)
+          .filter((el) => typeof el === 'string');
+
         setLoading(true);
 
         // create a post
@@ -133,6 +145,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
           public: privacy.public,
           sponsored: privacy.sponsored,
           waypointId: waypoint?.id,
+          uploads,
         });
 
         if (success) {
@@ -210,6 +223,22 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                       </FormItem>
                     )}
                   />
+                </div>
+                <div>
+                  <FormItem>
+                    <FormLabel>
+                      Photos ({uploader.files.length}/{uploader.maxFiles})
+                    </FormLabel>
+                    <FilePicker
+                      files={uploader.files}
+                      maxFiles={uploader.maxFiles}
+                      maxSize={uploader.maxSize}
+                      loader={uploader.loader}
+                      onChange={uploader.handleFileChange}
+                      onLoad={uploader.handleFileLoad}
+                      onRemove={uploader.handleFileRemove}
+                    />
+                  </FormItem>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <FormField

@@ -7,6 +7,7 @@ import {
   MapTrifoldIcon,
 } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
+import Image from 'next/image';
 import Link from 'next/link';
 
 import { CloseButton, PostButtons, UserBar } from '@/components';
@@ -24,7 +25,7 @@ export const MapDrawer: React.FC<{
   return (
     <div
       className={cn(
-        'z-50 bg-background w-full desktop:h-dvh desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll absolute right-0 top-0 desktop:top-0 bottom-0',
+        'z-50 bg-background w-full desktop:h-dvh desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll absolute right-0 top-0 desktop:top-0 bottom-0 border-2 border-solid border-accent',
         'desktop:max-w-[calc(100%-540px)]',
         'transform transition-transform duration-300 ease-in-out',
         opened ? 'translate-x-0' : 'translate-x-full',
@@ -42,13 +43,13 @@ export const MapDrawer: React.FC<{
       )}
     >
       <div className="flex flex-col">
-        <div className="p-4 h-[60px] sticky top-0 w-full flex flex-row justify-start items-center">
+        <div className="z-40 p-4 h-[60px] sticky bg-background top-0 w-full flex flex-row justify-start items-center">
           <CloseButton
             className="bg-white animate-in spin-in"
             onClick={onClose}
           />
         </div>
-        <div className="-mt-[60px] w-full h-[180px] bg-gray-500"></div>
+        {/* <div className="-mt-[60px] w-full h-[180px] bg-gray-500"></div> */}
         {loading ? (
           <LoadingSpinner />
         ) : post ? (
@@ -72,10 +73,28 @@ export const MapDrawer: React.FC<{
             <div className="mt-8">
               <h2 className="text-3xl font-medium">{post.title}</h2>
             </div>
-            <div className="py-6">
+            <div className="mt-6">
               <NormalizedText text={post.content} />
             </div>
-            <div>
+            {post?.media && (
+              <div className="mt-6 grid grid-cols-2 gap-2">
+                {post.media?.map((media, key) => (
+                  <div
+                    key={key}
+                    className="w-full h-auto overflow-hidden rounded-xl"
+                  >
+                    <Image
+                      src={media?.thumbnail}
+                      width={400}
+                      height={300}
+                      className="w-full h-auto"
+                      alt=""
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="mt-6">
               <PostButtons
                 postId={post.id}
                 liked={post.liked}

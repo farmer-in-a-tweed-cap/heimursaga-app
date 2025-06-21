@@ -23,27 +23,6 @@ import {
 import { MapNavigationControl } from './map-control';
 import { addSources, updateSources } from './map.utils';
 
-// export type MapOnLoadHandler = (data: MapOnLoadHandlerValue) => void;
-
-// export type MapOnLoadHandlerValue = {
-//   mapbox: mapboxgl.Map | null;
-//   viewport: { lat: number; lon: number };
-//   bounds?: {
-//     ne: { lat: number; lon: number };
-//     sw: { lat: number; lon: number };
-//   };
-// };
-
-// export type MapOnMoveHandlerValue = {
-//   lat: number;
-//   lon: number;
-//   alt: number;
-//   bounds?: {
-//     ne: { lat: number; lon: number };
-//     sw: { lat: number; lon: number };
-//   };
-// };
-
 export type MapSourceType = 'point' | 'line';
 
 export type MapSourceData<T = any> = {
@@ -399,52 +378,6 @@ export const Map: React.FC<Props> = ({
     }, 100);
   };
 
-  // const handleWaypointMove = ({
-  //   sourceId,
-  //   data,
-  // }: {
-  //   sourceId: string;
-  //   data: {
-  //     id: string;
-  //     lat: number;
-  //     lon: number;
-  //   };
-  // }) => {
-  //   const { id, lat, lon } = data;
-
-  //   console.log('waypoint drag', { sourceId, id, lat, lon });
-
-  //   const source = sources.find((source) => source.sourceId === sourceId);
-
-  //   if (source) {
-  //     const { onChange } = source;
-  //     let data = source.data;
-
-  //     const index = data.findIndex((e) => e.id === id);
-  //     const element = index > -1 ? data[index] : null;
-
-  //     if (element) {
-  //       data[index] = {
-  //         ...element,
-  //         lat,
-  //         lon,
-  //       };
-  //     }
-
-  //     if (onWaypointMove) {
-  //       onWaypointMove({
-  //         id,
-  //         lat,
-  //         lon,
-  //       });
-  //     }
-
-  //     if (onChange) {
-  //       onChange(data);
-  //     }
-  //   }
-  // };
-
   const handleWaypointMouseMove = (e: MapMouseEvent | MapTouchEvent) => {
     if (!mapboxRef.current) return;
 
@@ -461,29 +394,6 @@ export const Map: React.FC<Props> = ({
 
     // geojson.features[0].geometry.coordinates = [coords.lng, coords.lat];
     // mapRef.current.getSource('point').setData(geojson);
-  };
-
-  const handleWaypointMouseUp = (e: MapMouseEvent | MapTouchEvent) => {
-    if (!mapboxRef.current) return;
-
-    const canvas = mapboxRef.current.getCanvasContainer();
-    const { lat, lng: lon } = e.lngLat;
-
-    console.log('waypoint: mouseup', { lat, lon });
-
-    return;
-
-    canvas.style.cursor = '';
-
-    // if (waypointDraggableRef.current) {
-    //   handleWaypointMove({
-    //     sourceId: MAP_SOURCES.WAYPOINTS_DRAGGABLE,
-    //     data: { id: waypointDraggableRef.current.id, lat, lon },
-    //   });
-    // }
-
-    mapboxRef.current!.off('mousemove', handleWaypointMouseMove);
-    mapboxRef.current!.off('touchmove', handleWaypointMouseMove);
   };
 
   const handleWaypointDraggableMouseDown = (

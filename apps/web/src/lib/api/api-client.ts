@@ -2,6 +2,7 @@ import {
   ILoginPayload,
   IMapQueryPayload,
   IMapQueryResponse,
+  IMediaUploadResponse,
   IPasswordResetPayload,
   IPasswordUpdatePayload,
   IPaymentMethodCreatePayload,
@@ -58,6 +59,7 @@ import {
   IWaypointGetByIdResponse,
   IWaypointUpdatePayload,
 } from '@repo/types';
+import { config } from 'process';
 
 import {
   API_CONTENT_TYPES,
@@ -309,6 +311,19 @@ export const apiClient = {
       cookie: config ? config.cookie : undefined,
     });
   },
+  // upload
+  uploadImage: async ({ file }: { file: File }) => {
+    const form = new FormData();
+    form.append('file', file);
+
+    return api.request<IMediaUploadResponse>(API_ROUTER.UPLOAD, {
+      method: API_METHODS.POST,
+      contentType: API_CONTENT_TYPES.FORM_DATA,
+      body: form,
+      ...config,
+    });
+  },
+
   // stripe
   createStripeSetupIntent: async (config?: RequestConfig) =>
     api.request<IStripeCreateSetupIntentResponse>(

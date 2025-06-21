@@ -1,11 +1,18 @@
 'use client';
 
 import { XIcon } from 'lucide-react';
-import { FileWithPath, useDropzone } from 'react-dropzone';
+import { useDropzone } from 'react-dropzone';
 
 import { cn, randomIntegerId } from './../lib/utils';
+import { LoadingSpinner } from './spinner';
 
-export type FilePickerFile = FileWithPath & { id: number; preview: string };
+export type FilePickerFile = {
+  id: number;
+  src: string;
+  uploadId?: string;
+  loading?: boolean;
+  file?: File;
+};
 
 type Props = {
   files?: FilePickerFile[];
@@ -13,9 +20,13 @@ type Props = {
   maxSize?: number;
   placeholder?: string;
   disabled?: boolean;
+  loader?: (file: FilePickerFile) => Promise<void>;
   onChange?: (files: FilePickerFile[]) => void;
+  onLoad?: FilePickerLoadHandler;
   onRemove?: (id: number) => void;
 };
+
+export type FilePickerLoadHandler = (file: { id: number; src: string }) => void;
 
 export const FilePicker: React.FC<Props> = ({
   maxFiles = 1,
@@ -23,9 +34,13 @@ export const FilePicker: React.FC<Props> = ({
   files = [],
   placeholder = 'Click and select some files to upload',
   disabled = false,
+  loader,
   onChange,
+  onLoad,
   onRemove,
 }) => {
+  const fileCount = files.length;
+
   const { getRootProps, getInputProps } = useDropzone({
     noClick: false,
     accept: {
@@ -34,18 +49,28 @@ export const FilePicker: React.FC<Props> = ({
     maxFiles,
     maxSize: maxSize * 1000000,
     onDrop: (acceptedFiles) => {
-      const total = acceptedFiles.length + files.length;
+      const files: FilePickerFile[] = acceptedFiles.map((file) =>
+        Object.assign(file, {
+          id: randomIntegerId(),
+          src: URL.createObjectURL(file),
+          file,
+          loading: true,
+        }),
+      );
+
+      const total = files.length + fileCount;
       if (total > maxFiles) return;
 
       if (onChange) {
-        onChange(
-          acceptedFiles.map((file) =>
-            Object.assign(file, {
-              id: randomIntegerId(),
-              preview: URL.createObjectURL(file),
-            }),
-          ),
-        );
+        onChange(files);
+      }
+
+      if (loader && onLoad) {
+        files.forEach((file) => {
+          loader(file).then(() => {
+            onLoad({ id: file.id, src: '' });
+          });
+        });
       }
     },
   });
@@ -73,27 +98,47 @@ export const FilePicker: React.FC<Props> = ({
         <input {...getInputProps()} disabled={pickerDisabled} />
         <span className="text-sm font-normal text-gray-500">{placeholder}</span>
       </div>
+
       {files.length >= 1 && (
         <div className="mt-4 grid grid-cols-6 gap-2">
-          {files.map((file) => (
-            <div className="relative aspect-square overflow-hidden rounded-xl flex items-center justify-center border-2 border-accent border-solid">
-              <img
-                src={file.preview}
-                className="z-10 w-auto min-w-[150%] h-auto"
-              />
-              <div className="z-20 absolute inset-0 opacity-0 hover:opacity-100 transition-all">
-                <button
-                  type="button"
-                  className="absolute top-1 right-1 w-[20px] h-[20px] flex items-center justify-center bg-white rounded-full border border-solid border-accent"
-                  onClick={(e) => handleFileRemove(e, file.id)}
-                >
-                  <XIcon size={16} />
-                </button>
-              </div>
-            </div>
+          {files.map((file, key) => (
+            <FilePickerPreview
+              key={key}
+              id={file.id}
+              src={file.src}
+              loading={file.loading}
+              onRemove={handleFileRemove}
+            />
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+const FilePickerPreview: React.FC<{
+  id: number;
+  loading?: boolean;
+  src?: string;
+  onRemove?: (e: React.MouseEvent, id: number) => void;
+}> = ({ id, loading = false, src, onRemove }) => {
+  return (
+    <div className="relative aspect-square overflow-hidden rounded-xl flex items-center justify-center border-2 border-accent border-solid">
+      {loading && (
+        <div className="z-30 absolute inset-0 bg-accent opacity-50">
+          <LoadingSpinner />
+        </div>
+      )}
+      <img src={src} className="z-10 w-auto min-w-[150%] h-auto" />
+      <div className="z-20 absolute inset-0 opacity-0 hover:opacity-100 transition-all">
+        <button
+          type="button"
+          className="absolute top-1 right-1 w-[20px] h-[20px] flex items-center justify-center bg-white rounded-full border border-solid border-accent"
+          onClick={(e) => (onRemove ? onRemove(e, id) : () => {})}
+        >
+          <XIcon size={16} />
+        </button>
+      </div>
     </div>
   );
 };

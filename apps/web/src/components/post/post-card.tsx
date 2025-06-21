@@ -20,6 +20,7 @@ export type PostCardProps = {
   classNames?: {
     card?: string;
   };
+  media?: { thumbnail: string }[];
   id?: string;
   title?: string;
   content?: string;
@@ -60,7 +61,6 @@ export const PostCard: React.FC<PostCardProps> = ({
   href,
   title = '',
   content = '',
-  thumbnail = '',
   author = {
     name: '',
     picture: '',
@@ -82,6 +82,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   userbar,
   extended = false,
   selected = false,
+  media = [],
   onClick,
 }) => {
   const session = useSession();
@@ -169,34 +170,12 @@ export const PostCard: React.FC<PostCardProps> = ({
           )}
         </div>
         <div className="relative flex flex-col overflow-hidden">
-          {thumbnail && (
-            <div className="mt-6 w-full aspect-5/2 overflow-hidden rounded-xl">
-              <Image
-                src={thumbnail || ''}
-                width={400}
-                height={300}
-                className="w-full h-auto"
-                alt=""
-              />
-            </div>
-          )}
-          <div className="mt-6 flex flex-col">
-            <span
+          <div className="mt-6">
+            <h2
               className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
             >
               {title}
-            </span>
-            <div className={extended ? 'mt-6' : 'mt-2'}>
-              {extended ? (
-                <NormalizedText text={content} />
-              ) : (
-                <p className="break-all">
-                  {content.length <= 80
-                    ? content.split('\\n').join('')
-                    : `${content.split('\\n').join('').slice(0, 80)}..`}
-                </p>
-              )}
-            </div>
+            </h2>
           </div>
           {waypoint && (
             <div className="mt-6">
@@ -212,9 +191,39 @@ export const PostCard: React.FC<PostCardProps> = ({
               />
             </div>
           )}
+          <div className={extended ? 'mt-6' : 'mt-2'}>
+            {extended ? (
+              <NormalizedText text={content} />
+            ) : (
+              <p className="break-all">
+                {content.length <= 80
+                  ? content.split('\\n').join('')
+                  : `${content.split('\\n').join('').slice(0, 80)}..`}
+              </p>
+            )}
+          </div>
+          {media.length >= 1 && (
+            <div className="mt-6 grid grid-cols-2 gap-2">
+              {media.map(({ thumbnail }, key) => (
+                <div
+                  key={key}
+                  className="w-full h-auto overflow-hidden rounded-xl"
+                >
+                  <Image
+                    src={thumbnail}
+                    width={400}
+                    height={300}
+                    className="w-full h-auto"
+                    alt=""
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+
         {(actions.like || actions.share) && (
-          <div className="mt-4">
+          <div className="mt-6">
             <PostButtons
               postId={id}
               actions={{
