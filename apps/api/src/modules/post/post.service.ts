@@ -220,6 +220,7 @@ export class PostService {
             select: {
               upload: {
                 select: {
+                  public_id: true,
                   thumbnail: true,
                 },
               },
@@ -268,6 +269,7 @@ export class PostService {
         waypoint: post.waypoint,
         media: post.media
           ? post.media.map(({ upload }) => ({
+              id: upload?.public_id,
               thumbnail: getStaticMediaUrl(upload?.thumbnail),
             }))
           : [],
@@ -309,15 +311,7 @@ export class PostService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      const {
-        title,
-        lat,
-        lon,
-        date,
-        place,
-        waypointId,
-        uploads = [],
-      } = payload;
+      const { title, lat, lon, date, place, waypointId } = payload;
       const privacy = {
         public: payload.public,
         sponsored: payload.sponsored,
@@ -361,15 +355,14 @@ export class PostService {
         });
 
         // create post media
-        const media = await tx.upload.findMany({
-          where: { public_id: { in: uploads } },
+        const uploads = await tx.upload.findMany({
+          where: { public_id: { in: payload.uploads || [] } },
           select: { id: true },
         });
-        console.log({ media });
 
-        if (media.length >= 1) {
+        if (uploads.length >= 1) {
           await tx.postMedia.createMany({
-            data: media.map((upload) => ({
+            data: uploads.map((upload) => ({
               post_id: post.id,
               upload_id: upload.id,
             })),
@@ -410,11 +403,15 @@ export class PostService {
     try {
       const { publicId } = query;
       const { userId } = session;
+      const { uploads = [] } = payload;
 
-      if (!userId) throw new ServiceForbiddenException();
       if (!publicId) throw new ServiceNotFoundException('post not found');
 
       // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      // check post
       const post = await this.prisma.post
         .findFirstOrThrow({
           where: {
@@ -428,9 +425,8 @@ export class PostService {
           },
         })
         .catch(() => {
-          throw new ServiceForbiddenException();
+          throw new ServiceNotFoundException('post not found');
         });
-
       const { waypoint } = payload;
 
       // update the post
@@ -459,6 +455,48 @@ export class PostService {
               },
             });
           }
+        }
+
+        // update post media
+        const media = await tx.postMedia.findMany({
+          where: { post_id: post.id },
+          select: {
+            upload: { select: { id: true, public_id: true, thumbnail: true } },
+          },
+        });
+
+        // filter post uploads
+        const mediaAdded = uploads.filter(
+          (uploadId) =>
+            !media.find(({ upload }) => upload.public_id === uploadId),
+        );
+        const mediaRemoved = media.filter(
+          ({ upload }) =>
+            !uploads.find((uploadId) => uploadId === upload.public_id),
+        );
+
+        // delete post media
+        if (mediaRemoved.length >= 1) {
+          await tx.postMedia.deleteMany({
+            where: {
+              upload_id: { in: mediaRemoved.map(({ upload }) => upload.id) },
+            },
+          });
+        }
+
+        // create post media
+        if (mediaAdded.length >= 1) {
+          const uploads = await tx.upload.findMany({
+            where: { public_id: { in: mediaAdded } },
+            select: { id: true },
+          });
+
+          await tx.postMedia.createMany({
+            data: uploads.map((upload) => ({
+              post_id: post.id,
+              upload_id: upload.id,
+            })),
+          });
         }
       });
     } catch (e) {
