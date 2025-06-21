@@ -75,13 +75,14 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       : undefined,
   });
 
-  const media = values?.media || [];
-
   const uploader = useUploads({
-    files: media.map(({ thumbnail }, key) => ({
-      id: key,
-      src: thumbnail,
-    })),
+    files: values?.media
+      ? values?.media?.map(({ id, thumbnail }, key) => ({
+          id: key,
+          uploadId: id,
+          src: thumbnail,
+        }))
+      : [],
     maxFiles: session.creator ? 3 : 1,
     maxSize: 2,
   });
@@ -170,6 +171,9 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
         if (!postId) return;
 
         const { marker } = map;
+        const uploads: string[] = uploader.files
+          .map(({ uploadId }) => uploadId)
+          .filter((el) => typeof el === 'string');
 
         setLoading((loading) => ({ ...loading, post: true }));
 
@@ -182,6 +186,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
               lat: marker?.lat,
               lon: marker?.lon,
             },
+            uploads,
           },
         });
 

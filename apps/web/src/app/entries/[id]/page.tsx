@@ -52,7 +52,7 @@ export default async function Page({ params }: Props) {
             media={data?.media || []}
             actions={
               data.createdByMe
-                ? { edit: true }
+                ? { edit: true, like: true, share: true }
                 : { like: true, bookmark: true, share: true }
             }
             extended
