@@ -1,12 +1,9 @@
 'use client';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
 import { APP_CONFIG } from '@/config';
-
-import { useAppParams } from './use-app-params';
 
 const MAP_MOVE_DEBOUNCE_TIMEOUT = 500;
 
@@ -49,10 +46,6 @@ export type MapSearchParams = {
   filter: string | null;
 };
 
-export type MapHookConfig = {
-  updateSearchParams?: boolean;
-};
-
 export type MapCoordinatesValue = { lat: number; lon: number };
 
 export type MapWaypointValue = MapCoordinatesValue & {
@@ -79,34 +72,22 @@ export type MapMoveHandler = (data: {
   bounds?: MapBoundsValue;
 }) => void;
 
-export const useMap = (
-  state?: {
-    zoom?: number;
-    view?: string;
-    sidebar?: boolean;
-    drawer?: boolean;
-    context?: string;
-    filter?: string;
-    center?: MapCoordinatesValue;
-    marker?: MapCoordinatesValue;
-    bounds?: MapBoundsValue;
-  },
-  _config?: MapHookConfig,
-) => {
-  // const { setParams } = useAppParams();
-
-  const config: MapHookConfig = _config
-    ? _config
-    : { updateSearchParams: false };
-
+export const useMap = (state?: {
+  zoom?: number;
+  view?: string;
+  sidebar?: boolean;
+  drawer?: boolean;
+  context?: string;
+  filter?: string;
+  center?: MapCoordinatesValue;
+  marker?: MapCoordinatesValue;
+  bounds?: MapBoundsValue;
+}) => {
   const [loaded, setLoaded] = useState<boolean>(false);
   const [view, setView] = useState<string>(state?.view || MAP_VIEW_PARAMS.LIST);
   const [sidebar, setSidebar] = useState<boolean>(state?.sidebar || false);
   const [drawer, setDrawer] = useState<boolean>(state?.drawer || false);
-  const [context, setContext] = useState<string>(
-    state?.context || MAP_CONTEXT_PARAMS.GLOBAL,
-  );
-  const [filter, setFilter] = useState<string | undefined>(state?.filter);
+
   const [zoom, setZoom] = useState<number>(
     state?.zoom || APP_CONFIG.MAP.DEFAULT.ZOOM,
   );
@@ -126,46 +107,6 @@ export const useMap = (
 
   const mapboxRef = useRef<mapboxgl.Map | null>(null);
   const viewRef = useRef<string>(state?.view || MAP_VIEW_PARAMS.LIST);
-
-  const updateContext = (context: string) => {
-    setContext(context);
-    // setParams({ context });
-  };
-
-  const updateFilter = (filter: string) => {
-    setFilter(filter);
-    // setParams({ filter });
-  };
-
-  // const updateSearchParams = (payload: Partial<MapSearchParams>) => {
-  //   const { lat, lon, zoom, post_id, search, context, user, filter } = payload;
-
-  //   const s = new URLSearchParams(searchParams.toString());
-
-  //   const params = [
-  //     { key: MAP_SEARCH_PARAMS.LAT, value: lat },
-  //     { key: MAP_SEARCH_PARAMS.LON, value: lon },
-  //     { key: MAP_SEARCH_PARAMS.ZOOM, value: zoom },
-  //     { key: MAP_SEARCH_PARAMS.POST_ID, value: post_id },
-  //     { key: MAP_SEARCH_PARAMS.SEARCH, value: search },
-  //     { key: MAP_SEARCH_PARAMS.CONTEXT, value: context },
-  //     { key: MAP_SEARCH_PARAMS.USER, value: user },
-  //     { key: MAP_SEARCH_PARAMS.FILTER, value: filter },
-  //   ];
-
-  //   params.forEach(({ key, value }) => {
-  //     if (value) {
-  //       s.set(key, `${value}`);
-  //     } else {
-  //       if (value === null) {
-  //         s.delete(key);
-  //       }
-  //     }
-  //   });
-
-  //   // update the url
-  //   router.push([pathname, s.toString()].join('?'), { scroll: false });
-  // };
 
   const updateCenter = (center: MapCoordinatesValue) => {
     setCenter(center);
@@ -236,17 +177,6 @@ export const useMap = (
     if (bounds) {
       setBounds(bounds);
     }
-
-    // // update search params
-    // if (config.updateSearchParams) {
-    //   const { lat, lon } = center;
-
-    //   setParams({
-    //     lat: `${lat}`,
-    //     lon: `${lon}`,
-    //     zoom: `${zoom}`,
-    //   });
-    // }
   };
 
   const handleDrawerOpen = () => {
@@ -278,22 +208,6 @@ export const useMap = (
     }
   };
 
-  const handleContextChange = (context: string, callback?: () => void) => {
-    setContext(context);
-
-    if (callback) {
-      callback();
-    }
-  };
-
-  const handleFilterChange = (filter: string, callback?: () => void) => {
-    setFilter(filter);
-
-    if (callback) {
-      callback();
-    }
-  };
-
   const handleMarkerChange = (marker: MapCoordinatesValue) => {
     setMarker(marker);
   };
@@ -304,14 +218,10 @@ export const useMap = (
     sidebar,
     drawer,
     viewRef,
-    filter,
-    updateFilter,
-    context,
-    updateContext,
     zoom,
     setZoom,
-    updateZoom,
     center,
+    updateZoom,
     setCenter,
     updateCenter,
     bounds,
@@ -325,8 +235,6 @@ export const useMap = (
     handleDrawerOpen,
     handleDrawerClose,
     handleViewToggle,
-    handleContextChange,
-    handleFilterChange,
     handleMarkerChange,
     mapbox: mapboxRef.current,
   };

@@ -78,22 +78,21 @@ export const MapExploreView: React.FC<Props> = () => {
   const postId = params.entry_id as string;
   const tripId = params.journey_id as string;
 
-  const map = useMap(
-    {
-      sidebar: true,
-      context: params.context || MAP_CONTEXT_PARAMS.GLOBAL,
-      filter: params.filter || MAP_FILTER_PARAMS.POST,
-      center:
-        params.lat && params.lon
-          ? {
-              lat: parseFloat(params.lat),
-              lon: parseFloat(params.lon),
-            }
-          : undefined,
-      zoom: params.zoom ? parseFloat(params.zoom) : APP_CONFIG.MAP.DEFAULT.ZOOM,
-    },
-    { updateSearchParams: true },
-  );
+  const map = useMap({
+    sidebar: true,
+    context: params.context || MAP_CONTEXT_PARAMS.GLOBAL,
+    filter: params.filter || MAP_FILTER_PARAMS.POST,
+    center:
+      params.lat && params.lon
+        ? {
+            lat: parseFloat(params.lat),
+            lon: parseFloat(params.lon),
+          }
+        : undefined,
+    zoom: params.zoom ? parseFloat(params.zoom) : APP_CONFIG.MAP.DEFAULT.ZOOM,
+  });
+
+  const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
 
   const [search, setSearch] = useState<{
     value?: string;
@@ -119,13 +118,6 @@ export const MapExploreView: React.FC<Props> = () => {
     post: filter === MAP_FILTER_PARAMS.POST,
     journey: filter === MAP_FILTER_PARAMS.JOURNEY,
   };
-
-  const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
-  // const [userId, setUserId] = useState<string | null>(params.user || null);
-  // const [postId, setPostId] = useState<string | null>(params.entry_id || null);
-  // const [tripId, setTripId] = useState<string | null>(
-  //   params.journey_id || null,
-  // );
 
   const mapQuery = useQuery({
     queryKey: userId
@@ -248,19 +240,6 @@ export const MapExploreView: React.FC<Props> = () => {
   const isPostSelected = (id: string): boolean =>
     postId ? postId === id : false;
 
-  const handleMapLoad: MapLoadHandler = (data) => {
-    const {
-      center: { lat = 0, lon = 0 },
-      zoom = 0,
-    } = data;
-    map.handleLoad(data);
-    // setParams({
-    //   lat: `${lat}`,
-    //   lon: `${lon}`,
-    //   zoom: `${zoom}`,
-    // });
-  };
-
   const handleMapMove: MapMoveHandler = (data) => {
     const {
       center: { lat = 0, lon = 0 },
@@ -366,6 +345,7 @@ export const MapExploreView: React.FC<Props> = () => {
       context: MAP_CONTEXT_PARAMS.JOURNEY,
       filter: MAP_FILTER_PARAMS.POST,
       journey_id: tripId,
+      entry_id: null,
     });
   };
 
@@ -376,6 +356,7 @@ export const MapExploreView: React.FC<Props> = () => {
       context: MAP_CONTEXT_PARAMS.USER,
       filter: MAP_FILTER_PARAMS.POST,
       user: username,
+      entry_id: null,
     });
   };
 
@@ -384,6 +365,7 @@ export const MapExploreView: React.FC<Props> = () => {
       context: MAP_CONTEXT_PARAMS.GLOBAL,
       filter: MAP_FILTER_PARAMS.POST,
       user: null,
+      entry_id: null,
     });
   };
 
@@ -394,6 +376,7 @@ export const MapExploreView: React.FC<Props> = () => {
         filter: MAP_FILTER_PARAMS.JOURNEY,
         user: userId,
         journey_id: null,
+        entry_id: null,
       });
     }
   };
@@ -692,7 +675,7 @@ export const MapExploreView: React.FC<Props> = () => {
               onSourceClick={(sourceId) => {
                 handlePostDrawerOpen(sourceId);
               }}
-              onLoad={handleMapLoad}
+              onLoad={map.handleLoad}
               onMove={handleMapMove}
             />
           )}

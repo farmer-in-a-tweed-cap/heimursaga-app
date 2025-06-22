@@ -55,45 +55,6 @@ export const MapDialog: React.FC<Props> = ({
     zoom: coordinates?.alt,
   });
 
-  // const [map, setMap] = useState<{
-  //   lat: number;
-  //   lon: number;
-  //   alt: number;
-  //   marker?: {
-  //     lat: number;
-  //     lon: number;
-  //   };
-  // }>({
-  //   lat: coordinates?.lat,
-  //   lon: coordinates?.lon,
-  //   alt: coordinates?.alt,
-  // });
-
-  // const handleMapMove = (data: { lat: number; lon: number; alt: number }) => {
-  //   const { lat, lon, alt } = data;
-
-  //   setMap((map) => ({
-  //     ...map,
-  //     lat,
-  //     lon,
-  //     alt,
-  //   }));
-  // };
-
-  // const handleMarkerChange = (marker: { lat: number; lon: number }) => {
-  //   const { lat, lon } = marker;
-
-  //   setMap((map) => ({
-  //     ...map,
-  //     lat,
-  //     lon,
-  //     marker: {
-  //       lat,
-  //       lon,
-  //     },
-  //   }));
-  // };
-
   const handleSubmit = () => {
     const {
       center: { lat, lon },
