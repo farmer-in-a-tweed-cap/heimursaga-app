@@ -1,14 +1,9 @@
 'use client';
 
-import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import {
-  followUserMutation,
-  postBookmarkMutation,
-  unfollowUserMutation,
-} from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 import { FollowButton } from '@/components';
 import { DEBOUNCE_TIMEOUT } from '@/constants';
@@ -29,72 +24,56 @@ export const UserFollowButton: React.FC<Props> = ({
   });
   const [loading, setLoading] = useState<boolean>(false);
 
-  const mutations = {
-    follow: useMutation({
-      mutationFn: followUserMutation.mutationFn,
-      onSuccess: () => {
-        setLoading(false);
-      },
-      onError: () => {
-        // cancel follow on error
+  const follow = useDebouncedCallback(
+    async ({ username }: { username: string }) => {
+      const { success } = await apiClient.followUser({ username });
+
+      if (!success) {
         setState(({ followed, ...state }) => ({
           ...state,
           followed: !followed,
         }));
-
-        setLoading(false);
-      },
-    }),
-    unfollow: useMutation({
-      mutationFn: unfollowUserMutation.mutationFn,
-      onSuccess: () => {
-        setLoading(false);
-      },
-      onError: () => {
-        // cancel unfollow on error
-        setState(({ followed, ...state }) => ({
-          ...state,
-          followed: !followed,
-        }));
-
-        setLoading(false);
-      },
-    }),
-  };
-
-  const debouncedMutation = useDebouncedCallback(
-    ({ username }: { username: string }) => {
-      if (!state.followed) {
-        console.log('follow', username);
-        // follow if not followed
-
-        setState(({ ...state }) => ({
-          ...state,
-          followed: true,
-        }));
-
-        mutations.follow.mutate({ username });
-      } else {
-        console.log('unfollow', username);
-
-        // unfollow if followed
-        setState(({ ...state }) => ({
-          ...state,
-          followed: false,
-        }));
-
-        mutations.unfollow.mutate({ username });
       }
+
+      setLoading(false);
     },
     DEBOUNCE_TIMEOUT,
   );
 
-  const handleClick = () => {
+  const unfollow = useDebouncedCallback(
+    async ({ username }: { username: string }) => {
+      const { success } = await apiClient.unfollowUser({ username });
+
+      if (!success) {
+        setState(({ followed, ...state }) => ({
+          ...state,
+          followed: !followed,
+        }));
+      }
+
+      setLoading(false);
+    },
+    DEBOUNCE_TIMEOUT,
+  );
+
+  const handleClick = async () => {
     if (!username) return;
 
-    setLoading(true);
+    if (!state.followed) {
+      setState(({ ...state }) => ({
+        ...state,
+        followed: true,
+      }));
 
-    debouncedMutation({ username });
+      await follow({ username });
+    } else {
+      setState(({ ...state }) => ({
+        ...state,
+        followed: false,
+      }));
+
+      await unfollow({ username });
+    }
   };
 
   return (

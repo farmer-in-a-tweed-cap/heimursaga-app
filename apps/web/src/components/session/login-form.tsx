@@ -22,7 +22,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { apiClient, loginMutation } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 import { redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';

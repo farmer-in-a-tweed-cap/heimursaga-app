@@ -3,7 +3,7 @@
 import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { useSession } from '@/hooks';
 
@@ -13,7 +13,7 @@ export const SponsorshipTierView = () => {
   const session = useSession();
 
   const sponsorshipTierQuery = useQuery({
-    queryKey: [QUERY_KEYS.SPONSORSHIP_TIERS],
+    queryKey: [API_QUERY_KEYS.SPONSORSHIP_TIERS],
     queryFn: () => apiClient.getSponsorshipTiers().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,

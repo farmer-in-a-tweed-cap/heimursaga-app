@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { useSession } from '@/hooks';
 
@@ -12,7 +12,7 @@ export const AdminDashboardPostsView = () => {
   const session = useSession();
 
   const postQuery = useQuery({
-    queryKey: [QUERY_KEYS.POSTS],
+    queryKey: [API_QUERY_KEYS.POSTS],
     queryFn: () => apiClient.getPosts().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,

@@ -17,14 +17,12 @@ import {
   Input,
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
-import { cn } from '@repo/ui/lib/utils';
-import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { updatePasswordMutation } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 import { redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
@@ -52,31 +50,9 @@ type Props = {
 };
 
 export const ChangePasswordForm: React.FC<Props> = ({ token }) => {
-  const [loading, setLoading] = useState<boolean>(false);
-
   const toast = useToast();
 
-  const mutation = useMutation({
-    mutationFn: updatePasswordMutation.mutationFn,
-    onSuccess: () => {
-      toast({ type: 'success', message: 'password successfully changed' });
-
-      // redirect to the login page
-      setTimeout(() => {
-        redirect(ROUTER.LOGIN);
-      }, 500);
-    },
-    onError: (e) => {
-      console.log('error', e);
-      const message = e?.message;
-
-      if (message) {
-        toast({ type: 'error', message });
-      }
-
-      setLoading(false);
-    },
-  });
+  const [loading, setLoading] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -88,16 +64,27 @@ export const ChangePasswordForm: React.FC<Props> = ({ token }) => {
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      if (token) {
+      try {
+        if (!token) return;
+
         const { password } = values;
 
         setLoading(true);
 
-        mutation.mutate({
-          token,
-          password,
+        const { success } = await apiClient.updatePassword({
+          query: {},
+          payload: { token, password },
         });
-      } else {
+
+        if (success) {
+          redirect(ROUTER.LOGIN);
+        } else {
+          toast({ type: 'error', message: 'token is invalid' });
+        }
+
+        setLoading(false);
+      } catch (e) {
+        setLoading(false);
         toast({ type: 'error', message: 'token is invalid' });
       }
     },

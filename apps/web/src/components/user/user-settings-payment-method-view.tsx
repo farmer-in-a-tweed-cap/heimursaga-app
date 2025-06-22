@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { MODALS, PaymentMethodModalProps } from '@/components';
 import { useModal, useSession } from '@/hooks';
@@ -27,7 +27,7 @@ export const UserSettingsPaymentMethodView = () => {
   const toast = useToast();
 
   const paymentMethodQuery = useQuery({
-    queryKey: [QUERY_KEYS.USER_PAYMENT_METHODS],
+    queryKey: [API_QUERY_KEYS.USER_PAYMENT_METHODS],
     queryFn: () => apiClient.getUserPaymentMethods().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,

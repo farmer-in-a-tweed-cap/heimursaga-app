@@ -6,7 +6,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { MAP_LAYERS, MAP_SOURCES, MapPreview } from '@/components';
 import { APP_CONFIG } from '@/config';
@@ -20,7 +20,7 @@ type Props = {
 
 export const UserMapBanner: React.FC<Props> = ({ username, className }) => {
   const mapQuery = useQuery({
-    queryKey: [QUERY_KEYS.MAP, username],
+    queryKey: [API_QUERY_KEYS.MAP, username],
     queryFn: () =>
       apiClient
         .mapQuery({ context: MapQueryContext.USER, username })

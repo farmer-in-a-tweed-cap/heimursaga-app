@@ -1,11 +1,10 @@
 'use client';
 
 import { BookmarkButton } from '../button';
-import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { postBookmarkMutation } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 import { DEBOUNCE_TIMEOUT } from '@/constants';
 
@@ -31,35 +30,25 @@ export const PostBookmarkButton: React.FC<Props> = ({
   });
   const [loading, setLoading] = useState<boolean>(false);
 
-  const mutation = useMutation({
-    mutationFn: postBookmarkMutation.mutationFn,
-    onSuccess: ({ bookmarksCount }) => {
-      console.log({ bookmarksCount });
+  const bookmarkPost = useDebouncedCallback(
+    async ({ postId }: { postId: string }) => {
+      const { success, data } = await apiClient.bookmarkPost({ postId });
+      const bookmarksCount = data?.bookmarksCount || 0;
 
-      setState(({ bookmarksCount, ...state }) => ({
-        ...state,
-        bookmarksCount: bookmarksCount,
-      }));
-
-      setLoading(false);
-    },
-    onError: () => {
-      // cancel like on error
-      setState(({ bookmarked, bookmarksCount, ...state }) => ({
-        ...state,
-        bookmarked: !bookmarked,
-        bookmarksCount: bookmarksCount - 1,
-      }));
+      if (success) {
+        setState(({ ...state }) => ({
+          ...state,
+          bookmarksCount,
+        }));
+      } else {
+        setState(({ bookmarked, bookmarksCount, ...state }) => ({
+          ...state,
+          bookmarked: !bookmarked,
+          bookmarksCount: bookmarksCount - 1,
+        }));
+      }
 
       setLoading(false);
-    },
-  });
-
-  const debouncedMutation = useDebouncedCallback(
-    ({ postId }: { postId: string }) => {
-      console.log('bookmark');
-
-      mutation.mutate({ postId });
     },
     DEBOUNCE_TIMEOUT,
   );
@@ -75,7 +64,7 @@ export const PostBookmarkButton: React.FC<Props> = ({
 
     setLoading(true);
 
-    debouncedMutation({ postId });
+    bookmarkPost({ postId });
   };
 
   return (

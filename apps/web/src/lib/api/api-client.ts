@@ -18,10 +18,8 @@ import {
   IPayoutMethodPlatformLinkGetResponse,
   IPostCreatePayload,
   IPostCreateResponse,
-  IPostDetail,
   IPostGetByIdResponse,
   IPostInsightsGetResponse,
-  IPostQueryMapResponse,
   IPostQueryResponse,
   IPostUpdatePayload,
   ISessionUserGetResponse,
@@ -67,7 +65,7 @@ import {
   API_METHODS,
   API_ROUTER,
   Api,
-} from './api-router';
+} from './api';
 
 const baseUrl = `${process.env.NEXT_PUBLIC_APP_BASE_URL}/api`;
 
@@ -117,10 +115,10 @@ export const apiClient = {
       body: JSON.stringify({}),
       ...config,
     }),
-  resetPassword: async (body: IPasswordResetPayload) =>
+  resetPassword: async (payload: IPasswordResetPayload) =>
     api.request<void>(API_ROUTER.RESET_PASSWORD, {
       method: API_METHODS.POST,
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     }),
   updatePassword: async ({
     payload,
@@ -760,4 +758,43 @@ export const apiClient = {
       }
     },
   },
+};
+
+export const API_QUERY_KEYS = {
+  LOGIN: 'login',
+  SIGNUP: 'signup',
+  POSTS: 'posts',
+  GET_POSTS: 'get_posts',
+  GET_USER_POSTS: 'get_user_posts',
+  QUERY_POST_MAP: 'query_post_map',
+  GET_SESSION_USER: 'get_session_user',
+  GET_SESSION: 'get_session',
+  MAP: {
+    QUERY: 'map_query',
+  },
+  USERS: 'users',
+  USER_FOLLOWERS: 'user_followers',
+  USER_FOLLOWING: 'user_following',
+  USER_FEED: 'user_feed',
+  USER_BOOKMARKS: 'user_bookmarks',
+  USER_DRAFTS: 'user_drafts',
+  USER_SETTINGS_PROFILE: 'user_settings_profile',
+  USER_PAYMENT_METHODS: 'user_payment_methods,',
+  USER: {
+    POSTS: 'user_posts',
+    NOTIFICATIONS: 'user_notifications',
+    MAP: 'user_map',
+    SPONSORSHIPS: 'user_sponsorships',
+    BOOKMARKS: 'user_bookmarks',
+  },
+  MEMBERSHIPS: 'memberships',
+  PAYOUT_METHODS: 'payout_methods',
+  PAYOUTS: 'payouts',
+  BALANCE: 'balance',
+  SPONSORSHIPS: 'sponsorships',
+  SPONSORSHIP_TIERS: 'sponsorship_tiers',
+  INSIGHTS: {
+    POST: 'post_insights',
+  },
+  TRIPS: 'trips',
 };

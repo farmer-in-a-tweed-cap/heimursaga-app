@@ -13,7 +13,7 @@ import { useToast } from '@repo/ui/hooks';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { useModal, useSession } from '@/hooks';
 
@@ -27,14 +27,14 @@ export const PayoutWithdrawView = () => {
   const [loading, setLoading] = useState<boolean>(false);
 
   const balanceQuery = useQuery({
-    queryKey: [QUERY_KEYS.BALANCE],
+    queryKey: [API_QUERY_KEYS.BALANCE],
     queryFn: () => apiClient.getBalance().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,
   });
 
   const payoutQuery = useQuery({
-    queryKey: [QUERY_KEYS.PAYOUTS],
+    queryKey: [API_QUERY_KEYS.PAYOUTS],
     queryFn: () => apiClient.getPayouts().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,

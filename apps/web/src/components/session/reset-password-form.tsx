@@ -17,13 +17,11 @@ import {
   Input,
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
-import { cn } from '@repo/ui/lib/utils';
-import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { resetPasswordMutation } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 import { zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
@@ -38,29 +36,9 @@ const schema = z.object({
 });
 
 export const ResetPasswordForm = () => {
-  const [loading, setLoading] = useState<boolean>(false);
-
   const toast = useToast();
 
-  const mutation = useMutation({
-    mutationFn: resetPasswordMutation.mutationFn,
-    onSuccess: () => {
-      toast({ type: 'success', message: 'we sent you a link' });
-      setLoading(false);
-    },
-    onError: (e) => {
-      console.log('error', e);
-      const message = e?.message;
-
-      if (message) {
-        form.setError('email', { message });
-      } else {
-        form.setError('email', { message: `something went wrong` });
-      }
-
-      setLoading(false);
-    },
-  });
+  const [loading, setLoading] = useState<boolean>(false);
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -71,8 +49,25 @@ export const ResetPasswordForm = () => {
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
-      setLoading(true);
-      mutation.mutate(values);
+      try {
+        const { email } = values;
+
+        setLoading(true);
+
+        // reset password
+        const { success } = await apiClient.resetPassword({ email });
+
+        if (success) {
+          toast({ type: 'success', message: 'we sent you a reset link.' });
+        } else {
+          toast({ type: 'success', message: 'something went wrong.' });
+        }
+
+        setLoading(false);
+      } catch (e) {
+        toast({ type: 'success', message: 'something went wrong.' });
+        setLoading(false);
+      }
     },
   );
 

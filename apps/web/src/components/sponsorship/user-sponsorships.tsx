@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { useSession } from '@/hooks';
 
@@ -12,7 +12,7 @@ export const UserSponsorships = () => {
   const session = useSession();
 
   const sponsorshipQuery = useQuery({
-    queryKey: [QUERY_KEYS.SPONSORSHIPS],
+    queryKey: [API_QUERY_KEYS.SPONSORSHIPS],
     queryFn: () => apiClient.getUserSponsorships().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,
