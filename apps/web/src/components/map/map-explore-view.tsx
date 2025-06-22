@@ -1,7 +1,8 @@
 'use client';
 
 import { MapSearchbar, MapSearchbarSubmitHandler } from '../search';
-import { ChipGroup, LoadingSpinner } from '@repo/ui/components';
+import { MapQueryContext, MapQueryFilterParam } from '@repo/types';
+import { Button, ChipGroup, LoadingSpinner } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -14,6 +15,7 @@ import {
   Map,
   MapDrawer,
   MapSidebar,
+  MapTripCard,
   MapViewContainer,
   MapViewSwitch,
   PostCard,
@@ -24,6 +26,8 @@ import { APP_CONFIG } from '@/config';
 import {
   MAP_CONTEXT_PARAMS,
   MAP_FILTER_PARAMS,
+  MapLoadHandler,
+  MapMoveHandler,
   useAppParams,
   useMap,
   useMapbox,
@@ -31,7 +35,6 @@ import {
   useSession,
 } from '@/hooks';
 import { LOCALES } from '@/locales';
-import { ROUTER } from '@/router';
 
 type Waypoint = {
   lat: number;
@@ -42,6 +45,7 @@ type Waypoint = {
     title: string;
     content: string;
     bookmarked: boolean;
+    date?: Date;
     author: {
       username: string;
       name: string;
@@ -60,21 +64,24 @@ export const MapExploreView: React.FC<Props> = () => {
   const session = useSession();
   const screen = useScreen();
 
-  const { params, updateParams } = useAppParams({
+  const { params, setParams } = useAppParams({
     context: MAP_CONTEXT_PARAMS.GLOBAL,
+    filter: MAP_FILTER_PARAMS.POST,
     lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON.toString(),
     lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT.toString(),
     zoom: APP_CONFIG.MAP.DEFAULT.ZOOM.toString(),
   });
 
+  const filter = params.filter as MapQueryFilterParam;
+  const context = params.context as MapQueryContext;
+  const userId = params.user as string;
+  const postId = params.entry_id as string;
+  const tripId = params.journey_id as string;
+
   const map = useMap(
     {
       sidebar: true,
-      context: params.context
-        ? params.context
-        : params.user
-          ? MAP_CONTEXT_PARAMS.USER
-          : MAP_CONTEXT_PARAMS.GLOBAL,
+      context: params.context || MAP_CONTEXT_PARAMS.GLOBAL,
       filter: params.filter || MAP_FILTER_PARAMS.POST,
       center:
         params.lat && params.lon
@@ -102,26 +109,30 @@ export const MapExploreView: React.FC<Props> = () => {
 
   const contexts = {
     map: [MAP_CONTEXT_PARAMS.GLOBAL, MAP_CONTEXT_PARAMS.FOLLOWING].some(
-      (ctx) => ctx === map.context,
+      (ctx) => ctx === context,
     ),
-    user: map.context === MAP_CONTEXT_PARAMS.USER,
+    user: context === MAP_CONTEXT_PARAMS.USER,
+    journey: context === MAP_CONTEXT_PARAMS.JOURNEY,
   };
 
   const filters = {
-    post: map.filter === MAP_FILTER_PARAMS.POST,
-    journey: map.filter === MAP_FILTER_PARAMS.JOURNEY,
+    post: filter === MAP_FILTER_PARAMS.POST,
+    journey: filter === MAP_FILTER_PARAMS.JOURNEY,
   };
 
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
-  const [userId, setUserId] = useState<string | null>(params.user || null);
-  const [postId, setPostId] = useState<string | null>(params.entry_id || null);
+  // const [userId, setUserId] = useState<string | null>(params.user || null);
+  // const [postId, setPostId] = useState<string | null>(params.entry_id || null);
+  // const [tripId, setTripId] = useState<string | null>(
+  //   params.journey_id || null,
+  // );
 
   const mapQuery = useQuery({
     queryKey: userId
       ? [
           QUERY_KEYS.MAP.QUERY,
           userId,
-          map.context,
+          context,
           map.bounds
             ? [
                 map.bounds.ne.lat,
@@ -134,7 +145,7 @@ export const MapExploreView: React.FC<Props> = () => {
         ]
       : [
           QUERY_KEYS.MAP.QUERY,
-          map.context,
+          context,
           map.bounds
             ? [
                 map.bounds.ne.lat,
@@ -148,12 +159,20 @@ export const MapExploreView: React.FC<Props> = () => {
     queryFn: async () =>
       apiClient
         .mapQuery({
-          context: map.context,
+          context: context,
           username:
-            map.context === MAP_CONTEXT_PARAMS.USER
-              ? (userId as string)
+            context === MAP_CONTEXT_PARAMS.USER
+              ? userId
+                ? userId
+                : undefined
               : undefined,
           location: { bounds: map.bounds },
+          tripId:
+            context === MAP_CONTEXT_PARAMS.JOURNEY
+              ? tripId
+                ? tripId
+                : undefined
+              : undefined,
           search:
             search.context === 'text'
               ? search.query
@@ -162,7 +181,15 @@ export const MapExploreView: React.FC<Props> = () => {
               : undefined,
         })
         .then(({ data }) => data),
-    enabled: map.loaded && !!map.bounds,
+    enabled:
+      map.loaded &&
+      !!map.bounds &&
+      [
+        MAP_CONTEXT_PARAMS.GLOBAL,
+        MAP_CONTEXT_PARAMS.FOLLOWING,
+        MAP_CONTEXT_PARAMS.USER,
+        MAP_CONTEXT_PARAMS.JOURNEY,
+      ].some((ctx) => ctx === context),
     retry: 0,
   });
 
@@ -185,49 +212,104 @@ export const MapExploreView: React.FC<Props> = () => {
     enabled: !!postId,
   });
 
-  const tripQuery = useQuery({
+  const tripsQuery = useQuery({
     queryKey: [QUERY_KEYS.TRIPS, userId],
     queryFn: async () =>
       apiClient
         .getTripsByUsername({ username: userId as string })
         .then(({ data }) => data),
-    enabled: !!userId && map.filter === MAP_FILTER_PARAMS.JOURNEY,
+    enabled: !!userId && filter === MAP_FILTER_PARAMS.JOURNEY,
+  });
+
+  const tripQuery = useQuery({
+    queryKey: [QUERY_KEYS.TRIPS, tripId],
+    queryFn: async () =>
+      apiClient
+        .getTripById({ query: { tripId: tripId as string } })
+        .then(({ data }) => data),
+    enabled: !!tripId && context === MAP_FILTER_PARAMS.JOURNEY,
   });
 
   const post = postQuery?.data;
   const postLoading = postQuery.isLoading;
-
   const user = userQuery.data;
+  const showClusters = contexts.map || contexts.user;
 
-  const waypointLoading = mapQuery.isPending || mapQuery.isLoading;
-  const waypointResults = mapQuery.data?.results || 0;
+  const mapLoading = mapQuery.isPending || mapQuery.isLoading;
+  const mapResults = mapQuery.data?.results || 0;
+
+  const trips = tripsQuery.data?.data || [];
+  const tripsLoading = tripsQuery.isPending || tripsQuery.isLoading;
+  const tripsResults = tripsQuery.data?.results || 0;
+
+  const trip = tripQuery.data;
+  const tripLoading = tripQuery.isPending || tripQuery.isLoading;
 
   const isPostSelected = (id: string): boolean =>
     postId ? postId === id : false;
 
-  const handlePostDrawerOpen = ({ postId }: { postId: string }) => {
+  const handleMapLoad: MapLoadHandler = (data) => {
+    const {
+      center: { lat = 0, lon = 0 },
+      zoom = 0,
+    } = data;
+    map.handleLoad(data);
+    // setParams({
+    //   lat: `${lat}`,
+    //   lon: `${lon}`,
+    //   zoom: `${zoom}`,
+    // });
+  };
+
+  const handleMapMove: MapMoveHandler = (data) => {
+    const {
+      center: { lat = 0, lon = 0 },
+      zoom = 0,
+    } = data;
+    map.handleMove(data);
+    setParams({
+      lat: `${lat}`,
+      lon: `${lon}`,
+      zoom: `${zoom}`,
+    });
+  };
+
+  const handlePostDrawerOpen = (postId: string) => {
     map.handleDrawerOpen();
-    setPostId(postId);
-    updateParams({ entry_id: postId });
+    setParams({ entry_id: postId });
   };
 
   const handlePostDrawerClose = () => {
     map.handleDrawerClose();
-    setPostId(null);
-    updateParams({ entry_id: null });
+    setParams({ entry_id: null });
   };
 
-  const handleContextChange = (context: string) =>
-    map.handleContextChange(context, () => {
-      updateParams({ context });
-      mapQuery.refetch();
-    });
+  const handleContextChange = (context: string) => {
+    switch (context) {
+      case MapQueryContext.GLOBAL:
+        setParams({ context, filter: MapQueryFilterParam.POST });
+        break;
+      case MapQueryContext.FOLLOWING:
+        setParams({ context, filter: MapQueryFilterParam.POST });
+        break;
+      case MapQueryContext.USER:
+        setParams({ context, filter: MapQueryFilterParam.POST });
+        break;
+      case MapQueryContext.TRIP:
+        setParams({ context, filter: MapQueryFilterParam.TRIP });
+        break;
+      default:
+        setParams({
+          context: MapQueryContext.GLOBAL,
+          filter: MapQueryFilterParam.POST,
+        });
+        break;
+    }
+  };
 
-  const handleFilterChange = (filter: string) =>
-    map.handleFilterChange(filter, () => {
-      updateParams({ filter });
-      mapQuery.refetch();
-    });
+  const handleFilterChange = (filter: string) => {
+    setParams({ filter });
+  };
 
   const handleSearchChange = (value: string) => {
     if (value) {
@@ -237,7 +319,7 @@ export const MapExploreView: React.FC<Props> = () => {
 
   const handleSearchClear = () => {
     setSearch((prev) => ({ ...prev, value: '', query: null }));
-    updateParams({ search: null });
+    setParams({ search: null });
   };
 
   const handleSearchSubmit: MapSearchbarSubmitHandler = (data) => {
@@ -246,7 +328,7 @@ export const MapExploreView: React.FC<Props> = () => {
 
     if (context === 'text') {
       setSearch((prev) => ({ ...prev, query, context: 'text' }));
-      updateParams({ search: query });
+      setParams({ search: query });
     }
 
     if (context === 'location') {
@@ -269,7 +351,7 @@ export const MapExploreView: React.FC<Props> = () => {
         };
 
         if (query && lon && lat) {
-          updateParams({ search: query, lon: `${lon}`, lat: `${lat}` });
+          setParams({ search: query, lon: `${lon}`, lat: `${lat}` });
         }
 
         map.updateBounds(bbox);
@@ -277,32 +359,43 @@ export const MapExploreView: React.FC<Props> = () => {
     }
   };
 
+  const handleTripClick = (tripId: string) => {
+    if (!tripId) return;
+
+    setParams({
+      context: MAP_CONTEXT_PARAMS.JOURNEY,
+      filter: MAP_FILTER_PARAMS.POST,
+      journey_id: tripId,
+    });
+  };
+
   const handleUserClick = (username: string) => {
     if (!username) return;
 
-    setUserId(username);
-    map.setContext(MAP_CONTEXT_PARAMS.USER);
-
-    updateParams({
+    setParams({
       context: MAP_CONTEXT_PARAMS.USER,
+      filter: MAP_FILTER_PARAMS.POST,
       user: username,
     });
-
-    mapQuery.refetch();
   };
 
   const handleUserBack = () => {
-    setUserId(null);
-    map.setContext(MAP_CONTEXT_PARAMS.GLOBAL);
-    map.setFilter(MAP_FILTER_PARAMS.POST);
-
-    mapQuery.refetch();
-
-    updateParams({
+    setParams({
       context: MAP_CONTEXT_PARAMS.GLOBAL,
       filter: MAP_FILTER_PARAMS.POST,
       user: null,
     });
+  };
+
+  const handleTripBack = () => {
+    if (userId) {
+      setParams({
+        context: MAP_CONTEXT_PARAMS.USER,
+        filter: MAP_FILTER_PARAMS.JOURNEY,
+        user: userId,
+        journey_id: null,
+      });
+    }
   };
 
   // update waypoints
@@ -314,21 +407,8 @@ export const MapExploreView: React.FC<Props> = () => {
   }, [mapQuery]);
 
   useEffect(() => {
-    // set default context
-    if (params.user) {
-      map.setContext(MAP_CONTEXT_PARAMS.USER);
-      updateParams({ context: MAP_CONTEXT_PARAMS.USER });
-      setUserId(params.user);
-    } else {
-      if (!params.context) {
-        map.setContext(MAP_CONTEXT_PARAMS.GLOBAL);
-        updateParams({ context: MAP_CONTEXT_PARAMS.GLOBAL });
-      }
-    }
-
-    // set default post id
+    // open post sidebar
     if (params.entry_id) {
-      setPostId(postId);
       map.handleDrawerOpen();
     }
   }, []);
@@ -359,7 +439,7 @@ export const MapExploreView: React.FC<Props> = () => {
               {session.logged && (
                 <div className="px-4 desktop:px-6 py-2">
                   <ChipGroup
-                    value={map.context}
+                    value={params.context as string}
                     items={[
                       {
                         value: MAP_CONTEXT_PARAMS.GLOBAL,
@@ -392,7 +472,7 @@ export const MapExploreView: React.FC<Props> = () => {
                   }}
                 />
                 <ChipGroup
-                  value={map.filter}
+                  value={filter}
                   items={[
                     {
                       value: MAP_FILTER_PARAMS.POST,
@@ -411,12 +491,25 @@ export const MapExploreView: React.FC<Props> = () => {
               </div>
             </div>
           )}
+          {contexts.journey && (
+            <div className="sticky top-0 left-0 right-0 w-full">
+              <MapTripCard
+                title={trip?.title || ''}
+                startDate={trip?.startDate}
+                endDate={trip?.endDate}
+                loading={tripLoading}
+                onBack={handleTripBack}
+              />
+            </div>
+          )}
           <div className="w-full h-auto flex flex-col gap-2 overflow-y-scroll no-scrollbar px-4 desktop:px-6 py-4 box-border">
-            {filters.post && (
+            {((contexts.map && filters.post) ||
+              (contexts.user && filters.post) ||
+              (contexts.journey && filters.post)) && (
               <>
-                {waypointLoading ? (
+                {mapLoading ? (
                   <LoadingSpinner />
-                ) : waypointResults >= 1 ? (
+                ) : mapResults >= 1 ? (
                   waypoints.map(({ date, post }, key) =>
                     post ? (
                       <PostCard
@@ -434,9 +527,7 @@ export const MapExploreView: React.FC<Props> = () => {
                             : undefined
                         }
                         selected={isPostSelected(post.id)}
-                        onClick={() =>
-                          handlePostDrawerOpen({ postId: post.id })
-                        }
+                        onClick={() => handlePostDrawerOpen(post.id)}
                       />
                     ) : (
                       <></>
@@ -447,17 +538,15 @@ export const MapExploreView: React.FC<Props> = () => {
                 )}
               </>
             )}
-
-            {filters.journey && (
+            {contexts.user && filters.journey && (
               <>
-                {tripQuery.isLoading || tripQuery.isPending ? (
+                {tripsLoading ? (
                   <LoadingSpinner />
-                ) : (tripQuery.data?.results || 0) >= 1 ? (
-                  (tripQuery.data?.data || []).map(
+                ) : tripsResults ? (
+                  trips.map(
                     ({ id, title, startDate, endDate, author }, key) => (
                       <TripCard
                         key={key}
-                        href={ROUTER.MAP.TRIPS.DETAIL(id)}
                         variant="public"
                         id={id}
                         title={title}
@@ -465,18 +554,7 @@ export const MapExploreView: React.FC<Props> = () => {
                         endDate={endDate}
                         waypoints={[]}
                         author={author}
-                        // date={date}
-                        // actions={{ like: false, bookmark: true, edit: false }}
-                        // userbar={
-                        //   post?.author
-                        //     ? {
-                        //         click: () =>
-                        //           handleUserClick(post?.author?.username),
-                        //       }
-                        //     : undefined
-                        // }
-                        // selected={isPostSelected(post.id)}
-                        // onClick={() => handlePostOpen(post.id)}
+                        onClick={() => handleTripClick(id)}
                       />
                     ),
                   )
@@ -519,36 +597,103 @@ export const MapExploreView: React.FC<Props> = () => {
               zoom={map.zoom}
               minZoom={1}
               maxZoom={15}
-              layers={[
-                { id: MAP_LAYERS.WAYPOINTS, source: MAP_SOURCES.WAYPOINTS },
-                { id: MAP_LAYERS.CLUSTERS, source: MAP_SOURCES.WAYPOINTS },
-                { id: MAP_LAYERS.CLUSTER_COUNT, source: MAP_SOURCES.WAYPOINTS },
-              ]}
-              sources={[
-                {
-                  sourceId: MAP_SOURCES.WAYPOINTS,
-                  type: 'point',
-                  data: waypoints.map(({ lat, lon, post }, key) => ({
-                    id: key,
-                    lat,
-                    lon,
-                    properties: post
-                      ? {
-                          id: post.id,
-                          title: post.title,
-                          content: post.content,
-                          // date: post.date,
-                        }
-                      : {},
-                  })),
-                  config: {
-                    cluster: true,
-                  },
-                },
-              ]}
-              onSourceClick={(postId) => handlePostDrawerOpen({ postId })}
-              onLoad={map.handleLoad}
-              onMove={map.handleMove}
+              layers={
+                contexts.journey && filters.post
+                  ? [
+                      {
+                        id: MAP_LAYERS.WAYPOINT_LINES,
+                        source: MAP_SOURCES.WAYPOINT_LINES,
+                      },
+                      {
+                        id: MAP_LAYERS.WAYPOINTS,
+                        source: MAP_SOURCES.WAYPOINTS,
+                      },
+                      {
+                        id: MAP_LAYERS.WAYPOINT_ORDER_NUMBERS,
+                        source: MAP_SOURCES.WAYPOINTS,
+                      },
+                    ]
+                  : (contexts.map || contexts.user) && filters.post
+                    ? [
+                        {
+                          id: MAP_LAYERS.WAYPOINTS,
+                          source: MAP_SOURCES.WAYPOINTS,
+                        },
+                        {
+                          id: MAP_LAYERS.CLUSTERS,
+                          source: MAP_SOURCES.WAYPOINTS,
+                        },
+                        {
+                          id: MAP_LAYERS.CLUSTER_COUNT,
+                          source: MAP_SOURCES.WAYPOINTS,
+                        },
+                      ]
+                    : []
+              }
+              sources={
+                contexts.journey && filters.post
+                  ? [
+                      {
+                        sourceId: MAP_SOURCES.WAYPOINTS,
+                        type: 'point',
+                        data: waypoints.map(({ lat, lon, post }, key) => ({
+                          id: key,
+                          lat,
+                          lon,
+                          properties: post
+                            ? {
+                                id: post.id,
+                                title: post.title,
+                                content: post.content,
+                                date: post?.date || new Date(),
+                              }
+                            : {},
+                        })),
+                        config: {
+                          cluster: showClusters,
+                        },
+                      },
+                      {
+                        sourceId: MAP_SOURCES.WAYPOINT_LINES,
+                        type: 'line',
+                        data: waypoints.map(({ lat, lon }, key) => ({
+                          id: key,
+                          lat,
+                          lon,
+                          properties: {},
+                        })),
+                      },
+                    ]
+                  : (contexts.map || contexts.user) && filters.post
+                    ? [
+                        {
+                          sourceId: MAP_SOURCES.WAYPOINTS,
+                          type: 'point',
+                          data: waypoints.map(({ lat, lon, post }, key) => ({
+                            id: key,
+                            lat,
+                            lon,
+                            properties: post
+                              ? {
+                                  id: post.id,
+                                  title: post.title,
+                                  content: post.content,
+                                  date: post?.date || new Date(),
+                                }
+                              : {},
+                          })),
+                          config: {
+                            cluster: showClusters,
+                          },
+                        },
+                      ]
+                    : []
+              }
+              onSourceClick={(sourceId) => {
+                handlePostDrawerOpen(sourceId);
+              }}
+              onLoad={handleMapLoad}
+              onMove={handleMapMove}
             />
           )}
         </div>
