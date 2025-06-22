@@ -164,7 +164,9 @@ export const Map: React.FC<Props> = ({
   onSourceClick,
 }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
+
   const isInternalUpdate = useRef<boolean>(false);
+  const [isMobile, setIsMobile] = useState<boolean>(false);
 
   const [_waypointDraggable, setWaypointDraggable] = useState<{
     id: number;
@@ -172,8 +174,7 @@ export const Map: React.FC<Props> = ({
     lon: number;
   } | null>(null);
   const [waypointDraggable] = useDebounce(_waypointDraggable, 100);
-  const waypointDraggableId = useRef<number | null>(null);
-  const waypointDragging = useRef<boolean>(false);
+  // const [sources,setSources]=useState<MapSource[]>([])
 
   const [popup, setPopup] = useState<PopupState>({
     visible: false,
@@ -186,12 +187,11 @@ export const Map: React.FC<Props> = ({
   // refs
   const mapboxRef = useRef<mapboxgl.Map | null>(null);
   const mapboxContainerRef = useRef<any>(null);
-  const mapboxPopupRef = useRef<mapboxgl.Popup | null>(null);
+  // const mapboxPopupRef = useRef<mapboxgl.Popup | null>(null);
+  const waypointDraggableId = useRef<number | null>(null);
+  const waypointDragging = useRef<boolean>(false);
   const markerRef = useRef<Marker | null>(null);
-  const showPopupRef = useRef<boolean>(false);
-  const hoverPopupRef = useRef<boolean>(false);
   const waypointDraggableRef = useRef(waypointDraggable);
-
   const popupHovered = useRef<boolean>(false);
   const hoveredPointIdRef = useRef<string | null>(null);
   const hoveredClusterIdRef = useRef<string | null>(null);
@@ -253,7 +253,6 @@ export const Map: React.FC<Props> = ({
 
   const handleWaypointClick = ({
     event,
-    source,
   }: {
     event: MapMouseEvent;
     source: string;
@@ -275,12 +274,7 @@ export const Map: React.FC<Props> = ({
     source: string;
     state?: { [key: string]: number | string | boolean };
   }) => {
-    if (
-      !mapboxRef.current ||
-      !mapboxPopupRef.current ||
-      !event.features ||
-      !event.features?.length
-    )
+    if (!mapboxRef.current || !event.features || !event.features?.length)
       return;
 
     const canvas = mapboxRef.current.getCanvasContainer();
@@ -313,10 +307,11 @@ export const Map: React.FC<Props> = ({
     }
 
     // show popup
-    popupHovered.current = true;
+    if (!isMobile) {
+      popupHovered.current = true;
 
-    const { title = '', content = '', date = new Date() } = properties || {};
-    const popupContent = `
+      const { title = '', content = '', date = new Date() } = properties || {};
+      const popupContent = `
       <div class="flex flex-col justify-start">
         <div class="flex flex-col justify-start gap-0">
           <span class="text-base font-medium">${title}</span>
@@ -328,61 +323,14 @@ export const Map: React.FC<Props> = ({
       </div>
     `;
 
-    setPopup((prev) => ({
-      ...prev,
-      visible: true,
-      lat,
-      lon,
-      content: popupContent,
-    }));
-
-    // const { id, title, content, date } = properties;
-    // const coordinates = (feature.geometry as any).coordinates as [
-    //   number,
-    //   number,
-    // ];
-
-    // @todo
-    // set custom popup
-    // const popupContent = `
-    //   <div class="map-popup cursor-pointer">
-    //     <div class="flex flex-col justify-start gap-0">
-    //       <span class="text-base font-medium">${title}</span>
-    //       <span class="text-[0.7rem] font-normal text-gray-800">${dateformat(date).format('MMM DD')}</span>
-    //     </div>
-    //     <div class="">
-    //       <p class="text-sm font-normal text-gray-600">${content ? (content.length < 80 ? content : `${content.slice(0, 80)}..`) : ''}</p>
-    //     </div>
-    //   </div>
-    // `;
-
-    // setTimeout(() => {
-    //   mapboxPopupRef
-    //     .current!.setLngLat([coordinates[0], coordinates[1]])
-    //     .setHTML(popupContent)
-    //     .addTo(mapboxRef.current!);
-
-    //   const popupElement = mapboxPopupRef.current!._content;
-
-    //   if (popupElement) {
-    //     popupElement.addEventListener('mouseenter', () => {
-    //       hoverPopupRef.current = true;
-    //     });
-
-    //     popupElement.addEventListener('mouseleave', () => {
-    //       hoverPopupRef.current = false;
-
-    //       setTimeout(() => {
-    //         if (!hoverPopupRef.current) {
-    //           showPopupRef.current = false;
-    //           mapboxPopupRef.current!.remove();
-    //         }
-    //       }, 250);
-    //     });
-    //   }
-
-    //   showPopupRef.current = true;
-    // }, 250);
+      setPopup((prev) => ({
+        ...prev,
+        visible: true,
+        lat,
+        lon,
+        content: popupContent,
+      }));
+    }
   };
 
   const handleWaypointMouseLeave = ({
@@ -393,7 +341,7 @@ export const Map: React.FC<Props> = ({
     source: string;
     state?: { [key: string]: number | string | boolean };
   }) => {
-    if (!mapboxRef.current || !mapboxPopupRef.current) return;
+    if (!mapboxRef.current) return;
 
     const canvas = mapboxRef.current.getCanvasContainer();
     const pointId = hoveredPointIdRef.current;
@@ -428,24 +376,6 @@ export const Map: React.FC<Props> = ({
             },
       );
     }, 100);
-  };
-
-  const handleWaypointMouseMove = (e: MapMouseEvent | MapTouchEvent) => {
-    if (!mapboxRef.current) return;
-
-    const canvas = mapboxRef.current.getCanvasContainer();
-    const { lat, lng: lon } = e.lngLat;
-
-    canvas.style.cursor = 'grabbing';
-
-    if (waypointDraggableRef.current) {
-      const id = waypointDraggableRef.current.id;
-
-      console.log('move', { id, lat, lon });
-    }
-
-    // geojson.features[0].geometry.coordinates = [coords.lng, coords.lat];
-    // mapRef.current.getSource('point').setData(geojson);
   };
 
   const handleWaypointDraggableMouseDown = (
@@ -522,6 +452,9 @@ export const Map: React.FC<Props> = ({
   // update a marker on change
   useEffect(() => {
     if (!mapboxRef.current || !mapLoaded || !marker) return;
+
+    // define if it is mobile
+    setIsMobile('ontouchstart' in window || navigator.maxTouchPoints > 0);
 
     // remove existing marker if it exists
     if (markerRef.current) {
@@ -867,14 +800,6 @@ export const Map: React.FC<Props> = ({
 
     if (disabled) return;
 
-    // set popup
-    mapboxPopupRef.current = new mapboxgl.Popup({
-      closeOnMove: true,
-      closeButton: false,
-      anchor: 'top',
-      offset: 15,
-    });
-
     // handle events
     mapboxRef.current.on('click', (e) => {
       if (!mapboxRef.current) return;
@@ -943,46 +868,6 @@ export const Map: React.FC<Props> = ({
       }),
     );
 
-    // mapboxRef.current!.on('mouseover', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
-    //   if (
-    //     !mapboxRef.current ||
-    //     !mapboxPopupRef.current ||
-    //     !e.features ||
-    //     !e.features?.length
-    //   )
-    //     return;
-
-    //   // set cursor
-    //   canvas.style.cursor = 'move';
-
-    //   const feature = e.features[0];
-    //   const [lon, lat] = (feature.geometry as any).coordinates as [
-    //     number,
-    //     number,
-    //   ];
-
-    //   // console.log('waypoint drag', { lon, lat });
-
-    //   // const feature = e.features[0];
-    //   // const properties = feature?.properties as {
-    //   //   id: string;
-    //   //   title: string;
-    //   //   content: string;
-    //   //   date: string;
-    //   // };
-
-    //   // const { id, title, content, date } = properties;
-    //   // const coordinates = (feature.geometry as any).coordinates as [
-    //   //   number,
-    //   //   number,
-    //   // ];
-    // });
-
-    // mapboxRef.current!.on('mouseleave', MAP_LAYERS.WAYPOINTS_DRAGGABLE, () => {
-    //   // reset cursor
-    //   canvas.style.cursor = '';
-    // });
-
     mapboxRef.current!.on(
       'mousedown',
       MAP_LAYERS.WAYPOINTS_DRAGGABLE,
@@ -992,33 +877,6 @@ export const Map: React.FC<Props> = ({
     mapboxRef.current!.on('mouseup', handleWaypointDraggableMouseUp);
 
     mapboxRef.current!.on('mousemove', handleWaypointDraggableMouseMove);
-
-    // mapboxRef.current!.on('mousedown', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
-    //   e.preventDefault();
-
-    //   // ch
-    //   canvas.style.cursor = 'grab';
-
-    //   console.log('grab');
-
-    //   const { lat, lng: lon } = e.lngLat;
-    //   const properties = e.features?.[0]?.properties as { id: string };
-    //   const waypointId = properties.id;
-
-    //   if (waypointId) {
-    //     setWaypointDraggable({ id: waypointId, lat, lon });
-    //     mapboxRef.current!.on('mousemove', handleWaypointMouseMove);
-    //     mapboxRef.current!.once('mouseup', handleWaypointMouseUp);
-    //   }
-    // });
-
-    // @todo
-    // mapboxRef.current!.on('touchstart', MAP_LAYERS.WAYPOINTS_DRAGGABLE, (e) => {
-    //   if (e.points.length !== 1) return;
-    //   e.preventDefault();
-    //   mapboxRef.current!.on('touchmove', handleWaypointMouseMove);
-    //   mapboxRef.current!.once('touchend', handleWaypointMouseUp);
-    // });
 
     mapboxRef.current!.on('click', MAP_LAYERS.CLUSTERS, (e) => {
       if (!mapboxRef.current || !e.features || !e.features.length) return;
@@ -1131,7 +989,7 @@ export const Map: React.FC<Props> = ({
   return (
     <div className={cn(className, 'relative w-full h-full')}>
       {/* <div className="absolute bottom-5 right-5 z-20 bg-white text-black text-xs">
-        {JSON.stringify({ d: waypointDraggable })}
+        {JSON.stringify({ isMobile })}
       </div> */}
       <div
         id="map-container"

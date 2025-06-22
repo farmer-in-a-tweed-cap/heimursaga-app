@@ -11,6 +11,7 @@ import {
 } from '../map-ui';
 import { PostCard } from '../post';
 import { ITripDetail } from '@repo/types';
+import { LoadingSpinner, Skeleton } from '@repo/ui/components';
 import { useEffect, useState } from 'react';
 
 import { useMapbox } from '@/hooks';
@@ -202,15 +203,20 @@ export const MapTripCard: React.FC<{
   startDate?: Date;
   endDate?: Date;
   backUrl?: string;
+  loading?: boolean;
   onBack?: () => void;
-}> = ({ title, backUrl, onBack }) => {
+}> = ({ title, loading = false, backUrl, onBack }) => {
   return (
-    <div className="flex flex-row items-center justify-start box-border p-4 gap-4">
+    <div className="flex flex-row items-center justify-start box-border p-4 gap-2">
       <div className="">
         <BackButton href={backUrl} onClick={onBack} />
       </div>
-      <div>
-        <h1 className="text-lg font-medium">{title}</h1>
+      <div className="w-full h-[25px] overflow-hiddenflex flex-row justify-start items-center">
+        {loading ? (
+          <Skeleton className="w-[120px] h-[20px]" />
+        ) : (
+          <h1 className="text-lg font-medium">{title}</h1>
+        )}
       </div>
     </div>
   );
