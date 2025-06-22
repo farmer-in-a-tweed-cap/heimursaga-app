@@ -2,13 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { AdminUserTable } from './admin-user-table';
 
 export const AdminDashboardUsersView = () => {
   const userQuery = useQuery({
-    queryKey: [QUERY_KEYS.USERS],
+    queryKey: [API_QUERY_KEYS.USERS],
     queryFn: () => apiClient.getUsers().then(({ data }) => data),
     retry: 0,
   });

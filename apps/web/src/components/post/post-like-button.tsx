@@ -1,11 +1,10 @@
 'use client';
 
 import { LikeButton } from '../button';
-import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { postLikeMutation } from '@/lib/api';
+import { apiClient } from '@/lib/api';
 
 import { DEBOUNCE_TIMEOUT } from '@/constants';
 
@@ -26,33 +25,25 @@ export const PostLikeButton: React.FC<Props> = ({
   });
   const [loading, setLoading] = useState<boolean>(false);
 
-  const mutation = useMutation({
-    mutationFn: postLikeMutation.mutationFn,
-    onSuccess: ({ likesCount }) => {
-      console.log({ likesCount });
+  const likePost = useDebouncedCallback(
+    async ({ postId }: { postId: string }) => {
+      const { success, data } = await apiClient.likePost({ postId });
+      const likesCount = data?.likesCount || 0;
 
-      setState(({ likesCount, ...state }) => ({
-        ...state,
-        likesCount: likesCount,
-      }));
-
-      setLoading(false);
-    },
-    onError: () => {
-      // cancel like on error
-      setState(({ liked, likesCount, ...state }) => ({
-        ...state,
-        liked: !liked,
-        likesCount: likesCount - 1,
-      }));
+      if (success) {
+        setState(({ ...state }) => ({
+          ...state,
+          likesCount,
+        }));
+      } else {
+        setState(({ liked, likesCount, ...state }) => ({
+          ...state,
+          liked: !liked,
+          likesCount: likesCount - 1,
+        }));
+      }
 
       setLoading(false);
-    },
-  });
-
-  const debouncedMutation = useDebouncedCallback(
-    ({ postId }: { postId: string }) => {
-      mutation.mutate({ postId });
     },
     DEBOUNCE_TIMEOUT,
   );
@@ -68,7 +59,7 @@ export const PostLikeButton: React.FC<Props> = ({
 
     setLoading(true);
 
-    debouncedMutation({ postId });
+    likePost({ postId });
   };
 
   return (

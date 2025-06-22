@@ -3,14 +3,14 @@
 import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 
-import { getUserNotifications } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { UserNotificationCard } from './user-notification-card';
 
 export const UserNotifications = () => {
   const notificationsQuery = useQuery({
-    queryKey: [getUserNotifications.queryKey],
-    queryFn: () => getUserNotifications.queryFn(),
+    queryKey: [API_QUERY_KEYS.USER.NOTIFICATIONS],
+    queryFn: () => apiClient.getUserNotifications().then(({ data }) => data),
     retry: 0,
     staleTime: 5000,
     refetchOnMount: 'always',

@@ -7,7 +7,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import {
   MAP_LAYERS,
@@ -122,7 +122,7 @@ export const MapExploreView: React.FC<Props> = () => {
   const mapQuery = useQuery({
     queryKey: userId
       ? [
-          QUERY_KEYS.MAP.QUERY,
+          API_QUERY_KEYS.MAP.QUERY,
           userId,
           context,
           map.bounds
@@ -136,7 +136,7 @@ export const MapExploreView: React.FC<Props> = () => {
           search.query || 'search',
         ]
       : [
-          QUERY_KEYS.MAP.QUERY,
+          API_QUERY_KEYS.MAP.QUERY,
           context,
           map.bounds
             ? [
@@ -186,7 +186,7 @@ export const MapExploreView: React.FC<Props> = () => {
   });
 
   const userQuery = useQuery({
-    queryKey: [QUERY_KEYS.USERS, userId],
+    queryKey: [API_QUERY_KEYS.USERS, userId],
     queryFn: async () =>
       apiClient
         .getUserByUsername({ username: userId as string })
@@ -196,7 +196,7 @@ export const MapExploreView: React.FC<Props> = () => {
   });
 
   const postQuery = useQuery({
-    queryKey: [QUERY_KEYS.POSTS, postId],
+    queryKey: [API_QUERY_KEYS.POSTS, postId],
     queryFn: async () =>
       apiClient
         .getPostById({ query: { id: postId as string } })
@@ -205,7 +205,7 @@ export const MapExploreView: React.FC<Props> = () => {
   });
 
   const tripsQuery = useQuery({
-    queryKey: [QUERY_KEYS.TRIPS, userId],
+    queryKey: [API_QUERY_KEYS.TRIPS, userId],
     queryFn: async () =>
       apiClient
         .getTripsByUsername({ username: userId as string })
@@ -214,7 +214,7 @@ export const MapExploreView: React.FC<Props> = () => {
   });
 
   const tripQuery = useQuery({
-    queryKey: [QUERY_KEYS.TRIPS, tripId],
+    queryKey: [API_QUERY_KEYS.TRIPS, tripId],
     queryFn: async () =>
       apiClient
         .getTripById({ query: { tripId: tripId as string } })

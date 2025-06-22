@@ -3,7 +3,7 @@
 import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { ROUTER } from '@/router';
 
@@ -11,7 +11,7 @@ import { TripCard } from './trip-card';
 
 export const CreatorTrips = () => {
   const tripQuery = useQuery({
-    queryKey: [QUERY_KEYS.TRIPS],
+    queryKey: [API_QUERY_KEYS.TRIPS],
     queryFn: async () => apiClient.getTrips().then(({ data }) => data),
     retry: 0,
   });

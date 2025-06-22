@@ -3,7 +3,7 @@
 import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 
-import { QUERY_KEYS, apiClient, getUserBookmarks } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { PostCard } from '@/components';
 
@@ -11,7 +11,7 @@ type Props = {};
 
 export const UserBookmarks: React.FC<Props> = () => {
   const bookmarksQuery = useQuery({
-    queryKey: [QUERY_KEYS.USER.BOOKMARKS],
+    queryKey: [API_QUERY_KEYS.USER.BOOKMARKS],
     queryFn: () => apiClient.getUserBookmarks().then(({ data }) => data),
     retry: 0,
     staleTime: 5000,

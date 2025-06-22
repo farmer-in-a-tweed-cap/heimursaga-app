@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { useSession } from '@/hooks';
 import { dateformat } from '@/lib';
@@ -25,7 +25,7 @@ export const InsightPostView = () => {
   const session = useSession();
 
   const postInsightQuery = useQuery({
-    queryKey: [QUERY_KEYS.INSIGHTS.POST],
+    queryKey: [API_QUERY_KEYS.INSIGHTS.POST],
     queryFn: () => apiClient.getPostInsights().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,

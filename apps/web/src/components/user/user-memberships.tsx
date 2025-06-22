@@ -3,7 +3,7 @@
 import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { SponsorshipTierCard } from '@/components';
 
@@ -13,7 +13,7 @@ type Props = {
 
 export const UserMemberships: React.FC<Props> = ({ username }) => {
   const membershipQuery = useQuery({
-    queryKey: [QUERY_KEYS.MEMBERSHIPS, username],
+    queryKey: [API_QUERY_KEYS.MEMBERSHIPS, username],
     queryFn: () =>
       apiClient
         .getSponsorshipTiersByUsername({ username })

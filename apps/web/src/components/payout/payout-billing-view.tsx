@@ -19,7 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { useModal, useSession } from '@/hooks';
 import { getBaseAppUrl, redirect } from '@/lib';
@@ -34,7 +34,7 @@ export const PayoutBillingView = () => {
   const [loading, setLoading] = useState({ button: false });
 
   const payoutMethodQuery = useQuery({
-    queryKey: [QUERY_KEYS.PAYOUT_METHODS],
+    queryKey: [API_QUERY_KEYS.PAYOUT_METHODS],
     queryFn: () => apiClient.getUserPayoutMethods().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,

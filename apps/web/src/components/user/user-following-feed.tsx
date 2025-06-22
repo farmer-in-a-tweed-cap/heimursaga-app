@@ -3,7 +3,7 @@
 import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 
-import { getUserFollowingQuery } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { UserCard } from '@/components';
 import { ROUTER } from '@/router';
@@ -14,8 +14,9 @@ type Props = {
 
 export const UserFollowingFeed: React.FC<Props> = ({ username }) => {
   const followingQuery = useQuery({
-    queryKey: [getUserFollowingQuery.queryKey, username],
-    queryFn: () => getUserFollowingQuery.queryFn({ username }),
+    queryKey: [API_QUERY_KEYS.USER_FOLLOWING, username],
+    queryFn: () =>
+      apiClient.getUserFollowing({ username }).then(({ data }) => data),
     enabled: !!username,
     retry: 0,
   });

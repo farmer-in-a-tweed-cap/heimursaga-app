@@ -3,7 +3,7 @@
 import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
 
-import { QUERY_KEYS, apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { PostCard } from '@/components';
 import { useSession } from '@/hooks';
@@ -18,7 +18,7 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
   const me = session.me(username);
 
   const postsQuery = useQuery({
-    queryKey: [QUERY_KEYS.USER_FEED, username],
+    queryKey: [API_QUERY_KEYS.USER_FEED, username],
     queryFn: () =>
       apiClient.getUserPostsByUsername({ username }).then(({ data }) => data),
     retry: 0,
