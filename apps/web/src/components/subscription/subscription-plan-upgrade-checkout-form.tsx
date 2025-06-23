@@ -213,7 +213,7 @@ const FormComponent: React.FC<Props> = ({
           // complete the subscription plan upgrade
           if (stripePaymentCompleted) {
             await sleep(5000);
-            redirect(ROUTER.UPGRADE);
+            redirect(ROUTER.UPGRADE_SUCCESS);
             return;
           }
         } else {

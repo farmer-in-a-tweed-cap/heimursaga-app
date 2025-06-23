@@ -32,6 +32,7 @@ export const ROUTER = {
   },
   AUDIENCE: '/audience',
   UPGRADE: '/upgrade',
+  UPGRADE_SUCCESS: '/upgrade/success',
   UPGRADE_CHECKOUT: '/upgrade/checkout',
   NOTIFICATIONS: '/notifications',
   USER: {

@@ -44,6 +44,13 @@ export const LOCALES = {
       },
     },
     UPGRADE: {
+      WELCOME: {
+        CTA: {
+          TITLE: 'Welcome to Explorer Pro',
+          DESCRIPTION:
+            'Enjoy an enhanced experience, exclusive creator tools and security.',
+        },
+      },
       PLAN: {
         TITLE: 'Explorer Pro',
       },
