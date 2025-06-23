@@ -17,6 +17,7 @@ import { MapWaypointValue, useMap, useMapbox } from '@/hooks';
 import { sortByDate } from '@/lib';
 import { ROUTER } from '@/router';
 
+const WAYPOINT_SORT_ORDER = 'asc';
 const TRIP_EDIT_FORM_ID = 'trip_edit_form';
 
 type Props = {
@@ -46,63 +47,28 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
       : ROUTER.HOME
     : undefined;
 
-  // const [state, setState] = useState<{
-  //   waypointCreating: boolean;
-  //   waypointEditing: boolean;
-  //   waypointEditingId?: number;
-  // }>({
-  //   waypointCreating: false,
-  //   waypointEditing: false,
-  // });
-
-  // const [loading, setLoading] = useState({
-  //   trip: false,
-  //   waypoint: false,
-  // });
-
-  // const [viewport, setViewport] = useState<{ lat: number; lon: number }>({
-  //   lat: 0,
-  //   lon: 0,
-  // });
-
-  // const [waypoints, setWaypoints] = useState<WaypointElement[]>(
-  //   trip?.waypoints
-  //     ? sortByDate(
-  //         trip.waypoints.map(
-  //           ({ id, title = '', date = new Date(), lat, lon, post }) => ({
-  //             id,
-  //             title,
-  //             date: dateformat(date).toDate(),
-  //             lat,
-  //             lon,
-  //             post,
-  //           }),
-  //         ),
-  //         'asc',
-  //       )
-  //     : [],
-  // );
-
-  // const [waypointEditing, setWaypointEditing] = useState<WaypointElement>();
-
-  // const { waypointCreating, waypointEditingId } = state;
-
-  // const form = useForm<z.infer<typeof schema>>({
-  //   resolver: zodResolver(schema),
-  //   defaultValues: trip
-  //     ? { title: trip.title, description: trip.description }
-  //     : {
-  //         title: '',
-  //         description: '',
-  //       },
-  // });
-
   const handleWaypointMove = (waypoint: MapWaypointValue) => {
     setWaypoint(waypoint);
   };
 
   const handleWaypointCreateStart = (waypoint: MapWaypointValue) => {
-    setWaypoint(waypoint);
+    const offset = 1;
+
+    // check if there are any waypoints with the same coordinates
+    const duplicated = waypoints.some(
+      ({ lat, lon }) => lat === waypoint.lat && lon === waypoint.lon,
+    );
+
+    // update editable waypoint
+    if (duplicated) {
+      setWaypoint({
+        ...waypoint,
+        lat: waypoint.lat + offset,
+        lon: waypoint.lon + offset,
+      });
+    } else {
+      setWaypoint(waypoint);
+    }
   };
 
   const handleWaypointCreateCancel = () => {
@@ -110,13 +76,17 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
   };
 
   const handleWaypointCreateSubmit = (waypoint: MapWaypointValue) => {
+    // append waypoint
     setWaypoints((waypoints) =>
       sortByDate({
         elements: [...waypoints, waypoint],
-        order: 'asc',
+        order: WAYPOINT_SORT_ORDER,
         key: 'date',
       }),
     );
+
+    // clear editable waypoint
+    setWaypoint(null);
   };
 
   const handleWaypointDelete = (id: number) => {
@@ -136,6 +106,9 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
             backUrl={backUrl}
           />
         )}
+        {/* <span className="break-all text-xs">
+          {JSON.stringify({ w: waypoint })}
+        </span> */}
         <div className="w-full h-full flex flex-col overflow-y-scroll">
           <div className="w-full h-auto px-6 py-4">
             <TripEditForm

@@ -68,3 +68,8 @@ export function sortByDate<T = any>({
 export const getBaseAppUrl = (): string => {
   return process?.env?.NEXT_PUBLIC_APP_BASE_URL || '';
 };
+
+export const between = (number: number, range: [number, number]): boolean => {
+  const [min, max] = range || [0, 1];
+  return number > min && number < max;
+};
