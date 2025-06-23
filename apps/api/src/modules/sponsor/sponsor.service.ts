@@ -16,10 +16,11 @@ import {
 } from '@repo/types';
 import Stripe from 'stripe';
 
+import { calculateFee } from '@/lib/calculator';
 import { dateformat } from '@/lib/date-format';
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
-import { matchRoles, sleep } from '@/lib/utils';
+import { matchRoles } from '@/lib/utils';
 
 import {
   CurrencyCode,
@@ -33,7 +34,7 @@ import {
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import { ISessionQuery, ISessionQueryWithPayload } from '@/common/interfaces';
-import { config } from '@/config';
+import { APPLICATION_FEE, config } from '@/config';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 import { StripeService } from '@/modules/stripe';
@@ -163,6 +164,13 @@ export class SponsorService {
 
           // create an one time payment stripe payment intent
           if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
+            const applicationFeeAmount = decimalToInteger(
+              calculateFee({
+                amount: oneTimePaymentAmount,
+                percent: APPLICATION_FEE,
+              }),
+            );
+
             const stripePaymentIntent =
               await this.stripeService.stripe.paymentIntents.create({
                 amount: decimalToInteger(oneTimePaymentAmount),
@@ -171,7 +179,7 @@ export class SponsorService {
                 payment_method: stripePaymentMethodId,
                 transfer_data: { destination: creatorStripeAccountId },
                 payment_method_types: ['card'],
-                application_fee_amount: config.stripe.application_fee, // platform fee in cents
+                application_fee_amount: applicationFeeAmount,
                 description: '****',
               });
             amount = decimalToInteger(oneTimePaymentAmount);
@@ -199,6 +207,7 @@ export class SponsorService {
 
             const stripePriceId = sponsorshipTier.stripe_price_month_id;
             const subscriptionAmount = sponsorshipTier.price;
+            const applicationFeePercent = APPLICATION_FEE;
 
             this.logger.log(
               `sponsorship tier ${sponsorshipTier.id} is available to use`,
@@ -211,7 +220,7 @@ export class SponsorService {
                 items: [{ price: stripePriceId }],
                 default_payment_method: stripePaymentMethodId,
                 transfer_data: { destination: creatorStripeAccountId },
-                application_fee_percent: config.stripe.application_fee,
+                application_fee_percent: applicationFeePercent,
                 collection_method: 'charge_automatically',
                 payment_behavior: 'allow_incomplete',
                 metadata: {
