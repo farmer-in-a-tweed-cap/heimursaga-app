@@ -789,6 +789,8 @@ export const API_QUERY_KEYS = {
   PAYOUTS: 'payouts',
   BALANCE: 'balance',
   SPONSORSHIPS: 'sponsorships',
+  USER_SPONSORSHIPS: 'user_sponsorships',
+  CREATOR_SPONSORSHIPS: 'creator_sponsorships',
   SPONSORSHIP_TIERS: 'sponsorship_tiers',
   INSIGHTS: {
     POST: 'post_insights',
