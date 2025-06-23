@@ -317,9 +317,11 @@ export const Map: React.FC<Props> = ({
           <span class="text-base font-medium">${title}</span>
           <span class="text-[0.7rem] font-normal text-gray-500">${dateformat(date).format('MMM DD')}</span>
         </div>
-        <div class="mt-2">
-          <p class="text-sm font-normal text-gray-500">${content ? (content.length < 50 ? content : `${content.slice(0, 50)}..`) : ''}</p>
-        </div>
+      ${
+        content
+          ? `<div class="mt-2"><p class="text-sm font-normal text-gray-500">${content ? (content.length < 50 ? content : `${content.slice(0, 50)}..`) : ''}</p></div>`
+          : ''
+      }
       </div>
     `;
 
