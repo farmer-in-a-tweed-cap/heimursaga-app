@@ -178,7 +178,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             </h2>
           </div>
           {waypoint && (
-            <div className="mt-6">
+            <div className="py-4">
               <MapStaticPreview
                 href={
                   id
