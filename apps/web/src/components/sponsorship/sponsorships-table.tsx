@@ -13,6 +13,9 @@ import {
   DataTableColumn,
   DataTableRow,
   Spinner,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
 import Link from 'next/link';
@@ -32,10 +35,12 @@ type SponsorshipTableData = {
   amount: number;
   date?: Date;
   status: string;
+  message?: string;
 };
 
 type Props = {
   data: ISponsorshipDetail[];
+  results?: number;
   refetch: () => void;
   context: 'user' | 'creator';
   loading?: boolean;
@@ -43,6 +48,7 @@ type Props = {
 
 export const SponsorshipsTable: React.FC<Props> = ({
   data = [],
+  results = 0,
   loading = false,
   context,
   refetch,
@@ -159,6 +165,33 @@ export const SponsorshipsTable: React.FC<Props> = ({
         dateformat(row.getValue('date')).format('MMM DD, YYYY'),
     },
     {
+      accessorKey: 'message',
+      header: () => 'Message',
+      cell: ({ row }) => {
+        const value =
+          typeof row.getValue('message') === 'string'
+            ? (row.getValue('message') as string)
+            : '';
+
+        const message = {
+          preview: value.length >= 10 ? `${value.slice(0, 10)}..` : value,
+          content: value,
+        };
+
+        return (
+          <Tooltip>
+            <TooltipTrigger>{message.preview}</TooltipTrigger>
+            <TooltipContent
+              side="top"
+              className="w-full max-w-[400px] break-all p-2"
+            >
+              {message.content}
+            </TooltipContent>
+          </Tooltip>
+        );
+      },
+    },
+    {
       accessorKey: 'menu',
       header: () => '',
       cell: ({ row }) => {
@@ -196,13 +229,14 @@ export const SponsorshipsTable: React.FC<Props> = ({
   ];
 
   const rows: DataTableRow<SponsorshipTableData>[] = data.map(
-    ({ id, creator, amount, type, createdAt, status, user }, key) => ({
+    ({ id, creator, amount, type, createdAt, status, user, message }, key) => ({
       id: id ? id : `${key}`,
       type,
       status,
       username: (context === 'user' ? creator?.username : user?.username) || '',
       amount,
       date: createdAt,
+      message,
     }),
   );
 
@@ -213,7 +247,12 @@ export const SponsorshipsTable: React.FC<Props> = ({
 
   return (
     <div className="flex flex-col">
-      <DataTable columns={columns} rows={rows} loading={loading} />
+      <DataTable
+        results={results}
+        columns={columns}
+        rows={rows}
+        loading={loading}
+      />
     </div>
   );
 };

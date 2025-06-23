@@ -12,19 +12,18 @@ export const CreatorSponsorships = () => {
   const session = useSession();
 
   const sponsorshipQuery = useQuery({
-    queryKey: [API_QUERY_KEYS.SPONSORSHIPS],
+    queryKey: [API_QUERY_KEYS.CREATOR_SPONSORSHIPS],
     queryFn: () => apiClient.getCreatorSponsorships().then(({ data }) => data),
     enabled: !!session?.username,
     retry: 0,
   });
 
-  const sponsorships = sponsorshipQuery.data?.data || [];
-
   return (
     <div className="flex flex-col">
       <SponsorshipsTable
         context="creator"
-        data={sponsorships}
+        data={sponsorshipQuery.data?.data || []}
+        results={sponsorshipQuery.data?.results || 0}
         refetch={() => sponsorshipQuery.refetch()}
         loading={sponsorshipQuery.isLoading}
       />

@@ -13,6 +13,7 @@ import {
   FormMessage,
   NumberInput,
   SelectInput,
+  Textarea,
 } from '@repo/ui/components';
 import { CreditCardIcon, LockSimpleIcon } from '@repo/ui/icons';
 import { useStripe } from '@stripe/react-stripe-js';
@@ -40,6 +41,8 @@ type Props = {
   sponsorship?: ISponsorshipTier;
   paymentMethods?: { id: string; label: string }[];
 };
+
+const MESSAGE_LENGTH = 200;
 
 const PAYMENT_METHOD_TYPES = {
   CARD: 'card',
@@ -73,6 +76,10 @@ const schema = z.object({
     .nonempty(zodMessage.required('payment method'))
     .min(2, zodMessage.string.min('payment method', 2))
     .max(20, zodMessage.string.max('payment method', 20)),
+  message: z
+    .string()
+    .max(MESSAGE_LENGTH, zodMessage.string.max('message', MESSAGE_LENGTH))
+    .optional(),
 });
 
 export const FormComponent: React.FC<Props> = ({
@@ -105,6 +112,7 @@ export const FormComponent: React.FC<Props> = ({
       oneTimePaymentAmount: 5,
       paymentMethodId:
         paymentMethods.length >= 1 ? paymentMethods[0].id : undefined,
+      message: '',
     },
   });
 
@@ -112,6 +120,7 @@ export const FormComponent: React.FC<Props> = ({
 
   const oneTimePaymentAmount = form.watch('oneTimePaymentAmount') || 0;
   const paymentMethodId = form.watch('paymentMethodId');
+  const message = form.watch('message');
   const sponsorshipEnabled = !!sponsorship;
   const sponsorshipMonthlyAmount = sponsorship?.price || 0;
   const currency = { symbol: '$' };
@@ -130,16 +139,23 @@ export const FormComponent: React.FC<Props> = ({
 
         const { sponsorshipType } = state;
         const sponsorshipTierId = sponsorship?.id;
-        const { oneTimePaymentAmount, paymentMethodId } = values;
+        const { oneTimePaymentAmount, paymentMethodId, message } = values;
         const creatorId = username;
 
-        console.log('submit:', {
+        // console.log('submit:', {
+        //   creatorId,
+        //   oneTimePaymentAmount,
+        //   sponsorshipTierId,
+        //   sponsorshipType,
+        //   paymentMethodId,
+        // });
+
+        const payload = {
           creatorId,
-          oneTimePaymentAmount,
-          sponsorshipTierId,
           sponsorshipType,
           paymentMethodId,
-        });
+          message,
+        };
 
         // initiate a checkout
         const checkout = await apiClient.sponsorCheckout({
@@ -147,16 +163,12 @@ export const FormComponent: React.FC<Props> = ({
           payload:
             sponsorshipType === SponsorshipType.SUBSCRIPTION
               ? {
-                  creatorId,
-                  sponsorshipType,
+                  ...payload,
                   sponsorshipTierId,
-                  paymentMethodId,
                 }
               : {
-                  creatorId,
-                  sponsorshipType,
+                  ...payload,
                   oneTimePaymentAmount,
-                  paymentMethodId,
                 },
         });
         const stripePaymentMethodId = checkout.data?.paymentMethodId;
@@ -295,6 +307,7 @@ export const FormComponent: React.FC<Props> = ({
                 </div>
               </div>
             </div>
+
             <div className="flex flex-col">
               <h2 className="font-medium text-lg">Payment method</h2>
               <div className="mt-4 flex flex-col">
@@ -341,6 +354,36 @@ export const FormComponent: React.FC<Props> = ({
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col">
+              <h2 className="font-medium text-lg">Message</h2>
+              <p className="py-3">
+                You can send a private message to @{username}.
+              </p>
+              <div className="mt-4 w-full flex flex-col">
+                <FormField
+                  control={form.control}
+                  name="message"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        Message ({message?.length || 0}/{MESSAGE_LENGTH})
+                      </FormLabel>
+                      <FormControl>
+                        <Textarea
+                          className="min-h-[120px]"
+                          disabled={loading.form}
+                          maxLength={MESSAGE_LENGTH}
+                          required
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
             <div className="flex flex-col">
