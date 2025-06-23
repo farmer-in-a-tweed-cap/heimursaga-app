@@ -29,8 +29,7 @@ const schema = z.object({
   description: z
     .string()
     .nonempty(zodMessage.required('description'))
-    .min(2, zodMessage.string.min('description', 5))
-    .max(10, zodMessage.string.max('description', 100)),
+    .max(100, zodMessage.string.max('description', 100)),
 });
 
 type Props = {

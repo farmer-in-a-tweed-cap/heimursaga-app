@@ -23,6 +23,7 @@ import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { useModal, useSession } from '@/hooks';
 import { getBaseAppUrl, redirect } from '@/lib';
+import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
 export const PayoutBillingView = () => {
@@ -128,8 +129,6 @@ export const PayoutBillingView = () => {
 
       setLoading((loading) => ({ ...loading, button: false }));
     } catch (e) {
-      console.log(e);
-
       setLoading((loading) => ({ ...loading, button: false }));
       toast({ type: 'error', message: 'payout method not updated' });
     }
@@ -146,7 +145,9 @@ export const PayoutBillingView = () => {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col justify-start items-start">
-              <span className="text-sm font-normal">Stripe</span>
+              <span className="text-sm font-normal">
+                {LOCALES.APP.PAYOUTS.BILLING.STRIPE.TITLE}
+              </span>
               <div>
                 {payoutMethod ? (
                   payoutMethod.isVerified ? (
@@ -162,8 +163,7 @@ export const PayoutBillingView = () => {
               </div>
               <div className="mt-3">
                 <span className="text-sm text-gray-500">
-                  Payout fee is 1% of the amount transferred, with a minimum of
-                  USD $0.25 and a maximum of USD $20*
+                  {LOCALES.APP.PAYOUTS.BILLING.STRIPE.PAYOUT_FEE_WARNING}
                 </span>
               </div>
               <div className="mt-6">

@@ -516,10 +516,12 @@ export interface IPayoutMethodBaseDetail {
   businessType: string;
   phoneNumber?: string;
   email: string;
+  currency?: string;
+  country?: string;
   stripeAccountId?: string;
 }
 
-export interface IPayoutMethodGetAllByUsernameResponse {
+export interface IPayoutMethodGetResponse {
   data: IPayoutMethodBaseDetail[];
   results: number;
 }

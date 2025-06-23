@@ -25,8 +25,8 @@ export class PayoutMethodController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getUserPayoutMethods(@Session() session: ISession) {
-    return await this.payoutService.getUserPayoutMethods({
+  async getPayoutMethods(@Session() session: ISession) {
+    return await this.payoutService.getPayoutMethods({
       query: {},
       session,
     });
