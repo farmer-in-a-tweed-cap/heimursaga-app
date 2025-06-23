@@ -1,6 +1,6 @@
 'use client';
 
-import { ToastProvider } from '@repo/ui/components';
+import { ToastProvider, TooltipProvider } from '@repo/ui/components';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode, createContext, useState } from 'react';
 
@@ -74,7 +74,9 @@ export function AppProvider({
           visibleToasts={1}
           closeButton={false}
         />
-        <ModalProvider>{children}</ModalProvider>
+        <ModalProvider>
+          <TooltipProvider delayDuration={400}>{children}</TooltipProvider>
+        </ModalProvider>
       </QueryClientProvider>
     </AppContext.Provider>
   );

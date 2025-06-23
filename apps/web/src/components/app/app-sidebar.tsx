@@ -196,7 +196,11 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
             )}
           >
             <Link href={ROUTER.HOME}>
-              <Logo color="light" size="sm" />
+              {collapsed ? (
+                <Logo color="light" size="sm" />
+              ) : (
+                <Logo color="light" size="lg" />
+              )}
             </Link>
           </div>
           <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-3">
