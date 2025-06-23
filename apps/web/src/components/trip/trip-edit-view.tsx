@@ -14,7 +14,7 @@ import {
   TripEditForm,
 } from '@/components';
 import { MapWaypointValue, useMap, useMapbox } from '@/hooks';
-import { dateformat, sortByDate } from '@/lib';
+import { sortByDate } from '@/lib';
 import { ROUTER } from '@/router';
 
 const TRIP_EDIT_FORM_ID = 'trip_edit_form';
@@ -127,7 +127,7 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
-      <MapSidebar opened={map.sidebar} view={map.view}>
+      <MapSidebar opened={map.sidebar}>
         {trip && (
           <MapTripCard
             title={trip.title}
