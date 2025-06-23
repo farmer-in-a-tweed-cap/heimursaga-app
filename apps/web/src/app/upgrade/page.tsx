@@ -16,7 +16,10 @@ export const metadata: Metadata = {
 export default async function Page() {
   const cookie = cookies().toString();
 
-  const plansQuery = await apiClient.getSubscriptionPlans({ cookie });
+  const plansQuery = await apiClient.getSubscriptionPlans({
+    cookie,
+    cache: 'no-store',
+  });
 
   const plan = plansQuery.data?.data?.[0];
   const features = {
@@ -29,7 +32,6 @@ export default async function Page() {
       <div className="absolute top-3 right-3 lg:top-4 lg:left-4">
         <CloseButton redirect={ROUTER.HOME} />
       </div>
-
       <div className="flex flex-col py-8 items-center">
         <div className="w-full max-w-xl flex flex-col items-center text-base gap-6">
           <h2 className="font-medium text-5xl">
@@ -39,7 +41,6 @@ export default async function Page() {
             {LOCALES.APP.UPGRADE.PAGE.CTA.DESCRIPTION}
           </p>
         </div>
-
         {plan && (
           <SubscriptionPlanUpgrade
             {...plan}
