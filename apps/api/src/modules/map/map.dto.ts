@@ -20,8 +20,6 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import { ToNumber } from '@/common/decorators';
-
 export class MapQueryDto implements IMapQueryPayload {
   @ApiProperty({ required: false })
   @IsObject()
@@ -55,6 +53,11 @@ export class MapQueryDto implements IMapQueryPayload {
   @IsString()
   @IsOptional()
   search?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  tripId?: string;
 }
 
 class MapQueryLocationDto implements IMapQueryLocation {

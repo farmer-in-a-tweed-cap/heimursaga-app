@@ -68,6 +68,7 @@ export enum MapQueryContext {
   GLOBAL = 'global',
   FOLLOWING = 'following',
   USER = 'user',
+  TRIP = 'journey',
 }
 
 export enum MapQueryFilterParam {

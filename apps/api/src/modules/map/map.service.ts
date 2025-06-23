@@ -13,6 +13,7 @@ import {
 
 import { dateformat } from '@/lib/date-format';
 import { getStaticMediaUrl } from '@/lib/upload';
+import { sortByDate } from '@/lib/utils';
 
 import {
   ServiceBadRequestException,
@@ -41,7 +42,14 @@ export class MapService {
   }: IQueryWithSession<IMapQueryPayload>): Promise<IMapQueryResponse> {
     try {
       const { userId } = session;
-      const { context, location, username } = query;
+      const { context, location, username, tripId } = query;
+      const locationFilter =
+        location &&
+        [
+          MapQueryContext.GLOBAL,
+          MapQueryContext.FOLLOWING,
+          MapQueryContext.USER,
+        ].some((ctx) => ctx === context);
       const search = query?.search
         ? query.search.toLowerCase().trim()
         : undefined;
@@ -50,6 +58,7 @@ export class MapService {
         public: true,
         deleted_at: null,
       } as Prisma.WaypointWhereInput;
+
       const select = {
         lat: true,
         lon: true,
@@ -138,12 +147,32 @@ export class MapService {
             },
           };
           break;
+        case MapQueryContext.TRIP:
+          where = {
+            ...where,
+            posts: {
+              some: {
+                public: true,
+                deleted_at: null,
+              },
+            },
+            trips: tripId
+              ? {
+                  some: {
+                    trip: {
+                      public_id: tripId,
+                    },
+                  },
+                }
+              : undefined,
+          };
+          break;
         default:
           throw new ServiceBadRequestException('map query filter invalid');
       }
 
       // filter by location
-      if (location) {
+      if (locationFilter) {
         const { sw, ne } = location.bounds;
 
         const minLat = sw.lat;
@@ -171,9 +200,10 @@ export class MapService {
 
       const response: IMapQueryResponse = {
         results,
-        waypoints: waypoints
-          .map(({ lat, lon, posts }) => {
+        waypoints: sortByDate({
+          elements: waypoints.map(({ lat, lon, posts }) => {
             const post = posts[0];
+
             return {
               lat,
               lon,
@@ -183,6 +213,7 @@ export class MapService {
                     id: post.public_id,
                     title: post.title,
                     content: post.content.slice(0, 100),
+                    date: post.date,
                     author: {
                       username: post.author.username,
                       name: post.author.profile.name,
@@ -193,10 +224,10 @@ export class MapService {
                   }
                 : undefined,
             };
-          })
-          .sort(
-            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-          ),
+          }),
+          key: 'date',
+          order: 'desc',
+        }),
       };
 
       return response;
