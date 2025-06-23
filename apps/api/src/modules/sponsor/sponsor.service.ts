@@ -556,6 +556,7 @@ export class SponsorService {
   >): Promise<void> {
     try {
       const { userId } = session;
+      const { price, isAvailable, description } = payload;
       const { id } = query;
 
       const currency = CurrencyCode.USD;
@@ -569,8 +570,27 @@ export class SponsorService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      // get the sponsorship tier
-      const sponsorshipTier = await this.prisma.sponsorshipTier
+      // get a user
+      const user = await this.prisma.user
+        .findFirstOrThrow({ where: { id: userId }, select: { id: true } })
+        .catch(() => {
+          throw new ServiceForbiddenException();
+        });
+
+      // get a payout method
+      const payoutMethod = await this.prisma.payoutMethod
+        .findFirstOrThrow({
+          where: { user_id: userId },
+          select: { stripe_account_id: true },
+        })
+        .catch(() => {
+          throw new ServiceForbiddenException('you have no payout methods');
+        });
+
+      const stripeAccountId = payoutMethod.stripe_account_id;
+
+      // get a tier
+      const tier = await this.prisma.sponsorshipTier
         .findFirstOrThrow({
           where: { public_id: id, user_id: userId, deleted_at: null },
           select: {
@@ -584,22 +604,21 @@ export class SponsorService {
           throw new ServiceNotFoundException('sponsorship tier not found');
         });
 
-      // get a user stripe account id
-      const user = await this.prisma.user.findFirstOrThrow({
-        where: { id: userId },
-        select: {
-          id: true,
-          stripe_account_id: true,
-          is_stripe_account_connected: true,
-        },
-      });
-      const { description, isAvailable, price = 0 } = payload;
+      let stripeProductId = tier.stripe_product_id;
+      let stripePriceId = tier.stripe_price_month_id;
 
-      const stripeAccountId = user.stripe_account_id;
-      let stripeProductId = sponsorshipTier.stripe_product_id;
-      let stripePriceId = sponsorshipTier.stripe_price_month_id;
+      // get a stripe account
+      const stripeAccount = await this.stripeService.stripe.accounts
+        .retrieve(stripeAccountId)
+        .catch(() => {
+          throw new ServiceForbiddenException(
+            'your stripe account is not connected yet',
+          );
+        });
+      const stripeAccountVerified =
+        stripeAccount?.requirements?.pending_verification?.length <= 0 || false;
 
-      if (!stripeAccountId)
+      if (!stripeAccountVerified)
         throw new ServiceForbiddenException(
           'your stripe account is not verified yet',
         );
@@ -607,15 +626,6 @@ export class SponsorService {
       // create a stripe product if not attached yet
       if (!stripeProductId) {
         this.logger.log(`stripe product is not found, creating [..]`);
-
-        // retrieve a stripe account
-        const stripeAccount = await this.stripeService.stripe.accounts
-          .retrieve(stripeAccountId)
-          .catch(() => {
-            throw new ServiceForbiddenException(
-              'your stripe account is not verified yet',
-            );
-          });
 
         // create a stripe product
         const stripeProduct = await this.stripeService.stripe.products.create({
@@ -636,7 +646,7 @@ export class SponsorService {
 
       const priceChanged = price
         ? price >= 1
-          ? sponsorshipTier.price !== price
+          ? tier.price !== price
           : false
         : false;
 
@@ -668,7 +678,7 @@ export class SponsorService {
 
         // update the sponsorship tier
         await this.prisma.sponsorshipTier.update({
-          where: { id: sponsorshipTier.id },
+          where: { id: tier.id },
           data: {
             stripe_price_month_id: stripePriceId,
           },
@@ -677,7 +687,7 @@ export class SponsorService {
 
       // update the sponsorship tier
       await this.prisma.sponsorshipTier.update({
-        where: { id: sponsorshipTier.id },
+        where: { id: tier.id },
         data: {
           price: price ? decimalToInteger(price) : undefined,
           description,
@@ -687,7 +697,7 @@ export class SponsorService {
         },
       });
 
-      this.logger.log(`sponsorship tier ${sponsorshipTier.id} updated`);
+      this.logger.log(`sponsorship tier ${tier.id} updated`);
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
