@@ -96,6 +96,8 @@ export class PayoutService {
           stripeAccount.business_type === 'individual'
             ? stripeAccount.individual?.phone
             : stripeAccount.company?.phone;
+
+        console.log(stripeAccount);
       }
 
       const response: IPayoutMethodGetAllByUsernameResponse = {
@@ -143,7 +145,9 @@ export class PayoutService {
     try {
       // const { publicId, mode } = query;
       const { userId } = session;
-      const { mode, payoutMethodId, backUrl } = payload;
+      const { payoutMethodId, backUrl } = payload;
+
+      const mode = StripePlayformAccountLinkMode.ONBOARDING;
 
       // check access
       const access = !!payoutMethodId && !!userId;
@@ -176,9 +180,9 @@ export class PayoutService {
           case StripePlayformAccountLinkMode.ONBOARDING:
             stripeMode = 'account_onboarding';
             break;
-          case StripePlayformAccountLinkMode.UPDATE:
-            stripeMode = 'account_update';
-            break;
+          // case StripePlayformAccountLinkMode.UPDATE:
+          //   stripeMode = 'account_update';
+          //   break;
         }
 
         // get a stripe platform account link

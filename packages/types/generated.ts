@@ -329,8 +329,9 @@ export interface IMapQueryPayload {
   limit?: number;
   context?: string;
   page?: number;
-  username?: string;
   search?: string;
+  username?: string;
+  tripId?: string;
 }
 
 export interface IMapQueryResponse {
@@ -343,6 +344,7 @@ export interface IMapQueryResponse {
       id: string;
       title: string;
       content: string;
+      date?: Date;
       bookmarked: boolean;
       author: {
         username: string;
