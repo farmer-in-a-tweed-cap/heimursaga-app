@@ -41,7 +41,7 @@ const schema = z.object({
     .max(20, zodMessage.string.max('title', 20)),
   lat: z.string().max(20, zodMessage.string.max('latitude', 20)),
   lon: z.string().max(20, zodMessage.string.max('longitude', 20)),
-  date: z.date(),
+  date: z.date({ message: zodMessage.required('date') }),
 });
 
 export const TripWaypointCreateForm: React.FC<Props> = ({
