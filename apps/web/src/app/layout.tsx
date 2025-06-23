@@ -190,7 +190,7 @@ export const CheckoutLayout = ({ children }: { children: React.ReactNode }) => {
     <SessionLayout>
       <div className="w-full h-[55px] bg-white flex flex-row justify-center items-center border-b border-solid border-gray-200">
         <Link href={ROUTER.HOME}>
-          <Logo color="dark" size="sm" />
+          <Logo color="dark" size="lg" />
         </Link>
       </div>
       <div className="w-full bg-white text-black flex flex-row justify-center items-start">
