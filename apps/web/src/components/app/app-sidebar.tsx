@@ -1,7 +1,12 @@
 'use client';
 
 import { UserRole } from '@repo/types';
-import { Button } from '@repo/ui/components';
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@repo/ui/components';
 import {
   BellIcon,
   BookmarkSimpleIcon,
@@ -197,31 +202,38 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
           <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-3">
             <div className="lg:w-full flex flex-col gap-2">
               {links.map(({ href, base, label, icon: Icon }, key) => (
-                <Link
-                  key={key}
-                  href={href}
-                  className={cn(
-                    'w-full app-sidebar-link',
-                    isActiveLink(base) ? 'app-sidebar-link-active' : '',
-                  )}
-                >
-                  <Icon
-                    size={20}
-                    weight="bold"
-                    className="app-sidebar-link-icon"
-                  />
-                  <span
-                    className={cn(
-                      'text-sm leading-none',
-                      collapsed ? 'hidden' : 'hidden lg:flex',
-                    )}
-                  >
+                <Tooltip key={key}>
+                  <TooltipTrigger>
+                    <Link
+                      href={href}
+                      className={cn(
+                        'w-full app-sidebar-link',
+                        isActiveLink(base) ? 'app-sidebar-link-active' : '',
+                      )}
+                    >
+                      <Icon
+                        size={20}
+                        weight="bold"
+                        className="app-sidebar-link-icon"
+                      />
+                      <span
+                        className={cn(
+                          'text-sm leading-none',
+                          collapsed ? 'hidden' : 'hidden lg:flex',
+                        )}
+                      >
+                        {label}
+                      </span>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" hidden={!collapsed}>
                     {label}
-                  </span>
-                </Link>
+                  </TooltipContent>
+                </Tooltip>
               ))}
             </div>
           </div>
+
           {session.logged ? (
             <div
               className={cn(

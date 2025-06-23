@@ -23,3 +23,4 @@ export * from './sheet';
 export * from './date-picker';
 export * from './text';
 export * from './file-picker';
+export * from './tooltip';
