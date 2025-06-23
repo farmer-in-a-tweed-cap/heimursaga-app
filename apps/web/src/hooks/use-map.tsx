@@ -187,17 +187,6 @@ export const useMap = (state?: {
     setDrawer(false);
   };
 
-  const handleViewToggle = () => {
-    setView((prev) => {
-      const view =
-        prev === MAP_VIEW_PARAMS.LIST
-          ? MAP_VIEW_PARAMS.MAP
-          : MAP_VIEW_PARAMS.LIST;
-      viewRef.current = view;
-      return view;
-    });
-  };
-
   const handleSidebarToggle = () => {
     // update sidebar
     setSidebar((sidebar) => !sidebar);
@@ -214,7 +203,6 @@ export const useMap = (state?: {
 
   return {
     loaded,
-    view,
     sidebar,
     drawer,
     viewRef,
@@ -234,7 +222,6 @@ export const useMap = (state?: {
     handleSidebarToggle,
     handleDrawerOpen,
     handleDrawerClose,
-    handleViewToggle,
     handleMarkerChange,
     mapbox: mapboxRef.current,
   };

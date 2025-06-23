@@ -26,6 +26,7 @@ import { APP_CONFIG } from '@/config';
 import {
   MAP_CONTEXT_PARAMS,
   MAP_FILTER_PARAMS,
+  MAP_VIEW_PARAMS,
   MapLoadHandler,
   MapMoveHandler,
   useAppParams,
@@ -92,6 +93,7 @@ export const MapExploreView: React.FC<Props> = () => {
     zoom: params.zoom ? parseFloat(params.zoom) : APP_CONFIG.MAP.DEFAULT.ZOOM,
   });
 
+  const [view, setView] = useState<string>(MAP_VIEW_PARAMS.MAP);
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
 
   const [search, setSearch] = useState<{
@@ -239,6 +241,17 @@ export const MapExploreView: React.FC<Props> = () => {
 
   const isPostSelected = (id: string): boolean =>
     postId ? postId === id : false;
+
+  const handleViewToggle = () => {
+    setView((prev) => {
+      const view =
+        prev === MAP_VIEW_PARAMS.LIST
+          ? MAP_VIEW_PARAMS.MAP
+          : MAP_VIEW_PARAMS.LIST;
+      // viewRef.current = view;
+      return view;
+    });
+  };
 
   const handleMapMove: MapMoveHandler = (data) => {
     const {
@@ -398,8 +411,8 @@ export const MapExploreView: React.FC<Props> = () => {
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
-      <MapViewSwitch view={map.view} onToggle={map.handleViewToggle} />
-      <MapSidebar opened={map.sidebar} view={map.view}>
+      <MapViewSwitch view={view} onToggle={handleViewToggle} />
+      <MapSidebar opened={map.sidebar} view={view}>
         <div className="relative flex flex-col w-full h-full">
           {contexts.map && (
             <>
