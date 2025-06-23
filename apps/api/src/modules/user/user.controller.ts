@@ -275,7 +275,7 @@ export class SessionUserController {
   @Get('sponsorships')
   @HttpCode(HttpStatus.OK)
   async getSponsorships(@Session() session: ISession) {
-    return await this.sponsorService.getUserSponsorships({
+    return await this.sponsorService.getSponsorships({
       session,
       query: {},
     });

@@ -66,6 +66,7 @@ export class SponsorService {
         oneTimePaymentAmount,
         creatorId,
         paymentMethodId,
+        message = '',
       } = payload;
 
       if (!userId) throw new ServiceForbiddenException();
@@ -272,6 +273,7 @@ export class SponsorService {
               transaction_type: PaymentTransactionType.SPONSORSHIP,
               sponsorship_type: sponsorshipType,
               sponsorship_tier_id: sponsorshipTier.id,
+              message,
               total: amount,
               user_id: user.id,
               creator_id: creator.id,
@@ -348,6 +350,7 @@ export class SponsorService {
             sponsorship_type: true,
             sponsorship_tier_id: true,
             stripe_subscription_id: true,
+            message: true,
           },
         });
 
@@ -374,6 +377,7 @@ export class SponsorService {
             type: checkout.sponsorship_type,
             status,
             amount: checkout.total,
+            message: checkout.message,
             currency: checkout.currency,
             stripe_subscription_id: checkout.stripe_subscription_id,
             expiry:
@@ -754,7 +758,7 @@ export class SponsorService {
     }
   }
 
-  async getUserSponsorships({
+  async getSponsorships({
     session,
   }: ISessionQuery): Promise<ISponsorshipGetAllResponse> {
     try {
@@ -781,6 +785,7 @@ export class SponsorService {
           type: true,
           amount: true,
           currency: true,
+          message: true,
           creator: {
             select: {
               username: true,
@@ -805,6 +810,7 @@ export class SponsorService {
             status,
             creator,
             type,
+            message = '',
             created_at,
           }) => ({
             id,
@@ -812,6 +818,7 @@ export class SponsorService {
             amount: integerToDecimal(amount),
             status,
             currency,
+            message,
             creator: creator
               ? {
                   username: creator.username,
@@ -860,6 +867,7 @@ export class SponsorService {
           amount: true,
           status: true,
           currency: true,
+          message: true,
           user: {
             select: {
               username: true,
@@ -885,12 +893,14 @@ export class SponsorService {
             user,
             type,
             created_at,
+            message,
           }) => ({
             id,
             type: type as SponsorshipType,
             status,
             amount: integerToDecimal(amount),
             currency,
+            message,
             user: user
               ? {
                   username: user.username,

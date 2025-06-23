@@ -39,6 +39,11 @@ export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
   @IsNumber()
   @IsOptional()
   oneTimePaymentAmount?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  message?: string;
 }
 
 export class SponsorshipTierUpdateDto implements ISponsorshipTierUpdatePayload {
