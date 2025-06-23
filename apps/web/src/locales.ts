@@ -71,6 +71,15 @@ export const LOCALES = {
         TERMS: `By subscribing, you agree to our Purchaser Terms of Service. Subscriptions auto-renew until canceled. Cancel anytime, at least 24 hours prior to renewal to avoid additional charges. Manage your subscription through the platform you subscribed on.`,
       },
     },
+    PAYOUTS: {
+      BILLING: {
+        STRIPE: {
+          TITLE: 'Stripe',
+          PAYOUT_FEE_WARNING:
+            'Payout fee is 1% of the amount transferred, with a minimum of USD $0.25 and a maximum of USD $20*',
+        },
+      },
+    },
     UPGRADE_CHECKOUT: {
       PAGE: {
         CTA: {

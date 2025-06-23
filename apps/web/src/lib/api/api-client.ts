@@ -14,7 +14,7 @@ import {
   IPayoutGetResponse,
   IPayoutMethodCreatePayload,
   IPayoutMethodCreateResponse,
-  IPayoutMethodGetAllByUsernameResponse,
+  IPayoutMethodGetResponse,
   IPayoutMethodPlatformLinkGetResponse,
   IPostCreatePayload,
   IPostCreateResponse,
@@ -475,13 +475,10 @@ export const apiClient = {
     }),
   // payout methods
   getUserPayoutMethods: async (config?: RequestConfig) =>
-    api.request<IPayoutMethodGetAllByUsernameResponse>(
-      API_ROUTER.PAYOUT_METHODS.GET_ALL,
-      {
-        method: API_METHODS.GET,
-        ...config,
-      },
-    ),
+    api.request<IPayoutMethodGetResponse>(API_ROUTER.PAYOUT_METHODS.GET_ALL, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   createPayoutMethod: async (
     payload: IPayoutMethodCreatePayload,
     config?: RequestConfig,

@@ -7,7 +7,7 @@ import {
   IPayoutGetResponse,
   IPayoutMethodCreatePayload,
   IPayoutMethodCreateResponse,
-  IPayoutMethodGetAllByUsernameResponse,
+  IPayoutMethodGetResponse,
   IPayoutMethodPlatformLinkGetResponse,
   IStripePlatformAccountLinkGeneratePayload,
   IStripePlatformAccountLinkGenerateResponse,
@@ -45,13 +45,15 @@ export class PayoutService {
     private stripeService: StripeService,
   ) {}
 
-  async getUserPayoutMethods({
+  async getPayoutMethods({
     session,
-  }: IQueryWithSession): Promise<IPayoutMethodGetAllByUsernameResponse> {
+  }: IQueryWithSession): Promise<IPayoutMethodGetResponse> {
     try {
       const { userId } = session;
 
-      if (!userId) throw new ServiceForbiddenException();
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
 
       const where = {
         deleted_at: null,
@@ -61,65 +63,56 @@ export class PayoutService {
       const take = 20;
 
       // get payout methods
-      const results = await this.prisma.payoutMethod.count({ where });
-      const data = await this.prisma.payoutMethod.findMany({
+      const results = 1;
+      const payoutMethod = await this.prisma.payoutMethod.findFirstOrThrow({
         where,
         select: {
           public_id: true,
           platform: true,
-          is_verified: true,
           stripe_account_id: true,
-          business_type: true,
-          business_name: true,
-          email: true,
-          phone_number: true,
         },
         take,
         orderBy: [{ id: 'desc' }],
       });
 
-      const payoutMethod = data?.[0];
-      const stripeAccountId = payoutMethod?.stripe_account_id;
+      // get stripe account
+      const stripeAccount = payoutMethod.stripe_account_id
+        ? await this.stripeService.stripe.accounts.retrieve(
+            payoutMethod.stripe_account_id,
+          )
+        : null;
 
-      let email = '';
-      let phoneNumber = '';
+      const businessType = stripeAccount?.business_type;
+      const email =
+        businessType === 'individual'
+          ? stripeAccount?.individual?.email
+          : stripeAccount?.email;
+      const phoneNumber =
+        businessType === 'individual'
+          ? stripeAccount?.individual?.phone
+          : stripeAccount?.company?.phone;
+      const country = stripeAccount?.country;
+      const currency = stripeAccount?.default_currency;
+      const businessName = stripeAccount?.business_profile?.name;
+      const isVerified =
+        (stripeAccount?.requirements?.pending_verification?.length || 0) <= 0 ||
+        false;
 
-      // retrieve a stripe account
-      if (stripeAccountId) {
-        const stripeAccount =
-          await this.stripeService.stripe.accounts.retrieve(stripeAccountId);
-        email =
-          stripeAccount.business_type === 'individual'
-            ? stripeAccount.individual?.email
-            : stripeAccount?.email;
-        phoneNumber =
-          stripeAccount.business_type === 'individual'
-            ? stripeAccount.individual?.phone
-            : stripeAccount.company?.phone;
-
-        console.log(stripeAccount);
-      }
-
-      const response: IPayoutMethodGetAllByUsernameResponse = {
+      const response: IPayoutMethodGetResponse = {
         results,
         data: payoutMethod
           ? [payoutMethod].map(
-              ({
-                public_id,
-                stripe_account_id,
-                business_name,
-                business_type,
-                platform,
-                is_verified,
-              }) => ({
+              ({ public_id, stripe_account_id, platform }) => ({
                 id: public_id,
-                businessName: business_name,
-                businessType: business_type,
+                businessName,
+                businessType,
                 email,
                 phoneNumber,
                 platform,
-                isVerified: is_verified,
+                isVerified,
                 stripeAccountId: stripe_account_id,
+                currency,
+                country,
               }),
             )
           : [],
