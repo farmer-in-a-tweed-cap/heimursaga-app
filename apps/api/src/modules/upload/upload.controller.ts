@@ -17,6 +17,8 @@ import { ISession } from '@/common/interfaces';
 import { IUploadedFile } from './upload.interface';
 import { UploadService } from './upload.service';
 
+const UPLOAD_MAX_FILE_SIZE = 10; // mb
+
 @ApiTags('upload')
 @Controller('upload')
 export class UploadController {
@@ -29,7 +31,7 @@ export class UploadController {
     FileInterceptor('file', {
       limits: {
         files: 1,
-        fileSize: 2 * 1024 * 1024,
+        fileSize: UPLOAD_MAX_FILE_SIZE * 1024 * 1024,
       },
     }),
   )
@@ -40,7 +42,7 @@ export class UploadController {
     return this.uploadService.upload({
       query: {},
       payload: {
-        file: { buffer: file.buffer },
+        file,
         context: MediaUploadContext.UPLOAD,
       },
       session,

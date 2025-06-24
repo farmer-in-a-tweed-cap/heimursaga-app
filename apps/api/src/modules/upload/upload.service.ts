@@ -24,6 +24,14 @@ import { PrismaService } from '@/modules/prisma';
 
 import { UPLOAD_BUCKETS } from './upload.enum';
 
+const SUPPORTED_FORMATS = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+];
+
 @Injectable()
 export class UploadService {
   private s3: S3;
@@ -50,18 +58,13 @@ export class UploadService {
   async upload({
     payload,
     session,
-  }: ISessionQueryWithPayload<
-    {},
-    IMediaUploadPayload
-  >): Promise<IMediaUploadResponse> {
+  }: ISessionQueryWithPayload<{}, IMediaUploadPayload>) {
+    //Promise<IMediaUploadResponse> {
     try {
-      const {
-        context,
-        thumbnail = true,
-        aspect = 'auto',
-        file: { buffer },
-      } = payload;
+      const { context, thumbnail = true, aspect = 'auto', file } = payload;
       const { userId } = session;
+
+      const access = !!userId;
 
       let bucket;
       let username: string = '';
@@ -83,7 +86,7 @@ export class UploadService {
 
       // check if the user is logged in
       if (userRequired) {
-        if (!userId) throw new ServiceForbiddenException();
+        if (!access) throw new ServiceForbiddenException();
 
         await this.prisma.user
           .findFirstOrThrow({
@@ -99,12 +102,14 @@ export class UploadService {
       }
 
       // generate metadata
-      const ext = 'webp';
-      const mimetype = 'image/webp';
+      const metadata = {
+        ext: 'webp',
+        mimetype: 'image/webp',
+      };
       const hash = crypto.randomBytes(24).toString('hex');
       const keys = {
-        original: `${hash}.${ext}`,
-        thumbnail: `${hash}_thumbnail.${ext}`,
+        original: `${hash}.${metadata.ext}`,
+        thumbnail: `${hash}_thumbnail.${metadata.ext}`,
       };
       const paths = {
         original: `${bucket}/${keys.original}`,
@@ -139,7 +144,7 @@ export class UploadService {
       }
 
       const buffers = {
-        original: await sharp(buffer)
+        original: await sharp(file.buffer)
           .resize(size.original.width, size.original.height, {
             fit: 'cover',
             position: 'center',
@@ -147,7 +152,7 @@ export class UploadService {
           .webp()
           .toBuffer(),
         thumbnail: thumbnail
-          ? await sharp(buffer)
+          ? await sharp(file.buffer)
               .resize(size.thumbnail.width, size.thumbnail.height, {
                 fit: 'cover',
                 position: 'center',
@@ -176,7 +181,7 @@ export class UploadService {
           this.s3.send(
             new PutObjectCommand({
               Bucket: bucket,
-              ContentType: mimetype,
+              ContentType: metadata.mimetype,
               Key: key,
               Body: buffer,
             }),

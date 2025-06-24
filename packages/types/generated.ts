@@ -20,6 +20,11 @@ export type GeoJson<T = any> = {
   }[];
 };
 
+type UploadedFile = {
+  buffer: Buffer;
+  mimetype: string;
+};
+
 // app
 export interface ISitemapGetResponse {
   sources: {
@@ -151,7 +156,7 @@ export interface IUserFollowingQueryResponse {
 }
 
 export interface IUserPictureUploadPayload {
-  file: { buffer: Buffer };
+  file: UploadedFile;
 }
 
 export interface IUserPictureUploadClientPayload {
@@ -429,7 +434,7 @@ export enum MediaUploadContext {
 }
 
 export interface IMediaUploadPayload {
-  file: { buffer: Buffer };
+  file: UploadedFile;
   context: MediaUploadContext;
   thumbnail?: boolean;
   aspect?: 'auto' | 'square';
