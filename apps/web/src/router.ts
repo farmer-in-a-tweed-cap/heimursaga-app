@@ -1,5 +1,6 @@
 export const ROUTER = {
-  HOME: '/',
+  INDEX: '/',
+  HOME: '/explore',
   LOGIN: '/login',
   SIGNUP: '/signup',
   RESET_PASSWORD: 'reset-password',

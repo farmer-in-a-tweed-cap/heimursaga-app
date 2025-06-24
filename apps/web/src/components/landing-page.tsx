@@ -1,14 +1,9 @@
 import { Button } from '@repo/ui/components';
-import { Metadata } from 'next';
 import Link from 'next/link';
 
 import { Logo } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { ROUTER } from '@/router';
-
-export const metadata: Metadata = {
-  title: APP_CONFIG.APP.NAME,
-};
 
 const data = {
   counters: [
@@ -30,7 +25,7 @@ const data = {
   ],
 };
 
-export default async function Page() {
+export const LandingPage = () => {
   return (
     <div className="w-full h-auto flex flex-col">
       <div className="w-full h-auto min-h-dvh bg-white flex flex-col justify-center items-center py-20">
@@ -48,7 +43,7 @@ export default async function Page() {
         </div>
         <div className="mt-14 flex flex-col justify-center items-center">
           <Button size="lg" asChild>
-            <Link href={ROUTER.SIGNUP}>Start journey</Link>
+            <Link href={ROUTER.HOME}>Explore</Link>
           </Button>
         </div>
       </div>
@@ -159,4 +154,4 @@ export default async function Page() {
       </footer>
     </div>
   );
-}
+};
