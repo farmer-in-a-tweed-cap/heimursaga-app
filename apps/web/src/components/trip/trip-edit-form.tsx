@@ -50,6 +50,8 @@ type Props = {
   onWaypointCreateStart?: (waypoint: MapWaypointValue) => void;
   onWaypointCreateCancel?: () => void;
   onWaypointDelete?: (id: number) => void;
+  onWaypointEditStart?: (waypoint: MapWaypointValue) => void;
+  onWaypointEditSubmit?: (waypoint: MapWaypointValue) => void;
   onSubmit?: TripEditFormSubmitHandler;
 };
 
@@ -64,6 +66,8 @@ export const TripEditForm: React.FC<Props> = ({
   onWaypointCreateCancel,
   onWaypointCreateSubmit,
   onWaypointDelete,
+  onWaypointEditStart,
+  onWaypointEditSubmit,
   onLoading = () => {},
   onSubmit = () => {},
 }) => {
@@ -156,11 +160,22 @@ export const TripEditForm: React.FC<Props> = ({
   const handleWaypointEditStart = (id: number) => {
     setWaypointEditing(true);
     setWaypointEditingId(id);
+
+    const waypoint = waypoints.find((waypoint) => waypoint.id === id);
+    if (!waypoint) return;
+
+    if (onWaypointEditStart) {
+      onWaypointEditStart(waypoint);
+    }
   };
 
   const handleWaypointEditCancel = () => {
     setWaypointEditing(false);
     setWaypointEditingId(null);
+  };
+
+  const handleWaypointEditSubmit = () => {
+    //
   };
 
   const handleWaypointDelete = async (id: number) => {
@@ -266,9 +281,7 @@ export const TripEditForm: React.FC<Props> = ({
                       defaultValues={{ title, lat, lon, date }}
                       loading={loading.waypoint}
                       onCancel={handleWaypointEditCancel}
-                      onSubmit={(data) => {
-                        // handleWaypointEditSubmit(id, data)
-                      }}
+                      onSubmit={handleWaypointEditSubmit}
                     />
                   </div>
                 ) : (
