@@ -38,6 +38,11 @@ export const SEARCH_PARAMS = {
   FILTER: 'filter',
 };
 
-export const FILE_ACCEPT = {
-  IMAGE: ['image/jpeg', 'image/png'] as string[],
+export const FILE_ACCEPT: {
+  IMAGE: { [key: string]: string[] };
+} = {
+  IMAGE: {
+    'image/jpeg': [],
+    'image/png': [],
+  },
 };

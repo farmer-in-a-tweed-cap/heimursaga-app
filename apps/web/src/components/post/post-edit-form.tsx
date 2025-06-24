@@ -262,7 +262,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                       Photos ({uploader.files.length}/{uploader.maxFiles})
                     </FormLabel>
                     <FilePicker
-                      accept={{ image: FILE_ACCEPT.IMAGE }}
+                      accept={FILE_ACCEPT.IMAGE}
                       files={uploader.files}
                       maxFiles={uploader.maxFiles}
                       maxSize={uploader.maxSize}
