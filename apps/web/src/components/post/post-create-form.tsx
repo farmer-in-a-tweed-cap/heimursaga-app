@@ -39,17 +39,14 @@ const schema = z.object({
   title: z
     .string()
     .nonempty(zodMessage.required('title'))
-    .min(5, zodMessage.string.min('title', 5))
     .max(50, zodMessage.string.max('title', 50)),
   content: z
     .string()
     .nonempty(zodMessage.required('content'))
-    .min(0, zodMessage.string.min('content', 0))
     .max(3000, zodMessage.string.max('content', 3000)),
   place: z
     .string()
     .nonempty(zodMessage.required('place'))
-    .min(0, zodMessage.string.min('place', 0))
     .max(50, zodMessage.string.max('place', 50))
     .optional(),
   date: z.date().optional(),
