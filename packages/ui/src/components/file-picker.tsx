@@ -1,7 +1,7 @@
 'use client';
 
 import { UploadCloudIcon, XIcon } from 'lucide-react';
-import { Accept, useDropzone } from 'react-dropzone';
+import { useDropzone } from 'react-dropzone';
 
 import { cn, randomIntegerId } from './../lib/utils';
 import { LoadingSpinner } from './spinner';
@@ -16,7 +16,7 @@ export type FilePickerFile = {
 
 type Props = {
   files?: FilePickerFile[];
-  accept?: { image?: string[] };
+  accept?: { [key: string]: string[] };
   maxFiles?: number;
   maxSize?: number;
   placeholder?: string;

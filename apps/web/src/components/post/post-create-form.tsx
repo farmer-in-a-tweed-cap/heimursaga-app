@@ -7,6 +7,7 @@ import {
   FilePicker,
   Form,
   FormControl,
+  FormErrorMessage,
   FormField,
   FormItem,
   FormLabel,
@@ -17,7 +18,7 @@ import {
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
 import { MapPinIcon } from '@repo/ui/icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -31,7 +32,7 @@ import {
 } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { FILE_ACCEPT } from '@/constants';
-import { useMap, useModal, useSession, useUploads } from '@/hooks';
+import { useMap, useModal, useScroll, useSession, useUploads } from '@/hooks';
 import { dateformat, redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
@@ -65,6 +66,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   const modal = useModal();
   const session = useSession();
   const toast = useToast();
+  const { scrollTo, setRef } = useScroll();
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -165,13 +167,16 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-4">
-        <MapPreview
-          zoom={map.zoom}
-          center={map.marker}
-          marker={map.marker}
-          overlay={waypoint ? false : true}
-          onClick={handleLocationPickModal}
-        />
+        <div ref={setRef('map')} className="w-full h-auto">
+          <MapPreview
+            zoom={map.zoom}
+            center={map.marker}
+            marker={map.marker}
+            overlay={waypoint ? false : true}
+            onClick={handleLocationPickModal}
+          />
+        </div>
+
         {waypoint && (
           <div className="flex flex-row items-center justify-start gap-1">
             <MapPinIcon weight="bold" size={18} />
@@ -226,7 +231,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                       Photos ({uploader.files.length}/{uploader.maxFiles})
                     </FormLabel>
                     <FilePicker
-                      accept={{ image: FILE_ACCEPT.IMAGE }}
+                      accept={FILE_ACCEPT.IMAGE}
                       files={uploader.files}
                       maxFiles={uploader.maxFiles}
                       maxSize={uploader.maxSize}

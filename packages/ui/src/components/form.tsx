@@ -159,6 +159,10 @@ function FormMessage({ className, ...props }: React.ComponentProps<'p'>) {
   );
 }
 
+export const FormErrorMessage: React.FC<{ message?: string }> = ({
+  message = '',
+}) => <p className="text-xs text-destructive">{message}</p>;
+
 export {
   useFormField,
   Form,
