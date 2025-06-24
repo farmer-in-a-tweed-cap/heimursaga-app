@@ -89,6 +89,8 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
     setWaypoint(null);
   };
 
+  const handleWaypointEditStart = () => {};
+
   const handleWaypointDelete = (id: number) => {
     setWaypoints((waypoints) => {
       return waypoints.filter((waypoint) => waypoint.id !== id);
@@ -106,9 +108,9 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
             backUrl={backUrl}
           />
         )}
-        {/* <span className="break-all text-xs">
+        <span className="break-all text-xs">
           {JSON.stringify({ w: waypoint })}
-        </span> */}
+        </span>
         <div className="w-full h-full flex flex-col overflow-y-scroll">
           <div className="w-full h-auto px-6 py-4">
             <TripEditForm
