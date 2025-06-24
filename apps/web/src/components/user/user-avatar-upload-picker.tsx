@@ -17,7 +17,8 @@ type Props = {
   onChange?: (file: File) => void;
 };
 
-const ACCEPT_FILE_TYPES = 'image/*';
+const FILE_ACCEPT = 'image/jpeg,image/png';
+
 const MULTIPLE = false;
 
 export const UserAvatarUploadPicker: React.FC<Props> = ({
@@ -59,7 +60,7 @@ export const UserAvatarUploadPicker: React.FC<Props> = ({
           type="file"
           ref={inputRef}
           onChange={handleChange}
-          accept={ACCEPT_FILE_TYPES}
+          accept={FILE_ACCEPT}
           multiple={MULTIPLE}
           style={{ display: 'none' }}
         />
