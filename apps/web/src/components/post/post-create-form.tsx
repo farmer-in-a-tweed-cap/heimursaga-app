@@ -5,8 +5,6 @@ import {
   Button,
   DatePicker,
   FilePicker,
-  FilePickerFile,
-  FilePickerLoadHandler,
   Form,
   FormControl,
   FormField,
@@ -32,6 +30,7 @@ import {
   MapPreview,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
+import { FILE_ACCEPT } from '@/constants';
 import { useMap, useModal, useSession, useUploads } from '@/hooks';
 import { dateformat, redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
@@ -89,7 +88,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
 
   const uploader = useUploads({
     maxFiles: session.creator ? 3 : 1,
-    maxSize: 2,
+    maxSize: APP_CONFIG.UPLOAD.MAX_FILE_SIZE,
   });
 
   const [privacy, setPrivacy] = useState<{
@@ -230,6 +229,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                       Photos ({uploader.files.length}/{uploader.maxFiles})
                     </FormLabel>
                     <FilePicker
+                      accept={{ image: FILE_ACCEPT.IMAGE }}
                       files={uploader.files}
                       maxFiles={uploader.maxFiles}
                       maxSize={uploader.maxSize}

@@ -5,7 +5,7 @@ import { useState } from 'react';
 
 import { apiClient } from '@/lib/api';
 
-import { randomIntegerId } from '@/lib';
+import { APP_CONFIG } from '@/config';
 
 type State = {
   files?: FilePickerFile[];
@@ -16,8 +16,8 @@ type State = {
 export const useUploads = (state?: State) => {
   const [files, setFiles] = useState<FilePickerFile[]>(state?.files || []);
 
-  const maxFiles = state?.maxFiles || 4;
-  const maxSize = state?.maxSize || 2;
+  const maxFiles = state?.maxFiles || APP_CONFIG.UPLOAD.MAX_FILES;
+  const maxSize = state?.maxSize || APP_CONFIG.UPLOAD.MAX_FILE_SIZE;
 
   const loader = async ({ id, file }: FilePickerFile) => {
     console.log('file:', { id, file });

@@ -37,3 +37,7 @@ export const SEARCH_PARAMS = {
   USER: 'user',
   FILTER: 'filter',
 };
+
+export const FILE_ACCEPT = {
+  IMAGE: ['image/jpeg', 'image/png'] as string[],
+};
