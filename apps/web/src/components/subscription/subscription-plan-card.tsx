@@ -39,7 +39,7 @@ export const SubscriptionPlanCard: React.FC<Props> = ({
         </span>
         <span className="pt-2 text-sm font-normal text-gray-600">/ month</span>
       </div>
-      {!active && (
+      {/* {!active && (
         <div className="mt-1 flex flex-row gap-2">
           <span className="text-gray-600 text-base">
             {currencySymbol}
@@ -51,7 +51,7 @@ export const SubscriptionPlanCard: React.FC<Props> = ({
             </span>
           )}
         </div>
-      )}
+      )} */}
       {!active && (
         <div className="mt-6">
           <BulletList items={features} />
