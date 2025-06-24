@@ -22,11 +22,11 @@ import { UserAvatar, UserGuestAvatar } from './user-avatar';
 const getRoleLabel = (role: string) => {
   switch (role) {
     case UserRole.USER:
-      return 'member';
+      return 'explorer';
     case UserRole.ADMIN:
       return 'admin';
     case UserRole.CREATOR:
-      return 'creator';
+      return 'explorer pro';
   }
 };
 
