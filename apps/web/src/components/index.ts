@@ -24,3 +24,4 @@ export * from './trip';
 export * from './list/menu';
 export * from './payout';
 export * from './admin';
+export * from './landing-page';
