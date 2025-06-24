@@ -30,6 +30,7 @@ import {
 } from '@/components';
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
+import { FILE_ACCEPT } from '@/constants';
 import { useMap, useModal, useSession, useUploads } from '@/hooks';
 import { dateformat, normalizeText, randomIntegerId, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
@@ -84,7 +85,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
         }))
       : [],
     maxFiles: session.creator ? 3 : 1,
-    maxSize: 2,
+    maxSize: APP_CONFIG.UPLOAD.MAX_FILE_SIZE,
   });
 
   const [loading, setLoading] = useState<{ post: boolean; privacy: boolean }>({
@@ -264,6 +265,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                       Photos ({uploader.files.length}/{uploader.maxFiles})
                     </FormLabel>
                     <FilePicker
+                      accept={{ image: FILE_ACCEPT.IMAGE }}
                       files={uploader.files}
                       maxFiles={uploader.maxFiles}
                       maxSize={uploader.maxSize}

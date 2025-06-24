@@ -1,7 +1,7 @@
 'use client';
 
-import { XIcon } from 'lucide-react';
-import { useDropzone } from 'react-dropzone';
+import { UploadCloudIcon, XIcon } from 'lucide-react';
+import { Accept, useDropzone } from 'react-dropzone';
 
 import { cn, randomIntegerId } from './../lib/utils';
 import { LoadingSpinner } from './spinner';
@@ -16,6 +16,7 @@ export type FilePickerFile = {
 
 type Props = {
   files?: FilePickerFile[];
+  accept?: { image?: string[] };
   maxFiles?: number;
   maxSize?: number;
   placeholder?: string;
@@ -30,6 +31,7 @@ export type FilePickerLoadHandler = (file: { id: number; src: string }) => void;
 
 export const FilePicker: React.FC<Props> = ({
   maxFiles = 1,
+  accept,
   maxSize = 2,
   files = [],
   placeholder = 'Click and select some files to upload',
@@ -43,19 +45,19 @@ export const FilePicker: React.FC<Props> = ({
 
   const { getRootProps, getInputProps } = useDropzone({
     noClick: false,
-    accept: {
-      'image/*': [],
-    },
+    accept,
     maxFiles,
     maxSize: maxSize * 1000000,
-    onDrop: (acceptedFiles) => {
-      const files: FilePickerFile[] = acceptedFiles.map((file) =>
-        Object.assign(file, {
-          id: randomIntegerId(),
-          src: URL.createObjectURL(file),
-          file,
-          loading: true,
-        }),
+    onDrop: async (acceptedFiles) => {
+      const files: FilePickerFile[] = await Promise.all(
+        acceptedFiles.map(async (file) =>
+          Object.assign(file, {
+            id: randomIntegerId(),
+            src: URL.createObjectURL(file),
+            file,
+            loading: true,
+          }),
+        ),
       );
 
       const total = files.length + fileCount;
@@ -96,7 +98,11 @@ export const FilePicker: React.FC<Props> = ({
         )}
       >
         <input {...getInputProps()} disabled={pickerDisabled} />
-        <span className="text-sm font-normal text-gray-500">{placeholder}</span>
+        <div className="flex flex-col items-center justify-center gap-2 text-gray-500">
+          <UploadCloudIcon />
+          <span className="text-sm font-normal">{placeholder}</span>
+          <span className="text-sm">({`<${maxSize} mb`})</span>
+        </div>
       </div>
 
       {files.length >= 1 && (
@@ -129,7 +135,13 @@ const FilePickerPreview: React.FC<{
           <LoadingSpinner />
         </div>
       )}
-      <img src={src} className="z-10 w-auto min-w-[150%] h-auto" />
+      <img
+        src={src}
+        className="z-10 w-auto aspect-square"
+        width={400}
+        height={300}
+        alt=""
+      />
       <div className="z-20 absolute inset-0 opacity-0 hover:opacity-100 transition-all">
         <button
           type="button"

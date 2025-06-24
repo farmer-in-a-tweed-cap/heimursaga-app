@@ -32,4 +32,8 @@ export const APP_CONFIG = {
     STYLE: 'cnh1187/clikkzykm00wb01qf28pz4adt',
     BRAND_COLOR: 'AA6C46',
   },
+  UPLOAD: {
+    MAX_FILE_SIZE: 5, // mb
+    MAX_FILES: 4,
+  },
 };
