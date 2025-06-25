@@ -1,4 +1,4 @@
-export const EMAIL_TEMPLATE_KEYS = {
+export const EMAIL_TEMPLATES = {
   WELCOME: 'welcome',
   PASSWORD_RESET: 'password_reset',
 };
@@ -6,12 +6,12 @@ export const EMAIL_TEMPLATE_KEYS = {
 const templates: { key: string; subject: string; html: (v?: any) => string }[] =
   [
     {
-      key: EMAIL_TEMPLATE_KEYS.WELCOME,
-      subject: 'welcome to saga',
-      html: (v: { name: string }) => `welcome to saga, ${v?.name}`,
+      key: EMAIL_TEMPLATES.WELCOME,
+      subject: 'welcome to heirmursaga',
+      html: () => `welcome to heirmursaga!`,
     },
     {
-      key: EMAIL_TEMPLATE_KEYS.PASSWORD_RESET,
+      key: EMAIL_TEMPLATES.PASSWORD_RESET,
       subject: 'reset password',
       html: (v: { reset_link: string }) =>
         `reset your password using the link below\n, ${v?.reset_link}`,

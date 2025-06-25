@@ -986,7 +986,7 @@ export class SponsorService {
     }
   }
 
-  @OnEvent(EVENTS.SPONSORSHIP.CHECKOUT_COMPLETE)
+  @OnEvent(EVENTS.SPONSORSHIP_CHECKOUT_COMPLETE)
   async onSponsorCheckoutComplete(event: IOnSponsorCheckoutCompleteEvent) {
     try {
       const { checkoutId, creatorId, userId } = event;

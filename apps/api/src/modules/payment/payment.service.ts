@@ -1045,7 +1045,7 @@ export class PaymentService {
     }
   }
 
-  @OnEvent(EVENTS.SUBSCRIPTION.UPGRADE.COMPLETE)
+  @OnEvent(EVENTS.SUBSCRIPTION_UPGRADE_COMPLETE)
   async onSubscriptionUpgradeComplete(
     event: IOnSubscriptionUpgradeCompleteEvent,
   ) {

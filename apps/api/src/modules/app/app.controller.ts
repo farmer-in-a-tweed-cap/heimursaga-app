@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public } from '@/common/decorators';
@@ -14,6 +14,12 @@ export class AppController {
   @Get()
   health() {
     return;
+  }
+
+  @Public()
+  @Post('test')
+  test() {
+    return this.appService.test();
   }
 
   @Public()

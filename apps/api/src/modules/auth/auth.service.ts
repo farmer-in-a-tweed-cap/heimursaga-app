@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
 import {
   AppErrorCode,
   ILoginPayload,
@@ -15,7 +16,7 @@ import { generator } from '@/lib/generator';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { hashPassword } from '@/lib/utils';
 
-import { EMAIL_TEMPLATE_KEYS } from '@/common/email-templates';
+import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
   ServiceBadRequestException,
   ServiceException,
@@ -26,7 +27,12 @@ import {
 import { ISession, ISessionQueryWithPayload } from '@/common/interfaces';
 import { config } from '@/config';
 import { IPasswordResetEmailTemplateData } from '@/modules/email';
-import { EVENTS, EventService, IEmailSendEvent } from '@/modules/event';
+import {
+  EVENTS,
+  EventService,
+  IEventSendEmail,
+  IEventSignupComplete,
+} from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
@@ -189,8 +195,11 @@ export class AuthService {
         },
       });
 
-      // @todo
       // trigger the sign up event
+      this.eventService.trigger<IEventSignupComplete>({
+        event: EVENTS.SIGNUP_COMPLETE,
+        data: { email },
+      });
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -351,12 +360,12 @@ export class AuthService {
 
       // send the email
       this.eventService.trigger<
-        IEmailSendEvent<IPasswordResetEmailTemplateData>
+        IEventSendEmail<IPasswordResetEmailTemplateData>
       >({
         event: EVENTS.SEND_EMAIL,
         data: {
           to: email,
-          template: EMAIL_TEMPLATE_KEYS.PASSWORD_RESET,
+          template: EMAIL_TEMPLATES.PASSWORD_RESET,
           vars: { reset_link: link },
         },
       });
@@ -427,6 +436,24 @@ export class AuthService {
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('token is expired or invalid');
       throw exception;
+    }
+  }
+
+  @OnEvent(EVENTS.SIGNUP_COMPLETE)
+  async onSignupComplete(payload: IEventSignupComplete): Promise<void> {
+    try {
+      const { email } = payload;
+
+      // send a welcome email
+      this.eventService.trigger<IEventSendEmail>({
+        event: EVENTS.SEND_EMAIL,
+        data: {
+          to: email,
+          template: EMAIL_TEMPLATES.WELCOME,
+        },
+      });
+    } catch (e) {
+      this.logger.error(e);
     }
   }
 }

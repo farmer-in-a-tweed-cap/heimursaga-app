@@ -598,7 +598,7 @@ export class UserService {
         // create a notification
         if (followerId !== followeeId) {
           await this.eventService.trigger<IUserNotificationCreatePayload>({
-            event: EVENTS.NOTIFICATIONS.CREATE,
+            event: EVENTS.NOTIFICATION_CREATE,
             data: {
               context: UserNotificationContext.FOLLOW,
               userId: followeeId,

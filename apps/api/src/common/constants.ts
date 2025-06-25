@@ -1,5 +1,11 @@
 import { CurrencyCode } from './enums';
 
+export const ENVIRONMENTS = {
+  PRODUCTION: 'production',
+  STAGING: 'staging',
+  DEVELOPMENT: 'development',
+};
+
 export const SESSION_KEYS: {
   SID: 'sid';
   USER_ID: 'user_id';

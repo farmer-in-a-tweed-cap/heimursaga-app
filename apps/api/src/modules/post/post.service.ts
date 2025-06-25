@@ -623,7 +623,7 @@ export class PostService {
         // create a notification
         if (userId !== post.author_id) {
           await this.eventService.trigger<IUserNotificationCreatePayload>({
-            event: EVENTS.NOTIFICATIONS.CREATE,
+            event: EVENTS.NOTIFICATION_CREATE,
             data: {
               context: UserNotificationContext.LIKE,
               userId: post.author_id,
