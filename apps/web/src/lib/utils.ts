@@ -29,15 +29,10 @@ export const getEnv = (): 'development' | 'production' => {
   return process.env.NODE_ENV as 'development' | 'production';
 };
 
-export const normalizeText = (text: string = '') => {
-  return (
-    text
-      // .replace('\\n', /\n)
-      .replace(/\\n/g, '\n')
-  );
-  // .filter((line) => line.trim() !== '')
-  // .map((line, key) => <p key={key}>{line}</p>);
-};
+export const normalizeText = (text: string): string =>
+  text.replace(/\\n/g, '\n');
+
+export const renderText = (text: string): string => text.replace(/\\n/g, '\n');
 
 export const randomIntegerId = (): number => {
   return parseInt(Date.now() + Math.random().toFixed(0));

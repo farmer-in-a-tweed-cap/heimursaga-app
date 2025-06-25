@@ -20,7 +20,7 @@ import {
   MapLoadHandler,
   MapMoveHandler,
 } from '@/hooks';
-import { dateformat } from '@/lib';
+import { dateformat, normalizeText } from '@/lib';
 
 import { MapNavigationControl } from './map-control';
 import { addSources, updateSources } from './map.utils';
@@ -310,7 +310,16 @@ export const Map: React.FC<Props> = ({
     if (!isMobile) {
       popupHovered.current = true;
 
-      const { title = '', content = '', date = new Date() } = properties || {};
+      const { title = '', date = new Date() } = properties || {};
+      const content = properties?.content
+        ? properties?.content.split('\n').join(' ')
+        : '';
+
+      console.log({
+        content: properties?.content,
+        x: properties?.content.split('\n').join(' '),
+      });
+
       const popupContent = `
       <div class="flex flex-col justify-start">
         <div class="flex flex-col justify-start gap-0">
