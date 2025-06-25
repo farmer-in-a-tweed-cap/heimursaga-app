@@ -32,10 +32,10 @@ export const UserCard: React.FC<Props> = ({
       <div className="flex flex-row justify-between items-center">
         <div className="flex flex-row justify-start items-center gap-3">
           <UserBar
-            name={name}
+            name={username}
             picture={picture}
             creator={creator}
-            text={`@${username}`}
+            // text={`@${username}`}
           />
         </div>
       </div>

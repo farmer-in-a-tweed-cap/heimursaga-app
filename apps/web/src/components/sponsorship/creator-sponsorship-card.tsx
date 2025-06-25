@@ -40,7 +40,7 @@ export const CreatorSponsorshipCard: React.FC<Props> = ({
       <Link href={user?.username ? ROUTER.USERS.DETAIL(user?.username) : '#'}>
         <CardContent className="flex flex-row justify-between items-start">
           <div className="flex flex-col justify-start items-start gap-1">
-            {user && <span>{user.name}</span>}
+            {user && <span>{user.username}</span>}
             <div className="flex flex-row text-base font-medium">
               <span>{currencySymbol}</span>
               <span>{amount}</span>

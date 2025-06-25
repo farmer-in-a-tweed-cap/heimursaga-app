@@ -37,13 +37,13 @@ export const UserProfileCard: React.FC<Props> = ({
               loading={loading}
               fallback={name}
             />
-            <div className="mt-1 flex flex-col items-start justify-start  gap-0">
+            <div className="flex flex-col items-start justify-start gap-0">
               {loading ? (
                 <div className="h-6 flex items-center justify-center">
                   <Skeleton className="w-[100px] h-4" />
                 </div>
               ) : (
-                <span className="h-6 font-medium text-base">{name}</span>
+                <span className="h-6 font-medium text-base">{username}</span>
               )}
               {loading ? (
                 <Skeleton className="w-[80px] h-2" />

@@ -157,7 +157,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
           )}
           {!collapsed && (
             <div className="hidden lg:flex flex-col items-start text-sm">
-              <span className="font-medium text-sm text-white">{name}</span>
+              <span className="font-medium text-sm text-white">{username}</span>
               <span className={cn('font-normal text-xs capitalize')}>
                 {roleLabel}
               </span>

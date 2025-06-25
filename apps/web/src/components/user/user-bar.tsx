@@ -15,7 +15,7 @@ type Props = {
 export const UserBar: React.FC<Props> = ({
   name = 'user',
   picture = '',
-  text = '****',
+  text,
   creator = false,
   loading = false,
 }) => {
@@ -43,14 +43,18 @@ export const UserBar: React.FC<Props> = ({
             {/* {creator && <VerificationBadge />} */}
           </div>
         )}
-        {loading ? (
-          <div className="h-[12px] flex flex-row items-center justify-start">
-            <Skeleton className="w-[100px] h-[8px]" />
-          </div>
+        {text ? (
+          loading ? (
+            <div className="h-[12px] flex flex-row items-center justify-start">
+              <Skeleton className="w-[100px] h-[8px]" />
+            </div>
+          ) : (
+            <span className="text-[0.75rem] font-normal text-gray-600">
+              {text}
+            </span>
+          )
         ) : (
-          <span className="text-[0.75rem] font-normal text-gray-600">
-            {text}
-          </span>
+          <></>
         )}
       </div>
     </div>

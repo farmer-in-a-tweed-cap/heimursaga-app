@@ -29,11 +29,11 @@ import { zodMessage } from '@/lib';
 import { UserAvatarUploadPicker } from './user-avatar-upload-picker';
 
 const schema = z.object({
-  name: z
-    .string()
-    .nonempty(zodMessage.required('name'))
-    .min(2, zodMessage.string.min('name', 2))
-    .max(50, zodMessage.string.max('name', 20)),
+  // name: z
+  //   .string()
+  //   .nonempty(zodMessage.required('name'))
+  //   .min(2, zodMessage.string.min('name', 2))
+  //   .max(50, zodMessage.string.max('name', 20)),
   username: z
     .string()
     .nonempty(zodMessage.required('username'))
@@ -80,13 +80,13 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
       ? {
           email: data.email,
           username: data.username,
-          name: data.name,
+          // name: data.name,
           bio: data.bio,
           location_from: data.locationFrom,
           location_lives: data.locationLives,
         }
       : {
-          name: '',
+          // name: '',
           bio: '',
           location_from: '',
           location_lives: '',
@@ -96,7 +96,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
-        const { name, bio, location_from, location_lives } = values;
+        const { bio, location_from, location_lives } = values;
 
         setLoading((loading) => ({ ...loading, settings: true }));
 
@@ -104,7 +104,6 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
         const { success } = await apiClient.updateUserProfileSettings({
           query: {},
           payload: {
-            name,
             bio,
             from: location_from,
             livesIn: location_lives,
@@ -187,7 +186,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                     />
                   </div>
                 </div>
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
@@ -203,7 +202,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                /> */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <FormField
                     control={form.control}

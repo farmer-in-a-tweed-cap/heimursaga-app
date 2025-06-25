@@ -459,7 +459,7 @@ export const MapExploreView: React.FC<Props> = () => {
             <div className="flex flex-col pt-4 pb-2 px-6">
               <div className="flex flex-col justify-start items-start gap-3">
                 <UserProfileCard
-                  name={user?.name}
+                  name={user?.username}
                   picture={user?.picture}
                   username={user?.username}
                   loading={userQuery.isLoading}
