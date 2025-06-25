@@ -1,3 +1,3 @@
-# saga
+# Heimursaga
 
-a journaling platform for travelers.
+a journaling platform for explorers.
