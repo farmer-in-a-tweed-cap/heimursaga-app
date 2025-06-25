@@ -13,22 +13,28 @@ import {
   FormLabel,
   FormMessage,
   Input,
+  Select,
+  SelectInput,
   Switch,
   Textarea,
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
-import { MapPinIcon } from '@repo/ui/icons';
+import { MapPinIcon, PathIcon, XIcon } from '@repo/ui/icons';
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import {
+  CloseButton,
   MODALS,
   MapLocationPickModalOnSubmitHandler,
   MapLocationPickModalProps,
   MapPreview,
+  TripSelectModalProps,
+  TripSelectModalSubmitHandler,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { FILE_ACCEPT } from '@/constants';
@@ -48,9 +54,9 @@ const schema = z.object({
   place: z
     .string()
     .nonempty(zodMessage.required('place'))
-    .max(50, zodMessage.string.max('place', 50))
-    .optional(),
+    .max(50, zodMessage.string.max('place', 50)),
   date: z.date().optional(),
+  journeyId: z.string().nonempty(zodMessage.required('journey')).optional(),
 });
 
 type Props = {
@@ -66,7 +72,6 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   const modal = useModal();
   const session = useSession();
   const toast = useToast();
-  const { scrollTo, setRef } = useScroll();
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -79,6 +84,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   });
 
   const [loading, setLoading] = useState<boolean>(false);
+  const [trip, setTrip] = useState<{ id: string; title: string } | null>(null);
 
   const map = useMap({
     marker: waypoint ? waypoint : undefined,
@@ -98,8 +104,16 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     sponsored: false,
   });
 
+  const tripQuery = useQuery({
+    queryKey: [API_QUERY_KEYS.TRIPS],
+    queryFn: () => apiClient.getTrips().then(({ data }) => data),
+    enabled: session.creator,
+  });
+
+  const trips = tripQuery.data?.data || [];
+
   const handleLocationPickModal = () => {
-    modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_PICK, {
+    modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_SELECT, {
       full: true,
       props: {
         center: map.marker ? map.marker : map.center,
@@ -116,6 +130,18 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
           map.setZoom(APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM);
         }
       }) as MapLocationPickModalOnSubmitHandler,
+      onCancel: () => {},
+    });
+  };
+
+  const handleTripSelectModal = () => {
+    modal.open<TripSelectModalProps>(MODALS.TRIP_SELECT, {
+      full: false,
+      props: {},
+      onSubmit: ((data) => {
+        const { id, title } = data;
+        setTrip({ id, title });
+      }) as TripSelectModalSubmitHandler,
       onCancel: () => {},
     });
   };
@@ -164,10 +190,15 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     },
   );
 
+  useEffect(() => {
+    // cache modals
+    modal.preload([MODALS.MAP_LOCATION_SELECT, MODALS.TRIP_SELECT]);
+  }, []);
+
   return (
     <div className="flex flex-col">
       <div className="flex flex-col gap-4">
-        <div ref={setRef('map')} className="w-full h-auto">
+        <div className="w-full h-auto">
           <MapPreview
             zoom={map.zoom}
             center={map.marker}
@@ -225,6 +256,39 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                     )}
                   />
                 </div>
+                {session.creator && (
+                  <div className="flex flex-row">
+                    <FormItem>
+                      <FormLabel>Journey</FormLabel>
+                      <div className="mt-1">
+                        {trip ? (
+                          <div className="bg-accent text-black py-1.5 px-3 rounded-full overflow-hidden flex flex-row gap-4 items-center justify-start">
+                            <div className="flex flex-row items-center justify-start gap-2 text-sm font-normal">
+                              <PathIcon weight="bold" size={18} />
+                              <span>{trip.title}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTrip(null);
+                              }}
+                            >
+                              <XIcon weight="bold" size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleTripSelectModal}
+                          >
+                            Add journey
+                          </Button>
+                        )}
+                      </div>
+                    </FormItem>
+                  </div>
+                )}
                 <div>
                   <FormItem>
                     <FormLabel>

@@ -109,7 +109,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
   });
 
   const handleLocationPickModal = () => {
-    modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_PICK, {
+    modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_SELECT, {
       full: true,
       props: {
         center: map.marker ? map.marker : map.center,
@@ -205,7 +205,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
 
   // cache modals
   useEffect(() => {
-    modal.preload([MODALS.MAP_LOCATION_PICK]);
+    modal.preload([MODALS.MAP_LOCATION_SELECT]);
   }, [modal.preload]);
 
   return (

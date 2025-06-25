@@ -14,7 +14,8 @@ export const MODALS = {
   ACTION: 'action',
   PAYMENT_METHOD_ADD: 'payment_method_add',
   PAYMENT_METHOD_DELETE: 'payment_method_delete',
-  MAP_LOCATION_PICK: 'map_location_pick',
+  MAP_LOCATION_SELECT: 'map_location_select',
+  TRIP_SELECT: 'trip_select',
 };
 
 export const modalRegistry: IModalRegistry = {
@@ -22,5 +23,6 @@ export const modalRegistry: IModalRegistry = {
   [MODALS.ACTION]: () => import('./action-modal'),
   [MODALS.PAYMENT_METHOD_ADD]: () => import('./payment-method-add-modal'),
   [MODALS.PAYMENT_METHOD_DELETE]: () => import('./payment-method-delete-modal'),
-  [MODALS.MAP_LOCATION_PICK]: () => import('./map-location-pick-modal'),
+  [MODALS.MAP_LOCATION_SELECT]: () => import('./map-location-pick-modal'),
+  [MODALS.TRIP_SELECT]: () => import('./trip-select-modal'),
 };

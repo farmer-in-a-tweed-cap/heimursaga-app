@@ -50,6 +50,7 @@ function Button({
   loading = false,
   disabled = false,
   children,
+  type = 'button',
   ...props
 }: ButtonProps) {
   const Comp = asChild ? Slot : 'button';
@@ -57,6 +58,7 @@ function Button({
   return (
     <Comp
       data-slot="button"
+      type={type}
       className={cn(buttonVariants({ variant, size, className }))}
       disabled={disabled || loading}
       {...props}
