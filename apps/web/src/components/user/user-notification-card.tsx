@@ -8,7 +8,7 @@ import { ROUTER } from '@/router';
 
 type Props = {
   context: string;
-  mentionUser: { username: string; name: string; picture: string };
+  mentionUser: { username: string; picture: string };
   postId?: string;
   date: Date;
 };
@@ -26,14 +26,14 @@ export const UserNotificationCard: React.FC<Props> = ({
 
   switch (context) {
     case UserNotificationContext.LIKE:
-      notification.mention = mentionUser.name;
+      notification.mention = mentionUser.username;
       notification.text = 'liked your entry';
       if (postId) {
         notification.url = ROUTER.ENTRIES.DETAIL(postId);
       }
       break;
     case UserNotificationContext.FOLLOW:
-      notification.mention = mentionUser.name;
+      notification.mention = mentionUser.username;
       notification.text = 'followed you';
       if (mentionUser?.username) {
         notification.url = ROUTER.USERS.DETAIL(mentionUser?.username);
@@ -53,7 +53,9 @@ export const UserNotificationCard: React.FC<Props> = ({
         >
           <Avatar className="w-[40px] h-[40px]">
             <AvatarImage src={mentionUser?.picture} />
-            <AvatarFallback>{mentionUser?.name?.slice(0, 1)}</AvatarFallback>
+            <AvatarFallback>
+              {mentionUser?.username?.slice(0, 1)}
+            </AvatarFallback>
           </Avatar>
         </Link>
         <div className="flex flex-col">

@@ -35,10 +35,10 @@ export class SignupDto implements ISignupPayload {
   @IsNotEmpty()
   password: string;
 
-  @ApiProperty({ required: true })
-  @IsString()
-  @IsNotEmpty()
-  name: string;
+  // @ApiProperty({ required: true })
+  // @IsString()
+  // @IsNotEmpty()
+  // name: string;
 }
 
 export class PasswordResetDto implements IPasswordResetPayload {

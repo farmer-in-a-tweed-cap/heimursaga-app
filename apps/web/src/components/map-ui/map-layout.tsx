@@ -63,7 +63,7 @@ export const MapDrawer: React.FC<{
                 }
               >
                 <UserBar
-                  name={post?.author?.name}
+                  name={post?.author?.username}
                   picture={post.author?.picture}
                   creator={post.author?.creator}
                   text={dateformat(post?.date).format('MMM DD')}

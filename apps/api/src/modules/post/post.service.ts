@@ -276,7 +276,7 @@ export class PostService {
         author: post.author
           ? {
               username: post.author.username,
-              name: post.author.profile.name,
+              // name: post.author.profile.name,
               picture: post.author.profile.picture
                 ? getStaticMediaUrl(post.author.profile.picture)
                 : undefined,

@@ -13,7 +13,7 @@ type Props = {
   creator?: boolean;
   user?: {
     username: string;
-    name: string;
+    // name: string;
     bio?: string;
   };
 };

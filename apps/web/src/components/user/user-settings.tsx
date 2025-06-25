@@ -32,7 +32,7 @@ type Props = {
     profile?: {
       username: string;
       email: string;
-      name: string;
+      // name: string;
       bio: string;
       picture: string;
     };

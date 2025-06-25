@@ -144,7 +144,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
         <UserAvatarUploadPicker
           src={data?.picture}
           loading={loading.picture}
-          fallback={data?.name}
+          fallback={data?.username}
           onChange={handlePictureUpdate}
         />
         <Form {...form}>

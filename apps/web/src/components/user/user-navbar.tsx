@@ -55,7 +55,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
     }
   };
 
-  const { username, picture = '', name = '' } = session || {};
+  const { username, picture = '' } = session || {};
   const roleLabel = getRoleLabel(session?.role || UserRole.USER);
 
   const LINKS = {

@@ -6,7 +6,7 @@ import { ROUTER } from '@/router';
 type Props = {
   user?: {
     username?: string;
-    name: string;
+    // name: string;
     picture: string;
     bio?: string;
   };

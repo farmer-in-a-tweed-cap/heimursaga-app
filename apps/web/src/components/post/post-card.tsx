@@ -123,7 +123,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 }
               >
                 <UserBar
-                  name={author?.name}
+                  name={author?.username}
                   picture={author?.picture}
                   creator={author?.creator}
                   text={dateformat(date).format('MMM DD')}

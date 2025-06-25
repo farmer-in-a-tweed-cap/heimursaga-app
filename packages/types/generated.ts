@@ -41,7 +41,7 @@ export interface ISessionUser {
   username: string;
   email: string;
   picture?: string;
-  name: string;
+  // name: string;
   isEmailVerified: boolean;
   isPremium: boolean;
 }
@@ -66,7 +66,7 @@ export interface ISignupPayload {
   email: string;
   username: string;
   password: string;
-  name: string;
+  // name: string;
 }
 
 // password reset
@@ -83,7 +83,7 @@ export interface IPasswordUpdatePayload {
 export interface IUserDetail {
   username: string;
   role?: string;
-  name: string;
+  // name: string;
   picture: string;
   bio?: string;
   memberDate?: Date;
@@ -107,7 +107,7 @@ export interface IUserGetByUsernameResponse extends IUserDetail {}
 export interface IUserSettingsResponse {
   context: 'profile' | 'billing';
   profile?: {
-    name: string;
+    // name: string;
     bio: string;
     picture: string;
   };
@@ -125,7 +125,7 @@ export interface IUserSettingsUpdateQuery {
 export interface IUserSettingsProfileGetResponse {
   username: string;
   email: string;
-  name: string;
+  // name: string;
   bio: string;
   picture: string;
   locationFrom?: string;
@@ -261,7 +261,7 @@ export interface IPostDetail {
   createdAt?: Date;
   author?: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
     creator?: boolean;
   };
@@ -353,7 +353,7 @@ export interface IMapQueryResponse {
       bookmarked: boolean;
       author: {
         username: string;
-        name: string;
+        // name: string;
         picture: string;
         creator?: boolean;
       };
@@ -461,7 +461,7 @@ export interface IUserNotification {
   date: Date;
   mentionUser: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
   };
   body?: string;
@@ -490,7 +490,7 @@ export interface ISponsorshipTier {
   creator?: {
     username: string;
     picture: string;
-    name: string;
+    // name: string;
     bio: string;
   };
 }
@@ -620,12 +620,12 @@ export interface ISponsorshipDetail {
   message?: string;
   user?: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
   };
   creator?: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
   };
   createdAt?: Date;
@@ -659,7 +659,7 @@ export interface ITripDetail {
   waypointsCount?: number;
   author?: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
     creator?: boolean;
   };

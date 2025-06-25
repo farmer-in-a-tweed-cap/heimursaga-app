@@ -49,7 +49,6 @@ type Waypoint = {
     date?: Date;
     author: {
       username: string;
-      name: string;
       picture: string;
       creator?: boolean;
     };

@@ -16,7 +16,7 @@ type Props = {
   currency?: string;
   user?: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
   };
 };

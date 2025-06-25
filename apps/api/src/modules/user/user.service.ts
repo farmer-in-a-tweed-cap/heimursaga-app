@@ -180,7 +180,7 @@ export class UserService {
           ? getStaticMediaUrl(user.profile.picture)
           : '',
         bio: user.profile?.bio,
-        name: user.profile.name,
+        // name: user.profile.name,
         memberDate: user.created_at,
         followed: userId ? user.followers.length > 0 : false,
         you: userId ? userId === user.id : false,
