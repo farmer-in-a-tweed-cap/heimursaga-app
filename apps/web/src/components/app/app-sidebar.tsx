@@ -2,6 +2,8 @@
 
 import { UserRole } from '@repo/types';
 import {
+  BadgeCount,
+  BadgeDot,
   Button,
   Tooltip,
   TooltipContent,
@@ -20,9 +22,12 @@ import {
   WalletIcon,
 } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ForwardRefExoticComponent, RefAttributes } from 'react';
+
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { CreatePostButton, Logo, UserNavbar } from '@/components';
 import { useSession } from '@/hooks';
@@ -35,6 +40,7 @@ type SidebarLink = {
   icon: ForwardRefExoticComponent<
     Omit<IconProps, 'ref'> & RefAttributes<SVGSVGElement>
   >;
+  badge?: number;
 };
 
 type Props = {
@@ -51,6 +57,16 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
   const showCreateButton =
     session.logged &&
     (userRole === UserRole.USER || userRole === UserRole.CREATOR);
+
+  const badgeQuery = useQuery({
+    queryKey: [API_QUERY_KEYS.USER.BADGE_COUNT],
+    queryFn: () => apiClient.getBadgeCount().then(({ data }) => data),
+    enabled: true,
+  });
+
+  const badges = {
+    notifications: badgeQuery.isFetched ? badgeQuery.data?.notifications : 0,
+  };
 
   const LINKS: {
     guest: SidebarLink[];
@@ -90,6 +106,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         base: ROUTER.NOTIFICATIONS,
         label: 'Notifications',
         icon: BellIcon,
+        badge: badges.notifications,
       },
     ],
     creator: [
@@ -140,6 +157,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         base: ROUTER.NOTIFICATIONS,
         label: 'Notifications',
         icon: BellIcon,
+        badge: badges.notifications,
       },
     ],
     admin: [
@@ -205,39 +223,48 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
           </div>
           <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-3">
             <div className="lg:w-full flex flex-col gap-2">
-              {links.map(({ href, base, label, icon: Icon }, key) => (
-                <Tooltip key={key}>
-                  <TooltipTrigger>
-                    <Link
-                      href={href}
-                      className={cn(
-                        'w-full app-sidebar-link',
-                        isActiveLink(base) ? 'app-sidebar-link-active' : '',
-                      )}
-                    >
-                      <Icon
-                        size={20}
-                        weight="bold"
-                        className="app-sidebar-link-icon"
-                      />
-                      <span
+              {links.map(
+                ({ href, base, label, icon: Icon, badge = 0 }, key) => (
+                  <Tooltip key={key}>
+                    <TooltipTrigger>
+                      <Link
+                        href={href}
                         className={cn(
-                          'text-sm leading-none',
-                          collapsed ? 'hidden' : 'hidden lg:flex',
+                          'w-full flex h-[36px] justify-between app-sidebar-link overflow-hidden',
+                          isActiveLink(base) ? 'app-sidebar-link-active' : '',
                         )}
                       >
-                        {label}
-                      </span>
-                    </Link>
-                  </TooltipTrigger>
-                  <TooltipContent side="right" hidden={!collapsed}>
-                    {label}
-                  </TooltipContent>
-                </Tooltip>
-              ))}
+                        <div className="relative flex flex-row justify-start items-center gap-2">
+                          <Icon
+                            size={20}
+                            weight="bold"
+                            className="app-sidebar-link-icon"
+                          />
+                          {collapsed && badge >= 1 && (
+                            <BadgeDot className="absolute -bottom-[0.1rem] -right-[0.1rem]" />
+                          )}
+                          <span
+                            className={cn(
+                              'text-sm leading-none',
+                              collapsed ? 'hidden' : 'hidden lg:flex',
+                            )}
+                          >
+                            {label}
+                          </span>
+                        </div>
+                        {!collapsed && badge >= 1 && (
+                          <BadgeCount count={badge} />
+                        )}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" hidden={!collapsed}>
+                      {label}
+                    </TooltipContent>
+                  </Tooltip>
+                ),
+              )}
             </div>
           </div>
-
           {session.logged ? (
             <div
               className={cn(

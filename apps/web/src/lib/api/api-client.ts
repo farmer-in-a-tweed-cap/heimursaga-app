@@ -1,4 +1,5 @@
 import {
+  IBadgeCountGetResponse,
   ILoginPayload,
   IMapQueryPayload,
   IMapQueryResponse,
@@ -384,6 +385,11 @@ export const apiClient = {
       method: API_METHODS.GET,
       cookie: config ? config.cookie : undefined,
     }),
+  getBadgeCount: async (config?: RequestConfig) =>
+    api.request<IBadgeCountGetResponse>(API_ROUTER.USER.BADGE_COUNT, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   // sponsorships
   getSponsorshipTiers: async (config?: RequestConfig) =>
     api.request<ISponsorshipTierGetAllResponse>(
@@ -715,6 +721,7 @@ export const apiClient = {
         ...config,
       },
     ),
+
   // mapbox
   mapbox: {
     search: async (query: { token: string; search: string }) => {
@@ -783,6 +790,7 @@ export const API_QUERY_KEYS = {
     MAP: 'user_map',
     SPONSORSHIPS: 'user_sponsorships',
     BOOKMARKS: 'user_bookmarks',
+    BADGE_COUNT: 'user_badge_count',
   },
   MEMBERSHIPS: 'memberships',
   PAYOUT_METHODS: 'payout_methods',

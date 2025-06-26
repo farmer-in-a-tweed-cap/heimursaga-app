@@ -27,17 +27,20 @@ export const UserNotifications = () => {
       {loading ? (
         <LoadingSpinner />
       ) : results ? (
-        notifications.map(({ context, mentionUser, date, postId }, key) => (
-          <UserNotificationCard
-            key={key}
-            context={context}
-            mentionUser={mentionUser}
-            postId={postId}
-            date={date}
-          />
-        ))
+        notifications.map(
+          ({ context, read, mentionUser, date, postId }, key) => (
+            <UserNotificationCard
+              key={key}
+              context={context}
+              mentionUser={mentionUser}
+              read={read}
+              postId={postId}
+              date={date}
+            />
+          ),
+        )
       ) : (
-        <span>No notifications yet.</span>
+        <span>no notifications yet.</span>
       )}
     </div>
   );
