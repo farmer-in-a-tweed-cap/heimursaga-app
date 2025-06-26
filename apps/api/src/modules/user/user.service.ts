@@ -271,7 +271,7 @@ export class UserService {
         lat: true,
         lon: true,
         waypoint: {
-          select: { lat: true, lon: true },
+          select: { id: true, lat: true, lon: true },
         },
         date: true,
         place: true,
@@ -334,7 +334,7 @@ export class UserService {
             content,
             lat,
             lon,
-            waypoint: waypoint ? waypoint : { lat, lon },
+            waypoint,
             author: author.profile
               ? {
                   name: author.profile?.name,
@@ -792,7 +792,7 @@ export class SessionUserService {
         lat: true,
         lon: true,
         waypoint: {
-          select: { lat: true, lon: true },
+          select: { id: true, lat: true, lon: true },
         },
         date: true,
         place: true,
@@ -883,7 +883,7 @@ export class SessionUserService {
             content,
             lat,
             lon,
-            waypoint: waypoint ? waypoint : { lat, lon },
+            waypoint,
             author: {
               name: author.profile?.name,
               username: author?.username,

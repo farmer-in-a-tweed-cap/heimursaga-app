@@ -245,6 +245,7 @@ export interface IPostDetail {
   title: string;
   content?: string;
   waypoint?: {
+    id: number;
     lat: number;
     lon: number;
   };
@@ -259,6 +260,10 @@ export interface IPostDetail {
   date?: Date;
   createdByMe?: boolean;
   createdAt?: Date;
+  trip?: {
+    id: string;
+    title: string;
+  };
   author?: {
     username: string;
     // name: string;
@@ -288,8 +293,9 @@ export interface IPostCreatePayload {
   sponsored?: boolean;
   place?: string;
   date?: Date;
-  waypointId?: number;
   uploads?: string[];
+  waypointId?: number;
+  tripId?: string;
 }
 
 export interface IPostCreateResponse {
@@ -305,6 +311,7 @@ export interface IPostUpdatePayload {
   place?: string;
   date?: Date;
   uploads?: string[];
+  tripId?: string;
 }
 
 export interface IPostLikeResponse {

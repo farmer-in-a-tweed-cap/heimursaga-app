@@ -213,7 +213,7 @@ export class PostService {
           sponsored: true,
           place: true,
           date: true,
-          waypoint: { select: { lat: true, lon: true } },
+          waypoint: { select: { id: true, lat: true, lon: true } },
           likes_count: true,
           bookmarks_count: true,
           media: {
@@ -254,6 +254,25 @@ export class PostService {
         },
       });
 
+      // get trip
+      const trip = post.waypoint.id
+        ? await this.prisma.trip.findFirst({
+            where: {
+              waypoints: {
+                some: {
+                  waypoint: {
+                    id: post.waypoint.id,
+                  },
+                },
+              },
+            },
+            select: {
+              public_id: true,
+              title: true,
+            },
+          })
+        : undefined;
+
       const response: IPostGetByIdResponse = {
         id: post.public_id,
         title: post.title,
@@ -267,6 +286,12 @@ export class PostService {
         public: post.public,
         sponsored: post.sponsored,
         waypoint: post.waypoint,
+        trip: trip
+          ? {
+              id: trip.public_id,
+              title: trip.title,
+            }
+          : undefined,
         media: post.media
           ? post.media.map(({ upload }) => ({
               id: upload?.public_id,
@@ -311,12 +336,14 @@ export class PostService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      const { title, lat, lon, date, place, waypointId } = payload;
+      const { title, lat, lon, date, place, waypointId, tripId } = payload;
       const privacy = {
         public: payload.public,
         sponsored: payload.sponsored,
       };
       const content = normalizeText(payload.content);
+
+      this.logger.log('post_create');
 
       if (waypointId) {
         // get the waypoint
@@ -336,6 +363,24 @@ export class PostService {
 
       // create a post
       const { post } = await this.prisma.$transaction(async (tx) => {
+        this.logger.log('post_create: waypoint');
+
+        // create a waypoint
+        const waypoint = waypointId
+          ? await tx.waypoint.findFirstOrThrow({
+              where: { id: waypointId },
+              select: { id: true },
+            })
+          : await tx.waypoint.create({
+              data: {
+                lat,
+                lon,
+              },
+              select: { id: true },
+            });
+
+        this.logger.log('post_create: post');
+
         // create a post
         const post = await tx.post.create({
           data: {
@@ -347,12 +392,12 @@ export class PostService {
             public: privacy.public,
             sponsored: privacy.sponsored,
             author: { connect: { id: userId } },
-            waypoint: waypointId
-              ? { connect: { id: waypointId } }
-              : { create: { lat, lon } },
+            waypoint: waypoint ? { connect: { id: waypoint.id } } : undefined,
           },
           select: { id: true, public_id: true },
         });
+
+        this.logger.log('post_create: media');
 
         // create post media
         const uploads = await tx.upload.findMany({
@@ -369,6 +414,26 @@ export class PostService {
           });
         }
 
+        // attach to the trip
+        if (tripId) {
+          this.logger.log('post_create: trip');
+
+          // get trip
+          const trip = await tx.trip.findFirst({
+            where: { public_id: tripId, author_id: userId, deleted_at: null },
+            select: { id: true },
+          });
+          if (!trip) return;
+
+          // attach the waypoint to the trip
+          await tx.tripWaypoint.create({
+            data: {
+              trip_id: trip.id,
+              waypoint_id: waypoint.id,
+            },
+          });
+        }
+
         // update the user
         await tx.user.update({
           where: { id: userId },
@@ -378,16 +443,20 @@ export class PostService {
         return { post };
       });
 
+      this.logger.log('post_create: success');
+
       const response: IPostCreateResponse = {
         id: post.public_id,
       };
 
       return response;
     } catch (e) {
+      this.logger.log('post_create: error');
       this.logger.error(e);
+
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('post not created');
+        : new ServiceBadRequestException('post not created');
       throw exception;
     }
   }
@@ -403,7 +472,9 @@ export class PostService {
     try {
       const { publicId } = query;
       const { userId } = session;
-      const { uploads = [] } = payload;
+      const { uploads, tripId } = payload;
+
+      this.logger.log('post_update');
 
       if (!publicId) throw new ServiceNotFoundException('post not found');
 
@@ -431,6 +502,8 @@ export class PostService {
 
       // update the post
       await this.prisma.$transaction(async (tx) => {
+        this.logger.log('post_update: post');
+
         // update the post
         await tx.post.update({
           where: { id: post.id },
@@ -446,6 +519,8 @@ export class PostService {
 
         // update the waypoint
         if (waypoint) {
+          this.logger.log('post_update: waypoint');
+
           if (post.waypoint_id) {
             await tx.waypoint.update({
               where: { id: post.waypoint_id },
@@ -458,52 +533,82 @@ export class PostService {
         }
 
         // update post media
-        const media = await tx.postMedia.findMany({
-          where: { post_id: post.id },
-          select: {
-            upload: { select: { id: true, public_id: true, thumbnail: true } },
-          },
-        });
+        if (uploads) {
+          this.logger.log('post_update: media');
 
-        // filter post uploads
-        const mediaAdded = uploads.filter(
-          (uploadId) =>
-            !media.find(({ upload }) => upload.public_id === uploadId),
-        );
-        const mediaRemoved = media.filter(
-          ({ upload }) =>
-            !uploads.find((uploadId) => uploadId === upload.public_id),
-        );
+          // update post media
+          const media = await tx.postMedia.findMany({
+            where: { post_id: post.id },
+            select: {
+              upload: {
+                select: { id: true, public_id: true, thumbnail: true },
+              },
+            },
+          });
 
-        // delete post media
-        if (mediaRemoved.length >= 1) {
-          await tx.postMedia.deleteMany({
-            where: {
-              upload_id: { in: mediaRemoved.map(({ upload }) => upload.id) },
+          // filter post uploads
+          const mediaAdded = uploads.filter(
+            (uploadId) =>
+              !media.find(({ upload }) => upload.public_id === uploadId),
+          );
+          const mediaRemoved = media.filter(
+            ({ upload }) =>
+              !uploads.find((uploadId) => uploadId === upload.public_id),
+          );
+
+          // delete post media
+          if (mediaRemoved.length >= 1) {
+            await tx.postMedia.deleteMany({
+              where: {
+                upload_id: { in: mediaRemoved.map(({ upload }) => upload.id) },
+              },
+            });
+          }
+
+          // create post media
+          if (mediaAdded.length >= 1) {
+            const uploads = await tx.upload.findMany({
+              where: { public_id: { in: mediaAdded } },
+              select: { id: true },
+            });
+
+            await tx.postMedia.createMany({
+              data: uploads.map((upload) => ({
+                post_id: post.id,
+                upload_id: upload.id,
+              })),
+            });
+          }
+        }
+
+        // attach to the trip
+        if (tripId) {
+          this.logger.log('post_update: trip');
+
+          // get trip
+          const trip = await tx.trip.findFirst({
+            where: { public_id: tripId, author_id: userId, deleted_at: null },
+            select: { id: true },
+          });
+          if (!trip) return;
+
+          // attach the waypoint to the trip
+          await tx.tripWaypoint.create({
+            data: {
+              trip_id: trip.id,
+              waypoint_id: post.waypoint_id,
             },
           });
         }
-
-        // create post media
-        if (mediaAdded.length >= 1) {
-          const uploads = await tx.upload.findMany({
-            where: { public_id: { in: mediaAdded } },
-            select: { id: true },
-          });
-
-          await tx.postMedia.createMany({
-            data: uploads.map((upload) => ({
-              post_id: post.id,
-              upload_id: upload.id,
-            })),
-          });
-        }
       });
+
+      this.logger.log('post_update: success');
     } catch (e) {
+      this.logger.log('post_update: error');
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('post not updated');
+        : new ServiceBadRequestException('post not updated');
       throw exception;
     }
   }

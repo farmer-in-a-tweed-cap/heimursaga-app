@@ -47,6 +47,10 @@ export class PostController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() body: PostCreateDto, @Session() session: ISession) {
+    console.log(body);
+
+    // throw new BadRequestException();
+
     return await this.postService.create({
       query: {},
       payload: body,
