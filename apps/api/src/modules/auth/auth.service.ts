@@ -153,8 +153,13 @@ export class AuthService {
     }
   }
 
-  async signup(payload: ISignupPayload): Promise<void> {
+  async signup(
+    payload: ISignupPayload,
+    options?: { return?: boolean },
+  ): Promise<void | { email: string; password: string }> {
     try {
+      const returnCredentials = options?.return || false;
+
       // format email and username
       const username = payload.username.trim().toLowerCase();
       const email = payload.email.trim().toLowerCase();
@@ -200,6 +205,42 @@ export class AuthService {
         event: EVENTS.SIGNUP_COMPLETE,
         data: { email },
       });
+
+      if (returnCredentials) {
+        return {
+          email,
+          password: payload.password,
+        };
+      }
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('sign up failed');
+      throw exception;
+    }
+  }
+
+  async signupAndLogin(payload: ISignupPayload): Promise<ILoginResponse> {
+    try {
+      // sign up
+      const signup = await this.signup(payload, { return: true });
+
+      // log in
+      if (signup) {
+        const login = await this.login({
+          query: {},
+          payload: {
+            login: signup.email,
+            password: signup.password,
+          },
+        }).catch(() => {});
+
+        if (login) {
+          const response: ILoginResponse = { ...login };
+          return response;
+        }
+      }
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
