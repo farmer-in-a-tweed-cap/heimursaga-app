@@ -76,8 +76,8 @@ export const SignupForm = () => {
         });
 
         if (success) {
-          // redirect to login page
-          redirect(ROUTER.LOGIN);
+          // redirect to the home page
+          redirect(ROUTER.HOME);
         } else {
           switch (message) {
             case AppErrorCode.EMAIL_ALREADY_IN_USE:
