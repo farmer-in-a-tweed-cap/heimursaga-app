@@ -48,6 +48,13 @@ export const UserNotificationCard: React.FC<Props> = ({
         notification.url = ROUTER.USERS.DETAIL(mentionUser?.username);
       }
       break;
+    case UserNotificationContext.SPONSORSHIP:
+      notification.mention = mentionUser.username;
+      notification.text = 'is your new sponsor 💸';
+      if (mentionUser?.username) {
+        notification.url = ROUTER.USERS.DETAIL(mentionUser?.username);
+      }
+      break;
   }
 
   return (

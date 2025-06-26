@@ -15,9 +15,9 @@ type Props = {
 export const SponsorCheckoutSummary: React.FC<Props> = ({ user }) => {
   return (
     <div className="flex flex-col">
-      <div>
+      {/* <div>
         <h2 className="font-medium text-lg">Creator</h2>
-      </div>
+      </div> */}
       <div className="mt-6 flex flex-col">
         <div className="w-[120px] h-[120px] lg:w-[240px] lg:h-[240px] rounded-xl overflow-hidden flex justify-center items-center">
           <Image
