@@ -2,6 +2,7 @@ import { IUserNotificationCreatePayload } from '../notification';
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import {
+  IBadgeCountGetResponse,
   IPostInsightsGetResponse,
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
@@ -1071,7 +1072,6 @@ export class SessionUserService {
 
       // get the notifications
       const results = await this.prisma.userNotification.count({ where });
-
       const data = await this.prisma.userNotification.findMany({
         where,
         select: {
@@ -1082,6 +1082,7 @@ export class SessionUserService {
               profile: { select: { picture: true, name: true } },
             },
           },
+          is_read: true,
           mention_post: {
             select: { public_id: true },
           },
@@ -1093,12 +1094,28 @@ export class SessionUserService {
         orderBy: [{ created_at: 'desc' }],
       });
 
-      return {
+      // read notifications
+      this.prisma.userNotification
+        .updateMany({
+          where: { user_id: userId },
+          data: { is_read: true },
+        })
+        .catch(() => {});
+
+      const response: IUserNotificationGetResponse = {
         results,
         data: data.map(
-          ({ mention_user, context, mention_post, body, created_at }) => ({
+          ({
+            mention_user,
+            context,
+            mention_post,
+            is_read,
+            body,
+            created_at,
+          }) => ({
             context,
             body,
+            read: is_read,
             mentionUser: {
               username: mention_user.username,
               name: mention_user.profile.name,
@@ -1110,11 +1127,38 @@ export class SessionUserService {
         ),
         page,
       };
+
+      return response;
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceNotFoundException('notifications not found');
+      throw exception;
+    }
+  }
+
+  async getBadgeCount({
+    session,
+  }: IQueryWithSession): Promise<IBadgeCountGetResponse> {
+    try {
+      const { userId } = session;
+
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      const notifications = await this.prisma.userNotification.count({
+        where: { user_id: userId, is_read: false },
+      });
+
+      const response: IBadgeCountGetResponse = { notifications };
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('badge count not found');
       throw exception;
     }
   }

@@ -459,6 +459,7 @@ export interface IStripeCreateSetupIntentResponse {
 export interface IUserNotification {
   context: string;
   date: Date;
+  read?: boolean;
   mentionUser: {
     username: string;
     // name: string;
@@ -473,6 +474,12 @@ export interface IUserNotificationGetResponse {
   data: IUserNotification[];
   page: number;
 }
+
+export interface IBadgeCount {
+  notifications: number;
+}
+
+export interface IBadgeCountGetResponse extends IBadgeCount {}
 
 // map
 export interface IUserMapGetResponse {
