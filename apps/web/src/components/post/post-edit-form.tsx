@@ -27,6 +27,9 @@ import {
   MODALS,
   MapLocationPickModalOnSubmitHandler,
   MapPreview,
+  PostTripAddButton,
+  TripSelectModalProps,
+  TripSelectModalSubmitHandler,
 } from '@/components';
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
@@ -85,10 +88,18 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     maxSize: APP_CONFIG.UPLOAD.MAX_FILE_SIZE,
   });
 
-  const [loading, setLoading] = useState<{ post: boolean; privacy: boolean }>({
+  const [loading, setLoading] = useState<{
+    post: boolean;
+    privacy: boolean;
+    trip: boolean;
+  }>({
     post: false,
     privacy: false,
+    trip: false,
   });
+  const [trip, setTrip] = useState<{ id: string; title: string } | null>(
+    values?.trip || null,
+  );
 
   const [privacy, setPrivacy] = useState<{
     public: boolean;
@@ -107,6 +118,51 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       date: values?.date ? new Date(values?.date) : new Date(),
     },
   });
+
+  const handleTripSelectModal = () => {
+    modal.open<TripSelectModalProps>(MODALS.TRIP_SELECT, {
+      full: false,
+      props: { creator: session.creator },
+      onSubmit: ((data) => {
+        const { id, title } = data;
+        setTrip({ id, title });
+      }) as TripSelectModalSubmitHandler,
+      onCancel: () => {},
+    });
+  };
+
+  const handleTripRemove = async () => {
+    try {
+      const waypointId = values?.waypoint?.id;
+      const tripId = values?.trip?.id;
+      const enabled = waypointId && tripId;
+
+      if (!enabled) return;
+
+      setLoading((prev) => ({ ...prev, trip: true }));
+
+      // delete the trip waypoint
+      const { success } = await apiClient.deleteTripWaypoint({
+        query: {
+          tripId,
+          waypointId,
+        },
+      });
+
+      if (success) {
+        setTrip(null);
+
+        toast({ type: 'success', message: 'trip has been removed' });
+      } else {
+        toast({ type: 'error', message: 'trip is not removed' });
+      }
+
+      setLoading((prev) => ({ ...prev, trip: false }));
+    } catch (e) {
+      toast({ type: 'error', message: 'trip is not removed' });
+      setLoading((prev) => ({ ...prev, trip: false }));
+    }
+  };
 
   const handleLocationPickModal = () => {
     modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_SELECT, {
@@ -168,7 +224,9 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       try {
         if (!postId) return;
 
+        const tripId = trip?.id;
         const { marker } = map;
+
         const uploads: string[] = uploader.files
           .map(({ uploadId }) => uploadId)
           .filter((el) => typeof el === 'string');
@@ -184,6 +242,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
               lat: marker?.lat,
               lon: marker?.lon,
             },
+            tripId,
             uploads,
           },
         });
@@ -205,7 +264,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
 
   // cache modals
   useEffect(() => {
-    modal.preload([MODALS.MAP_LOCATION_SELECT]);
+    modal.preload([MODALS.TRIP_SELECT, MODALS.MAP_LOCATION_SELECT]);
   }, [modal.preload]);
 
   return (
@@ -256,6 +315,21 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                     )}
                   />
                 </div>
+                {session.creator && (
+                  <div className="flex flex-row">
+                    <FormItem>
+                      <FormLabel>Journey</FormLabel>
+                      <div className="mt-1">
+                        <PostTripAddButton
+                          trip={trip || undefined}
+                          loading={loading.trip}
+                          onAdd={handleTripSelectModal}
+                          onRemove={handleTripRemove}
+                        />
+                      </div>
+                    </FormItem>
+                  </div>
+                )}
                 <div>
                   <FormItem>
                     <FormLabel>

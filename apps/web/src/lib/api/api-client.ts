@@ -694,21 +694,21 @@ export const apiClient = {
   //       ...config,
   //     },
   //   ),
-  // deleteTripWaypoint: async (
-  //   { query }: IApiClientQuery<{ tripId: string; waypointId: number }>,
-  //   config?: RequestConfig,
-  // ) =>
-  //   api.request<void>(
-  //     API_ROUTER.JOURNEYS.WAYPOINTS.DELETE({
-  //       trip_id: query.tripId,
-  //       waypoint_id: query.waypointId,
-  //     }),
-  //     {
-  //       method: API_METHODS.DELETE,
-  //       body: JSON.stringify({}),
-  //       ...config,
-  //     },
-  //   ),
+  deleteTripWaypoint: async (
+    { query }: IApiClientQuery<{ tripId: string; waypointId: number }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(
+      API_ROUTER.TRIPS.WAYPOINTS.DELETE({
+        trip_id: query.tripId,
+        waypoint_id: query.waypointId,
+      }),
+      {
+        method: API_METHODS.DELETE,
+        body: JSON.stringify({}),
+        ...config,
+      },
+    ),
   // waypoints
   getWaypointById: async (
     { query }: IApiClientQuery<{ id: number }>,

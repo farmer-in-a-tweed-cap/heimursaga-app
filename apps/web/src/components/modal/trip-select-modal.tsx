@@ -12,11 +12,11 @@ import { useState } from 'react';
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
-import { useSession } from '@/hooks';
-
 import { ModalBaseProps } from './modal-provider';
 
-type State = {};
+type State = {
+  creator?: boolean;
+};
 
 export type TripSelectModalProps = State;
 
@@ -31,7 +31,7 @@ const TripSelectModal: React.FC<ModalBaseProps<TripSelectModalProps>> = ({
   onSubmit,
   onCancel,
 }) => {
-  const session = useSession();
+  const { creator = false } = props || {};
 
   const [loading, setLoading] = useState(false);
   const [tripId, setTripId] = useState<string>();
@@ -39,7 +39,7 @@ const TripSelectModal: React.FC<ModalBaseProps<TripSelectModalProps>> = ({
   const tripQuery = useQuery({
     queryKey: [API_QUERY_KEYS.TRIPS],
     queryFn: () => apiClient.getTrips().then(({ data }) => data),
-    enabled: session.creator,
+    enabled: creator,
   });
 
   const trips = tripQuery.data?.data || [];

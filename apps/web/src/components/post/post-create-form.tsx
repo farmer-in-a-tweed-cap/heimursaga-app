@@ -33,6 +33,7 @@ import {
   MapLocationPickModalOnSubmitHandler,
   MapLocationPickModalProps,
   MapPreview,
+  PostTripAddButton,
   TripSelectModalProps,
   TripSelectModalSubmitHandler,
 } from '@/components';
@@ -104,14 +105,6 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     sponsored: false,
   });
 
-  const tripQuery = useQuery({
-    queryKey: [API_QUERY_KEYS.TRIPS],
-    queryFn: () => apiClient.getTrips().then(({ data }) => data),
-    enabled: session.creator,
-  });
-
-  const trips = tripQuery.data?.data || [];
-
   const handleLocationPickModal = () => {
     modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_SELECT, {
       full: true,
@@ -137,7 +130,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   const handleTripSelectModal = () => {
     modal.open<TripSelectModalProps>(MODALS.TRIP_SELECT, {
       full: false,
-      props: {},
+      props: { creator: session.creator },
       onSubmit: ((data) => {
         const { id, title } = data;
         setTrip({ id, title });
@@ -146,10 +139,15 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     });
   };
 
+  const handleTripRemove = () => {
+    setTrip(null);
+  };
+
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
         const { title, content, place, date } = values;
+        const tripId = trip?.id;
         const { marker } = map;
 
         const uploads: string[] = uploader.files
@@ -170,6 +168,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
           sponsored: privacy.sponsored,
           waypointId: waypoint?.id,
           uploads,
+          tripId,
         });
 
         if (success) {
@@ -261,30 +260,11 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                     <FormItem>
                       <FormLabel>Journey</FormLabel>
                       <div className="mt-1">
-                        {trip ? (
-                          <div className="bg-accent text-black py-1.5 px-3 rounded-full overflow-hidden flex flex-row gap-4 items-center justify-start">
-                            <div className="flex flex-row items-center justify-start gap-2 text-sm font-normal">
-                              <PathIcon weight="bold" size={18} />
-                              <span>{trip.title}</span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTrip(null);
-                              }}
-                            >
-                              <XIcon weight="bold" size={16} />
-                            </button>
-                          </div>
-                        ) : (
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={handleTripSelectModal}
-                          >
-                            Add journey
-                          </Button>
-                        )}
+                        <PostTripAddButton
+                          trip={trip || undefined}
+                          onAdd={handleTripSelectModal}
+                          onRemove={handleTripRemove}
+                        />
                       </div>
                     </FormItem>
                   </div>
