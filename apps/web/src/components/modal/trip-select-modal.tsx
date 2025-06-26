@@ -5,9 +5,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Form,
-  FormItem,
-  FormLabel,
   SelectInput,
 } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
@@ -15,8 +12,7 @@ import { useState } from 'react';
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
-import { Map } from '@/components';
-import { MapCoordinatesValue, useMap, useMapbox, useSession } from '@/hooks';
+import { useSession } from '@/hooks';
 
 import { ModalBaseProps } from './modal-provider';
 
@@ -85,7 +81,7 @@ const TripSelectModal: React.FC<ModalBaseProps<TripSelectModalProps>> = ({
             label: title,
           }))}
           value={tripId}
-          placeholder="??"
+          placeholder="Select journey"
           loading={tripQuery.isPending || tripQuery.isLoading}
           disabled={tripQuery.isFetched && trips.length <= 0}
           onValueChange={handleChange}
