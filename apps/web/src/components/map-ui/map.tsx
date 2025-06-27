@@ -315,11 +315,6 @@ export const Map: React.FC<Props> = ({
         ? properties?.content.split('\n').join(' ')
         : '';
 
-      console.log({
-        content: properties?.content,
-        x: properties?.content.split('\n').join(' '),
-      });
-
       const popupContent = `
       <div class="flex flex-col justify-start">
         <div class="flex flex-col justify-start gap-0">
