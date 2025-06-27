@@ -179,15 +179,16 @@ export const TripEditForm: React.FC<Props> = ({
   };
 
   const handleWaypointDelete = async (id: number) => {
-    if (confirm(`delete this waypoint?`)) {
+    if (confirm(`remove this waypoint?`)) {
       try {
+        const tripId = trip?.id;
         const waypointId = id;
 
-        if (!waypointId) return;
+        if (!tripId || !waypointId) return;
 
         // delete the waypoint
-        const { success } = await apiClient.deleteWaypoint({
-          query: { id },
+        const { success } = await apiClient.deleteTripWaypoint({
+          query: { tripId, waypointId },
         });
 
         if (success) {
@@ -267,7 +268,6 @@ export const TripEditForm: React.FC<Props> = ({
             </form>
           </Form>
         </Section>
-
         <Section title="Waypoints">
           {waypoints.length >= 1 && (
             <div className="w-full h-auto flex flex-col gap-2">

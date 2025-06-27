@@ -14,7 +14,7 @@ import {
   TripEditForm,
 } from '@/components';
 import { MapWaypointValue, useMap, useMapbox } from '@/hooks';
-import { sortByDate } from '@/lib';
+import { dateformat, sortByDate } from '@/lib';
 import { ROUTER } from '@/router';
 
 const WAYPOINT_SORT_ORDER = 'asc';
@@ -77,13 +77,18 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
 
   const handleWaypointCreateSubmit = (waypoint: MapWaypointValue) => {
     // append waypoint
-    setWaypoints((waypoints) =>
-      sortByDate({
-        elements: [...waypoints, waypoint],
-        order: WAYPOINT_SORT_ORDER,
+    setWaypoints((prev) => {
+      // sort waypoints by date
+      const sorted = sortByDate({
+        elements: [...prev, waypoint],
+        order: 'asc',
         key: 'date',
-      }),
-    );
+      });
+
+      console.log({ waypoint, prev, sorted });
+
+      return sorted;
+    });
 
     // clear editable waypoint
     setWaypoint(null);
@@ -108,6 +113,12 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
             backUrl={backUrl}
           />
         )}
+        {/* {JSON.stringify(
+          waypoints.map(({ title, date }) => ({
+            t: title,
+            d: dateformat(date).format('MM/DD'),
+          })),
+        )} */}
         {/* <span className="break-all text-xs">
           {JSON.stringify({ w: waypoint })}
         </span> */}

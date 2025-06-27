@@ -74,21 +74,11 @@ export const TripWaypointCard: React.FC<Props> = ({
             <div className="flex flex-row items-center justify-start gap-2 text-base font-medium text-black">
               {post ? (
                 <Link href={ROUTER.ENTRIES.EDIT(post.id)} target="_blank">
-                  {post?.title}
+                  {title}
                 </Link>
               ) : (
                 <span>{title}</span>
               )}
-
-              {/* {post && (
-                <Link
-                  href={ROUTER.ENTRIES.EDIT(post.id)}
-                  target="_blank"
-                  className="flex items-center flex-row justify-start gap-1 text-sm"
-                >
-                  <LinkIcon size={16} weight="bold" />
-                </Link>
-              )} */}
             </div>
             <span className="text-xs font-normal text-gray-500">
               {dateformat(date).format('MMM DD, YYYY')}
