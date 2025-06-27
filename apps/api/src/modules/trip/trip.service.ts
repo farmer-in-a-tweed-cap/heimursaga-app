@@ -323,8 +323,8 @@ export class TripService {
                 id,
                 lat,
                 lon,
-                title,
-                date,
+                title: post ? post?.title : title,
+                date: post ? post.date : date,
                 post: post
                   ? {
                       id: post.public_id,
@@ -348,6 +348,8 @@ export class TripService {
           order: 'asc',
         }),
       };
+
+      console.log(response.waypoints);
 
       return response;
     } catch (e) {

@@ -389,6 +389,7 @@ export interface IWaypoint {
   title?: string;
   description?: string;
   date?: Date;
+  post?: { id: string; title: string };
 }
 
 export interface IWaypointDetail extends IWaypoint {
