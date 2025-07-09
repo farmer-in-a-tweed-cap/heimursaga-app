@@ -56,10 +56,15 @@ export class AuthController {
   @Public()
   @Post('signup')
   @HttpCode(HttpStatus.OK)
-  async signup(@Body() body: SignupDto) {
-    return this.authService.signup({
-      ...body,
-    });
+  async signup(
+    @Req() req: IRequest,
+    @Res() res: IResponse,
+    @Body() body: SignupDto,
+  ) {
+    const user = await this.authService.signupAndLogin(body);
+
+    req.session.set(SESSION_KEYS.SID, user.session.sid);
+    res.send();
   }
 
   @Post('logout')

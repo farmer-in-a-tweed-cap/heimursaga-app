@@ -309,7 +309,7 @@ export class StripeService {
       switch (transaction) {
         case PaymentTransactionType.SUBSCRIPTION:
           await this.eventService.trigger<IOnSubscriptionUpgradeCompleteEvent>({
-            event: EVENTS.SUBSCRIPTION.UPGRADE.COMPLETE,
+            event: EVENTS.SUBSCRIPTION_UPGRADE_COMPLETE,
             data: {
               userId,
               subscriptionPlanId,
@@ -319,7 +319,7 @@ export class StripeService {
           break;
         case PaymentTransactionType.SPONSORSHIP:
           await this.eventService.trigger<IOnSponsorCheckoutCompleteEvent>({
-            event: EVENTS.SPONSORSHIP.CHECKOUT_COMPLETE,
+            event: EVENTS.SPONSORSHIP_CHECKOUT_COMPLETE,
             data: {
               userId,
               creatorId,

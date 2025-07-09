@@ -26,11 +26,11 @@ import { redirect, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
 const schema = z.object({
-  name: z
-    .string()
-    .nonempty(zodMessage.required('name'))
-    .min(2, zodMessage.string.min('name', 2))
-    .max(50, zodMessage.string.max('name', 20)),
+  // name: z
+  //   .string()
+  //   .nonempty(zodMessage.required('name'))
+  //   .min(2, zodMessage.string.min('name', 2))
+  //   .max(50, zodMessage.string.max('name', 20)),
   username: z
     .string()
     .nonempty(zodMessage.required('username'))
@@ -45,8 +45,8 @@ const schema = z.object({
   password: z
     .string()
     .nonempty(zodMessage.required('password'))
-    .min(2, zodMessage.string.min('password', 2))
-    .max(50, zodMessage.string.max('password', 20)),
+    .min(8, zodMessage.string.min('password', 8))
+    .max(50, zodMessage.string.max('password', 50)),
 });
 
 export const SignupForm = () => {
@@ -55,7 +55,7 @@ export const SignupForm = () => {
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
-      name: '',
+      // name: '',
       username: '',
       email: '',
       password: '',
@@ -65,19 +65,19 @@ export const SignupForm = () => {
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
-        const { email, password, name, username } = values;
+        const { email, password, username } = values;
 
         setLoading(true);
 
         // sign up
         const { success, message } = await apiClient.signup({
           query: {},
-          payload: { email, password, username, name },
+          payload: { email, password, username },
         });
 
         if (success) {
-          // redirect to login page
-          redirect(ROUTER.LOGIN);
+          // redirect to the home page
+          redirect(ROUTER.HOME);
         } else {
           switch (message) {
             case AppErrorCode.EMAIL_ALREADY_IN_USE:
@@ -108,7 +108,7 @@ export const SignupForm = () => {
           <Form {...form}>
             <form onSubmit={handleSubmit}>
               <div className="flex flex-col gap-6">
-                <FormField
+                {/* <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
@@ -120,7 +120,7 @@ export const SignupForm = () => {
                       <FormMessage />
                     </FormItem>
                   )}
-                />
+                /> */}
 
                 <div className="grid gap-2">
                   <FormField
@@ -157,7 +157,7 @@ export const SignupForm = () => {
                     )}
                   />
                 </div>
-                <div className="grid gap-2">
+                <div className="flex flex-col gap-2">
                   <FormField
                     control={form.control}
                     name="password"

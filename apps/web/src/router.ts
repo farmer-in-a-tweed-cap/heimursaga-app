@@ -8,6 +8,7 @@ export const ROUTER = {
     HOME: '/explore',
     POST: (id: string) => `/explore/post/${id}`,
   },
+  YOU: '/you',
   DASHBOARD: {
     HOME: '/dashboard',
   },

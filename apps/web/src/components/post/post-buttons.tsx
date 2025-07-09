@@ -1,3 +1,5 @@
+import { cn } from '@repo/ui/lib/utils';
+
 import { PostBookmarkButton } from './post-bookmark-button';
 import { PostLikeButton } from './post-like-button';
 import { PostShareButton } from './post-share-button';
@@ -8,6 +10,7 @@ type Props = {
   likesCount?: number;
   bookmarked?: boolean;
   bookmarksCount?: number;
+  className?: string;
   actions?: {
     like?: boolean;
     bookmark?: boolean;
@@ -19,12 +22,18 @@ export const PostButtons: React.FC<Props> = ({
   postId,
   actions = { like: true, bookmark: true, share: true },
   liked = false,
+  className,
   likesCount = 0,
   bookmarked = false,
   bookmarksCount = 0,
 }) => {
   return (
-    <div className="flex flex-row items-center justify-start gap-1">
+    <div
+      className={cn(
+        'flex flex-row items-center justify-start gap-1',
+        className,
+      )}
+    >
       {actions.like && (
         <PostLikeButton postId={postId} liked={liked} likesCount={likesCount} />
       )}

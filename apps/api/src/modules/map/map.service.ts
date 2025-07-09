@@ -212,11 +212,13 @@ export class MapService {
                 ? {
                     id: post.public_id,
                     title: post.title,
-                    content: post.content.slice(0, 100),
+                    content: post.content
+                      .slice(0, 500)
+                      .replaceAll('\\n', ' ')
+                      .slice(0, 120),
                     date: post.date,
                     author: {
                       username: post.author.username,
-                      name: post.author.profile.name,
                       picture: getStaticMediaUrl(post.author.profile.picture),
                       creator: post.author.role === UserRole.CREATOR,
                     },
@@ -404,6 +406,8 @@ export class MapService {
       // check access
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
+
+      console.log({ id, deleted_at: null, author_id: userId });
 
       // get a waypoint
       const waypoint = await this.prisma.waypoint

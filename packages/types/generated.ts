@@ -41,7 +41,7 @@ export interface ISessionUser {
   username: string;
   email: string;
   picture?: string;
-  name: string;
+  // name: string;
   isEmailVerified: boolean;
   isPremium: boolean;
 }
@@ -66,7 +66,7 @@ export interface ISignupPayload {
   email: string;
   username: string;
   password: string;
-  name: string;
+  // name: string;
 }
 
 // password reset
@@ -83,7 +83,7 @@ export interface IPasswordUpdatePayload {
 export interface IUserDetail {
   username: string;
   role?: string;
-  name: string;
+  // name: string;
   picture: string;
   bio?: string;
   memberDate?: Date;
@@ -107,7 +107,7 @@ export interface IUserGetByUsernameResponse extends IUserDetail {}
 export interface IUserSettingsResponse {
   context: 'profile' | 'billing';
   profile?: {
-    name: string;
+    // name: string;
     bio: string;
     picture: string;
   };
@@ -125,7 +125,7 @@ export interface IUserSettingsUpdateQuery {
 export interface IUserSettingsProfileGetResponse {
   username: string;
   email: string;
-  name: string;
+  // name: string;
   bio: string;
   picture: string;
   locationFrom?: string;
@@ -245,6 +245,7 @@ export interface IPostDetail {
   title: string;
   content?: string;
   waypoint?: {
+    id: number;
     lat: number;
     lon: number;
   };
@@ -259,9 +260,13 @@ export interface IPostDetail {
   date?: Date;
   createdByMe?: boolean;
   createdAt?: Date;
+  trip?: {
+    id: string;
+    title: string;
+  };
   author?: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
     creator?: boolean;
   };
@@ -288,8 +293,9 @@ export interface IPostCreatePayload {
   sponsored?: boolean;
   place?: string;
   date?: Date;
-  waypointId?: number;
   uploads?: string[];
+  waypointId?: number;
+  tripId?: string;
 }
 
 export interface IPostCreateResponse {
@@ -305,6 +311,7 @@ export interface IPostUpdatePayload {
   place?: string;
   date?: Date;
   uploads?: string[];
+  tripId?: string;
 }
 
 export interface IPostLikeResponse {
@@ -353,7 +360,7 @@ export interface IMapQueryResponse {
       bookmarked: boolean;
       author: {
         username: string;
-        name: string;
+        // name: string;
         picture: string;
         creator?: boolean;
       };
@@ -382,6 +389,7 @@ export interface IWaypoint {
   title?: string;
   description?: string;
   date?: Date;
+  post?: { id: string; title: string };
 }
 
 export interface IWaypointDetail extends IWaypoint {
@@ -459,9 +467,10 @@ export interface IStripeCreateSetupIntentResponse {
 export interface IUserNotification {
   context: string;
   date: Date;
+  read?: boolean;
   mentionUser: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
   };
   body?: string;
@@ -473,6 +482,12 @@ export interface IUserNotificationGetResponse {
   data: IUserNotification[];
   page: number;
 }
+
+export interface IBadgeCount {
+  notifications: number;
+}
+
+export interface IBadgeCountGetResponse extends IBadgeCount {}
 
 // map
 export interface IUserMapGetResponse {
@@ -490,7 +505,7 @@ export interface ISponsorshipTier {
   creator?: {
     username: string;
     picture: string;
-    name: string;
+    // name: string;
     bio: string;
   };
 }
@@ -620,12 +635,12 @@ export interface ISponsorshipDetail {
   message?: string;
   user?: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
   };
   creator?: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
   };
   createdAt?: Date;
@@ -659,7 +674,7 @@ export interface ITripDetail {
   waypointsCount?: number;
   author?: {
     username: string;
-    name: string;
+    // name: string;
     picture: string;
     creator?: boolean;
   };

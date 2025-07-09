@@ -8,7 +8,6 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
-  IsDate,
   IsDateString,
   IsNotEmpty,
   IsNumber,
@@ -60,15 +59,20 @@ export class PostCreateDto implements IPostCreatePayload {
   date: Date;
 
   @ApiProperty({ required: false })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  uploads?: string[];
+
+  @ApiProperty({ required: false })
   @IsNumber()
   @IsOptional()
   waypointId: number;
 
   @ApiProperty({ required: false })
-  @IsArray()
-  @IsString({ each: true })
+  @IsString()
   @IsOptional()
-  uploads?: string[];
+  tripId: string;
 }
 
 export class PostUpdateDto implements IPostUpdatePayload {
@@ -113,6 +117,11 @@ export class PostUpdateDto implements IPostUpdatePayload {
   @IsString({ each: true })
   @IsOptional()
   uploads?: string[];
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  tripId: string;
 }
 
 class PostWaypointCreateDto implements IWaypointCreatePayload {

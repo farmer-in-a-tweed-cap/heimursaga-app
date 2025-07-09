@@ -24,7 +24,7 @@ export const generateMetadata = async ({
     .catch(() => null);
 
   return {
-    title: user ? `${user.name} | ${user.bio || ''}` : undefined,
+    title: user ? `${user.username} | ${user.bio || ''}` : undefined,
   };
 };
 

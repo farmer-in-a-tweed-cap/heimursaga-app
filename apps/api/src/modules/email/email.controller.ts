@@ -9,10 +9,7 @@ import {
 import { ApiExcludeController } from '@nestjs/swagger';
 
 import { Public } from '@/common/decorators';
-import {
-  EMAIL_TEMPLATE_KEYS,
-  getEmailTemplate,
-} from '@/common/email-templates';
+import { EMAIL_TEMPLATES, getEmailTemplate } from '@/common/email-templates';
 
 import { EmailService } from './email.service';
 
@@ -30,7 +27,7 @@ export class EmailController {
     @Body('text') text: string,
     @Body('html') html: string,
   ) {
-    const template = getEmailTemplate(EMAIL_TEMPLATE_KEYS.WELCOME, {
+    const template = getEmailTemplate(EMAIL_TEMPLATES.WELCOME, {
       name: 'peter',
     });
 

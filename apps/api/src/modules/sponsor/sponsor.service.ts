@@ -1,4 +1,5 @@
-import { EVENTS } from '../event';
+import { EVENTS, EventService } from '../event';
+import { IUserNotificationCreatePayload } from '../notification';
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
@@ -12,6 +13,7 @@ import {
   PayoutMethodPlatform,
   SponsorshipStatus,
   SponsorshipType,
+  UserNotificationContext,
   UserRole,
 } from '@repo/types';
 import Stripe from 'stripe';
@@ -49,6 +51,7 @@ export class SponsorService {
   constructor(
     private logger: Logger,
     private prisma: PrismaService,
+    private eventService: EventService,
     private stripeService: StripeService,
   ) {}
 
@@ -392,6 +395,10 @@ export class SponsorService {
               connect: { id: creatorId },
             },
           },
+          select: {
+            user_id: true,
+            creator_id: true,
+          },
         });
 
         // update the checkout
@@ -401,9 +408,19 @@ export class SponsorService {
             status: CheckoutStatus.CONFIRMED,
           },
         });
-
-        console.log({ sponsorship });
       });
+
+      // create a notification
+      if (creatorId && userId) {
+        this.eventService.trigger<IUserNotificationCreatePayload>({
+          event: EVENTS.NOTIFICATION_CREATE,
+          data: {
+            context: UserNotificationContext.SPONSORSHIP,
+            userId: creatorId,
+            mentionUserId: userId,
+          },
+        });
+      }
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -986,7 +1003,7 @@ export class SponsorService {
     }
   }
 
-  @OnEvent(EVENTS.SPONSORSHIP.CHECKOUT_COMPLETE)
+  @OnEvent(EVENTS.SPONSORSHIP_CHECKOUT_COMPLETE)
   async onSponsorCheckoutComplete(event: IOnSponsorCheckoutCompleteEvent) {
     try {
       const { checkoutId, creatorId, userId } = event;

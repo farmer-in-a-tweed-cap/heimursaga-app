@@ -42,7 +42,7 @@ export const UserProfilePage: React.FC<Props> = ({
       </div>
       <div className="mt-6 flex flex-col justify-center items-center gap-2">
         <div className="flex justify-center items-center gap-1">
-          <span className="text-2xl font-semibold">{user?.name}</span>
+          <span className="text-2xl font-semibold">{user?.username}</span>
         </div>
         <span className="text-sm font-normal text-gray-700">{user?.bio}</span>
         {location.visible && (

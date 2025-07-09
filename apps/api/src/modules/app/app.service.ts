@@ -1,50 +1,32 @@
+import { EmailService } from '../email';
 import { Injectable } from '@nestjs/common';
 import { ISitemapGetResponse } from '@repo/types';
 
-import { ServiceBadRequestException } from '@/common/exceptions';
+import { getEnv } from '@/lib/utils';
+
+import { ENVIRONMENTS } from '@/common/constants';
+import {
+  ServiceBadRequestException,
+  ServiceForbiddenException,
+} from '@/common/exceptions';
 import { PrismaService } from '@/modules/prisma';
 
 @Injectable()
 export class AppService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async test() {
     try {
-      const results = {
-        posts: await this.prisma.post
-          .findMany({
-            select: {
-              id: true,
-              title: true,
-              created_at: true,
-              author: {
-                select: {
-                  id: true,
-                  profile: {
-                    select: { name: true },
-                  },
-                },
-              },
-            },
-            orderBy: [{ id: 'desc' }],
-          })
-          .then((posts) =>
-            posts.map((post) => ({
-              id: post.id,
-              title: post.title,
-              author: post?.author
-                ? {
-                    name: post?.author?.profile?.name,
-                  }
-                : undefined,
-              date: post.created_at,
-            })),
-          ),
-      };
+      // check access
+      const access = getEnv() === ENVIRONMENTS.DEVELOPMENT;
+      if (!access) throw new ServiceForbiddenException();
 
-      return results;
+      // test
     } catch (error) {
-      console.log(error);
+      throw new ServiceForbiddenException();
     }
   }
 

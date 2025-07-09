@@ -50,7 +50,7 @@ const TripPublicCard: React.FC<Props> = ({
           <div className="w-auto flex flex-row justify-start items-center gap-3 z-20">
             {userbar && (
               <UserBar
-                name={author?.name}
+                name={author?.username}
                 picture={author?.picture}
                 creator={author?.creator}
                 text={`${dateformat(startDate).format('MMM DD')}-${dateformat(endDate).format('MMM DD')}`}

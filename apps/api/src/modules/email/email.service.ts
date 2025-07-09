@@ -5,7 +5,7 @@ import * as nodemailer from 'nodemailer';
 
 import { getEmailTemplate } from '@/common/email-templates';
 import { ServiceException } from '@/common/exceptions';
-import { EVENTS, IEmailSendEvent } from '@/modules/event';
+import { EVENTS, IEventSendEmail } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 
 import { IEmailSendPayload } from './email.interface';
@@ -57,7 +57,7 @@ export class EmailService {
   }
 
   @OnEvent(EVENTS.SEND_EMAIL)
-  async onSend(event: IEmailSendEvent): Promise<void> {
+  async onSend(event: IEventSendEmail): Promise<void> {
     try {
       const { to, vars } = event;
 

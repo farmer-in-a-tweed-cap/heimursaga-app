@@ -7,6 +7,7 @@ import { PageNotFound } from '@/components/page';
 
 import { PostCard } from '@/components';
 import { AppLayout } from '@/layouts';
+import { ROUTER } from '@/router';
 
 type Props = {
   params: { id: string };
@@ -44,6 +45,11 @@ export default async function Page({ params }: Props) {
             title={data.title}
             content={data.content}
             author={data.author}
+            userbar={
+              data?.author?.username
+                ? { href: ROUTER.USERS.DETAIL(data.author.username) }
+                : undefined
+            }
             waypoint={data.waypoint}
             liked={data.liked}
             likesCount={data.likesCount}

@@ -33,7 +33,7 @@ export const UserBookmarks: React.FC<Props> = () => {
           key={key}
           {...post}
           author={{
-            name: author?.name,
+            name: author?.username,
             username: author?.username,
             picture: author?.picture,
           }}

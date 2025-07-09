@@ -24,3 +24,4 @@ export * from './date-picker';
 export * from './text';
 export * from './file-picker';
 export * from './tooltip';
+export * from './badge-count';

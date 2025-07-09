@@ -73,7 +73,7 @@ export class NotificationService {
     }
   }
 
-  @OnEvent(EVENTS.NOTIFICATIONS.CREATE)
+  @OnEvent(EVENTS.NOTIFICATION_CREATE)
   async onCreate(payload: IUserNotificationCreatePayload): Promise<void> {
     this.create({ query: {}, payload });
   }

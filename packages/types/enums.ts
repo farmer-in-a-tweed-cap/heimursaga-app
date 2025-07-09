@@ -36,8 +36,7 @@ export enum PlanExpiryPeriod {
 export enum UserNotificationContext {
   LIKE = 'like',
   FOLLOW = 'follow',
-  MEMBERSHIP = 'membership',
-  DONATION = 'donation',
+  SPONSORSHIP = 'sponsorship',
 }
 
 export enum PayoutMethodPlatform {

@@ -26,7 +26,7 @@ type TableData = {
   id: string;
   username: string;
   role: string;
-  name: string;
+  // name: string;
   picture: string;
   posts: number;
   blocked?: boolean;
@@ -118,7 +118,7 @@ export const AdminUserTable: React.FC<Props> = ({
       header: () => 'User',
       cell: ({ row }) => {
         const username = row.original.username;
-        const name = row.original.name;
+        const name = row.original.username;
         const blocked = row.original.blocked || false;
         const picture = row.original.picture;
         return username ? (
@@ -215,7 +215,6 @@ export const AdminUserTable: React.FC<Props> = ({
 
   const rows: DataTableRow<TableData>[] = data.map(
     ({
-      name,
       username,
       role = '',
       postsCount = 0,

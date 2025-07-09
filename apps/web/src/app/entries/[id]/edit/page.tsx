@@ -38,12 +38,7 @@ export default async function Page({ params }: PageProps) {
           <PageHeaderTitle>Edit entry</PageHeaderTitle>
           <Card>
             <CardContent>
-              <PostEditForm
-                postId={postId}
-                values={{
-                  ...postQuery.data,
-                }}
-              />
+              <PostEditForm postId={postId} values={postQuery.data} />
             </CardContent>
           </Card>
         </div>

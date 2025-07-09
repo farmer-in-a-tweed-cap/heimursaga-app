@@ -7,4 +7,8 @@ export interface IEventMessage<T = any> {
   data?: T;
 }
 
-export interface IEmailSendEvent<T = any> extends IEmailSendPayload<T> {}
+export interface IEventSendEmail<T = any> extends IEmailSendPayload<T> {}
+
+export interface IEventSignupComplete {
+  email: string;
+}

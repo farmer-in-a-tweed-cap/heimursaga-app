@@ -133,6 +133,8 @@ export const FormComponent: React.FC<Props> = ({
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
+        console.log('submit:', { stripe, username });
+
         if (!stripe || !username) return;
 
         setLoading((loading) => ({ ...loading, form: true }));
@@ -400,7 +402,11 @@ export const FormComponent: React.FC<Props> = ({
                 </p>
               </div>
               <div className="mt-8 flex flex-col">
-                <Button loading={loading.form} disabled={!payButtonEnabled}>
+                <Button
+                  type="submit"
+                  loading={loading.form}
+                  disabled={!payButtonEnabled}
+                >
                   <div className="flex flex-row items-center justify-center gap-2">
                     <LockSimpleIcon />
                     {sponsorshipType === SponsorshipType.SUBSCRIPTION

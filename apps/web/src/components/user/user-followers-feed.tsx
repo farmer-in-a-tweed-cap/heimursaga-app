@@ -31,12 +31,12 @@ export const UserFollowersFeed: React.FC<Props> = ({ username }) => {
     <>no followers</>
   ) : (
     <div className="w-full flex flex-col gap-2">
-      {followers.map(({ name, username, creator, ...follower }, key) => (
+      {followers.map(({ username, creator, ...follower }, key) => (
         <UserCard
           key={key}
           href={ROUTER.USERS.DETAIL(username)}
           username={username}
-          name={name}
+          name={username}
           creator={creator}
           {...follower}
         />

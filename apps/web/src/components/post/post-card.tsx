@@ -109,7 +109,6 @@ export const PostCard: React.FC<PostCardProps> = ({
         ) : (
           <></>
         )}
-
         <div className="relative flex flex-row justify-between items-center">
           <div className="w-auto flex flex-row justify-start items-center gap-3 z-20">
             {userbar?.href ? (
@@ -123,7 +122,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 }
               >
                 <UserBar
-                  name={author?.name}
+                  name={author?.username}
                   picture={author?.picture}
                   creator={author?.creator}
                   text={dateformat(date).format('MMM DD')}
@@ -132,7 +131,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             ) : (
               <div className="cursor-pointer" onClick={userbar?.click}>
                 <UserBar
-                  name={author?.name}
+                  name={author?.username}
                   picture={author?.picture}
                   creator={author?.creator}
                   text={dateformat(date).format('MMM DD')}
@@ -221,21 +220,19 @@ export const PostCard: React.FC<PostCardProps> = ({
             </div>
           )}
         </div>
-
         {(actions.like || actions.share) && (
-          <div className="mt-6">
-            <PostButtons
-              postId={id}
-              actions={{
-                ...actions,
-                bookmark: false,
-              }}
-              liked={liked}
-              likesCount={likesCount}
-              bookmarked={bookmarked}
-              bookmarksCount={bookmarksCount}
-            />
-          </div>
+          <PostButtons
+            className="relative mt-6 z-20"
+            postId={id}
+            actions={{
+              ...actions,
+              bookmark: false,
+            }}
+            liked={liked}
+            likesCount={likesCount}
+            bookmarked={bookmarked}
+            bookmarksCount={bookmarksCount}
+          />
         )}
       </CardContent>
     </Card>

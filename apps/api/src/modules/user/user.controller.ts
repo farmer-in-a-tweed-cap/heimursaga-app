@@ -263,6 +263,15 @@ export class SessionUserController {
     });
   }
 
+  @Get('badge-count')
+  @HttpCode(HttpStatus.OK)
+  async getBadgeCount(@Session() session: ISession) {
+    return await this.sessionUserService.getBadgeCount({
+      session,
+      query: {},
+    });
+  }
+
   @Get('insights/post')
   @HttpCode(HttpStatus.OK)
   async getPostInsights(@Session() session: ISession) {
