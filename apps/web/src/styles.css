@@ -47,6 +47,21 @@
   .error-message {
     @apply text-red-500 text-sm;
   }
+
+  .richtext {
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      @apply py-2 text-lg font-medium;
+    }
+
+    p {
+      @apply py-2;
+    }
+  }
 }
 
 .map-popup {
