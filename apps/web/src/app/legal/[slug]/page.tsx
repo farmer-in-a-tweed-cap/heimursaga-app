@@ -1,55 +1,83 @@
-import { NormalizedText } from '@repo/ui/components';
+import fs from 'fs';
+import matter from 'gray-matter';
+import { marked } from 'marked';
 import { Metadata } from 'next';
+import { notFound } from 'next/navigation';
+import path from 'path';
+
+import { AppLayout } from '@/app/layout';
 
 import { PageHeaderTitle } from '@/components';
-import { AppLayout } from '@/layouts';
 
-enum PageSlug {
-  PRIVACY = 'privacy',
-  TERMS = 'terms',
+const PATH = path.join(process.cwd(), 'src/content/legal');
+
+// generate static params
+export async function generateStaticParams() {
+  const files = fs.readdirSync(PATH);
+  return files
+    .filter((file) => file.endsWith('.md'))
+    .map((file) => ({
+      slug: file.replace(/\.md$/, ''),
+    }));
 }
 
-type PageProps = {
-  params: {
-    slug: PageSlug;
-  };
-};
-
-const data = {
-  terms: {
-    title: 'terms of service',
-    content: 'content',
-  },
-  privacy: {
-    title: 'privacy policy',
-    content: 'content',
-  },
-};
-
-export const generateMetadata = async ({
+// generate metadata
+export async function generateMetadata({
   params,
-}: PageProps): Promise<Metadata> => {
-  const { slug } = await params;
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
+  const { slug } = params;
+  const filePath = path.join(PATH, `${slug}.md`);
 
-  const page = data[slug as PageSlug];
+  // check if file exist
+  if (!fs.existsSync(filePath)) {
+    notFound();
+  }
+
+  // read and parse markdown
+  const fileContents = fs.readFileSync(filePath, 'utf8');
+  const { data } = matter(fileContents);
+  const { title = '', description = '', date = new Date() } = data || {};
 
   return {
-    title: page.title,
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `/legal/${slug}`,
+      type: 'article',
+      publishedTime: date ? new Date(date).toISOString() : undefined,
+    },
   };
-};
+}
 
-export default async function Page({ params }: PageProps) {
-  const slug = params.slug;
+export default async function Page({ params }: { params: { slug: string } }) {
+  const { slug } = params;
+  const filePath = path.join(PATH, `${slug}.md`);
 
-  const page = data[slug];
+  // check if file exist
+  if (!fs.existsSync(filePath)) {
+    notFound();
+  }
+
+  // read and parse markdown
+  const fileContents = fs.readFileSync(filePath, 'utf8');
+  const { data, content } = matter(fileContents);
+  const { title = '', date = new Date() } = data || {};
+
+  // convert markdown to html
+  const htmlContent = await marked(content);
 
   return (
-    <AppLayout>
+    <AppLayout secure={false}>
       <div className="w-full max-w-3xl flex flex-col gap-6">
-        <PageHeaderTitle>{page.title}</PageHeaderTitle>
-        <div>
-          <NormalizedText text={page.content} />
-        </div>
+        <PageHeaderTitle>{title}</PageHeaderTitle>
+        <div
+          className="richtext"
+          dangerouslySetInnerHTML={{ __html: htmlContent }}
+        />
       </div>
     </AppLayout>
   );
