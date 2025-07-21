@@ -1,155 +1,282 @@
-import { Button } from '@repo/ui/components';
+"use client"
+
+import React, { useState, useEffect } from 'react';
+import { Logo } from '@/components';
+import { ROUTER } from '@/router';
 import Link from 'next/link';
 
-import { Logo } from '@/components';
-import { APP_CONFIG } from '@/config';
-import { ROUTER } from '@/router';
+interface FeatureCardProps {
+  title: string;
+  subtitle: string;
+  description: string;
+  imageSrc?: string;
+  imageAlt?: string;
+  reverse?: boolean;
+}
 
-const data = {
-  counters: [
-    {
-      header: '25k+',
-      subheader: 'stories',
-      description: 'Discover unexpected gems, even in your own backyard.',
-    },
-    {
-      header: '10k+',
-      subheader: 'authors',
-      description: 'Share your adventures and learn from our community.',
-    },
-    {
-      header: '$5m+',
-      subheader: 'earned',
-      description: 'Monetize your stories and accept donations.',
-    },
-  ],
-};
+interface PricingTierProps {
+  title: string;
+  price: string;
+  features: string[];
+  isPopular?: boolean;
+}
 
-export const LandingPage = () => {
+const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description, imageSrc, imageAlt, reverse = false }) => (
+  <div className={`container mx-auto px-4 py-16`}>
+    <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 max-w-6xl mx-auto`}>
+      <div className="lg:w-1/2 text-center lg:text-left">
+        <div className="inline-block px-4 py-2 text-sm uppercase font-light mb-4 text-white" style={{ backgroundColor: '#4676AC', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+          {title}
+        </div>
+        <h3 className="text-4xl lg:text-5xl font-light text-white mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif', fontWeight: 300 }}>
+          {subtitle}
+        </h3>
+        <p className="text-lg text-gray-300 leading-relaxed max-w-xl" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+          {description}
+        </p>
+      </div>
+      {imageSrc && (
+        <div className="lg:w-1/2">
+          <div className="relative group">
+            <div className="absolute inset-0 rounded-2xl transition-transform duration-300" style={{ backgroundColor: '#AC6D46' }}></div>
+            <img 
+              src={imageSrc} 
+              alt={imageAlt || subtitle} 
+              className="relative w-full h-80 object-cover rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPopular = false }) => (
+  <div className={`relative bg-gray-800 rounded-3xl shadow-xl p-8 transform hover:scale-105 transition-all duration-300 ${isPopular ? 'border-4 border-blue-500' : 'border border-gray-600'}`}>
+    {isPopular && (
+      <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+        <div className="text-white text-sm font-light px-6 py-2 rounded-full shadow-lg" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+          Most Popular
+        </div>
+      </div>
+    )}
+    <div className="text-center mb-8">
+      <h3 className="text-2xl font-light text-white mb-2" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>{title}</h3>
+      <div className="text-4xl font-light mb-6" style={{ color: '#4676AC', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+        {price}
+      </div>
+    </div>
+    <ul className="space-y-4 mb-8">
+      {features.map((feature, index) => (
+        <li key={index} className="flex items-start">
+          <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3">
+            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <span className="text-gray-300" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>{feature}</span>
+        </li>
+      ))}
+    </ul>
+    <button className={`w-full py-4 px-6 rounded-xl font-light text-lg transition-all duration-300 text-white hover:opacity-90 ${
+      isPopular 
+        ? 'shadow-lg hover:shadow-xl' 
+        : 'bg-gray-700 hover:bg-gray-600'
+    }`} style={isPopular ? { backgroundColor: '#4676AC', fontFamily: 'Lato, sans-serif', fontWeight: 300 } : { fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+        <Link href={ROUTER.SIGNUP}>Sign Up</Link>
+    </button>
+  </div>
+);
+
+export const LandingPage: React.FC = () => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
+
   return (
-    <div className="w-full h-auto flex flex-col">
-      <div className="w-full h-auto min-h-dvh bg-white flex flex-col justify-center items-center py-20">
-        <header className="absolute top-0 left-0 right-0 w-full h-[60px] bg-white flex flex-row items-center justify-center">
-          <Logo size="lg" color="dark" />
-        </header>
-        <div className="w-full max-w-2xl flex flex-col justify-center items-center gap-6 p-6">
-          <h2 className="text-6xl font-semibold text-center">
-            Turn your travels into income
-          </h2>
-          <span className="text-base text-center">
-            Capture your adventures, connect with a global audience, and
-            monetize your stories. Start creating, sharing, and earning today!
-          </span>
-        </div>
-        <div className="mt-14 flex flex-col justify-center items-center">
-          <Button size="lg" asChild>
-            <Link href={ROUTER.HOME}>Explore</Link>
-          </Button>
-        </div>
+    <div className="min-h-screen relative">
+      {/* Google Fonts Import */}
+      <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Sulphur+Point:wght@300;400;700&display=swap" rel="stylesheet" />
+      
+      {/* Fixed Background Image */}
+      <div
+        className="fixed inset-0 bg-cover bg-center bg-no-repeat z-0"
+        style={{
+          backgroundImage: `url(/bg.jpg)`
+        }}
+      >
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-black opacity-65"></div>
       </div>
-      <div className="w-full h-auto bg-white flex flex-col justify-center items-center py-20">
-        <div className="w-full max-w-6xl flex flex-col justify-center items-center gap-6 desktop:p-6">
-          <div className="w-full h-[540px] desktop:rounded-2xl bg-gray-100 p-16 flex flex-col justify-center items-start">
-            <div className="flex flex-col justify-start items-start">
-              <div className="w-full max-w-md flex flex-col gap-4">
-                <h2 className="text-4xl font-medium">
-                  Upgrade your adventures
-                </h2>
-                <p className="text-base font-normal">
-                  Whether you want to explore offline or create your own route,
-                  choose the membership that helps you make the most of every
-                  minute outdoors.
-                </p>
-              </div>
-              <div className="mt-6">
-                <Button size="lg" asChild>
-                  <Link href="">action</Link>
-                </Button>
-              </div>
+
+      {/* Hero Section */}
+      <div className="relative min-h-screen text-white overflow-hidden z-10">
+
+ 
+        
+        <div className="relative z-30 container mx-auto px-4 py-20 flex flex-col items-center justify-center min-h-screen text-center">
+          <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+            <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+              <span className="block text-white">WELCOME TO</span>
+            </h1>
+            
+            <div className="w-100 h-80 mb-1 mr-6">
+              <Logo size="xlg" color="light" />
+            </div>
+            
+            <p className="text-xl lg:text-2xl mb-12 font-normal max-w-4xl mx-auto text-gray-200 leading-relaxed" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+              A PLACE FOR EXPLORERS TO SHARE THEIR STORIES AND BE SPONSORED
+            </p>
+            
+            <div className="flex items-center justify-center">
+              <button className="font-light py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+                <Link href={ROUTER.HOME} className="flex items-center gap-3">
+                  Explore
+                  <svg 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className="transition-transform duration-300 group-hover:translate-x-1"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </Link>
+              </button>
             </div>
           </div>
-        </div>
+        </div>  
       </div>
-      <div className="w-full h-auto bg-white flex flex-col justify-center items-center py-20">
-        <div className="w-full max-w-5xl flex flex-col justify-center items-center gap-6">
-          <div className="grid grid-cols-1 desktop:grid-cols-3 gap-6">
-            {data.counters.map(({ header, subheader, description }, key) => (
-              <div
-                key={key}
-                className="flex flex-col items-center justify-start gap-4"
-              >
-                <span className="text-5xl desktop:text-7xl font-medium">
-                  {header}
-                </span>
-                <span className="text-lg font-medium">{subheader}</span>
-                <span className="text-base font-normal text-center leading-loose">
-                  {description}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+
+      {/* Features Section */}
+      <div className="py-20 relative z-10" style={{ backgroundColor: 'rgba(17, 17, 17, 0.8)' }}>
+        <FeatureCard
+          title="Map-Centric"
+          subtitle="Explore"
+          description="At Heimursaga, the map is everything, just like it is for the explorer. Use the map or the feed to discover journal entries and explorers around the world."
+          imageSrc="/explore.png"
+          imageAlt="Map exploration interface"
+        />
+
+        <FeatureCard
+          title="Text-Focused"
+          subtitle="Journal"
+          description="Every user gets a journal where their geo-tagged entries are logged. Entry photo uploads and privacy settings are included, as well as entry grouping to show journey lines on the map. Follow or sponsor other explorers by visiting their journal."
+          imageSrc="/journal.png"
+          imageAlt="Journal writing interface"
+          reverse={true}
+        />
+
+        <FeatureCard
+          title="Payment-Enabled"
+          subtitle="Sponsor"
+          description="A robust Stripe integration allows Explorer Pro users to receive subscription or one-time sponsorship payments from their supporters. Manage payouts and set subscription amounts right from your Heimursaga dashboard. Entries have an exclusive sponsor-only setting allowing explorers to reward their sponsors!"
+          imageSrc="/sponsor.png"
+          imageAlt="Sponsorship payment interface"
+        />
       </div>
-      <div className="w-full h-auto bg-white flex flex-col justify-center items-center py-20">
-        <div className="w-full max-w-6xl flex flex-col justify-center items-center gap-6 desktop:p-6">
-          <div className="w-full h-[540px] desktop:rounded-2xl bg-gray-100 p-16 flex flex-col justify-center items-start">
-            <div className="flex flex-col justify-start items-start">
-              <div className="w-full max-w-md flex flex-col gap-4">
-                <h2 className="text-4xl font-medium">
-                  Upgrade your adventures
-                </h2>
-                <p className="text-base font-normal">
-                  Whether you want to explore offline or create your own route,
-                  choose the membership that helps you make the most of every
-                  minute outdoors.
-                </p>
-              </div>
-              <div className="mt-6">
-                <Button size="lg" asChild>
-                  <Link href="">action</Link>
-                </Button>
-              </div>
+
+      {/* Call to Action */}
+      <div className="relative py-32 text-white overflow-hidden z-10" style={{ backgroundColor: 'rgba(70, 118, 172, 0.8)' }}>
+        <div className="absolute inset-0 bg-black opacity-30"></div>
+        <div className="relative z-10 container mx-auto px-4 text-center">
+          <h2 className="text-5xl lg:text-6xl font-light mb-6" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>BE AN EXPLORER</h2>
+          <h3 className="text-2xl lg:text-3xl mb-8" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 400 }}>JOIN HEIMURSAGA TODAY</h3>
+          <p className="text-xl mb-12 max-w-3xl mx-auto text-gray-100 leading-relaxed" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            Every place has a story, what's yours? Like the explorers of old, it's never too late to inspire the world.
+          </p>
+            <div className="flex items-center justify-center">
+              <button className="font-light py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+                <Link href={ROUTER.HOME} className="flex items-center gap-3">
+                  Start Your Journey
+                  <svg 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className="transition-transform duration-300 group-hover:translate-x-1"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </Link>
+              </button>
             </div>
+        </div>
+      </div>
+
+      {/* Pricing Section */}
+      <div className="py-32 relative z-10" style={{ backgroundColor: 'rgba(17, 17, 17, 0.8)' }}>
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-20">
+            <h2 className="text-5xl lg:text-6xl font-light text-white mb-6" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+              Choose Your Adventure
+            </h2>
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+              Start your journey with our free plan or unlock premium features with Explorer Pro
+            </p>
+          </div>
+          
+          <div className="grid lg:grid-cols-2 gap-12 max-w-4xl mx-auto">
+            <PricingTier
+              title="EXPLORER"
+              price="FREE FOREVER"
+              features={[
+                "Write and share journal entries",
+                "Bookmark and like entries",
+                "Follow and sponsor other explorers",
+                "Access exclusive entries from sponsored explorers"
+              ]}
+            />
+            <PricingTier
+              title="EXPLORER PRO"
+              price="$7/mo"
+              features={[
+                "All Explorer features included",
+                "Receive sponsorship payments",
+                "View detailed entry statistics",
+                "Journey Builder (waypoint logging and entry grouping)"
+              ]}
+              isPopular={true}
+            />
           </div>
         </div>
       </div>
-      <div className="w-full h-auto min-h-[400px] bg-white flex flex-col justify-center items-center py-20">
-        <div className="w-full max-w-xl flex flex-col justify-center items-center gap-6 p-6">
-          <h2 className="text-6xl font-semibold text-center">
-            Start your journey
-          </h2>
-          <span className="text-base text-center">
-            Create a free account today and start posting unique stories for
-            your fellow explorers.
-          </span>
-        </div>
-        {/* <div className="mt-6 flex flex-col justify-center items-center">
-          <Button size="lg" asChild>
-            <Link href={ROUTER.SIGNUP}>Sign up</Link>
-          </Button>
-        </div> */}
-      </div>
-      <footer className="w-full h-auto min-h-[140px] bg-dark text-gray-200 text-base flex flex-row justify-center items-start">
-        <div className="w-full max-w-7xl grid grid-cols-1 desktop:grid-cols-3 p-6">
-          <div className="flex flex-col justify-start items-start gap-2">
-            <span>© 2025 {APP_CONFIG.APP.NAME}, LLC</span>
-            <ul className="flex flex-row gap-2">
-              {[
-                { href: ROUTER.LEGAL.PRIVACY, label: 'Privacy' },
-                { href: ROUTER.LEGAL.TERMS, label: 'Terms' },
-              ].map(({ href, label }, key) => (
-                <li
-                  key={key}
-                  className="flex flex-row justify-start items-center gap-1"
-                >
-                  <span>•</span>
-                  <Link href={href} className="hover:underline">
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+
+      {/* Quote Section */}
+      <div className="py-32 text-white relative z-10" style={{ backgroundColor: 'rgba(26, 26, 26, 0.8)' }}>
+        <div className="container mx-auto px-4 text-center">
+          <div className="max-w-4xl mx-auto">
+            <div className="text-6xl mb-8" style={{ color: '#AC6D46' }}>"</div>
+            <blockquote className="text-2xl lg:text-3xl font-light mb-8 italic leading-relaxed" style={{ fontFamily: 'Lato, sans-serif' }}>
+              We shall not cease from exploration<br />
+              And the end of all our exploring<br />
+              Will be to arrive where we started<br />
+              And know the place for the first time.
+            </blockquote>
+            <cite className="text-xl text-gray-300 font-light" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>— T.S. Eliot</cite>
           </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="text-white py-12 relative z-10" style={{ backgroundColor: 'rgba(10, 10, 10, 0.8)' }}>
+        <div className="container mx-auto px-4 text-center">
+          <div className="text-2xl font-light mb-4" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            HEIMURSAGA
+          </div>
+          <p className="text-gray-400" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            © 2025 The Peripety Company. All Rights Reserved.
+          </p>
         </div>
       </footer>
     </div>

@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      turborepo:
+        specifier: ^0.0.1
+        version: 0.0.1
     devDependencies:
       '@trivago/prettier-plugin-sort-imports':
         specifier: ^5.2.2
@@ -12111,6 +12115,10 @@ packages:
       turbo-windows-64: 2.4.4
       turbo-windows-arm64: 2.4.4
     dev: true
+
+  /turborepo@0.0.1:
+    resolution: {integrity: sha512-x+4Q9iy252nr6zuU/TvQIF4na8OVLe2pBTwTJKA/aTPzdR4W8q0uhEj/U69G09IznNDjMg8jXG2nm9gan4KQ1g==}
+    dev: false
 
   /type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}

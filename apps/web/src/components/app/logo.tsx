@@ -1,7 +1,7 @@
 import Image from 'next/image';
 
 type Props = {
-  size?: 'lg' | 'sm';
+  size?: 'xlg' | 'lg' | 'sm';
   color?: 'dark' | 'light';
 };
 
@@ -19,6 +19,8 @@ export const Logo: React.FC<Props> = ({ color = 'dark', size = 'sm' }) => {
       switch (size) {
         case 'lg':
           return <LogoLgLight />;
+        case 'xlg':
+          return <LogoXLgLight />;
         case 'sm':
           return <LogoSmLight />;
       }
@@ -34,6 +36,16 @@ const LogoLgLight = () => (
       height={80}
       alt="logo"
       priority={false}
+    />
+  </div>
+);
+
+const LogoXLgLight = () => (
+  <div className="w-full h-full flex items-center justify-center">
+    <img
+      src="/logo-lg-light.svg"
+      alt="logo"
+      className="max-w-full max-h-full object-contain"
     />
   </div>
 );
