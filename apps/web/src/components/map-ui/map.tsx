@@ -52,7 +52,7 @@ const config = {
   maxZoom: 18,
   minZoom: 2,
   point: {
-    radius: 12,
+    radius: 8,
     color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
     colorHover: `#000`,
     scale: 0.75,
@@ -762,7 +762,15 @@ export const Map: React.FC<Props> = ({
                     config.cluster.colorHover,
                     config.cluster.color,
                   ],
-                  'circle-radius': config.cluster.radius,
+                  'circle-radius': [
+                    'interpolate',
+                    ['linear'],
+                    ['get', 'point_count'],
+                    10, 12,    // 10 points = 12px radius  
+                    25, 16,    // 25 points = 16px radius
+                    50, 20,    // 50 points = 20px radius
+                    100, 24    // 100+ points = 24px radius
+                  ],
                   'circle-stroke-width': 2,
                   'circle-stroke-color': '#ffffff',
                 },

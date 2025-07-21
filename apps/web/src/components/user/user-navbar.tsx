@@ -170,6 +170,10 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
           <DropdownMenuItem key={key} asChild>
             <Link
               href={href}
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.href = href;
+              }}
               className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
             >
               {label}

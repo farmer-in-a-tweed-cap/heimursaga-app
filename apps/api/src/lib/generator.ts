@@ -1,4 +1,3 @@
-import { nanoid } from 'nanoid';
 import * as crypto from 'node:crypto';
 
 export const generator = {
@@ -13,7 +12,7 @@ export const generator = {
       length = 14;
     }
 
-    const hash = nanoid(length);
+    const hash = crypto.randomBytes(Math.ceil(length * 3 / 4)).toString('base64url').slice(0, length);
 
     if (prefix) {
       return [prefix, hash].join('_');
