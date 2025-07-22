@@ -1,0 +1,136 @@
+
+> api@0.0.1 dev
+> nest start --watch
+
+c[[90m8:57:12 AM[0m] Starting compilation in watch mode...
+
+[[90m8:57:22 AM[0m] Found 0 errors. Watching for file changes.
+
+[08:57:23.759] [32mINFO[39m (62949): [36mStarting Nest application...[39m
+[08:57:23.793] [32mINFO[39m (62949): [36mLoggerModule dependencies initialized[39m
+[08:57:23.799] [32mINFO[39m (62949): [36mDiscoveryModule dependencies initialized[39m
+[08:57:23.800] [32mINFO[39m (62949): [36mConfigHostModule dependencies initialized[39m
+[08:57:23.800] [32mINFO[39m (62949): [36mEventModule dependencies initialized[39m
+[08:57:23.806] [32mINFO[39m (62949): [36mPrismaModule dependencies initialized[39m
+[08:57:23.822] [32mINFO[39m (62949): [36mEventEmitterModule dependencies initialized[39m
+[08:57:23.822] [32mINFO[39m (62949): [36mConfigModule dependencies initialized[39m
+[08:57:23.822] [32mINFO[39m (62949): [36mNotificationModule dependencies initialized[39m
+[08:57:23.838] [32mINFO[39m (62949): [36mStripeModule dependencies initialized[39m
+[08:57:23.838] [32mINFO[39m (62949): [36mPostModule dependencies initialized[39m
+[08:57:23.838] [32mINFO[39m (62949): [36mTripModule dependencies initialized[39m
+[08:57:23.838] [32mINFO[39m (62949): [36mMapModule dependencies initialized[39m
+[08:57:23.838] [32mINFO[39m (62949): [36mSearchModule dependencies initialized[39m
+[08:57:23.840] [32mINFO[39m (62949): [36mAuthModule dependencies initialized[39m
+[08:57:23.840] [32mINFO[39m (62949): [36mEmailModule dependencies initialized[39m
+[08:57:23.840] [32mINFO[39m (62949): [36mSponsorModule dependencies initialized[39m
+[08:57:23.840] [32mINFO[39m (62949): [36mPaymentModule dependencies initialized[39m
+[08:57:23.840] [32mINFO[39m (62949): [36mPayoutModule dependencies initialized[39m
+[08:57:23.841] [32mINFO[39m (62949): [36mAppModule dependencies initialized[39m
+[08:57:23.841] [32mINFO[39m (62949): [36mUploadModule dependencies initialized[39m
+[08:57:23.841] [32mINFO[39m (62949): [36mUserModule dependencies initialized[39m
+[08:57:23.938] [32mINFO[39m (62949): [36mAppController {/v1}:[39m
+[08:57:23.942] [32mINFO[39m (62949): [36mMapped {/, GET} route[39m
+[08:57:23.943] [32mINFO[39m (62949): [36mMapped {/v1/test, POST} route[39m
+[08:57:23.943] [32mINFO[39m (62949): [36mMapped {/v1/sitemap, GET} route[39m
+[08:57:23.944] [32mINFO[39m (62949): [36mEmailController {/v1/email}:[39m
+[08:57:23.945] [32mINFO[39m (62949): [36mMapped {/v1/email/b1ab69e2db45272230abce24a8341fae1d7f780e, POST} route[39m
+[08:57:23.945] [32mINFO[39m (62949): [36mStripeController {/v1/stripe}:[39m
+[08:57:23.946] [32mINFO[39m (62949): [36mMapped {/stripe, POST} route[39m
+[08:57:23.947] [32mINFO[39m (62949): [36mMapped {/v1/stripe/create-setup-intent, POST} route[39m
+[08:57:23.948] [32mINFO[39m (62949): [36mMapped {/v1/stripe/create-payment-intent, POST} route[39m
+[08:57:23.949] [32mINFO[39m (62949): [36mMapped {/v1/stripe/account/:id, GET} route[39m
+[08:57:23.950] [32mINFO[39m (62949): [36mMapped {/v1/stripe/account, POST} route[39m
+[08:57:23.950] [32mINFO[39m (62949): [36mMapped {/v1/stripe/account-link, POST} route[39m
+[08:57:23.950] [32mINFO[39m (62949): [36mAuthController {/v1/auth}:[39m
+[08:57:23.951] [32mINFO[39m (62949): [36mMapped {/v1/auth/user, GET} route[39m
+[08:57:23.951] [32mINFO[39m (62949): [36mMapped {/v1/auth/login, POST} route[39m
+[08:57:23.952] [32mINFO[39m (62949): [36mMapped {/v1/auth/signup, POST} route[39m
+[08:57:23.952] [32mINFO[39m (62949): [36mMapped {/v1/auth/logout, POST} route[39m
+[08:57:23.952] [32mINFO[39m (62949): [36mMapped {/v1/auth/reset-password, POST} route[39m
+[08:57:23.953] [32mINFO[39m (62949): [36mMapped {/v1/auth/change-password, POST} route[39m
+[08:57:23.953] [32mINFO[39m (62949): [36mMapped {/v1/auth/tokens/:token, GET} route[39m
+[08:57:23.954] [32mINFO[39m (62949): [36mPostController {/v1/posts}:[39m
+[08:57:23.954] [32mINFO[39m (62949): [36mMapped {/v1/posts, GET} route[39m
+[08:57:23.955] [32mINFO[39m (62949): [36mMapped {/v1/posts/:id, GET} route[39m
+[08:57:23.955] [32mINFO[39m (62949): [36mMapped {/v1/posts, POST} route[39m
+[08:57:23.956] [32mINFO[39m (62949): [36mMapped {/v1/posts/:id, PUT} route[39m
+[08:57:23.956] [32mINFO[39m (62949): [36mMapped {/v1/posts/:id, DELETE} route[39m
+[08:57:23.957] [32mINFO[39m (62949): [36mMapped {/v1/posts/:id/like, POST} route[39m
+[08:57:23.957] [32mINFO[39m (62949): [36mMapped {/v1/posts/:id/bookmark, POST} route[39m
+[08:57:23.957] [32mINFO[39m (62949): [36mUploadController {/v1/upload}:[39m
+[08:57:23.957] [32mINFO[39m (62949): [36mMapped {/v1/upload, POST} route[39m
+[08:57:23.957] [32mINFO[39m (62949): [36mUserController {/v1/users}:[39m
+[08:57:23.958] [32mINFO[39m (62949): [36mMapped {/v1/users, GET} route[39m
+[08:57:23.958] [32mINFO[39m (62949): [36mMapped {/v1/users/:username, GET} route[39m
+[08:57:23.959] [32mINFO[39m (62949): [36mMapped {/v1/users/:username/block, POST} route[39m
+[08:57:23.959] [32mINFO[39m (62949): [36mMapped {/v1/users/:username/posts, GET} route[39m
+[08:57:23.960] [32mINFO[39m (62949): [36mMapped {/v1/users/:username/trips, GET} route[39m
+[08:57:23.960] [32mINFO[39m (62949): [36mMapped {/v1/users/:username/map, GET} route[39m
+[08:57:23.961] [32mINFO[39m (62949): [36mMapped {/v1/users/:username/followers, GET} route[39m
+[08:57:23.962] [32mINFO[39m (62949): [36mMapped {/v1/users/:username/following, GET} route[39m
+[08:57:23.963] [32mINFO[39m (62949): [36mMapped {/v1/users/:username/follow, POST} route[39m
+[08:57:23.963] [32mINFO[39m (62949): [36mMapped {/v1/users/:username/unfollow, POST} route[39m
+[08:57:23.963] [32mINFO[39m (62949): [36mMapped {/v1/users/:username/sponsorship-tiers, GET} route[39m
+[08:57:23.963] [32mINFO[39m (62949): [36mSessionUserController {/v1/user}:[39m
+[08:57:23.964] [32mINFO[39m (62949): [36mMapped {/v1/user/settings/profile, GET} route[39m
+[08:57:23.964] [32mINFO[39m (62949): [36mMapped {/v1/user/settings/profile, PUT} route[39m
+[08:57:23.965] [32mINFO[39m (62949): [36mMapped {/v1/user/picture, POST} route[39m
+[08:57:23.965] [32mINFO[39m (62949): [36mMapped {/v1/user/posts, GET} route[39m
+[08:57:23.965] [32mINFO[39m (62949): [36mMapped {/v1/user/bookmarks, GET} route[39m
+[08:57:23.966] [32mINFO[39m (62949): [36mMapped {/v1/user/drafts, GET} route[39m
+[08:57:23.966] [32mINFO[39m (62949): [36mMapped {/v1/user/notifications, GET} route[39m
+[08:57:23.967] [32mINFO[39m (62949): [36mMapped {/v1/user/badge-count, GET} route[39m
+[08:57:23.967] [32mINFO[39m (62949): [36mMapped {/v1/user/insights/post, GET} route[39m
+[08:57:23.967] [32mINFO[39m (62949): [36mMapped {/v1/user/sponsorships, GET} route[39m
+[08:57:23.968] [32mINFO[39m (62949): [36mSponsorController {/v1/sponsor}:[39m
+[08:57:23.968] [32mINFO[39m (62949): [36mMapped {/v1/sponsor/checkout, POST} route[39m
+[08:57:23.968] [32mINFO[39m (62949): [36mSponsorshipController {/v1/sponsorships}:[39m
+[08:57:23.969] [32mINFO[39m (62949): [36mMapped {/v1/sponsorships, GET} route[39m
+[08:57:23.969] [32mINFO[39m (62949): [36mMapped {/v1/sponsorships/:id/cancel, POST} route[39m
+[08:57:23.969] [32mINFO[39m (62949): [36mSponsorshipTierController {/v1/sponsorship-tiers}:[39m
+[08:57:23.970] [32mINFO[39m (62949): [36mMapped {/v1/sponsorship-tiers, GET} route[39m
+[08:57:23.970] [32mINFO[39m (62949): [36mMapped {/v1/sponsorship-tiers/:id, PUT} route[39m
+[08:57:23.970] [32mINFO[39m (62949): [36mMapped {/v1/sponsorship-tiers/:id, DELETE} route[39m
+[08:57:23.970] [32mINFO[39m (62949): [36mTripController {/v1/trips}:[39m
+[08:57:23.971] [32mINFO[39m (62949): [36mMapped {/v1/trips, GET} route[39m
+[08:57:23.971] [32mINFO[39m (62949): [36mMapped {/v1/trips/:trip_id, GET} route[39m
+[08:57:23.972] [32mINFO[39m (62949): [36mMapped {/v1/trips, POST} route[39m
+[08:57:23.972] [32mINFO[39m (62949): [36mMapped {/v1/trips/:trip_id, PUT} route[39m
+[08:57:23.972] [32mINFO[39m (62949): [36mMapped {/v1/trips/:trip_id, DELETE} route[39m
+[08:57:23.972] [32mINFO[39m (62949): [36mMapped {/v1/trips/:trip_id/waypoints, POST} route[39m
+[08:57:23.972] [32mINFO[39m (62949): [36mMapped {/v1/trips/:trip_id/waypoints/:waypoint_id, PUT} route[39m
+[08:57:23.973] [32mINFO[39m (62949): [36mMapped {/v1/trips/:trip_id/waypoints/:waypoint_id, DELETE} route[39m
+[08:57:23.973] [32mINFO[39m (62949): [36mMapController {/v1/map}:[39m
+[08:57:23.973] [32mINFO[39m (62949): [36mMapped {/v1/map, POST} route[39m
+[08:57:23.973] [32mINFO[39m (62949): [36mMapped {/v1/map/waypoints/:id, GET} route[39m
+[08:57:23.973] [32mINFO[39m (62949): [36mMapped {/v1/map/waypoints, POST} route[39m
+[08:57:23.973] [32mINFO[39m (62949): [36mMapped {/v1/map/waypoints/:id, PUT} route[39m
+[08:57:23.974] [32mINFO[39m (62949): [36mMapped {/v1/map/waypoints/:id, DELETE} route[39m
+[08:57:23.974] [32mINFO[39m (62949): [36mPaymentMethodController {/v1/payment-methods}:[39m
+[08:57:23.974] [32mINFO[39m (62949): [36mMapped {/v1/payment-methods, GET} route[39m
+[08:57:23.975] [32mINFO[39m (62949): [36mMapped {/v1/payment-methods/:id, GET} route[39m
+[08:57:23.975] [32mINFO[39m (62949): [36mMapped {/v1/payment-methods, POST} route[39m
+[08:57:23.975] [32mINFO[39m (62949): [36mMapped {/v1/payment-methods/:id, DELETE} route[39m
+[08:57:23.975] [32mINFO[39m (62949): [36mPaymentIntentController {/v1/payment-intents}:[39m
+[08:57:23.976] [32mINFO[39m (62949): [36mMapped {/v1/payment-intents, POST} route[39m
+[08:57:23.976] [32mINFO[39m (62949): [36mPlanController {/v1/plan}:[39m
+[08:57:23.976] [32mINFO[39m (62949): [36mMapped {/v1/plan/upgrade/checkout, POST} route[39m
+[08:57:23.976] [32mINFO[39m (62949): [36mMapped {/v1/plan/downgrade, POST} route[39m
+[08:57:23.976] [32mINFO[39m (62949): [36mPlansController {/v1/plans}:[39m
+[08:57:23.976] [32mINFO[39m (62949): [36mMapped {/v1/plans, GET} route[39m
+[08:57:23.977] [32mINFO[39m (62949): [36mMapped {/v1/plans/:slug, GET} route[39m
+[08:57:23.977] [32mINFO[39m (62949): [36mPayoutController {/v1/payouts}:[39m
+[08:57:23.977] [32mINFO[39m (62949): [36mMapped {/v1/payouts, GET} route[39m
+[08:57:23.977] [32mINFO[39m (62949): [36mMapped {/v1/payouts, POST} route[39m
+[08:57:23.977] [32mINFO[39m (62949): [36mPayoutMethodController {/v1/payout-methods}:[39m
+[08:57:23.978] [32mINFO[39m (62949): [36mMapped {/v1/payout-methods, GET} route[39m
+[08:57:23.979] [32mINFO[39m (62949): [36mMapped {/v1/payout-methods, POST} route[39m
+[08:57:23.979] [32mINFO[39m (62949): [36mBalanceController {/v1/balance}:[39m
+[08:57:23.979] [32mINFO[39m (62949): [36mMapped {/v1/balance, GET} route[39m
+[08:57:23.979] [32mINFO[39m (62949): [36mStripeAccountLinkController {/v1/stripe-account-links}:[39m
+[08:57:23.979] [32mINFO[39m (62949): [36mMapped {/v1/stripe-account-links, POST} route[39m
+[08:57:23.979] [32mINFO[39m (62949): [36mSearchController {/v1/search}:[39m
+[08:57:23.979] [32mINFO[39m (62949): [36mMapped {/v1/search, POST} route[39m
+api running { env: 'development' }
+[08:57:24.327] [32mINFO[39m (62949): [36mprisma: database connected[39m
+[08:57:24.333] [32mINFO[39m (62949): [36mNest application successfully started[39m

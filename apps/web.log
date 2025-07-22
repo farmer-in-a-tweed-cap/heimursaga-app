@@ -1,0 +1,15 @@
+
+> web@0.0.0 dev /Users/christopherhamilton/Documents/Heimursaga/heimursaga-app/apps/web
+> next dev
+
+   ▲ Next.js 14.1.1
+   - Local:        http://localhost:3000
+   - Environments: .env.local
+   - Experiments (use at your own risk):
+     · outputFileTracingRoot
+
+ ✓ Ready in 2.9s
+ ○ Compiling / ...
+ ✓ Compiled / in 28s (11980 modules)
+ ○ Compiling /not-found ...
+ ✓ Compiled /favicon.ico in 24.7s (11972 modules)

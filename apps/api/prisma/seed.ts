@@ -29,10 +29,12 @@ async function main() {
   const profiles = usersCreated.map(
     ({ id }) =>
       ({
-        first_name: faker.person.firstName(),
-        last_name: faker.person.lastName(),
+        name: faker.person.fullName(),
+        bio: faker.lorem.sentence(),
+        location_from: faker.location.country(),
+        location_lives: faker.location.city(),
         user_id: id,
-      }) as UserProfile,
+      }) as Omit<UserProfile, 'id' | 'created_at' | 'updated_at' | 'picture'>,
   );
 
   const profilesCreated = await prisma.$transaction(
@@ -42,17 +44,27 @@ async function main() {
   console.log('profiles:', profilesCreated.length);
 
   // create posts
-  const posts: Post[] = [];
+  const posts: (Omit<Post, 'id' | 'created_at' | 'updated_at' | 'deleted_at'>)[] = [];
 
   for (const { id } of usersCreated) {
     posts.push(
       ...array(20).map(
         () =>
           ({
-            title: faker.lorem.paragraph({ min: 1, max: 1 }),
-            content: faker.lorem.paragraphs({ min: 1, max: 3 }),
+            public_id: faker.string.alphanumeric(14),
+            title: faker.lorem.words({ min: 3, max: 8 }),
+            content: faker.lorem.paragraphs({ min: 2, max: 4 }),
+            public: true, // Make posts public!
+            sponsored: false,
+            lat: faker.location.latitude(),
+            lon: faker.location.longitude(),
+            place: faker.location.city() + ', ' + faker.location.country(),
+            date: faker.date.recent({ days: 30 }),
+            waypoint_id: null,
             author_id: id,
-          }) as Post,
+            likes_count: 0,
+            bookmarks_count: 0,
+          }),
       ),
     );
   }

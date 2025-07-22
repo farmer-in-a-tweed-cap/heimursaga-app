@@ -35,12 +35,12 @@ export const AppBottomNavbar: React.FC<Props> = () => {
 
   // Get notification count for badge
   const { data: notificationData } = useQuery({
-    queryKey: [API_QUERY_KEYS.USER_NOTIFICATIONS],
-    queryFn: () => apiClient.notifications.getAll(),
+    queryKey: [API_QUERY_KEYS.USER.NOTIFICATIONS],
+    queryFn: () => apiClient.getUserNotifications(),
     enabled: logged,
   });
 
-  const unreadNotifications = notificationData?.data?.filter(n => !n.isRead)?.length || 0;
+  const unreadNotifications = Array.isArray(notificationData?.data) ? notificationData.data.filter((n: any) => !n.read).length : 0;
 
   const createAvatarIcon = () => (
     <div className="relative flex items-center justify-center w-[56px] h-[56px]">
@@ -154,7 +154,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
           )}
         >
           <div className="w-[24px] h-[24px] flex items-center justify-center">
-            {typeof links[0].icon === 'function' && links[0].icon.length === 0 ? links[0].icon() : links[0].icon({ size: 20, weight: "regular" })}
+            {typeof links[0].icon === 'function' && links[0].icon.length === 0 ? links[0].icon({} as any) : links[0].icon({ size: 20, weight: "regular" as any })}
           </div>
           {links[0].label && <span className="text-xs font-medium whitespace-nowrap">{links[0].label}</span>}
         </Link>
@@ -189,7 +189,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
           )}
         >
           <div className="w-[24px] h-[24px] flex items-center justify-center">
-            {typeof links[links.length - 1].icon === 'function' && links[links.length - 1].icon.length === 0 ? links[links.length - 1].icon() : links[links.length - 1].icon({ size: 20, weight: "regular" })}
+            {typeof links[links.length - 1].icon === 'function' && links[links.length - 1].icon.length === 0 ? links[links.length - 1].icon({} as any) : links[links.length - 1].icon({ size: 20, weight: "regular" as any })}
           </div>
           {links[links.length - 1].label && <span className="text-xs font-medium whitespace-nowrap">{links[links.length - 1].label}</span>}
         </Link>

@@ -1,0 +1,25 @@
+
+> web@0.0.0 dev
+> next dev
+
+   ▲ Next.js 14.1.1
+   - Local:        http://localhost:3000
+   - Environments: .env.local
+   - Experiments (use at your own risk):
+     · outputFileTracingRoot
+
+error This project's package.json defines "packageManager": "yarn@pnpm@8.6.7". However the current global version of Yarn is 1.22.22.
+
+Presence of the "packageManager" field indicates that the project is meant to be used with Corepack, a tool included by default with all official Node.js distributions starting from 16.9 and 14.19.
+Corepack must currently be enabled by running corepack enable in your terminal. For more information, check out https://yarnpkg.com/corepack.
+ ✓ Ready in 3.5s
+ ○ Compiling / ...
+ ✓ Compiled / in 31.6s (11980 modules)
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 23.8s (11942 modules)
+ ○ Compiling /not-found ...
+ ✓ Compiled /not-found in 7.2s (11969 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
+ ○ Compiling /_error ...
+ ✓ Compiled /_error in 4.1s (12111 modules)
+ ⚠ Fast Refresh had to perform a full reload. Read more: https://nextjs.org/docs/messages/fast-refresh-reload
