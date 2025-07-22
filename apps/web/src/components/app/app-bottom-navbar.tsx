@@ -2,6 +2,7 @@
 
 import { UserAvatar } from '../user';
 import { UserRole } from '@repo/types';
+import { BadgeDot } from '@repo/ui/components';
 import {
   BookmarkSimpleIcon,
   IconProps,
@@ -13,9 +14,11 @@ import {
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 type Props = {};
 
@@ -26,8 +29,17 @@ type NavLink = {
 };
 
 export const AppBottomNavbar: React.FC<Props> = () => {
-  const { role, logged, username, ...user } = useSession();
+  const { role, logged, username, creator, ...user } = useSession();
   const pathname = usePathname();
+
+  // Get notification count for badge
+  const { data: notificationData } = useQuery({
+    queryKey: [API_QUERY_KEYS.USER_NOTIFICATIONS],
+    queryFn: () => apiClient.notifications.getAll(),
+    enabled: logged,
+  });
+
+  const unreadNotifications = notificationData?.data?.filter(n => !n.isRead)?.length || 0;
 
   const LINKS: { [role: string]: NavLink[] } = {
     guest: [
@@ -66,7 +78,18 @@ export const AppBottomNavbar: React.FC<Props> = () => {
       {
         href: username ? ROUTER.YOU : '#',
         icon: () => (
-          <UserAvatar src={user?.picture} className="w-[24px] h-[24px]" />
+          <div className="relative">
+            <UserAvatar 
+              src={user?.picture} 
+              className={cn(
+                "w-[24px] h-[24px]",
+                creator ? 'border-2 border-primary' : ''
+              )} 
+            />
+            {unreadNotifications > 0 && (
+              <BadgeDot className="absolute -top-1 -right-1" />
+            )}
+          </div>
         ),
         label: 'You',
       },

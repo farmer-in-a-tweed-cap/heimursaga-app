@@ -5,7 +5,7 @@ export const LOCALES = {
       BAD_REQUEST: 'bad request',
     },
     SEARCH: {
-      POSTS_FOUND: 'posts found',
+      POSTS_FOUND: 'entries found',
     },
     MAP: {
       FILTER: {
@@ -29,8 +29,8 @@ export const LOCALES = {
     },
     POSTS: {
       TOAST: {
-        DELETED: 'post deleted',
-        NOT_UPDATED: 'post not updated',
+        DELETED: 'entry deleted',
+        NOT_UPDATED: 'entry not updated',
       },
     },
     SPONSORSHIP: {

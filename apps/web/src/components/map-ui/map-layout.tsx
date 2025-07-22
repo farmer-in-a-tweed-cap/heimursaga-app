@@ -105,7 +105,7 @@ export const MapDrawer: React.FC<{
             </div>
           </div>
         ) : (
-          <>post not found</>
+          <>entry not found</>
         )}
       </div>
     </div>

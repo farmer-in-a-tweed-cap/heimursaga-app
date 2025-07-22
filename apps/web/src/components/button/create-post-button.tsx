@@ -39,7 +39,7 @@ export const CreatePostButton: React.FC<Props> = ({
             classNames?.label,
           )}
         >
-          {children ? children : 'Create post'}
+          {children ? children : 'Create entry'}
         </span>
       )}
     </Button>

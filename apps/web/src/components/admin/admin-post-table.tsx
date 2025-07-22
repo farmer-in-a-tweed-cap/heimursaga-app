@@ -55,8 +55,8 @@ export const AdminPostTable: React.FC<Props> = ({
   const handleDeleteModal = (postId: string) => {
     modal.open<ActionModalProps>(MODALS.ACTION, {
       props: {
-        title: 'Delete post',
-        message: 'Are you sure you want to delete this post?',
+        title: 'Delete entry',
+        message: 'Are you sure you want to delete this entry?',
         submit: {
           buttonText: 'Delete',
           onClick: () => handleDeleteSubmit(postId),

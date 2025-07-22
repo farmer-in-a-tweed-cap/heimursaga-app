@@ -138,12 +138,13 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
       legalLinks = LINKS.info;
       break;
   }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
         <div
           className={cn(
-            'flex flex-row gap-4 items-center justify-center lg:justify-start rounded-none lg:rounded-full box-border bg-dark lg:hover:bg-dark-hover focus:bg-secondary-hover active:bg-dark-hover',
+            'flex flex-row gap-4 items-center justify-center desktop:justify-start rounded-none desktop:rounded-full box-border bg-dark desktop:hover:bg-dark-hover focus:bg-secondary-hover active:bg-dark-hover',
             collapsed ? '' : 'p-2',
           )}
         >
@@ -156,7 +157,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
             <UserGuestAvatar />
           )}
           {!collapsed && (
-            <div className="hidden lg:flex flex-col items-start text-sm">
+            <div className="hidden desktop:flex flex-col items-start text-sm">
               <span className="font-medium text-sm text-white">{username}</span>
               <span className={cn('font-normal text-xs capitalize')}>
                 {roleLabel}

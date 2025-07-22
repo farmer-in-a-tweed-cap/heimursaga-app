@@ -529,7 +529,7 @@ export const MapExploreView: React.FC<Props> = () => {
                     ),
                   )
                 ) : (
-                  <>no posts found</>
+                  <>no entries found</>
                 )}
               </>
             )}

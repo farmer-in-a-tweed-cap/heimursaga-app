@@ -61,6 +61,6 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
       ))}
     </div>
   ) : (
-    <>no posts</>
+    <>no entries</>
   );
 };

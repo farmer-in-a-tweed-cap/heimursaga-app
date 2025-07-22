@@ -26,3 +26,4 @@ export * from './user-profile-buttons';
 export * from './verification-badge';
 
 export * from './user-you-menu';
+export * from './user-you-header';

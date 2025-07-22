@@ -40,13 +40,13 @@ export const InsightPostView = () => {
 
   const handleDelete = (postId: string) => {
     if (!postId) return;
-    confirm('do you want to delete this post?');
+    confirm('do you want to delete this entry?');
   };
 
   const columns: DataTableColumn<PostInsightTableData>[] = [
     {
       accessorKey: 'title',
-      header: () => 'Post',
+      header: () => 'Entry',
 
       cell: ({ row }) => {
         const postId = row.original.postId;
