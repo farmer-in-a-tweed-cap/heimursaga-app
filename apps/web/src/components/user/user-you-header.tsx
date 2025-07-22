@@ -11,8 +11,7 @@ export const UserYouHeader = () => {
   };
 
   return (
-    <div className="flex items-center justify-between">
-      <h1 className="text-2xl font-bold text-gray-900">You</h1>
+    <div className="flex items-center justify-end">
       <button
         onClick={handleClose}
         className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"

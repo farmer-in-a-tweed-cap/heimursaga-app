@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, ButtonProps } from '@repo/ui/components';
-import { PencilSimpleLineIcon } from '@repo/ui/icons';
+import { Feather } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 
 import { redirect } from '@/lib';
@@ -31,7 +31,7 @@ export const CreatePostButton: React.FC<Props> = ({
       className={cn(collapsed ? 'w-[36px] h-[36px]' : '', classNames?.button)}
       {...props}
     >
-      <PencilSimpleLineIcon width={20} weight="bold" />
+      <Feather width={20} weight="regular" />
       {!collapsed && (
         <span
           className={cn(
@@ -39,7 +39,7 @@ export const CreatePostButton: React.FC<Props> = ({
             classNames?.label,
           )}
         >
-          {children ? children : 'Create entry'}
+          {children ? children : 'Log Entry'}
         </span>
       )}
     </Button>

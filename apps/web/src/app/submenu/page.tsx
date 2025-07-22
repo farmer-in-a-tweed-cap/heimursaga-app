@@ -15,7 +15,7 @@ import { AppLayout } from '@/layouts';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'You',
+  title: 'Submenu',
 };
 
 export default async function Page() {

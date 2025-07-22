@@ -8,7 +8,7 @@ export const ROUTER = {
     HOME: '/explore',
     POST: (id: string) => `/explore/post/${id}`,
   },
-  YOU: '/you',
+  YOU: '/submenu',
   DASHBOARD: {
     HOME: '/dashboard',
   },

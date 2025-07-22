@@ -18,6 +18,19 @@ import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { UserBar } from './user-bar';
 
+const getRoleLabel = (role: string) => {
+  switch (role) {
+    case UserRole.USER:
+      return 'explorer';
+    case UserRole.ADMIN:
+      return 'admin';
+    case UserRole.CREATOR:
+      return 'explorer pro';
+    default:
+      return 'explorer';
+  }
+};
+
 type Props = {};
 
 export const UserYouMenu = () => {
@@ -26,6 +39,7 @@ export const UserYouMenu = () => {
   const isCreator = session?.creator;
 
   const { username = '', email = '', picture = '' } = session || {};
+  const roleLabel = getRoleLabel(session?.role || UserRole.USER);
 
   // Get notification count for badge
   const { data: notificationData } = useQuery({
@@ -162,7 +176,7 @@ export const UserYouMenu = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      <UserBar name={username} picture={picture} creator={isCreator} />
+      <UserBar name={username} picture={picture} text={roleLabel} creator={isCreator} />
       
       {/* Navigation Menu */}
       <div className="flex flex-col gap-2">

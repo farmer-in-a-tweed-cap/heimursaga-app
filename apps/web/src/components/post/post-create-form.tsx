@@ -180,11 +180,11 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
           }
         } else {
           setLoading(false);
-          toast({ type: 'error', message: 'entry not created' });
+          toast({ type: 'error', message: 'log entry not created' });
         }
       } catch (e) {
         setLoading(false);
-        toast({ type: 'error', message: 'post not created' });
+        toast({ type: 'error', message: 'log entry not created' });
       }
     },
   );
@@ -363,7 +363,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                     className="min-w-[140px]"
                     loading={loading}
                   >
-                    Submit
+                    Log Entry
                   </Button>
                 </div>
               </div>
