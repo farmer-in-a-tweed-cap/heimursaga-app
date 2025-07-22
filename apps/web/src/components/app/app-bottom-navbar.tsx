@@ -2,20 +2,24 @@
 
 import { UserAvatar } from '../user';
 import { UserRole } from '@repo/types';
+import { BadgeDot } from '@repo/ui/components';
 import {
-  BookmarkSimpleIcon,
+  BookBookmark,
+  Bookmarks,
+  CompassRose,
+  Feather,
   IconProps,
-  MagnifyingGlassIcon,
-  PencilIcon,
-  PlusIcon,
   UserIcon,
 } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import Image from 'next/image';
 
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 type Props = {};
 
@@ -26,15 +30,54 @@ type NavLink = {
 };
 
 export const AppBottomNavbar: React.FC<Props> = () => {
-  const { role, logged, username, ...user } = useSession();
+  const { role, logged, username, creator, ...user } = useSession();
   const pathname = usePathname();
+
+  // Get notification count for badge
+  const { data: notificationData } = useQuery({
+    queryKey: [API_QUERY_KEYS.USER_NOTIFICATIONS],
+    queryFn: () => apiClient.notifications.getAll(),
+    enabled: logged,
+  });
+
+  const unreadNotifications = notificationData?.data?.filter(n => !n.isRead)?.length || 0;
+
+  const createAvatarIcon = () => (
+    <div className="relative flex items-center justify-center w-[56px] h-[56px]">
+      <UserAvatar 
+        src={user?.picture} 
+        className={cn(
+          "w-[48px] h-[48px]",
+          creator ? 'border-2 border-primary' : ''
+        )} 
+      />
+      {(unreadNotifications || 0) > 0 && (
+        <BadgeDot className="absolute -top-1 -right-1" />
+      )}
+    </div>
+  );
+
+  const createLogoIcon = () => (
+    <div className="relative flex items-center justify-center w-[56px] h-[56px]">
+      <div className="w-[48px] h-[48px] rounded-full border-2 border-primary flex items-center justify-center">
+        <Image
+          src="/logo-sm-dark.svg"
+          width={36}
+          height={36}
+          alt=""
+          priority={false}
+          style={{ filter: 'drop-shadow(0 0 0.5px currentColor)' }}
+        />
+      </div>
+    </div>
+  );
 
   const LINKS: { [role: string]: NavLink[] } = {
     guest: [
       {
         href: ROUTER.HOME,
-        icon: (props) => <MagnifyingGlassIcon {...props} />,
-        label: 'Explore',
+        icon: createLogoIcon,
+        label: '',
       },
       {
         href: ROUTER.LOGIN,
@@ -45,30 +88,28 @@ export const AppBottomNavbar: React.FC<Props> = () => {
     user: [
       {
         href: ROUTER.HOME,
-        icon: (props) => <MagnifyingGlassIcon {...props} />,
-        label: 'Explore',
+        icon: createLogoIcon,
+        label: '',
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
-        icon: (props) => <PencilIcon {...props} />,
+        icon: (props) => <BookBookmark {...props} />,
         label: 'Journal',
       },
       {
         href: ROUTER.ENTRIES.CREATE,
-        icon: (props) => <PlusIcon {...props} />,
-        label: 'Create',
+        icon: (props) => <Feather {...props} />,
+        label: 'Log Entry',
       },
       {
         href: ROUTER.BOOKMARKS.HOME,
-        icon: (props) => <BookmarkSimpleIcon {...props} />,
-        label: 'Saved',
+        icon: (props) => <Bookmarks {...props} />,
+        label: 'Bookmarks',
       },
       {
         href: username ? ROUTER.YOU : '#',
-        icon: () => (
-          <UserAvatar src={user?.picture} className="w-[24px] h-[24px]" />
-        ),
-        label: 'You',
+        icon: createAvatarIcon,
+        label: '',
       },
     ],
   };
@@ -89,28 +130,70 @@ export const AppBottomNavbar: React.FC<Props> = () => {
 
   const isActiveLink = (path: string): boolean => {
     path = path.startsWith('/') ? path : `/${path}`;
-    const active = path === '/' ? pathname === path : pathname.startsWith(path);
-    return active;
+    // For root path, check exact match
+    if (path === '/') {
+      return pathname === path;
+    }
+    // For explore page, only match exact path (not subpages like /explore/post/123)
+    if (path === '/explore') {
+      return pathname === '/explore';
+    }
+    // For other paths, check if pathname starts with path followed by '/' or is exact match
+    return pathname === path || pathname.startsWith(path + '/');
   };
 
   return (
-    <div className="w-full h-[70px] bg-background border-t border-solid border-accent flex flex-row justify-center gap-10 sm:justify-center sm:gap-14 box-border px-6 items-center">
-      {links.map(({ label, href, icon: Icon }, key) => (
+    <div className="w-full h-[70px] bg-background border-t border-solid border-accent flex flex-row items-center">
+      {/* Left item - Logo/Explore */}
+      <div className="flex-shrink-0 pl-6">
         <Link
-          key={key}
-          href={href}
+          href={links[0].href}
           className={cn(
             'flex flex-col items-center justify-center gap-1 text-gray-500',
-            isActiveLink(href) ? 'text-black' : 'text-gray-500',
+            isActiveLink(links[0].href) ? 'text-black' : 'text-gray-500',
           )}
         >
           <div className="w-[24px] h-[24px] flex items-center justify-center">
-            <Icon size={20} weight="bold" />
+            {typeof links[0].icon === 'function' && links[0].icon.length === 0 ? links[0].icon() : links[0].icon({ size: 20, weight: "regular" })}
           </div>
-
-          {label && <span className="text-xs font-medium ">{label}</span>}
+          {links[0].label && <span className="text-xs font-medium whitespace-nowrap">{links[0].label}</span>}
         </Link>
-      ))}
+      </div>
+
+      {/* Center items - Middle menu items */}
+      <div className="flex-1 flex flex-row items-center justify-evenly px-4">
+        {links.slice(1, -1).map(({ label, href, icon: Icon }, index) => (
+          <Link
+            key={index + 1}
+            href={href}
+            className={cn(
+              'flex flex-col items-center justify-center gap-1 text-gray-500',
+              isActiveLink(href) ? 'text-black' : 'text-gray-500',
+            )}
+          >
+            <div className="w-[28px] h-[28px] flex items-center justify-center">
+              <Icon size={24} weight="regular" />
+            </div>
+            {label && <span className="text-xs font-normal whitespace-nowrap">{label}</span>}
+          </Link>
+        ))}
+      </div>
+
+      {/* Right item - Avatar */}
+      <div className="flex-shrink-0 pr-6">
+        <Link
+          href={links[links.length - 1].href}
+          className={cn(
+            'flex flex-col items-center justify-center gap-1 text-gray-500',
+            isActiveLink(links[links.length - 1].href) ? 'text-black' : 'text-gray-500',
+          )}
+        >
+          <div className="w-[24px] h-[24px] flex items-center justify-center">
+            {typeof links[links.length - 1].icon === 'function' && links[links.length - 1].icon.length === 0 ? links[links.length - 1].icon() : links[links.length - 1].icon({ size: 20, weight: "regular" })}
+          </div>
+          {links[links.length - 1].label && <span className="text-xs font-medium whitespace-nowrap">{links[links.length - 1].label}</span>}
+        </Link>
+      </div>
     </div>
   );
 };

@@ -1,11 +1,7 @@
 'use client';
 
-import { Sheet, SheetContent, SheetTrigger } from '@repo/ui/components';
-import { ListIcon } from '@repo/ui/icons';
 import Link from 'next/link';
-import { useState } from 'react';
 
-import { useScreen } from '@/hooks';
 import { ROUTER } from '@/router';
 
 import { Logo } from './logo';
@@ -14,22 +10,12 @@ type Props = {};
 
 export const AppTopNavbar: React.FC<Props> = () => {
   return (
-    <div className="z-50 relative w-full h-[60px] bg-background flex flex-row items-center justify-between app-container gap-10">
+    <div className="lg:hidden fixed top-4 left-4 z-50">
       <Link href={ROUTER.HOME}>
-        <Logo size="sm" color="dark" />
+        <div className="w-12 h-12 bg-dark rounded-full flex items-center justify-center shadow-lg">
+          <Logo size="sm" color="light" />
+        </div>
       </Link>
-      <div>
-        <Sheet>
-          <SheetTrigger>
-            <ListIcon />
-          </SheetTrigger>
-          <SheetContent side="right" className="min-w-[100vw] h-dvh">
-            <div className="flex flex-row justify-between">
-              <Logo size="lg" color="dark" />
-            </div>
-          </SheetContent>
-        </Sheet>
-      </div>
     </div>
   );
 };

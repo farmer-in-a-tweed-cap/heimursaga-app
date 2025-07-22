@@ -421,7 +421,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                     className="min-w-[140px]"
                     loading={loading.post}
                   >
-                    Save
+                    Save Entry
                   </Button>
                 </div>
               </div>

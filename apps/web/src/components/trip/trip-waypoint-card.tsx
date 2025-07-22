@@ -34,7 +34,7 @@ export const TripWaypointCard: React.FC<Props> = ({
 
   if (!post) {
     actions.push({
-      label: 'Create entry',
+      label: 'Log Entry',
       onClick: () => {
         // redirect to the post page
         if (waypointId) {

@@ -11,14 +11,14 @@ import {
 } from '@repo/ui/components';
 import {
   BellIcon,
-  BookmarkSimpleIcon,
+  BookBookmark,
+  Bookmarks,
   ChartPieSliceIcon,
+  CompassRose,
   HandCoinsIcon,
   HouseIcon,
   IconProps,
-  MagnifyingGlassIcon,
   PathIcon,
-  PencilIcon,
   WalletIcon,
 } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
@@ -79,7 +79,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.HOME,
         base: ROUTER.HOME,
         label: 'Explore',
-        icon: MagnifyingGlassIcon,
+        icon: CompassRose,
       },
     ],
     user: [
@@ -87,19 +87,19 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.HOME,
         base: ROUTER.HOME,
         label: 'Explore',
-        icon: MagnifyingGlassIcon,
+        icon: CompassRose,
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
         base: username ? ROUTER.USERS.DETAIL(username) : '#',
         label: 'Journal',
-        icon: PencilIcon,
+        icon: BookBookmark,
       },
       {
         href: ROUTER.BOOKMARKS.HOME,
         base: ROUTER.BOOKMARKS.HOME,
         label: 'Bookmarks',
-        icon: BookmarkSimpleIcon,
+        icon: Bookmarks,
       },
       {
         href: ROUTER.NOTIFICATIONS,
@@ -114,13 +114,13 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.HOME,
         base: ROUTER.HOME,
         label: 'Explore',
-        icon: MagnifyingGlassIcon,
+        icon: CompassRose,
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
         base: username ? ROUTER.USERS.DETAIL(username) : '#',
         label: 'Journal',
-        icon: PencilIcon,
+        icon: BookBookmark,
       },
       {
         href: ROUTER.JOURNEYS.HOME,
@@ -150,7 +150,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.BOOKMARKS.HOME,
         base: ROUTER.BOOKMARKS.HOME,
         label: 'Bookmarks',
-        icon: BookmarkSimpleIcon,
+        icon: Bookmarks,
       },
       {
         href: ROUTER.NOTIFICATIONS,
@@ -189,8 +189,16 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
 
   const isActiveLink = (path: string): boolean => {
     path = path.startsWith('/') ? path : `/${path}`;
-    const active = path === '/' ? pathname === path : pathname.startsWith(path);
-    return active;
+    // For root path, check exact match
+    if (path === '/') {
+      return pathname === path;
+    }
+    // For explore page, only match exact path (not subpages like /explore/post/123)
+    if (path === '/explore') {
+      return pathname === '/explore';
+    }
+    // For other paths, check if pathname starts with path followed by '/' or is exact match
+    return pathname === path || pathname.startsWith(path + '/');
   };
 
   return (
@@ -209,15 +217,14 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         <div className="bg-dark text-dark-foreground flex flex-col items-center w-full h-full py-4">
           <div
             className={cn(
-              'w-full box-border flex flex-row items-center justify-center',
-              collapsed ? '' : 'lg:px-4 lg:justify-start',
+              'w-full box-border flex flex-row items-center pl-4 pr-8',
             )}
           >
             <Link href={ROUTER.HOME}>
               {collapsed ? (
                 <Logo color="light" size="sm" />
               ) : (
-                <Logo color="light" size="lg" />
+                <Logo color="light" size="xlg" />
               )}
             </Link>
           </div>
@@ -237,7 +244,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                         <div className="relative flex flex-row justify-start items-center gap-2">
                           <Icon
                             size={20}
-                            weight="bold"
+                            weight="regular"
                             className="app-sidebar-link-icon"
                           />
                           {collapsed && badge >= 1 && (
@@ -280,7 +287,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                     button: 'min-w-auto bg-white hover:bg-accent',
                   }}
                 >
-                  Create
+                  Log Entry
                 </CreatePostButton>
               )}
               <UserNavbar collapsed={collapsed} />
