@@ -43,12 +43,12 @@ export const UserYouMenu = () => {
 
   // Get notification count for badge
   const { data: notificationData } = useQuery({
-    queryKey: [API_QUERY_KEYS.USER_NOTIFICATIONS],
-    queryFn: () => apiClient.notifications.getAll(),
+    queryKey: [API_QUERY_KEYS.USER.NOTIFICATIONS],
+    queryFn: () => apiClient.getUserNotifications(),
     enabled: session?.logged,
   });
 
-  const unreadNotifications = notificationData?.data?.filter(n => !n.isRead)?.length || 0;
+  const unreadNotifications = Array.isArray(notificationData?.data) ? notificationData.data.filter(n => !n.read).length : 0;
 
   // Define navigation links based on user role (excluding items already in mobile bottom nav)
   // Items with icons are from desktop sidebar, items without are submenu items
