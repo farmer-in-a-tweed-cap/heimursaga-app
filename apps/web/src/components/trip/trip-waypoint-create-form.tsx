@@ -41,7 +41,14 @@ const schema = z.object({
     .max(20, zodMessage.string.max('title', 20)),
   lat: z.string().max(20, zodMessage.string.max('latitude', 20)),
   lon: z.string().max(20, zodMessage.string.max('longitude', 20)),
-  date: z.date({ message: zodMessage.required('date') }),
+  date: z.date({ message: zodMessage.required('date') })
+    .refine((date) => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return date >= today;
+    }, {
+      message: "Date cannot be earlier than today"
+    }),
 });
 
 export const TripWaypointCreateForm: React.FC<Props> = ({
@@ -145,6 +152,9 @@ export const TripWaypointCreateForm: React.FC<Props> = ({
                     }}
                   />
                 </FormControl>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Date must be today or in the future
+                </div>
                 <FormMessage />
               </FormItem>
             )}

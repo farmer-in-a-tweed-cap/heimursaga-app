@@ -250,7 +250,7 @@ model Trip {
   public_id   String         @db.VarChar(14)
   title       String         @db.VarChar(200)
   description String?        @db.Text
-  public      Boolean?       @default(false)
+  public      Boolean?       @default(true)
   waypoints   TripWaypoint[] @relation("trip_waypoints")
   author      User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
   author_id   Int

@@ -1,6 +1,7 @@
 export * from './user-feed';
 
 export * from './user-posts';
+export * from './user-journeys';
 
 export * from './user-profile-card';
 export * from './user-follow-button';

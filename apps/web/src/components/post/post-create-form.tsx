@@ -51,7 +51,15 @@ const schema = z.object({
   content: z
     .string()
     .nonempty(zodMessage.required('content'))
-    .max(3000, zodMessage.string.max('content', 3000)),
+    .min(1, zodMessage.required('content'))
+    .refine((content) => {
+      const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+      return wordCount >= 100;
+    }, { message: 'Content must be at least 100 words' })
+    .refine((content) => {
+      const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+      return wordCount <= 1000;
+    }, { message: 'Content must not exceed 1000 words' }),
   place: z
     .string()
     .nonempty(zodMessage.required('place'))
@@ -239,20 +247,42 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                   <FormField
                     control={form.control}
                     name="content"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Content</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            className="min-h-[180px]"
-                            disabled={loading}
-                            required
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      const content = field.value || '';
+                      const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+
+                      const getWordCountColor = () => {
+                        if (wordCount < 100) return 'text-red-400';
+                        if (wordCount > 1000) return 'text-red-400';
+                        if (wordCount > 900) return 'text-orange-400';
+                        return 'text-gray-400';
+                      };
+
+                      return (
+                        <FormItem>
+                          <div className="flex items-center justify-between">
+                            <FormLabel>Content</FormLabel>
+                            <span className={`text-xs ${getWordCountColor()}`}>
+                              {wordCount} / 1000 words
+                            </span>
+                          </div>
+                          <FormControl>
+                            <Textarea
+                              className="min-h-[180px]"
+                              disabled={loading}
+                              required
+                              {...field}
+                            />
+                          </FormControl>
+                          <div className="flex items-center justify-between">
+                            <FormMessage />
+                            <p className="text-xs text-gray-500">
+                              Minimum 100 words, maximum 1000 words
+                            </p>
+                          </div>
+                        </FormItem>
+                      );
+                    }}
                   />
                 </div>
                 {session.creator && (

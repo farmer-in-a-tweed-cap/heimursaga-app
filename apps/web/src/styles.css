@@ -26,7 +26,7 @@
   }
 
   .app-sidebar-link {
-    @apply transition-all flex flex-row gap-3 items-center text-sm px-3 py-2 rounded-lg hover:bg-dark-hover;
+    @apply transition-all flex flex-row gap-3 items-center text-sm px-2 py-3 rounded-lg hover:bg-dark-hover;
 
     &:hover {
       @apply text-white;

@@ -1,10 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   ITripCreatePayload,
+  ITripUpdatePayload,
   IWaypointCreatePayload,
   IWaypointUpdatePayload,
 } from '@repo/types';
 import {
+  IsBoolean,
   IsDate,
   IsDateString,
   IsNotEmpty,
@@ -22,13 +24,23 @@ export class TripCreateDto implements ITripCreatePayload {
   @IsString()
   @IsNotEmpty()
   title: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  public?: boolean;
 }
 
-export class TripUpdateDto implements ITripCreatePayload {
+export class TripUpdateDto implements ITripUpdatePayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
   title: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  public?: boolean;
 }
 
 export class TripParamDto {
