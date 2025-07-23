@@ -607,7 +607,7 @@ export const Map: React.FC<Props> = ({
     
     
     // Remove existing layers that are not in the new layer list
-    const existingLayers = mapboxRef.current.getStyle().layers || [];
+    const existingLayers = mapboxRef.current.getStyle()?.layers || [];
     const newLayerIds = layers.map(l => l.id);
     
     existingLayers.forEach((layer) => {
