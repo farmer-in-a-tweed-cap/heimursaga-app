@@ -9,15 +9,66 @@ import { TripCard } from '@/components/trip/trip-card';
 
 type Props = {
   username: string;
+  isOwnProfile?: boolean;
 };
 
-export const UserJourneys: React.FC<Props> = ({ username }) => {
+export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }) => {
   const tripQuery = useQuery({
-    queryKey: [API_QUERY_KEYS.TRIPS, username],
-    queryFn: async () =>
-      apiClient
-        .getTripsByUsername({ username })
-        .then(({ data }) => data),
+    queryKey: [API_QUERY_KEYS.TRIPS, username, isOwnProfile],
+    queryFn: async () => {
+      console.log(`Fetching journeys for user: ${username}, isOwnProfile: ${isOwnProfile}`);
+      const result = isOwnProfile 
+        ? await apiClient.getTrips()
+        : await apiClient.getTripsByUsername({ username });
+      console.log('Journeys API response:', {
+        success: result.success,
+        message: result.message,
+        tripCount: result.data?.data?.length,
+        trips: result.data?.data
+      });
+      
+      // Look for the specific "public journey" trip
+      const publicJourney = result.data?.data?.find(trip => 
+        trip.title?.toLowerCase().includes('public journey')
+      );
+      if (publicJourney) {
+        console.log('Found "public journey" trip:', {
+          id: publicJourney.id,
+          title: publicJourney.title,
+          public: publicJourney.public,
+          waypointsCount: publicJourney.waypoints?.length,
+          waypoints: publicJourney.waypoints?.map(wp => ({
+            id: wp.id,
+            title: wp.title,
+            public: wp.public,
+            lat: wp.lat,
+            lon: wp.lon
+          }))
+        });
+      } else {
+        console.log('No "public journey" trip found in results');
+      }
+      
+      // Also check if we can see the user's posts and their waypoint connections
+      try {
+        const postsResult = await apiClient.getPosts();
+        const userPosts = postsResult.data?.data?.filter(post => 
+          post.author?.username === username
+        ) || [];
+        console.log(`User has ${userPosts.length} posts with waypoint connections:`, 
+          userPosts.map(post => ({
+            id: post.id,
+            title: post.title,
+            waypoint_id: post.waypoint_id,
+            hasWaypoint: !!post.waypoint_id
+          }))
+        );
+      } catch (e) {
+        console.log('Could not fetch posts for waypoint analysis');
+      }
+      
+      return result.data;
+    },
     retry: 0,
   });
 

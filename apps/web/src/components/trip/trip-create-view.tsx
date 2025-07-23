@@ -11,6 +11,7 @@ import {
   FormLabel,
   FormMessage,
   Input,
+  Switch,
 } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -42,6 +43,7 @@ const schema = z.object({
     .min(0, zodMessage.string.min('title', 0))
     .max(100, zodMessage.string.max('title', 100)),
   description: z.string().max(500, zodMessage.string.max('description', 500)),
+  public: z.boolean(),
 });
 
 type Props = {};
@@ -66,20 +68,21 @@ export const TripCreateView: React.FC<Props> = () => {
     defaultValues: {
       title: '',
       description: '',
+      public: true,
     },
   });
 
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
-        const { title } = values;
+        const { title, public: isPublic } = values;
 
         setLoading(true);
 
         // create a trip
         const { success, data } = await apiClient.createTrip({
           query: {},
-          payload: { title },
+          payload: { title, public: isPublic },
         });
 
         if (success) {
@@ -122,6 +125,23 @@ export const TripCreateView: React.FC<Props> = () => {
                               <FormLabel>Title</FormLabel>
                               <FormControl>
                                 <Input disabled={loading} required {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="public"
+                          render={({ field }) => (
+                            <FormItem className="mt-6">
+                              <FormLabel>Public</FormLabel>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  disabled={loading}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>

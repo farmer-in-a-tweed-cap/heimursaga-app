@@ -11,6 +11,7 @@ import {
   FormLabel,
   FormMessage,
   Input,
+  Switch,
 } from '@repo/ui/components';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -34,6 +35,7 @@ const schema = z.object({
     .nonempty(zodMessage.required('title'))
     .min(0, zodMessage.string.min('title', 0))
     .max(100, zodMessage.string.max('title', 100)),
+  public: z.boolean(),
 });
 
 export const TRIP_EDIT_FORM_ID = 'trip_edit_form';
@@ -55,7 +57,7 @@ type Props = {
   onSubmit?: TripEditFormSubmitHandler;
 };
 
-export type TripEditFormSubmitHandler = (values: { title: string }) => void;
+export type TripEditFormSubmitHandler = (values: { title: string; public: boolean }) => void;
 
 export const TripEditForm: React.FC<Props> = ({
   trip,
@@ -86,6 +88,7 @@ export const TripEditForm: React.FC<Props> = ({
     resolver: zodResolver(schema),
     defaultValues: {
       title: trip?.title || '',
+      public: trip?.public ?? true,
     },
   });
 
@@ -205,7 +208,7 @@ export const TripEditForm: React.FC<Props> = ({
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
-        const { title } = values;
+        const { title, public: isPublic } = values;
         const tripId = trip?.id;
 
         if (!tripId) return;
@@ -216,12 +219,13 @@ export const TripEditForm: React.FC<Props> = ({
         // update the trip
         const { success } = await apiClient.updateTrip({
           query: { tripId },
-          payload: { title },
+          payload: { title, public: isPublic },
         });
 
         if (success) {
           setLoading((state) => ({ ...state, trip: false }));
           onLoading(false);
+          onSubmit({ title, public: isPublic });
         } else {
           setLoading((state) => ({ ...state, trip: false }));
           onLoading(false);
@@ -247,6 +251,23 @@ export const TripEditForm: React.FC<Props> = ({
                     <FormLabel>Title</FormLabel>
                     <FormControl>
                       <Input disabled={loading.trip} required {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="public"
+                render={({ field }) => (
+                  <FormItem className="mt-6">
+                    <FormLabel>Public</FormLabel>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={loading.trip}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -217,7 +217,8 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         <div className="bg-dark text-dark-foreground flex flex-col items-center w-full h-full py-4">
           <div
             className={cn(
-              'w-full box-border flex flex-row items-center pl-4 pr-8',
+              'w-full box-border flex flex-row items-center',
+              collapsed ? 'justify-center' : 'pl-4 pr-8',
             )}
           >
             <Link href={ROUTER.HOME}>

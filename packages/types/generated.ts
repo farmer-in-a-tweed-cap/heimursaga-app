@@ -689,6 +689,7 @@ export interface ITripGetByIdResponse extends ITripDetail {}
 
 export interface ITripCreatePayload {
   title: string;
+  public?: boolean;
 }
 
 export interface ITripCreateResponse {
@@ -697,6 +698,7 @@ export interface ITripCreateResponse {
 
 export interface ITripUpdatePayload {
   title: string;
+  public?: boolean;
 }
 
 // search

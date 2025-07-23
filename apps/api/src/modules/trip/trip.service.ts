@@ -380,6 +380,7 @@ export class TripService {
         data: {
           public_id: generator.publicId(),
           title: payload.title,
+          public: payload.public ?? true, // Default to true if not specified
           author_id: userId,
         },
         select: {
@@ -430,10 +431,14 @@ export class TripService {
       });
 
       // update the trip
-      const { title } = payload;
+      const { title, public: isPublic } = payload;
+      const updateData: any = { title };
+      if (isPublic !== undefined) {
+        updateData.public = isPublic;
+      }
       await this.prisma.trip.update({
         where: { id: trip.id },
-        data: { title },
+        data: updateData,
       });
     } catch (e) {
       this.logger.error(e);
