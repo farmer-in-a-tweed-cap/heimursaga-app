@@ -59,8 +59,8 @@ export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }
           userPosts.map(post => ({
             id: post.id,
             title: post.title,
-            waypoint_id: post.waypoint_id,
-            hasWaypoint: !!post.waypoint_id
+            waypoint_id: post.waypoint?.id,
+            hasWaypoint: !!post.waypoint
           }))
         );
       } catch (e) {

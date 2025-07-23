@@ -27,13 +27,12 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
       
       const userPosts = allPostsResult.data?.data?.filter(post => 
         post.author?.username === username && 
-        post.public === true &&
-        !post.deleted_at
+        post.public === true
       ) || [];
       
       // Sort by creation date descending (newest first)
       const sortedPosts = userPosts.sort((a, b) => 
-        new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
       );
       
       console.log(`Found ${sortedPosts.length} public posts for ${username}`);
