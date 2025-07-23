@@ -12,6 +12,7 @@ interface FeatureCardProps {
   imageSrc?: string;
   imageAlt?: string;
   reverse?: boolean;
+  mobileImageAlign?: 'center' | 'left';
 }
 
 interface PricingTierProps {
@@ -21,28 +22,28 @@ interface PricingTierProps {
   isPopular?: boolean;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description, imageSrc, imageAlt, reverse = false }) => (
+const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description, imageSrc, imageAlt, reverse = false, mobileImageAlign = 'center' }) => (
   <div className={`container mx-auto px-4 py-16`}>
-    <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-12 max-w-6xl mx-auto`}>
-      <div className="lg:w-1/2 text-center lg:text-left">
+    <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} ${mobileImageAlign === 'left' ? 'items-start lg:items-center' : 'items-center'} gap-12 max-w-6xl mx-auto`}>
+      <div className={`lg:w-1/2 ${mobileImageAlign === 'left' ? 'text-left' : 'text-center lg:text-left'}`}>
         <div className="inline-block px-4 py-2 text-sm uppercase font-light mb-4 text-white" style={{ backgroundColor: '#4676AC', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
           {title}
         </div>
-        <h3 className="text-4xl lg:text-5xl font-light text-white mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif', fontWeight: 300 }}>
+        <h3 className="text-4xl lg:text-5xl font-light text-black mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif', fontWeight: 300 }}>
           {subtitle}
         </h3>
-        <p className="text-lg text-gray-300 leading-relaxed max-w-xl" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+        <p className="text-lg text-gray-700 leading-relaxed max-w-xl" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
           {description}
         </p>
       </div>
       {imageSrc && (
-        <div className="lg:w-1/2">
+        <div className={`lg:w-1/2 ${mobileImageAlign === 'left' ? 'self-start w-full' : ''}`}>
           <div className="relative group">
-            <div className="absolute inset-0 rounded-2xl transition-transform duration-300" style={{ backgroundColor: '#AC6D46' }}></div>
             <img 
               src={imageSrc} 
               alt={imageAlt || subtitle} 
-              className="relative w-full h-80 object-cover rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300"
+              className={`relative w-full h-80 rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300 ${mobileImageAlign === 'left' ? 'object-cover object-left lg:object-center' : 'object-cover'}`}
+              style={{ border: '4px solid #AC6D46' }}
             />
           </div>
         </div>
@@ -52,7 +53,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
 );
 
 const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPopular = false }) => (
-  <div className={`relative bg-gray-800 rounded-3xl shadow-xl p-8 transform hover:scale-105 transition-all duration-300 ${isPopular ? 'border-4 border-blue-500' : 'border border-gray-600'}`}>
+  <div className={`relative rounded-3xl shadow-xl p-8 transform hover:scale-105 transition-all duration-300 ${isPopular ? 'border-4 border-blue-500' : 'border border-gray-600'}`} style={{ backgroundColor: '#252525' }}>
     {isPopular && (
       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
         <div className="text-white text-sm font-light px-6 py-2 rounded-full shadow-lg" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
@@ -78,21 +79,37 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
         </li>
       ))}
     </ul>
-    <button className={`w-full py-4 px-6 rounded-xl font-light text-lg transition-all duration-300 text-white hover:opacity-90 ${
-      isPopular 
-        ? 'shadow-lg hover:shadow-xl' 
-        : 'bg-gray-700 hover:bg-gray-600'
-    }`} style={isPopular ? { backgroundColor: '#4676AC', fontFamily: 'Lato, sans-serif', fontWeight: 300 } : { fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
-        <Link href={ROUTER.SIGNUP}>Sign Up</Link>
-    </button>
+    <Link 
+      href={ROUTER.SIGNUP}
+      className="w-full py-4 px-6 rounded-xl font-light text-lg transition-all duration-300 text-white hover:opacity-90 block text-center shadow-lg hover:shadow-xl"
+      style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}
+    >
+      SIGN UP
+    </Link>
   </div>
 );
 
 export const LandingPage: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const videoRef = React.useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     setIsVisible(true);
+    setIsMobile(window.innerWidth < 760);
+    
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 760);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 1; 
+    }
   }, []);
 
   return (
@@ -100,15 +117,22 @@ export const LandingPage: React.FC = () => {
       {/* Google Fonts Import */}
       <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Sulphur+Point:wght@300;400;700&display=swap" rel="stylesheet" />
       
-      {/* Fixed Background Image */}
-      <div
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat z-0"
-        style={{
-          backgroundImage: `url(/bg.jpg)`
-        }}
-      >
+      {/* Fixed Background Video */}
+      <div className="fixed inset-0 z-0">
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover"
+          poster="/bg.png"
+        >
+          <source src="/bg-video2.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
         {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black opacity-65"></div>
+        <div className="absolute inset-0 bg-black opacity-50"></div>
       </div>
 
       {/* Hero Section */}
@@ -116,46 +140,53 @@ export const LandingPage: React.FC = () => {
 
  
         
-        <div className="relative z-30 container mx-auto px-4 py-20 flex flex-col items-center justify-center min-h-screen text-center">
-          <div className={`transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
-            <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+        <div className="relative z-30 w-full h-screen">
+          {/* Logo at top */}
+          <div className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 z-50 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ top: '8px', marginTop: isMobile ? '-50px' : '0px' }}>
+            <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight hidden" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
               <span className="block text-white">WELCOME TO</span>
             </h1>
             
-            <div className="w-100 h-80 mb-1 mr-6">
+            <div className="w-100 h-80 mr-6">
               <Logo size="xlg" color="light" />
             </div>
-            
-            <p className="text-xl lg:text-2xl mb-12 font-normal max-w-4xl mx-auto text-gray-200 leading-relaxed" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
-              A PLACE FOR EXPLORERS TO SHARE THEIR STORIES AND BE SPONSORED
-            </p>
-            
-            <div className="flex items-center justify-center">
-              <button className="font-light py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
-                <Link href={ROUTER.HOME} className="flex items-center gap-3">
-                  Explore
-                  <svg 
-                    width="20" 
-                    height="20" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                    className="transition-transform duration-300 group-hover:translate-x-1"
-                  >
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </Link>
-              </button>
+          </div>
+          
+          {/* Text in middle */}
+          <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transform: `translate(-50%, -50%) ${isVisible ? 'translateY(0)' : 'translateY(2.5rem)'}` }}>
+            <div className="text-xl lg:text-2xl font-normal max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+              <p>You're an explorer.</p>
+              <p>Don't get lost in a sea of content creators.</p>
+              <p>Share your story and raise money on Heimursaga.</p>
             </div>
+          </div>
+          
+          {/* Button near bottom */}
+          <div className={`absolute bottom-24 left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+            <button className="font-light py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+              <Link href={ROUTER.HOME} className="flex items-center gap-3">
+                EXPLORE
+                <svg 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  className="transition-transform duration-300 group-hover:translate-x-1"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </Link>
+            </button>
           </div>
         </div>  
       </div>
 
       {/* Features Section */}
-      <div className="py-20 relative z-10" style={{ backgroundColor: 'rgba(17, 17, 17, 0.8)' }}>
+      <div className="py-20 relative z-10" style={{ backgroundColor: 'white' }}>
         <FeatureCard
           title="Map-Centric"
           subtitle="Explore"
@@ -179,11 +210,12 @@ export const LandingPage: React.FC = () => {
           description="A robust Stripe integration allows Explorer Pro users to receive subscription or one-time sponsorship payments from their supporters. Manage payouts and set subscription amounts right from your Heimursaga dashboard. Entries have an exclusive sponsor-only setting allowing explorers to reward their sponsors!"
           imageSrc="/sponsor.png"
           imageAlt="Sponsorship payment interface"
+          mobileImageAlign="left"
         />
       </div>
 
       {/* Call to Action */}
-      <div className="relative py-32 text-white overflow-hidden z-10" style={{ backgroundColor: 'rgba(70, 118, 172, 0.8)' }}>
+      <div className="relative py-32 text-white overflow-hidden z-10" style={{ backgroundColor: '#4676AC' }}>
         <div className="absolute inset-0 bg-black opacity-30"></div>
         <div className="relative z-10 container mx-auto px-4 text-center">
           <h2 className="text-5xl lg:text-6xl font-light mb-6" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>BE AN EXPLORER</h2>
@@ -194,7 +226,7 @@ export const LandingPage: React.FC = () => {
             <div className="flex items-center justify-center">
               <button className="font-light py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
                 <Link href={ROUTER.HOME} className="flex items-center gap-3">
-                  Start Your Journey
+                  START YOUR JOURNEY
                   <svg 
                     width="20" 
                     height="20" 
@@ -215,13 +247,13 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* Pricing Section */}
-      <div className="py-32 relative z-10" style={{ backgroundColor: 'rgba(17, 17, 17, 0.8)' }}>
+      <div className="py-32 relative z-10" style={{ backgroundColor: 'white' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-20">
-            <h2 className="text-5xl lg:text-6xl font-light text-white mb-6" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            <h2 className="text-5xl lg:text-6xl font-light text-black mb-6" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
               Choose Your Adventure
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            <p className="text-xl text-gray-700 max-w-2xl mx-auto" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
               Start your journey with our free plan or unlock premium features with Explorer Pro
             </p>
           </div>
@@ -246,18 +278,31 @@ export const LandingPage: React.FC = () => {
                 "View detailed entry statistics",
                 "Journey Builder (waypoint logging and entry grouping)"
               ]}
-              isPopular={true}
+              isPopular={false}
             />
+          </div>
+          
+          <div className="text-center mt-12">
+            <p className="text-gray-700 mb-6" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+              Already have an account?
+            </p>
+            <Link 
+              href={ROUTER.LOGIN}
+              className="inline-block py-3 px-8 rounded-xl font-light text-lg transition-all duration-300 bg-gray-700 hover:bg-gray-600 text-white hover:opacity-90"
+              style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}
+            >
+              LOG IN
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Quote Section */}
-      <div className="py-32 text-white relative z-10" style={{ backgroundColor: 'rgba(26, 26, 26, 0.8)' }}>
+      <div className="py-16 text-white relative z-10" style={{ backgroundColor: '#AC6D46' }}>
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-4xl mx-auto">
-            <div className="text-6xl mb-8" style={{ color: '#AC6D46' }}>"</div>
-            <blockquote className="text-2xl lg:text-3xl font-light mb-8 italic leading-relaxed" style={{ fontFamily: 'Lato, sans-serif' }}>
+            <div className="text-6xl mb-8" style={{ color: 'white' }}>"</div>
+            <blockquote className="text-1xl lg:text-2xl font-light mb-8 italic leading-relaxed" style={{ fontFamily: 'Lato, sans-serif' }}>
               We shall not cease from exploration<br />
               And the end of all our exploring<br />
               Will be to arrive where we started<br />
@@ -269,7 +314,7 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* Footer */}
-      <footer className="text-white py-12 relative z-10" style={{ backgroundColor: 'rgba(10, 10, 10, 0.8)' }}>
+      <footer className="text-white py-12 relative z-10" style={{ backgroundColor: '#252525' }}>
         <div className="container mx-auto px-4 text-center">
           <div className="text-2xl font-light mb-4" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
             HEIMURSAGA
