@@ -670,6 +670,7 @@ export interface ITripDetail {
   startDate: Date;
   endDate: Date;
   description?: string;
+  public?: boolean;
   waypoints: IWaypointDetail[];
   waypointsCount?: number;
   author?: {
