@@ -229,8 +229,8 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
               )}
             </Link>
           </div>
-          <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-3">
-            <div className="lg:w-full flex flex-col gap-2">
+          <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-2">
+            <div className={cn("lg:w-full flex flex-col gap-2", collapsed ? "items-center" : "")}>
               {links.map(
                 ({ href, base, label, icon: Icon, badge = 0 }, key) => (
                   <Tooltip key={key}>
@@ -277,7 +277,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
             <div
               className={cn(
                 'w-full flex flex-col gap-6',
-                collapsed ? 'items-center justify-center' : 'px-3',
+                collapsed ? 'items-center justify-center' : 'px-2',
               )}
             >
               {showCreateButton && (
@@ -285,7 +285,9 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                   variant="secondary"
                   collapsed={collapsed}
                   classNames={{
-                    button: 'min-w-auto bg-white hover:bg-accent',
+                    button: collapsed 
+                      ? 'min-w-auto bg-white hover:bg-accent' 
+                      : 'w-[210px] bg-white hover:bg-accent mx-auto',
                   }}
                 >
                   Log Entry
