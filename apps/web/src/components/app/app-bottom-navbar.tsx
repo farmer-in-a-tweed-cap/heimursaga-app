@@ -66,6 +66,8 @@ export const AppBottomNavbar: React.FC<Props> = () => {
           height={36}
           alt=""
           priority={false}
+          className="drop-shadow-none"
+          style={{ filter: 'none', boxShadow: 'none' }}
         />
       </div>
     </div>
