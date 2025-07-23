@@ -29,6 +29,7 @@ export const toGeoJson = <T = any>({
     case 'line':
       return {
         type: 'Feature',
+        properties: {},
         geometry: {
           type: 'LineString',
           coordinates: data.map(({ lat, lon }) => [lon, lat, 0.0]),

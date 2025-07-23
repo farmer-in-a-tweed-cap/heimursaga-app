@@ -122,6 +122,7 @@ type Props = {
   onSourceClick?: MapOnSourceClickHandler;
   onWaypointMove?: MapWaypointMoveHandler;
   onMarkerChange?: (data: { lat: number; lon: number }) => void;
+  hoveredPostId?: string | null;
 };
 
 export type MapWaypointMoveHandler = (
@@ -162,6 +163,7 @@ export const Map: React.FC<Props> = ({
   onMarkerChange,
   onWaypointMove,
   onSourceClick,
+  hoveredPostId,
 }) => {
   const [mapLoaded, setMapLoaded] = useState(false);
 
@@ -200,6 +202,125 @@ export const Map: React.FC<Props> = ({
   if (!token) {
     return <></>;
   }
+
+  const addLayer = (mapbox: mapboxgl.Map, id: string, source: string) => {
+    switch (id) {
+      case MAP_LAYERS.WAYPOINTS:
+        mapbox.addLayer({
+          id,
+          source,
+          type: 'circle',
+          filter: ['!', ['has', 'point_count']],
+          paint: {
+            'circle-radius': styles?.layer?.waypoint.radius
+              ? styles?.layer?.waypoint.radius
+              : [
+                  'interpolate',
+                  ['linear'],
+                  ['zoom'],
+                  ...[0, config.point.radius],
+                  ...[5, config.point.radius],
+                ],
+            'circle-color': [
+              'case',
+              [
+                '==',
+                ['feature-state', MAP_FEATURE_STATE.WAYPOINT_HOVER],
+                true,
+              ],
+              config.cluster.colorHover,
+              config.cluster.color,
+            ],
+            'circle-stroke-width': 1,
+            'circle-stroke-color': '#ffffff',
+          },
+        });
+        break;
+      case MAP_LAYERS.WAYPOINT_LINES:
+        mapbox.addLayer({
+          id,
+          source,
+          type: 'line',
+          layout: {
+            'line-join': 'round',
+            'line-cap': 'round',
+          },
+          paint: {
+            'line-color': `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
+            'line-width': 3,
+          },
+        });
+        break;
+      case MAP_LAYERS.WAYPOINT_ORDER_NUMBERS:
+        mapbox.addLayer({
+          id,
+          source,
+          type: 'symbol',
+          layout: {
+            'text-field': ['get', 'index'],
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-size': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              ...[5, 10],
+              ...[8, 10],
+              ...[12, 14],
+              ...[15, 14],
+            ],
+            'text-anchor': 'center',
+            'text-offset': [0, 0],
+          },
+          paint: {
+            'text-color': '#ffffff',
+          },
+        });
+        break;
+      case MAP_LAYERS.CLUSTERS:
+        mapbox.addLayer({
+          id,
+          source,
+          type: 'circle',
+          filter: ['has', 'point_count'],
+          paint: {
+            'circle-color': [
+              'case',
+              ['==', ['feature-state', 'hovered_cluster'], true],
+              config.cluster.colorHover,
+              config.cluster.color,
+            ],
+            'circle-radius': [
+              'interpolate',
+              ['linear'],
+              ['get', 'point_count'],
+              10, 12,
+              25, 16,
+              50, 20,
+              100, 24
+            ],
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff',
+          },
+        });
+        break;
+      case MAP_LAYERS.CLUSTER_COUNT:
+        mapbox.addLayer({
+          id,
+          source,
+          type: 'symbol',
+          filter: ['has', 'point_count'],
+          layout: {
+            'text-field': '{point_count_abbreviated}',
+            'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+            'text-size': 12,
+          },
+          paint: {
+            'text-color': '#fff',
+          },
+        });
+        break;
+    }
+  };
 
   const handleLoad: MapLoadHandler = (data) => {
     if (!mapboxRef.current) return;
@@ -480,6 +601,33 @@ export const Map: React.FC<Props> = ({
     updateSources({ mapbox: mapboxRef.current, sources });
   }, [sources]);
 
+  // update layers on change
+  useEffect(() => {
+    if (!mapboxRef.current || !mapLoaded || !layers.length) return;
+    
+    
+    // Remove existing layers that are not in the new layer list
+    const existingLayers = mapboxRef.current.getStyle().layers || [];
+    const newLayerIds = layers.map(l => l.id);
+    
+    existingLayers.forEach((layer) => {
+      if (['waypoint_lines', 'waypoints', 'waypoint_order_numbers', 'clusters', 'cluster_count'].includes(layer.id)) {
+        if (!newLayerIds.includes(layer.id)) {
+          mapboxRef.current?.removeLayer(layer.id);
+        }
+      }
+    });
+    
+    // Add new layers that don't exist yet
+    layers.forEach(({ id, source }) => {
+      const existingLayer = mapboxRef.current?.getLayer(id);
+      if (!existingLayer) {
+        // Add the layer using the same logic as in the initial load
+        addLayer(mapboxRef.current!, id, source);
+      }
+    });
+  }, [layers, mapLoaded]);
+
   useEffect(() => {
     mapboxgl.accessToken = token;
 
@@ -596,205 +744,7 @@ export const Map: React.FC<Props> = ({
       if (layers.length) {
         layers.forEach(({ id, source }) => {
           if (!mapboxRef.current) return;
-
-          switch (id) {
-            case MAP_LAYERS.WAYPOINTS:
-              mapboxRef.current.addLayer({
-                id,
-                source,
-                type: 'circle',
-                filter: ['!', ['has', 'point_count']],
-                paint: {
-                  'circle-radius': styles?.layer?.waypoint.radius
-                    ? styles?.layer?.waypoint.radius
-                    : [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        ...[0, config.point.radius],
-                        ...[5, config.point.radius],
-                      ],
-                  'circle-color': [
-                    'case',
-                    [
-                      '==',
-                      ['feature-state', MAP_FEATURE_STATE.WAYPOINT_HOVER],
-                      true,
-                    ],
-                    config.cluster.colorHover,
-                    config.cluster.color,
-                  ],
-                  'circle-stroke-width': 1,
-                  'circle-stroke-color': '#ffffff',
-                },
-              });
-              break;
-            case MAP_LAYERS.WAYPOINTS_DRAGGABLE:
-              mapboxRef.current.addLayer({
-                id,
-                source,
-                type: 'circle',
-                paint: {
-                  'circle-radius': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    // dynamic point sizes ([zoom, radius])
-                    ...[5, 10],
-                    ...[8, 10],
-                    ...[12, 14],
-                    ...[15, 14],
-                  ],
-                  'circle-stroke-width': 1,
-                  'circle-color': config.point.color,
-                  'circle-stroke-color': '#ffffff',
-                },
-              });
-              break;
-            case MAP_LAYERS.WAYPOINT_ORDER_NUMBERS:
-              mapboxRef.current.addLayer({
-                id,
-                source,
-                type: 'symbol',
-                layout: {
-                  'text-field': ['get', 'index'],
-                  'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-                  'text-size': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    // dynamic font size ([zoom, radius])
-                    ...[5, 10],
-                    ...[8, 10],
-                    ...[12, 14],
-                    ...[15, 14],
-                  ],
-                  'text-anchor': 'center',
-                  'text-offset': [0, 0],
-                },
-                paint: {
-                  'text-color': '#ffffff',
-                },
-              });
-              break;
-            case MAP_LAYERS.WAYPOINTS_DRAGGABLE_ORDER_NUMBER:
-              mapboxRef.current.addLayer({
-                id,
-                source,
-                type: 'symbol',
-                layout: {
-                  'text-field': ['get', 'index'],
-                  'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-                  'text-size': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    // dynamic font size ([zoom, radius])
-                    ...[5, 10],
-                    ...[8, 10],
-                    ...[12, 14],
-                    ...[15, 14],
-                  ],
-                  'text-anchor': 'center',
-                  'text-offset': [0, 0],
-                },
-                paint: {
-                  'text-color': '#ffffff',
-                },
-              });
-              break;
-            case MAP_LAYERS.WAYPOINT_LINES:
-              mapboxRef.current.addLayer({
-                id,
-                source,
-                type: 'line',
-                layout: {
-                  'line-join': 'round',
-                  'line-cap': 'round',
-                },
-                paint: {
-                  'line-color': `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
-                  'line-width': 3,
-                },
-              });
-              break;
-            case MAP_LAYERS.TRIP_WAYPOINTS:
-              mapboxRef.current.addLayer({
-                id,
-                source,
-                type: 'circle',
-                filter: ['!', ['has', 'point_count']],
-                paint: {
-                  'circle-radius': styles?.layer?.waypoint.radius
-                    ? styles?.layer?.waypoint.radius
-                    : [
-                        'interpolate',
-                        ['linear'],
-                        ['zoom'],
-                        ...[0, config.point.radius],
-                        ...[5, config.point.radius],
-                      ],
-                  'circle-color': [
-                    'case',
-                    [
-                      '==',
-                      ['feature-state', MAP_FEATURE_STATE.TRIP_WAYPOINT_HOVER],
-                      true,
-                    ],
-                    config.cluster.colorHover,
-                    config.cluster.color,
-                  ],
-                  'circle-stroke-width': 1,
-                  'circle-stroke-color': '#ffffff',
-                },
-              });
-              break;
-            case MAP_LAYERS.CLUSTERS:
-              mapboxRef.current.addLayer({
-                id,
-                source,
-                type: 'circle',
-                filter: ['has', 'point_count'],
-                paint: {
-                  'circle-color': [
-                    'case',
-                    ['==', ['feature-state', 'hovered_cluster'], true],
-                    config.cluster.colorHover,
-                    config.cluster.color,
-                  ],
-                  'circle-radius': [
-                    'interpolate',
-                    ['linear'],
-                    ['get', 'point_count'],
-                    10, 12,    // 10 points = 12px radius  
-                    25, 16,    // 25 points = 16px radius
-                    50, 20,    // 50 points = 20px radius
-                    100, 24    // 100+ points = 24px radius
-                  ],
-                  'circle-stroke-width': 2,
-                  'circle-stroke-color': '#ffffff',
-                },
-              });
-              break;
-            case MAP_LAYERS.CLUSTER_COUNT:
-              mapboxRef.current.addLayer({
-                id,
-                source,
-                type: 'symbol',
-                filter: ['has', 'point_count'],
-                layout: {
-                  'text-field': '{point_count_abbreviated}',
-                  'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-                  'text-size': 12,
-                },
-                paint: {
-                  'text-color': '#fff',
-                  // 'text-halo-color': 'rgba(0, 0, 0, 0.5)',
-                  // 'text-halo-width': 1,
-                },
-              });
-              break;
-          }
+          addLayer(mapboxRef.current, id, source);
         });
       }
 
@@ -999,6 +949,50 @@ export const Map: React.FC<Props> = ({
       }
     };
   }, []);
+
+  // Handle external hover from feed items
+  useEffect(() => {
+    if (!mapboxRef.current || !sources.length) return;
+
+    if (hoveredPostId) {
+      // Find the waypoint data for this post
+      const waypointSource = sources.find(source => source.sourceId === 'waypoints');
+      if (waypointSource && waypointSource.data) {
+        const waypoint = waypointSource.data.find(point => point.properties?.id === hoveredPostId);
+        if (waypoint) {
+          const { lat, lon, properties } = waypoint;
+          const { title = '', date = new Date() } = properties || {};
+          const content = properties?.content
+            ? properties?.content.split('\n').join(' ')
+            : '';
+
+          const popupContent = `
+      <div class="flex flex-col justify-start">
+        <div class="flex flex-col justify-start gap-0">
+          <span class="text-base font-medium">${title}</span>
+          <span class="text-[0.7rem] font-normal text-gray-500">${dateformat(date).format('MMM DD')}</span>
+        </div>
+      ${
+        content
+          ? `<div class="mt-2"><p class="text-sm font-normal text-gray-500">${content ? (content.length < 50 ? content : `${content.slice(0, 50)}..`) : ''}</p></div>`
+          : ''
+      }
+      </div>
+    `;
+
+          setPopup({
+            visible: true,
+            lat,
+            lon,
+            content: popupContent,
+          });
+        }
+      }
+    } else {
+      // Hide popup when no external hover
+      setPopup(prev => ({ ...prev, visible: false }));
+    }
+  }, [hoveredPostId, sources]);
 
   return (
     <div className={cn(className, 'relative w-full h-full')}>
