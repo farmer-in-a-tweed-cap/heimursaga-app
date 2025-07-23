@@ -59,14 +59,13 @@ export const AppBottomNavbar: React.FC<Props> = () => {
 
   const createLogoIcon = () => (
     <div className="relative flex items-center justify-center w-[56px] h-[56px]">
-      <div className="w-[48px] h-[48px] rounded-full border-2 border-primary flex items-center justify-center shadow-none">
+      <div className="w-[48px] h-[48px] rounded-full border-2 border-primary flex items-center justify-center">
         <Image
           src="/logo-sm-dark.svg"
           width={36}
           height={36}
           alt=""
           priority={false}
-          className="shadow-none"
         />
       </div>
     </div>
@@ -161,22 +160,24 @@ export const AppBottomNavbar: React.FC<Props> = () => {
       </div>
 
       {/* Center items - Middle menu items */}
-      <div className="flex-1 flex flex-row items-center justify-evenly px-4">
-        {links.slice(1, -1).map(({ label, href, icon: Icon }, index) => (
-            <Link
-              key={index + 1}
-              href={href}
-              className={cn(
-                'flex flex-col items-center justify-center gap-1 text-gray-500',
-                isActiveLink(href) ? 'text-black' : 'text-gray-500',
-              )}
-            >
-              <div className="w-[28px] h-[28px] flex items-center justify-center">
-                <Icon size={24} weight="regular" />
-              </div>
-              {label && <span className="text-xs font-normal whitespace-nowrap">{label}</span>}
-            </Link>
-        ))}
+      <div className="flex-1 flex flex-row items-center justify-center px-4">
+        <div className="flex flex-row items-center justify-between w-full max-w-[180px]">
+          {links.slice(1, -1).map(({ label, href, icon: Icon }, index) => (
+              <Link
+                key={index + 1}
+                href={href}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1 text-gray-500',
+                  isActiveLink(href) ? 'text-black' : 'text-gray-500',
+                )}
+              >
+                <div className="w-[28px] h-[28px] flex items-center justify-center">
+                  <Icon size={24} weight="regular" />
+                </div>
+                {label && <span className="text-xs font-normal whitespace-nowrap">{label}</span>}
+              </Link>
+          ))}
+        </div>
       </div>
 
       {/* Right item - Avatar */}
