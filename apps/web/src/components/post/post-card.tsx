@@ -54,6 +54,8 @@ export type PostCardProps = {
   };
   selected?: boolean;
   onClick?: () => void;
+  onHover?: () => void;
+  onUnhover?: () => void;
 };
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -84,6 +86,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   selected = false,
   media = [],
   onClick,
+  onHover,
+  onUnhover,
 }) => {
   const session = useSession();
   const me =
@@ -97,6 +101,8 @@ export const PostCard: React.FC<PostCardProps> = ({
         'border-2 border-solid',
         selected ? 'border-black' : 'border-transparent',
       )}
+      onMouseEnter={onHover}
+      onMouseLeave={onUnhover}
     >
       <CardContent>
         {href ? (

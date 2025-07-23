@@ -59,14 +59,14 @@ export const AppBottomNavbar: React.FC<Props> = () => {
 
   const createLogoIcon = () => (
     <div className="relative flex items-center justify-center w-[56px] h-[56px]">
-      <div className="w-[48px] h-[48px] rounded-full border-2 border-primary flex items-center justify-center">
+      <div className="w-[48px] h-[48px] rounded-full border-2 border-primary flex items-center justify-center shadow-none">
         <Image
           src="/logo-sm-dark.svg"
           width={36}
           height={36}
           alt=""
           priority={false}
-          style={{ filter: 'drop-shadow(0 0 0.5px currentColor)' }}
+          className="shadow-none"
         />
       </div>
     </div>
@@ -145,7 +145,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
   return (
     <div className="w-full h-[70px] bg-background border-t border-solid border-accent flex flex-row items-center">
       {/* Left item - Logo/Explore */}
-      <div className="flex-shrink-0 pl-6">
+      <div className="flex-shrink-0 px-3">
         <Link
           href={links[0].href}
           className={cn(
@@ -153,7 +153,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
             isActiveLink(links[0].href) ? 'text-black' : 'text-gray-500',
           )}
         >
-          <div className="w-[24px] h-[24px] flex items-center justify-center">
+          <div className="w-[56px] h-[56px] flex items-center justify-center">
             {typeof links[0].icon === 'function' && links[0].icon.length === 0 ? links[0].icon({} as any) : links[0].icon({ size: 20, weight: "regular" as any })}
           </div>
           {links[0].label && <span className="text-xs font-medium whitespace-nowrap">{links[0].label}</span>}
@@ -163,24 +163,24 @@ export const AppBottomNavbar: React.FC<Props> = () => {
       {/* Center items - Middle menu items */}
       <div className="flex-1 flex flex-row items-center justify-evenly px-4">
         {links.slice(1, -1).map(({ label, href, icon: Icon }, index) => (
-          <Link
-            key={index + 1}
-            href={href}
-            className={cn(
-              'flex flex-col items-center justify-center gap-1 text-gray-500',
-              isActiveLink(href) ? 'text-black' : 'text-gray-500',
-            )}
-          >
-            <div className="w-[28px] h-[28px] flex items-center justify-center">
-              <Icon size={24} weight="regular" />
-            </div>
-            {label && <span className="text-xs font-normal whitespace-nowrap">{label}</span>}
-          </Link>
+            <Link
+              key={index + 1}
+              href={href}
+              className={cn(
+                'flex flex-col items-center justify-center gap-1 text-gray-500',
+                isActiveLink(href) ? 'text-black' : 'text-gray-500',
+              )}
+            >
+              <div className="w-[28px] h-[28px] flex items-center justify-center">
+                <Icon size={24} weight="regular" />
+              </div>
+              {label && <span className="text-xs font-normal whitespace-nowrap">{label}</span>}
+            </Link>
         ))}
       </div>
 
       {/* Right item - Avatar */}
-      <div className="flex-shrink-0 pr-6">
+      <div className="flex-shrink-0 px-3">
         <Link
           href={links[links.length - 1].href}
           className={cn(
@@ -188,7 +188,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
             isActiveLink(links[links.length - 1].href) ? 'text-black' : 'text-gray-500',
           )}
         >
-          <div className="w-[24px] h-[24px] flex items-center justify-center">
+          <div className="w-[56px] h-[56px] flex items-center justify-center">
             {typeof links[links.length - 1].icon === 'function' && links[links.length - 1].icon.length === 0 ? links[links.length - 1].icon({} as any) : links[links.length - 1].icon({ size: 20, weight: "regular" as any })}
           </div>
           {links[links.length - 1].label && <span className="text-xs font-medium whitespace-nowrap">{links[links.length - 1].label}</span>}

@@ -65,33 +65,124 @@
 }
 
 .map-popup {
-  @apply w-[320px] bg-white p-4 text-black rounded-lg drop-shadow text-sm flex flex-col justify-start items-start gap-2 overflow-hidden;
+  @apply p-4 text-black text-sm flex flex-col justify-start items-start gap-2;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  white-space: normal;
+  overflow: hidden;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .map-popup-title {
   @apply font-medium;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .map-popup-date {
   @apply text-sm font-normal text-neutral-700;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .map-popup-content {
   @apply font-normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .mapboxgl-popup {
 }
 
 .mapboxgl-popup-content {
-  background: transparent !important;
+  background: white !important;
   padding: 0 !important;
   margin: 0 !important;
-  box-shadow: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
 }
 
 .mapboxgl-popup-tip {
-  @apply !hidden;
+  width: 0 !important;
+  height: 0 !important;
+  border: 10px solid transparent !important;
+  border-top-color: white !important;
+  border-bottom: none !important;
+  margin-top: -1px !important;
+}
+
+.mapboxgl-popup-tip::before {
+  content: '';
+  position: absolute;
+  top: -11px;
+  left: -11px;
+  width: 0;
+  height: 0;
+  border: 11px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.1);
+  z-index: -1;
+}
+
+/* Upward pointing tip for popups below marker */
+.mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+  border-top: none !important;
+  border-bottom: 10px solid white !important;
+  margin-top: 1px !important;
+  margin-bottom: -1px !important;
+}
+
+.mapboxgl-popup-anchor-top .mapboxgl-popup-tip::before {
+  top: 1px !important;
+  border-top: none !important;
+  border-bottom: 11px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Left pointing tip for popups to the right of marker */
+.mapboxgl-popup-anchor-left .mapboxgl-popup-tip {
+  border-top: 10px solid transparent !important;
+  border-bottom: 10px solid transparent !important;
+  border-right: 10px solid white !important;
+  border-left: none !important;
+  margin-left: 1px !important;
+  margin-right: -1px !important;
+}
+
+.mapboxgl-popup-anchor-left .mapboxgl-popup-tip::before {
+  left: 1px !important;
+  border-top: 11px solid transparent !important;
+  border-bottom: 11px solid transparent !important;
+  border-right: 11px solid rgba(0, 0, 0, 0.1) !important;
+  border-left: none !important;
+}
+
+/* Right pointing tip for popups to the left of marker */
+.mapboxgl-popup-anchor-right .mapboxgl-popup-tip {
+  border-top: 10px solid transparent !important;
+  border-bottom: 10px solid transparent !important;
+  border-left: 10px solid white !important;
+  border-right: none !important;
+  margin-right: 1px !important;
+  margin-left: -1px !important;
+}
+
+.mapboxgl-popup-anchor-right .mapboxgl-popup-tip::before {
+  left: -21px !important;
+  border-top: 11px solid transparent !important;
+  border-bottom: 11px solid transparent !important;
+  border-left: 11px solid rgba(0, 0, 0, 0.1) !important;
+  border-right: none !important;
 }
 
 .map-control-group {
