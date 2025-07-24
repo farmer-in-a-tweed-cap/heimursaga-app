@@ -163,6 +163,9 @@ export class UserService {
               bio: true,
               location_from: true,
               location_lives: true,
+              sponsors_fund: true,
+              sponsors_fund_type: true,
+              sponsors_fund_journey_id: true,
             },
           },
           followers: userId
@@ -175,7 +178,7 @@ export class UserService {
         },
       });
 
-      const response: IUserGetByUsernameResponse = {
+      const response = {
         username: user.username,
         picture: user.profile.picture
           ? getStaticMediaUrl(user.profile.picture)
@@ -188,7 +191,10 @@ export class UserService {
         creator: user.role === UserRole.CREATOR,
         locationFrom: user.profile?.location_from,
         locationLives: user.profile?.location_lives,
-      };
+        sponsorsFund: user.profile?.sponsors_fund,
+        sponsorsFundType: user.profile?.sponsors_fund_type,
+        sponsorsFundJourneyId: user.profile?.sponsors_fund_journey_id,
+      } as IUserGetByUsernameResponse;
 
       return response;
     } catch (e) {
@@ -942,6 +948,9 @@ export class SessionUserService {
                     picture: true,
                     location_from: true,
                     location_lives: true,
+                    sponsors_fund: true,
+                    sponsors_fund_type: true,
+                    sponsors_fund_journey_id: true,
                   },
                 },
               },
@@ -957,6 +966,9 @@ export class SessionUserService {
                 bio: profile?.bio,
                 locationFrom: profile?.location_from,
                 locationLives: profile?.location_lives,
+                sponsorsFund: profile?.sponsors_fund,
+                sponsorsFundType: profile?.sponsors_fund_type,
+                sponsorsFundJourneyId: profile?.sponsors_fund_journey_id,
               } as IUserSettingsProfileGetResponse;
             });
         case 'billing':
@@ -991,14 +1003,22 @@ export class SessionUserService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      const { name, bio, livesIn, from } = payload;
+      const { name, bio, livesIn, from, sponsorsFund, sponsorsFundType, sponsorsFundJourneyId } = payload;
 
       // update settings based on context
       switch (context) {
         case 'profile':
           await this.prisma.userProfile.update({
             where: { user_id: userId },
-            data: { name, bio, location_from: from, location_lives: livesIn },
+            data: { 
+              name, 
+              bio, 
+              location_from: from, 
+              location_lives: livesIn, 
+              sponsors_fund: sponsorsFund,
+              sponsors_fund_type: sponsorsFundType,
+              sponsors_fund_journey_id: sponsorsFundJourneyId,
+            },
           });
           break;
         case 'billing':

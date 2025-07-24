@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",
+    "@mapbox/mapbox-gl-geocoder": "^5.1.0",
     "@repo/ui": "workspace:*",
     "@stripe/react-stripe-js": "^3.5.1",
     "@stripe/stripe-js": "^6.1.0",
@@ -34,6 +35,7 @@
     "@repo/types": "workspace:*",
     "@repo/ui": "workspace:*",
     "@types/geojson": "^7946.0.16",
+    "@types/mapbox__mapbox-gl-geocoder": "^5.0.0",
     "@types/marked": "^6.0.0",
     "@types/node": "^20.11.24",
     "@types/react": "^18.2.61",

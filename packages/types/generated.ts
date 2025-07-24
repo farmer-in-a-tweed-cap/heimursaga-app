@@ -89,6 +89,9 @@ export interface IUserDetail {
   memberDate?: Date;
   locationFrom?: string;
   locationLives?: string;
+  sponsorsFund?: string;
+  sponsorsFundType?: string;
+  sponsorsFundJourneyId?: string;
   followed?: boolean;
   you?: boolean;
   creator?: boolean;
@@ -102,7 +105,9 @@ export interface IUserGetAllResponse {
   results: number;
 }
 
-export interface IUserGetByUsernameResponse extends IUserDetail {}
+export interface IUserGetByUsernameResponse extends IUserDetail {
+  sponsorsFund?: string;
+}
 
 export interface IUserSettingsResponse {
   context: 'profile' | 'billing';
@@ -130,6 +135,9 @@ export interface IUserSettingsProfileGetResponse {
   picture: string;
   locationFrom?: string;
   locationLives?: string;
+  sponsorsFund?: string;
+  sponsorsFundType?: string;
+  sponsorsFundJourneyId?: string;
 }
 
 export interface IUserSettingsProfileUpdatePayload {
@@ -138,6 +146,9 @@ export interface IUserSettingsProfileUpdatePayload {
   picture?: string;
   from?: string;
   livesIn?: string;
+  sponsorsFund?: string;
+  sponsorsFundType?: string;
+  sponsorsFundJourneyId?: string;
 }
 
 export interface IUserPostsQueryResponse {

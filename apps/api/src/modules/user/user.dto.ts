@@ -27,4 +27,19 @@ export class UserSettingsProfileUpdateDto
   @IsString()
   @IsOptional()
   livesIn: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  sponsorsFund: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  sponsorsFundType: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  sponsorsFundJourneyId: string;
 }

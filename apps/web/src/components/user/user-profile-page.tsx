@@ -1,7 +1,11 @@
+'use client';
+
 import { IUserDetail } from '@repo/types';
 import { FlagIcon, MapPinIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
+import { useRouter } from 'next/navigation';
 
+import { ROUTER } from '@/router';
 import { UserAvatar } from './user-avatar';
 import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
@@ -18,12 +22,25 @@ export const UserProfilePage: React.FC<Props> = ({
   section,
   me = false,
 }) => {
+  const router = useRouter();
   const isCreator = user.creator ? user.creator : false;
 
   const location = {
     visible: user.locationFrom || user.locationLives,
     from: user.locationFrom,
     lives: user.locationLives,
+  };
+
+  const showSponsorsFund = isCreator && user.sponsorsFund;
+  
+  // Check if sponsors fund is linked to a journey
+  const isJourneyLinked = user.sponsorsFundType === 'journey' && user.sponsorsFundJourneyId;
+  
+  const handleJourneyClick = () => {
+    if (isJourneyLinked && user.sponsorsFundJourneyId) {
+      const url = `${ROUTER.HOME}?context=journey&filter=post&journey_id=${user.sponsorsFundJourneyId}&user=${user.username}`;
+      router.push(url);
+    }
   };
 
   return (
@@ -49,15 +66,30 @@ export const UserProfilePage: React.FC<Props> = ({
           <div className="flex flex-row items-center justify-center gap-3">
             {location.from && (
               <div className="mt-2 flex flex-row gap-1 items-center justify-start text-sm font-normal text-gray-700">
-                <FlagIcon size={16} weight="bold" />
-                <span>{location.from}</span>
+                <MapPinIcon size={16} weight="bold" />
+                <span><span className="font-medium">From:</span> {location.from}</span>
               </div>
             )}
             {location.lives && (
               <div className="mt-2 flex flex-row gap-1 items-center justify-start text-sm font-normal text-gray-700">
                 <MapPinIcon size={16} weight="bold" />
-                <span>{location.lives}</span>
+                <span><span className="font-medium">Currently:</span> {location.lives}</span>
               </div>
+            )}
+          </div>
+        )}
+        {showSponsorsFund && (
+          <div className="mt-3 flex flex-col gap-1 items-center justify-center text-sm font-normal text-gray-700 max-w-lg text-center">
+            <span className="font-medium">Seeking sponsors for:</span>
+            {isJourneyLinked ? (
+              <button
+                onClick={handleJourneyClick}
+                className="text-primary hover:text-primary/80 hover:underline transition-all cursor-pointer"
+              >
+                {user.sponsorsFund}
+              </button>
+            ) : (
+              <span>{user.sponsorsFund}</span>
             )}
           </div>
         )}

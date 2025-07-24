@@ -85,6 +85,9 @@ model UserProfile {
   bio            String?   @db.VarChar(200)
   location_from  String?   @db.VarChar(200)
   location_lives String?   @db.VarChar(200)
+  sponsors_fund          String? @db.VarChar(500)
+  sponsors_fund_type     String? @db.VarChar(20)
+  sponsors_fund_journey_id String? @db.VarChar(50)
   user           User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id        Int       @unique
   created_at     DateTime? @default(now())
