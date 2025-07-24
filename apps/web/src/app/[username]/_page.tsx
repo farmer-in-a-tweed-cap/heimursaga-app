@@ -45,9 +45,6 @@ export const generateMetadata = async ({
       description,
       url: `${process.env.NEXT_PUBLIC_APP_BASE_URL}/${username}`,
       type: 'profile',
-      profile: {
-        username: user.username,
-      },
       images: [
         {
           url: ogImage,
