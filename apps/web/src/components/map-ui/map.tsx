@@ -10,6 +10,8 @@ import mapboxgl, {
   Marker,
 } from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
+import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { Dispatch, SetStateAction, useEffect, useRef, useState } from 'react';
 import { useDebounce } from 'use-debounce';
 
@@ -117,6 +119,7 @@ type Props = {
   markerEnabled?: boolean;
   width?: number;
   height?: number;
+  geocoder?: boolean;
   onLoad?: MapLoadHandler;
   onMove?: MapMoveHandler;
   onSourceClick?: MapOnSourceClickHandler;
@@ -158,6 +161,7 @@ export const Map: React.FC<Props> = ({
   markerEnabled = false,
   disabled = false,
   bounds,
+  geocoder = false,
   onLoad,
   onMove,
   onMarkerChange,
@@ -759,6 +763,17 @@ export const Map: React.FC<Props> = ({
           new MapNavigationControl(),
           'bottom-right',
         );
+      }
+
+      // add geocoder control
+      if (geocoder) {
+        const geocoderControl = new MapboxGeocoder({
+          accessToken: token,
+          mapboxgl: mapboxgl as any,
+          marker: false, // Disable default marker since we have our own
+          placeholder: 'Search for places...',
+        });
+        mapboxRef.current.addControl(geocoderControl as any, 'top-right');
       }
     });
 

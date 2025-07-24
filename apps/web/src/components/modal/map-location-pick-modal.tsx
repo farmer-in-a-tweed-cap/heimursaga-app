@@ -67,6 +67,7 @@ const MapLocationPickModal: React.FC<
             center={map.center}
             zoom={map.zoom}
             markerEnabled={true}
+            geocoder={true}
             onMove={map.handleMove}
             onMarkerChange={map.handleMarkerChange}
           />

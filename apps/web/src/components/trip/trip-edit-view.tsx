@@ -191,6 +191,7 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
           center={map.center}
           bounds={map.bounds}
           zoom={map.zoom}
+          geocoder={true}
           layers={[
             {
               id: MAP_LAYERS.WAYPOINTS_DRAGGABLE,
