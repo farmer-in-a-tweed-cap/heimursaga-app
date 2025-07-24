@@ -15,6 +15,7 @@ import { LoadingSpinner, Skeleton } from '@repo/ui/components';
 import { useEffect, useState } from 'react';
 
 import { useMapbox } from '@/hooks';
+import { dateformat } from '@/lib';
 import { ROUTER } from '@/router';
 
 type Props = {
@@ -205,17 +206,45 @@ export const MapTripCard: React.FC<{
   backUrl?: string;
   loading?: boolean;
   onBack?: () => void;
-}> = ({ title, loading = false, backUrl, onBack }) => {
+}> = ({ title, startDate, endDate, loading = false, backUrl, onBack }) => {
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return '';
+    return dateformat(date).format('MMM DD, YYYY');
+  };
+
+  const getDateRange = () => {
+    if (startDate || endDate) {
+      const start = formatDate(startDate);
+      const end = formatDate(endDate);
+      if (start && end) {
+        return `${start} - ${end}`;
+      } else if (start) {
+        return start;
+      } else if (end) {
+        return end;
+      }
+    }
+    return '';
+  };
+
   return (
     <div className="flex flex-row items-center justify-start box-border p-4 gap-2">
       <div className="">
         <BackButton href={backUrl} onClick={onBack} />
       </div>
-      <div className="w-full h-[25px] overflow-hiddenflex flex-row justify-start items-center">
+      <div className="w-full flex flex-col justify-start">
         {loading ? (
-          <Skeleton className="w-[120px] h-[20px]" />
+          <>
+            <Skeleton className="w-[120px] h-[20px] mb-1" />
+            <Skeleton className="w-[100px] h-[16px]" />
+          </>
         ) : (
-          <h1 className="text-lg font-medium">{title}</h1>
+          <>
+            <h1 className="text-lg font-medium">{title}</h1>
+            {getDateRange() && (
+              <p className="text-sm text-gray-600">{getDateRange()}</p>
+            )}
+          </>
         )}
       </div>
     </div>

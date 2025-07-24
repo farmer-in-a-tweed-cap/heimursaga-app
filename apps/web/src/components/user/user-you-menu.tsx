@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
+import { redirect } from '@/lib';
 
 import { UserBar } from './user-bar';
 
@@ -37,6 +38,21 @@ export const UserYouMenu = () => {
   const session = useSession();
   const userRole = session?.role as UserRole;
   const isCreator = session?.creator;
+
+  const handleLogout = async () => {
+    try {
+      // log out
+      const response = await apiClient.logout();
+
+      if (!response.success) {
+        return;
+      }
+
+      redirect(ROUTER.HOME);
+    } catch (e) {
+      //
+    }
+  };
 
   const { username = '', email = '', picture = '' } = session || {};
   const roleLabel = getRoleLabel(session?.role || UserRole.USER);
@@ -239,10 +255,7 @@ export const UserYouMenu = () => {
           <>
             <div className="border-t border-gray-200 my-2"></div>
             <button
-              onClick={() => {
-                // TODO: Implement logout functionality
-                window.location.href = '/api/auth/logout';
-              }}
+              onClick={handleLogout}
               className="flex items-center py-3 px-4 text-base font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors text-left"
             >
               Log out

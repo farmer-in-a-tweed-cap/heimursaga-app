@@ -162,7 +162,10 @@ export const LandingPage: React.FC = () => {
           </div>
           
           {/* Button near bottom */}
-          <div className={`absolute bottom-24 left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+          <div 
+            className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+            style={{ bottom: `calc(6rem + env(safe-area-inset-bottom, 0px))` }}
+          >
             <button className="font-light py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
               <Link href={ROUTER.HOME} className="flex items-center gap-3">
                 EXPLORE

@@ -27,12 +27,65 @@ export const TripCard: React.FC<Props & { variant: 'public' | 'private' }> = ({
 const TripPublicCard: React.FC<Props> = ({
   href,
   title,
-  startDate = new Date(),
-  endDate = new Date(),
+  startDate,
+  endDate,
   author,
   userbar,
   onClick,
+  waypoints,
 }) => {
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return '';
+    return dateformat(date).format('MMM DD, YYYY');
+  };
+
+  const calculateDateRangeFromWaypoints = () => {
+    if (!waypoints || waypoints.length === 0) return { start: null, end: null };
+    
+    const dates = waypoints
+      .map(wp => wp.date)
+      .filter((date): date is Date => date !== undefined && date !== null)
+      .map(date => new Date(date))
+      .sort((a, b) => a.getTime() - b.getTime());
+    
+    if (dates.length === 0) return { start: null, end: null };
+    
+    return {
+      start: dates[0],
+      end: dates[dates.length - 1]
+    };
+  };
+
+  const getDateRange = () => {
+    // First try to calculate from waypoints if available
+    const waypointDates = calculateDateRangeFromWaypoints();
+    
+    if (waypointDates.start && waypointDates.end) {
+      const start = formatDate(waypointDates.start);
+      const end = formatDate(waypointDates.end);
+      if (start === end) {
+        return start; // Same date, show only once
+      }
+      return `${start} - ${end}`;
+    }
+    
+    // Fallback to trip's stored dates
+    if (startDate || endDate) {
+      const start = formatDate(startDate);
+      const end = formatDate(endDate);
+      if (start && end) {
+        if (start === end) {
+          return start; // Same date, show only once
+        }
+        return `${start} - ${end}`;
+      } else if (start) {
+        return start;
+      } else if (end) {
+        return end;
+      }
+    }
+    return '';
+  };
   return (
     <Card>
       <CardContent>
@@ -53,7 +106,7 @@ const TripPublicCard: React.FC<Props> = ({
                 name={author?.username}
                 picture={author?.picture}
                 creator={author?.creator}
-                text={`${dateformat(startDate).format('MMM DD')}-${dateformat(endDate).format('MMM DD')}`}
+                text={getDateRange() || 'Journey'}
               />
             )}
           </div>
@@ -61,11 +114,7 @@ const TripPublicCard: React.FC<Props> = ({
         <div className="flex flex-col gap-1 justify-start items-start">
           <span className="font-medium text-lg text-black">{title}</span>
           <span className="text-xs text-gray-500">
-            {startDate
-              ? endDate
-                ? `${[dateformat(startDate).format('MMM DD'), dateformat(endDate).format('MMM DD')].join(' - ')}`
-                : `${dateformat(startDate).format('MMM DD')}`
-              : 'No date'}
+            {getDateRange() || 'No date range'}
           </span>
         </div>
       </CardContent>
@@ -76,9 +125,28 @@ const TripPublicCard: React.FC<Props> = ({
 const TripPrivateCard: React.FC<Props> = ({
   href,
   title = 'trip',
-  startDate = new Date(),
-  endDate = new Date(),
+  startDate,
+  endDate,
 }) => {
+  const formatDate = (date: Date | undefined) => {
+    if (!date) return '';
+    return dateformat(date).format('MMM DD, YYYY');
+  };
+
+  const getDateRange = () => {
+    if (startDate || endDate) {
+      const start = formatDate(startDate);
+      const end = formatDate(endDate);
+      if (start && end) {
+        return `${start} - ${end}`;
+      } else if (start) {
+        return start;
+      } else if (end) {
+        return end;
+      }
+    }
+    return '';
+  };
   return (
     <Card>
       {href && <Link href={href} className="z-10 absolute inset-0"></Link>}
@@ -86,11 +154,7 @@ const TripPrivateCard: React.FC<Props> = ({
         <div className="flex flex-col gap-1 justify-start items-start">
           <span className="font-medium text-lg text-black">{title}</span>
           <span className="text-xs text-gray-500">
-            {startDate
-              ? endDate
-                ? `${[dateformat(startDate).format('MMM DD'), dateformat(endDate).format('MMM DD')].join(' - ')}`
-                : `${dateformat(startDate).format('MMM DD')}`
-              : 'No date'}
+            {getDateRange() || 'No date range'}
           </span>
         </div>
       </CardContent>

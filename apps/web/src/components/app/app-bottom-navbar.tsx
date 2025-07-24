@@ -59,15 +59,26 @@ export const AppBottomNavbar: React.FC<Props> = () => {
 
   const createLogoIcon = () => (
     <div className="relative flex items-center justify-center w-[56px] h-[56px]">
-      <div className="w-[48px] h-[48px] rounded-full border-2 border-primary flex items-center justify-center">
+      <div 
+        className="w-[48px] h-[48px] rounded-full flex items-center justify-center"
+        style={{ 
+          border: '2px solid rgb(170, 108, 70)',
+          borderWidth: '2px !important',
+          borderStyle: 'solid !important',
+          borderColor: 'rgb(170, 108, 70) !important'
+        }}
+      >
         <Image
           src="/logo-sm-dark.svg"
           width={36}
           height={36}
           alt=""
           priority={false}
-          className="drop-shadow-none"
-          style={{ filter: 'none', boxShadow: 'none' }}
+          style={{ 
+            filter: 'drop-shadow(none) !important', 
+            boxShadow: 'none !important',
+            WebkitFilter: 'drop-shadow(none) !important'
+          }}
         />
       </div>
     </div>

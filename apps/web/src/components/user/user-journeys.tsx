@@ -2,6 +2,7 @@
 
 import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 import { ROUTER } from '@/router';
@@ -13,6 +14,7 @@ type Props = {
 };
 
 export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }) => {
+  const router = useRouter();
   const tripQuery = useQuery({
     queryKey: [API_QUERY_KEYS.TRIPS, username, isOwnProfile],
     queryFn: async () => {
@@ -75,6 +77,11 @@ export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }
   const results = tripQuery.data?.results || 0;
   const trips = tripQuery.data?.data || [];
 
+  const handleJourneyClick = (tripId: string) => {
+    const url = `${ROUTER.HOME}?context=journey&filter=post&journey_id=${tripId}&user=${username}`;
+    router.push(url);
+  };
+
   if (tripQuery.isLoading) {
     return <LoadingSpinner />;
   }
@@ -90,7 +97,7 @@ export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }
           <TripCard
             key={key}
             variant="public"
-            href={trip.id ? ROUTER.JOURNEYS.DETAIL(trip.id) : '#'}
+            onClick={trip.id ? () => handleJourneyClick(trip.id) : undefined}
             {...trip}
           />
         ))}

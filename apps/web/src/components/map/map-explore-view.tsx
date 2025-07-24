@@ -5,7 +5,7 @@ import { MapQueryContext, MapQueryFilterParam } from '@repo/types';
 import { Button, ChipGroup, LoadingSpinner } from '@repo/ui/components';
 import { ArrowLeft } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
@@ -64,6 +64,7 @@ export const MapExploreView: React.FC<Props> = () => {
   const mapbox = useMapbox();
   const session = useSession();
   const screen = useScreen();
+  const queryClient = useQueryClient();
 
   const { params, setParams } = useAppParams({
     context: MAP_CONTEXT_PARAMS.GLOBAL,
@@ -136,6 +137,7 @@ export const MapExploreView: React.FC<Props> = () => {
           API_QUERY_KEYS.MAP.QUERY,
           userId,
           context,
+          tripId, // Include tripId in query key for journey context
           // Don't include bounds in query key for journey context to get all entries
           contexts.journey 
             ? 'all_entries'
@@ -148,10 +150,12 @@ export const MapExploreView: React.FC<Props> = () => {
               ].join(':')
             : 'no_bounds',
           search.query || 'search',
+          map.loaded, // Include map loaded state to re-trigger when map loads
         ]
       : [
           API_QUERY_KEYS.MAP.QUERY,
           context,
+          tripId, // Include tripId in query key for journey context
           contexts.journey 
             ? 'all_entries'
             : map.bounds
@@ -163,9 +167,10 @@ export const MapExploreView: React.FC<Props> = () => {
               ].join(':')
             : 'no_bounds',
           search.query || 'search',
+          map.loaded, // Include map loaded state to re-trigger when map loads
         ],
-    queryFn: async () =>
-      apiClient
+    queryFn: async () => {
+      return apiClient
         .mapQuery({
           context: context,
           username:
@@ -188,16 +193,18 @@ export const MapExploreView: React.FC<Props> = () => {
                 : undefined
               : undefined,
         })
-        .then(({ data }) => data),
+        .then(({ data }) => data);
+    },
     enabled:
       map.loaded &&
-      (contexts.journey || !!map.bounds) &&
       [
         MAP_CONTEXT_PARAMS.GLOBAL,
         MAP_CONTEXT_PARAMS.FOLLOWING,
         MAP_CONTEXT_PARAMS.USER,
         MAP_CONTEXT_PARAMS.JOURNEY,
-      ].some((ctx) => ctx === context),
+      ].some((ctx) => ctx === context) &&
+      // For journey context, only need tripId; for others, need bounds
+      (contexts.journey ? !!tripId : !!map.bounds),
     retry: 0,
   });
 
@@ -235,7 +242,7 @@ export const MapExploreView: React.FC<Props> = () => {
       apiClient
         .getTripById({ query: { tripId: tripId as string } })
         .then(({ data }) => data),
-    enabled: !!tripId && context === MAP_FILTER_PARAMS.JOURNEY,
+    enabled: !!tripId && context === MAP_CONTEXT_PARAMS.JOURNEY,
   });
 
   const post = postQuery?.data;
@@ -330,9 +337,19 @@ export const MapExploreView: React.FC<Props> = () => {
           }
           
           setFocusedWaypointId(postId);
+        } else if (contexts.journey) {
+          // In journey context, if waypoint not found (out of bounds), 
+          // trigger journey overview to show all waypoints
+          handleBackToOverview();
         }
       }
     }
+  };
+
+  const handleMapMarkerClick = (postId: string) => {
+    // Map marker clicks always open the full entry immediately
+    map.handleDrawerOpen();
+    setParams({ entry_id: postId });
   };
 
   const handlePostDrawerClose = () => {
@@ -341,66 +358,32 @@ export const MapExploreView: React.FC<Props> = () => {
   };
 
   const handleBackToOverview = () => {
-    if (map.mapbox) {
-      setUserInitiatedFlyTo(true);
-      const duration = contexts.journey ? 2000 : 1000; // Slower in journey context
-      
-      if (contexts.journey) {
-        // In journey context, fit bounds to show all journey markers
-        const coordinates = waypoints.map(wp => [wp.lon, wp.lat]);
-        
-        if (coordinates.length === 1) {
-          // Single point - center map on it
-          map.mapbox.flyTo({
-            center: [waypoints[0].lon, waypoints[0].lat],
-            zoom: 14,
-            duration: duration
-          });
-        } else if (coordinates.length > 1) {
-          // Multiple points - fit bounds to include all points
-          const lats = coordinates.map(coord => coord[1]);
-          const lons = coordinates.map(coord => coord[0]);
-          
-          const minLat = Math.min(...lats);
-          const maxLat = Math.max(...lats);
-          const minLon = Math.min(...lons);
-          const maxLon = Math.max(...lons);
-          
-          // Add padding to bounds
-          const latPadding = (maxLat - minLat) * 0.1 || 0.01;
-          const lonPadding = (maxLon - minLon) * 0.1 || 0.01;
-          
-          map.mapbox.fitBounds(
-            [minLon - lonPadding, minLat - latPadding, maxLon + lonPadding, maxLat + latPadding],
-            {
-              duration: duration,
-              padding: 20
-            }
-          );
-        }
-      } else if (previousView) {
-        // In other contexts, return to previous view state
-        if (previousView.bounds) {
-          // Fly back to previous bounds
-          map.mapbox.fitBounds(
-            [previousView.bounds.sw.lon, previousView.bounds.sw.lat, previousView.bounds.ne.lon, previousView.bounds.ne.lat],
-            {
-              duration: duration,
-              padding: 20
-            }
-          );
-        } else {
-          // Fly back to previous center and zoom
-          map.mapbox.flyTo({
-            center: [previousView.center.lon, previousView.center.lat],
-            zoom: previousView.zoom,
-            duration: duration
-          });
-        }
+    if (contexts.journey) {
+      // In journey context, invalidate query and reset bounds flag to trigger re-fitting
+      queryClient.invalidateQueries({ 
+        queryKey: [API_QUERY_KEYS.MAP.QUERY] 
+      });
+      setJourneyBoundsSet(false);
+    } else if (previousView && map.mapbox) {
+      // In other contexts, return to previous view state
+      const duration = 1000;
+      if (previousView.bounds) {
+        // Fly back to previous bounds
+        map.mapbox.fitBounds(
+          [previousView.bounds.sw.lon, previousView.bounds.sw.lat, previousView.bounds.ne.lon, previousView.bounds.ne.lat],
+          {
+            duration: duration,
+            padding: 20
+          }
+        );
+      } else {
+        // Fly back to previous center and zoom
+        map.mapbox.flyTo({
+          center: [previousView.center.lon, previousView.center.lat],
+          zoom: previousView.zoom,
+          duration: duration
+        });
       }
-      
-      // Reset flag after animation completes with extra buffer
-      setTimeout(() => setUserInitiatedFlyTo(false), duration + 1000);
     }
     
     setFocusedWaypointId(null);
@@ -539,12 +522,18 @@ export const MapExploreView: React.FC<Props> = () => {
 
   // fit map bounds to show all journey entries when initially loading journey
   useEffect(() => {
-    if (contexts.journey && waypoints.length > 0 && map.loaded && !journeyBoundsSet && !userInitiatedFlyTo) {
+    if (contexts.journey && waypoints.length > 0 && map.loaded && !journeyBoundsSet && 
+        !mapQuery.isLoading && map.mapbox) {
       const coordinates = waypoints.map(wp => [wp.lon, wp.lat]);
+      const duration = 2000; // Always animate in journey context
       
       if (coordinates.length === 1) {
         // Single point - center map on it
-        map.updateCenter({ lat: waypoints[0].lat, lon: waypoints[0].lon });
+        map.mapbox.flyTo({
+          center: [waypoints[0].lon, waypoints[0].lat],
+          zoom: 14,
+          duration: duration
+        });
       } else if (coordinates.length > 1) {
         // Multiple points - fit bounds to include all points
         const lats = coordinates.map(coord => coord[1]);
@@ -559,17 +548,18 @@ export const MapExploreView: React.FC<Props> = () => {
         const latPadding = (maxLat - minLat) * 0.1 || 0.01;
         const lonPadding = (maxLon - minLon) * 0.1 || 0.01;
         
-        const bounds = {
-          sw: { lat: minLat - latPadding, lon: minLon - lonPadding },
-          ne: { lat: maxLat + latPadding, lon: maxLon + lonPadding }
-        };
-        
-        map.updateBounds(bounds);
+        map.mapbox.fitBounds(
+          [minLon - lonPadding, minLat - latPadding, maxLon + lonPadding, maxLat + latPadding],
+          {
+            duration: duration,
+            padding: 20
+          }
+        );
       }
       
       setJourneyBoundsSet(true);
     }
-  }, [contexts.journey, waypoints, map.loaded, journeyBoundsSet, userInitiatedFlyTo]);
+  }, [contexts.journey, waypoints, map.loaded, journeyBoundsSet, mapQuery.isLoading]);
 
   useEffect(() => {
     // open post sidebar
@@ -584,9 +574,15 @@ export const MapExploreView: React.FC<Props> = () => {
     setFocusedWaypointId(null);
     setPreviousView(null);
     setUserInitiatedFlyTo(false);
-    // Clear waypoints when changing contexts to avoid stale data
-    setWaypoints([]);
-  }, [tripId, context, userId]);
+    // Don't clear waypoints here - let the query update them naturally
+    
+    // When entering journey context, invalidate queries to force fresh data
+    if (contexts.journey && tripId) {
+      queryClient.invalidateQueries({ 
+        queryKey: [API_QUERY_KEYS.MAP.QUERY] 
+      });
+    }
+  }, [tripId, context, userId, contexts.journey, queryClient]);
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
@@ -770,6 +766,7 @@ export const MapExploreView: React.FC<Props> = () => {
                         endDate={endDate}
                         waypoints={[]}
                         author={author}
+                        userbar={false}
                         onClick={() => handleTripClick(id)}
                       />
                     ),
@@ -910,7 +907,7 @@ export const MapExploreView: React.FC<Props> = () => {
                     : []
               }
               onSourceClick={(sourceId) => {
-                handlePostClick(sourceId);
+                handleMapMarkerClick(sourceId);
               }}
               onLoad={map.handleLoad}
               onMove={handleMapMove}
