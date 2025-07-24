@@ -26,12 +26,44 @@ import './../styles.css';
 export const metadata: Metadata = {
   title: {
     template: `%s | ${APP_CONFIG.APP.NAME}`,
-    default: `${APP_CONFIG.APP.NAME}`,
+    default: `${APP_CONFIG.APP.NAME} - Share Your Journey, Raise Money, Inspire the World`,
   },
-  description: 'a journaling platform for travelers',
+  description: 'Document your travels with geo-tagged journal entries, connect with fellow explorers, and raise money from sponsors who support your adventures. Join the community of modern explorers on Heimursaga.',
+  keywords: ['travel journal', 'travel blog', 'explorer', 'geo-tagged entries', 'travel sponsorship', 'adventure funding', 'travel community', 'journey mapping'],
+  authors: [{ name: 'The Peripety Company' }],
   openGraph: {
-    title: `${APP_CONFIG.APP.NAME}`,
-    description: 'a journaling platform for travelers',
+    title: `${APP_CONFIG.APP.NAME} - Share Your Journey, Raise Money, Inspire the World`,
+    description: 'Document your travels with geo-tagged journal entries, connect with fellow explorers, and raise money from sponsors who support your adventures.',
+    url: process.env.NEXT_PUBLIC_APP_BASE_URL,
+    siteName: APP_CONFIG.APP.NAME,
+    type: 'website',
+    locale: 'en_US',
+    images: [
+      {
+        url: '/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'Heimursaga - Share Your Journey, Raise Money, Inspire the World',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${APP_CONFIG.APP.NAME} - Share Your Journey, Raise Money, Inspire the World`,
+    description: 'Document your travels with geo-tagged journal entries, connect with fellow explorers, and raise money from sponsors who support your adventures.',
+    creator: '@heimursaga',
+    images: ['/og-image.jpg'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 

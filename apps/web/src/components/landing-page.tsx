@@ -92,14 +92,22 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
 export const LandingPage: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isMobileSafari, setIsMobileSafari] = useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     setIsVisible(true);
     setIsMobile(window.innerWidth < 760);
     
+    // Detect mobile Safari
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isMobileDevice = window.innerWidth < 760;
+    setIsMobileSafari(isSafari && isMobileDevice);
+    
     const handleResize = () => {
       setIsMobile(window.innerWidth < 760);
+      const isMobileDevice = window.innerWidth < 760;
+      setIsMobileSafari(isSafari && isMobileDevice);
     };
     
     window.addEventListener('resize', handleResize);
@@ -142,19 +150,19 @@ export const LandingPage: React.FC = () => {
         
         <div className="relative z-30 w-full h-screen">
           {/* Logo at top */}
-          <div className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 z-50 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ top: '8px', marginTop: isMobile ? '-50px' : '0px' }}>
+          <div className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 z-50 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ top: '8px', marginTop: isMobile ? '-50px' : '-60px' }}>
             <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight hidden" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
               <span className="block text-white">WELCOME TO</span>
             </h1>
             
-            <div className="w-100 h-80 mr-6">
+            <div className="w-96 h-72 lg:w-[36rem] lg:h-[28rem] mr-6">
               <Logo size="xlg" color="light" />
             </div>
           </div>
           
           {/* Text in middle */}
           <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transform: `translate(-50%, -50%) ${isVisible ? 'translateY(0)' : 'translateY(2.5rem)'}` }}>
-            <div className="text-xl lg:text-2xl font-normal max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            <div className="text-xl lg:text-3xl font-normal max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
               <p>You're an explorer.</p>
               <p>Don't get lost in a sea of content creators.</p>
               <p>Share your story and raise money on Heimursaga.</p>
@@ -164,7 +172,7 @@ export const LandingPage: React.FC = () => {
           {/* Button near bottom */}
           <div 
             className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
-            style={{ bottom: `calc(6rem + env(safe-area-inset-bottom, 0px))` }}
+            style={{ bottom: `calc(6rem + env(safe-area-inset-bottom, 0px) + ${isMobileSafari ? '4px' : '0px'})` }}
           >
             <button className="font-light py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
               <Link href={ROUTER.HOME} className="flex items-center gap-3">

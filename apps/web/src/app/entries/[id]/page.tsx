@@ -21,8 +21,45 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .then(({ data }) => data)
     .catch(() => null);
 
+  if (!post) {
+    return {
+      title: 'Entry not found',
+    };
+  }
+
+  const description = post.content 
+    ? `${post.content.slice(0, 160)}${post.content.length > 160 ? '...' : ''}`
+    : `Read this entry by ${post.author?.username || 'an explorer'} on Heimursaga.`;
+
+  // Use entry media or author avatar as image
+  const ogImage = post.media?.[0]?.thumbnail || post.author?.picture || '/og-image.jpg';
+
   return {
-    title: post ? `${post.title.slice(0, 120)}` : undefined,
+    title: `${post.title.slice(0, 120)}`,
+    description,
+    openGraph: {
+      title: post.title,
+      description,
+      url: `${process.env.NEXT_PUBLIC_APP_BASE_URL}/entries/${id}`,
+      type: 'article',
+      publishedTime: post.date?.toISOString(),
+      authors: post.author?.username ? [`${post.author.username}`] : undefined,
+      images: [
+        {
+          url: ogImage,
+          width: 1200,
+          height: 630,
+          alt: `${post.title} by ${post.author?.username || 'Explorer'}`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description,
+      creator: post.author?.username ? `@${post.author.username}` : undefined,
+      images: [ogImage],
+    },
   };
 }
 
