@@ -136,7 +136,7 @@ export const AppLayout = ({
       <div className="w-full min-h-dvh bg-background text-black flex flex-row">
         <AppSidebar />
         <div className="relative w-full flex flex-col justify-start">
-          <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
+          <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center lg:hidden">
             <AppBottomNavbar />
           </div>
           <div className="z-10 w-full h-auto flex flex-col pb-[70px]">
@@ -162,10 +162,10 @@ export const MapLayout = ({
       <div className="w-full h-dvh bg-background text-black flex flex-row overflow-hidden">
         <AppSidebar collapsed={true} />
         <div className="relative w-full h-dvh flex flex-col justify-start">
-          <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center desktop:hidden">
+          <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center lg:hidden">
             <AppBottomNavbar />
           </div>
-          <div className="z-10 w-full h-dvh relative pb-[70px] desktop:pb-0">
+          <div className="z-10 w-full h-dvh relative pb-[70px] lg:pb-0">
             {children}
           </div>
         </div>
@@ -188,7 +188,7 @@ export const LoginLayout = async ({
   if (logged) return redirect(ROUTER.HOME);
 
   return (
-    <div className="w-full min-h-dvh bg-dark text-dark-foreground flex flex-col items-center justify-center">
+    <div className="w-full min-h-dvh bg-dark text-dark-foreground flex flex-col items-center justify-start pt-16 desktop:pt-20">
       <div className="w-full max-w-[240px] -ml-6 mb-12">
         <Link href={ROUTER.HOME}>
           <Logo size="xlg" color="light" />

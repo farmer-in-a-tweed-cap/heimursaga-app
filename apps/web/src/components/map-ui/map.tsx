@@ -132,7 +132,7 @@ export type MapWaypointMoveHandler = (
   waypoint: MapCoordinatesValue & { id: number },
 ) => void;
 
-export type MapOnSourceClickHandler = (sourceId: string) => void;
+export type MapOnSourceClickHandler = (sourceId: string, feature?: any) => void;
 
 type PopupState = {
   visible?: boolean;
@@ -412,8 +412,9 @@ export const Map: React.FC<Props> = ({
     if (!mapboxRef.current) return;
 
     if (onSourceClick) {
-      const sourceId = event.features?.[0].properties?.id;
-      onSourceClick(sourceId);
+      const feature = event.features?.[0];
+      const sourceId = feature?.properties?.id;
+      onSourceClick(sourceId, feature);
     }
   };
 

@@ -257,6 +257,12 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
           queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.MAP.QUERY] });
           queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER.POSTS] });
           
+          // Show success toast
+          toast({
+            type: 'success',
+            message: 'entry saved',
+          });
+          
           setLoading((loading) => ({ ...loading, post: false }));
         } else {
           toast({

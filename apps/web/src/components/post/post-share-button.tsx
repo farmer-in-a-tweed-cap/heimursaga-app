@@ -23,7 +23,7 @@ export const PostShareButton: React.FC<Props> = ({ postId }) => {
       process.env.NEXT_PUBLIC_APP_BASE_URL,
     ).toString();
     navigator.clipboard.writeText(url);
-    toast({ type: 'message', message: 'the entry link copied' });
+    toast({ type: 'message', message: 'entry link copied' });
   };
 
   return (

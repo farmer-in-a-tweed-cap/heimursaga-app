@@ -105,6 +105,11 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
     ],
     info: [
       {
+        href: ROUTER.USER_GUIDE,
+        label: 'User guide',
+        openNewTab: false,
+      },
+      {
         href: ROUTER.LEGAL.PRIVACY,
         label: 'Privacy policy',
         openNewTab: true,

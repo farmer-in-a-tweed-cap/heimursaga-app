@@ -35,8 +35,9 @@ export const MapTripView: React.FC<Props> = ({ trip }) => {
     setSidebar((prev) => !prev);
   };
 
-  const handleWaypointClick: MapOnSourceClickHandler = (waypointId) => {
-    alert(waypointId);
+  const handleWaypointClick: MapOnSourceClickHandler = (waypointId, feature) => {
+    // Do nothing - disable all clicks in journey context
+    return;
   };
 
   useEffect(() => {

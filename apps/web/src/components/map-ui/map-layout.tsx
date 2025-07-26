@@ -76,6 +76,24 @@ export const MapDrawer: React.FC<{
             <div className="mt-6">
               <NormalizedText text={post.content} />
             </div>
+            
+            {/* "Logged on" attribution */}
+            <div className="mt-12 mb-12">
+              <p className="text-sm text-gray-500">
+                entry logged on {post.createdAt ? `${dateformat(post.createdAt).format('MMMM DD, YYYY [at] h:mm A')} ${new Date(post.createdAt).toLocaleDateString('en-US', { timeZoneName: 'short' }).split(', ')[1]}` : (post.date ? `${dateformat(post.date).format('MMMM DD, YYYY [at] h:mm A')} ${new Date(post.date).toLocaleDateString('en-US', { timeZoneName: 'short' }).split(', ')[1]}` : 'unknown date')} by{' '}
+                {post.author?.username ? (
+                  <Link 
+                    href={ROUTER.USERS.DETAIL(post.author.username)}
+                    className="text-primary hover:underline"
+                  >
+                    {post.author.username}
+                  </Link>
+                ) : (
+                  'unknown'
+                )}
+              </p>
+            </div>
+            
             {post?.media && (
               <div className="mt-6 grid grid-cols-2 gap-2">
                 {post.media?.map((media, key) => (

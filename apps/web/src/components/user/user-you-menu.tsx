@@ -161,6 +161,11 @@ export const UserYouMenu = () => {
     ],
     info: [
       {
+        href: ROUTER.USER_GUIDE,
+        label: 'User guide',
+        isMainItem: false,
+      },
+      {
         href: ROUTER.LEGAL.PRIVACY,
         label: 'Privacy policy',
         isMainItem: false,

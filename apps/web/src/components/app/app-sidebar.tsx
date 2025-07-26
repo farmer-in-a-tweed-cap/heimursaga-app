@@ -238,7 +238,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                       <Link
                         href={href}
                         className={cn(
-                          'w-full flex h-[36px] justify-between app-sidebar-link overflow-hidden',
+                          'w-full flex h-[40px] justify-between app-sidebar-link overflow-hidden',
                           isActiveLink(base) ? 'app-sidebar-link-active' : '',
                         )}
                       >
@@ -253,7 +253,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                           )}
                           <span
                             className={cn(
-                              'text-sm leading-none',
+                              'text-base leading-none',
                               collapsed ? 'hidden' : 'hidden lg:flex',
                             )}
                           >

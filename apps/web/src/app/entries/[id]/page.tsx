@@ -90,6 +90,8 @@ export default async function Page({ params }: Props) {
                 : undefined
             }
             waypoint={data.waypoint}
+            date={data.date}
+            createdAt={data.createdAt}
             liked={data.liked}
             likesCount={data.likesCount}
             bookmarked={data.bookmarked}
@@ -97,7 +99,7 @@ export default async function Page({ params }: Props) {
             media={data?.media || []}
             actions={
               data.createdByMe
-                ? { edit: true, like: true, share: true }
+                ? { edit: true, share: true }
                 : { like: true, bookmark: true, share: true }
             }
             extended

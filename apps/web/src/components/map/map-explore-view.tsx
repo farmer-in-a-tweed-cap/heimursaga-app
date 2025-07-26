@@ -355,7 +355,12 @@ export const MapExploreView: React.FC<Props> = () => {
     }
   };
 
-  const handleMapMarkerClick = (postId: string) => {
+  const handleMapMarkerClick = (postId: string, feature?: any) => {
+    // In journey context, only respond to entries (not waypoints)
+    if (params.context === 'journey' && feature?.properties?.type === 'waypoint') {
+      return; // Do nothing for waypoint markers in journey context
+    }
+    
     // Map marker clicks always open the full entry immediately
     map.handleDrawerOpen();
     setParams({ entry_id: postId });
@@ -768,7 +773,7 @@ export const MapExploreView: React.FC<Props> = () => {
                           {...post}
                           id={post.id}
                           date={date}
-                          actions={{ like: false, bookmark: true, edit: false }}
+                          actions={{ like: false, bookmark: false, edit: false }}
                           userbar={
                             // Only show userbar in non-journey contexts
                             !contexts.journey && post?.author
@@ -978,8 +983,8 @@ export const MapExploreView: React.FC<Props> = () => {
                       ]
                     : []
               }
-              onSourceClick={(sourceId) => {
-                handleMapMarkerClick(sourceId);
+              onSourceClick={(sourceId, feature) => {
+                handleMapMarkerClick(sourceId, feature);
               }}
               onLoad={map.handleLoad}
               onMove={handleMapMove}

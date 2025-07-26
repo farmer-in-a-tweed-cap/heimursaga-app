@@ -27,6 +27,7 @@ export type PostCardProps = {
   content?: string;
   place?: string;
   date?: Date;
+  createdAt?: Date;
   thumbnail?: string;
   author?: {
     picture?: string;
@@ -76,6 +77,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     username: '',
   },
   date,
+  createdAt,
   place,
   waypoint,
   liked = false,
@@ -168,9 +170,12 @@ export const PostCard: React.FC<PostCardProps> = ({
               </p>
             </div>
 
-            {/* Right side: User info right-justified */}
+            {/* Right side: Edit button for owned entries, User info for others */}
             <div className="flex flex-col items-end z-20">
-              {userbar?.href ? (
+              {actions.edit ? (
+                // Show edit button for entries owned by current user
+                <PostEditButton postId={id} />
+              ) : userbar?.href ? (
                 <Link
                   href={
                     userbar?.href
@@ -235,7 +240,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             </div>
           )}
           {waypoint && (
-            <div className="py-4">
+            <div className={extended ? "py-8" : "py-4"}>
               <MapStaticPreview
                 href={
                   id
@@ -278,14 +283,31 @@ export const PostCard: React.FC<PostCardProps> = ({
             </div>
           )}
         </div>
-        {(actions.like || actions.share) && (
+
+        {/* "Logged on" note for extended view */}
+        {extended && (
+          <div className="mt-12 mb-12">
+            <p className="text-sm text-gray-500">
+              entry logged on {createdAt ? `${dateformat(createdAt).format('MMMM DD, YYYY [at] h:mm A')} ${new Date(createdAt).toLocaleDateString('en-US', { timeZoneName: 'short' }).split(', ')[1]}` : (date ? `${dateformat(date).format('MMMM DD, YYYY [at] h:mm A')} ${new Date(date).toLocaleDateString('en-US', { timeZoneName: 'short' }).split(', ')[1]}` : 'unknown date')} by{' '}
+              {author?.username ? (
+                <Link 
+                  href={ROUTER.USERS.DETAIL(author.username)}
+                  className="text-primary hover:underline"
+                >
+                  {author.username}
+                </Link>
+              ) : (
+                'unknown'
+              )}
+            </p>
+          </div>
+        )}
+
+        {(actions.like || actions.bookmark || actions.share) && (
           <PostButtons
             className="relative mt-6 z-20"
             postId={id}
-            actions={{
-              ...actions,
-              bookmark: false,
-            }}
+            actions={actions}
             liked={liked}
             likesCount={likesCount}
             bookmarked={bookmarked}
