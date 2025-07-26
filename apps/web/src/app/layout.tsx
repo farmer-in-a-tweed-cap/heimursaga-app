@@ -24,6 +24,7 @@ import { ROUTER } from '@/router';
 import './../styles.css';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_BASE_URL || 'https://heimursaga.com'),
   title: {
     template: `%s | ${APP_CONFIG.APP.NAME}`,
     default: `${APP_CONFIG.APP.NAME} - Share Your Journey, Raise Money, Inspire the World`,

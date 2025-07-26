@@ -313,7 +313,7 @@ export const TripEditForm: React.FC<Props> = ({
                         title, 
                         lat: waypoint?.id === id ? waypoint.lat : lat, 
                         lon: waypoint?.id === id ? waypoint.lon : lon, 
-                        date: date instanceof Date ? date : new Date(date)
+                        date: date instanceof Date ? date : new Date(date || new Date())
                       }}
                       loading={loading.waypoint}
                       onCancel={handleWaypointEditCancel}
@@ -324,7 +324,7 @@ export const TripEditForm: React.FC<Props> = ({
                           lat: waypoint?.id === id ? waypoint.lat : values.lat || lat,
                           lon: waypoint?.id === id ? waypoint.lon : values.lon || lon,
                           title: values.title || title,
-                          date: values.date instanceof Date ? values.date : new Date(values.date || date)
+                          date: values.date instanceof Date ? values.date : new Date(values.date || date || new Date())
                         };
                         
                         if (onWaypointEditSubmit) {

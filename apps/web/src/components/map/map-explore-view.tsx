@@ -58,6 +58,10 @@ type Waypoint = {
       picture: string;
       creator?: boolean;
     };
+    trip?: {
+      id: string;
+      title: string;
+    };
   };
 };
 
