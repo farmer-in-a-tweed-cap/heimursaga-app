@@ -608,16 +608,18 @@ export const MapExploreView: React.FC<Props> = () => {
     setPreviousView(null);
     setUserInitiatedFlyTo(false);
     
-    // Clear waypoints immediately when switching journeys to prevent flashing lines
-    if (contexts.journey) {
-      setWaypoints([]);
-    }
-    
     // Reset transitioning state when journey changes
     if (journeyTransitioning && tripId) {
       setTimeout(() => setJourneyTransitioning(false), 500);
     }
-  }, [tripId, context, userId, contexts.journey, journeyTransitioning]);
+  }, [tripId, context, userId, journeyTransitioning]);
+
+  // Clear waypoints only when switching between different journeys
+  useEffect(() => {
+    if (contexts.journey) {
+      setWaypoints([]);
+    }
+  }, [tripId]); // Only clear when tripId changes, not on every context change
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">

@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { Session } from '@/common/decorators';
+import { Public, Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
 
 import {
@@ -37,6 +37,7 @@ export class TripController {
     });
   }
 
+  @Public()
   @Get(':trip_id')
   @HttpCode(HttpStatus.OK)
   async getTripById(
