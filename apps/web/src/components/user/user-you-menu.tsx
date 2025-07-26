@@ -145,7 +145,7 @@ export const UserYouMenu = () => {
     admin: [
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
-        label: 'Profile',
+        label: 'Journal',
         isMainItem: false,
       },
       {

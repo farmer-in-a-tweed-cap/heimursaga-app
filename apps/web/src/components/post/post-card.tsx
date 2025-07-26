@@ -1,13 +1,14 @@
 'use client';
 
 import { Card, CardContent, NormalizedText } from '@repo/ui/components';
+import { LockSimpleIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 
 import { dateformat } from '@/lib/date-format';
 
-import { MapStaticPreview, PostButtons, UserBar } from '@/components';
+import { MapStaticPreview, PostButtons, UserBar, UserAvatar } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
@@ -47,6 +48,7 @@ export type PostCardProps = {
   bookmarksCount?: number;
   liked?: boolean;
   likesCount?: number;
+  public?: boolean;
   extended?: boolean;
   userbar?: {
     href?: string;
@@ -56,6 +58,11 @@ export type PostCardProps = {
   onClick?: () => void;
   onHover?: () => void;
   onUnhover?: () => void;
+  isWaypoint?: boolean;
+  isEntry?: boolean;
+  trip?: {
+    title: string;
+  };
 };
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -75,6 +82,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   likesCount = 0,
   bookmarked = false,
   bookmarksCount = 0,
+  public: isPublic = true,
   actions = {
     like: true,
     bookmark: true,
@@ -88,6 +96,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   onClick,
   onHover,
   onUnhover,
+  isWaypoint = false,
+  isEntry = false,
+  trip,
 }) => {
   const session = useSession();
   const me =
@@ -100,6 +111,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       className={cn(
         'border-2 border-solid',
         selected ? 'border-black' : 'border-transparent',
+        isWaypoint ? 'bg-gray-100' : '', // Darker gray background for waypoints
       )}
       onMouseEnter={onHover}
       onMouseLeave={onUnhover}
@@ -115,73 +127,113 @@ export const PostCard: React.FC<PostCardProps> = ({
         ) : (
           <></>
         )}
-        <div className="relative flex flex-row justify-between items-center">
-          <div className="w-auto flex flex-row justify-start items-center gap-3 z-20">
-            {userbar?.href ? (
-              <Link
-                href={
-                  userbar?.href
-                    ? userbar?.href
-                    : author?.username
-                      ? ROUTER.USERS.DETAIL(author.username)
-                      : '#'
-                }
-              >
-                <UserBar
-                  name={author?.username}
-                  picture={author?.picture}
-                  creator={author?.creator}
-                  text={dateformat(date).format('MMM DD')}
-                />
-              </Link>
-            ) : (
-              <div className="cursor-pointer" onClick={userbar?.click}>
-                <UserBar
-                  name={author?.username}
-                  picture={author?.picture}
-                  creator={author?.creator}
-                  text={dateformat(date).format('MMM DD')}
-                />
+        {isWaypoint || isEntry ? (
+          // Journey context: original layout with type indicator
+          <div className="relative flex flex-row justify-between items-center">
+            <div className="w-auto flex flex-row justify-start items-center gap-3 z-20">
+              <div className="flex flex-row items-center gap-2">
+                <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">
+                  {isWaypoint ? 'WAYPOINT' : 'ENTRY'}
+                </span>
               </div>
-            )}
+            </div>
           </div>
-          {session.logged && (
-            <div className="z-20 flex flex-row items-center gap-2">
-              {me ? (
-                <>
-                  {actions?.edit && <PostEditButton postId={id} />}
-                  {actions?.bookmark && (
-                    <PostBookmarkButton
-                      postId={id}
-                      bookmarked={bookmarked}
-                      bookmarksCount={bookmarksCount}
-                      disableCount={true}
-                    />
-                  )}
-                </>
+        ) : (
+          // Global/Following/User context: new restructured layout
+          <div className="relative flex flex-row justify-between items-start">
+            {/* Left side: Title and date */}
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <h2 className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}>
+                  {title}
+                </h2>
+                {!isPublic && (
+                  <LockSimpleIcon 
+                    size={extended ? 20 : 16} 
+                    className="text-gray-500 opacity-60" 
+                  />
+                )}
+              </div>
+              
+              {/* Trip title */}
+              {trip && (
+                <p className="text-sm text-primary font-medium mt-1">
+                  {trip.title}
+                </p>
+              )}
+              
+              {/* Date */}
+              <p className="text-sm text-gray-600 mt-1">
+                {dateformat(date).format('MMM DD, YYYY')}
+              </p>
+            </div>
+
+            {/* Right side: User info right-justified */}
+            <div className="flex flex-col items-end z-20">
+              {userbar?.href ? (
+                <Link
+                  href={
+                    userbar?.href
+                      ? userbar?.href
+                      : author?.username
+                        ? ROUTER.USERS.DETAIL(author.username)
+                        : '#'
+                  }
+                  className="flex flex-col items-end"
+                >
+                  <UserAvatar
+                    src={author?.picture}
+                    fallback={author?.username}
+                    className={`w-8 h-8 border-2 border-solid ${author?.creator ? 'border-primary' : 'border-transparent'}`}
+                  />
+                  <span className="text-xs text-gray-600 mt-1">{author?.username}</span>
+                </Link>
+              ) : userbar?.click ? (
+                <div className="cursor-pointer flex flex-col items-end" onClick={userbar?.click}>
+                  <UserAvatar
+                    src={author?.picture}
+                    fallback={author?.username}
+                    className={`w-8 h-8 border-2 border-solid ${author?.creator ? 'border-primary' : 'border-transparent'}`}
+                  />
+                  <span className="text-xs text-gray-600 mt-1">{author?.username}</span>
+                </div>
               ) : (
-                <>
-                  {actions?.bookmark && (
-                    <PostBookmarkButton
-                      postId={id}
-                      bookmarked={bookmarked}
-                      bookmarksCount={bookmarksCount}
-                      disableCount={true}
-                    />
-                  )}
-                </>
+                <div className="flex flex-col items-end">
+                  <UserAvatar
+                    src={author?.picture}
+                    fallback={author?.username}
+                    className={`w-8 h-8 border-2 border-solid ${author?.creator ? 'border-primary' : 'border-transparent'}`}
+                  />
+                  <span className="text-xs text-gray-600 mt-1">{author?.username}</span>
+                </div>
               )}
             </div>
-          )}
-        </div>
-        <div className="relative flex flex-col overflow-hidden">
-          <div className="mt-6">
-            <h2
-              className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
-            >
-              {title}
-            </h2>
           </div>
+        )}
+        <div className="relative flex flex-col overflow-hidden">
+          {(isWaypoint || isEntry) && (
+            // Journey context: show title/date in content area (original layout)
+            <div className="mt-6">
+              <div className="flex items-center gap-2">
+                <h2
+                  className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
+                >
+                  {title}
+                </h2>
+                {!isPublic && (
+                  <LockSimpleIcon 
+                    size={extended ? 20 : 16} 
+                    className="text-gray-500 opacity-60" 
+                  />
+                )}
+              </div>
+              
+              {/* Date below title in journey context */}
+              <p className="text-sm text-gray-600 mt-1">
+                {dateformat(date).format('MMM DD, YYYY')}
+              </p>
+            </div>
+          )}
           {waypoint && (
             <div className="py-4">
               <MapStaticPreview

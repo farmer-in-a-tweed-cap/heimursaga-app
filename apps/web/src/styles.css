@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix for ghost Mapbox popup tip appearing in wrong location */
+.mapboxgl-popup-tip::before {
+  display: none !important;
+}
+
 @layer base {
   :root {
     --app-header-height: 50px;
@@ -123,17 +128,6 @@
   margin-top: -1px !important;
 }
 
-.mapboxgl-popup-tip::before {
-  content: '';
-  position: absolute;
-  top: -11px;
-  left: -11px;
-  width: 0;
-  height: 0;
-  border: 11px solid transparent;
-  border-top-color: rgba(0, 0, 0, 0.1);
-  z-index: -1;
-}
 
 /* Upward pointing tip for popups below marker */
 .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {

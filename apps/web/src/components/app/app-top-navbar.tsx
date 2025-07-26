@@ -11,7 +11,7 @@ type Props = {};
 export const AppTopNavbar: React.FC<Props> = () => {
   return (
     <div className="lg:hidden fixed top-4 left-4 z-50">
-      <Link href={ROUTER.HOME}>
+      <Link href={ROUTER.EXPLORE.RESET}>
         <div className="w-12 h-12 bg-dark rounded-full flex items-center justify-center shadow-lg">
           <Logo size="sm" color="light" />
         </div>

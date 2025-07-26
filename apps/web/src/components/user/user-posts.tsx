@@ -20,27 +20,28 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
   const postsQuery = useQuery({
     queryKey: [API_QUERY_KEYS.USER_FEED, username],
     queryFn: async () => {
-      // Get all posts and filter for this user's public posts
-      // This includes posts with waypoints attached (which should be all posts)
-      console.log(`Getting all posts for user: ${username}`);
-      const allPostsResult = await apiClient.getPosts();
-      
-      const userPosts = allPostsResult.data?.data?.filter(post => 
-        post.author?.username === username && 
-        post.public === true
-      ) || [];
-      
-      // Sort by creation date descending (newest first)
-      const sortedPosts = userPosts.sort((a, b) => 
-        new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
-      );
-      
-      console.log(`Found ${sortedPosts.length} public posts for ${username}`);
-      
-      return {
-        results: sortedPosts.length,
-        data: sortedPosts
-      };
+      if (me) {
+        // If viewing own profile, use getUserPosts to get all posts (public + private)
+        return apiClient.getUserPosts().then(({ data }) => data);
+      } else {
+        // If viewing someone else's profile, get all posts and filter for this user's public posts
+        const allPostsResult = await apiClient.getPosts();
+        
+        const userPosts = allPostsResult.data?.data?.filter(post => 
+          post.author?.username === username && 
+          post.public === true
+        ) || [];
+        
+        // Sort by creation date descending (newest first)
+        const sortedPosts = userPosts.sort((a, b) => 
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        );
+        
+        return {
+          results: sortedPosts.length,
+          data: sortedPosts
+        };
+      }
     },
     retry: 0,
     enabled: !!username,

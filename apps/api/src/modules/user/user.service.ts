@@ -787,14 +787,13 @@ export class SessionUserService {
 
       let where = {
         deleted_at: null,
-        lat: { not: null },
-        lon: { not: null },
       } as Prisma.PostWhereInput;
 
       const select = {
         public_id: true,
         title: true,
         content: true,
+        public: true,
         lat: true,
         lon: true,
         waypoint: {
@@ -833,14 +832,12 @@ export class SessionUserService {
         case 'feed':
           where = {
             ...where,
-            public: true,
             author: { id: userId },
           };
           break;
         case 'bookmarks':
           where = {
             ...where,
-            public: true,
             bookmarks: {
               some: {
                 user_id: userId,
@@ -874,6 +871,7 @@ export class SessionUserService {
             title,
             created_at: date,
             content,
+            public: isPublic,
             lat,
             lon,
             author,
@@ -887,6 +885,7 @@ export class SessionUserService {
             title,
             date,
             content,
+            public: isPublic,
             lat,
             lon,
             waypoint,

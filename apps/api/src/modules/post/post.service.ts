@@ -592,13 +592,25 @@ export class PostService {
           });
           if (!trip) return;
 
-          // attach the waypoint to the trip
-          await tx.tripWaypoint.create({
-            data: {
-              trip_id: trip.id,
-              waypoint_id: post.waypoint_id,
+          // check if waypoint is already attached to the trip
+          const existingRelation = await tx.tripWaypoint.findUnique({
+            where: {
+              trip_id_waypoint_id: {
+                trip_id: trip.id,
+                waypoint_id: post.waypoint_id,
+              },
             },
           });
+
+          // only create the relationship if it doesn't exist
+          if (!existingRelation) {
+            await tx.tripWaypoint.create({
+              data: {
+                trip_id: trip.id,
+                waypoint_id: post.waypoint_id,
+              },
+            });
+          }
         }
       });
 

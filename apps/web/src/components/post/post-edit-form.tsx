@@ -17,11 +17,12 @@ import {
   Textarea,
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { apiClient } from '@/lib/api';
+import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import {
   MODALS,
@@ -64,6 +65,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
   const modal = useModal();
   const toast = useToast();
   const session = useSession();
+  const queryClient = useQueryClient();
 
   const { waypoint } = values || {};
 
@@ -238,6 +240,8 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
           query: { id: postId },
           payload: {
             ...values,
+            public: privacy.public,
+            sponsored: privacy.sponsored,
             waypoint: {
               lat: marker?.lat,
               lon: marker?.lon,
@@ -248,6 +252,11 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
         });
 
         if (success) {
+          // Invalidate relevant queries to update the UI
+          queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.POSTS] });
+          queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.MAP.QUERY] });
+          queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER.POSTS] });
+          
           setLoading((loading) => ({ ...loading, post: false }));
         } else {
           toast({
@@ -359,9 +368,10 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                             format={(date) =>
                               dateformat(date).format('MMM DD, YYYY')
                             }
-                            date={form.watch('date')}
-                            onChange={(date) => form.setValue('date', date)}
+                            date={field.value}
+                            onChange={field.onChange}
                             disabled={loading.post}
+                            disabledDates={{ after: new Date() }}
                             inputProps={{
                               name: field.name,
                             }}
@@ -391,7 +401,6 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                       <FormLabel>Public</FormLabel>
                       <Switch
                         checked={privacy.public}
-                        aria-readonly
                         disabled={loading.privacy}
                         onCheckedChange={(checked) =>
                           handlePrivacyChange({ public: checked })
@@ -405,7 +414,6 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                         <FormLabel>Sponsored</FormLabel>
                         <Switch
                           checked={privacy.sponsored}
-                          aria-readonly
                           disabled={loading.privacy}
                           onCheckedChange={(checked) =>
                             handlePrivacyChange({ sponsored: checked })

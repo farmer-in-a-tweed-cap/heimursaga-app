@@ -259,6 +259,18 @@ export class TripService {
             public: true,
             title: true,
             author_id: true,
+            author: {
+              select: {
+                username: true,
+                role: true,
+                profile: {
+                  select: {
+                    name: true,
+                    picture: true,
+                  },
+                },
+              },
+            },
             waypoints: {
               where: {
                 waypoint: {
@@ -303,18 +315,36 @@ export class TripService {
           throw new ServiceNotFoundException('trip not found');
         });
 
-      const { public_id, title, waypoints } = trip;
+      const { public_id, title, waypoints, author } = trip;
 
       // access control
       if (!trip.public && userId !== trip.author_id) {
         throw new ServiceForbiddenException();
       }
 
+      // Calculate date range from waypoints (dates are mandatory)
+      const waypointDates = waypoints.map(({ waypoint: { date, posts } }) => {
+        const post = posts?.[0];
+        return post ? post.date : date;
+      });
+
+      const startDate = waypointDates.length > 0 
+        ? new Date(Math.min(...waypointDates.map(d => d.getTime())))
+        : new Date(); // Fallback to current date if no waypoints
+      const endDate = waypointDates.length > 0 
+        ? new Date(Math.max(...waypointDates.map(d => d.getTime())))
+        : new Date(); // Fallback to current date if no waypoints
+
       const response: ITripGetByIdResponse = {
         id: public_id,
         title,
-        startDate: new Date(),
-        endDate: new Date(),
+        startDate,
+        endDate,
+        author: author ? {
+          username: author.username,
+          picture: getStaticMediaUrl(author.profile.picture),
+          creator: author.role === UserRole.CREATOR,
+        } : undefined,
         waypoints: sortByDate({
           elements: waypoints.map(
             ({ waypoint: { id, lat, lon, title, date, posts } }) => {
@@ -349,7 +379,6 @@ export class TripService {
         }),
       };
 
-      console.log(response.waypoints);
 
       return response;
     } catch (e) {

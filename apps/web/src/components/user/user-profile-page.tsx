@@ -109,6 +109,7 @@ export const UserProfilePage: React.FC<Props> = ({
             username={user?.username}
             section={section}
             me={me}
+            isCreator={isCreator}
           />
         )}
       </div>

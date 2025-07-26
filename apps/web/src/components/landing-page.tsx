@@ -162,7 +162,7 @@ export const LandingPage: React.FC = () => {
           
           {/* Text in middle */}
           <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transform: `translate(-50%, -50%) ${isVisible ? 'translateY(0)' : 'translateY(2.5rem)'}` }}>
-            <div className="text-xl lg:text-3xl font-normal max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            <div className="text-2xl lg:text-3xl font-normal max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
               <p>You're an explorer.</p>
               <p>Don't get lost in a sea of content creators.</p>
               <p>Share your story and raise money on Heimursaga.</p>
@@ -172,7 +172,7 @@ export const LandingPage: React.FC = () => {
           {/* Button near bottom */}
           <div 
             className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
-            style={{ bottom: `calc(6rem + env(safe-area-inset-bottom, 0px) + ${isMobileSafari ? '4px' : '0px'})` }}
+            style={{ bottom: `calc(6rem + env(safe-area-inset-bottom, 0px) + ${isMobileSafari ? '8px' : '0px'})` }}
           >
             <button className="font-light py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
               <Link href={ROUTER.HOME} className="flex items-center gap-3">
@@ -331,7 +331,7 @@ export const LandingPage: React.FC = () => {
             HEIMURSAGA
           </div>
           <p className="text-gray-400" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
-            © 2025 The Peripety Company. All Rights Reserved.
+            © 2025 <a href="https://theperipetycompany.com/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-300 transition-colors no-underline">The Peripety Company</a>. All Rights Reserved.
           </p>
         </div>
       </footer>

@@ -76,7 +76,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
   } = {
     guest: [
       {
-        href: ROUTER.HOME,
+        href: ROUTER.EXPLORE.RESET,
         base: ROUTER.HOME,
         label: 'Explore',
         icon: CompassRose,
@@ -84,7 +84,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
     ],
     user: [
       {
-        href: ROUTER.HOME,
+        href: ROUTER.EXPLORE.RESET,
         base: ROUTER.HOME,
         label: 'Explore',
         icon: CompassRose,
@@ -111,7 +111,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
     ],
     creator: [
       {
-        href: ROUTER.HOME,
+        href: ROUTER.EXPLORE.RESET,
         base: ROUTER.HOME,
         label: 'Explore',
         icon: CompassRose,
@@ -265,9 +265,11 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                         )}
                       </Link>
                     </TooltipTrigger>
-                    <TooltipContent side="right" hidden={!collapsed}>
-                      {label}
-                    </TooltipContent>
+                    {collapsed && (
+                      <TooltipContent side="right">
+                        {label}
+                      </TooltipContent>
+                    )}
                   </Tooltip>
                 ),
               )}

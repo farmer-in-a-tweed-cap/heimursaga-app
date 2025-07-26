@@ -12,7 +12,7 @@ import { AppLayout } from '@/layouts';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Edit Log Entry',
+  title: 'Edit Entry',
 };
 
 type PageProps = {
@@ -35,7 +35,7 @@ export default async function Page({ params }: PageProps) {
     <AppLayout>
       {postQuery.success ? (
         <div className="w-full max-w-3xl flex flex-col gap-6">
-          <PageHeaderTitle>Edit Log Entry</PageHeaderTitle>
+          <PageHeaderTitle>Edit Entry</PageHeaderTitle>
           <Card>
             <CardContent>
               <PostEditForm postId={postId} values={postQuery.data} />

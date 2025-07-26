@@ -87,7 +87,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
   const LINKS: { [role: string]: NavLink[] } = {
     guest: [
       {
-        href: ROUTER.HOME,
+        href: ROUTER.EXPLORE.RESET,
         icon: createLogoIcon,
         label: '',
       },
@@ -99,7 +99,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
     ],
     user: [
       {
-        href: ROUTER.HOME,
+        href: ROUTER.EXPLORE.RESET,
         icon: createLogoIcon,
         label: '',
       },
@@ -193,19 +193,25 @@ export const AppBottomNavbar: React.FC<Props> = () => {
         </div>
       </div>
 
-      {/* Right item - Avatar */}
+      {/* Right item - Avatar/Login */}
       <div className="flex-shrink-0 px-3">
         <Link
           href={links[links.length - 1].href}
           className={cn(
-            'flex flex-col items-center justify-center gap-1 text-gray-500',
+            'flex flex-col items-center justify-center text-gray-500',
             isActiveLink(links[links.length - 1].href) ? 'text-black' : 'text-gray-500',
+            // Adjust spacing for login button to fit in navbar
+            links[links.length - 1].label ? 'gap-0' : 'gap-1'
           )}
         >
-          <div className="w-[56px] h-[56px] flex items-center justify-center">
-            {typeof links[links.length - 1].icon === 'function' && links[links.length - 1].icon.length === 0 ? links[links.length - 1].icon({} as any) : links[links.length - 1].icon({ size: 20, weight: "regular" as any })}
+          <div className={cn(
+            "flex items-center justify-center",
+            // Smaller icon container for login button to make room for label
+            links[links.length - 1].label ? "w-[32px] h-[32px]" : "w-[56px] h-[56px]"
+          )}>
+            {typeof links[links.length - 1].icon === 'function' && links[links.length - 1].icon.length === 0 ? links[links.length - 1].icon({} as any) : links[links.length - 1].icon({ size: links[links.length - 1].label ? 18 : 20, weight: "regular" as any })}
           </div>
-          {links[links.length - 1].label && <span className="text-xs font-medium whitespace-nowrap">{links[links.length - 1].label}</span>}
+          {links[links.length - 1].label && <span className="text-[10px] font-medium whitespace-nowrap mt-1">{links[links.length - 1].label}</span>}
         </Link>
       </div>
     </div>

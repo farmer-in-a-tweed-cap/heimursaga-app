@@ -62,7 +62,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
     user: [
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
-        label: 'Profile',
+        label: 'Journal',
       },
       {
         href: ROUTER.USER.SETTINGS.HOME,
@@ -76,7 +76,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
     creator: [
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
-        label: 'Profile',
+        label: 'Journal',
       },
       {
         href: ROUTER.UPGRADE,
@@ -96,7 +96,7 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
     admin: [
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
-        label: 'Profile',
+        label: 'Journal',
       },
       {
         href: ROUTER.USER.SETTINGS.HOME,
@@ -107,11 +107,6 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
       {
         href: ROUTER.LEGAL.PRIVACY,
         label: 'Privacy policy',
-        openNewTab: true,
-      },
-      {
-        href: ROUTER.LEGAL.TERMS,
-        label: 'Terms of service',
         openNewTab: true,
       },
     ],

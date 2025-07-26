@@ -2,6 +2,7 @@
 
 import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
@@ -10,6 +11,8 @@ import { PostCard } from '@/components';
 type Props = {};
 
 export const UserBookmarks: React.FC<Props> = () => {
+  const router = useRouter();
+  
   const bookmarksQuery = useQuery({
     queryKey: [API_QUERY_KEYS.USER.BOOKMARKS],
     queryFn: () => apiClient.getUserBookmarks().then(({ data }) => data),
@@ -24,9 +27,13 @@ export const UserBookmarks: React.FC<Props> = () => {
   const results = bookmarksQuery.data?.results || 0;
   const bookmarks = bookmarksQuery.data?.data || [];
 
+  const handlePostClick = (postId: string) => {
+    router.push(`/entries/${postId}`);
+  };
+
   return loading ? (
     <LoadingSpinner />
-  ) : results ? (
+  ) : bookmarks.length > 0 ? (
     <div className="w-full flex flex-col gap-3">
       {bookmarks.map(({ author, ...post }, key) => (
         <PostCard
@@ -38,6 +45,7 @@ export const UserBookmarks: React.FC<Props> = () => {
             picture: author?.picture,
           }}
           waypoint={post?.waypoint}
+          onClick={() => handlePostClick(post.id)}
         />
       ))}
     </div>
