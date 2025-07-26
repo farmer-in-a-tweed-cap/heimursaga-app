@@ -241,13 +241,14 @@ export class TripService {
 
       if (!id) throw new ServiceNotFoundException('trip not found');
 
-      // check access
-      const access = !!userId;
-      if (!access) throw new ServiceForbiddenException();
+      // Allow access for public trips, require auth for private trips
+      const isAuthenticated = !!userId;
 
       const where: Prisma.TripWhereInput = {
         public_id: id,
         deleted_at: null,
+        // If not authenticated, only show public trips
+        ...(isAuthenticated ? {} : { public: true }),
       };
 
       // get a trip
@@ -317,8 +318,8 @@ export class TripService {
 
       const { public_id, title, waypoints, author } = trip;
 
-      // access control
-      if (!trip.public && userId !== trip.author_id) {
+      // access control - ensure private trips are only accessible by their authors
+      if (!trip.public && (!isAuthenticated || userId !== trip.author_id)) {
         throw new ServiceForbiddenException();
       }
 
