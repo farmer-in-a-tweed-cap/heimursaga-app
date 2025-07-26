@@ -44,7 +44,6 @@ export const MapPreview: React.FC<Props> = ({
   useEffect(() => {
     // if (!loaded) return;
 
-    console.log('center', { mapbox: !!map.mapbox, center });
 
     if (map.mapbox && center) {
       map.mapbox.setCenter(center);
@@ -54,7 +53,6 @@ export const MapPreview: React.FC<Props> = ({
   useEffect(() => {
     // if (!loaded) return;
 
-    console.log('zoom', { mapbox: !!map.mapbox, zoom });
 
     if (map.mapbox && typeof zoom === 'number') {
       map.mapbox.setZoom(zoom);

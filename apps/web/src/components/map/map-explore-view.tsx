@@ -42,6 +42,11 @@ type Waypoint = {
   lat: number;
   lon: number;
   date: Date;
+  waypoint?: {
+    id: number;
+    title: string;
+    date: Date;
+  };
   post?: {
     id: string;
     title: string;
@@ -104,7 +109,7 @@ export const MapExploreView: React.FC<Props> = () => {
     bounds?: { sw: { lat: number; lon: number }; ne: { lat: number; lon: number } };
   } | null>(null);
   const [userInitiatedFlyTo, setUserInitiatedFlyTo] = useState<boolean>(false);
-  const [journeyBoundsSet, setJourneyBoundsSet] = useState<boolean>(false);
+  const [journeyTransitioning, setJourneyTransitioning] = useState<boolean>(false);
 
   const [search, setSearch] = useState<{
     value?: string;
@@ -357,13 +362,52 @@ export const MapExploreView: React.FC<Props> = () => {
     setParams({ entry_id: null });
   };
 
+  const fitJourneyBounds = () => {
+    if (!map.mapbox || waypoints.length === 0) return;
+    
+    const coordinates = waypoints.map(wp => [wp.lon, wp.lat]);
+    const duration = 1500;
+    
+    if (coordinates.length === 1) {
+      // Single point - center map on it
+      map.mapbox.flyTo({
+        center: [waypoints[0].lon, waypoints[0].lat],
+        zoom: 14,
+        duration: duration
+      });
+    } else if (coordinates.length > 1) {
+      // Multiple points - fit bounds to include all points
+      const lats = coordinates.map(coord => coord[1]);
+      const lons = coordinates.map(coord => coord[0]);
+      
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLon = Math.min(...lons);
+      const maxLon = Math.max(...lons);
+      
+      // Add padding to bounds - ensure minimum padding for very close points
+      const latRange = maxLat - minLat;
+      const lonRange = maxLon - minLon;
+      const latPadding = Math.max(latRange * 0.1, 0.01);
+      const lonPadding = Math.max(lonRange * 0.1, 0.01);
+      
+      // Force fit bounds regardless of current zoom level
+      map.mapbox.fitBounds(
+        [minLon - lonPadding, minLat - latPadding, maxLon + lonPadding, maxLat + latPadding],
+        {
+          duration: duration,
+          padding: 40, // Increased padding for better visibility
+          maxZoom: 15, // Prevent zooming in too much on close points
+          linear: false // Use easing for smoother animation
+        }
+      );
+    }
+  };
+
   const handleBackToOverview = () => {
     if (contexts.journey) {
-      // In journey context, invalidate query and reset bounds flag to trigger re-fitting
-      queryClient.invalidateQueries({ 
-        queryKey: [API_QUERY_KEYS.MAP.QUERY] 
-      });
-      setJourneyBoundsSet(false);
+      // In journey context, fit bounds to show all waypoints
+      fitJourneyBounds();
     } else if (previousView && map.mapbox) {
       // In other contexts, return to previous view state
       const duration = 1000;
@@ -388,6 +432,10 @@ export const MapExploreView: React.FC<Props> = () => {
     
     setFocusedWaypointId(null);
     setPreviousView(null);
+    
+    // Close any open entry drawer
+    map.handleDrawerClose();
+    setParams({ entry_id: null });
   };
 
   const handleContextChange = (context: string) => {
@@ -468,6 +516,14 @@ export const MapExploreView: React.FC<Props> = () => {
   const handleTripClick = (tripId: string) => {
     if (!tripId) return;
 
+    // Set transitioning state to manage visual feedback
+    setJourneyTransitioning(true);
+
+    // Clear ALL map query cache entries to prevent stale data when switching journeys
+    queryClient.removeQueries({ 
+      queryKey: [API_QUERY_KEYS.MAP.QUERY] 
+    });
+
     setParams({
       context: MAP_CONTEXT_PARAMS.JOURNEY,
       filter: MAP_FILTER_PARAMS.POST,
@@ -498,6 +554,11 @@ export const MapExploreView: React.FC<Props> = () => {
 
   const handleTripBack = () => {
     if (userId) {
+      // Clear ALL map query cache entries when going back from journey to prevent stale data
+      queryClient.removeQueries({ 
+        queryKey: [API_QUERY_KEYS.MAP.QUERY] 
+      });
+      
       setParams({
         context: MAP_CONTEXT_PARAMS.USER,
         filter: MAP_FILTER_PARAMS.JOURNEY,
@@ -520,46 +581,15 @@ export const MapExploreView: React.FC<Props> = () => {
     }
   }, [mapQuery.data?.waypoints, contexts.journey, contexts.user, contexts.map, tripId, userId]);
 
-  // fit map bounds to show all journey entries when initially loading journey
+  // Fit map bounds when journey waypoints are loaded
   useEffect(() => {
-    if (contexts.journey && waypoints.length > 0 && map.loaded && !journeyBoundsSet && 
-        !mapQuery.isLoading && map.mapbox) {
-      const coordinates = waypoints.map(wp => [wp.lon, wp.lat]);
-      const duration = 2000; // Always animate in journey context
-      
-      if (coordinates.length === 1) {
-        // Single point - center map on it
-        map.mapbox.flyTo({
-          center: [waypoints[0].lon, waypoints[0].lat],
-          zoom: 14,
-          duration: duration
-        });
-      } else if (coordinates.length > 1) {
-        // Multiple points - fit bounds to include all points
-        const lats = coordinates.map(coord => coord[1]);
-        const lons = coordinates.map(coord => coord[0]);
-        
-        const minLat = Math.min(...lats);
-        const maxLat = Math.max(...lats);
-        const minLon = Math.min(...lons);
-        const maxLon = Math.max(...lons);
-        
-        // Add padding to bounds
-        const latPadding = (maxLat - minLat) * 0.1 || 0.01;
-        const lonPadding = (maxLon - minLon) * 0.1 || 0.01;
-        
-        map.mapbox.fitBounds(
-          [minLon - lonPadding, minLat - latPadding, maxLon + lonPadding, maxLat + latPadding],
-          {
-            duration: duration,
-            padding: 20
-          }
-        );
-      }
-      
-      setJourneyBoundsSet(true);
+    if (contexts.journey && waypoints.length > 0 && map.loaded && map.mapbox && !mapQuery.isLoading) {
+      // Small delay to ensure DOM is ready and map is stable
+      setTimeout(() => {
+        fitJourneyBounds();
+      }, 200);
     }
-  }, [contexts.journey, waypoints, map.loaded, journeyBoundsSet, mapQuery.isLoading]);
+  }, [contexts.journey, waypoints, map.loaded, mapQuery.isLoading, tripId]);
 
   useEffect(() => {
     // open post sidebar
@@ -568,21 +598,22 @@ export const MapExploreView: React.FC<Props> = () => {
     }
   }, []);
 
-  // Reset journey bounds flag when changing journeys
+  // Reset state when changing journeys or contexts
   useEffect(() => {
-    setJourneyBoundsSet(false);
     setFocusedWaypointId(null);
     setPreviousView(null);
     setUserInitiatedFlyTo(false);
-    // Don't clear waypoints here - let the query update them naturally
     
-    // When entering journey context, invalidate queries to force fresh data
-    if (contexts.journey && tripId) {
-      queryClient.invalidateQueries({ 
-        queryKey: [API_QUERY_KEYS.MAP.QUERY] 
-      });
+    // Clear waypoints immediately when switching journeys to prevent flashing lines
+    if (contexts.journey) {
+      setWaypoints([]);
     }
-  }, [tripId, context, userId, contexts.journey, queryClient]);
+    
+    // Reset transitioning state when journey changes
+    if (journeyTransitioning && tripId) {
+      setTimeout(() => setJourneyTransitioning(false), 500);
+    }
+  }, [tripId, context, userId, contexts.journey, journeyTransitioning]);
 
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
@@ -603,7 +634,7 @@ export const MapExploreView: React.FC<Props> = () => {
                         className="flex items-center gap-2 text-sm"
                       >
                         <ArrowLeft size={16} />
-                        Back
+                        Reset Map
                       </Button>
                     )}
                   </div>
@@ -648,6 +679,7 @@ export const MapExploreView: React.FC<Props> = () => {
                   name={user?.username}
                   picture={user?.picture}
                   username={user?.username}
+                  creator={user?.creator}
                   loading={userQuery.isLoading}
                   backButton={{
                     click: handleUserBack,
@@ -695,6 +727,7 @@ export const MapExploreView: React.FC<Props> = () => {
                   endDate={trip?.endDate}
                   loading={tripLoading}
                   onBack={handleTripBack}
+                  author={trip?.author}
                 />
                 {!screen.mobile && focusedWaypointId && previousView && (
                   <div className="flex justify-end px-4 pb-2">
@@ -705,7 +738,7 @@ export const MapExploreView: React.FC<Props> = () => {
                       className="flex items-center gap-2 text-sm"
                     >
                       <ArrowLeft size={16} />
-                      Journey Overview
+                      Reset Map
                     </Button>
                   </div>
                 )}
@@ -720,31 +753,53 @@ export const MapExploreView: React.FC<Props> = () => {
                 {mapLoading ? (
                   <LoadingSpinner />
                 ) : mapResults >= 1 ? (
-                  waypoints.map(({ date, post }, key) =>
-                    post ? (
-                      <PostCard
-                        key={key}
-                        {...post}
-                        id={post.id}
-                        date={date}
-                        actions={{ like: false, bookmark: true, edit: false }}
-                        userbar={
-                          post?.author
-                            ? {
-                                click: () =>
-                                  handleUserClick(post?.author?.username),
-                              }
-                            : undefined
-                        }
-                        selected={isPostSelected(post.id) || focusedWaypointId === post.id}
-                        onClick={() => handlePostClick(post.id)}
-                        onHover={!screen.mobile ? () => handlePostHover(post.id) : undefined}
-                        onUnhover={!screen.mobile ? handlePostUnhover : undefined}
-                      />
-                    ) : (
-                      <></>
-                    ),
-                  )
+                  waypoints.map(({ date, post, waypoint }, key) => {
+                    if (post) {
+                      // Render entry cards (clickable) - in journey context, show as entries
+                      return (
+                        <PostCard
+                          key={key}
+                          {...post}
+                          id={post.id}
+                          date={date}
+                          actions={{ like: false, bookmark: true, edit: false }}
+                          userbar={
+                            // Only show userbar in non-journey contexts
+                            !contexts.journey && post?.author
+                              ? {
+                                  click: contexts.user 
+                                    ? () => handlePostClick(post.id)
+                                    : () => handleUserClick(post?.author?.username),
+                                }
+                              : undefined
+                          }
+                          selected={isPostSelected(post.id) || focusedWaypointId === post.id}
+                          onClick={() => handlePostClick(post.id)}
+                          onHover={!screen.mobile ? () => handlePostHover(post.id) : undefined}
+                          onUnhover={!screen.mobile ? handlePostUnhover : undefined}
+                          isEntry={contexts.journey} // Show entry indicator only in journey context
+                          trip={!contexts.journey ? post.trip : undefined}
+                        />
+                      );
+                    } else if (waypoint) {
+                      // Render waypoint cards (non-clickable, simplified)
+                      return (
+                        <PostCard
+                          key={key}
+                          id={waypoint.id.toString()}
+                          title={waypoint.title}
+                          content=""
+                          date={date}
+                          actions={{ like: false, bookmark: false, edit: false }}
+                          // No author/userbar for waypoints - show type indicator instead
+                          isWaypoint={true}
+                          // No onClick handler (non-clickable)
+                          // No hover handlers
+                        />
+                      );
+                    }
+                    return null;
+                  }).filter(Boolean)
                 ) : (
                   <>no entries found</>
                 )}
@@ -851,7 +906,7 @@ export const MapExploreView: React.FC<Props> = () => {
                         {
                           sourceId: MAP_SOURCES.WAYPOINTS,
                           type: 'point',
-                          data: waypoints.map(({ lat, lon, post }, key) => ({
+                          data: waypoints.map(({ lat, lon, post, waypoint }, key) => ({
                             id: key,
                             lat,
                             lon,
@@ -861,6 +916,14 @@ export const MapExploreView: React.FC<Props> = () => {
                                   title: post.title,
                                   content: post.content,
                                   date: post?.date || new Date(),
+                                  type: 'entry',
+                                }
+                              : waypoint
+                              ? {
+                                  id: waypoint.id.toString(),
+                                  title: waypoint.title,
+                                  date: waypoint.date,
+                                  type: 'waypoint',
                                 }
                               : {},
                           })),
@@ -886,19 +949,22 @@ export const MapExploreView: React.FC<Props> = () => {
                         {
                           sourceId: MAP_SOURCES.WAYPOINTS,
                           type: 'point',
-                          data: waypoints.map(({ lat, lon, post }, key) => ({
-                            id: key,
-                            lat,
-                            lon,
-                            properties: post
-                              ? {
-                                  id: post.id,
-                                  title: post.title,
-                                  content: post.content,
-                                  date: post?.date || new Date(),
-                                }
-                              : {},
-                          })),
+                          data: waypoints
+                            .filter(({ post }) => post) // Only show entries in non-journey contexts
+                            .map(({ lat, lon, post }, key) => ({
+                              id: key,
+                              lat,
+                              lon,
+                              properties: post
+                                ? {
+                                    id: post.id,
+                                    title: post.title,
+                                    content: post.content,
+                                    date: post?.date || new Date(),
+                                    type: 'entry',
+                                  }
+                                : {},
+                            })),
                           config: {
                             cluster: showClusters,
                           },

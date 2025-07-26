@@ -53,6 +53,7 @@ type Props = {
   onWaypointCreateCancel?: () => void;
   onWaypointDelete?: (id: number) => void;
   onWaypointEditStart?: (waypoint: MapWaypointValue) => void;
+  onWaypointEditCancel?: () => void;
   onWaypointEditSubmit?: (waypoint: MapWaypointValue) => void;
   onSubmit?: TripEditFormSubmitHandler;
 };
@@ -69,6 +70,7 @@ export const TripEditForm: React.FC<Props> = ({
   onWaypointCreateSubmit,
   onWaypointDelete,
   onWaypointEditStart,
+  onWaypointEditCancel,
   onWaypointEditSubmit,
   onLoading = () => {},
   onSubmit = () => {},
@@ -175,11 +177,12 @@ export const TripEditForm: React.FC<Props> = ({
   const handleWaypointEditCancel = () => {
     setWaypointEditing(false);
     setWaypointEditingId(null);
+    
+    if (onWaypointEditCancel) {
+      onWaypointEditCancel();
+    }
   };
 
-  const handleWaypointEditSubmit = () => {
-    //
-  };
 
   const handleWaypointDelete = async (id: number) => {
     if (confirm(`remove this waypoint?`)) {
@@ -241,6 +244,13 @@ export const TripEditForm: React.FC<Props> = ({
     <div className="relative w-full h-auto flex flex-col">
       <div className="w-full h-auto flex flex-col gap-10">
         <Section title="Journey">
+          <div className="mb-6 text-sm text-gray-600">
+            <p className="mb-2">Plan your journey here by adding future waypoints</p>
+            <ul className="list-disc ml-5 space-y-1">
+              <li>waypoints can be converted into entries when the date becomes present or past</li>
+              <li>entries can be added to a saved journey at any time via the "create entry" page</li>
+            </ul>
+          </div>
           <Form {...form}>
             <form id={TRIP_EDIT_FORM_ID} onSubmit={handleSubmit}>
               <FormField
@@ -299,10 +309,31 @@ export const TripEditForm: React.FC<Props> = ({
                     className="py-4 border-b border-solid border-accent"
                   >
                     <TripWaypointEditForm
-                      defaultValues={{ title, lat, lon, date }}
+                      defaultValues={{ 
+                        title, 
+                        lat: waypoint?.id === id ? waypoint.lat : lat, 
+                        lon: waypoint?.id === id ? waypoint.lon : lon, 
+                        date: date instanceof Date ? date : new Date(date)
+                      }}
                       loading={loading.waypoint}
                       onCancel={handleWaypointEditCancel}
-                      onSubmit={handleWaypointEditSubmit}
+                      onSubmit={(values) => {
+                        // Update the waypoint with the current coordinates (potentially from dragging)
+                        const updatedWaypoint = {
+                          id,
+                          lat: waypoint?.id === id ? waypoint.lat : values.lat || lat,
+                          lon: waypoint?.id === id ? waypoint.lon : values.lon || lon,
+                          title: values.title || title,
+                          date: values.date instanceof Date ? values.date : new Date(values.date || date)
+                        };
+                        
+                        if (onWaypointEditSubmit) {
+                          onWaypointEditSubmit(updatedWaypoint);
+                        }
+                        
+                        setWaypointEditing(false);
+                        setWaypointEditingId(null);
+                      }}
                     />
                   </div>
                 ) : (

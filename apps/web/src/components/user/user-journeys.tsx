@@ -1,8 +1,9 @@
 'use client';
 
 import { LoadingSpinner } from '@repo/ui/components';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 import { ROUTER } from '@/router';
@@ -15,6 +16,8 @@ type Props = {
 
 export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }) => {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const tripQuery = useQuery({
     queryKey: [API_QUERY_KEYS.TRIPS, username, isOwnProfile],
     queryFn: async () => {
@@ -78,11 +81,22 @@ export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }
   const trips = tripQuery.data?.data || [];
 
   const handleJourneyClick = (tripId: string) => {
+    // Set transitioning state for better UX
+    setIsTransitioning(true);
+    
+    // Clear ALL map query cache entries to prevent stale data when switching journeys
+    queryClient.removeQueries({ 
+      queryKey: [API_QUERY_KEYS.MAP.QUERY] 
+    });
+    
     const url = `${ROUTER.HOME}?context=journey&filter=post&journey_id=${tripId}&user=${username}`;
     router.push(url);
+    
+    // Reset transitioning state after navigation
+    setTimeout(() => setIsTransitioning(false), 1000);
   };
 
-  if (tripQuery.isLoading) {
+  if (tripQuery.isLoading || isTransitioning) {
     return <LoadingSpinner />;
   }
 
@@ -97,7 +111,7 @@ export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }
           <TripCard
             key={key}
             variant="public"
-            onClick={trip.id ? () => handleJourneyClick(trip.id) : undefined}
+            onClick={trip.id && !isTransitioning ? () => handleJourneyClick(trip.id) : undefined}
             {...trip}
           />
         ))}

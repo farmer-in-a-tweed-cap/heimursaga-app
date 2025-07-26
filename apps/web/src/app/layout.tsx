@@ -187,16 +187,14 @@ export const LoginLayout = async ({
   if (logged) return redirect(ROUTER.HOME);
 
   return (
-    <div className="w-full min-h-dvh bg-dark text-dark-foreground flex flex-row">
-      <div className="relative w-full flex flex-col items-center justify-start py-14">
-        <div className="w-full max-w-[200px] -ml-6">
-          <Link href={ROUTER.HOME}>
-            <Logo size="xlg" color="light" />
-          </Link>
-        </div>
-        <div className="mt-4 w-full h-auto max-w-md flex flex-col items-center justify-start p-4 desktop:p-0">
-          {children}
-        </div>
+    <div className="w-full min-h-dvh bg-dark text-dark-foreground flex flex-col items-center justify-center">
+      <div className="w-full max-w-[240px] -ml-6 mb-12">
+        <Link href={ROUTER.HOME}>
+          <Logo size="xlg" color="light" />
+        </Link>
+      </div>
+      <div className="w-full h-auto max-w-md flex flex-col items-center justify-center p-4 desktop:p-0">
+        {children}
       </div>
     </div>
   );

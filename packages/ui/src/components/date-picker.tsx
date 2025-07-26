@@ -13,6 +13,7 @@ type Props = {
   date?: Date;
   onChange?: (date: Date) => void;
   disabled?: boolean;
+  disabledDates?: any; // For react-day-picker disabled prop
   inputProps?: React.ComponentProps<'input'>;
 };
 
@@ -21,6 +22,7 @@ export const DatePicker: React.FC<Props> = ({
   format,
   onChange,
   disabled = false,
+  disabledDates,
   inputProps,
 }) => {
   const handleSelect = (date?: Date) => {
@@ -56,6 +58,7 @@ export const DatePicker: React.FC<Props> = ({
           selected={date}
           onSelect={handleSelect}
           initialFocus
+          disabled={disabledDates}
         />
       </PopoverContent>
     </Popover>

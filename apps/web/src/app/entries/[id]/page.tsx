@@ -15,9 +15,10 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
+  const cookie = cookies().toString();
 
   const post = await apiClient
-    .getPostById({ query: { id } })
+    .getPostById({ query: { id } }, { cookie })
     .then(({ data }) => data)
     .catch(() => null);
 
@@ -42,7 +43,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url: `${process.env.NEXT_PUBLIC_APP_BASE_URL}/entries/${id}`,
       type: 'article',
-      publishedTime: post.date?.toISOString(),
+      publishedTime: post.date ? new Date(post.date).toISOString() : undefined,
       authors: post.author?.username ? [`${post.author.username}`] : undefined,
       images: [
         {
@@ -81,6 +82,7 @@ export default async function Page({ params }: Props) {
             id={data.id}
             title={data.title}
             content={data.content}
+            public={data.public}
             author={data.author}
             userbar={
               data?.author?.username

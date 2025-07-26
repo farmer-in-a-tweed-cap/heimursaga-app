@@ -9,6 +9,7 @@ type Props = {
   username?: string;
   name?: string;
   picture?: string;
+  creator?: boolean;
   loading?: boolean;
   backButton?: {
     href?: string;
@@ -20,6 +21,7 @@ export const UserProfileCard: React.FC<Props> = ({
   username = '',
   name = '',
   picture = '',
+  creator = false,
   loading = false,
   backButton,
 }) => {
@@ -32,7 +34,7 @@ export const UserProfileCard: React.FC<Props> = ({
           </div>
           <div className="flex flex-row items-center justify-start gap-2">
             <UserAvatar
-              className="w-[40px] h-[40px]"
+              className={`w-[40px] h-[40px] border-2 border-solid ${creator ? 'border-primary' : 'border-transparent'}`}
               src={picture}
               loading={loading}
               fallback={name}

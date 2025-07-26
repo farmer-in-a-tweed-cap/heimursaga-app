@@ -233,7 +233,12 @@ export const Map: React.FC<Props> = ({
                 true,
               ],
               config.cluster.colorHover,
-              config.cluster.color,
+              [
+                'case',
+                ['==', ['get', 'type'], 'waypoint'],
+                '#6B7280', // Dark gray for waypoints
+                config.cluster.color, // Original color for entries
+              ],
             ],
             'circle-stroke-width': 1,
             'circle-stroke-color': '#ffffff',
@@ -323,6 +328,30 @@ export const Map: React.FC<Props> = ({
           },
         });
         break;
+      case MAP_LAYERS.WAYPOINTS_DRAGGABLE:
+        mapbox.addLayer({
+          id,
+          source,
+          type: 'circle',
+          paint: {
+            'circle-radius': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              3, 8,
+              6, 12,
+              10, 16,
+              25, 20,
+              50, 24,
+              100, 28
+            ],
+            'circle-color': config.cluster.color, // Match existing waypoint color
+            'circle-stroke-width': 3,
+            'circle-stroke-color': '#ffffff',
+            'circle-opacity': 0.9,
+          },
+        });
+        break;
     }
   };
 
@@ -331,7 +360,6 @@ export const Map: React.FC<Props> = ({
 
     const { center, zoom, bounds } = data;
 
-    console.log('map: onload', { center, zoom, bounds });
 
     if (onLoad) {
       onLoad({
@@ -366,7 +394,6 @@ export const Map: React.FC<Props> = ({
 
     // update state
     if (onMove) {
-      console.log('map: onmove', bounds);
 
       onMove({
         center: { lat, lon },
@@ -516,7 +543,6 @@ export const Map: React.FC<Props> = ({
 
     if (!mapboxRef.current) return;
 
-    console.log('waypoint: mousedown');
 
     waypointDragging.current = true;
 
@@ -542,7 +568,6 @@ export const Map: React.FC<Props> = ({
     const canvas = mapboxRef.current.getCanvasContainer();
     const waypointId = waypointDraggableId.current;
 
-    console.log('waypoint: mouseup');
 
     if (waypointId) {
       // update waypoint
@@ -569,7 +594,6 @@ export const Map: React.FC<Props> = ({
     const waypointId = waypointDraggableId.current;
     const { lat, lng: lon } = e.lngLat;
 
-    console.log('waypoint: mousemove', { waypointId, lat, lon });
 
     if (waypointId) {
       setWaypointDraggable(() => ({ id: waypointId, lat, lon }));

@@ -54,12 +54,15 @@ export class MapService {
         ? query.search.toLowerCase().trim()
         : undefined;
 
+      // Base filter - for TRIP context, we'll override the public requirement
       let where = {
         public: true,
         deleted_at: null,
       } as Prisma.WaypointWhereInput;
 
       const select = {
+        id: true,
+        title: true,
         lat: true,
         lon: true,
         date: true,
@@ -69,6 +72,7 @@ export class MapService {
             title: true,
             content: true,
             date: true,
+            public: true,
             bookmarks: userId
               ? {
                   where: { user_id: userId },
@@ -87,7 +91,26 @@ export class MapService {
                 },
               },
             },
+            waypoint: {
+              select: {
+                trips: {
+                  select: {
+                    trip: {
+                      select: {
+                        public_id: true,
+                        title: true,
+                      },
+                    },
+                  },
+                  take: 1, // Only get the first trip if multiple exist
+                },
+              },
+            },
             created_at: true,
+          },
+          where: {
+            public: true,
+            deleted_at: null,
           },
           take: 1,
         },
@@ -148,19 +171,15 @@ export class MapService {
           };
           break;
         case MapQueryContext.TRIP:
+          // For TRIP context, ignore waypoint public field and only check trip public field
           where = {
-            ...where,
-            posts: {
-              some: {
-                public: true,
-                deleted_at: null,
-              },
-            },
+            deleted_at: null,
             trips: tripId
               ? {
                   some: {
                     trip: {
                       public_id: tripId,
+                      public: true, // Only show waypoints for public journeys
                     },
                   },
                 }
@@ -201,13 +220,18 @@ export class MapService {
       const response: IMapQueryResponse = {
         results,
         waypoints: sortByDate({
-          elements: waypoints.map(({ lat, lon, posts }) => {
+          elements: waypoints.map(({ id, title, lat, lon, date, posts }) => {
             const post = posts[0];
 
             return {
               lat,
               lon,
-              date: post ? post.date : undefined,
+              date: post ? post.date : date, // Use waypoint date if no post
+              waypoint: !post ? {
+                id: id,
+                title: title || '',
+                date: date,
+              } : undefined,
               post: post
                 ? {
                     id: post.public_id,
@@ -223,6 +247,12 @@ export class MapService {
                       creator: post.author.role === UserRole.CREATOR,
                     },
                     bookmarked: userId ? post.bookmarks.length > 0 : false,
+                    trip: post.waypoint?.trips?.[0]?.trip
+                      ? {
+                          id: post.waypoint.trips[0].trip.public_id,
+                          title: post.waypoint.trips[0].trip.title,
+                        }
+                      : undefined,
                   }
                 : undefined,
             };

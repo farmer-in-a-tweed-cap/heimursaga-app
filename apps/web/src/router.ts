@@ -6,6 +6,7 @@ export const ROUTER = {
   RESET_PASSWORD: 'reset-password',
   EXPLORE: {
     HOME: '/explore',
+    RESET: '/explore?context=global&filter=post',
     POST: (id: string) => `/explore/post/${id}`,
   },
   YOU: '/submenu',

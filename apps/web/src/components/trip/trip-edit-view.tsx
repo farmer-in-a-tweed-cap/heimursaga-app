@@ -15,6 +15,7 @@ import {
 } from '@/components';
 import { MapWaypointValue, useMap, useMapbox, useScreen } from '@/hooks';
 import { dateformat, sortByDate } from '@/lib';
+import { apiClient } from '@/lib/api';
 import { ROUTER } from '@/router';
 
 const WAYPOINT_SORT_ORDER = 'asc';
@@ -94,6 +95,68 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
     setWaypoint(waypoint);
   };
 
+  const handleWaypointEditStart = (waypointData: IWaypoint) => {
+    // Set the waypoint as draggable on the map by setting it in the waypoint state
+    setWaypoint({
+      id: waypointData.id,
+      lat: waypointData.lat,
+      lon: waypointData.lon
+    });
+  };
+
+  const handleWaypointEditCancel = () => {
+    // Clear the draggable waypoint when editing is cancelled
+    setWaypoint(null);
+  };
+
+  const handleWaypointEditSubmit = async (editedWaypoint: MapWaypointValue) => {
+    // Clear the draggable waypoint when editing is submitted
+    setWaypoint(null);
+    
+    try {
+      // Save to database
+      if (trip?.id) {
+        await apiClient.updateTripWaypoint({
+          query: {
+            tripId: trip.id,
+            waypointId: editedWaypoint.id
+          },
+          payload: {
+            title: editedWaypoint.title,
+            lat: editedWaypoint.lat,
+            lon: editedWaypoint.lon,
+            date: editedWaypoint.date
+          }
+        });
+      }
+      
+      // Update the waypoint in the local state and re-sort by date
+      setWaypoints(prev => {
+        const updated = prev.map(wp => 
+          wp.id === editedWaypoint.id 
+            ? { 
+                ...wp, 
+                lat: editedWaypoint.lat, 
+                lon: editedWaypoint.lon,
+                title: editedWaypoint.title || wp.title,
+                date: editedWaypoint.date || wp.date
+              }
+            : wp
+        );
+        
+        // Re-sort waypoints by date to maintain chronological order
+        return sortByDate({
+          elements: updated,
+          order: WAYPOINT_SORT_ORDER,
+          key: 'date',
+        });
+      });
+    } catch (error) {
+      console.error('Failed to update waypoint:', error);
+      // TODO: Show error toast to user
+    }
+  };
+
   const handleWaypointCreateStart = (waypoint: MapWaypointValue) => {
     const offset = 1;
 
@@ -137,8 +200,6 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
     setWaypoint(null);
   };
 
-  const handleWaypointEditStart = () => {};
-
   const handleWaypointDelete = (id: number) => {
     setWaypoints((waypoints) => {
       return waypoints.filter((waypoint) => waypoint.id !== id);
@@ -166,6 +227,9 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
             onWaypointCreateSubmit={handleWaypointCreateSubmit}
             onWaypointCreateStart={handleWaypointCreateStart}
             onWaypointCreateCancel={handleWaypointCreateCancel}
+            onWaypointEditStart={handleWaypointEditStart}
+            onWaypointEditCancel={handleWaypointEditCancel}
+            onWaypointEditSubmit={handleWaypointEditSubmit}
             onWaypointDelete={handleWaypointDelete}
           />
         </div>
@@ -228,25 +292,27 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
             {
               sourceId: MAP_SOURCES.WAYPOINTS,
               type: 'point',
-              data: waypoints.map(({ id, lat, lon, title, date }, key) => ({
-                id,
-                lat,
-                lon,
-                properties: {
-                  index: key + 1,
+              data: waypoints
+                .filter(wp => waypoint ? wp.id !== waypoint.id : true) // Hide waypoint being edited
+                .map(({ id, lat, lon, title, date }, key) => ({
                   id,
-                  title,
-                  date,
-                },
-              })),
+                  lat,
+                  lon,
+                  properties: {
+                    index: key + 1,
+                    id,
+                    title,
+                    date,
+                  },
+                })),
             },
             {
               sourceId: MAP_SOURCES.WAYPOINT_LINES,
               type: 'line',
               data: waypoints.map(({ id, lat, lon }) => ({
                 id,
-                lat,
-                lon,
+                lat: waypoint && waypoint.id === id ? waypoint.lat : lat, // Use dragged coordinates if editing
+                lon: waypoint && waypoint.id === id ? waypoint.lon : lon, // Use dragged coordinates if editing
                 properties: {},
               })),
             },

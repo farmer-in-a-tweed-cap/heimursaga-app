@@ -10,6 +10,7 @@ import {
   MapViewContainer,
 } from '../map-ui';
 import { PostCard } from '../post';
+import { UserBar } from '../user';
 import { ITripDetail } from '@repo/types';
 import { LoadingSpinner, Skeleton } from '@repo/ui/components';
 import { useEffect, useState } from 'react';
@@ -206,7 +207,12 @@ export const MapTripCard: React.FC<{
   backUrl?: string;
   loading?: boolean;
   onBack?: () => void;
-}> = ({ title, startDate, endDate, loading = false, backUrl, onBack }) => {
+  author?: {
+    username?: string;
+    picture?: string;
+    creator?: boolean;
+  };
+}> = ({ title, startDate, endDate, loading = false, backUrl, onBack, author }) => {
   const formatDate = (date: Date | undefined) => {
     if (!date) return '';
     return dateformat(date).format('MMM DD, YYYY');
@@ -228,21 +234,41 @@ export const MapTripCard: React.FC<{
   };
 
   return (
-    <div className="flex flex-row items-center justify-start box-border p-4 gap-2">
-      <div className="">
+    <div className="relative box-border p-4">
+      {/* Back button positioned absolutely */}
+      <div className="absolute left-4 top-4">
         <BackButton href={backUrl} onClick={onBack} />
       </div>
-      <div className="w-full flex flex-col justify-start">
+      
+      {/* Centered content */}
+      <div className="flex flex-col items-center justify-center text-center">
         {loading ? (
-          <>
-            <Skeleton className="w-[120px] h-[20px] mb-1" />
+          <div className="flex flex-col items-center gap-2">
+            <Skeleton className="w-10 h-10 rounded-full" />
+            <Skeleton className="w-[80px] h-[16px]" />
+            <div className="h-4" />
+            <Skeleton className="w-[120px] h-[20px]" />
             <Skeleton className="w-[100px] h-[16px]" />
-          </>
+          </div>
         ) : (
           <>
+            {/* Author information */}
+            {author && (
+              <>
+                <img 
+                  src={author.picture || '/default-avatar.png'} 
+                  alt={author.username}
+                  className={`w-10 h-10 rounded-full object-cover border-2 border-solid ${author.creator ? 'border-primary' : 'border-transparent'}`}
+                />
+                <span className="text-sm font-medium mt-2">{author.username}</span>
+                <div className="h-4" />
+              </>
+            )}
+            
+            {/* Journey title and date */}
             <h1 className="text-lg font-medium">{title}</h1>
             {getDateRange() && (
-              <p className="text-sm text-gray-600">{getDateRange()}</p>
+              <p className="text-sm text-gray-600 mt-1">{getDateRange()}</p>
             )}
           </>
         )}

@@ -331,6 +331,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                             date={form.watch('date')}
                             onChange={(date) => form.setValue('date', date)}
                             disabled={loading}
+                            disabledDates={{ after: new Date() }}
                             inputProps={{
                               name: field.name,
                             }}

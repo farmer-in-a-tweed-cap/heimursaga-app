@@ -673,27 +673,27 @@ export const apiClient = {
   //       ...config,
   //     },
   //   ),
-  // updateTripWaypoint: async (
-  //   {
-  //     query,
-  //     payload,
-  //   }: IApiClientQueryWithPayload<
-  //     { tripId: string; waypointId: number },
-  //     IWaypointUpdatePayload
-  //   >,
-  //   config?: RequestConfig,
-  // ) =>
-  //   api.request<void>(
-  //     API_ROUTER.JOURNEYS.WAYPOINTS.UPDATE({
-  //       trip_id: query.tripId,
-  //       waypoint_id: query.waypointId,
-  //     }),
-  //     {
-  //       method: API_METHODS.PUT,
-  //       body: JSON.stringify(payload),
-  //       ...config,
-  //     },
-  //   ),
+  updateTripWaypoint: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<
+      { tripId: string; waypointId: number },
+      IWaypointUpdatePayload
+    >,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(
+      API_ROUTER.TRIPS.WAYPOINTS.UPDATE({
+        trip_id: query.tripId,
+        waypoint_id: query.waypointId,
+      }),
+      {
+        method: API_METHODS.PUT,
+        body: JSON.stringify(payload),
+        ...config,
+      },
+    ),
   deleteTripWaypoint: async (
     { query }: IApiClientQuery<{ tripId: string; waypointId: number }>,
     config?: RequestConfig,

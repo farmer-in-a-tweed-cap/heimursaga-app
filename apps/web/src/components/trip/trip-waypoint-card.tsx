@@ -32,7 +32,14 @@ export const TripWaypointCard: React.FC<Props> = ({
   const waypointId = id;
   const actions: ActionMenuItem[] = [];
 
-  if (!post) {
+  // Check if waypoint date is today or in the past
+  const isDatePastOrPresent = () => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of today
+    return date <= today;
+  };
+
+  if (!post && isDatePastOrPresent()) {
     actions.push({
       label: 'Log Entry',
       onClick: () => {

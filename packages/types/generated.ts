@@ -363,6 +363,11 @@ export interface IMapQueryResponse {
     lat: number;
     lon: number;
     date: Date;
+    waypoint?: {
+      id: number;
+      title: string;
+      date: Date;
+    };
     post?: {
       id: string;
       title: string;
@@ -374,6 +379,10 @@ export interface IMapQueryResponse {
         // name: string;
         picture: string;
         creator?: boolean;
+      };
+      trip?: {
+        id: string;
+        title: string;
       };
     };
   }[];
