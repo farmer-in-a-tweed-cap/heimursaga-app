@@ -2,7 +2,7 @@
 
 import { ToastProvider, TooltipProvider } from '@repo/ui/components';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode, createContext, useState } from 'react';
+import { ReactNode, Suspense, createContext, useState } from 'react';
 
 import { ModalProvider, SponsorModalHandler } from '@/components';
 import { TOAST_DURATION } from '@/constants';
@@ -76,7 +76,9 @@ export function AppProvider({
         />
         <ModalProvider>
           <TooltipProvider delayDuration={400}>
-            <SponsorModalHandler />
+            <Suspense fallback={null}>
+              <SponsorModalHandler />
+            </Suspense>
             {children}
           </TooltipProvider>
         </ModalProvider>

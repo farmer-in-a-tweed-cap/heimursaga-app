@@ -227,7 +227,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.TITLE_REQUIRED });
     } else if (errors.content) {
       toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.CONTENT_REQUIRED });
-    } else if (errors.location) {
+    } else if (errors.place) {
       toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.LOCATION_REQUIRED });
     } else {
       toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.FIELDS_REQUIRED });

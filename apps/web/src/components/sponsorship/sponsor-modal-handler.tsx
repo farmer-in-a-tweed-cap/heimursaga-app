@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { MODALS } from '@/components';
@@ -11,10 +11,17 @@ import { useModal } from '@/hooks';
  * Usage: Add ?sponsor=username to any URL to open sponsor modal
  */
 export const SponsorModalHandler = () => {
+  const [mounted, setMounted] = useState(false);
   const searchParams = useSearchParams();
   const modal = useModal();
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     const sponsorUsername = searchParams.get('sponsor');
     
     if (sponsorUsername) {
@@ -23,7 +30,7 @@ export const SponsorModalHandler = () => {
         full: true,
       });
     }
-  }, [searchParams, modal]);
+  }, [searchParams, modal, mounted]);
 
   return null; // This component doesn't render anything
 };
