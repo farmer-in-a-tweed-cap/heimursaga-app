@@ -16,6 +16,7 @@ export const MODALS = {
   PAYMENT_METHOD_DELETE: 'payment_method_delete',
   MAP_LOCATION_SELECT: 'map_location_select',
   TRIP_SELECT: 'trip_select',
+  SPONSOR_CHECKOUT: 'sponsor_checkout',
 };
 
 export const modalRegistry: IModalRegistry = {
@@ -25,4 +26,5 @@ export const modalRegistry: IModalRegistry = {
   [MODALS.PAYMENT_METHOD_DELETE]: () => import('./payment-method-delete-modal'),
   [MODALS.MAP_LOCATION_SELECT]: () => import('./map-location-pick-modal'),
   [MODALS.TRIP_SELECT]: () => import('./trip-select-modal'),
+  [MODALS.SPONSOR_CHECKOUT]: () => import('./sponsor-checkout-modal'),
 };

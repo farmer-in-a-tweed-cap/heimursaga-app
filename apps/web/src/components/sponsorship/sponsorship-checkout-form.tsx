@@ -40,6 +40,8 @@ type Props = {
   username?: string;
   sponsorship?: ISponsorshipTier;
   paymentMethods?: { id: string; label: string }[];
+  onSuccess?: () => void;
+  onCancel?: () => void;
 };
 
 const MESSAGE_LENGTH = 200;
@@ -86,6 +88,8 @@ export const FormComponent: React.FC<Props> = ({
   username,
   sponsorship,
   paymentMethods = [],
+  onSuccess,
+  onCancel,
 }) => {
   const stripe = useStripe();
   const modal = useModal();
@@ -213,8 +217,10 @@ export const FormComponent: React.FC<Props> = ({
           return;
         }
 
-        // redirect to the home page
-        if (username) {
+        // handle success - either call callback or redirect
+        if (onSuccess) {
+          onSuccess();
+        } else if (username) {
           redirect(ROUTER.USERS.DETAIL(username));
         }
 
@@ -401,7 +407,7 @@ export const FormComponent: React.FC<Props> = ({
                   {LOCALES.APP.CHECKOUT.PAGE.TERMS}
                 </p>
               </div>
-              <div className="mt-8 flex flex-col">
+              <div className="mt-8 flex flex-col gap-3">
                 <Button
                   type="submit"
                   loading={loading.form}
@@ -414,6 +420,16 @@ export const FormComponent: React.FC<Props> = ({
                       : 'Pay'}
                   </div>
                 </Button>
+                {onCancel && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onCancel}
+                    disabled={loading.form}
+                  >
+                    Cancel
+                  </Button>
+                )}
               </div>
             </div>
           </div>

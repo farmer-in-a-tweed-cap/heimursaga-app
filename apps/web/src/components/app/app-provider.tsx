@@ -2,9 +2,9 @@
 
 import { ToastProvider, TooltipProvider } from '@repo/ui/components';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode, createContext, useState } from 'react';
+import { ReactNode, Suspense, createContext, useState } from 'react';
 
-import { ModalProvider } from '@/components';
+import { ModalProvider, SponsorModalHandler } from '@/components';
 import { TOAST_DURATION } from '@/constants';
 
 export interface IAppContext {
@@ -75,7 +75,12 @@ export function AppProvider({
           closeButton={false}
         />
         <ModalProvider>
-          <TooltipProvider delayDuration={400}>{children}</TooltipProvider>
+          <TooltipProvider delayDuration={400}>
+            <Suspense fallback={null}>
+              <SponsorModalHandler />
+            </Suspense>
+            {children}
+          </TooltipProvider>
         </ModalProvider>
       </QueryClientProvider>
     </AppContext.Provider>

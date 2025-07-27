@@ -31,11 +31,21 @@ export const LOCALES = {
       TOAST: {
         DELETED: 'entry deleted',
         NOT_UPDATED: 'entry not updated',
+        NOT_SAVED: 'entry not saved',
+        NOT_LOGGED: 'entry not logged',
+      },
+      VALIDATION: {
+        TITLE_REQUIRED: 'Title is required',
+        CONTENT_REQUIRED: 'Content is required',
+        LOCATION_REQUIRED: 'Location is required',
+        DATE_REQUIRED: 'Date is required',
+        FIELDS_REQUIRED: 'Please fill in all required fields',
       },
     },
     SPONSORSHIP: {
       TOAST: {
         CANCELED: 'sponsorship canceled',
+        STRIPE_NOT_VERIFIED: 'Please complete your Stripe account verification to update sponsorship tiers',
       },
     },
     USERS: {

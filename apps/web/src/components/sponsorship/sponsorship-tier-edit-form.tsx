@@ -20,6 +20,7 @@ import { z } from 'zod';
 import { apiClient } from '@/lib/api';
 
 import { zodMessage } from '@/lib';
+import { LOCALES } from '@/locales';
 
 const schema = z.object({
   price: z
@@ -77,7 +78,7 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
         const { price, description } = values;
 
         // update the sponsorship tier
-        const { success } = await apiClient.updateSponsorshipTierById({
+        const { success, message } = await apiClient.updateSponsorshipTierById({
           query: { id: sponsorshipTierId },
           payload: {
             price,
@@ -97,11 +98,28 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
 
           setLoading(false);
         } else {
-          toast({ type: 'error', message: 'sponsorship tier not updated' });
+          // Handle specific Stripe verification error
+          if (message && message.includes('not verified')) {
+            toast({ 
+              type: 'error', 
+              message: LOCALES.APP.SPONSORSHIP.TOAST.STRIPE_NOT_VERIFIED
+            });
+          } else {
+            toast({ type: 'error', message: 'sponsorship tier not updated' });
+          }
           setLoading(false);
         }
-      } catch (e) {
-        toast({ type: 'error', message: 'sponsorship tier not updated' });
+      } catch (e: any) {
+        // Handle specific error messages from API
+        const errorMessage = e?.response?.data?.message || e?.message;
+        if (errorMessage && errorMessage.includes('not verified')) {
+          toast({ 
+            type: 'error', 
+            message: LOCALES.APP.SPONSORSHIP.TOAST.STRIPE_NOT_VERIFIED
+          });
+        } else {
+          toast({ type: 'error', message: 'sponsorship tier not updated' });
+        }
         setLoading(false);
       }
     },
