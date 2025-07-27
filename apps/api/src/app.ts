@@ -1,4 +1,6 @@
 import { FastifyCorsOptions, fastifyCors } from '@fastify/cors';
+// import { FastifyCsrfOptions, fastifyCsrf } from '@fastify/csrf-protection';
+import fastifyHelmet, { FastifyHelmetOptions } from '@fastify/helmet';
 import { FastifyMultipartOptions, fastifyMultipart } from '@fastify/multipart';
 import {
   SecureSessionPluginOptions as FastifySecureSessionOptions,
@@ -72,8 +74,39 @@ export async function app() {
       },
     } satisfies FastifyMultipartOptions);
 
-    // @todo
-    // await fastify.register<FastifyHelmetOptions>(fastifyHelmet as any);
+    // CSRF protection - temporarily disabled due to plugin loading issue
+    // await fastify.register(fastifyCsrf as any, {
+    //   sessionPlugin: '@fastify/secure-session',
+    //   cookieOpts: {
+    //     signed: false,
+    //     secure: IS_PRODUCTION,
+    //     httpOnly: false, // Allow frontend to read CSRF token
+    //     sameSite: 'strict',
+    //   },
+    // });
+
+    // security headers
+    await fastify.register(fastifyHelmet as any, {
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          scriptSrc: ["'self'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          mediaSrc: ["'self'"],
+          frameSrc: ["'none'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+      hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+      },
+    });
 
     // create an app instance
     const app = await NestFactory.create<NestFastifyApplication>(
@@ -110,6 +143,12 @@ export async function app() {
       // if (IS_DEVELOPMENT) await sleep(500);
       next();
     });
+
+    // CSRF token endpoint - temporarily disabled
+    // fastify.get('/csrf-token', async (request, reply) => {
+    //   // The CSRF token is automatically set as a cookie by the plugin
+    //   return { message: 'CSRF token available in _csrf cookie' };
+    // });
 
     // swagger
     const config = new DocumentBuilder()

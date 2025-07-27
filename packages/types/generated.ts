@@ -66,6 +66,7 @@ export interface ISignupPayload {
   email: string;
   username: string;
   password: string;
+  recaptchaToken?: string;
   // name: string;
 }
 

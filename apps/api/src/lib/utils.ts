@@ -40,14 +40,37 @@ export const getEnvFilePath = (): string => {
 };
 
 export const hashPassword = (password: string): string => {
-  // @todo: security
-  const salt = '';
-
+  // Generate a unique salt for each password
+  const salt = crypto.randomBytes(32).toString('hex');
+  
+  // Use 100,000 iterations for strong security
   const hash = crypto
-    .pbkdf2Sync(password, salt, 1000, 64, 'sha512')
+    .pbkdf2Sync(password, salt, 100000, 64, 'sha512')
     .toString('hex');
 
-  return hash;
+  // Return salt and hash combined
+  return `${salt}:${hash}`;
+};
+
+export const verifyPassword = (password: string, hashedPassword: string): boolean => {
+  try {
+    // Split the stored hash to get salt and hash
+    const [salt, hash] = hashedPassword.split(':');
+    
+    if (!salt || !hash) {
+      return false;
+    }
+    
+    // Hash the provided password with the stored salt
+    const hashedAttempt = crypto
+      .pbkdf2Sync(password, salt, 100000, 64, 'sha512')
+      .toString('hex');
+    
+    // Use constant-time comparison to prevent timing attacks
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(hashedAttempt, 'hex'));
+  } catch (error) {
+    return false;
+  }
 };
 
 export const matchRoles = (role: UserRole, roles: UserRole[]): boolean => {
