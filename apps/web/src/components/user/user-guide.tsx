@@ -18,8 +18,11 @@ import {
 import Link from 'next/link';
 
 import { ROUTER } from '@/router';
+import { useSession } from '@/hooks';
 
 export const UserGuide = () => {
+  const session = useSession();
+  
   return (
     <div className="w-full flex flex-col gap-8">
       {/* Header */}
@@ -40,23 +43,25 @@ export const UserGuide = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
+            {!session?.logged && (
+              <div>
+                <h3 className="text-lg font-medium mb-2">1. Create Your Account</h3>
+                <p className="text-gray-600 mb-2">
+                  Sign up for a free Explorer account to start creating and sharing your travel experiences.
+                </p>
+                <Link href={ROUTER.SIGNUP} className="text-primary hover:underline">
+                  Create Account →
+                </Link>
+              </div>
+            )}
             <div>
-              <h3 className="text-lg font-medium mb-2">1. Create Your Account</h3>
-              <p className="text-gray-600 mb-2">
-                Sign up for a free Explorer account to start creating and sharing your travel experiences.
-              </p>
-              <Link href={ROUTER.SIGNUP} className="text-primary hover:underline">
-                Create Account →
-              </Link>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium mb-2">2. Create Your First Entry</h3>
+              <h3 className="text-lg font-medium mb-2">{session?.logged ? '1' : '2'}. Create Your First Entry</h3>
               <p className="text-gray-600">
                 Click the "Log Entry" or feather button to create your first entry. Add a location, photos, and share your experience.
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-medium mb-2">3. Upgrade to Explorer Pro</h3>
+              <h3 className="text-lg font-medium mb-2">{session?.logged ? '2' : '3'}. Upgrade to Explorer Pro</h3>
               <p className="text-gray-600">
                 Unlock premium features including journey creation, multiple photos per entry, and sponsorship opportunities.
               </p>
@@ -155,7 +160,7 @@ export const UserGuide = () => {
             <p className="text-sm text-green-800">
               Found an explorer whose adventures inspire you? Consider sponsoring their journeys! 
               Sponsorships help passionate travelers share authentic experiences and create amazing content. 
-              Look for the "Seeking Sponsors for" indicator on Explorer Pro profiles and click the Sponsor button to support their next adventure.
+              Look for the "Seeking Sponsors for" indicator on Explorer Pro journals and click the Sponsor button to support their next adventure.
             </p>
           </div>
         </CardContent>
