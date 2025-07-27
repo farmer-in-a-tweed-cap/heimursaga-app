@@ -76,11 +76,13 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
   if (loading) {
     return (
       <>
-        <DialogHeader>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Sponsor</DialogTitle>
         </DialogHeader>
-        <div className="p-8 text-center">
-          <div>Loading...</div>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="p-8 text-center">
+            <div>Loading...</div>
+          </div>
         </div>
       </>
     );
@@ -89,11 +91,13 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
   if (!data.creator) {
     return (
       <>
-        <DialogHeader>
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Sponsor</DialogTitle>
         </DialogHeader>
-        <div className="p-8 text-center">
-          <div>User not found</div>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="p-8 text-center">
+            <div>User not found</div>
+          </div>
         </div>
       </>
     );
@@ -101,12 +105,12 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
 
   return (
     <>
-      <DialogHeader>
+      <DialogHeader className="flex-shrink-0">
         <DialogTitle>Sponsor {data.creator?.username}</DialogTitle>
       </DialogHeader>
       
-      <div className="max-h-[80vh] overflow-y-auto">
-        <div className="w-full flex flex-col lg:flex-row gap-6 lg:gap-8 p-4 lg:p-6">
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="w-full flex flex-col lg:flex-row gap-6 lg:gap-8 p-4 lg:p-6 min-h-full">
           {/* Creator Summary - Responsive layout */}
           <div className="flex-shrink-0 lg:w-48">
             <SponsorCheckoutSummary user={data.creator} />
