@@ -8,11 +8,14 @@ import {
   Post,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 import { SESSION_KEYS } from '@/common/constants';
 import { Public, Session } from '@/common/decorators';
+import { BotDetectionGuard } from '@/common/guards/bot-detection.guard';
 import { IRequest, IResponse, ISession } from '@/common/interfaces';
 
 import {
@@ -25,11 +28,13 @@ import { AuthService } from './auth.service';
 
 @ApiTags('auth')
 @Controller('auth')
+@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Get('user')
   @HttpCode(HttpStatus.OK)
+  @SkipThrottle()
   async getSessionUser(@Session() session: ISession) {
     return await this.authService.getSessionUser(session);
   }
@@ -37,6 +42,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
   async login(
     @Req() req: IRequest,
     @Res() res: IResponse,
@@ -56,6 +62,8 @@ export class AuthController {
   @Public()
   @Post('signup')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 2, ttl: 300000 } }) // 2 registrations per 5 minutes
+  @UseGuards(BotDetectionGuard)
   async signup(
     @Req() req: IRequest,
     @Res() res: IResponse,
@@ -86,6 +94,7 @@ export class AuthController {
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 reset attempts per 5 minutes
   async resetPassword(@Body() body: PasswordResetDto) {
     return this.authService.resetPassword(body);
   }
@@ -93,6 +102,7 @@ export class AuthController {
   @Public()
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 password change attempts per 5 minutes
   async updatePassword(@Body() body: PasswordUpdateDto) {
     return this.authService.updatePassword(body);
   }
@@ -100,6 +110,7 @@ export class AuthController {
   @Public()
   @Get('tokens/:token')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 token validations per minute
   async validateToken(@Param('token') token: string) {
     return this.authService.validateToken(token);
   }

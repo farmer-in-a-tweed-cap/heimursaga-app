@@ -30,6 +30,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
     "@fastify/cors": "^8",
+    "@fastify/csrf-protection": "^6.4.1",
     "@fastify/helmet": "^9.x",
     "@fastify/multipart": "^7.x",
     "@fastify/rate-limit": "^10.2.2",
@@ -40,6 +41,7 @@
     "@nestjs/event-emitter": "^3.0.1",
     "@nestjs/platform-fastify": "10",
     "@nestjs/swagger": "8.x",
+    "@nestjs/throttler": "^6.4.0",
     "@prisma/client": "^6.4.1",
     "@repo/types": "workspace:*",
     "class-transformer": "^0.5.1",
@@ -47,6 +49,7 @@
     "cross-env": "^7.0.3",
     "dayjs": "^1.11.13",
     "dotenv": "^16.4.7",
+    "express-recaptcha": "^5.1.0",
     "fastify": "5",
     "fastify-multer": "^2.0.3",
     "module-alias": "^2.2.3",

@@ -54,14 +54,25 @@ export const UserGuide = () => {
                 </Link>
               </div>
             )}
+            {session?.logged && (
+              <div>
+                <h3 className="text-lg font-medium mb-2">1. Update Your Profile</h3>
+                <p className="text-gray-600 mb-2">
+                  Complete your profile with your bio, avatar, and location info.
+                </p>
+                <Link href={ROUTER.USER.SETTINGS.PROFILE} className="text-primary hover:underline">
+                  Go to Settings →
+                </Link>
+              </div>
+            )}
             <div>
-              <h3 className="text-lg font-medium mb-2">{session?.logged ? '1' : '2'}. Create Your First Entry</h3>
+              <h3 className="text-lg font-medium mb-2">{session?.logged ? '2' : '2'}. Create Your First Entry</h3>
               <p className="text-gray-600">
                 Click the "Log Entry" or feather button to create your first entry. Add a location, photos, and share your experience.
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-medium mb-2">{session?.logged ? '2' : '3'}. Upgrade to Explorer Pro</h3>
+              <h3 className="text-lg font-medium mb-2">{session?.logged ? '3' : '3'}. Upgrade to Explorer Pro</h3>
               <p className="text-gray-600">
                 Unlock premium features including journey creation, multiple photos per entry, and sponsorship opportunities.
               </p>
@@ -214,20 +225,17 @@ export const UserGuide = () => {
             <div>
               <h3 className="text-lg font-medium mb-3">Journal Features</h3>
               <ul className="space-y-2 text-gray-600">
-                <li>• View all your entries and journeys</li>
-                <li>• Manage followers and following</li>
-                <li>• Edit journal information</li>
-                <li>• Set location preferences</li>
-                <li>• Configure privacy settings</li>
+                <li>• View and edit all your entries and journeys</li>
+                <li>• View followers and following</li>
+                <li>• Edit journal/profile information</li>
               </ul>
             </div>
             <div>
               <h3 className="text-lg font-medium mb-3">Privacy Controls</h3>
               <ul className="space-y-2 text-gray-600">
                 <li>• Make entries public or private</li>
-                <li>• Control who can follow you</li>
                 <li>• Manage visibility of your journeys</li>
-                <li>• Set sponsorship preferences</li>
+                <li>• Set sponsorship info (Explorer Pro)</li>
               </ul>
             </div>
           </div>

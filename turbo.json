@@ -10,12 +10,14 @@
         "NEXT_PUBLIC_APP_BASE_URL",
         "NEXT_PUBLIC_API_BASE_URL",
         "NEXT_PUBLIC_STRIPE_PUBLIC_KEY",
+        "NEXT_PUBLIC_RECAPTCHA_SITE_KEY",
         "MAPBOX_ACCESS_TOKEN",
         "DATABASE_URL",
         "DIRECT_URL",
         "CORS_ORIGIN",
         "COOKIE_SECRET",
-        "SESSION_SECRET"
+        "SESSION_SECRET",
+        "RECAPTCHA_SECRET_KEY"
       ]
     },
     "test": {

@@ -4,6 +4,7 @@ import { marked } from 'marked';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import path from 'path';
+import DOMPurify from 'isomorphic-dompurify';
 
 import { AppLayout } from '@/app/layout';
 
@@ -69,6 +70,9 @@ export default async function Page({ params }: { params: { slug: string } }) {
 
   // convert markdown to html
   const htmlContent = await marked(content);
+  
+  // sanitize HTML to prevent XSS attacks
+  const sanitizedContent = DOMPurify.sanitize(htmlContent);
 
   return (
     <AppLayout secure={false}>
@@ -76,7 +80,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
         <PageHeaderTitle>{title}</PageHeaderTitle>
         <div
           className="richtext"
-          dangerouslySetInnerHTML={{ __html: htmlContent }}
+          dangerouslySetInnerHTML={{ __html: sanitizedContent }}
         />
       </div>
     </AppLayout>

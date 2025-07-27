@@ -17,6 +17,7 @@ import {
   IAppContextStateConfig,
   Logo,
 } from '@/components';
+import { CookieConsent } from '@/components/cookie-consent';
 import { APP_CONFIG } from '@/config';
 import { SessionProvider } from '@/contexts';
 import { ROUTER } from '@/router';
@@ -89,8 +90,20 @@ export default async function RootLayout({ children }: Props) {
 
   return (
     <html lang="en">
+      <head>
+        {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (
+          <script
+            src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`}
+            async
+            defer
+          />
+        )}
+      </head>
       <body>
-        <AppProvider config={config}>{children}</AppProvider>
+        <AppProvider config={config}>
+          {children}
+          <CookieConsent />
+        </AppProvider>
       </body>
     </html>
   );

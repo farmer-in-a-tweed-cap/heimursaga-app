@@ -35,6 +35,11 @@ export class SignupDto implements ISignupPayload {
   @IsNotEmpty()
   password: string;
 
+  @ApiProperty({ required: false, description: 'reCAPTCHA token for bot protection' })
+  @IsString()
+  @IsOptional()
+  recaptchaToken?: string;
+
   // @ApiProperty({ required: true })
   // @IsString()
   // @IsNotEmpty()

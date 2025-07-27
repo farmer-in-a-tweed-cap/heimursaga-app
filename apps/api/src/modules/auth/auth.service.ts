@@ -14,7 +14,7 @@ import {
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';
 import { getStaticMediaUrl } from '@/lib/upload';
-import { hashPassword } from '@/lib/utils';
+import { hashPassword, verifyPassword } from '@/lib/utils';
 
 import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
@@ -35,6 +35,7 @@ import {
 } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
+import { RecaptchaService } from '@/modules/recaptcha/recaptcha.service';
 
 import { ISessionCreateOptions } from './auth.interface';
 
@@ -44,6 +45,7 @@ export class AuthService {
     private logger: Logger,
     private prisma: PrismaService,
     private eventService: EventService,
+    private recaptchaService: RecaptchaService,
   ) {}
 
   async getSessionUser(payload: ISession): Promise<ISessionUserGetResponse> {
@@ -106,25 +108,26 @@ export class AuthService {
     session,
   }: ISessionQueryWithPayload<{}, ILoginPayload>): Promise<ILoginResponse> {
     try {
-      const { login } = payload;
+      const { login, password: plainPassword } = payload;
       const { sid, ip, userAgent } = session || {};
-      const password = hashPassword(payload.password);
 
-      // validate the user
+      // First find the user by login (email or username)
       const user = await this.prisma.user
-        .findFirstOrThrow({
+        .findFirst({
           where: {
             OR: [
-              { email: login, password },
-              { username: login, password },
+              { email: login },
+              { username: login },
             ],
             blocked: false,
           },
-          select: { id: true },
-        })
-        .catch(() => {
-          throw new ServiceForbiddenException('login or password invalid');
+          select: { id: true, password: true },
         });
+
+      // Check if user exists and password is correct
+      if (!user || !verifyPassword(plainPassword, user.password)) {
+        throw new ServiceForbiddenException('login or password invalid');
+      }
 
       // create a session
       const userSession = await this.createSession({
@@ -163,6 +166,25 @@ export class AuthService {
       // format email and username
       const username = payload.username.trim().toLowerCase();
       const email = payload.email.trim().toLowerCase();
+
+      // Check for suspicious registration patterns
+      await this.detectSuspiciousRegistration(email, username);
+
+      // Verify reCAPTCHA token if provided (skip for localhost)
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      const isLocalhost = process.env.HOST === 'localhost' || process.env.HOST === '127.0.0.1' || !process.env.HOST;
+      
+      if (!isDevelopment && !isLocalhost) {
+        if (payload.recaptchaToken) {
+          const isValidRecaptcha = await this.recaptchaService.verifyToken(payload.recaptchaToken);
+          if (!isValidRecaptcha) {
+            throw new ServiceForbiddenException('reCAPTCHA verification failed');
+          }
+        } else if (this.recaptchaService.isConfigured()) {
+          // If reCAPTCHA is configured but no token provided, reject
+          throw new ServiceForbiddenException('reCAPTCHA verification required');
+        }
+      }
 
       // hash password
       const password = hashPassword(payload.password);
@@ -495,6 +517,93 @@ export class AuthService {
       });
     } catch (e) {
       this.logger.error(e);
+    }
+  }
+
+  private async detectSuspiciousRegistration(email: string, username: string): Promise<void> {
+    // Check for suspicious email patterns (more specific to avoid false positives)
+    const suspiciousEmailPatterns = [
+      /^(user|test|fake|bot|temp)\d+@/i, // Specific bot patterns like user123@, test456@
+      /^\d{4,}@/,         // Starting with 4+ numbers like 12345@
+      /^[a-z]{1,2}\d{4,}@/i, // Very short letters + many numbers like ab1234@
+      /^(admin|root|system)@/i, // System-like usernames
+    ];
+
+    // Check for suspicious username patterns
+    const suspiciousUsernamePatterns = [
+      /^user\d+$/i,     // user123
+      /^test\d+$/i,     // test123
+      /^bot\d+$/i,      // bot123
+      /^fake\d+$/i,     // fake123
+      /^temp\d+$/i,     // temp123
+      /^\d+$/,          // All numbers
+      /^[a-z]{1,3}\d{3,}$/i, // Short letters + many numbers
+    ];
+
+    // Check for disposable/temporary email domains
+    const disposableEmailDomains = [
+      '10minutemail.com',
+      'tempmail.org',
+      'guerrillamail.com',
+      'maildrop.cc',
+      'throwaway.email',
+      'temp-mail.org',
+      'getnada.com',
+      'mailinator.com',
+      'yopmail.com',
+      '0-mail.com',
+    ];
+
+    const emailDomain = email.split('@')[1];
+
+    // Check email patterns
+    if (suspiciousEmailPatterns.some(pattern => pattern.test(email))) {
+      throw new ServiceForbiddenException('Invalid email format detected');
+    }
+
+    // Check username patterns
+    if (suspiciousUsernamePatterns.some(pattern => pattern.test(username))) {
+      throw new ServiceForbiddenException('Invalid username format detected');
+    }
+
+    // Check disposable email domains
+    if (disposableEmailDomains.includes(emailDomain.toLowerCase())) {
+      throw new ServiceForbiddenException('Disposable email addresses are not allowed');
+    }
+
+    // Check for too many similar registrations (basic pattern)
+    const similarEmailCount = await this.prisma.user.count({
+      where: {
+        email: {
+          contains: email.split('@')[0].slice(0, -3), // Check similar email prefixes
+        },
+        created_at: {
+          gte: dateformat().subtract(1, 'hour').toDate(), // Within last hour
+        },
+      },
+    });
+
+    if (similarEmailCount >= 3) {
+      throw new ServiceForbiddenException('Too many similar registrations detected');
+    }
+
+    // Check for sequential username registrations
+    const baseUsername = username.replace(/\d+$/, ''); // Remove trailing numbers
+    if (baseUsername.length >= 3) {
+      const similarUsernameCount = await this.prisma.user.count({
+        where: {
+          username: {
+            startsWith: baseUsername,
+          },
+          created_at: {
+            gte: dateformat().subtract(1, 'hour').toDate(),
+          },
+        },
+      });
+
+      if (similarUsernameCount >= 5) {
+        throw new ServiceForbiddenException('Suspicious registration pattern detected');
+      }
     }
   }
 }

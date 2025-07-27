@@ -16,13 +16,14 @@ import {
   Input,
 } from '@repo/ui/components';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { apiClient } from '@/lib/api';
 
 import { redirect, zodMessage } from '@/lib';
+import { useRecaptcha } from '@/hooks/use-recaptcha';
 import { ROUTER } from '@/router';
 
 const schema = z.object({
@@ -51,6 +52,13 @@ const schema = z.object({
 
 export const SignupForm = () => {
   const [loading, setLoading] = useState<boolean>(false);
+  const [mounted, setMounted] = useState(false);
+  const { executeRecaptcha, isConfigured } = useRecaptcha();
+
+  // Fix hydration issue
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
@@ -69,10 +77,21 @@ export const SignupForm = () => {
 
         setLoading(true);
 
+        // Get reCAPTCHA token if configured
+        let recaptchaToken: string | undefined;
+        if (isConfigured) {
+          recaptchaToken = (await executeRecaptcha('signup')) || undefined;
+          if (!recaptchaToken) {
+            form.setError('password', { message: 'Please complete the verification' });
+            setLoading(false);
+            return;
+          }
+        }
+
         // sign up
         const { success, message } = await apiClient.signup({
           query: {},
-          payload: { email, password, username },
+          payload: { email, password, username, recaptchaToken },
         });
 
         if (success) {
@@ -101,8 +120,8 @@ export const SignupForm = () => {
     <div className="w-full flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <h2 className="text-2xl font-bold">Sign up.</h2>
-          <span className="text-sm">Create your free account today.</span>
+          <h2 className="text-2xl font-bold">Sign up</h2>
+          <span className="text-sm">Inspire the world. Create your free Explorer account today.</span>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -180,6 +199,29 @@ export const SignupForm = () => {
                 <Button type="submit" className="w-full" loading={loading}>
                   Sign up
                 </Button>
+                {mounted && isConfigured && (
+                  <div className="text-xs text-gray-500 text-center">
+                    This site is protected by reCAPTCHA and the Google{' '}
+                    <a
+                      href="https://policies.google.com/privacy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      Privacy Policy
+                    </a>{' '}
+                    and{' '}
+                    <a
+                      href="https://policies.google.com/terms"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline"
+                    >
+                      Terms of Service
+                    </a>{' '}
+                    apply.
+                  </div>
+                )}
               </div>
               <div className="mt-4 text-center text-sm">
                 Already have an account?{' '}
