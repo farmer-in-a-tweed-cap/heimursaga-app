@@ -129,6 +129,16 @@ export class AuthService {
         throw new ServiceForbiddenException('login or password invalid');
       }
 
+      // Migrate old password format to new secure format
+      if (!user.password.includes(':')) {
+        const newHashedPassword = hashPassword(plainPassword);
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { password: newHashedPassword },
+        });
+        this.logger.log(`Password upgraded to new format for user ${user.id}`);
+      }
+
       // create a session
       const userSession = await this.createSession({
         sid,

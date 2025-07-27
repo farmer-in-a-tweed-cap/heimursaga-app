@@ -81,7 +81,7 @@ export const LoginForm = () => {
     <div className="w-full flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <h2 className="text-2xl font-bold">Welcome back.</h2>
+          <h2 className="text-2xl font-bold">Welcome back!</h2>
           <span className="text-sm">Log in and start exploring.</span>
         </CardHeader>
         <CardContent>

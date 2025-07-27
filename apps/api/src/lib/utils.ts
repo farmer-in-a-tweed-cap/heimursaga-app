@@ -54,20 +54,30 @@ export const hashPassword = (password: string): string => {
 
 export const verifyPassword = (password: string, hashedPassword: string): boolean => {
   try {
-    // Split the stored hash to get salt and hash
-    const [salt, hash] = hashedPassword.split(':');
-    
-    if (!salt || !hash) {
-      return false;
+    // Check if this is a new format password (contains salt)
+    if (hashedPassword.includes(':')) {
+      // New format: salt:hash
+      const [salt, hash] = hashedPassword.split(':');
+      
+      if (!salt || !hash) {
+        return false;
+      }
+      
+      // Hash the provided password with the stored salt
+      const hashedAttempt = crypto
+        .pbkdf2Sync(password, salt, 100000, 64, 'sha512')
+        .toString('hex');
+      
+      // Use constant-time comparison to prevent timing attacks
+      return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(hashedAttempt, 'hex'));
+    } else {
+      // Old format: just the hash (with empty salt and 1000 iterations)
+      const oldHash = crypto
+        .pbkdf2Sync(password, '', 1000, 64, 'sha512')
+        .toString('hex');
+      
+      return oldHash === hashedPassword;
     }
-    
-    // Hash the provided password with the stored salt
-    const hashedAttempt = crypto
-      .pbkdf2Sync(password, salt, 100000, 64, 'sha512')
-      .toString('hex');
-    
-    // Use constant-time comparison to prevent timing attacks
-    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(hashedAttempt, 'hex'));
   } catch (error) {
     return false;
   }
