@@ -41,6 +41,7 @@ import { APP_CONFIG } from '@/config';
 import { FILE_ACCEPT } from '@/constants';
 import { useMap, useModal, useScroll, useSession, useUploads } from '@/hooks';
 import { dateformat, redirect, zodMessage } from '@/lib';
+import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
 
 const schema = z.object({
@@ -188,11 +189,25 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
           }
         } else {
           setLoading(false);
-          toast({ type: 'error', message: 'log entry not created' });
+          toast({ type: 'error', message: LOCALES.APP.POSTS.TOAST.NOT_LOGGED });
         }
       } catch (e) {
         setLoading(false);
-        toast({ type: 'error', message: 'log entry not created' });
+        toast({ type: 'error', message: LOCALES.APP.POSTS.TOAST.NOT_LOGGED });
+      }
+    },
+    () => {
+      const errors = form.formState.errors;
+      if (errors.title) {
+        toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.TITLE_REQUIRED });
+      } else if (errors.content) {
+        toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.CONTENT_REQUIRED });
+      } else if (errors.place) {
+        toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.LOCATION_REQUIRED });
+      } else if (errors.date) {
+        toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.DATE_REQUIRED });
+      } else {
+        toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.FIELDS_REQUIRED });
       }
     },
   );

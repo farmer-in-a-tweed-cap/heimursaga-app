@@ -9,3 +9,4 @@ export * from './creator-sponsorship-card';
 
 export * from './creator-sponsorships';
 export * from './user-sponsorships';
+export * from './sponsor-modal-handler';

@@ -154,14 +154,14 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       if (success) {
         setTrip(null);
 
-        toast({ type: 'success', message: 'trip has been removed' });
+        toast({ type: 'success', message: 'journey removed' });
       } else {
-        toast({ type: 'error', message: 'trip is not removed' });
+        toast({ type: 'error', message: 'journey not removed' });
       }
 
       setLoading((prev) => ({ ...prev, trip: false }));
     } catch (e) {
-      toast({ type: 'error', message: 'trip is not removed' });
+      toast({ type: 'error', message: 'journey not removed' });
       setLoading((prev) => ({ ...prev, trip: false }));
     }
   };
@@ -221,6 +221,19 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     }
   };
 
+  const handleValidationError = () => {
+    const errors = form.formState.errors;
+    if (errors.title) {
+      toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.TITLE_REQUIRED });
+    } else if (errors.content) {
+      toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.CONTENT_REQUIRED });
+    } else if (errors.location) {
+      toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.LOCATION_REQUIRED });
+    } else {
+      toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.FIELDS_REQUIRED });
+    }
+  };
+
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
@@ -267,14 +280,19 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
         } else {
           toast({
             type: 'error',
-            message: LOCALES.APP.POSTS.TOAST.NOT_UPDATED,
+            message: LOCALES.APP.POSTS.TOAST.NOT_SAVED,
           });
           setLoading((loading) => ({ ...loading, post: false }));
         }
       } catch (e) {
+        toast({
+          type: 'error',
+          message: LOCALES.APP.POSTS.TOAST.NOT_SAVED,
+        });
         setLoading((loading) => ({ ...loading, post: false }));
       }
     },
+    handleValidationError,
   );
 
   // cache modals
