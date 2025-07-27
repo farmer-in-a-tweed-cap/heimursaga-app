@@ -18,7 +18,7 @@ export const SponsorButton: React.FC<Props> = ({ username }) => {
     
     modal.open(MODALS.SPONSOR_CHECKOUT, {
       props: { username },
-      full: true, // Use full modal for better responsive experience
+      full: true,
     });
   };
 
