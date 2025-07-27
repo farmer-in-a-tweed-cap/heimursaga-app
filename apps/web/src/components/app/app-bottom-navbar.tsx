@@ -173,11 +173,11 @@ export const AppBottomNavbar: React.FC<Props> = () => {
       </div>
 
       {/* Center items - Middle menu items */}
-      <div className="flex-1 flex flex-row items-center justify-center px-4">
-        <div className="flex flex-row items-center justify-between w-full max-w-[180px]">
+      <div className="flex-1 flex flex-row items-center justify-center">
+        <div className="flex flex-row justify-evenly w-full max-w-[200px]">
           {links.slice(1, -1).map(({ label, href, icon: Icon }, index) => (
+            <div key={index + 1} className="w-[64px] flex justify-center">
               <Link
-                key={index + 1}
                 href={href}
                 className={cn(
                   'flex flex-col items-center justify-center gap-1 text-gray-500',
@@ -189,6 +189,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
                 </div>
                 {label && <span className="text-xs font-normal whitespace-nowrap">{label}</span>}
               </Link>
+            </div>
           ))}
         </div>
       </div>
