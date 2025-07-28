@@ -16,11 +16,13 @@ import {
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+import { useQueryClient } from '@tanstack/react-query';
 
-import { apiClient } from '@/lib/api';
+import { apiClient, API_QUERY_KEYS } from '@/lib/api';
 
-import { MapCoordinatesValue, MapWaypointValue } from '@/hooks';
+import { MapCoordinatesValue, MapWaypointValue, useModal } from '@/hooks';
 import { randomIntegerId, zodMessage } from '@/lib';
+import { MODALS } from '@/components/modal/modal-registry';
 
 import { TripWaypointCard } from './trip-waypoint-card';
 import {
@@ -56,6 +58,7 @@ type Props = {
   onWaypointEditCancel?: () => void;
   onWaypointEditSubmit?: (waypoint: MapWaypointValue) => void;
   onSubmit?: TripEditFormSubmitHandler;
+  onDelete?: () => void;
 };
 
 export type TripEditFormSubmitHandler = (values: { title: string; public: boolean }) => void;
@@ -74,7 +77,10 @@ export const TripEditForm: React.FC<Props> = ({
   onWaypointEditSubmit,
   onLoading = () => {},
   onSubmit = () => {},
+  onDelete = () => {},
 }) => {
+  const modal = useModal();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState<{ trip: boolean; waypoint: boolean }>({
     trip: false,
     waypoint: false,
@@ -240,6 +246,58 @@ export const TripEditForm: React.FC<Props> = ({
     },
   );
 
+  const handleDelete = async () => {
+    // First show confirmation
+    modal.open(MODALS.ACTION, {
+      props: {
+        title: 'Delete Journey',
+        message: 'Are you sure you want to delete this journey? This action cannot be undone and will delete all associated waypoints.',
+        submit: {
+          buttonText: 'Delete Journey',
+          onClick: () => {
+            // This will close the modal, then perform the actual deletion
+            performDelete();
+          },
+        },
+        cancel: {
+          buttonText: 'Cancel',
+          onClick: () => {},
+        },
+      },
+    });
+  };
+
+  const performDelete = async () => {
+    try {
+      const tripId = trip?.id;
+      console.log('Attempting to delete trip with ID:', tripId);
+      
+      if (!tripId) {
+        console.error('No trip ID available');
+        return;
+      }
+
+      const response = await apiClient.deleteTrip({
+        query: { tripId },
+      });
+
+      console.log('Delete response:', response);
+
+      if (response.success) {
+        console.log('Delete successful, invalidating cache and calling onDelete');
+        // Invalidate the trips cache so the list refreshes
+        await queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.TRIPS] });
+        onDelete();
+      } else {
+        console.error('Delete failed:', response);
+        // Could show an error message here
+      }
+    } catch (e) {
+      console.error('Failed to delete journey:', e);
+      // Could show an error message here
+    }
+  };
+
   return (
     <div className="relative w-full h-auto flex flex-col">
       <div className="w-full h-auto flex flex-col gap-10">
@@ -372,6 +430,23 @@ export const TripEditForm: React.FC<Props> = ({
               </Button>
             </div>
           )}
+        </Section>
+        
+        {/* Delete Journey Section */}
+        <Section title="Delete Journey">
+          <div className="flex flex-col gap-4">
+            <div className="text-sm text-gray-600">
+              <p className="font-medium text-red-600 mb-2">Danger Zone</p>
+              <p>Deleting this journey will permanently remove it and all associated waypoints. This action cannot be undone.</p>
+            </div>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete}
+              className="self-start"
+            >
+              Delete Journey
+            </Button>
+          </div>
         </Section>
       </div>
     </div>

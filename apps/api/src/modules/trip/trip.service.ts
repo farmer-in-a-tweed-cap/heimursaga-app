@@ -78,6 +78,7 @@ export class TripService {
         select: {
           public_id: true,
           title: true,
+          public: true,
           waypoints: {
             select: {
               waypoint: {
@@ -98,7 +99,7 @@ export class TripService {
 
       const response: ITripGetAllResponse = {
         results,
-        data: data.map(({ public_id, title, ...trip }) => {
+        data: data.map(({ public_id, title, public: isPublic, ...trip }) => {
           const waypoints = sortByDate({
             elements: trip.waypoints.map(({ waypoint }) => ({ ...waypoint })),
             key: 'date',
@@ -115,6 +116,7 @@ export class TripService {
           return {
             id: public_id,
             title,
+            public: isPublic,
             startDate,
             endDate,
             waypointsCount: waypoints.length,
@@ -316,7 +318,7 @@ export class TripService {
           throw new ServiceNotFoundException('trip not found');
         });
 
-      const { public_id, title, waypoints, author } = trip;
+      const { public_id, title, public: isPublic, waypoints, author } = trip;
 
       // access control - ensure private trips are only accessible by their authors
       if (!trip.public && (!isAuthenticated || userId !== trip.author_id)) {
@@ -339,6 +341,7 @@ export class TripService {
       const response: ITripGetByIdResponse = {
         id: public_id,
         title,
+        public: isPublic,
         startDate,
         endDate,
         author: author ? {

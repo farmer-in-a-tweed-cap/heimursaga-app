@@ -60,7 +60,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
   const badgeQuery = useQuery({
     queryKey: [API_QUERY_KEYS.USER.BADGE_COUNT],
     queryFn: () => apiClient.getBadgeCount().then(({ data }) => data),
-    enabled: true,
+    enabled: session.logged,
   });
 
   const badges = {

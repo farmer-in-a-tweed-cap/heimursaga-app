@@ -82,6 +82,7 @@ export default async function Page({ params }: Props) {
             id={data.id}
             title={data.title}
             content={data.content}
+            place={data.place}
             public={data.public}
             author={data.author}
             userbar={
@@ -97,6 +98,7 @@ export default async function Page({ params }: Props) {
             bookmarked={data.bookmarked}
             bookmarksCount={data.bookmarksCount}
             media={data?.media || []}
+            trip={data.trip}
             actions={
               data.createdByMe
                 ? { edit: true, share: true }

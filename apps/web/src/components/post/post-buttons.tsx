@@ -1,5 +1,6 @@
 import { cn } from '@repo/ui/lib/utils';
 
+import { useSession } from '@/hooks';
 import { PostBookmarkButton } from './post-bookmark-button';
 import { PostLikeButton } from './post-like-button';
 import { PostShareButton } from './post-share-button';
@@ -27,6 +28,9 @@ export const PostButtons: React.FC<Props> = ({
   bookmarked = false,
   bookmarksCount = 0,
 }) => {
+  const session = useSession();
+  const isLoggedIn = !!session.username;
+
   return (
     <div
       className={cn(
@@ -34,10 +38,10 @@ export const PostButtons: React.FC<Props> = ({
         className,
       )}
     >
-      {actions.like && (
+      {actions.like && isLoggedIn && (
         <PostLikeButton postId={postId} liked={liked} likesCount={likesCount} />
       )}
-      {actions.bookmark && (
+      {actions.bookmark && isLoggedIn && (
         <PostBookmarkButton
           postId={postId}
           bookmarked={bookmarked}

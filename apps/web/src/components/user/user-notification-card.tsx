@@ -1,4 +1,4 @@
-import { UserNotificationContext } from '@repo/types';
+import { UserNotificationContext, SponsorshipType } from '@repo/types';
 import {
   Avatar,
   AvatarFallback,
@@ -19,6 +19,10 @@ type Props = {
   postId?: string;
   date: Date;
   read?: boolean;
+  body?: string;
+  sponsorshipType?: string;
+  sponsorshipAmount?: number;
+  sponsorshipCurrency?: string;
 };
 
 export const UserNotificationCard: React.FC<Props> = ({
@@ -27,6 +31,10 @@ export const UserNotificationCard: React.FC<Props> = ({
   date,
   postId,
   read = false,
+  body,
+  sponsorshipType,
+  sponsorshipAmount,
+  sponsorshipCurrency,
 }) => {
   const notification: { mention: string; text: string; url?: string } = {
     mention: '',
@@ -48,13 +56,33 @@ export const UserNotificationCard: React.FC<Props> = ({
         notification.url = ROUTER.USERS.DETAIL(mentionUser?.username);
       }
       break;
-    case UserNotificationContext.SPONSORSHIP:
+    case UserNotificationContext.SPONSORSHIP: {
       notification.mention = mentionUser.username;
-      notification.text = 'is your new sponsor 💸';
+      
+      // Build the sponsorship text with message and type/amount info
+      let sponsorshipText = 'has sponsored you';
+      if (body) {
+        sponsorshipText += `: "${body}"`;
+      }
+      
+      // Add sponsorship type and amount information
+      if (sponsorshipType && sponsorshipAmount) {
+        const amount = (sponsorshipAmount / 100).toFixed(2); // Convert from cents to dollars
+        const currency = sponsorshipCurrency || 'USD';
+        
+        if (sponsorshipType === SponsorshipType.SUBSCRIPTION) {
+          sponsorshipText += ` (monthly subscription: $${amount} ${currency})`;
+        } else if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
+          sponsorshipText += ` (one-time payment: $${amount} ${currency})`;
+        }
+      }
+      
+      notification.text = sponsorshipText;
       if (mentionUser?.username) {
         notification.url = ROUTER.USERS.DETAIL(mentionUser?.username);
       }
       break;
+    }
   }
 
   return (

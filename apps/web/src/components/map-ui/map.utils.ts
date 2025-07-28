@@ -16,6 +16,10 @@ export const addSources = ({
 
 
     sources.forEach(({ sourceId, type, data, config }) => {
+      // Check if source already exists before adding
+      if (mapbox.getSource(sourceId)) {
+        return; // Source already exists, skip adding
+      }
       
       let source: SourceSpecification = {
         type: 'geojson',

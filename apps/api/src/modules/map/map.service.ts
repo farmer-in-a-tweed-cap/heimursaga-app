@@ -71,6 +71,7 @@ export class MapService {
             public_id: true,
             title: true,
             content: true,
+            place: true,
             date: true,
             public: true,
             bookmarks: userId
@@ -240,6 +241,7 @@ export class MapService {
                       .slice(0, 500)
                       .replaceAll('\\n', ' ')
                       .slice(0, 120),
+                    place: post.place,
                     date: post.date,
                     author: {
                       username: post.author.username,
