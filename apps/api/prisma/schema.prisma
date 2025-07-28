@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native"]
@@ -15,8 +9,6 @@ datasource db {
   directUrl = env("DATABASE_DIRECT_URL")
 }
 
-// models
-
 model User {
   id                          Int                @id @default(autoincrement())
   email                       String             @unique @db.VarChar(50)
@@ -25,38 +17,38 @@ model User {
   role                        String             @db.VarChar(10)
   is_premium                  Boolean?           @default(false)
   is_email_verified           Boolean?           @default(false)
-  is_stripe_account_connected Boolean?           @default(false)
-  blocked                     Boolean?           @default(false)
-  stripe_account_id           String?            @db.VarChar(40)
-  stripe_customer_id          String?            @db.VarChar(40)
+  created_at                  DateTime?          @default(now())
+  updated_at                  DateTime?          @updatedAt
+  bookmarks_count             Int?               @default(0)
   followers_count             Int?               @default(0)
   following_count             Int?               @default(0)
-  bookmarks_count             Int?               @default(0)
   posts_count                 Int?               @default(0)
-  profile                     UserProfile?
-  plans                       UserPlan[]
-  sessions                    UserSession[]
-  posts                       Post[]
-  trips                       Trip[]
-  waypoints                   Waypoint[]
-  post_likes                  PostLike[]         @relation("user_post_likes")
-  post_bookmarks              PostBookmark[]     @relation("user_post_bookmarks")
-  following                   UserFollow[]       @relation("user_follows_follower")
-  followers                   UserFollow[]       @relation("user_follows_followee")
-  uploads                     Upload[]
-  subscriptions               UserSubscription[]
+  stripe_customer_id          String?            @db.VarChar(40)
+  is_stripe_account_connected Boolean?           @default(false)
+  stripe_account_id           String?            @db.VarChar(40)
+  blocked                     Boolean?           @default(false)
+  creator_checkouts           Checkout[]         @relation("creator_checkouts")
+  user_checkouts              Checkout[]         @relation("user_checkouts")
   payment_methods             PaymentMethod[]
   payout_methods              PayoutMethod[]
   payouts                     Payout[]
+  post_bookmarks              PostBookmark[]     @relation("user_post_bookmarks")
+  post_likes                  PostLike[]         @relation("user_post_likes")
+  posts                       Post[]
   sponsorship_tiers           SponsorshipTier[]
-  notifications               UserNotification[] @relation("user_notifications")
-  notification_mentions       UserNotification[] @relation("user_notification_mentions")
   creator_sponsorships        Sponsorship[]      @relation("creator_sponsorships")
   user_sponsorships           Sponsorship[]      @relation("user_sponsorships")
-  user_checkouts              Checkout[]         @relation("user_checkouts")
-  creator_checkouts           Checkout[]         @relation("creator_checkouts")
-  created_at                  DateTime?          @default(now())
-  updated_at                  DateTime?          @updatedAt
+  trips                       Trip[]
+  uploads                     Upload[]
+  followers                   UserFollow[]       @relation("user_follows_followee")
+  following                   UserFollow[]       @relation("user_follows_follower")
+  notification_mentions       UserNotification[] @relation("user_notification_mentions")
+  notifications               UserNotification[] @relation("user_notifications")
+  plans                       UserPlan[]
+  profile                     UserProfile?
+  sessions                    UserSession[]
+  subscriptions               UserSubscription[]
+  waypoints                   Waypoint[]
 
   @@map("users")
 }
@@ -65,34 +57,34 @@ model UserSession {
   id         Int       @id @default(autoincrement())
   sid        String    @unique @db.VarChar(48)
   user_id    Int
-  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  expired    Boolean?  @default(false)
   expires_at DateTime
   ip_address String?   @db.VarChar(45)
   user_agent String?   @db.VarChar(255)
   device     String?   @db.VarChar(100)
   created_at DateTime? @default(now())
   updated_at DateTime? @updatedAt
+  expired    Boolean?  @default(false)
+  user       User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([expires_at])
   @@map("user_sessions")
 }
 
 model UserProfile {
-  id             Int       @id @default(autoincrement())
-  name           String?   @db.VarChar(50)
-  picture        String?   @db.VarChar(200)
-  bio            String?   @db.VarChar(200)
-  location_from  String?   @db.VarChar(200)
-  location_lives String?   @db.VarChar(200)
-  sponsors_fund          String? @db.VarChar(500)
-  sponsors_fund_type     String? @db.VarChar(20)
-  sponsors_fund_journey_id String? @db.VarChar(50)
-  portfolio              String? @db.VarChar(500)
-  user           User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  user_id        Int       @unique
-  created_at     DateTime? @default(now())
-  updated_at     DateTime? @updatedAt
+  id                       Int       @id @default(autoincrement())
+  picture                  String?   @db.VarChar(200)
+  user_id                  Int       @unique
+  created_at               DateTime? @default(now())
+  updated_at               DateTime? @updatedAt
+  bio                      String?   @db.VarChar(200)
+  name                     String?   @db.VarChar(50)
+  location_from            String?   @db.VarChar(200)
+  location_lives           String?   @db.VarChar(200)
+  sponsors_fund            String?   @db.VarChar(500)
+  sponsors_fund_journey_id String?   @db.VarChar(50)
+  sponsors_fund_type       String?   @db.VarChar(20)
+  portfolio                String?   @db.VarChar(500)
+  user                     User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")
 }
@@ -102,8 +94,8 @@ model UserFollow {
   follower_id Int
   followee_id Int
   created_at  DateTime @default(now())
-  follower    User     @relation("user_follows_follower", fields: [follower_id], references: [id], onDelete: Cascade)
   followee    User     @relation("user_follows_followee", fields: [followee_id], references: [id], onDelete: Cascade)
+  follower    User     @relation("user_follows_follower", fields: [follower_id], references: [id], onDelete: Cascade)
 
   @@unique([follower_id, followee_id])
   @@map("user_follows")
@@ -113,19 +105,19 @@ model Plan {
   id                    Int        @id @default(autoincrement())
   slug                  String?    @unique @db.VarChar(20)
   name                  String?    @db.VarChar(20)
-  description           String?    @db.Text
+  description           String?
   is_available          Boolean?   @default(false)
-  price_month           Int?       @default(0)
-  price_year            Int?       @default(0)
-  discount_year         Int?       @default(0)
   stripe_product_id     String?    @db.VarChar(20)
-  stripe_price_month_id String?    @db.VarChar(30)
-  stripe_price_year_id  String?    @db.VarChar(30)
-  features              String?    @db.Text
-  users                 UserPlan[]
-  checkouts             Checkout[]
+  features              String?
   created_at            DateTime?  @default(now())
   updated_at            DateTime?  @updatedAt
+  stripe_price_month_id String?    @db.VarChar(30)
+  stripe_price_year_id  String?    @db.VarChar(30)
+  discount_year         Int?       @default(0)
+  price_month           Int?       @default(0)
+  price_year            Int?       @default(0)
+  checkouts             Checkout[]
+  users                 UserPlan[]
 
   @@map("plans")
 }
@@ -134,22 +126,22 @@ model Sponsorship {
   id                     Int              @id @default(autoincrement())
   public_id              String           @unique @db.VarChar(14)
   type                   String           @db.VarChar(50)
-  status                 String?          @default("pending")
-  amount                 Int              @default(0) @db.Integer
-  message                String?          @db.VarChar(500)
-  expiry                 DateTime?
-  next_charge            DateTime?
+  amount                 Int              @default(0)
   currency               String
-  stripe_subscription_id String?          @db.VarChar(30)
-  tier_id                Int?
-  tier                   SponsorshipTier? @relation(fields: [tier_id], references: [id], onDelete: Cascade)
   creator_id             Int
-  creator                User             @relation("creator_sponsorships", fields: [creator_id], references: [id], onDelete: Cascade)
   user_id                Int
-  user                   User             @relation("user_sponsorships", fields: [user_id], references: [id], onDelete: Cascade)
   created_at             DateTime?        @default(now())
   updated_at             DateTime?        @updatedAt
   deleted_at             DateTime?
+  expiry                 DateTime?
+  next_charge            DateTime?
+  tier_id                Int?
+  stripe_subscription_id String?          @db.VarChar(30)
+  status                 String?          @default("pending")
+  message                String?          @db.VarChar(500)
+  creator                User             @relation("creator_sponsorships", fields: [creator_id], references: [id], onDelete: Cascade)
+  tier                   SponsorshipTier? @relation(fields: [tier_id], references: [id], onDelete: Cascade)
+  user                   User             @relation("user_sponsorships", fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("sponsorships")
 }
@@ -157,31 +149,31 @@ model Sponsorship {
 model SponsorshipTier {
   id                    Int           @id @default(autoincrement())
   public_id             String        @unique @db.VarChar(14)
-  price                 Int           @default(0) @db.Integer
-  stripe_product_id     String?       @db.VarChar(30)
-  stripe_price_month_id String?       @db.VarChar(30)
-  stripe_price_year_id  String?       @db.VarChar(30)
+  price                 Int           @default(0)
   description           String?       @db.VarChar(500)
   is_available          Boolean?      @default(false)
-  members_count         Int?          @default(0)
-  sponsorships          Sponsorship[]
   user_id               Int
-  user                  User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
   created_at            DateTime?     @default(now())
   updated_at            DateTime?     @updatedAt
   deleted_at            DateTime?
+  members_count         Int?          @default(0)
+  stripe_price_month_id String?       @db.VarChar(30)
+  stripe_price_year_id  String?       @db.VarChar(30)
+  stripe_product_id     String?       @db.VarChar(30)
+  user                  User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  sponsorships          Sponsorship[]
 
   @@map("sponsorship_tiers")
 }
 
 model UserPlan {
   plan_id         Int
-  plan            Plan              @relation(fields: [plan_id], references: [id], onDelete: Cascade)
   user_id         Int
-  user            User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  subscription    UserSubscription? @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
-  subscription_id Int?              @unique
   created_at      DateTime?         @default(now())
+  subscription_id Int?              @unique
+  plan            Plan              @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  subscription    UserSubscription? @relation(fields: [subscription_id], references: [id], onDelete: Cascade)
+  user            User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@id([plan_id, user_id])
   @@map("user_plans")
@@ -193,39 +185,39 @@ model UserSubscription {
   stripe_subscription_id String?   @db.VarChar(40)
   period                 String?
   expiry                 DateTime? @default(now())
-  user                   User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   user_id                Int?
-  plan                   UserPlan?
   created_at             DateTime? @default(now())
   updated_at             DateTime? @updatedAt
+  plan                   UserPlan?
+  user                   User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("user_subscriptions")
 }
 
 model Post {
   id                    Int                @id @default(autoincrement())
-  public_id             String?            @db.VarChar(14)
   title                 String?            @db.VarChar(200)
-  content               String             @db.Text
-  public                Boolean?           @default(false)
-  sponsored             Boolean?           @default(false)
-  lat                   Float?
-  lon                   Float?
-  place                 String?            @db.VarChar(250)
-  date                  DateTime?          @default(now())
-  waypoint              Waypoint?          @relation(fields: [waypoint_id], references: [id], onDelete: Cascade)
-  waypoint_id           Int?
-  author                User?              @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  content               String
   author_id             Int
-  likes                 PostLike[]         @relation("post_likes")
-  likes_count           Int?               @default(0)
-  bookmarks             PostBookmark[]     @relation("post_bookmarks")
-  bookmarks_count       Int?               @default(0)
-  media                 PostMedia[]
-  notification_mentions UserNotification[] @relation("post_notification_mentions")
   created_at            DateTime?          @default(now())
   updated_at            DateTime?          @updatedAt
   deleted_at            DateTime?
+  date                  DateTime?          @default(now())
+  lat                   Float?
+  lon                   Float?
+  place                 String?            @db.VarChar(250)
+  public                Boolean?           @default(false)
+  public_id             String?            @db.VarChar(14)
+  bookmarks_count       Int?               @default(0)
+  likes_count           Int?               @default(0)
+  waypoint_id           Int?
+  sponsored             Boolean?           @default(false)
+  bookmarks             PostBookmark[]     @relation("post_bookmarks")
+  likes                 PostLike[]         @relation("post_likes")
+  media                 PostMedia[]
+  author                User               @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  waypoint              Waypoint?          @relation(fields: [waypoint_id], references: [id], onDelete: Cascade)
+  notification_mentions UserNotification[] @relation("post_notification_mentions")
 
   @@map("posts")
 }
@@ -234,17 +226,17 @@ model Waypoint {
   id          Int            @id @default(autoincrement())
   lat         Float
   lon         Float
-  title       String?        @db.VarChar(200)
-  description String?        @db.VarChar(500)
   public      Boolean?       @default(true)
-  date        DateTime?
-  posts       Post[]
-  trips       TripWaypoint[] @relation("waypoint_trips")
-  author      User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
-  author_id   Int?
   created_at  DateTime?      @default(now())
   updated_at  DateTime?      @updatedAt
   deleted_at  DateTime?
+  description String?        @db.VarChar(500)
+  title       String?        @db.VarChar(200)
+  date        DateTime?
+  author_id   Int?
+  posts       Post[]
+  trips       TripWaypoint[] @relation("waypoint_trips")
+  author      User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
 
   @@map("waypoints")
 }
@@ -253,24 +245,24 @@ model Trip {
   id          Int            @id @default(autoincrement())
   public_id   String         @db.VarChar(14)
   title       String         @db.VarChar(200)
-  description String?        @db.Text
+  description String?
   public      Boolean?       @default(true)
-  waypoints   TripWaypoint[] @relation("trip_waypoints")
-  author      User?          @relation(fields: [author_id], references: [id], onDelete: Cascade)
   author_id   Int
   created_at  DateTime?      @default(now())
   updated_at  DateTime?      @updatedAt
   deleted_at  DateTime?
+  waypoints   TripWaypoint[] @relation("trip_waypoints")
+  author      User           @relation(fields: [author_id], references: [id], onDelete: Cascade)
 
   @@map("trips")
 }
 
 model TripWaypoint {
   waypoint_id Int
-  waypoint    Waypoint  @relation("waypoint_trips", fields: [waypoint_id], references: [id], onDelete: Cascade)
   trip_id     Int
-  trip        Trip      @relation("trip_waypoints", fields: [trip_id], references: [id], onDelete: Cascade)
   created_at  DateTime? @default(now())
+  trip        Trip      @relation("trip_waypoints", fields: [trip_id], references: [id], onDelete: Cascade)
+  waypoint    Waypoint  @relation("waypoint_trips", fields: [waypoint_id], references: [id], onDelete: Cascade)
 
   @@id([trip_id, waypoint_id])
   @@map("trip_waypoints")
@@ -278,10 +270,10 @@ model TripWaypoint {
 
 model PostMedia {
   post_id    Int
-  post       Post      @relation(fields: [post_id], references: [id], onDelete: Cascade)
   upload_id  Int
-  upload     Upload    @relation(fields: [upload_id], references: [id], onDelete: Cascade)
   created_at DateTime? @default(now())
+  post       Post      @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  upload     Upload    @relation(fields: [upload_id], references: [id], onDelete: Cascade)
 
   @@id([post_id, upload_id])
   @@map("post_media")
@@ -289,10 +281,10 @@ model PostMedia {
 
 model PostLike {
   post_id    Int
-  post       Post      @relation("post_likes", fields: [post_id], references: [id], onDelete: Cascade)
   user_id    Int
-  user       User      @relation("user_post_likes", fields: [user_id], references: [id], onDelete: Cascade)
   created_at DateTime? @default(now())
+  post       Post      @relation("post_likes", fields: [post_id], references: [id], onDelete: Cascade)
+  user       User      @relation("user_post_likes", fields: [user_id], references: [id], onDelete: Cascade)
 
   @@id([post_id, user_id])
   @@map("post_likes")
@@ -300,10 +292,10 @@ model PostLike {
 
 model PostBookmark {
   post_id    Int
-  post       Post      @relation("post_bookmarks", fields: [post_id], references: [id], onDelete: Cascade)
   user_id    Int
-  user       User      @relation("user_post_bookmarks", fields: [user_id], references: [id], onDelete: Cascade)
   created_at DateTime? @default(now())
+  post       Post      @relation("post_bookmarks", fields: [post_id], references: [id], onDelete: Cascade)
+  user       User      @relation("user_post_bookmarks", fields: [user_id], references: [id], onDelete: Cascade)
 
   @@id([post_id, user_id])
   @@map("post_bookmarks")
@@ -311,15 +303,15 @@ model PostBookmark {
 
 model Upload {
   id         Int         @id @default(autoincrement())
-  public_id  String?     @db.VarChar(40)
   file_type  String      @default("image") @db.VarChar(10)
   original   String      @db.VarChar(250)
   thumbnail  String?     @db.VarChar(250)
   user_id    Int?
-  user       User?       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  post_media PostMedia[]
   created_at DateTime?   @default(now())
   updated_at DateTime?   @updatedAt
+  public_id  String?     @db.VarChar(40)
+  post_media PostMedia[]
+  user       User?       @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("uploads")
 }
@@ -338,48 +330,48 @@ model EmailVerification {
 model Checkout {
   id                       Int            @id @default(autoincrement())
   public_id                String         @unique @db.VarChar(20)
-  transaction_type         String?
-  status                   String?        @default("pending")
   currency                 String?        @default("usd")
   total                    Int
   expiry                   DateTime?
-  message                  String?        @db.VarChar(500)
-  sponsorship_type         String?
-  sponsorship_tier_id      Int?
-  stripe_subscription_id   String?        @db.VarChar(40)
   stripe_payment_intent_id String?        @db.VarChar(40)
   stripe_product_id        String?        @db.VarChar(40)
   stripe_requires_action   Boolean?       @default(false)
   stripe_receipt_url       String?
-  payment_method           PaymentMethod? @relation(fields: [payment_method_id], references: [id], onDelete: Cascade)
   payment_method_id        Int?
-  plan                     Plan?          @relation(fields: [plan_id], references: [id], onDelete: Cascade)
-  plan_id                  Int?
-  user                     User?          @relation("user_checkouts", fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   user_id                  Int?
-  creator                  User?          @relation("creator_checkouts", fields: [creator_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
-  creator_id               Int?
   confirmed_at             DateTime?
   canceled_at              DateTime?
   created_at               DateTime?      @default(now())
   updated_at               DateTime?      @updatedAt
   deleted_at               DateTime?
+  status                   String?        @default("pending")
+  plan_id                  Int?
+  stripe_subscription_id   String?        @db.VarChar(40)
+  creator_id               Int?
+  sponsorship_type         String?
+  transaction_type         String?
+  sponsorship_tier_id      Int?
+  message                  String?        @db.VarChar(500)
+  creator                  User?          @relation("creator_checkouts", fields: [creator_id], references: [id], onDelete: Cascade)
+  payment_method           PaymentMethod? @relation(fields: [payment_method_id], references: [id], onDelete: Cascade)
+  plan                     Plan?          @relation(fields: [plan_id], references: [id], onDelete: Cascade)
+  user                     User?          @relation("user_checkouts", fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("checkouts")
 }
 
 model PaymentMethod {
   id                       Int        @id @default(autoincrement())
-  public_id                String?    @db.VarChar(14)
   stripe_payment_method_id String?
   label                    String?
   last4                    String?
-  user                     User?      @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   user_id                  Int?
-  checkouts                Checkout[]
   created_at               DateTime?  @default(now())
   updated_at               DateTime?  @updatedAt
   deleted_at               DateTime?
+  public_id                String?    @db.VarChar(14)
+  checkouts                Checkout[]
+  user                     User?      @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("payment_methods")
 }
@@ -389,18 +381,18 @@ model PayoutMethod {
   public_id         String    @unique @db.VarChar(14)
   platform          String
   is_verified       Boolean   @default(false)
-  currency          String?
-  business_type     String?
-  business_name     String?
   email             String?   @db.VarChar(50)
   phone_number      String?   @db.VarChar(20)
   stripe_account_id String?
-  payouts           Payout[]
-  user              User?     @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   user_id           Int?
   created_at        DateTime? @default(now())
   updated_at        DateTime? @updatedAt
   deleted_at        DateTime?
+  business_name     String?
+  business_type     String?
+  currency          String?
+  user              User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  payouts           Payout[]
 
   @@map("payout_methods")
 }
@@ -410,40 +402,41 @@ model Payout {
   public_id        String       @unique @db.VarChar(14)
   status           String?      @default("pending") @db.VarChar(20)
   amount           Int
-  currency         String?
-  stripe_payout_id String?      @db.VarChar(40)
-  payout_method    PayoutMethod @relation(fields: [payout_method_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   payout_method_id Int
-  user             User         @relation(fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
   user_id          Int
-  arrival_date     DateTime?
   confirmed_at     DateTime?    @default(now())
   created_at       DateTime?    @default(now())
   updated_at       DateTime?    @updatedAt
   deleted_at       DateTime?
+  currency         String?
+  stripe_payout_id String?      @db.VarChar(40)
+  arrival_date     DateTime?
+  payout_method    PayoutMethod @relation(fields: [payout_method_id], references: [id], onDelete: Cascade)
+  user             User         @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("payouts")
 }
 
 model UserNotification {
-  id              Int       @id @default(autoincrement())
-  public_id       String    @unique @db.VarChar(14)
-  context         String?   @db.VarChar(20)
-  body            String?   @db.Text
-  is_read         Boolean?  @default(false)
-  user            User?     @relation("user_notifications", fields: [user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
-  user_id         Int?
-  mention_user    User?     @relation("user_notification_mentions", fields: [mention_user_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
-  mention_user_id Int?
-  mention_post    Post?     @relation("post_notification_mentions", fields: [mention_post_id], references: [id], onUpdate: Cascade, onDelete: Cascade)
-  mention_post_id Int?
-  created_at      DateTime? @default(now())
-  updated_at      DateTime? @updatedAt
+  id                   Int       @id @default(autoincrement())
+  public_id            String    @unique @db.VarChar(14)
+  context              String?   @db.VarChar(20)
+  body                 String?
+  is_read              Boolean?  @default(false)
+  user_id              Int?
+  mention_user_id      Int?
+  created_at           DateTime? @default(now())
+  updated_at           DateTime? @updatedAt
+  mention_post_id      Int?
+  sponsorship_amount   Int?
+  sponsorship_currency String?   @db.VarChar(3)
+  sponsorship_type     String?   @db.VarChar(20)
+  mention_post         Post?     @relation("post_notification_mentions", fields: [mention_post_id], references: [id], onDelete: Cascade)
+  mention_user         User?     @relation("user_notification_mentions", fields: [mention_user_id], references: [id], onDelete: Cascade)
+  user                 User?     @relation("user_notifications", fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("user_notifications")
 }
-
-// enums
 
 enum CheckoutStatus {
   PENDING

@@ -6,4 +6,7 @@ export interface IUserNotificationCreatePayload {
   mentionUserId: number;
   body?: string;
   mentionPostId?: number;
+  sponsorshipType?: string;
+  sponsorshipAmount?: number;
+  sponsorshipCurrency?: string;
 }
