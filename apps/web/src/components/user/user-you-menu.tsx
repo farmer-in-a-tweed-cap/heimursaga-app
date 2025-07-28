@@ -7,7 +7,6 @@ import {
   ChartPieSliceIcon,
   HandCoinsIcon,
   PathIcon,
-  WalletIcon,
 } from '@repo/ui/icons';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
@@ -108,12 +107,6 @@ export const UserYouMenu = () => {
         href: ROUTER.INSIGHTS.HOME,
         label: 'Insights',
         icon: ChartPieSliceIcon,
-        isMainItem: true,
-      },
-      {
-        href: ROUTER.PAYOUTS.HOME,
-        label: 'Payouts',
-        icon: WalletIcon,
         isMainItem: true,
       },
       {

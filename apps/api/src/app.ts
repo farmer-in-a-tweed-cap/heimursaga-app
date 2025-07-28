@@ -26,6 +26,15 @@ import { IRequest, IResponse } from './common/interfaces';
 // build the app
 export async function app() {
   try {
+    // Temporarily suppress Fastify deprecation warnings until NestJS updates
+    const originalEmitWarning = process.emitWarning;
+    process.emitWarning = function(warning, name, code) {
+      if (code === 'FSTDEP012') {
+        // Skip the request.context deprecation warning from NestJS platform-fastify
+        return;
+      }
+      return originalEmitWarning.call(this, warning, name, code);
+    };
     const ENV = getEnv();
     const IS_PRODUCTION = ENV === 'production';
     const IS_DEVELOPMENT = ENV === 'development';

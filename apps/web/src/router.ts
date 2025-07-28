@@ -32,6 +32,8 @@ export const ROUTER = {
     HOME: '/sponsorship/tiers',
     TIERS: '/sponsorship/tiers',
     SPONSORS: '/sponsorship/sponsors',
+    PAYOUTS: '/sponsorship/payouts',
+    ACCOUNT: '/sponsorship/account',
   },
   AUDIENCE: '/audience',
   UPGRADE: '/upgrade',
@@ -74,11 +76,6 @@ export const ROUTER = {
     CREATE: `/trips/create`,
     DETAIL: (id: string) => `/trips/${id}`,
     EDIT: (id: string) => `/trips/${id}/edit`,
-  },
-  PAYOUTS: {
-    HOME: '/payouts',
-    WITHDRAW: '/payouts/withdraw',
-    BILLING: '/payouts/billing',
   },
   INSIGHTS: {
     ROOT: '/insights',

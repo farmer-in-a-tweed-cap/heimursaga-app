@@ -331,8 +331,8 @@ export const UserGuide = () => {
                   <li>1. Upgrade to Explorer Pro</li>
                   <li>2. Go to your journal settings</li>
                   <li>3. Update the "Seeking Sponsors for" option</li>
-                  <li>4. Visit the billing section on the Payouts page and update your Stripe profile</li>
-                  <li>5. Set your monthly subscription price and description</li>
+                  <li>4. Visit the Account tab on the Sponsorship page and update your Stripe profile</li>
+                  <li>5. Set your monthly subscription Tier price and description</li>
                 </ol>
               </div>
               <div>
@@ -373,11 +373,11 @@ export const UserGuide = () => {
             <div className="bg-blue-50 p-4 rounded-lg">
               <h3 className="text-lg font-medium mb-2 text-blue-900">Sponsorship Guidelines</h3>
               <ul className="space-y-1 text-sm text-blue-800">
-                <li>• All sponsorship arrangements are between users and sponsors</li>
-                <li>• Heimursaga facilitates connections but doesn't handle payments</li>
-                <li>• Always disclose sponsored content clearly</li>
-                <li>• Follow local laws and regulations for sponsored content</li>
-                <li>• Maintain authenticity in your travel storytelling</li>
+                <li>• Set up your Stripe account through the Account tab to receive payments</li>
+                <li>• Be transparent about what your sponsors are supporting</li>
+                <li>• Deliver on promised content for your sponsors</li>
+                <li>• Maintain authenticity in your travel storytelling and experiences</li>
+                <li>• Follow local laws and regulations for sponsored content and income reporting</li>
               </ul>
             </div>
           </div>

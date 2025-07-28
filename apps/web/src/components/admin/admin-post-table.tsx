@@ -1,7 +1,7 @@
 'use client';
 
 import { ActionMenu } from '../list/menu';
-import { ActionModalProps, MODALS } from '../modal';
+import { ActionModalProps, AdminEntryPreviewModalProps, MODALS } from '../modal';
 import {
   IPostDetail,
   ISponsorshipDetail,
@@ -10,6 +10,8 @@ import {
 } from '@repo/types';
 import {
   Badge,
+  Button,
+  Checkbox,
   DataTable,
   DataTableColumn,
   DataTableRow,
@@ -50,6 +52,8 @@ export const AdminPostTable: React.FC<Props> = ({
 
   const [rowLoading, setRowLoading] = useState<boolean>(false);
   const [postId, setPostId] = useState<string | null>(null);
+  const [selectedPosts, setSelectedPosts] = useState<string[]>([]);
+  const [bulkLoading, setBulkLoading] = useState<boolean>(false);
   const results = data.length || 0;
 
   const handleDeleteModal = (postId: string) => {
@@ -95,7 +99,96 @@ export const AdminPostTable: React.FC<Props> = ({
       setRowLoading(false);
     }
   };
+
+  const handleBulkDeleteModal = () => {
+    modal.open<ActionModalProps>(MODALS.ACTION, {
+      props: {
+        title: 'Delete entries',
+        message: `Are you sure you want to delete ${selectedPosts.length} selected entrie(s)?`,
+        submit: {
+          buttonText: 'Delete All',
+          onClick: () => handleBulkDeleteSubmit(),
+        },
+      },
+    });
+  };
+
+  const handleBulkDeleteSubmit = async () => {
+    try {
+      setBulkLoading(true);
+      
+      // Delete all selected posts
+      const promises = selectedPosts.map(postId => 
+        apiClient.deletePost({ query: { postId } })
+      );
+      
+      const results = await Promise.allSettled(promises);
+      const successful = results.filter(result => result.status === 'fulfilled').length;
+      
+      if (successful > 0) {
+        toast({
+          type: 'success',
+          message: `Successfully deleted ${successful} entrie(s)`,
+        });
+        setSelectedPosts([]);
+        if (refetch) refetch();
+      }
+      
+      setBulkLoading(false);
+    } catch (e) {
+      setBulkLoading(false);
+      toast({ type: 'error', message: 'Failed to delete entries' });
+    }
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allPostIds = data.map(post => post.id);
+      setSelectedPosts(allPostIds);
+    } else {
+      setSelectedPosts([]);
+    }
+  };
+
+  const handleSelectPost = (postId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedPosts(prev => [...prev, postId]);
+    } else {
+      setSelectedPosts(prev => prev.filter(p => p !== postId));
+    }
+  };
+
+  const handleEntryPreview = (entryId: string) => {
+    modal.open<AdminEntryPreviewModalProps>(MODALS.ADMIN_ENTRY_PREVIEW, {
+      props: {
+        entryId,
+      },
+    });
+  };
+
   const columns: DataTableColumn<TableData>[] = [
+    {
+      id: 'select',
+      header: ({ table }) => (
+        <Checkbox
+          checked={selectedPosts.length === data.length && data.length > 0}
+          onCheckedChange={handleSelectAll}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => {
+        const postId = row.original.id;
+        return (
+          <Checkbox
+            checked={selectedPosts.includes(postId)}
+            onCheckedChange={(checked) => handleSelectPost(postId, checked as boolean)}
+            aria-label="Select row"
+          />
+        );
+      },
+      enableSorting: false,
+      enableHiding: false,
+    },
     {
       accessorKey: 'title',
       header: () => 'Title',
@@ -103,13 +196,12 @@ export const AdminPostTable: React.FC<Props> = ({
         const postId = row.original.id;
         const title = row.original.title;
         return (
-          <Link
-            href={postId ? ROUTER.ENTRIES.EDIT(postId) : '#'}
-            target="_blank"
-            className="underline font-medium"
+          <button
+            onClick={() => handleEntryPreview(postId)}
+            className="underline font-medium text-left hover:text-blue-600"
           >
             {title}
-          </Link>
+          </button>
         );
       },
     },
@@ -212,11 +304,39 @@ export const AdminPostTable: React.FC<Props> = ({
 
   useEffect(() => {
     // cache modals
-    modal.preload([MODALS.ACTION]);
+    modal.preload([MODALS.ACTION, MODALS.ADMIN_ENTRY_PREVIEW]);
   }, []);
 
+
   return (
-    <div className="flex flex-col gap-0">
+    <div className="flex flex-col">
+      {selectedPosts.length > 0 && (
+        <div className="mb-4 p-3 bg-red-50 rounded-lg border border-red-200">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-red-900">
+              {selectedPosts.length} entrie(s) selected
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDeleteModal}
+                disabled={bulkLoading}
+              >
+                {bulkLoading ? <Spinner className="w-4 h-4" /> : 'Delete Selected'}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectedPosts([])}
+                disabled={bulkLoading}
+              >
+                Clear Selection
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
       <DataTable
         columns={columns}
         rows={rows}

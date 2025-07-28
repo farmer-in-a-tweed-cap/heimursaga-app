@@ -46,7 +46,7 @@ export const PayoutBillingView = () => {
 
   const stripeBackUrl = process?.env?.NEXT_PUBLIC_APP_BASE_URL
     ? new URL(
-        ROUTER.PAYOUTS.BILLING,
+        ROUTER.SPONSORSHIP.ACCOUNT,
         process?.env?.NEXT_PUBLIC_APP_BASE_URL,
       ).toString()
     : '';

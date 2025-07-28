@@ -42,10 +42,22 @@ const LogoLgLight = () => (
 
 const LogoXLgLight = () => (
   <div className="w-full h-full flex items-center justify-center">
-    <img
+    <Image
       src="/logo-lg-light.svg"
+      width={240}
+      height={80}
       alt="logo"
       className="max-w-full max-h-full object-contain"
+      style={{
+        filter: 'none',
+        WebkitFilter: 'none',
+        opacity: 1,
+        WebkitBackfaceVisibility: 'hidden',
+        backfaceVisibility: 'hidden',
+        WebkitTransform: 'translateZ(0)',
+        transform: 'translateZ(0)',
+      }}
+      priority={true}
     />
   </div>
 );

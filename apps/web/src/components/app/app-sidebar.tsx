@@ -19,7 +19,6 @@ import {
   HouseIcon,
   IconProps,
   PathIcon,
-  WalletIcon,
 } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
@@ -139,12 +138,6 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         base: ROUTER.INSIGHTS.HOME,
         label: 'Insights',
         icon: ChartPieSliceIcon,
-      },
-      {
-        href: ROUTER.PAYOUTS.HOME,
-        base: ROUTER.PAYOUTS.HOME,
-        label: 'Payouts',
-        icon: WalletIcon,
       },
       {
         href: ROUTER.BOOKMARKS.HOME,

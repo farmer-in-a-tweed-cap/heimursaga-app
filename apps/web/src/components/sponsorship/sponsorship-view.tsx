@@ -9,10 +9,14 @@ import { ROUTER } from '@/router';
 
 import { CreatorSponsorships } from './creator-sponsorships';
 import { SponsorshipTierView } from './sponsorship-tier-view';
+import { PayoutWithdrawView } from '../payout/payout-withdraw-view';
+import { PayoutBillingView } from '../payout/payout-billing-view';
 
 const TABS = {
   TIERS: 'tiers',
   SPONSORS: 'sponsors',
+  PAYOUTS: 'payouts',
+  ACCOUNT: 'account',
 };
 
 type Props = {
@@ -28,6 +32,8 @@ export const SponsorshipView: React.FC<Props> = ({ section }) => {
   const tabs: { key: string; label: string }[] = [
     { key: TABS.TIERS, label: 'Tiers' },
     { key: TABS.SPONSORS, label: 'Sponsors' },
+    { key: TABS.PAYOUTS, label: 'Payouts' },
+    { key: TABS.ACCOUNT, label: 'Account' },
   ];
 
   const handleTabChange = (tab: string) => {
@@ -39,7 +45,7 @@ export const SponsorshipView: React.FC<Props> = ({ section }) => {
 
   useEffect(() => {
     if (!section) {
-      router.push([ROUTER.SPONSORSHIP.HOME, TABS.TIERS].join('/'), {
+      router.push([ROUTER.SPONSORSHIP.ROOT, TABS.TIERS].join('/'), {
         scroll: false,
       });
     }
@@ -53,7 +59,7 @@ export const SponsorshipView: React.FC<Props> = ({ section }) => {
           activeTab={tab}
           classNames={{
             container: 'w-full justify-start',
-            tabs: 'max-w-2xl',
+            tabs: 'max-w-4xl',
           }}
           onChange={handleTabChange}
         />
@@ -61,6 +67,8 @@ export const SponsorshipView: React.FC<Props> = ({ section }) => {
       <div className="mt-2 flex flex-col w-full py-4">
         {tab === TABS.TIERS && <SponsorshipTierView />}
         {tab === TABS.SPONSORS && <CreatorSponsorships />}
+        {tab === TABS.PAYOUTS && <PayoutWithdrawView />}
+        {tab === TABS.ACCOUNT && <PayoutBillingView />}
       </div>
     </div>
   );

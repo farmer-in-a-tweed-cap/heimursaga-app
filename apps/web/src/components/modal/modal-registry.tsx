@@ -17,6 +17,8 @@ export const MODALS = {
   MAP_LOCATION_SELECT: 'map_location_select',
   TRIP_SELECT: 'trip_select',
   SPONSOR_CHECKOUT: 'sponsor_checkout',
+  ADMIN_ENTRY_PREVIEW: 'admin_entry_preview',
+  ADMIN_USER_PREVIEW: 'admin_user_preview',
 };
 
 export const modalRegistry: IModalRegistry = {
@@ -27,4 +29,6 @@ export const modalRegistry: IModalRegistry = {
   [MODALS.MAP_LOCATION_SELECT]: () => import('./map-location-pick-modal'),
   [MODALS.TRIP_SELECT]: () => import('./trip-select-modal'),
   [MODALS.SPONSOR_CHECKOUT]: () => import('./sponsor-checkout-modal'),
+  [MODALS.ADMIN_ENTRY_PREVIEW]: () => import('./admin-entry-preview-modal'),
+  [MODALS.ADMIN_USER_PREVIEW]: () => import('./admin-user-preview-modal'),
 };

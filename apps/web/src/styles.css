@@ -186,3 +186,10 @@
 .map-control button {
   @apply transition-all w-[40px] h-[40px] select-none bg-white drop-shadow flex items-center justify-center rounded-full text-lg cursor-pointer scale-100 active:scale-95 hover:!bg-white hover:!opacity-100;
 }
+
+/* Hide reCAPTCHA badge */
+.grecaptcha-badge {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
