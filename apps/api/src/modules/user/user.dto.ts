@@ -42,4 +42,9 @@ export class UserSettingsProfileUpdateDto
   @IsString()
   @IsOptional()
   sponsorsFundJourneyId: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  portfolio: string;
 }

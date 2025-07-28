@@ -124,7 +124,7 @@ export const UserYouMenu = () => {
       },
       {
         href: ROUTER.UPGRADE,
-        label: 'Upgrade',
+        label: 'Account',
         isMainItem: false,
       },
     ],

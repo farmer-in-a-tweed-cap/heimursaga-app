@@ -228,6 +228,8 @@ export const UserGuide = () => {
                 <li>• View and edit all your entries and journeys</li>
                 <li>• View followers and following</li>
                 <li>• Edit journal/profile information</li>
+                <li>• Set sponsorship info (Explorer Pro)</li>
+                <li>• Set portfolio/social links (Explorer Pro)</li>
               </ul>
             </div>
             <div>
@@ -235,7 +237,6 @@ export const UserGuide = () => {
               <ul className="space-y-2 text-gray-600">
                 <li>• Make entries public or private</li>
                 <li>• Manage visibility of your journeys</li>
-                <li>• Set sponsorship info (Explorer Pro)</li>
               </ul>
             </div>
           </div>

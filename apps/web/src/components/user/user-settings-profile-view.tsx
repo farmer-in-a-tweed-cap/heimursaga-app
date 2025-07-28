@@ -78,6 +78,11 @@ const schema = z.object({
   sponsors_fund_journey_id: z
     .string()
     .optional(),
+  portfolio: z
+    .string()
+    .min(0, zodMessage.string.min('portfolio', 0))
+    .max(500, zodMessage.string.max('portfolio', 500))
+    .optional(),
 });
 
 type Props = {
@@ -98,13 +103,6 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   const isCreator = session?.role === UserRole.CREATOR;
   const shouldShowSponsorsFund = isCreator;
 
-  // Debug: Check what data is being loaded
-  console.log('Profile data loaded:', {
-    sponsorsFund: data?.sponsorsFund,
-    sponsorsFundType: data?.sponsorsFundType,
-    sponsorsFundJourneyId: data?.sponsorsFundJourneyId
-  });
-
   // Fetch user's journeys for the dropdown
   const journeysQuery = useQuery({
     queryKey: [API_QUERY_KEYS.TRIPS],
@@ -117,13 +115,6 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
 
   // Smart detection of journey vs custom mode
   const detectJourneyMode = (): { type: 'journey' | 'custom'; journeyId: string } => {
-    console.log('detectJourneyMode called:', {
-      sponsorsFundType: data?.sponsorsFundType,
-      sponsorsFund: data?.sponsorsFund,
-      journeysLength: journeys.length,
-      journeys: journeys.map(j => j.title)
-    });
-
     if (data?.sponsorsFundType && (data.sponsorsFundType === 'journey' || data.sponsorsFundType === 'custom')) {
       return {
         type: data.sponsorsFundType as 'journey' | 'custom',
@@ -134,7 +125,6 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
     // Fallback: check if the sponsors fund text matches any journey title
     if (data?.sponsorsFund && journeys.length > 0) {
       const matchingJourney = journeys.find(j => j.title === data.sponsorsFund);
-      console.log('Looking for matching journey:', { sponsorsFund: data.sponsorsFund, matchingJourney });
       if (matchingJourney) {
         return {
           type: 'journey',
@@ -162,6 +152,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
           sponsors_fund: data.sponsorsFund || '',
           sponsors_fund_type: 'custom', // Start with custom, will be updated by useEffect
           sponsors_fund_journey_id: '',
+          portfolio: data.portfolio || '',
         }
       : {
           // name: '',
@@ -171,6 +162,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
           sponsors_fund: '',
           sponsors_fund_type: 'custom',
           sponsors_fund_journey_id: '',
+          portfolio: '',
         },
   });
 
@@ -178,8 +170,6 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   React.useEffect(() => {
     if (journeys.length > 0 && data) {
       const journeyMode = detectJourneyMode();
-      console.log('Setting form values based on detection:', journeyMode);
-      
       form.setValue('sponsors_fund_type', journeyMode.type);
       form.setValue('sponsors_fund_journey_id', journeyMode.journeyId);
     }
@@ -200,11 +190,16 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
 
   // Update sponsors_fund when journey is selected
   React.useEffect(() => {
-    if (sponsorsFundType === 'journey' && selectedJourneyId) {
-      const selectedJourney = journeys.find(j => j.id === selectedJourneyId);
-      if (selectedJourney) {
-        const journeyText = `${selectedJourney.title}`;
-        form.setValue('sponsors_fund', journeyText);
+    if (sponsorsFundType === 'journey') {
+      if (selectedJourneyId && selectedJourneyId !== 'none') {
+        const selectedJourney = journeys.find(j => j.id === selectedJourneyId);
+        if (selectedJourney) {
+          const journeyText = `${selectedJourney.title}`;
+          form.setValue('sponsors_fund', journeyText);
+        }
+      } else if (selectedJourneyId === 'none') {
+        // Clear the sponsors_fund field when "None" is selected
+        form.setValue('sponsors_fund', '');
       }
     }
   }, [sponsorsFundType, selectedJourneyId, journeys, form]);
@@ -212,9 +207,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
-        const { bio, location_from, location_lives, sponsors_fund, sponsors_fund_type, sponsors_fund_journey_id } = values;
-
-        console.log('Form submission values:', { sponsors_fund, sponsors_fund_type, sponsors_fund_journey_id });
+        const { bio, location_from, location_lives, sponsors_fund, sponsors_fund_type, sponsors_fund_journey_id, portfolio } = values;
 
         setLoading((loading) => ({ ...loading, settings: true }));
 
@@ -228,6 +221,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
             sponsorsFund: sponsors_fund,
             sponsorsFundType: sponsors_fund_type,
             sponsorsFundJourneyId: sponsors_fund_journey_id,
+            portfolio,
           },
         });
 
@@ -324,34 +318,6 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                     </FormItem>
                   )}
                 /> */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <FormField
-                    control={form.control}
-                    name="location_from"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>From</FormLabel>
-                        <FormControl>
-                          <Input disabled={loading.settings} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="location_lives"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Currently</FormLabel>
-                        <FormControl>
-                          <Input disabled={loading.settings} {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
                 <div className="grid gap-2">
                   <FormField
                     control={form.control}
@@ -372,11 +338,65 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                     )}
                   />
                 </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <FormField
+                    control={form.control}
+                    name="location_from"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>From</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading.settings} {...field} 
+                          placeholder="Where are you from?"/>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="location_lives"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Currently</FormLabel>
+                        <FormControl>
+                          <Input disabled={loading.settings} {...field} 
+                          placeholder="Where are you now?"/>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Portfolio Field - Available for Explorer Pro users */}
+                {shouldShowSponsorsFund && (
+                  <div>
+                    <FormField
+                      control={form.control}
+                      name="portfolio"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Portfolio/Social Links</FormLabel>
+                          <FormControl>
+                            <Input
+                              disabled={loading.settings}
+                              placeholder="https://instagram.com/username or personal website URL..."
+                              {...field}
+                            />
+                          </FormControl>
+
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
                 {shouldShowSponsorsFund && (
                   <div className="grid gap-4">
                     <div>
-                      <FormLabel className="text-base font-medium">Sponsors Fund</FormLabel>
-                      <p className="text-sm text-gray-600 mt-1">Tell sponsors how their support will be used</p>
+                      <FormLabel>Seeking sponsors for</FormLabel>
                     </div>
                     
                     {/* Type Selection */}
@@ -434,6 +454,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                                   <SelectValue placeholder="Choose a journey" />
                                 </SelectTrigger>
                                 <SelectContent>
+                                  <SelectItem value="none">None</SelectItem>
                                   {journeys.map((journey) => (
                                     <SelectItem key={journey.id} value={journey.id}>
                                       {journey.title}
@@ -472,6 +493,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                   </div>
                 )}
               </div>
+              
               <div>
                 <Button type="submit" loading={loading.settings}>
                   Save
