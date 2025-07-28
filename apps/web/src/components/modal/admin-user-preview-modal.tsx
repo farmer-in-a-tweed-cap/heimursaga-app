@@ -58,12 +58,9 @@ const AdminUserPreviewModal: ModalComponent<AdminUserPreviewModalProps> = ({
             />
             <div className="flex-1">
               <h3 className="text-xl font-bold">{user.username}</h3>
-              {user.name && (
-                <p className="text-gray-600">{user.name}</p>
-              )}
               <div className="flex items-center gap-2 mt-2">
                 <Badge variant="outline">{user.role}</Badge>
-                {user.blocked && (
+                {(user as any).blocked && (
                   <Badge variant="destructive">Blocked</Badge>
                 )}
               </div>
@@ -73,15 +70,15 @@ const AdminUserPreviewModal: ModalComponent<AdminUserPreviewModalProps> = ({
           {/* Stats */}
           <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 rounded-lg">
             <div className="text-center">
-              <div className="text-2xl font-bold">{user.postsCount || 0}</div>
+              <div className="text-2xl font-bold">{(user as any).postsCount || 0}</div>
               <div className="text-sm text-gray-600">Entries</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">{user.followersCount || 0}</div>
+              <div className="text-2xl font-bold">{(user as any).followersCount || 0}</div>
               <div className="text-sm text-gray-600">Followers</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold">{user.followingCount || 0}</div>
+              <div className="text-2xl font-bold">{(user as any).followingCount || 0}</div>
               <div className="text-sm text-gray-600">Following</div>
             </div>
           </div>
@@ -105,17 +102,17 @@ const AdminUserPreviewModal: ModalComponent<AdminUserPreviewModalProps> = ({
               </div>
             </div>
 
-            {user.website && (
+            {(user as any).website && (
               <div>
                 <label className="text-sm font-medium text-gray-600">Website</label>
                 <div className="mt-1">
                   <a
-                    href={user.website}
+                    href={(user as any).website}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:text-blue-800 underline text-sm"
                   >
-                    {user.website}
+                    {(user as any).website}
                   </a>
                 </div>
               </div>
@@ -132,31 +129,33 @@ const AdminUserPreviewModal: ModalComponent<AdminUserPreviewModalProps> = ({
               </div>
             )}
 
-            {user.location && (
+            {(user.locationFrom || user.locationLives) && (
               <div>
                 <label className="text-sm font-medium text-gray-600">Location</label>
                 <div className="mt-1">
-                  <span className="text-sm">{user.location}</span>
+                  <span className="text-sm">
+                    {user.locationFrom && `From: ${user.locationFrom}`}
+                    {user.locationFrom && user.locationLives && ' | '}
+                    {user.locationLives && `Lives: ${user.locationLives}`}
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
           {/* Sponsorship Info */}
-          {(user.sponsorshipEnabled || user.sponsorshipCount > 0) && (
+          {user.sponsorsFund && (
             <div>
               <label className="text-sm font-medium text-gray-600">Sponsorship</label>
               <div className="mt-2 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Sponsorship Enabled</span>
-                  <Badge variant={user.sponsorshipEnabled ? "success" : "outline"}>
-                    {user.sponsorshipEnabled ? "Yes" : "No"}
-                  </Badge>
+                  <span className="text-sm">Sponsors Fund</span>
+                  <span className="text-sm font-medium">{user.sponsorsFund}</span>
                 </div>
-                {user.sponsorshipCount > 0 && (
+                {user.sponsorsFundType && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Active Sponsors</span>
-                    <span className="text-sm font-medium">{user.sponsorshipCount}</span>
+                    <span className="text-sm">Fund Type</span>
+                    <span className="text-sm font-medium">{user.sponsorsFundType}</span>
                   </div>
                 )}
               </div>

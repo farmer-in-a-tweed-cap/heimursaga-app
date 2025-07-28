@@ -30,10 +30,11 @@ const AdminEntryPreviewModal: ModalComponent<AdminEntryPreviewModalProps> = ({
   const fetchEntry = async (entryId: string) => {
     try {
       setLoading(true);
-      const { data } = await apiClient.getPostById({ query: { id: entryId } });
-      setEntry(data);
+      const response = await apiClient.getPostById({ query: { id: entryId } });
+      setEntry(response.data || null);
     } catch (error) {
       console.error('Failed to fetch entry:', error);
+      setEntry(null);
     } finally {
       setLoading(false);
     }
@@ -115,38 +116,35 @@ const AdminEntryPreviewModal: ModalComponent<AdminEntryPreviewModalProps> = ({
           )}
 
           {/* Location */}
-          {entry.location && (
+          {entry.waypoint && (
             <div>
               <label className="text-sm font-medium text-gray-600">Location</label>
               <div className="mt-1">
-                <span>{entry.location.name}</span>
-                {entry.location.coordinates && (
-                  <span className="text-sm text-gray-500 ml-2">
-                    ({entry.location.coordinates.lat.toFixed(4)}, {entry.location.coordinates.lng.toFixed(4)})
-                  </span>
-                )}
+                <span className="text-sm text-gray-500">
+                  ({entry.waypoint.lat.toFixed(4)}, {entry.waypoint.lon.toFixed(4)})
+                </span>
               </div>
             </div>
           )}
 
-          {/* Images */}
-          {entry.images && entry.images.length > 0 && (
+          {/* Media */}
+          {entry.media && entry.media.length > 0 && (
             <div>
-              <label className="text-sm font-medium text-gray-600">Images ({entry.images.length})</label>
+              <label className="text-sm font-medium text-gray-600">Media ({entry.media.length})</label>
               <div className="mt-2 grid grid-cols-2 gap-2">
-                {entry.images.slice(0, 4).map((image, index) => (
-                  <div key={index} className="aspect-square bg-gray-100 rounded">
+                {entry.media.slice(0, 4).map((media, index) => (
+                  <div key={media.id} className="aspect-square bg-gray-100 rounded">
                     <img
-                      src={image.url}
-                      alt={`Entry image ${index + 1}`}
+                      src={media.thumbnail}
+                      alt={`Entry media ${index + 1}`}
                       className="w-full h-full object-cover rounded"
                     />
                   </div>
                 ))}
-                {entry.images.length > 4 && (
+                {entry.media.length > 4 && (
                   <div className="aspect-square bg-gray-100 rounded flex items-center justify-center">
                     <span className="text-sm text-gray-500">
-                      +{entry.images.length - 4} more
+                      +{entry.media.length - 4} more
                     </span>
                   </div>
                 )}
@@ -160,7 +158,9 @@ const AdminEntryPreviewModal: ModalComponent<AdminEntryPreviewModalProps> = ({
             <div className="mt-2 prose prose-sm max-w-none">
               <div 
                 dangerouslySetInnerHTML={{ 
-                  __html: entry.content?.substring(0, 500) + (entry.content?.length > 500 ? '...' : '') || 'No content'
+                  __html: entry.content ? 
+                    entry.content.substring(0, 500) + (entry.content.length > 500 ? '...' : '') 
+                    : 'No content'
                 }} 
               />
             </div>

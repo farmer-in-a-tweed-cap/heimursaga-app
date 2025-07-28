@@ -31,14 +31,14 @@ export const PayoutView: React.FC<Props> = ({ section }) => {
 
   const handleTabChange = (tab: string) => {
     setTab(tab);
-    router.push([ROUTER.PAYOUTS.HOME, tab].join('/'), {
+    router.push([ROUTER.SPONSORSHIP.ROOT, tab].join('/'), {
       scroll: false,
     });
   };
 
   useEffect(() => {
     if (!section) {
-      router.push([ROUTER.PAYOUTS.HOME, TABS.WITHDRAW].join('/'), {
+      router.push([ROUTER.SPONSORSHIP.ROOT, TABS.WITHDRAW].join('/'), {
         scroll: false,
       });
     }
