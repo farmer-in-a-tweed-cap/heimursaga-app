@@ -93,6 +93,7 @@ export interface IUserDetail {
   sponsorsFund?: string;
   sponsorsFundType?: string;
   sponsorsFundJourneyId?: string;
+  portfolio?: string;
   followed?: boolean;
   you?: boolean;
   creator?: boolean;
@@ -139,6 +140,7 @@ export interface IUserSettingsProfileGetResponse {
   sponsorsFund?: string;
   sponsorsFundType?: string;
   sponsorsFundJourneyId?: string;
+  portfolio?: string;
 }
 
 export interface IUserSettingsProfileUpdatePayload {
@@ -150,6 +152,7 @@ export interface IUserSettingsProfileUpdatePayload {
   sponsorsFund?: string;
   sponsorsFundType?: string;
   sponsorsFundJourneyId?: string;
+  portfolio?: string;
 }
 
 export interface IUserPostsQueryResponse {

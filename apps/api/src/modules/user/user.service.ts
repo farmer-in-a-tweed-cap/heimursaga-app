@@ -166,6 +166,7 @@ export class UserService {
               sponsors_fund: true,
               sponsors_fund_type: true,
               sponsors_fund_journey_id: true,
+              portfolio: true,
             },
           },
           followers: userId
@@ -194,6 +195,7 @@ export class UserService {
         sponsorsFund: user.profile?.sponsors_fund,
         sponsorsFundType: user.profile?.sponsors_fund_type,
         sponsorsFundJourneyId: user.profile?.sponsors_fund_journey_id,
+        portfolio: user.profile?.portfolio,
       } as IUserGetByUsernameResponse;
 
       return response;
@@ -950,6 +952,7 @@ export class SessionUserService {
                     sponsors_fund: true,
                     sponsors_fund_type: true,
                     sponsors_fund_journey_id: true,
+                    portfolio: true,
                   },
                 },
               },
@@ -968,6 +971,7 @@ export class SessionUserService {
                 sponsorsFund: profile?.sponsors_fund,
                 sponsorsFundType: profile?.sponsors_fund_type,
                 sponsorsFundJourneyId: profile?.sponsors_fund_journey_id,
+                portfolio: profile?.portfolio,
               } as IUserSettingsProfileGetResponse;
             });
         case 'billing':
@@ -1002,7 +1006,7 @@ export class SessionUserService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      const { name, bio, livesIn, from, sponsorsFund, sponsorsFundType, sponsorsFundJourneyId } = payload;
+      const { name, bio, livesIn, from, sponsorsFund, sponsorsFundType, sponsorsFundJourneyId, portfolio } = payload;
 
       // update settings based on context
       switch (context) {
@@ -1017,6 +1021,7 @@ export class SessionUserService {
               sponsors_fund: sponsorsFund,
               sponsors_fund_type: sponsorsFundType,
               sponsors_fund_journey_id: sponsorsFundJourneyId,
+              portfolio,
             },
           });
           break;

@@ -32,6 +32,7 @@ export const UserProfilePage: React.FC<Props> = ({
   };
 
   const showSponsorsFund = isCreator && user.sponsorsFund;
+  const showPortfolio = isCreator && user.portfolio;
   
   // Check if sponsors fund is linked to a journey
   const isJourneyLinked = user.sponsorsFundType === 'journey' && user.sponsorsFundJourneyId;
@@ -76,6 +77,19 @@ export const UserProfilePage: React.FC<Props> = ({
                 <span><span className="font-medium">Currently:</span> {location.lives}</span>
               </div>
             )}
+          </div>
+        )}
+        {showPortfolio && (
+          <div className="mt-3 flex flex-col gap-1 items-center justify-center text-sm font-normal text-gray-700 max-w-lg text-center">
+            <span className="font-medium">Portfolio/Social:</span>
+            <a
+              href={user.portfolio?.startsWith('http') ? user.portfolio : `https://${user.portfolio}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:text-primary/80 hover:underline transition-all"
+            >
+              {user.portfolio}
+            </a>
           </div>
         )}
         {showSponsorsFund && (

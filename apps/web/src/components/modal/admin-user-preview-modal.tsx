@@ -162,6 +162,23 @@ const AdminUserPreviewModal: ModalComponent<AdminUserPreviewModalProps> = ({
             </div>
           )}
 
+          {/* Portfolio/Social Links */}
+          {(user as any).portfolio && (
+            <div>
+              <label className="text-sm font-medium text-gray-600">Portfolio/Social Links</label>
+              <div className="mt-1">
+                <a
+                  href={(user as any).portfolio.startsWith('http') ? (user as any).portfolio : `https://${(user as any).portfolio}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 underline text-sm"
+                >
+                  {(user as any).portfolio}
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex gap-2 pt-4 border-t">
             <Link

@@ -1,3 +1,0 @@
--- AlterTable
-ALTER TABLE "posts" ADD COLUMN     "bookmarkCount" INTEGER NOT NULL DEFAULT 0,
-ADD COLUMN     "likesCount" INTEGER NOT NULL DEFAULT 0;

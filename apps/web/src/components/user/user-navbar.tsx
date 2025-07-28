@@ -79,12 +79,12 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
         label: 'Journal',
       },
       {
-        href: ROUTER.UPGRADE,
-        label: 'Upgrade',
-      },
-      {
         href: ROUTER.USER.SETTINGS.HOME,
         label: 'Settings',
+      },
+      {
+        href: ROUTER.UPGRADE,
+        label: 'Account',
       },
     ],
     guest: [
