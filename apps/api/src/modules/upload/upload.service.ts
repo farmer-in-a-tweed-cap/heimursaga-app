@@ -145,14 +145,16 @@ export class UploadService {
 
       const buffers = {
         original: await sharp(file.buffer)
+          .rotate() // Auto-rotate based on EXIF orientation data
           .resize(size.original.width, size.original.height, {
             fit: 'cover',
             position: 'center',
           })
-          .webp()
+          .webp({ quality: 90 }) // High quality for original
           .toBuffer(),
         thumbnail: thumbnail
           ? await sharp(file.buffer)
+              .rotate() // Auto-rotate based on EXIF orientation data
               .resize(size.thumbnail.width, size.thumbnail.height, {
                 fit: 'cover',
                 position: 'center',
