@@ -622,6 +622,7 @@ export const apiClient = {
   ) =>
     api.request<void>(API_ROUTER.TRIPS.DELETE(query.tripId), {
       method: API_METHODS.DELETE,
+      body: JSON.stringify({}),
       ...config,
     }),
 

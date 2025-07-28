@@ -3,6 +3,7 @@
 import { Badge, Button, DialogHeader, DialogTitle, DialogDescription } from '@repo/ui/components';
 import { IPostDetail } from '@repo/types';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 
 import { apiClient } from '@/lib/api';
@@ -134,9 +135,11 @@ const AdminEntryPreviewModal: ModalComponent<AdminEntryPreviewModalProps> = ({
               <div className="mt-2 grid grid-cols-2 gap-2">
                 {entry.media.slice(0, 4).map((media, index) => (
                   <div key={media.id} className="aspect-square bg-gray-100 rounded">
-                    <img
+                    <Image
                       src={media.thumbnail}
                       alt={`Entry media ${index + 1}`}
+                      width={200}
+                      height={200}
                       className="w-full h-full object-cover rounded"
                     />
                   </div>

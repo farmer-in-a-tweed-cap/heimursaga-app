@@ -14,6 +14,7 @@ import { UserBar } from '../user';
 import { ITripDetail } from '@repo/types';
 import { LoadingSpinner, Skeleton } from '@repo/ui/components';
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 
 import { useMapbox } from '@/hooks';
 import { dateformat } from '@/lib';
@@ -213,7 +214,8 @@ export const MapTripCard: React.FC<{
     picture?: string;
     creator?: boolean;
   };
-}> = ({ title, startDate, endDate, loading = false, backUrl, onBack, author }) => {
+  centered?: boolean; // Whether to keep title perfectly centered despite back button
+}> = ({ title, startDate, endDate, loading = false, backUrl, onBack, author, centered = false }) => {
   const formatDate = (date: Date | undefined) => {
     if (!date) return '';
     return dateformat(date).format('MMM DD, YYYY');
@@ -237,12 +239,14 @@ export const MapTripCard: React.FC<{
   return (
     <div className="relative box-border p-4">
       {/* Back button positioned absolutely */}
-      <div className="absolute left-4 top-4">
-        <BackButton href={backUrl} onClick={onBack} />
-      </div>
+      {(backUrl || onBack) && (
+        <div className="absolute left-4 top-4">
+          <BackButton href={backUrl} onClick={onBack} />
+        </div>
+      )}
       
-      {/* Centered content */}
-      <div className="flex flex-col items-center justify-center text-center">
+      {/* Centered content with conditional margin based on back button presence and centering preference */}
+      <div className={`flex flex-col items-center justify-center text-center ${(backUrl || onBack) && !centered ? 'ml-12 mr-4' : ''}`}>
         {loading ? (
           <div className="flex flex-col items-center gap-2">
             <Skeleton className="w-10 h-10 rounded-full" />
@@ -256,9 +260,11 @@ export const MapTripCard: React.FC<{
             {/* Author information */}
             {author && (
               <>
-                <img 
+                <Image 
                   src={author.picture || '/default-avatar.png'} 
-                  alt={author.username}
+                  alt={author.username || 'User avatar'}
+                  width={40}
+                  height={40}
                   className={`w-10 h-10 rounded-full object-cover border-2 border-solid ${author.creator ? 'border-primary' : 'border-transparent'}`}
                 />
                 <span className="text-sm font-medium mt-2">{author.username}</span>

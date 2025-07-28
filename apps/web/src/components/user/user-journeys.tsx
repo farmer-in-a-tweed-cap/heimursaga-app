@@ -84,13 +84,23 @@ export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }
     // Set transitioning state for better UX
     setIsTransitioning(true);
     
-    // Clear ALL map query cache entries to prevent stale data when switching journeys
-    queryClient.removeQueries({ 
-      queryKey: [API_QUERY_KEYS.MAP.QUERY] 
-    });
+    // Find the clicked trip to check if it's private
+    const clickedTrip = trips.find(trip => trip.id === tripId);
     
-    const url = `${ROUTER.HOME}?context=journey&filter=post&journey_id=${tripId}&user=${username}`;
-    router.push(url);
+    // If it's a private journey and this is the owner's profile, go to edit view
+    if (isOwnProfile && clickedTrip && !clickedTrip.public) {
+      const url = ROUTER.JOURNEYS.DETAIL(tripId);
+      router.push(url);
+    } else {
+      // For public journeys (or when viewing someone else's profile), use explore context
+      // Clear ALL map query cache entries to prevent stale data when switching journeys
+      queryClient.removeQueries({ 
+        queryKey: [API_QUERY_KEYS.MAP.QUERY] 
+      });
+      
+      const url = `${ROUTER.HOME}?context=journey&filter=post&journey_id=${tripId}&user=${username}`;
+      router.push(url);
+    }
     
     // Reset transitioning state after navigation
     setTimeout(() => setIsTransitioning(false), 1000);

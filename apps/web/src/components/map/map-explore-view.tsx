@@ -51,6 +51,7 @@ type Waypoint = {
     id: string;
     title: string;
     content: string;
+    place?: string;
     bookmarked: boolean;
     date?: Date;
     author: {
@@ -739,6 +740,7 @@ export const MapExploreView: React.FC<Props> = () => {
                   loading={tripLoading}
                   onBack={handleTripBack}
                   author={trip?.author}
+                  centered={true}
                 />
                 {!screen.mobile && focusedWaypointId && previousView && (
                   <div className="flex justify-end px-4 pb-2">
@@ -773,6 +775,7 @@ export const MapExploreView: React.FC<Props> = () => {
                           {...post}
                           id={post.id}
                           date={date}
+                          place={post.place}
                           actions={{ like: false, bookmark: false, edit: false }}
                           userbar={
                             // Only show userbar in non-journey contexts

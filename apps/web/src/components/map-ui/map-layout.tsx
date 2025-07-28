@@ -5,12 +5,15 @@ import {
   CaretLineRightIcon,
   ListBulletsIcon,
   MapTrifoldIcon,
+  MapPinIcon,
+  CalendarIcon,
+  PathIcon,
 } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { CloseButton, PostButtons, UserBar } from '@/components';
+import { CloseButton, PostButtons, UserBar, UserAvatar } from '@/components';
 import { MAP_VIEW_PARAMS } from '@/hooks';
 import { dateformat } from '@/lib';
 import { ROUTER } from '@/router';
@@ -54,28 +57,83 @@ export const MapDrawer: React.FC<{
           <LoadingSpinner />
         ) : post ? (
           <div className="w-full flex flex-col p-8">
-            {post.author && (
-              <Link
-                href={
-                  post?.author?.username
-                    ? ROUTER.USERS.DETAIL(post?.author?.username)
-                    : '#'
-                }
-              >
-                <UserBar
-                  name={post?.author?.username}
-                  picture={post.author?.picture}
-                  creator={post.author?.creator}
-                  text={dateformat(post?.date).format('MMM DD')}
-                />
-              </Link>
-            )}
-            <div className="mt-8">
-              <h2 className="text-3xl font-medium">{post.title}</h2>
+            {/* Top section with title and avatar */}
+            <div className="relative flex flex-row justify-between items-start">
+              {/* Left side: Title info */}
+              <div className="flex flex-col">
+                <h2 className="text-3xl font-medium">{post.title}</h2>
+                
+                {/* Location | Date */}
+                <div className="flex items-center gap-1 mt-2">
+                  <MapPinIcon size={16} className="text-primary" />
+                  <div className="text-base text-gray-600 font-normal">
+                    {post.place ? (
+                      <div className="flex flex-wrap items-center gap-1">
+                        <span>{post.place}</span>
+                        <span className="hidden sm:inline">|</span>
+                        <span>{dateformat(post.date).format('MMM DD, YYYY')}</span>
+                      </div>
+                    ) : (
+                      <span>{dateformat(post.date).format('MMM DD, YYYY')}</span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Journey */}
+                {post.trip && (
+                  <div className="flex items-center gap-1 mt-2">
+                    <PathIcon size={16} className="text-gray-500" />
+                    <p className="text-base text-primary font-medium">
+                      {post.trip.title}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {/* Right side: User info */}
+              {post.author && (
+                <div className="flex flex-col items-end z-20">
+                  <Link
+                    href={
+                      post?.author?.username
+                        ? ROUTER.USERS.DETAIL(post?.author?.username)
+                        : '#'
+                    }
+                    className="flex flex-col items-end"
+                  >
+                    <UserAvatar
+                      src={post.author?.picture}
+                      fallback={post.author?.username}
+                      className={`w-8 h-8 border-2 border-solid ${post.author?.creator ? 'border-primary' : 'border-transparent'}`}
+                    />
+                    <span className="text-xs text-gray-600 mt-1">{post.author?.username}</span>
+                  </Link>
+                </div>
+              )}
             </div>
+
             <div className="mt-6">
               <NormalizedText text={post.content} />
             </div>
+            
+            {post?.media && (
+              <div className="mt-6 grid grid-cols-1 gap-2">
+                {post.media?.map((media, key) => (
+                  <div
+                    key={key}
+                    className="w-full h-auto overflow-hidden rounded-xl"
+                  >
+                    <Image
+                      src={media?.thumbnail}
+                      width={800}
+                      height={600}
+                      className="w-full h-auto"
+                      alt=""
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
             
             {/* "Logged on" attribution */}
             <div className="mt-12 mb-12">
@@ -93,25 +151,6 @@ export const MapDrawer: React.FC<{
                 )}
               </p>
             </div>
-            
-            {post?.media && (
-              <div className="mt-6 grid grid-cols-2 gap-2">
-                {post.media?.map((media, key) => (
-                  <div
-                    key={key}
-                    className="w-full h-auto overflow-hidden rounded-xl"
-                  >
-                    <Image
-                      src={media?.thumbnail}
-                      width={400}
-                      height={300}
-                      className="w-full h-auto"
-                      alt=""
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
             <div className="mt-6">
               <PostButtons
                 postId={post.id}

@@ -28,7 +28,7 @@ export const UserNotifications = () => {
         <LoadingSpinner />
       ) : results ? (
         notifications.map(
-          ({ context, read, mentionUser, date, postId }, key) => (
+          ({ context, read, mentionUser, date, postId, body, sponsorshipType, sponsorshipAmount, sponsorshipCurrency }, key) => (
             <UserNotificationCard
               key={key}
               context={context}
@@ -36,6 +36,10 @@ export const UserNotifications = () => {
               read={read}
               postId={postId}
               date={date}
+              body={body}
+              sponsorshipType={sponsorshipType}
+              sponsorshipAmount={sponsorshipAmount}
+              sponsorshipCurrency={sponsorshipCurrency}
             />
           ),
         )

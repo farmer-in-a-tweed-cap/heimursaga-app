@@ -6,6 +6,13 @@ import Head from 'next/head';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { Lato } from 'next/font/google';
+
+const lato = Lato({
+  subsets: ['latin'],
+  weight: ['300', '400', '700', '900'],
+  display: 'swap',
+});
 
 import { apiClient } from '@/lib/api';
 
@@ -99,7 +106,7 @@ export default async function RootLayout({ children }: Props) {
           />
         )}
       </head>
-      <body>
+      <body className={lato.className}>
         <AppProvider config={config}>
           {children}
           <CookieConsent />

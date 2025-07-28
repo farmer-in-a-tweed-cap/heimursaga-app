@@ -50,18 +50,22 @@ export class NotificationService {
     try {
       console.log({ payload });
 
-      const { userId, mentionUserId, mentionPostId, context } = payload;
+      const { userId, mentionUserId, mentionPostId, context, body, sponsorshipType, sponsorshipAmount, sponsorshipCurrency } = payload;
 
       // create a notification
       await this.prisma.userNotification.create({
         data: {
           public_id: generator.publicId(),
           context,
+          body,
           user: { connect: { id: userId } },
           mention_user: { connect: { id: mentionUserId } },
           mention_post: mentionPostId
             ? { connect: { id: mentionPostId } }
             : undefined,
+          sponsorship_type: sponsorshipType,
+          sponsorship_amount: sponsorshipAmount,
+          sponsorship_currency: sponsorshipCurrency,
         },
       });
     } catch (e) {

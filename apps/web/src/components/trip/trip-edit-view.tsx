@@ -17,6 +17,7 @@ import { MapWaypointValue, useMap, useMapbox, useScreen } from '@/hooks';
 import { dateformat, sortByDate } from '@/lib';
 import { apiClient } from '@/lib/api';
 import { ROUTER } from '@/router';
+import { useRouter } from 'next/navigation';
 
 const WAYPOINT_SORT_ORDER = 'asc';
 const TRIP_EDIT_FORM_ID = 'trip_edit_form';
@@ -27,6 +28,7 @@ type Props = {
 };
 
 export const TripEditView: React.FC<Props> = ({ source, trip }) => {
+  const router = useRouter();
   const mapbox = useMapbox();
   const screen = useScreen();
   const map = useMap({
@@ -206,6 +208,12 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
     });
   };
 
+  const handleDelete = () => {
+    console.log('handleDelete called, redirecting to:', ROUTER.JOURNEYS.HOME);
+    // Navigate back to journeys list after successful deletion
+    router.push(ROUTER.JOURNEYS.HOME);
+  };
+
   const sidebarContent = (
     <>
       {trip && (
@@ -231,6 +239,7 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
             onWaypointEditCancel={handleWaypointEditCancel}
             onWaypointEditSubmit={handleWaypointEditSubmit}
             onWaypointDelete={handleWaypointDelete}
+            onDelete={handleDelete}
           />
         </div>
         <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background px-4 py-4 box-border">

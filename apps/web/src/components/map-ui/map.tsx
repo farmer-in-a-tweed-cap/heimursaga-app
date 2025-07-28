@@ -208,6 +208,11 @@ export const Map: React.FC<Props> = ({
   }
 
   const addLayer = (mapbox: mapboxgl.Map, id: string, source: string) => {
+    // Check if layer already exists before adding
+    if (mapbox.getLayer(id)) {
+      return; // Layer already exists, skip adding
+    }
+    
     switch (id) {
       case MAP_LAYERS.WAYPOINTS:
         mapbox.addLayer({

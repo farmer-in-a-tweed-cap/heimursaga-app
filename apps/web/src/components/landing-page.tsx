@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Logo } from '@/components';
 import { ROUTER } from '@/router';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface FeatureCardProps {
   title: string;
@@ -26,22 +27,24 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
   <div className={`container mx-auto px-4 py-16`}>
     <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} ${mobileImageAlign === 'left' ? 'items-start lg:items-center' : 'items-center'} gap-12 max-w-6xl mx-auto`}>
       <div className={`lg:w-1/2 ${mobileImageAlign === 'left' ? 'text-left' : 'text-center lg:text-left'}`}>
-        <div className="inline-block px-4 py-2 text-sm uppercase font-light mb-4 text-white" style={{ backgroundColor: '#4676AC', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+        <div className="inline-block px-4 py-2 text-sm uppercase font-light mb-4 text-white" style={{ backgroundColor: '#4676AC' }}>
           {title}
         </div>
-        <h3 className="text-4xl lg:text-5xl font-light text-black mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif', fontWeight: 300 }}>
+        <h3 className="text-4xl lg:text-5xl font-light text-black mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
           {subtitle}
         </h3>
-        <p className="text-lg text-gray-700 leading-relaxed max-w-xl" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+        <p className="text-lg text-gray-700 font-light leading-relaxed max-w-xl">
           {description}
         </p>
       </div>
       {imageSrc && (
         <div className={`lg:w-1/2 ${mobileImageAlign === 'left' ? 'self-start w-full' : ''}`}>
           <div className="relative group">
-            <img 
+            <Image 
               src={imageSrc} 
               alt={imageAlt || subtitle} 
+              width={800}
+              height={320}
               className={`relative w-full h-80 rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300 ${mobileImageAlign === 'left' ? 'object-cover object-left lg:object-center' : 'object-cover'}`}
               style={{ border: '4px solid #AC6D46' }}
             />
@@ -56,14 +59,14 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
   <div className={`relative rounded-3xl shadow-xl p-8 transform hover:scale-105 transition-all duration-300 ${isPopular ? 'border-4 border-blue-500' : 'border border-gray-600'}`} style={{ backgroundColor: '#252525' }}>
     {isPopular && (
       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-        <div className="text-white text-sm font-light px-6 py-2 rounded-full shadow-lg" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+        <div className="text-white text-sm font-light px-6 py-2 rounded-full shadow-lg" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
           Most Popular
         </div>
       </div>
     )}
     <div className="text-center mb-8">
-      <h3 className="text-2xl font-light text-white mb-2" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>{title}</h3>
-      <div className="text-4xl font-light mb-6" style={{ color: '#4676AC', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+      <h3 className="text-2xl font-light text-white mb-2" style={{}}>{title}</h3>
+      <div className="text-4xl font-light mb-6" style={{ color: '#4676AC', fontFamily: 'Lato, sans-serif' }}>
         {price}
       </div>
     </div>
@@ -75,14 +78,14 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-          <span className="text-gray-300" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>{feature}</span>
+          <span className="text-gray-300 font-light" style={{}}>{feature}</span>
         </li>
       ))}
     </ul>
     <Link 
       href={ROUTER.SIGNUP}
-      className="w-full py-4 px-6 rounded-xl font-light text-lg transition-all duration-300 text-white hover:opacity-90 block text-center shadow-lg hover:shadow-xl"
-      style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}
+      className="w-full py-4 px-6 rounded-xl font-normal text-lg transition-all duration-300 text-white hover:opacity-90 block text-center shadow-lg hover:shadow-xl"
+      style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}
     >
       SIGN UP
     </Link>
@@ -122,8 +125,6 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen relative">
-      {/* Google Fonts Import */}
-      <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Sulphur+Point:wght@300;400;700&display=swap" rel="stylesheet" />
       
       {/* Fixed Background Video */}
       <div className="fixed inset-0 z-0">
@@ -151,7 +152,7 @@ export const LandingPage: React.FC = () => {
         <div className="relative z-30 w-full h-screen">
           {/* Logo at top */}
           <div className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 z-50 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ top: '8px', marginTop: isMobile ? '-50px' : '-60px' }}>
-            <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight hidden" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight hidden" style={{}}>
               <span className="block text-white">WELCOME TO</span>
             </h1>
             
@@ -162,7 +163,7 @@ export const LandingPage: React.FC = () => {
           
           {/* Text in middle */}
           <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transform: `translate(-50%, -50%) ${isVisible ? 'translateY(0)' : 'translateY(2.5rem)'}` }}>
-            <div className="text-2xl lg:text-3xl font-normal max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            <div className="text-2xl lg:text-3xl font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center" style={{}}>
               <p>You're an explorer.</p>
               <p>Don't get lost in a sea of content creators.</p>
               <p>Share your story and raise money on Heimursaga.</p>
@@ -174,7 +175,7 @@ export const LandingPage: React.FC = () => {
             className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
             style={{ bottom: `calc(6rem + env(safe-area-inset-bottom, 0px) + ${isMobileSafari ? '8px' : '0px'})` }}
           >
-            <button className="font-light py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            <button className="font-normal py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
               <Link href={ROUTER.HOME} className="flex items-center gap-3">
                 EXPLORE
                 <svg 
@@ -229,13 +230,13 @@ export const LandingPage: React.FC = () => {
       <div className="relative py-32 text-white overflow-hidden z-10" style={{ backgroundColor: '#4676AC' }}>
         <div className="absolute inset-0 bg-black opacity-30"></div>
         <div className="relative z-10 container mx-auto px-4 text-center">
-          <h2 className="text-5xl lg:text-6xl font-light mb-6" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>BE AN EXPLORER</h2>
-          <h3 className="text-2xl lg:text-3xl mb-8" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 400 }}>JOIN HEIMURSAGA TODAY</h3>
-          <p className="text-xl mb-12 max-w-3xl mx-auto text-gray-100 leading-relaxed" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+          <h2 className="text-5xl lg:text-6xl font-light mb-6" style={{}}>BE AN EXPLORER</h2>
+          <h3 className="text-2xl lg:text-3xl font-normal mb-8" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>JOIN HEIMURSAGA TODAY</h3>
+          <p className="text-xl mb-12 max-w-3xl mx-auto text-gray-100 font-light leading-relaxed" style={{}}>
             Every place has a story, what's yours? Like the explorers of old, it's never too late to inspire the world.
           </p>
             <div className="flex items-center justify-center">
-              <button className="font-light py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+              <button className="font-normal py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
                 <Link href={ROUTER.HOME} className="flex items-center gap-3">
                   START YOUR JOURNEY
                   <svg 
@@ -261,10 +262,10 @@ export const LandingPage: React.FC = () => {
       <div className="py-32 relative z-10" style={{ backgroundColor: 'white' }}>
         <div className="container mx-auto px-4">
           <div className="text-center mb-20">
-            <h2 className="text-5xl lg:text-6xl font-light text-black mb-6" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            <h2 className="text-5xl lg:text-6xl font-light text-black mb-6" style={{}}>
               Choose Your Adventure
             </h2>
-            <p className="text-xl text-gray-700 max-w-2xl mx-auto" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            <p className="text-xl text-gray-700 font-light max-w-2xl mx-auto" style={{}}>
               Start your journey with our free plan or unlock premium features with Explorer Pro
             </p>
           </div>
@@ -294,14 +295,13 @@ export const LandingPage: React.FC = () => {
           </div>
           
           <div className="text-center mt-12">
-            <p className="text-gray-700 mb-6" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+            <p className="text-gray-700 font-light mb-6" style={{}}>
               Already have an account?
             </p>
             <Link 
               href={ROUTER.LOGIN}
-              className="inline-block py-3 px-8 rounded-xl font-light text-lg transition-all duration-300 bg-gray-700 hover:bg-gray-600 text-white hover:opacity-90"
-              style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}
-            >
+              className="inline-block py-3 px-8 rounded-xl font-normal text-lg transition-all duration-300 bg-gray-700 hover:bg-gray-600 text-white hover:opacity-90"
+                         >
               LOG IN
             </Link>
           </div>
@@ -313,13 +313,13 @@ export const LandingPage: React.FC = () => {
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-4xl mx-auto">
             <div className="text-6xl mb-8" style={{ color: 'white' }}>"</div>
-            <blockquote className="text-1xl lg:text-2xl font-light mb-8 italic leading-relaxed" style={{ fontFamily: 'Lato, sans-serif' }}>
+            <blockquote className="text-1xl lg:text-2xl font-light mb-8 italic leading-relaxed" style={{}}>
               We shall not cease from exploration<br />
               And the end of all our exploring<br />
               Will be to arrive where we started<br />
               And know the place for the first time.
             </blockquote>
-            <cite className="text-xl text-gray-300 font-light" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>— T.S. Eliot</cite>
+            <cite className="text-xl text-gray-300 font-light" style={{}}>— T.S. Eliot</cite>
           </div>
         </div>
       </div>
@@ -327,10 +327,10 @@ export const LandingPage: React.FC = () => {
       {/* Footer */}
       <footer className="text-white py-12 relative z-10" style={{ backgroundColor: '#252525' }}>
         <div className="container mx-auto px-4 text-center">
-          <div className="text-2xl font-light mb-4" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+          <div className="text-2xl font-light mb-4" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
             HEIMURSAGA
           </div>
-          <p className="text-gray-400" style={{ fontFamily: 'Lato, sans-serif', fontWeight: 300 }}>
+          <p className="text-gray-400 font-light" style={{}}>
             © 2025 <a href="https://theperipetycompany.com/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-300 transition-colors no-underline">The Peripety Company</a>. All Rights Reserved.
           </p>
         </div>

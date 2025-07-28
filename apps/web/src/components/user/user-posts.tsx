@@ -75,9 +75,9 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
           }
           waypoint={post?.waypoint}
           actions={{
-            like: me ? false : true,
-            bookmark: me ? false : true,
-            edit: true,
+            like: true,
+            bookmark: true,
+            edit: me,
           }}
         />
       ))}

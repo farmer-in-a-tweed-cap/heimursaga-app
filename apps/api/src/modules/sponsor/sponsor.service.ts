@@ -341,6 +341,14 @@ export class SponsorService {
       if (!checkoutId)
         throw new ServiceNotFoundException('checkout is not found');
 
+      // Store checkout data for notification
+      let checkoutData: {
+        message: string;
+        sponsorship_type: string;
+        total: number;
+        currency: string;
+      };
+
       await this.prisma.$transaction(async (tx) => {
         // get a checkout
         const checkout = await tx.checkout.findFirstOrThrow({
@@ -356,6 +364,14 @@ export class SponsorService {
             message: true,
           },
         });
+
+        // Store checkout data for notification
+        checkoutData = {
+          message: checkout.message,
+          sponsorship_type: checkout.sponsorship_type,
+          total: checkout.total,
+          currency: checkout.currency,
+        };
 
         const expiry = dateformat().add(1, 'month').toDate();
 
@@ -411,13 +427,17 @@ export class SponsorService {
       });
 
       // create a notification
-      if (creatorId && userId) {
+      if (creatorId && userId && checkoutData) {
         this.eventService.trigger<IUserNotificationCreatePayload>({
           event: EVENTS.NOTIFICATION_CREATE,
           data: {
             context: UserNotificationContext.SPONSORSHIP,
             userId: creatorId,
             mentionUserId: userId,
+            body: checkoutData.message,
+            sponsorshipType: checkoutData.sponsorship_type,
+            sponsorshipAmount: checkoutData.total,
+            sponsorshipCurrency: checkoutData.currency,
           },
         });
       }

@@ -500,6 +500,9 @@ export interface IUserNotification {
   };
   body?: string;
   postId?: string;
+  sponsorshipType?: string;
+  sponsorshipAmount?: number;
+  sponsorshipCurrency?: string;
 }
 
 export interface IUserNotificationGetResponse {

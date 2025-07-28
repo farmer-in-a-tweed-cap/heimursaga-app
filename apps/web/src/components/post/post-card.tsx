@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardContent, NormalizedText } from '@repo/ui/components';
-import { LockSimpleIcon } from '@repo/ui/icons';
+import { LockSimpleIcon, MapPinIcon, CalendarIcon, PathIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -145,6 +145,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           <div className="relative flex flex-row justify-between items-start">
             {/* Left side: Title and date */}
             <div className="flex flex-col">
+              {/* Title */}
               <div className="flex items-center gap-2">
                 <h2 className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}>
                   {title}
@@ -157,17 +158,31 @@ export const PostCard: React.FC<PostCardProps> = ({
                 )}
               </div>
               
-              {/* Trip title */}
-              {trip && (
-                <p className="text-sm text-primary font-medium mt-1">
-                  {trip.title}
-                </p>
-              )}
+              {/* Location | Date */}
+              <div className="flex items-center gap-1 mt-3">
+                <MapPinIcon size={14} className="text-primary" />
+                <div className="text-sm text-gray-600 font-normal">
+                  {place ? (
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span>{place}</span>
+                      <span className="hidden sm:inline">|</span>
+                      <span>{dateformat(date).format('MMM DD, YYYY')}</span>
+                    </div>
+                  ) : (
+                    <span>{dateformat(date).format('MMM DD, YYYY')}</span>
+                  )}
+                </div>
+              </div>
               
-              {/* Date */}
-              <p className="text-sm text-gray-600 mt-1">
-                {dateformat(date).format('MMM DD, YYYY')}
-              </p>
+              {/* Journey */}
+              {trip && (
+                <div className="flex items-center gap-1 mt-3">
+                  <PathIcon size={14} className="text-gray-500" />
+                  <p className="text-sm text-primary font-medium">
+                    {trip.title}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Right side: Edit button for owned entries, User info for others */}
@@ -202,16 +217,19 @@ export const PostCard: React.FC<PostCardProps> = ({
                   />
                   <span className="text-xs text-gray-600 mt-1">{author?.username}</span>
                 </div>
-              ) : (
-                <div className="flex flex-col items-end">
+              ) : author?.username ? (
+                <Link
+                  href={ROUTER.USERS.DETAIL(author.username)}
+                  className="flex flex-col items-end"
+                >
                   <UserAvatar
                     src={author?.picture}
                     fallback={author?.username}
                     className={`w-8 h-8 border-2 border-solid ${author?.creator ? 'border-primary' : 'border-transparent'}`}
                   />
                   <span className="text-xs text-gray-600 mt-1">{author?.username}</span>
-                </div>
-              )}
+                </Link>
+              ) : null}
             </div>
           </div>
         )}
@@ -219,6 +237,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           {(isWaypoint || isEntry) && (
             // Journey context: show title/date in content area (original layout)
             <div className="mt-6">
+              {/* Title */}
               <div className="flex items-center gap-2">
                 <h2
                   className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
@@ -233,10 +252,31 @@ export const PostCard: React.FC<PostCardProps> = ({
                 )}
               </div>
               
-              {/* Date below title in journey context */}
-              <p className="text-sm text-gray-600 mt-1">
-                {dateformat(date).format('MMM DD, YYYY')}
-              </p>
+              {/* Location | Date */}
+              <div className="flex items-center gap-1 mt-3">
+                <MapPinIcon size={14} className="text-primary" />
+                <div className="text-sm text-gray-600 font-normal">
+                  {place ? (
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span>{place}</span>
+                      <span className="hidden sm:inline">|</span>
+                      <span>{dateformat(date).format('MMM DD, YYYY')}</span>
+                    </div>
+                  ) : (
+                    <span>{dateformat(date).format('MMM DD, YYYY')}</span>
+                  )}
+                </div>
+              </div>
+              
+              {/* Journey */}
+              {trip && (
+                <div className="flex items-center gap-1 mt-3">
+                  <PathIcon size={14} className="text-gray-500" />
+                  <p className="text-sm text-primary font-medium">
+                    {trip.title}
+                  </p>
+                </div>
+              )}
             </div>
           )}
           {waypoint && (
@@ -253,11 +293,11 @@ export const PostCard: React.FC<PostCardProps> = ({
               />
             </div>
           )}
-          <div className={extended ? 'mt-6' : 'mt-2'}>
+          <div className={extended ? 'mt-6' : 'mt-4'}>
             {extended ? (
               <NormalizedText text={content} />
             ) : (
-              <p className="break-all">
+              <p className="break-all text-sm text-gray-700">
                 {content.length <= 80
                   ? content.split('\\n').join('')
                   : `${content.split('\\n').join('').slice(0, 80)}..`}
@@ -265,7 +305,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             )}
           </div>
           {media.length >= 1 && (
-            <div className="mt-6 grid grid-cols-2 gap-2">
+            <div className={`mt-6 grid ${extended ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
               {media.map(({ thumbnail }, key) => (
                 <div
                   key={key}
@@ -273,8 +313,8 @@ export const PostCard: React.FC<PostCardProps> = ({
                 >
                   <Image
                     src={thumbnail}
-                    width={400}
-                    height={300}
+                    width={extended ? 800 : 400}
+                    height={extended ? 600 : 300}
                     className="w-full h-auto"
                     alt=""
                   />
@@ -302,6 +342,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             </p>
           </div>
         )}
+
 
         {(actions.like || actions.bookmark || actions.share) && (
           <PostButtons
