@@ -8,7 +8,11 @@ import { SessionContext } from '@/contexts';
 export const useSession = () => {
   const context = useContext(SessionContext);
 
-  const session = context?.session;
+  if (!context) {
+    throw new Error('useSession must be used within a SessionProvider');
+  }
+
+  const { session, isLoading, error, refreshSession, clearSession } = context;
   const logged = !!session;
 
   const me = (username?: string) =>
@@ -16,5 +20,14 @@ export const useSession = () => {
 
   const creator = session?.username ? session.role === UserRole.CREATOR : false;
 
-  return { ...session, logged, me, creator };
+  return { 
+    ...session, 
+    logged, 
+    me, 
+    creator,
+    isLoading,
+    error,
+    refreshSession,
+    clearSession
+  };
 };

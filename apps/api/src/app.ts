@@ -72,6 +72,8 @@ export async function app() {
           path: '/',
           maxAge: SESSION_MAX_AGE * 60 * 60,
           secure: IS_PRODUCTION,
+          sameSite: IS_PRODUCTION ? 'strict' : 'lax',
+          domain: IS_PRODUCTION ? process.env.COOKIE_DOMAIN : undefined,
         },
       },
     );

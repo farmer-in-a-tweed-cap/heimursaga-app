@@ -25,6 +25,7 @@ import {
   IAppContextStateConfig,
   Logo,
 } from '@/components';
+import { SessionGuard } from '@/components/session/session-guard';
 import { CookieConsent } from '@/components/cookie-consent';
 import { APP_CONFIG } from '@/config';
 import { SessionProvider } from '@/contexts';
@@ -123,26 +124,38 @@ export const SessionLayout = async ({
   roles = [],
 }: Props & { roles?: string[]; secure?: boolean }) => {
   const cookie = cookies().toString();
-  const session = await apiClient
-    .getSession({ cookie })
-    .then(({ data }) => data);
+  
+  let session = null;
+  let sessionError = null;
+  
+  // Try to get session with retry logic
+  try {
+    const response = await apiClient.getSession({ cookie });
+    session = response.data;
+  } catch (error) {
+    sessionError = error;
+    console.warn('Server-side session fetch failed:', error);
+    
+    // If it's a server error (not auth error), don't redirect immediately
+    // Let the client-side session handling take over
+    if (secure && ((error as any)?.status === 401 || (error as any)?.status === 403)) {
+      return redirect(ROUTER.LOGIN);
+    }
+  }
 
-  if (secure) {
-    // redirect to the login page
-    if (!session) return redirect(ROUTER.LOGIN);
-
+  if (secure && session) {
     // check roles
-    if (session) {
-      if (roles.length >= 1) {
-        const access = roles.some((role) => role === session.role);
-        if (!access) {
-          return redirect(ROUTER.HOME);
-        }
+    if (roles.length >= 1) {
+      const access = roles.some((role) => role === session.role);
+      if (!access) {
+        return redirect(ROUTER.HOME);
       }
     }
   }
 
-  return <SessionProvider state={session}>{children}</SessionProvider>;
+  // For secure pages without a session, let client-side session recovery handle it
+  // This prevents immediate redirects when there are temporary server issues
+  return <SessionProvider state={session || undefined}>{children}</SessionProvider>;
 };
 
 export const AppLayout = ({
@@ -153,21 +166,23 @@ export const AppLayout = ({
   secure?: boolean;
 }) => {
   return (
-    <SessionLayout secure={secure}>
-      <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-row">
-        <AppSidebar collapsed={true} />
-        <AppTopNavbar />
-        <div className="relative w-full flex flex-col justify-start">
-          <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center lg:hidden">
-            <AppBottomNavbar />
-          </div>
-          <div className="z-10 w-full h-auto flex flex-col pb-[70px] lg:pt-16">
-            <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
-              {children}
+    <SessionLayout secure={false}>
+      <SessionGuard secure={secure}>
+        <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-row">
+          <AppSidebar collapsed={true} />
+          <AppTopNavbar />
+          <div className="relative w-full flex flex-col justify-start">
+            <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center lg:hidden">
+              <AppBottomNavbar />
+            </div>
+            <div className="z-10 w-full h-auto flex flex-col pb-[70px] lg:pt-16">
+              <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+                {children}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </SessionGuard>
     </SessionLayout>
   );
 };
@@ -180,19 +195,21 @@ export const MapLayout = ({
   secure?: boolean;
 }) => {
   return (
-    <SessionLayout secure={secure}>
-      <div className="w-full h-dvh bg-gray-50 text-black flex flex-row overflow-hidden">
-        <AppSidebar collapsed={true} />
-        <AppTopNavbar />
-        <div className="relative w-full h-dvh flex flex-col justify-start">
-          <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center lg:hidden">
-            <AppBottomNavbar />
-          </div>
-          <div className="z-10 w-full h-dvh relative pb-[70px] lg:pb-0 lg:pt-16">
-            {children}
+    <SessionLayout secure={false}>
+      <SessionGuard secure={secure}>
+        <div className="w-full h-dvh bg-gray-50 text-black flex flex-row overflow-hidden">
+          <AppSidebar collapsed={true} />
+          <AppTopNavbar />
+          <div className="relative w-full h-dvh flex flex-col justify-start">
+            <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center lg:hidden">
+              <AppBottomNavbar />
+            </div>
+            <div className="z-10 w-full h-dvh relative pb-[70px] lg:pb-0 lg:pt-16">
+              {children}
+            </div>
           </div>
         </div>
-      </div>
+      </SessionGuard>
     </SessionLayout>
   );
 };
@@ -226,30 +243,34 @@ export const LoginLayout = async ({
 
 export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <SessionLayout roles={[UserRole.ADMIN]}>
-      <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-row">
-        <AppSidebar collapsed={true} />
-        <div className="relative w-full flex flex-col justify-start">
-          <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
-            {children}
+    <SessionLayout secure={false}>
+      <SessionGuard secure={true} roles={[UserRole.ADMIN]}>
+        <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-row">
+          <AppSidebar collapsed={true} />
+          <div className="relative w-full flex flex-col justify-start">
+            <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+              {children}
+            </div>
           </div>
         </div>
-      </div>
+      </SessionGuard>
     </SessionLayout>
   );
 };
 
 export const CheckoutLayout = ({ children }: { children: React.ReactNode }) => {
   return (
-    <SessionLayout>
-      <div className="w-full h-[55px] bg-white flex flex-row justify-center items-center border-b border-solid border-gray-200">
-        <Link href={ROUTER.HOME}>
-          <Logo color="dark" size="lg" />
-        </Link>
-      </div>
-      <div className="w-full bg-gray-50 text-black flex flex-row justify-center items-start">
-        <div className="w-full max-w-5xl flex flex-col p-4">{children}</div>
-      </div>
+    <SessionLayout secure={false}>
+      <SessionGuard secure={true}>
+        <div className="w-full h-[55px] bg-white flex flex-row justify-center items-center border-b border-solid border-gray-200">
+          <Link href={ROUTER.HOME}>
+            <Logo color="dark" size="lg" />
+          </Link>
+        </div>
+        <div className="w-full bg-gray-50 text-black flex flex-row justify-center items-start">
+          <div className="w-full max-w-5xl flex flex-col p-4">{children}</div>
+        </div>
+      </SessionGuard>
     </SessionLayout>
   );
 };
@@ -260,13 +281,15 @@ export const AppLayoutWithoutSidebar = ({
   children: React.ReactNode;
 }) => {
   return (
-    <SessionLayout>
-      <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-col justify-start">
-        <div className="w-full h-auto min-h-dvh flex flex-col py-6 items-center justify-start">
-          {children}
+    <SessionLayout secure={false}>
+      <SessionGuard secure={true}>
+        <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-col justify-start">
+          <div className="w-full h-auto min-h-dvh flex flex-col py-6 items-center justify-start">
+            {children}
+          </div>
+          <AppFooter />
         </div>
-        <AppFooter />
-      </div>
+      </SessionGuard>
     </SessionLayout>
   );
 };
