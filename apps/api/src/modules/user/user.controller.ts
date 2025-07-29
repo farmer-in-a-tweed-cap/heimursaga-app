@@ -263,6 +263,15 @@ export class SessionUserController {
     });
   }
 
+  @Post('notifications/mark-read')
+  @HttpCode(HttpStatus.OK)
+  async markNotificationsAsRead(@Session() session: ISession) {
+    return await this.sessionUserService.markNotificationsAsRead({
+      session,
+      query: {},
+    });
+  }
+
   @Get('badge-count')
   @HttpCode(HttpStatus.OK)
   async getBadgeCount(@Session() session: ISession) {

@@ -28,7 +28,13 @@ export function SessionProvider({
 }) {
   const [clientSession, setClientSession] = useState<ISessionUser | undefined>(state);
   const [error, setError] = useState<Error | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
   const queryClient = useQueryClient();
+
+  // Set mounted state
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Log initialization
   useEffect(() => {
@@ -42,7 +48,7 @@ export function SessionProvider({
   const sessionQuery = useQuery({
     queryKey: [API_QUERY_KEYS.GET_SESSION_USER],
     queryFn: () => apiClient.getSession({}).then(({ data }) => data),
-    enabled: typeof window !== 'undefined', // Only run on client-side
+    enabled: isMounted, // Only run after component is mounted
     retry: (failureCount, error: any) => {
       // Don't retry on 401/403 errors (user not logged in)
       if (error?.status === 401 || error?.status === 403) {
@@ -97,7 +103,7 @@ export function SessionProvider({
 
   // Try to restore session from localStorage on initial load
   useEffect(() => {
-    if (typeof window !== 'undefined' && !state && !sessionQuery.data && !sessionQuery.isLoading) {
+    if (isMounted && !state && !sessionQuery.data && !sessionQuery.isLoading) {
       try {
         const cached = localStorage.getItem('session_cache');
         if (cached) {
@@ -131,7 +137,7 @@ export function SessionProvider({
         }
       }
     }
-  }, [state, sessionQuery.data, sessionQuery.isLoading]);
+  }, [isMounted, state, sessionQuery.data, sessionQuery.isLoading]);
 
   const refreshSession = useCallback(async () => {
     try {
@@ -161,7 +167,7 @@ export function SessionProvider({
   return (
     <SessionContext.Provider value={{ 
       session: finalSession, 
-      isLoading: sessionQuery.isLoading,
+      isLoading: !isMounted || sessionQuery.isLoading,
       error,
       refreshSession,
       clearSession

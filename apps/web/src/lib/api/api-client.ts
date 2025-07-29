@@ -385,6 +385,12 @@ export const apiClient = {
       method: API_METHODS.GET,
       cookie: config ? config.cookie : undefined,
     }),
+  markNotificationsAsRead: async (config?: RequestConfig) =>
+    api.request<void>(API_ROUTER.USER.NOTIFICATIONS_MARK_READ, {
+      method: API_METHODS.POST,
+      body: JSON.stringify({}),
+      cookie: config ? config.cookie : undefined,
+    }),
   getBadgeCount: async (config?: RequestConfig) =>
     api.request<IBadgeCountGetResponse>(API_ROUTER.USER.BADGE_COUNT, {
       method: API_METHODS.GET,

@@ -2,10 +2,10 @@
 
 import { useEffect, ReactNode, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
-import { SessionRecovery } from './session-recovery';
 
 interface SessionGuardProps {
   children: ReactNode;
@@ -14,7 +14,7 @@ interface SessionGuardProps {
   fallback?: ReactNode;
 }
 
-export const SessionGuard: React.FC<SessionGuardProps> = ({
+const SessionGuardContent: React.FC<SessionGuardProps> = ({
   children,
   secure = true,
   roles = [],
@@ -22,20 +22,28 @@ export const SessionGuard: React.FC<SessionGuardProps> = ({
 }) => {
   const session = useSession();
   const router = useRouter();
-  const [showRecovery, setShowRecovery] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
-    // Wait for session loading to complete
-    if (session.isLoading) return;
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+    
+    // Wait for session to be resolved (either loaded with data or failed)
+    if (session.isLoading || (!session.logged && session.isLoading === undefined)) {
+      return;
+    }
+
+    // Mark as initialized once we have session state
+    if (!hasInitialized) {
+      setHasInitialized(true);
+    }
 
     // Handle secure pages
     if (secure) {
-      // If there's an error but no session, show recovery UI
-      if (session.error && !session.logged) {
-        setShowRecovery(true);
-        return;
-      }
-
       if (!session.logged) {
         // No session found, redirect to login
         router.push(ROUTER.LOGIN);
@@ -51,21 +59,14 @@ export const SessionGuard: React.FC<SessionGuardProps> = ({
         }
       }
     }
+  }, [isMounted, session.isLoading, session.logged, session.role, secure, roles, router, hasInitialized]);
 
-    // Reset recovery state if session is recovered
-    if (session.logged && showRecovery) {
-      setShowRecovery(false);
-    }
-  }, [session.isLoading, session.logged, session.role, session.error, secure, roles, router, showRecovery]);
-
-  // Show recovery UI for secure pages with session errors
-  if (secure && showRecovery && session.error) {
+  // Show loading until mounted and initialized
+  if (!isMounted || !hasInitialized) {
     return (
-      <SessionRecovery 
-        onRecovered={() => {
-          setShowRecovery(false);
-        }}
-      />
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
     );
   }
 
@@ -90,3 +91,13 @@ export const SessionGuard: React.FC<SessionGuardProps> = ({
 
   return <>{children}</>;
 };
+
+// Export as dynamic component with no SSR to prevent hydration issues
+export const SessionGuard = dynamic(() => Promise.resolve(SessionGuardContent), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+    </div>
+  ),
+});

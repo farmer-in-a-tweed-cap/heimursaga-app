@@ -1197,6 +1197,37 @@ export class SessionUserService {
     }
   }
 
+  async markNotificationsAsRead({
+    session,
+  }: IQueryWithSession): Promise<void> {
+    try {
+      const { userId } = session;
+
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      // Mark all unread notifications as read for this user
+      await this.prisma.userNotification.updateMany({
+        where: { 
+          user_id: userId, 
+          is_read: false 
+        },
+        data: { 
+          is_read: true 
+        },
+      });
+
+      this.logger.log(`Marked notifications as read for user ${userId}`);
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('failed to mark notifications as read');
+      throw exception;
+    }
+  }
+
   async getSponsorshipByUsername({
     session,
   }: ISessionQuery): Promise<ISponsorshipTierGetAllResponse> {
