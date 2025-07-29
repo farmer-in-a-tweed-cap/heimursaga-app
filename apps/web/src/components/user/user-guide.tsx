@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader } from '@repo/ui/components';
 import { 
   BookmarkSimpleIcon, 
-  HeartIcon, 
+  HighlighterCircle, 
   MapPinIcon, 
   Feather, 
   ShareFatIcon,
@@ -148,7 +148,7 @@ export const UserGuide = () => {
               </p>
               <ul className="space-y-1 text-sm text-gray-600">
                 <li>• Scroll through recent entries</li>
-                <li>• Like and bookmark content</li>
+                <li>• Highlight and bookmark content</li>
                 <li>• Follow interesting explorers</li>
                 <li>• Switch to "Following" feed to see only entries from explorers you follow</li>
               </ul>
@@ -181,33 +181,38 @@ export const UserGuide = () => {
       <Card>
         <CardHeader>
           <h2 className="text-2xl font-semibold flex items-center gap-2">
-            <HeartIcon size={24} />
+            <HighlighterCircle size={24} />
             Interacting with Content
           </h2>
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="text-center">
-              <HeartIcon size={32} className="mx-auto mb-2 text-primary" />
-              <h3 className="text-lg font-medium mb-2">Like</h3>
+              <HighlighterCircle size={32} className="mx-auto mb-2 text-primary" />
+              <h3 className="text-lg font-medium mb-2">Highlight</h3>
               <p className="text-gray-600 text-sm">
-                Show appreciation for entries and journeys you enjoy.
+                Show appreciation for entries you enjoy.
               </p>
             </div>
             <div className="text-center">
               <BookmarkSimpleIcon size={32} className="mx-auto mb-2 text-primary" />
               <h3 className="text-lg font-medium mb-2">Bookmark</h3>
               <p className="text-gray-600 text-sm">
-                Save entries and journeys to view later in your bookmarks.
+                Save entries to view later in your bookmarks.
               </p>
             </div>
             <div className="text-center">
               <ShareFatIcon size={32} className="mx-auto mb-2 text-primary" />
               <h3 className="text-lg font-medium mb-2">Share</h3>
               <p className="text-gray-600 text-sm">
-                Copy links to share interesting content with friends.
+                Copy links to share interesting entries with friends.
               </p>
             </div>
+          </div>
+              <div className="bg-blue-50 p-4 rounded-lg mt-6">
+            <p className="text-sm text-blue-800">
+              <strong>Note:</strong> Heimursaga uses "highlight" instead of "like" - these terms are equivalent. Highlighting an entry is the best way to show appreciation for an explorer's work, alongside following and providing sponsorship support.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -412,7 +417,7 @@ export const UserGuide = () => {
                 <li>• Engage with other explorers</li>
                 <li>• Use relevant location tags</li>
                 <li>• Share unique perspectives</li>
-                <li>• Respond to likes and follows</li>
+                <li>• Respond to highlights and follows</li>
               </ul>
             </div>
           </div>

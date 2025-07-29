@@ -2,15 +2,12 @@
 
 import { UserRole } from '@repo/types';
 import {
-  BadgeCount,
-  BadgeDot,
   Button,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components';
 import {
-  BellIcon,
   BookBookmark,
   Bookmarks,
   ChartPieSliceIcon,
@@ -21,12 +18,9 @@ import {
   PathIcon,
 } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
-import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ForwardRefExoticComponent, RefAttributes } from 'react';
-
-import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
 import { CreatePostButton, Logo, UserNavbar } from '@/components';
 import { useSession } from '@/hooks';
@@ -39,7 +33,6 @@ type SidebarLink = {
   icon: ForwardRefExoticComponent<
     Omit<IconProps, 'ref'> & RefAttributes<SVGSVGElement>
   >;
-  badge?: number;
 };
 
 type Props = {
@@ -57,15 +50,6 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
     session.logged &&
     (userRole === UserRole.USER || userRole === UserRole.CREATOR);
 
-  const badgeQuery = useQuery({
-    queryKey: [API_QUERY_KEYS.USER.BADGE_COUNT],
-    queryFn: () => apiClient.getBadgeCount().then(({ data }) => data),
-    enabled: session.logged,
-  });
-
-  const badges = {
-    notifications: badgeQuery.isFetched ? badgeQuery.data?.notifications : 0,
-  };
 
   const LINKS: {
     guest: SidebarLink[];
@@ -99,13 +83,6 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         base: ROUTER.BOOKMARKS.HOME,
         label: 'Bookmarks',
         icon: Bookmarks,
-      },
-      {
-        href: ROUTER.NOTIFICATIONS,
-        base: ROUTER.NOTIFICATIONS,
-        label: 'Notifications',
-        icon: BellIcon,
-        badge: badges.notifications,
       },
     ],
     creator: [
@@ -144,13 +121,6 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         base: ROUTER.BOOKMARKS.HOME,
         label: 'Bookmarks',
         icon: Bookmarks,
-      },
-      {
-        href: ROUTER.NOTIFICATIONS,
-        base: ROUTER.NOTIFICATIONS,
-        label: 'Notifications',
-        icon: BellIcon,
-        badge: badges.notifications,
       },
     ],
     admin: [
@@ -203,7 +173,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
     >
       <div
         className={cn(
-          'md:flex w-full h-dvh fixed top-0 bottom-0 left-0 bg-white flex-col',
+          'md:flex w-full h-dvh fixed top-0 bottom-0 left-0 bg-white flex-col z-50',
           collapsed ? 'desktop:max-w-[65px]' : 'desktop:max-w-[240px]',
         )}
       >
@@ -225,7 +195,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
           <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-2">
             <div className={cn("lg:w-full flex flex-col gap-2", collapsed ? "items-center" : "")}>
               {links.map(
-                ({ href, base, label, icon: Icon, badge = 0 }, key) => (
+                ({ href, base, label, icon: Icon }, key) => (
                   <Tooltip key={key}>
                     <TooltipTrigger>
                       <Link
@@ -241,9 +211,6 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                             weight="regular"
                             className="app-sidebar-link-icon"
                           />
-                          {collapsed && badge >= 1 && (
-                            <BadgeDot className="absolute -bottom-[0.1rem] -right-[0.1rem]" />
-                          )}
                           <span
                             className={cn(
                               'text-base leading-none',
@@ -253,9 +220,6 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                             {label}
                           </span>
                         </div>
-                        {!collapsed && badge >= 1 && (
-                          <BadgeCount count={badge} />
-                        )}
                       </Link>
                     </TooltipTrigger>
                     {collapsed && (

@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@repo/ui/components';
-import { HeartIcon } from '@repo/ui/icons';
+import { HighlighterCircle } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 
 type Props = {
@@ -29,7 +29,7 @@ export const LikeButton: React.FC<Props> = ({
       disabled={disabled}
       onClick={disabled ? () => {} : onClick}
     >
-      <HeartIcon
+      <HighlighterCircle
         className={cn(liked ? 'fill-black stroke-black' : '')}
         size={24}
         weight={liked ? 'fill' : 'bold'}

@@ -276,7 +276,7 @@ export const LandingPage: React.FC = () => {
               price="FREE FOREVER"
               features={[
                 "Write and share journal entries",
-                "Bookmark and like entries",
+                "Bookmark and highlight entries",
                 "Follow and sponsor other explorers",
                 "Access exclusive entries from sponsored explorers"
               ]}

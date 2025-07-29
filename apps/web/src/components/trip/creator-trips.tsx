@@ -27,7 +27,7 @@ export const CreatorTrips = () => {
         trips.map((trip, key) => (
           <TripCard
             key={key}
-            variant="private"
+            variant={trip.public === false ? "private" : "public"}
             href={trip.id ? ROUTER.JOURNEYS.DETAIL(trip.id) : '#'}
             {...trip}
           />

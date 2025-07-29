@@ -628,13 +628,13 @@ export const MapExploreView: React.FC<Props> = () => {
   }, [tripId]); // Only clear when tripId changes, not on every context change
 
   return (
-    <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-white">
+    <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-gray-50">
       <MapViewSwitch view={view} onToggle={handleViewToggle} />
       <MapSidebar opened={map.sidebar} view={view}>
         <div className="relative flex flex-col w-full h-full">
           {contexts.map && (
             <>
-              <div className="flex flex-row justify-between items-center py-4 px-4 desktop:px-6 bg-white">
+              <div className="flex flex-row justify-between items-center py-4 px-4 desktop:px-6 bg-gray-50">
                 <div className="w-full flex flex-col">
                   <div className="flex flex-row items-center justify-between">
                     <span className="text-xl font-medium">Explore</span>
@@ -662,7 +662,7 @@ export const MapExploreView: React.FC<Props> = () => {
                 </div>
               </div>
               {session.logged && (
-                <div className="px-4 desktop:px-6 py-2">
+                <div className="px-4 desktop:px-6 py-2 bg-gray-50">
                   <ChipGroup
                     value={params.context as string}
                     items={[
@@ -685,7 +685,7 @@ export const MapExploreView: React.FC<Props> = () => {
             </>
           )}
           {contexts.user && (
-            <div className="flex flex-col pt-4 pb-2 px-6">
+            <div className="flex flex-col pt-4 pb-2 px-6 bg-gray-50">
               <div className="flex flex-col justify-start items-start gap-3">
                 <UserProfileCard
                   name={user?.username}
@@ -758,7 +758,7 @@ export const MapExploreView: React.FC<Props> = () => {
               </div>
             </div>
           )}
-          <div className="w-full h-auto flex flex-col gap-2 overflow-y-scroll no-scrollbar px-4 desktop:px-6 py-4 box-border">
+          <div className="w-full h-auto flex flex-col gap-2 overflow-y-scroll no-scrollbar px-4 desktop:px-6 py-4 pb-8 box-border bg-gray-50">
             {((contexts.map && filters.post) ||
               (contexts.user && filters.post) ||
               (contexts.journey && filters.post)) && (

@@ -178,7 +178,7 @@ export const MapSidebar: React.FC<{
   return (
     <div
       className={cn(
-        'relative w-full flex flex-col justify-start items-start h-dvh bg-background overflow-hidden',
+        'relative w-full flex flex-col justify-start items-start h-dvh bg-gray-50 overflow-hidden',
         opened
           ? `w-full desktop:min-w-[540px] desktop:max-w-[540px]`
           : 'desktop:max-w-[0px]',

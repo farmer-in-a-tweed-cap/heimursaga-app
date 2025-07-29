@@ -1121,13 +1121,14 @@ export class SessionUserService {
         orderBy: [{ created_at: 'desc' }],
       });
 
-      // read notifications
-      this.prisma.userNotification
-        .updateMany({
-          where: { user_id: userId },
-          data: { is_read: true },
-        })
-        .catch(() => {});
+      // Note: Notifications are not automatically marked as read when fetched
+      // They should be marked as read when the user actually views them
+      // this.prisma.userNotification
+      //   .updateMany({
+      //     where: { user_id: userId },
+      //     data: { is_read: true },
+      //   })
+      //   .catch(() => {});
 
       const response: IUserNotificationGetResponse = {
         results,

@@ -21,6 +21,7 @@ import {
   AppFooter,
   AppProvider,
   AppSidebar,
+  AppTopNavbar,
   IAppContextStateConfig,
   Logo,
 } from '@/components';
@@ -153,13 +154,14 @@ export const AppLayout = ({
 }) => {
   return (
     <SessionLayout secure={secure}>
-      <div className="w-full min-h-dvh bg-background text-black flex flex-row">
-        <AppSidebar />
+      <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-row">
+        <AppSidebar collapsed={true} />
+        <AppTopNavbar />
         <div className="relative w-full flex flex-col justify-start">
           <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center lg:hidden">
             <AppBottomNavbar />
           </div>
-          <div className="z-10 w-full h-auto flex flex-col pb-[70px]">
+          <div className="z-10 w-full h-auto flex flex-col pb-[70px] lg:pt-16">
             <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
               {children}
             </div>
@@ -179,13 +181,14 @@ export const MapLayout = ({
 }) => {
   return (
     <SessionLayout secure={secure}>
-      <div className="w-full h-dvh bg-background text-black flex flex-row overflow-hidden">
+      <div className="w-full h-dvh bg-gray-50 text-black flex flex-row overflow-hidden">
         <AppSidebar collapsed={true} />
+        <AppTopNavbar />
         <div className="relative w-full h-dvh flex flex-col justify-start">
           <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center lg:hidden">
             <AppBottomNavbar />
           </div>
-          <div className="z-10 w-full h-dvh relative pb-[70px] lg:pb-0">
+          <div className="z-10 w-full h-dvh relative pb-[70px] lg:pb-0 lg:pt-16">
             {children}
           </div>
         </div>
@@ -224,7 +227,7 @@ export const LoginLayout = async ({
 export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <SessionLayout roles={[UserRole.ADMIN]}>
-      <div className="w-full min-h-dvh bg-background text-black flex flex-row">
+      <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-row">
         <AppSidebar collapsed={true} />
         <div className="relative w-full flex flex-col justify-start">
           <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
@@ -244,7 +247,7 @@ export const CheckoutLayout = ({ children }: { children: React.ReactNode }) => {
           <Logo color="dark" size="lg" />
         </Link>
       </div>
-      <div className="w-full bg-white text-black flex flex-row justify-center items-start">
+      <div className="w-full bg-gray-50 text-black flex flex-row justify-center items-start">
         <div className="w-full max-w-5xl flex flex-col p-4">{children}</div>
       </div>
     </SessionLayout>
@@ -258,7 +261,7 @@ export const AppLayoutWithoutSidebar = ({
 }) => {
   return (
     <SessionLayout>
-      <div className="w-full min-h-dvh bg-background text-black flex flex-col justify-start">
+      <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-col justify-start">
         <div className="w-full h-auto min-h-dvh flex flex-col py-6 items-center justify-start">
           {children}
         </div>

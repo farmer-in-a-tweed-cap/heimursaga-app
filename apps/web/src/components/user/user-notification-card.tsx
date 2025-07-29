@@ -44,7 +44,7 @@ export const UserNotificationCard: React.FC<Props> = ({
   switch (context) {
     case UserNotificationContext.LIKE:
       notification.mention = mentionUser.username;
-      notification.text = 'liked your entry';
+      notification.text = 'highlighted your entry';
       if (postId) {
         notification.url = ROUTER.ENTRIES.DETAIL(postId);
       }
@@ -87,7 +87,7 @@ export const UserNotificationCard: React.FC<Props> = ({
 
   return (
     <Card>
-      <CardContent className="p-4 box-border cursor-pointer hover:bg-gray-50">
+      <CardContent className={`p-4 box-border cursor-pointer hover:bg-gray-50 ${read ? 'opacity-60' : ''}`}>
         {notification.url && (
           <Link
             href={notification.url}
