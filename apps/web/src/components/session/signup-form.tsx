@@ -120,8 +120,8 @@ export const SignupForm = () => {
     <div className="w-full flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <h2 className="text-2xl font-bold">Sign up</h2>
-          <span className="text-sm">Inspire the world. Create your free Explorer account today.</span>
+          <h2 className="text-2xl font-bold text-center">Sign up</h2>
+          <span className="text-sm text-center">Inspire the world. Create your free Explorer account today.</span>
         </CardHeader>
         <CardContent>
           <Form {...form}>

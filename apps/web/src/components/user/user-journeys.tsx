@@ -120,7 +120,7 @@ export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }
         {trips.map((trip, key) => (
           <TripCard
             key={key}
-            variant="public"
+            variant={trip.public === false ? "private" : "public"}
             onClick={trip.id && !isTransitioning ? () => handleJourneyClick(trip.id) : undefined}
             {...trip}
           />

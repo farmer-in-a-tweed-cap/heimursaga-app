@@ -114,6 +114,11 @@ export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
         label: 'Privacy policy',
         openNewTab: true,
       },
+      {
+        href: ROUTER.LEGAL.TERMS,
+        label: 'Terms and conditions',
+        openNewTab: true,
+      },
     ],
   };
 

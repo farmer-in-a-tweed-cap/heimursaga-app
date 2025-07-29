@@ -153,7 +153,8 @@ export const PostCard: React.FC<PostCardProps> = ({
                 {!isPublic && (
                   <LockSimpleIcon 
                     size={extended ? 20 : 16} 
-                    className="text-gray-500 opacity-60" 
+                    className="text-[#4676AC]" 
+                    weight="bold"
                   />
                 )}
               </div>
@@ -247,7 +248,8 @@ export const PostCard: React.FC<PostCardProps> = ({
                 {!isPublic && (
                   <LockSimpleIcon 
                     size={extended ? 20 : 16} 
-                    className="text-gray-500 opacity-60" 
+                    className="text-[#4676AC]" 
+                    weight="bold"
                   />
                 )}
               </div>

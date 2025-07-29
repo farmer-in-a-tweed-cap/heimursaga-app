@@ -163,6 +163,11 @@ export const UserYouMenu = () => {
         label: 'Privacy policy',
         isMainItem: false,
       },
+      {
+        href: ROUTER.LEGAL.TERMS,
+        label: 'Terms and conditions',
+        isMainItem: false,
+      },
     ],
   };
 

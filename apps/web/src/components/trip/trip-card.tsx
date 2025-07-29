@@ -1,6 +1,7 @@
 import { UserBar } from '../user';
 import { ITripDetail } from '@repo/types';
 import { Card, CardContent } from '@repo/ui/components';
+import { LockSimpleIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 
@@ -152,7 +153,14 @@ const TripPrivateCard: React.FC<Props> = ({
       {href && <Link href={href} className="z-10 absolute inset-0"></Link>}
       <CardContent>
         <div className="flex flex-col gap-1 justify-start items-start">
-          <span className="font-medium text-lg text-black">{title}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-medium text-lg text-black">{title}</span>
+            <LockSimpleIcon 
+              size={16} 
+              className="text-[#4676AC]" 
+              weight="bold"
+            />
+          </div>
           <span className="text-xs text-gray-500">
             {getDateRange() || 'No date range'}
           </span>
