@@ -47,9 +47,18 @@ export const UserYouMenu = () => {
         return;
       }
 
+      // Clear the session context to prevent further session validation attempts
+      if (session.clearSession) {
+        session.clearSession();
+      }
+
       redirect(ROUTER.HOME);
     } catch (e) {
-      //
+      // Even if logout API fails, clear the local session
+      if (session.clearSession) {
+        session.clearSession();
+      }
+      redirect(ROUTER.HOME);
     }
   };
 

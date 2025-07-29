@@ -365,6 +365,10 @@ export const MapExploreView: React.FC<Props> = () => {
     // Map marker clicks always open the full entry immediately
     map.handleDrawerOpen();
     setParams({ entry_id: postId });
+    
+    // TODO: Add map centering logic for entry drawer
+    // When feed drawer is closed and entry drawer opens, center marker in left visible area
+    // This feature needs further investigation of the map update mechanism
   };
 
   const handlePostDrawerClose = () => {
@@ -549,7 +553,7 @@ export const MapExploreView: React.FC<Props> = () => {
       context: MAP_CONTEXT_PARAMS.USER,
       filter: MAP_FILTER_PARAMS.POST,
       user: username,
-      entry_id: null,
+      // Don't clear entry_id to preserve open drawer
     });
   };
 

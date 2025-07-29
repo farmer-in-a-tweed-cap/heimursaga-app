@@ -29,6 +29,7 @@ export function SessionProvider({
   const [clientSession, setClientSession] = useState<ISessionUser | undefined>(state);
   const [error, setError] = useState<Error | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isLoggedOut, setIsLoggedOut] = useState(false);
   const queryClient = useQueryClient();
 
   // Set mounted state
@@ -48,7 +49,7 @@ export function SessionProvider({
   const sessionQuery = useQuery({
     queryKey: [API_QUERY_KEYS.GET_SESSION_USER],
     queryFn: () => apiClient.getSession({}).then(({ data }) => data),
-    enabled: isMounted, // Only run after component is mounted
+    enabled: isMounted && !isLoggedOut, // Only run after component is mounted and user hasn't logged out
     retry: (failureCount, error: any) => {
       // Don't retry on 401/403 errors (user not logged in)
       if (error?.status === 401 || error?.status === 403) {
@@ -92,6 +93,7 @@ export function SessionProvider({
       if (error?.status === 401 || error?.status === 403) {
         sessionDebugger.log('Clearing session due to auth error');
         setClientSession(undefined);
+        setIsLoggedOut(true); // Set logged out state to prevent further queries
         try {
           localStorage.removeItem('session_cache');
         } catch (e) {
@@ -153,6 +155,7 @@ export function SessionProvider({
     sessionDebugger.log('Manually clearing session');
     setClientSession(undefined);
     setError(null);
+    setIsLoggedOut(true); // Set logged out state to prevent further queries
     queryClient.clear();
     try {
       localStorage.removeItem('session_cache');

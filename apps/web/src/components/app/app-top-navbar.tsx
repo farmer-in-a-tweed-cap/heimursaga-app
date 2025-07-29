@@ -61,9 +61,19 @@ export const AppTopNavbar: React.FC<Props> = () => {
       if (!response.success) {
         return;
       }
+      
+      // Clear the session context to prevent further session validation attempts
+      if (session.clearSession) {
+        session.clearSession();
+      }
+      
       redirect(ROUTER.HOME);
     } catch (e) {
-      //
+      // Even if logout API fails, clear the local session
+      if (session.clearSession) {
+        session.clearSession();
+      }
+      redirect(ROUTER.HOME);
     }
   };
 
@@ -140,23 +150,44 @@ export const AppTopNavbar: React.FC<Props> = () => {
         
         {/* Right side elements */}
         <div className="flex-1 flex items-center justify-end space-x-4">
-          {/* Create Entry Button */}
-          <Link href={ROUTER.ENTRIES.CREATE}>
-            <Button 
-              variant="default" 
-              size="sm" 
-              className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
-            >
-              <FeatherIcon size={16} className="mr-1" />
-              Log Entry
-            </Button>
-          </Link>
+          {session?.logged ? (
+            /* Create Entry Button */
+            <Link href={ROUTER.ENTRIES.CREATE}>
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
+              >
+                <FeatherIcon size={16} className="mr-1" />
+                Log Entry
+              </Button>
+            </Link>
+          ) : (
+            /* Logged out state - Login button and create account link */
+            <div className="flex items-center space-x-4">
+              <Link 
+                href={ROUTER.SIGNUP}
+                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                create account
+              </Link>
+              <Link href={ROUTER.LOGIN}>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
+                >
+                  Log in
+                </Button>
+              </Link>
+            </div>
+          )}
           
           {/* Notifications */}
           {session?.logged && (
             <Link href={ROUTER.NOTIFICATIONS}>
-              <Button variant="ghost" size="sm" className="p-2 relative">
-                <BellIcon size={24} weight="bold" className="text-gray-600" />
+              <Button variant="ghost" size="lg" className="relative">
+                <BellIcon size={20} weight="bold" className="text-gray-600 !size-5" />
                 {badges.notifications >= 1 && (
                   <div className="absolute -top-1 -right-1">
                     <BadgeCount count={badges.notifications} />

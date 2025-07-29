@@ -58,7 +58,7 @@ export const LOCALES = {
         CTA: {
           TITLE: 'Welcome to Explorer Pro',
           DESCRIPTION:
-            'Enjoy an enhanced experience, exclusive creator tools and security.',
+            'Enjoy an enhanced experience, exclusive pro tools, top-tier verification and security.',
         },
       },
       PLAN: {
@@ -68,15 +68,15 @@ export const LOCALES = {
         CTA: {
           TITLE: 'Upgrade to Explorer Pro',
           DESCRIPTION:
-            'Enjoy an enhanced experience, exclusive creator tools, top-tier verification and security.',
+            'Enjoy an enhanced experience, exclusive pro tools, top-tier verification and security.',
         },
         FEATURES: [
-          `Download offline maps`,
-          `Watch immersive trail previews`,
-          `Get alerts for wrong turns`,
-          `Print maps for backup`,
-          `Explore ad free`,
-          `Bring trails to life with 3D maps`,
+          `Accept sponsor payments`,
+          `Set sponsor subscription price`,
+          `Post sponsor-only entries`,
+          `Plan and share journeys`,
+          `View journal entry analytics`,
+          `Private messaging (coming soon)`
         ],
         TERMS: `By subscribing, you agree to our Purchaser Terms of Service. Subscriptions auto-renew until canceled. Cancel anytime, at least 24 hours prior to renewal to avoid additional charges. Manage your subscription through the platform you subscribed on.`,
       },
@@ -95,7 +95,7 @@ export const LOCALES = {
         CTA: {
           TITLE: 'Upgrade to Explorer Pro',
           DESCRIPTION:
-            'Enjoy an enhanced experience, exclusive creator tools, top-tier verification and security.',
+            'Enjoy an enhanced experience, exclusive pro tools, top-tier verification and security.',
         },
       },
     },
