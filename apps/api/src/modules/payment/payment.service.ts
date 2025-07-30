@@ -747,18 +747,12 @@ export class PaymentService {
           };
           const paymentIntent = invoice.payment_intent;
 
-          // get the actual amount that will be charged (after promo code discount)
-          const actualAmount = invoice.amount_paid || invoice.total || paymentIntent.amount;
-          
-          // Log for debugging
-          this.logger.log(`Checkout amounts - Original: ${amount}, Invoice total: ${invoice.total}, Payment intent: ${paymentIntent.amount}, Using: ${actualAmount}`);
-
-          // create a checkout
+          // create a checkout - use original amount since promo discounts are handled by Stripe
           const checkout = await tx.checkout.create({
             data: {
               public_id: generator.publicId(),
               status: CheckoutStatus.PENDING,
-              total: actualAmount,
+              total: amount,
               user_id: userId,
               plan_id: plan.id,
               stripe_subscription_id: stripeSubscription.id,
@@ -979,10 +973,10 @@ export class PaymentService {
         this.logger.log(`checkout ${checkout.id} completed`);
       });
     } catch (e) {
-      this.logger.error(e);
+      this.logger.error('Error completing subscription plan upgrade:', e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('plan upgrade not completed');
+        : new ServiceBadRequestException(`plan upgrade not completed: ${e.message || e}`);
       throw exception;
     }
   }
