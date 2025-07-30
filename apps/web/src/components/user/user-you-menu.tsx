@@ -80,13 +80,13 @@ export const UserYouMenu = () => {
   const roleLabel = getRoleLabel(session?.role || UserRole.USER);
 
   // Get notification count for badge
-  const { data: notificationData } = useQuery({
-    queryKey: [API_QUERY_KEYS.USER.NOTIFICATIONS],
-    queryFn: () => apiClient.getUserNotifications(),
+  const badgeQuery = useQuery({
+    queryKey: [API_QUERY_KEYS.USER.BADGE_COUNT],
+    queryFn: () => apiClient.getBadgeCount().then(({ data }) => data),
     enabled: session?.logged,
   });
 
-  const unreadNotifications = Array.isArray(notificationData?.data) ? notificationData.data.filter(n => !n.read).length : 0;
+  const unreadNotifications = badgeQuery.isFetched ? (badgeQuery.data?.notifications || 0) : 0;
 
   // Define navigation links based on user role (excluding items already in mobile bottom nav)
   // Items with icons are from desktop sidebar, items without are submenu items

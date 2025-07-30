@@ -37,13 +37,13 @@ export const AppBottomNavbar: React.FC<Props> = () => {
   const isDark = context.app.navbarTheme === 'dark';
 
   // Get notification count for badge
-  const { data: notificationData } = useQuery({
-    queryKey: [API_QUERY_KEYS.USER.NOTIFICATIONS],
-    queryFn: () => apiClient.getUserNotifications(),
+  const badgeQuery = useQuery({
+    queryKey: [API_QUERY_KEYS.USER.BADGE_COUNT],
+    queryFn: () => apiClient.getBadgeCount().then(({ data }) => data),
     enabled: logged,
   });
 
-  const unreadNotifications = Array.isArray(notificationData?.data) ? notificationData.data.filter((n: any) => !n.read).length : 0;
+  const unreadNotifications = badgeQuery.isFetched ? (badgeQuery.data?.notifications || 0) : 0;
 
   const createAvatarIcon = () => (
     <div className="relative flex items-center justify-center w-[56px] h-[56px]">
@@ -55,7 +55,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
         )} 
       />
       {(unreadNotifications || 0) > 0 && (
-        <BadgeDot className="absolute -top-1 -right-1" />
+        <BadgeDot className="absolute top-1 right-1 bg-primary w-3.5 h-3.5" />
       )}
     </div>
   );
