@@ -811,7 +811,8 @@ export class PaymentService {
       return {
         subscriptionPlanId,
         subscriptionId,
-        clientSecret,
+        clientSecret: clientSecret || null, // Explicitly return null for free subscriptions
+        isFreeSubscription: !clientSecret, // Flag to indicate free subscription
       };
     } catch (e) {
       this.logger.error(e);
