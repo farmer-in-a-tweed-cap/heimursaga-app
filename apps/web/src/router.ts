@@ -10,6 +10,7 @@ export const ROUTER = {
     POST: (id: string) => `/explore/post/${id}`,
   },
   YOU: '/submenu',
+  GUEST_MENU: '/guest-menu',
   DASHBOARD: {
     HOME: '/dashboard',
   },

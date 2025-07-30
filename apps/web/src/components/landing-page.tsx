@@ -100,21 +100,34 @@ export const LandingPage: React.FC = () => {
 
   useEffect(() => {
     setIsVisible(true);
-    setIsMobile(window.innerWidth < 760);
     
-    // Detect mobile Safari
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-    const isMobileDevice = window.innerWidth < 760;
-    setIsMobileSafari(isSafari && isMobileDevice);
+    const checkDeviceType = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const isMobileWidth = width < 760;
+      
+      // Better Safari detection for iOS devices
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent) || isIOS;
+      const isMobileSafariDevice = isSafari && isMobileWidth;
+      
+      setIsMobile(isMobileWidth);
+      setIsMobileSafari(isMobileSafariDevice);
+    };
+    
+    checkDeviceType();
     
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 760);
-      const isMobileDevice = window.innerWidth < 760;
-      setIsMobileSafari(isSafari && isMobileDevice);
+      checkDeviceType();
     };
     
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -124,7 +137,10 @@ export const LandingPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative" style={{ 
+      minHeight: isMobileSafari ? '100vh' : 'auto',
+      WebkitMinHeight: isMobileSafari ? '-webkit-fill-available' : 'auto'
+    }}>
       
       {/* Fixed Background Video */}
       <div className="fixed inset-0 z-0">
@@ -145,11 +161,17 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* Hero Section */}
-      <div className="relative min-h-screen text-white overflow-hidden z-10">
+      <div className="relative min-h-screen text-white overflow-hidden z-10" style={{
+        minHeight: isMobileSafari ? '100vh' : 'auto',
+        WebkitMinHeight: isMobileSafari ? '-webkit-fill-available' : 'auto'
+      }}>
 
  
         
-        <div className="relative z-30 w-full h-screen">
+        <div className="relative z-30 w-full h-screen" style={{
+          height: isMobileSafari ? '100vh' : 'auto',
+          WebkitHeight: isMobileSafari ? '-webkit-fill-available' : 'auto'
+        }}>
           {/* Logo at top */}
           <div className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 z-50 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ top: '8px', marginTop: isMobile ? '-50px' : '-60px' }}>
             <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight hidden" style={{}}>
@@ -173,7 +195,11 @@ export const LandingPage: React.FC = () => {
           {/* Button near bottom */}
           <div 
             className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
-            style={{ bottom: `calc(3rem + env(safe-area-inset-bottom, 0px) + ${isMobileSafari ? '8px' : '0px'})` }}
+            style={{ 
+              bottom: isMobileSafari 
+                ? `calc(2rem + env(safe-area-inset-bottom, 20px))` 
+                : `calc(3rem + env(safe-area-inset-bottom, 0px))`
+            }}
           >
             <button className="font-normal py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
               <Link href={ROUTER.HOME} className="flex items-center gap-3">

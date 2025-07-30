@@ -103,9 +103,9 @@ export const AppBottomNavbar: React.FC<Props> = () => {
   const LINKS: { [role: string]: NavLink[] } = {
     guest: [
       {
-        href: ROUTER.LOGIN,
+        href: ROUTER.GUEST_MENU,
         icon: (props) => <UserIcon {...props} />,
-        label: 'Log in',
+        label: 'Menu',
       },
       {
         href: ROUTER.EXPLORE.RESET,
@@ -194,21 +194,31 @@ export const AppBottomNavbar: React.FC<Props> = () => {
       "w-full h-[70px] border-t border-solid flex flex-row items-center",
       isDark ? "bg-dark border-gray-700" : "bg-background border-accent"
     )}>
-      {/* Left item - Logo/Explore */}
-      <div className="flex-shrink-0 px-3">
+      {/* Left item - Avatar/Explore/Login */}
+      <div className={cn(
+        "flex-shrink-0", 
+        // Extra padding for login button to prevent text cutoff
+        links[0].label === 'Log in' ? "px-4" : "px-3"
+      )}>
         <Link
           href={links[0].href}
           className={cn(
-            'flex flex-col items-center justify-center gap-1',
+            'flex flex-col items-center justify-center',
             isDark 
               ? (isActiveLink(links[0].href) ? 'text-white' : 'text-gray-400')
               : (isActiveLink(links[0].href) ? 'text-black' : 'text-gray-500'),
+            // Adjust spacing for login button to fit in navbar
+            links[0].label ? 'gap-0' : 'gap-1'
           )}
         >
-          <div className="w-[56px] h-[56px] flex items-center justify-center">
-            {typeof links[0].icon === 'function' && links[0].icon.length === 0 ? links[0].icon({} as any) : links[0].icon({ size: 20, weight: "regular" as any })}
+          <div className={cn(
+            "flex items-center justify-center",
+            // Smaller icon container for login button to make room for label
+            links[0].label ? "w-[32px] h-[32px]" : "w-[56px] h-[56px]"
+          )}>
+            {typeof links[0].icon === 'function' && links[0].icon.length === 0 ? links[0].icon({} as any) : links[0].icon({ size: links[0].label ? 18 : 20, weight: "regular" as any })}
           </div>
-          {links[0].label && <span className="text-xs font-medium whitespace-nowrap">{links[0].label}</span>}
+          {links[0].label && <span className="text-[10px] font-medium whitespace-nowrap mt-1">{links[0].label}</span>}
         </Link>
       </div>
 
