@@ -742,13 +742,16 @@ export class PaymentService {
           const stripeSubscription =
             await this.stripeService.stripe.subscriptions.create(subscriptionParams);
 
-          const invoice = stripeSubscription.latest_invoice as {
+          const invoice = stripeSubscription.latest_invoice as Stripe.Invoice & {
             payment_intent: Stripe.PaymentIntent;
           };
           const paymentIntent = invoice.payment_intent;
 
           // get the actual amount that will be charged (after promo code discount)
-          const actualAmount = paymentIntent.amount;
+          const actualAmount = invoice.amount_paid || invoice.total || paymentIntent.amount;
+          
+          // Log for debugging
+          this.logger.log(`Checkout amounts - Original: ${amount}, Invoice total: ${invoice.total}, Payment intent: ${paymentIntent.amount}, Using: ${actualAmount}`);
 
           // create a checkout
           const checkout = await tx.checkout.create({
@@ -1121,13 +1124,8 @@ export class PaymentService {
         })
         .then(async ({ stripe_price_month_id, stripe_price_year_id }) => {
           this.logger.log(`Plan found. Price IDs - Month: ${stripe_price_month_id}, Year: ${stripe_price_year_id}`);
-          // Use correct test price IDs for validation
-          const correctTestPriceIds = {
-            month: 'price_1RZ9QqFXr1UXQNSZYJPSsheV',
-            year: 'price_1RZ9QqFXr1UXQNSZlL9HcrNZ'
-          };
-          const stripePriceId = period === 'month' ? correctTestPriceIds.month : correctTestPriceIds.year;
-          this.logger.log(`Using corrected test price ID: ${stripePriceId} for period: ${period}`);
+          const stripePriceId = period === 'month' ? stripe_price_month_id : stripe_price_year_id;
+          this.logger.log(`Using price ID: ${stripePriceId} for period: ${period}`);
           
           try {
             this.logger.log('Fetching price from Stripe...');
@@ -1141,13 +1139,7 @@ export class PaymentService {
             };
           } catch (stripeError) {
             this.logger.error(`Failed to retrieve Stripe price ${stripePriceId}:`, stripeError);
-            // For testing purposes, use a fallback price
-            this.logger.warn(`Using fallback price for testing promo code functionality`);
-            return {
-              stripePriceId,
-              unitAmount: 999, // $9.99 in cents
-              currency: 'usd',
-            };
+            throw new ServiceBadRequestException('Plan price not found');
           }
         });
 
