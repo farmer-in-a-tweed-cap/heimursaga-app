@@ -9,8 +9,8 @@ import { CheckoutLayout } from '@/app/layout';
 import {
   BulletList,
   PageNotFound,
-  SubscriptionPlanUpgradeCheckoutForm,
 } from '@/components';
+import { CheckoutPageClient } from './checkout-page-client';
 import { DEMO_DATA } from '@/constants';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
@@ -42,51 +42,7 @@ export default async function Page() {
   return (
     <CheckoutLayout>
       {plan ? (
-        <div className="w-full h-auto flex flex-col lg:flex-row lg:justify-between gap-10 py-10">
-          <div className="basis-6/12">
-            <div className="flex flex-col gap-4 py-6">
-              <span className="text-3xl font-medium">
-                {LOCALES.APP.UPGRADE_CHECKOUT.PAGE.CTA.TITLE}
-              </span>
-              <p className="text-sm">
-                {LOCALES.APP.UPGRADE_CHECKOUT.PAGE.CTA.DESCRIPTION}
-              </p>
-            </div>
-            <div className="mt-6">
-              <BulletList
-                classNames={{
-                  list: 'gap-3',
-                  icon: 'bg-gray-500 text-white',
-                  item: 'text-gray-600 text-sm',
-                }}
-                items={LOCALES.APP.UPGRADE.PAGE.FEATURES}
-              />
-            </div>
-            <div className="mt-14">
-              <div className="flex flex-row w-full items-center justify-between">
-                <div className="mt-4 flex flex-row items-center gap-2">
-                  <span className="text-3xl font-semibold leading-none">
-                    {plan.currencySymbol}
-                    {plan.priceMonthly}
-                  </span>
-                  <span className="pt-2 text-sm font-normal text-gray-600">
-                    / month
-                  </span>
-                </div>
-              </div>
-              <div className="mt-10 w-full h-[1px] bg-accent"></div>
-            </div>
-          </div>
-          <div className="basis-5/12">
-            <SubscriptionPlanUpgradeCheckoutForm>
-              <div className="mt-6">
-                <p className="text-xs font-normal text-gray-500">
-                  {LOCALES.APP.CHECKOUT.PAGE.TERMS}
-                </p>
-              </div>
-            </SubscriptionPlanUpgradeCheckoutForm>
-          </div>
-        </div>
+        <CheckoutPageClient plan={plan} />
       ) : (
         <PageNotFound />
       )}

@@ -465,6 +465,35 @@ export const apiClient = {
         cookie: config ? config.cookie : undefined,
       },
     ),
+
+  validatePromoCode: async (
+    payload: { promoCode: string; planId: string; period: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<{
+      success: boolean;
+      data?: {
+        valid: boolean;
+        coupon: {
+          id: string;
+          name: string;
+          percentOff: number | null;
+          amountOff: number | null;
+          currency: string | null;
+        };
+        pricing: {
+          originalAmount: number;
+          discountAmount: number;
+          finalAmount: number;
+          currency: string;
+        };
+      };
+      error?: string;
+    }>(API_ROUTER.PLAN.VALIDATE_PROMO_CODE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      cookie: config ? config.cookie : undefined,
+    }),
   completeSubscriptionPlanUpgrade: async (
     {
       payload,

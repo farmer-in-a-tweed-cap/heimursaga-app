@@ -47,6 +47,7 @@ export const API_ROUTER = {
       COMPLETE: '/plan/upgrade/complete',
     },
     DOWNGRADE: '/plan/downgrade',
+    VALIDATE_PROMO_CODE: '/plan/validate-promo-code',
   },
   USERS: {
     GET: '/users',

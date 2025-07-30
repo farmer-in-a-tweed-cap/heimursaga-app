@@ -238,6 +238,7 @@ export interface ISubscriptionPlanGetBySlugResponse
 export interface ISubscriptionPlanUpgradeCheckoutPayload {
   planId: string;
   period: PlanExpiryPeriod;
+  promoCode?: string;
 }
 
 export interface ISubscriptionPlanUpgradeCheckoutResponse {

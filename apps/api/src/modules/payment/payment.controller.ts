@@ -14,7 +14,7 @@ import { Public, Session } from '@/common/decorators';
 import { ParamPublicIdDto, ParamSlugDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import { PaymentMethodCreateDto, PlanUpgradeCheckoutDto } from './payment.dto';
+import { PaymentMethodCreateDto, PlanUpgradeCheckoutDto, ValidatePromoCodeDto } from './payment.dto';
 import { PaymentService } from './payment.service';
 
 @ApiTags('payment-methods')
@@ -137,6 +137,18 @@ export class PlanController {
     return await this.paymentService.downgradeSubscriptionPlan({
       session,
       query: {},
+    });
+  }
+
+  @Post('validate-promo-code')
+  @HttpCode(HttpStatus.OK)
+  async validatePromoCode(
+    @Session() session: ISession,
+    @Body() body: ValidatePromoCodeDto,
+  ) {
+    return await this.paymentService.validatePromoCode({
+      session,
+      payload: body,
     });
   }
 }

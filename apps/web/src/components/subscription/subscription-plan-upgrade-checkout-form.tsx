@@ -33,12 +33,28 @@ import { useModal } from '@/hooks';
 import { redirect, sleep, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
 
+type PromoValidation = {
+  loading: boolean;
+  valid: boolean | null;
+  error?: string;
+  discount?: {
+    originalAmount: number;
+    discountAmount: number;
+    finalAmount: number;
+    percentOff?: number;
+    amountOff?: number;
+    currency: string;
+  };
+};
+
 type Props = {
   children?: React.ReactNode;
   onLoad?: () => void;
   onLoading?: (state: boolean) => void;
   onComplete?: (state: boolean) => void;
   onSubmit?: () => void;
+  promoValidation?: PromoValidation;
+  onPromoValidationChange?: (validation: PromoValidation) => void;
 };
 
 enum StripeFieldKey {
@@ -69,6 +85,9 @@ const schema = z.object({
     .string()
     .nonempty(zodMessage.required('postcode'))
     .max(10, zodMessage.string.max('postcode', 10)),
+  promoCode: z
+    .string()
+    .optional(),
 });
 
 const FormComponent: React.FC<Props> = ({
@@ -77,6 +96,8 @@ const FormComponent: React.FC<Props> = ({
   onComplete,
   onLoading,
   onSubmit,
+  promoValidation: externalPromoValidation,
+  onPromoValidationChange,
 }) => {
   const router = useRouter();
   const modal = useModal();
@@ -99,12 +120,22 @@ const FormComponent: React.FC<Props> = ({
   });
 
   const [loading, setLoading] = useState<boolean>(false);
+  
+  // Use external promo validation state if provided, otherwise use internal state
+  const [internalPromoValidation, setInternalPromoValidation] = useState<PromoValidation>({
+    loading: false,
+    valid: null,
+  });
+  
+  const promoValidation = externalPromoValidation || internalPromoValidation;
+  const setPromoValidation = onPromoValidationChange || setInternalPromoValidation;
 
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: '',
       postcode: '',
+      promoCode: '',
     },
   });
 
@@ -119,10 +150,66 @@ const FormComponent: React.FC<Props> = ({
     state.stripe.expiry.complete &&
     state.stripe.cvc.complete;
 
+  const validatePromoCode = async (promoCode: string) => {
+    if (!promoCode.trim()) {
+      setPromoValidation({ loading: false, valid: null });
+      return;
+    }
+
+    setPromoValidation({ loading: true, valid: null });
+
+    try {
+      const response = await apiClient.validatePromoCode({
+        promoCode: promoCode.trim(),
+        planId: 'premium',
+        period: 'month',
+      });
+      console.log('Promo code validation response:', response);
+
+      if (response.success && response.data) {
+        const backendResponse = response.data as any;
+        if (backendResponse.success && backendResponse.data) {
+          const data = backendResponse.data;
+          setPromoValidation({
+            loading: false,
+            valid: true,
+            discount: {
+              originalAmount: data.pricing.originalAmount,
+              discountAmount: data.pricing.discountAmount,
+              finalAmount: data.pricing.finalAmount,
+              percentOff: data.coupon.percentOff,
+              amountOff: data.coupon.amountOff,
+              currency: data.pricing.currency,
+            },
+          });
+        } else {
+          setPromoValidation({
+            loading: false,
+            valid: false,
+            error: backendResponse?.error || 'Invalid promo code',
+          });
+        }
+      } else {
+        setPromoValidation({
+          loading: false,
+          valid: false,
+          error: 'Invalid promo code',
+        });
+      }
+    } catch (error) {
+      console.error('Promo code validation error:', error);
+      setPromoValidation({
+        loading: false,
+        valid: false,
+        error: 'Unable to validate promo code',
+      });
+    }
+  };
+
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
-        const { name, postcode } = values;
+        const { name, postcode, promoCode } = values;
 
         setLoading(true);
 
@@ -146,6 +233,7 @@ const FormComponent: React.FC<Props> = ({
             payload: {
               planId: 'premium',
               period: PlanExpiryPeriod.MONTH,
+              promoCode: promoCode || undefined,
             },
           });
 
@@ -362,6 +450,40 @@ const FormComponent: React.FC<Props> = ({
           <div className="w-full flex flex-col gap-6">
             <FormField
               control={form.control}
+              name="promoCode"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Promo code (optional)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Enter promo code" 
+                      maxLength={50} 
+                      {...field}
+                      onBlur={(e) => {
+                        field.onBlur();
+                        validatePromoCode(e.target.value);
+                      }}
+                    />
+                  </FormControl>
+                  {promoValidation.loading && (
+                    <p className="text-sm text-gray-500">Validating promo code...</p>
+                  )}
+                  {promoValidation.valid === true && promoValidation.discount && (
+                    <p className="text-sm text-green-600 font-medium">
+                      ✓ Valid promo code applied!
+                    </p>
+                  )}
+                  {promoValidation.valid === false && (
+                    <p className="text-sm text-red-600">
+                      ✗ {promoValidation.error}
+                    </p>
+                  )}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -405,21 +527,6 @@ const FormComponent: React.FC<Props> = ({
                 <FormItem>
                   <FormLabel>Billing postcode</FormLabel>
                   <FormControl>
-                    {/* <AddressElement
-                        options={{
-                          mode: 'shipping',
-                          autocomplete: { mode: 'automatic' },
-                        }}
-                        onReady={() =>
-                          handleStripeFieldLoad(StripeFieldKey.ADDRESS)
-                        }
-                        onChange={({ complete }) =>
-                          handleStripeFieldChange(
-                            StripeFieldKey.ADDRESS,
-                            complete,
-                          )
-                        }
-                      /> */}
                     <Input required maxLength={10} {...field} />
                   </FormControl>
                   <FormMessage />
