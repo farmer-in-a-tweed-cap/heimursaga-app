@@ -244,7 +244,8 @@ export interface ISubscriptionPlanUpgradeCheckoutPayload {
 export interface ISubscriptionPlanUpgradeCheckoutResponse {
   subscriptionPlanId: number;
   subscriptionId: string;
-  clientSecret: string;
+  clientSecret: string | null;
+  isFreeSubscription?: boolean;
 }
 
 export interface ISubscriptionPlanUpgradeCompletePayload {
