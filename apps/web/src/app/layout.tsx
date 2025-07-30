@@ -172,10 +172,10 @@ export const AppLayout = ({
           <AppSidebar collapsed={true} />
           <AppTopNavbar />
           <div className="relative w-full flex flex-col justify-start">
-            <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center lg:hidden">
+            <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] flex flex-row items-center lg:hidden">
               <AppBottomNavbar />
             </div>
-            <div className="z-10 w-full h-auto flex flex-col pb-[70px] lg:pt-16">
+            <div className="z-10 w-full h-auto flex flex-col pb-[70px] pt-16 lg:pt-16">
               <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
                 {children}
               </div>
@@ -201,10 +201,10 @@ export const MapLayout = ({
           <AppSidebar collapsed={true} />
           <AppTopNavbar />
           <div className="relative w-full h-dvh flex flex-col justify-start">
-            <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] border-t border-solid border-accent flex flex-row items-center lg:hidden">
+            <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] flex flex-row items-center lg:hidden">
               <AppBottomNavbar />
             </div>
-            <div className="z-10 w-full h-dvh relative pb-[70px] lg:pb-0 lg:pt-16">
+            <div className="z-10 w-full h-dvh relative pb-[70px] pt-16 lg:pb-0 lg:pt-16">
               {children}
             </div>
           </div>

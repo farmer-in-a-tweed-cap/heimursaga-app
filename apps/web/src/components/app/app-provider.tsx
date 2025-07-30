@@ -16,6 +16,7 @@ export interface IAppContextState {
   config: IAppContextStateConfig;
   app: {
     drawer: boolean;
+    navbarTheme: 'light' | 'dark';
   };
 }
 
@@ -26,7 +27,7 @@ export interface IAppContextStateConfig {
 }
 
 export const AppContext = createContext<IAppContext>({
-  context: { config: {}, app: { drawer: false } },
+  context: { config: {}, app: { drawer: false, navbarTheme: 'dark' } },
   setContext: () => {},
 });
 
@@ -39,7 +40,7 @@ export function AppProvider({
 }) {
   const [state, setState] = useState<IAppContextState>({
     config,
-    app: { drawer: false },
+    app: { drawer: false, navbarTheme: 'dark' },
   });
 
   const setContext = (data: Partial<IAppContextState>) => {

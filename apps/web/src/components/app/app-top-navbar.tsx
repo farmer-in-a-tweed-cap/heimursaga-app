@@ -136,109 +136,121 @@ export const AppTopNavbar: React.FC<Props> = () => {
   }
 
   return (
-    <div className="hidden lg:flex fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-16 shadow-sm">
-      <div className="w-full px-6 flex items-center justify-between">
-        {/* Left spacer */}
-        <div className="flex-1"></div>
-        
-        {/* Centered Logo */}
-        <div className="flex items-center justify-center">
+    <>
+      {/* Desktop Top Navbar - Full version */}
+      <div className="hidden lg:flex fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-16 shadow-sm">
+        <div className="w-full px-6 flex items-center justify-between">
+          {/* Left spacer */}
+          <div className="flex-1"></div>
+          
+          {/* Centered Logo */}
+          <div className="flex items-center justify-center">
+            <Link href={ROUTER.HOME}>
+              <Logo size="lg" color="dark" />
+            </Link>
+          </div>
+          
+          {/* Right side elements */}
+          <div className="flex-1 flex items-center justify-end">
+            {session?.logged ? (
+              <div className="flex items-center">
+                {/* Create Entry Button */}
+                <Link href={ROUTER.ENTRIES.CREATE} className="mr-2">
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
+                  >
+                    <FeatherIcon size={16} className="mr-1" />
+                    Log Entry
+                  </Button>
+                </Link>
+                
+                {/* Notifications */}
+                <Link href={ROUTER.NOTIFICATIONS} className="mx-3">
+                  <Button variant="ghost" size="lg" className="relative !px-1">
+                    <BellIcon size={20} weight="bold" className="text-gray-600 !size-5" />
+                    {badges.notifications >= 1 && (
+                      <div className="absolute -top-1 -right-1">
+                        <BadgeCount count={badges.notifications} />
+                      </div>
+                    )}
+                  </Button>
+                </Link>
+                
+                {/* User Avatar with Username and Role */}
+                <DropdownMenu>
+                <DropdownMenuTrigger>
+                  <div className="flex flex-row gap-3 items-center hover:bg-gray-50 rounded-lg p-2 transition-colors">
+                    <UserAvatar
+                      src={picture}
+                      className={cn(isCreator ? 'border-2 border-primary' : '')}
+                    />
+                    <div className="flex flex-col items-start text-sm">
+                      <span className="font-medium text-sm text-gray-900">{username}</span>
+                      <span className="font-normal text-xs capitalize text-gray-600">
+                        {roleLabel}
+                      </span>
+                    </div>
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-background min-w-[240px] mr-4 mt-2 p-0 py-2">
+                  {links.map(({ href, label }, key) => (
+                    <DropdownMenuItem key={key} asChild>
+                      <Link
+                        href={href}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          window.location.href = href;
+                        }}
+                        className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
+                      >
+                        {label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
+                    onClick={handleLogout}
+                  >
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              </div>
+            ) : (
+              /* Logged out state - Login button and create account link */
+              <div className="flex items-center space-x-4">
+                <Link 
+                  href={ROUTER.SIGNUP}
+                  className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                >
+                  create account
+                </Link>
+                <Link href={ROUTER.LOGIN}>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
+                  >
+                    Log in
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Top Navbar - Logo only (when bottom navbar is visible) */}
+      <div className="flex lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-16 shadow-sm">
+        <div className="w-full px-6 flex items-center justify-center">
           <Link href={ROUTER.HOME}>
             <Logo size="lg" color="dark" />
           </Link>
         </div>
-        
-        {/* Right side elements */}
-        <div className="flex-1 flex items-center justify-end">
-          {session?.logged ? (
-            <div className="flex items-center">
-              {/* Create Entry Button */}
-              <Link href={ROUTER.ENTRIES.CREATE} className="mr-2">
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
-                >
-                  <FeatherIcon size={16} className="mr-1" />
-                  Log Entry
-                </Button>
-              </Link>
-              
-              {/* Notifications */}
-              <Link href={ROUTER.NOTIFICATIONS} className="mx-3">
-                <Button variant="ghost" size="lg" className="relative !px-1">
-                  <BellIcon size={20} weight="bold" className="text-gray-600 !size-5" />
-                  {badges.notifications >= 1 && (
-                    <div className="absolute -top-1 -right-1">
-                      <BadgeCount count={badges.notifications} />
-                    </div>
-                  )}
-                </Button>
-              </Link>
-              
-              {/* User Avatar with Username and Role */}
-              <DropdownMenu>
-              <DropdownMenuTrigger>
-                <div className="flex flex-row gap-3 items-center hover:bg-gray-50 rounded-lg p-2 transition-colors">
-                  <UserAvatar
-                    src={picture}
-                    className={cn(isCreator ? 'border-2 border-primary' : '')}
-                  />
-                  <div className="flex flex-col items-start text-sm">
-                    <span className="font-medium text-sm text-gray-900">{username}</span>
-                    <span className="font-normal text-xs capitalize text-gray-600">
-                      {roleLabel}
-                    </span>
-                  </div>
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="bg-background min-w-[240px] mr-4 mt-2 p-0 py-2">
-                {links.map(({ href, label }, key) => (
-                  <DropdownMenuItem key={key} asChild>
-                    <Link
-                      href={href}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        window.location.href = href;
-                      }}
-                      className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
-                    >
-                      {label}
-                    </Link>
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
-                  onClick={handleLogout}
-                >
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            </div>
-          ) : (
-            /* Logged out state - Login button and create account link */
-            <div className="flex items-center space-x-4">
-              <Link 
-                href={ROUTER.SIGNUP}
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
-              >
-                create account
-              </Link>
-              <Link href={ROUTER.LOGIN}>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
-                >
-                  Log in
-                </Button>
-              </Link>
-            </div>
-          )}
-        </div>
       </div>
-    </div>
+    </>
   );
 };

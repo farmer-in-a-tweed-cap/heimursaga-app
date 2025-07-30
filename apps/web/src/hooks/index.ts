@@ -6,3 +6,4 @@ export * from './use-map';
 export * from './use-app-params';
 export * from './use-uploads';
 export * from './use-scroll';
+export * from './use-app';

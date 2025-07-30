@@ -17,7 +17,7 @@ import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 
-import { useSession } from '@/hooks';
+import { useSession, useApp } from '@/hooks';
 import { ROUTER } from '@/router';
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
@@ -31,7 +31,10 @@ type NavLink = {
 
 export const AppBottomNavbar: React.FC<Props> = () => {
   const { role, logged, username, creator, ...user } = useSession();
+  const { context, setContext } = useApp();
   const pathname = usePathname();
+  
+  const isDark = context.app.navbarTheme === 'dark';
 
   // Get notification count for badge
   const { data: notificationData } = useQuery({
@@ -84,24 +87,42 @@ export const AppBottomNavbar: React.FC<Props> = () => {
     </div>
   );
 
+  const createLogEntryButton = () => (
+    <div className="relative flex items-center justify-center w-[56px] h-[56px]">
+      <div 
+        className="w-[48px] h-[48px] rounded-full flex items-center justify-center bg-primary"
+        style={{ 
+          backgroundColor: 'rgb(170, 108, 70)',
+        }}
+      >
+        <Feather size={24} weight="regular" className="text-white" />
+      </div>
+    </div>
+  );
+
   const LINKS: { [role: string]: NavLink[] } = {
     guest: [
-      {
-        href: ROUTER.EXPLORE.RESET,
-        icon: createLogoIcon,
-        label: '',
-      },
       {
         href: ROUTER.LOGIN,
         icon: (props) => <UserIcon {...props} />,
         label: 'Log in',
       },
+      {
+        href: ROUTER.EXPLORE.RESET,
+        icon: (props) => <CompassRose {...props} />,
+        label: 'Explore',
+      },
     ],
     user: [
       {
-        href: ROUTER.EXPLORE.RESET,
-        icon: createLogoIcon,
+        href: username ? ROUTER.YOU : '#',
+        icon: createAvatarIcon,
         label: '',
+      },
+      {
+        href: ROUTER.EXPLORE.RESET,
+        icon: (props) => <CompassRose {...props} />,
+        label: 'Explore',
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
@@ -109,18 +130,13 @@ export const AppBottomNavbar: React.FC<Props> = () => {
         label: 'Journal',
       },
       {
-        href: ROUTER.ENTRIES.CREATE,
-        icon: (props) => <Feather {...props} />,
-        label: 'Log Entry',
-      },
-      {
         href: ROUTER.BOOKMARKS.HOME,
         icon: (props) => <Bookmarks {...props} />,
         label: 'Bookmarks',
       },
       {
-        href: username ? ROUTER.YOU : '#',
-        icon: createAvatarIcon,
+        href: ROUTER.ENTRIES.CREATE,
+        icon: createLogEntryButton,
         label: '',
       },
     ],
@@ -142,27 +158,51 @@ export const AppBottomNavbar: React.FC<Props> = () => {
 
   const isActiveLink = (path: string): boolean => {
     path = path.startsWith('/') ? path : `/${path}`;
-    // For root path, check exact match
-    if (path === '/') {
-      return pathname === path;
+    
+    // Special handling for explore routes with query params
+    if (path.startsWith('/explore?')) {
+      return pathname === '/explore';
     }
-    // For explore page, only match exact path (not subpages like /explore/post/123)
+    
+    // Special handling for explore base path
     if (path === '/explore') {
       return pathname === '/explore';
     }
-    // For other paths, check if pathname starts with path followed by '/' or is exact match
+    
+    // For root path, exact match only
+    if (path === '/') {
+      return pathname === '/';
+    }
+    
+    // For all other paths (including user profiles), exact match or subpaths
     return pathname === path || pathname.startsWith(path + '/');
   };
 
+  const toggleTheme = () => {
+    if (setContext) {
+      setContext({
+        app: {
+          ...context.app,
+          navbarTheme: isDark ? 'light' : 'dark'
+        }
+      });
+    }
+  };
+
   return (
-    <div className="w-full h-[70px] bg-background border-t border-solid border-accent flex flex-row items-center">
+    <div className={cn(
+      "w-full h-[70px] border-t border-solid flex flex-row items-center",
+      isDark ? "bg-dark border-gray-700" : "bg-background border-accent"
+    )}>
       {/* Left item - Logo/Explore */}
       <div className="flex-shrink-0 px-3">
         <Link
           href={links[0].href}
           className={cn(
-            'flex flex-col items-center justify-center gap-1 text-gray-500',
-            isActiveLink(links[0].href) ? 'text-black' : 'text-gray-500',
+            'flex flex-col items-center justify-center gap-1',
+            isDark 
+              ? (isActiveLink(links[0].href) ? 'text-white' : 'text-gray-400')
+              : (isActiveLink(links[0].href) ? 'text-black' : 'text-gray-500'),
           )}
         >
           <div className="w-[56px] h-[56px] flex items-center justify-center">
@@ -180,8 +220,10 @@ export const AppBottomNavbar: React.FC<Props> = () => {
               <Link
                 href={href}
                 className={cn(
-                  'flex flex-col items-center justify-center gap-1 text-gray-500',
-                  isActiveLink(href) ? 'text-black' : 'text-gray-500',
+                  'flex flex-col items-center justify-center gap-1',
+                  isDark 
+                    ? (isActiveLink(href) ? 'text-white' : 'text-gray-400')
+                    : (isActiveLink(href) ? 'text-black' : 'text-gray-500'),
                 )}
               >
                 <div className="w-[28px] h-[28px] flex items-center justify-center">
@@ -199,8 +241,10 @@ export const AppBottomNavbar: React.FC<Props> = () => {
         <Link
           href={links[links.length - 1].href}
           className={cn(
-            'flex flex-col items-center justify-center text-gray-500',
-            isActiveLink(links[links.length - 1].href) ? 'text-black' : 'text-gray-500',
+            'flex flex-col items-center justify-center',
+            isDark 
+              ? (isActiveLink(links[links.length - 1].href) ? 'text-white' : 'text-gray-400')
+              : (isActiveLink(links[links.length - 1].href) ? 'text-black' : 'text-gray-500'),
             // Adjust spacing for login button to fit in navbar
             links[links.length - 1].label ? 'gap-0' : 'gap-1'
           )}
