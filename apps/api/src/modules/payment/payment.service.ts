@@ -869,19 +869,22 @@ export class PaymentService {
           );
         });
 
-      // verify if the stripe payment intent is completed
-      const stripePaymentIntent =
-        await this.stripeService.stripe.paymentIntents.retrieve(
-          checkout.stripe_payment_intent_id,
-        );
+      // verify if the stripe payment intent is completed (skip for free subscriptions)
+      let stripePaymentIntentComplete = true; // Default to true for free subscriptions
 
-      const stripePaymentIntentComplete =
-        stripePaymentIntent.status === 'succeeded';
+      if (checkout.stripe_payment_intent_id) {
+        const stripePaymentIntent =
+          await this.stripeService.stripe.paymentIntents.retrieve(
+            checkout.stripe_payment_intent_id,
+          );
 
-      if (!stripePaymentIntentComplete)
-        throw new ServiceBadRequestException(
-          'plan upgrade not completed, checkout not confirmed',
-        );
+        stripePaymentIntentComplete = stripePaymentIntent.status === 'succeeded';
+
+        if (!stripePaymentIntentComplete)
+          throw new ServiceBadRequestException(
+            'plan upgrade not completed, checkout not confirmed',
+          );
+      }
 
       // retrieve a stripe subscription
       const stripeSubscription = await this.stripeService.stripe.subscriptions
@@ -892,9 +895,13 @@ export class PaymentService {
           );
         });
 
-      this.logger.log(
-        `stripe payment intent ${checkout.stripe_payment_intent_id} is completed`,
-      );
+      if (checkout.stripe_payment_intent_id) {
+        this.logger.log(
+          `stripe payment intent ${checkout.stripe_payment_intent_id} is completed`,
+        );
+      } else {
+        this.logger.log(`free subscription completed without payment intent`);
+      }
 
       // get the plan
       const plan = await this.prisma.plan
