@@ -137,10 +137,7 @@ export const LandingPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen relative" style={{ 
-      minHeight: isMobileSafari ? '100vh' : 'auto',
-      ...(isMobileSafari && { WebkitMinHeight: '-webkit-fill-available' })
-    } as React.CSSProperties}>
+    <div className="min-h-screen relative">
       
       {/* Fixed Background Video */}
       <div className="fixed inset-0 z-0">
@@ -161,17 +158,11 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* Hero Section */}
-      <div className="relative min-h-screen text-white overflow-hidden z-10" style={{
-        minHeight: isMobileSafari ? '100vh' : 'auto',
-        ...(isMobileSafari && { WebkitMinHeight: '-webkit-fill-available' })
-      } as React.CSSProperties}>
+      <div className="relative min-h-screen text-white overflow-hidden z-10">
 
  
         
-        <div className="relative z-30 w-full h-screen" style={{
-          height: isMobileSafari ? '100vh' : 'auto',
-          ...(isMobileSafari && { WebkitHeight: '-webkit-fill-available' })
-        } as React.CSSProperties}>
+        <div className="relative z-30 w-full h-screen">
           {/* Logo at top */}
           <div className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 z-50 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ top: '8px', marginTop: isMobile ? '-50px' : '-60px' }}>
             <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight hidden" style={{}}>
