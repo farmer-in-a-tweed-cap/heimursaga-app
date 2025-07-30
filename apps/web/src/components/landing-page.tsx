@@ -107,10 +107,10 @@ export const LandingPage: React.FC = () => {
       const height = window.innerHeight;
       const isMobileWidth = width < 760;
       
-      // Better Safari detection for iOS devices
+      // Detect specifically Safari on iOS (not other mobile browsers)
       const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      const isSafari = /^((?!chrome|android|crios|fxios).)*safari/i.test(navigator.userAgent) || isIOS;
-      const isMobileSafariDevice = isSafari && isMobileWidth;
+      const isActualSafari = /Version\/[\d\.].*Safari/.test(navigator.userAgent);
+      const isMobileSafariDevice = isIOS && isActualSafari && isMobileWidth;
       
       setIsMobile(isMobileWidth);
       setIsMobileSafari(isMobileSafariDevice);
