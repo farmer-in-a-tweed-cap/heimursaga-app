@@ -702,37 +702,73 @@ export class SponsorService {
 
       // create a stripe price if not attached yet or the amount changed
       if (!stripePriceId || priceChanged) {
-        // create a stripe price
-        const stripePrice = await this.stripeService.stripe.prices.create({
-          currency,
-          unit_amount: priceChanged
-            ? decimalToInteger(price)
-            : config.sponsorship.default_amount,
-          recurring: { interval: 'month' },
-          product: stripeProductId,
-        });
+        try {
+          // create a stripe price
+          const stripePrice = await this.stripeService.stripe.prices.create({
+            currency,
+            unit_amount: priceChanged
+              ? decimalToInteger(price)
+              : config.sponsorship.default_amount,
+            recurring: { interval: 'month' },
+            product: stripeProductId,
+          });
 
-        // set the price as default in the stripe product
-        await this.stripeService.stripe.products.update(stripeProductId, {
-          default_price: stripePrice.id,
-        });
+          // set the price as default in the stripe product
+          await this.stripeService.stripe.products.update(stripeProductId, {
+            default_price: stripePrice.id,
+          });
 
         // archive the previous price
         await this.stripeService.stripe.prices.update(stripePriceId, {
           active: false,
         });
 
-        stripePriceId = stripePrice.id as string;
+          stripePriceId = stripePrice.id as string;
 
-        this.logger.log(`stripe price updated (${stripePriceId})`);
+          this.logger.log(`stripe price updated (${stripePriceId})`);
 
-        // update the sponsorship tier
-        await this.prisma.sponsorshipTier.update({
-          where: { id: tier.id },
-          data: {
-            stripe_price_month_id: stripePriceId,
-          },
-        });
+          // update the sponsorship tier
+          await this.prisma.sponsorshipTier.update({
+            where: { id: tier.id },
+            data: {
+              stripe_price_month_id: stripePriceId,
+            },
+          });
+        } catch (stripeError) {
+          // If the product doesn't exist (test vs live mode mismatch), create a new one
+          if (stripeError.code === 'resource_missing') {
+            this.logger.log(`stripe product not found in current mode, creating new product [..]`);
+            
+            // create a stripe product (identical to normal tier creation)
+            const stripeProduct = await this.stripeService.stripe.products.create({
+              name: `creator_${user.id}__sponsorship`,
+              active: true,
+              default_price_data: {
+                currency,
+                unit_amount: priceChanged
+                  ? decimalToInteger(price)
+                  : config.sponsorship.default_amount,
+                recurring: { interval },
+              },
+            });
+
+            this.logger.log(`stripe product created (${stripeProduct.id})`);
+
+            stripeProductId = stripeProduct.id as string;
+            stripePriceId = stripeProduct.default_price as string;
+
+            // update the sponsorship tier with new product/price IDs
+            await this.prisma.sponsorshipTier.update({
+              where: { id: tier.id },
+              data: {
+                stripe_product_id: stripeProductId,
+                stripe_price_month_id: stripePriceId,
+              },
+            });
+          } else {
+            throw stripeError; // Re-throw other Stripe errors
+          }
+        }
       }
 
       // update the sponsorship tier
