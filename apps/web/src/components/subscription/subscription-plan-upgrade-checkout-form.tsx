@@ -238,7 +238,15 @@ const FormComponent: React.FC<Props> = ({
           });
 
         if (success && checkout) {
-          const { clientSecret } = checkout;
+          const { clientSecret, isFreeSubscription } = checkout;
+
+          // Handle free subscriptions (100% discount promo codes)
+          if (isFreeSubscription) {
+            // Free subscription is completed automatically by webhooks
+            await sleep(3000); // Give webhooks time to process
+            redirect(ROUTER.UPGRADE_SUCCESS);
+            return;
+          }
 
           if (!clientSecret) {
             modal.open<InfoModalProps>(MODALS.INFO, {
