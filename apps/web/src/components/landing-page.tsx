@@ -5,6 +5,7 @@ import { Logo } from '@/components';
 import { ROUTER } from '@/router';
 import Link from 'next/link';
 import Image from 'next/image';
+import { cn } from '@repo/ui/lib/utils';
 
 interface FeatureCardProps {
   title: string;
@@ -176,7 +177,13 @@ export const LandingPage: React.FC = () => {
           
           {/* Text in middle */}
           <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transform: `translate(-50%, -50%) ${isVisible ? 'translateY(0)' : 'translateY(2.5rem)'}` }}>
-            <div className="text-xl sm:text-xl md:text-2xl lg:text-3xl font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center" style={{}}>
+            <div className={cn(
+              "font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center",
+              // Larger text for mobile Safari since it renders smaller
+              isMobileSafari 
+                ? "text-2xl sm:text-2xl md:text-3xl lg:text-3xl" 
+                : "text-xl sm:text-xl md:text-2xl lg:text-3xl"
+            )}>
               <p>You're an explorer.</p>
               <p>Don't get lost in a sea of content creators.</p>
               <p>Share your story and raise money on Heimursaga.</p>
@@ -188,7 +195,7 @@ export const LandingPage: React.FC = () => {
             className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
             style={{ 
               bottom: isMobileSafari 
-                ? `calc(2rem + env(safe-area-inset-bottom, 20px))` 
+                ? '4rem' // Higher positioning for Safari to ensure visibility
                 : `calc(3rem + env(safe-area-inset-bottom, 0px))`
             }}
           >
