@@ -742,9 +742,7 @@ export class PaymentService {
           const stripeSubscription =
             await this.stripeService.stripe.subscriptions.create(subscriptionParams);
 
-          const invoice = stripeSubscription.latest_invoice as Stripe.Invoice & {
-            payment_intent: Stripe.PaymentIntent;
-          };
+          const invoice = stripeSubscription.latest_invoice as Stripe.Invoice;
           const paymentIntent = invoice.payment_intent;
 
           // create a checkout - use original amount since promo discounts are handled by Stripe
@@ -756,7 +754,7 @@ export class PaymentService {
               user_id: userId,
               plan_id: plan.id,
               stripe_subscription_id: stripeSubscription.id,
-              stripe_payment_intent_id: paymentIntent.id,
+              stripe_payment_intent_id: paymentIntent?.id || null,
             },
             select: {
               id: true,
@@ -776,7 +774,7 @@ export class PaymentService {
             [StripeMetadataKey.CHECKOUT_ID]: checkout.id,
           };
 
-          if (paymentIntent) {
+          if (paymentIntent?.id) {
             await this.stripeService.stripe.paymentIntents.update(
               paymentIntent.id,
               { metadata },
