@@ -6,6 +6,7 @@ import {
   IPostGetAllResponse,
   IPostGetByIdResponse,
   IPostUpdatePayload,
+  SponsorshipStatus,
   UserNotificationContext,
   UserRole,
 } from '@repo/types';
@@ -35,6 +36,27 @@ export class PostService {
     private prisma: PrismaService,
     private eventService: EventService,
   ) {}
+
+  /**
+   * Check if a user has an active sponsorship with a creator
+   */
+  private async hasActiveSponsorship(userId: number, creatorId: number): Promise<boolean> {
+    if (!userId) return false;
+    
+    const sponsorship = await this.prisma.sponsorship.findFirst({
+      where: {
+        user_id: userId,
+        creator_id: creatorId,
+        status: SponsorshipStatus.ACTIVE,
+        expiry: {
+          gt: new Date(), // expiry is in the future
+        },
+        deleted_at: null,
+      },
+    });
+
+    return !!sponsorship;
+  }
 
   async getPosts({ session }: ISessionQuery): Promise<IPostGetAllResponse> {
     try {
@@ -87,12 +109,14 @@ export class PostService {
             title: true,
             content: true,
             public: true,
+            sponsored: true,
             lat: true,
             lon: true,
             place: true,
             date: true,
             likes_count: true,
             bookmarks_count: true,
+            author_id: true, // Need this for sponsorship check
             // check if the session user has liked this post
             likes: userId
               ? {
@@ -121,37 +145,60 @@ export class PostService {
           take,
           orderBy: [{ date: 'desc' }],
         })
-        .then((posts) =>
-          posts.map((post) => ({
-            id: post.public_id,
-            lat: post.lat,
-            lon: post.lon,
-            place: post.place,
-            date: post.date,
-            title: post.title,
-            public: post.public,
-            content: post.content.slice(0, 140),
-            author: post.author
-              ? {
-                  username: post.author.username,
-                  name: post.author.profile?.name,
-                  picture: post.author.profile?.picture
-                    ? getStaticMediaUrl(post.author.profile.picture)
-                    : undefined,
-                  creator: post.author.role === UserRole.CREATOR,
-                }
-              : undefined,
-            liked: userId ? post.likes.length > 0 : false,
-            bookmarked: userId ? post.bookmarks.length > 0 : false,
-            likesCount: post.likes_count,
-            bookmarksCount: post.bookmarks_count,
-            createdAt: post.created_at,
-          })),
-        );
+      
+      // Filter out sponsored posts that the user doesn't have access to
+      const filteredPosts = [];
+      for (const post of data) {
+        // If post is sponsored, check if user has access
+        if (post.sponsored) {
+          // Allow the post author to see their own sponsored posts
+          if (userId && post.author_id === userId) {
+            filteredPosts.push(post);
+          }
+          // Allow admins to see all sponsored posts
+          else if (userRole === UserRole.ADMIN) {
+            filteredPosts.push(post);
+          }
+          // For other users, check if they have an active sponsorship
+          else if (userId && await this.hasActiveSponsorship(userId, post.author_id)) {
+            filteredPosts.push(post);
+          }
+          // Otherwise, skip this sponsored post
+        } else {
+          // Non-sponsored posts are visible to everyone (subject to public visibility rules)
+          filteredPosts.push(post);
+        }
+      }
+
+      const processedData = filteredPosts.map((post) => ({
+        id: post.public_id,
+        lat: post.lat,
+        lon: post.lon,
+        place: post.place,
+        date: post.date,
+        title: post.title,
+        public: post.public,
+        content: post.content.slice(0, 140),
+        author: post.author
+          ? {
+              username: post.author.username,
+              name: post.author.profile?.name,
+              picture: post.author.profile?.picture
+                ? getStaticMediaUrl(post.author.profile.picture)
+                : undefined,
+              creator: post.author.role === UserRole.CREATOR,
+            }
+          : undefined,
+        liked: userId ? post.likes.length > 0 : false,
+        bookmarked: userId ? post.bookmarks.length > 0 : false,
+        likesCount: post.likes_count,
+        bookmarksCount: post.bookmarks_count,
+        createdAt: post.created_at,
+      }));
 
       const response: IPostGetAllResponse = {
-        data,
-        results,
+        data: processedData,
+        results: filteredPosts.length,
       };
 
       return response;
@@ -211,6 +258,7 @@ export class PostService {
           content: true,
           public: true,
           sponsored: true,
+          author_id: true,
           place: true,
           date: true,
           waypoint: { select: { id: true, lat: true, lon: true } },
@@ -272,6 +320,17 @@ export class PostService {
             },
           })
         : undefined;
+
+      // Check access for sponsored posts
+      if (post.sponsored) {
+        const isAuthor = userId && post.author_id === userId;
+        const isAdmin = userRole === UserRole.ADMIN;
+        const hasSponsorship = userId && await this.hasActiveSponsorship(userId, post.author_id);
+        
+        if (!isAuthor && !isAdmin && !hasSponsorship) {
+          throw new ServiceForbiddenException('Access denied to sponsored content');
+        }
+      }
 
       const response: IPostGetByIdResponse = {
         id: post.public_id,

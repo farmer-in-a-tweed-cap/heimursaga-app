@@ -8,6 +8,7 @@ import {
   IWaypointGetByIdResponse,
   IWaypointUpdatePayload,
   MapQueryContext,
+  SponsorshipStatus,
   UserRole,
 } from '@repo/types';
 
@@ -35,6 +36,27 @@ export class MapService {
     private logger: Logger,
     private prisma: PrismaService,
   ) {}
+
+  /**
+   * Check if a user has an active sponsorship with a creator
+   */
+  private async hasActiveSponsorship(userId: number, creatorId: number): Promise<boolean> {
+    if (!userId) return false;
+    
+    const sponsorship = await this.prisma.sponsorship.findFirst({
+      where: {
+        user_id: userId,
+        creator_id: creatorId,
+        status: SponsorshipStatus.ACTIVE,
+        expiry: {
+          gt: new Date(), // expiry is in the future
+        },
+        deleted_at: null,
+      },
+    });
+
+    return !!sponsorship;
+  }
 
   async query({
     query,
@@ -74,6 +96,8 @@ export class MapService {
             place: true,
             date: true,
             public: true,
+            sponsored: true,
+            author_id: true,
             bookmarks: userId
               ? {
                   where: { user_id: userId },
@@ -218,47 +242,62 @@ export class MapService {
         take,
       });
 
-      const response: IMapQueryResponse = {
-        results,
-        waypoints: sortByDate({
-          elements: waypoints.map(({ id, title, lat, lon, date, posts }) => {
-            const post = posts[0];
+      // Filter out sponsored posts for users without active sponsorships
+      const filteredWaypoints = await Promise.all(
+        waypoints.map(async ({ id, title, lat, lon, date, posts }) => {
+          const post = posts[0];
 
-            return {
-              lat,
-              lon,
-              date: post ? post.date : date, // Use waypoint date if no post
-              waypoint: !post ? {
-                id: id,
-                title: title || '',
-                date: date,
-              } : undefined,
-              post: post
-                ? {
-                    id: post.public_id,
-                    title: post.title,
-                    content: post.content
-                      .slice(0, 500)
-                      .replaceAll('\\n', ' ')
-                      .slice(0, 120),
-                    place: post.place,
-                    date: post.date,
-                    author: {
-                      username: post.author.username,
-                      picture: getStaticMediaUrl(post.author.profile.picture),
-                      creator: post.author.role === UserRole.CREATOR,
-                    },
-                    bookmarked: userId ? post.bookmarks.length > 0 : false,
-                    trip: post.waypoint?.trips?.[0]?.trip
-                      ? {
-                          id: post.waypoint.trips[0].trip.public_id,
-                          title: post.waypoint.trips[0].trip.title,
-                        }
-                      : undefined,
-                  }
-                : undefined,
-            };
-          }),
+          // If post is sponsored, check if user has active sponsorship
+          if (post?.sponsored && userId) {
+            const hasSponsorship = await this.hasActiveSponsorship(userId, post.author_id);
+            if (!hasSponsorship) {
+              return null; // Filter out this post
+            }
+          }
+
+          return {
+            lat,
+            lon,
+            date: post ? post.date : date, // Use waypoint date if no post
+            waypoint: !post ? {
+              id: id,
+              title: title || '',
+              date: date,
+            } : undefined,
+            post: post
+              ? {
+                  id: post.public_id,
+                  title: post.title,
+                  content: post.content
+                    .slice(0, 500)
+                    .replaceAll('\\n', ' ')
+                    .slice(0, 120),
+                  place: post.place,
+                  date: post.date,
+                  author: {
+                    username: post.author.username,
+                    picture: getStaticMediaUrl(post.author.profile.picture),
+                    creator: post.author.role === UserRole.CREATOR,
+                  },
+                  bookmarked: userId ? post.bookmarks.length > 0 : false,
+                  trip: post.waypoint?.trips?.[0]?.trip
+                    ? {
+                        id: post.waypoint.trips[0].trip.public_id,
+                        title: post.waypoint.trips[0].trip.title,
+                      }
+                    : undefined,
+                }
+              : undefined,
+          };
+        })
+      );
+
+      const finalWaypoints = filteredWaypoints.filter(Boolean);
+      
+      const response: IMapQueryResponse = {
+        results: finalWaypoints.length,
+        waypoints: sortByDate({
+          elements: finalWaypoints,
           key: 'date',
           order: 'desc',
         }),

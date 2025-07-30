@@ -640,9 +640,8 @@ export const MapExploreView: React.FC<Props> = () => {
             <>
               <div className="flex flex-row justify-between items-center py-4 px-4 desktop:px-6 bg-gray-50">
                 <div className="w-full flex flex-col">
-                  <div className="flex flex-row items-center justify-between">
-                    <span className="text-xl font-medium">Explore</span>
-                    {!screen.mobile && focusedWaypointId && previousView && (
+                  {!screen.mobile && focusedWaypointId && previousView && (
+                    <div className="flex justify-end">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -652,8 +651,8 @@ export const MapExploreView: React.FC<Props> = () => {
                         <ArrowLeft size={16} />
                         Reset Map
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                   <div className={cn('mt-4 w-full')}>
                     <MapSearchbar
                       value={search.value}
@@ -819,7 +818,10 @@ export const MapExploreView: React.FC<Props> = () => {
                     return null;
                   }).filter(Boolean)
                 ) : (
-                  <>no entries found</>
+                  <div className="text-center text-gray-600 py-8 px-4">
+                    <p>Looks like there are no journal entries in this area.</p>
+                    <p>Be the first to document your adventures here!</p>
+                  </div>
                 )}
               </>
             )}

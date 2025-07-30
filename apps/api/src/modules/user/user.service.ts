@@ -18,6 +18,7 @@ import {
   IUserSettingsProfileGetResponse,
   IUserSettingsProfileUpdatePayload,
   MediaUploadContext,
+  SponsorshipStatus,
   UserNotificationContext,
   UserRole,
 } from '@repo/types';
@@ -51,6 +52,27 @@ export class UserService {
     private prisma: PrismaService,
     private eventService: EventService,
   ) {}
+
+  /**
+   * Check if a user has an active sponsorship with a creator
+   */
+  private async hasActiveSponsorship(userId: number, creatorId: number): Promise<boolean> {
+    if (!userId) return false;
+    
+    const sponsorship = await this.prisma.sponsorship.findFirst({
+      where: {
+        user_id: userId,
+        creator_id: creatorId,
+        status: SponsorshipStatus.ACTIVE,
+        expiry: {
+          gt: new Date(), // expiry is in the future
+        },
+        deleted_at: null,
+      },
+    });
+
+    return !!sponsorship;
+  }
 
   async getUsers({
     query,
@@ -276,6 +298,8 @@ export class UserService {
         public_id: true,
         title: true,
         content: true,
+        sponsored: true,
+        author_id: true,
         lat: true,
         lon: true,
         waypoint: {
@@ -320,8 +344,28 @@ export class UserService {
         orderBy: [{ id: 'desc' }],
       });
 
+      // Filter out sponsored posts that the user doesn't have access to
+      const filteredPosts = [];
+      for (const post of data) {
+        // If post is sponsored, check if user has access
+        if (post.sponsored) {
+          // Allow the post author to see their own sponsored posts
+          if (userId && post.author_id === userId) {
+            filteredPosts.push(post);
+          }
+          // For other users, check if they have an active sponsorship
+          else if (userId && await this.hasActiveSponsorship(userId, post.author_id)) {
+            filteredPosts.push(post);
+          }
+          // Otherwise, skip this sponsored post
+        } else {
+          // Non-sponsored posts are visible to everyone (subject to public visibility rules)
+          filteredPosts.push(post);
+        }
+      }
+
       const response: IUserPostsQueryResponse = {
-        data: data.map(
+        data: filteredPosts.map(
           ({
             public_id: id,
             title,
@@ -360,7 +404,7 @@ export class UserService {
             you: userId ? userId === author.id : false,
           }),
         ),
-        results,
+        results: filteredPosts.length,
       };
 
       return response;
@@ -777,6 +821,27 @@ export class SessionUserService {
     private uploadService: UploadService,
   ) {}
 
+  /**
+   * Check if a user has an active sponsorship with a creator
+   */
+  private async hasActiveSponsorship(userId: number, creatorId: number): Promise<boolean> {
+    if (!userId) return false;
+    
+    const sponsorship = await this.prisma.sponsorship.findFirst({
+      where: {
+        user_id: userId,
+        creator_id: creatorId,
+        status: SponsorshipStatus.ACTIVE,
+        expiry: {
+          gt: new Date(), // expiry is in the future
+        },
+        deleted_at: null,
+      },
+    });
+
+    return !!sponsorship;
+  }
+
   async getPosts({
     userId,
     context,
@@ -796,6 +861,8 @@ export class SessionUserService {
         title: true,
         content: true,
         public: true,
+        sponsored: true,
+        author_id: true,
         lat: true,
         lon: true,
         waypoint: {
@@ -845,6 +912,10 @@ export class SessionUserService {
                 user_id: userId,
               },
             },
+            OR: [
+              { public: true },
+              { author: { id: userId } }
+            ],
           };
           break;
         case 'drafts':
@@ -866,8 +937,28 @@ export class SessionUserService {
         orderBy: [{ id: 'desc' }],
       });
 
+      // Filter out sponsored posts that the user doesn't have access to
+      const filteredPosts = [];
+      for (const post of data) {
+        // If post is sponsored, check if user has access
+        if (post.sponsored) {
+          // Allow the post author to see their own sponsored posts
+          if (userId && post.author_id === userId) {
+            filteredPosts.push(post);
+          }
+          // For other users, check if they have an active sponsorship
+          else if (userId && await this.hasActiveSponsorship(userId, post.author_id)) {
+            filteredPosts.push(post);
+          }
+          // Otherwise, skip this sponsored post
+        } else {
+          // Non-sponsored posts are visible to everyone (subject to public visibility rules)
+          filteredPosts.push(post);
+        }
+      }
+
       const response: IUserPostsQueryResponse = {
-        data: data.map(
+        data: filteredPosts.map(
           ({
             public_id: id,
             title,
@@ -904,7 +995,7 @@ export class SessionUserService {
             bookmarksCount: bookmarks_count,
           }),
         ),
-        results,
+        results: filteredPosts.length,
       };
 
       return response;

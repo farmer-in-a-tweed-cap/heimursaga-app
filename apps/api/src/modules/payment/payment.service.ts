@@ -747,12 +747,15 @@ export class PaymentService {
           };
           const paymentIntent = invoice.payment_intent;
 
+          // get the actual amount that will be charged (after promo code discount)
+          const actualAmount = paymentIntent.amount;
+
           // create a checkout
           const checkout = await tx.checkout.create({
             data: {
               public_id: generator.publicId(),
               status: CheckoutStatus.PENDING,
-              total: amount,
+              total: actualAmount,
               user_id: userId,
               plan_id: plan.id,
               stripe_subscription_id: stripeSubscription.id,

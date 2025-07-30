@@ -149,57 +149,35 @@ export const AppTopNavbar: React.FC<Props> = () => {
         </div>
         
         {/* Right side elements */}
-        <div className="flex-1 flex items-center justify-end space-x-4">
+        <div className="flex-1 flex items-center justify-end">
           {session?.logged ? (
-            /* Create Entry Button */
-            <Link href={ROUTER.ENTRIES.CREATE}>
-              <Button 
-                variant="default" 
-                size="sm" 
-                className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
-              >
-                <FeatherIcon size={16} className="mr-1" />
-                Log Entry
-              </Button>
-            </Link>
-          ) : (
-            /* Logged out state - Login button and create account link */
-            <div className="flex items-center space-x-4">
-              <Link 
-                href={ROUTER.SIGNUP}
-                className="text-sm font-medium text-gray-600 hover:text-gray-900"
-              >
-                create account
-              </Link>
-              <Link href={ROUTER.LOGIN}>
+            <div className="flex items-center">
+              {/* Create Entry Button */}
+              <Link href={ROUTER.ENTRIES.CREATE} className="mr-2">
                 <Button 
                   variant="default" 
                   size="sm" 
                   className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
                 >
-                  Log in
+                  <FeatherIcon size={16} className="mr-1" />
+                  Log Entry
                 </Button>
               </Link>
-            </div>
-          )}
-          
-          {/* Notifications */}
-          {session?.logged && (
-            <Link href={ROUTER.NOTIFICATIONS}>
-              <Button variant="ghost" size="lg" className="relative">
-                <BellIcon size={20} weight="bold" className="text-gray-600 !size-5" />
-                {badges.notifications >= 1 && (
-                  <div className="absolute -top-1 -right-1">
-                    <BadgeCount count={badges.notifications} />
-                  </div>
-                )}
-              </Button>
-            </Link>
-          )}
-          
-          {/* User Avatar with Username and Role */}
-          {session?.logged && (
-            <DropdownMenu>
+              
+              {/* Notifications */}
+              <Link href={ROUTER.NOTIFICATIONS} className="mx-3">
+                <Button variant="ghost" size="lg" className="relative !px-1">
+                  <BellIcon size={20} weight="bold" className="text-gray-600 !size-5" />
+                  {badges.notifications >= 1 && (
+                    <div className="absolute -top-1 -right-1">
+                      <BadgeCount count={badges.notifications} />
+                    </div>
+                  )}
+                </Button>
+              </Link>
+              
+              {/* User Avatar with Username and Role */}
+              <DropdownMenu>
               <DropdownMenuTrigger>
                 <div className="flex flex-row gap-3 items-center hover:bg-gray-50 rounded-lg p-2 transition-colors">
                   <UserAvatar
@@ -238,6 +216,26 @@ export const AppTopNavbar: React.FC<Props> = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
+          ) : (
+            /* Logged out state - Login button and create account link */
+            <div className="flex items-center space-x-4">
+              <Link 
+                href={ROUTER.SIGNUP}
+                className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              >
+                create account
+              </Link>
+              <Link href={ROUTER.LOGIN}>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
+                >
+                  Log in
+                </Button>
+              </Link>
+            </div>
           )}
         </div>
       </div>
