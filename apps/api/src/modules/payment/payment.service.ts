@@ -770,7 +770,7 @@ export class PaymentService {
             },
           });
 
-          // add metadata to the payment intent
+          // add metadata to the subscription (for free subscriptions) and payment intent (for paid subscriptions)
           const metadata = {
             [StripeMetadataKey.TRANSACTION]:
               PaymentTransactionType.SUBSCRIPTION,
@@ -779,6 +779,13 @@ export class PaymentService {
             [StripeMetadataKey.CHECKOUT_ID]: checkout.id,
           };
 
+          // Always add metadata to subscription for free subscriptions
+          await this.stripeService.stripe.subscriptions.update(
+            stripeSubscription.id,
+            { metadata }
+          );
+
+          // Also add to payment intent if it exists (for paid subscriptions)
           if (paymentIntentId) {
             await this.stripeService.stripe.paymentIntents.update(
               paymentIntentId,

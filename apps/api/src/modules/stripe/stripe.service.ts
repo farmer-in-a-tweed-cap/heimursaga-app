@@ -61,6 +61,9 @@ export class StripeService {
         case 'payment_intent.succeeded':
           this.onPaymentIntentSucceeded(data as Stripe.PaymentIntent);
           break;
+        case 'invoice.payment_succeeded':
+          this.onInvoicePaymentSucceeded(data as Stripe.Invoice);
+          break;
       }
 
       // save logs
@@ -271,6 +274,57 @@ export class StripeService {
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('stripe account not linked');
       throw exception;
+    }
+  }
+
+  async onInvoicePaymentSucceeded(event: Stripe.Invoice) {
+    try {
+      const { subscription } = event;
+      
+      if (!subscription) return;
+      
+      await sleep(1000);
+      
+      // Retrieve the subscription to get metadata
+      const stripeSubscription = await this.stripe.subscriptions.retrieve(
+        typeof subscription === 'string' ? subscription : subscription.id
+      );
+      
+      // Check if this is for a subscription (not a one-time payment)
+      if (!stripeSubscription.metadata?.[StripeMetadataKey.CHECKOUT_ID]) {
+        return;
+      }
+      
+      const metadata = stripeSubscription.metadata || {};
+      const params = {
+        transaction: metadata?.[StripeMetadataKey.TRANSACTION] as PaymentTransactionType,
+        checkoutId: metadata?.[StripeMetadataKey.CHECKOUT_ID]
+          ? parseInt(metadata?.[StripeMetadataKey.CHECKOUT_ID])
+          : undefined,
+        userId: metadata?.[StripeMetadataKey.USER_ID]
+          ? parseInt(metadata?.[StripeMetadataKey.USER_ID])
+          : undefined,
+        subscriptionPlanId: metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID]
+          ? parseInt(metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID])
+          : undefined,
+      };
+      
+      const { transaction, userId, checkoutId, subscriptionPlanId } = params;
+
+      switch (transaction) {
+        case PaymentTransactionType.SUBSCRIPTION:
+          await this.eventService.trigger<IOnSubscriptionUpgradeCompleteEvent>({
+            event: EVENTS.SUBSCRIPTION_UPGRADE_COMPLETE,
+            data: {
+              userId,
+              subscriptionPlanId,
+              checkoutId,
+            },
+          });
+          break;
+      }
+    } catch (e) {
+      this.logger.error('Error handling invoice payment succeeded:', e);
     }
   }
 
