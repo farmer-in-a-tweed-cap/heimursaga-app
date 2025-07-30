@@ -26,7 +26,7 @@ const schema = z.object({
   price: z
     .number()
     .min(5, zodMessage.number.min('price', 5))
-    .max(500, zodMessage.number.max('price', 500)),
+    .max(100, zodMessage.number.max('price', 100)),
   description: z
     .string()
     .nonempty(zodMessage.required('description'))

@@ -15,6 +15,7 @@ import {
   SelectInput,
   Textarea,
 } from '@repo/ui/components';
+import { useToast } from '@repo/ui/hooks';
 import { CreditCardIcon, LockSimpleIcon } from '@repo/ui/icons';
 import { useStripe } from '@stripe/react-stripe-js';
 import Link from 'next/link';
@@ -93,6 +94,7 @@ export const FormComponent: React.FC<Props> = ({
 }) => {
   const stripe = useStripe();
   const modal = useModal();
+  const toast = useToast();
 
   const [loading, setLoading] = useState<{
     form: boolean;
@@ -217,7 +219,14 @@ export const FormComponent: React.FC<Props> = ({
           return;
         }
 
-        // handle success - either call callback or redirect
+        // handle success - show toast message based on sponsorship type
+        const successMessage = sponsorshipType === SponsorshipType.SUBSCRIPTION 
+          ? LOCALES.APP.SPONSORSHIP.TOAST.MONTHLY_PAYMENT_SENT
+          : LOCALES.APP.SPONSORSHIP.TOAST.ONE_TIME_PAYMENT_SENT;
+        
+        toast({ type: 'success', message: successMessage });
+        
+        // either call callback or redirect
         if (onSuccess) {
           onSuccess();
         } else if (username) {
@@ -353,10 +362,14 @@ export const FormComponent: React.FC<Props> = ({
                         {LOCALES.APP.PAYMENT_METHOD.NO_PAYMENT_METHODS_FOUND}
                       </span>
                       <div className="mt-4">
-                        <Button variant="secondary" asChild>
-                          <Link href={ROUTER.USER.SETTINGS.PAYMENT_METHODS}>
-                            Add payment method
-                          </Link>
+                        <Button 
+                          variant="secondary" 
+                          onClick={() => {
+                            if (onCancel) onCancel(); // Close modal first
+                            redirect(ROUTER.USER.SETTINGS.PAYMENT_METHODS);
+                          }}
+                        >
+                          Add payment method
                         </Button>
                       </div>
                     </div>

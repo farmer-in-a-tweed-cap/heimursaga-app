@@ -46,6 +46,8 @@ export const LOCALES = {
       TOAST: {
         CANCELED: 'sponsorship canceled',
         STRIPE_NOT_VERIFIED: 'Please complete your Stripe account verification to update sponsorship tiers',
+        ONE_TIME_PAYMENT_SENT: 'one-time sponsorship payment sent!',
+        MONTHLY_PAYMENT_SENT: 'monthly sponsorship payment sent!',
       },
     },
     USERS: {
@@ -58,7 +60,7 @@ export const LOCALES = {
         CTA: {
           TITLE: 'Welcome to Explorer Pro',
           DESCRIPTION:
-            'Enjoy an enhanced experience, exclusive pro tools, top-tier verification and security.',
+            'Enjoy an enhanced experience, exclusive pro tools, and secure sponsorship payment handling.',
         },
       },
       PLAN: {
@@ -68,7 +70,7 @@ export const LOCALES = {
         CTA: {
           TITLE: 'Upgrade to Explorer Pro',
           DESCRIPTION:
-            'Enjoy an enhanced experience, exclusive pro tools, top-tier verification and security.',
+            'Enjoy an enhanced experience, exclusive pro tools, and secure sponsorship payment handling.',
         },
         FEATURES: [
           `Accept sponsor payments`,
@@ -95,13 +97,13 @@ export const LOCALES = {
         CTA: {
           TITLE: 'Upgrade to Explorer Pro',
           DESCRIPTION:
-            'Enjoy an enhanced experience, exclusive pro tools, top-tier verification and security.',
+            'Enjoy an enhanced experience, exclusive pro tools, and secure sponsorship payment handling.',
         },
       },
     },
     CHECKOUT: {
       PAGE: {
-        TERMS: `By clicking Subscribe now, you agree to Terms of Use and Privacy Policy. This subscription automatically renews monthly, and you’ll be notified in advance if the monthly amount increases. Cancel anytime in your membership settings.`,
+        TERMS: `By clicking Subscribe now, you agree to Terms of Use and Privacy Policy. This subscription automatically renews monthly, and you’ll be notified in advance if the monthly amount increases. Cancel anytime in your account settings.`,
       },
     },
   },
