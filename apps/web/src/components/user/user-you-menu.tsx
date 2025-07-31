@@ -241,7 +241,7 @@ export const UserYouMenu = () => {
         
         {/* Divider between primary and submenu items */}
         {links.some(link => !link.isMainItem) && (
-          <div className="border-t border-gray-200 my-2"></div>
+          <div className="border-t-2 border-gray-200 my-2 w-full"></div>
         )}
         
         {/* Submenu Items (text-only, indented) */}
@@ -258,7 +258,7 @@ export const UserYouMenu = () => {
         {/* Legal Links */}
         {legalLinks.length > 0 && (
           <>
-            <div className="border-t border-gray-200 my-2"></div>
+            <div className="border-t border-gray-200 my-2 w-full"></div>
             {legalLinks.map(({ href, label, isMainItem }, key) => (
               <Link
                 key={key}
@@ -289,7 +289,7 @@ export const UserYouMenu = () => {
         {/* Logout */}
         {session?.logged && (
           <>
-            <div className="border-t border-gray-200 my-2"></div>
+            <div className="border-t border-gray-200 my-2 w-full"></div>
             <button
               onClick={handleLogout}
               className="flex items-center py-3 px-4 text-base font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors text-left"

@@ -1,4 +1,3 @@
-import { Card, CardContent } from '@repo/ui/components';
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
 
@@ -33,11 +32,7 @@ export default async function Page({ searchParams }: PageProps) {
     <AppLayout>
       <div className="w-full max-w-3xl flex flex-col gap-6">
         <PageHeaderTitle>Log Entry</PageHeaderTitle>
-        <Card>
-          <CardContent>
-            <PostCreateForm waypoint={waypoint} />
-          </CardContent>
-        </Card>
+        <PostCreateForm waypoint={waypoint} />
       </div>
     </AppLayout>
   );

@@ -1,4 +1,3 @@
-import { Card, CardContent, CardHeader } from '@repo/ui/components';
 import { Metadata } from 'next';
 import { cookies } from 'next/headers';
 
@@ -36,11 +35,7 @@ export default async function Page({ params }: PageProps) {
       {postQuery.success ? (
         <div className="w-full max-w-3xl flex flex-col gap-6">
           <PageHeaderTitle>Edit Entry</PageHeaderTitle>
-          <Card>
-            <CardContent>
-              <PostEditForm postId={postId} values={postQuery.data} />
-            </CardContent>
-          </Card>
+          <PostEditForm postId={postId} values={postQuery.data} />
         </div>
       ) : (
         <PageNotFound />
