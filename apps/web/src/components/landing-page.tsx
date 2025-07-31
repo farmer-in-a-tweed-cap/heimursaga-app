@@ -139,7 +139,20 @@ export const LandingPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen relative">
+    <>
+      <style jsx>{`
+        @supports (-webkit-touch-callout: none) {
+          @media (max-width: 760px) {
+            .safari-mobile-text {
+              font-size: 1.5rem !important;
+            }
+            .safari-mobile-button {
+              bottom: 8rem !important;
+            }
+          }
+        }
+      `}</style>
+      <div className="min-h-screen relative">
       
       {/* Fixed Background Video */}
       <div className="fixed inset-0 z-0">
@@ -178,13 +191,7 @@ export const LandingPage: React.FC = () => {
           
           {/* Text in middle */}
           <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transform: `translate(-50%, -50%) ${isVisible ? 'translateY(0)' : 'translateY(2.5rem)'}` }}>
-            <div className={cn(
-              "font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center",
-              // Larger text for mobile Safari since it renders smaller
-              isMobileSafari 
-                ? "text-2xl sm:text-2xl md:text-3xl lg:text-3xl" 
-                : "text-xl sm:text-xl md:text-2xl lg:text-3xl"
-            )}>
+            <div className="text-xl sm:text-xl md:text-2xl lg:text-3xl font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center safari-mobile-text">
               <p>You're an explorer.</p>
               <p>Don't get lost in a sea of content creators.</p>
               <p>Share your story and raise money on Heimursaga.</p>
@@ -193,11 +200,9 @@ export const LandingPage: React.FC = () => {
           
           {/* Button near bottom */}
           <div 
-            className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+            className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} safari-mobile-button`}
             style={{ 
-              bottom: isMobileSafari 
-                ? '8rem' // Higher positioning for Safari
-                : `calc(3rem + env(safe-area-inset-bottom, 0px))`
+              bottom: `calc(3rem + env(safe-area-inset-bottom, 0px))`
             }}
           >
             <button className="font-normal py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
@@ -361,5 +366,6 @@ export const LandingPage: React.FC = () => {
         </div>
       </footer>
     </div>
+    </>
   );
 };
