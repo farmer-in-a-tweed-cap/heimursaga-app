@@ -30,11 +30,11 @@ export const LikeButton: React.FC<Props> = ({
       onClick={disabled ? () => {} : onClick}
     >
       <HighlighterCircle
-        className={cn(liked ? 'fill-black stroke-black' : '')}
         size={24}
-        weight={liked ? 'fill' : 'bold'}
+        weight={liked ? 'duotone' : 'bold'}
+        style={{ color: liked ? '#AC6D46' : '#4676AC' }}
       />
-      <span>{likesCount}</span>
+      <span style={{ color: liked ? '#AC6D46' : '#4676AC' }}>{likesCount}</span>
     </Button>
   );
 };

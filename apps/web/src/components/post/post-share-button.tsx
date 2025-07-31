@@ -34,7 +34,7 @@ export const PostShareButton: React.FC<Props> = ({ postId }) => {
       title="Share"
       onClick={handleClick}
     >
-      <ShareFatIcon size={24} weight="bold" />
+      <ShareFatIcon size={24} weight="bold" style={{ color: '#4676AC' }} />
     </Button>
   );
 };

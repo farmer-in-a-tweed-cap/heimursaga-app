@@ -25,6 +25,7 @@ import {
   StripeCardNumberInput,
   StripeProvider,
 } from '@/components';
+import { StripeSecurityBadge } from '../stripe-security-badge';
 import { zodMessage } from '@/lib';
 
 type Props = {
@@ -381,6 +382,7 @@ const PaymentMethodAddForm_: React.FC<Props> = ({
                 </FormItem>
               )}
             />
+            <StripeSecurityBadge variant="text" className="mt-4" />
           </div>
         </div>
         {children}

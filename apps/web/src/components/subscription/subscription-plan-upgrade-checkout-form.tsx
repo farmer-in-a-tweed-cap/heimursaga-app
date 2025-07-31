@@ -29,6 +29,7 @@ import {
   StripeCardNumberInput,
   StripeProvider,
 } from '@/components';
+import { StripeSecurityBadge } from '../stripe-security-badge';
 import { useModal } from '@/hooks';
 import { redirect, sleep, zodMessage } from '@/lib';
 import { ROUTER } from '@/router';
@@ -541,6 +542,7 @@ const FormComponent: React.FC<Props> = ({
                 </FormItem>
               )}
             />
+            <StripeSecurityBadge variant="text" className="mt-4" />
           </div>
         </div>
         <div className="flex mt-4">

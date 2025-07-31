@@ -32,6 +32,7 @@ import {
   SponsorshipTierCard,
   StripeProvider,
 } from '@/components';
+import { StripeSecurityBadge } from '../stripe-security-badge';
 import { useModal } from '@/hooks';
 import { redirect, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
@@ -446,7 +447,8 @@ export const FormComponent: React.FC<Props> = ({
               </div>
             </div>
           </div>
-          <div className="mt-6 flex flex-col">
+          <div className="mt-6 flex flex-col gap-4">
+            <StripeSecurityBadge variant="badge" />
             <span className="text-sm font-medium text-gray-600">
               legal_menu
             </span>

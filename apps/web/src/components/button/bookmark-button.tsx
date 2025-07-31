@@ -34,10 +34,10 @@ export const BookmarkButton: React.FC<Props> = ({
     >
       <BookmarkSimpleIcon
         size={20}
-        weight={bookmarked ? 'fill' : 'bold'}
-        className="text-black"
+        weight={bookmarked ? 'duotone' : 'bold'}
+        style={{ color: bookmarked ? '#AC6D46' : '#4676AC' }}
       />
-      {!disableCount && <span>{bookmarksCount}</span>}
+      {!disableCount && <span style={{ color: bookmarked ? '#AC6D46' : '#4676AC' }}>{bookmarksCount}</span>}
     </Button>
   );
 };

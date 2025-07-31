@@ -56,7 +56,7 @@ export const MapDrawer: React.FC<{
         {loading ? (
           <LoadingSpinner />
         ) : post ? (
-          <div className="w-full flex flex-col p-8">
+          <div className="w-full flex flex-col p-8 pb-20">
             {/* Top section with title and avatar */}
             <div className="relative flex flex-row justify-between items-start">
               {/* Left side: Title info */}
