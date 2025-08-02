@@ -468,7 +468,7 @@ export const Map: React.FC<Props> = ({
     if (!isMobile) {
       popupHovered.current = true;
 
-      const { title = '', date = new Date() } = properties || {};
+      const { title = '', date = new Date(), username = '' } = (properties as any) || {};
       const content = properties?.content
         ? properties?.content.split('\n').join(' ')
         : '';
@@ -477,7 +477,7 @@ export const Map: React.FC<Props> = ({
       <div class="flex flex-col justify-start">
         <div class="flex flex-col justify-start gap-0">
           <span class="text-base font-medium">${title}</span>
-          <span class="text-[0.7rem] font-normal text-gray-500">${dateformat(date).format('MMM DD')}</span>
+          <span class="text-[0.7rem] font-normal text-gray-500">${dateformat(date).format('MMM DD')}${username ? ` | ${username}` : ''}</span>
         </div>
       ${
         content
@@ -1006,7 +1006,7 @@ export const Map: React.FC<Props> = ({
         const waypoint = waypointSource.data.find(point => point.properties?.id === hoveredPostId);
         if (waypoint) {
           const { lat, lon, properties } = waypoint;
-          const { title = '', date = new Date() } = properties || {};
+          const { title = '', date = new Date(), username = '' } = (properties as any) || {};
           const content = properties?.content
             ? properties?.content.split('\n').join(' ')
             : '';
@@ -1015,7 +1015,7 @@ export const Map: React.FC<Props> = ({
       <div class="flex flex-col justify-start">
         <div class="flex flex-col justify-start gap-0">
           <span class="text-base font-medium">${title}</span>
-          <span class="text-[0.7rem] font-normal text-gray-500">${dateformat(date).format('MMM DD')}</span>
+          <span class="text-[0.7rem] font-normal text-gray-500">${dateformat(date).format('MMM DD')}${username ? ` | ${username}` : ''}</span>
         </div>
       ${
         content

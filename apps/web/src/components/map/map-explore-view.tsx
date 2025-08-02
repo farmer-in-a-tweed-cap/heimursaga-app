@@ -936,6 +936,7 @@ export const MapExploreView: React.FC<Props> = () => {
                                   title: post.title,
                                   content: post.content,
                                   date: post?.date || new Date(),
+                                  username: post.author.username,
                                   type: 'entry',
                                 }
                               : waypoint
@@ -981,6 +982,7 @@ export const MapExploreView: React.FC<Props> = () => {
                                     title: post.title,
                                     content: post.content,
                                     date: post?.date || new Date(),
+                                    username: post.author.username,
                                     type: 'entry',
                                   }
                                 : {},

@@ -70,6 +70,7 @@ export class SponsorService {
         creatorId,
         paymentMethodId,
         message = '',
+        emailDelivery = true,
       } = payload;
 
       if (!userId) throw new ServiceForbiddenException();
@@ -399,6 +400,7 @@ export class SponsorService {
             message: checkout.message,
             currency: checkout.currency,
             stripe_subscription_id: checkout.stripe_subscription_id,
+            email_delivery_enabled: checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION ? true : false,
             expiry:
               checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
                 ? expiry
@@ -859,6 +861,7 @@ export class SponsorService {
           amount: true,
           currency: true,
           message: true,
+          email_delivery_enabled: true,
           creator: {
             select: {
               username: true,
@@ -884,6 +887,7 @@ export class SponsorService {
             creator,
             type,
             message = '',
+            email_delivery_enabled,
             created_at,
           }) => ({
             id,
@@ -892,6 +896,7 @@ export class SponsorService {
             status,
             currency,
             message,
+            email_delivery_enabled,
             creator: creator
               ? {
                   username: creator.username,
@@ -1055,6 +1060,53 @@ export class SponsorService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceBadRequestException('sponsorship not canceled');
+      throw exception;
+    }
+  }
+
+  async toggleEmailDelivery({
+    query,
+    payload,
+    session,
+  }: ISessionQueryWithPayload<
+    { sponsorshipId: string },
+    { enabled: boolean }
+  >): Promise<void> {
+    try {
+      const { sponsorshipId } = query;
+      const { enabled } = payload;
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      // Find the sponsorship belonging to the user
+      const sponsorship = await this.prisma.sponsorship
+        .findFirstOrThrow({
+          where: {
+            public_id: sponsorshipId,
+            user_id: userId,
+            type: SponsorshipType.SUBSCRIPTION,
+            deleted_at: null,
+          },
+          select: { id: true, email_delivery_enabled: true },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('sponsorship not found');
+        });
+
+      // Update email delivery preference
+      await this.prisma.sponsorship.update({
+        where: { id: sponsorship.id },
+        data: { email_delivery_enabled: enabled },
+      });
+
+      this.logger.log(`Email delivery ${enabled ? 'enabled' : 'disabled'} for sponsorship ${sponsorshipId}`);
+
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceBadRequestException('Failed to update email delivery preference');
       throw exception;
     }
   }

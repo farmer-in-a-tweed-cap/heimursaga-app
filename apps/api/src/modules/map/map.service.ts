@@ -247,11 +247,23 @@ export class MapService {
         waypoints.map(async ({ id, title, lat, lon, date, posts }) => {
           const post = posts[0];
 
-          // If post is sponsored, check if user has active sponsorship
-          if (post?.sponsored && userId) {
-            const hasSponsorship = await this.hasActiveSponsorship(userId, post.author_id);
-            if (!hasSponsorship) {
-              return null; // Filter out this post
+          // If post is sponsored, check if user has access
+          if (post?.sponsored) {
+            // If user is not logged in, filter out sponsored posts
+            if (!userId) {
+              return null;
+            }
+            
+            // Allow the post author to see their own sponsored posts
+            if (userId === post.author_id) {
+              // Author can see their own sponsored posts
+            }
+            // For other users, check if they have an active sponsorship
+            else {
+              const hasSponsorship = await this.hasActiveSponsorship(userId, post.author_id);
+              if (!hasSponsorship) {
+                return null; // Filter out this post
+              }
             }
           }
 
@@ -274,6 +286,7 @@ export class MapService {
                     .slice(0, 120),
                   place: post.place,
                   date: post.date,
+                  sponsored: post.sponsored,
                   author: {
                     username: post.author.username,
                     picture: getStaticMediaUrl(post.author.profile.picture),

@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
   Put,
 } from '@nestjs/common';
@@ -59,6 +60,20 @@ export class SponsorshipController {
   ) {
     return await this.sponsorService.cancelSponsorship({
       query: { sponsorshipId: params.id },
+      session,
+    });
+  }
+
+  @Patch(':id/email-delivery')
+  @HttpCode(HttpStatus.OK)
+  async toggleEmailDelivery(
+    @Session() session: ISession,
+    @Param() params: ParamPublicIdDto,
+    @Body() body: { enabled: boolean },
+  ) {
+    return await this.sponsorService.toggleEmailDelivery({
+      query: { sponsorshipId: params.id },
+      payload: { enabled: body.enabled },
       session,
     });
   }

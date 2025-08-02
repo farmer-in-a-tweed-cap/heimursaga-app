@@ -36,6 +36,7 @@ type SponsorshipTableData = {
   date?: Date;
   status: string;
   message?: string;
+  email_delivery_enabled?: boolean;
 };
 
 type Props = {
@@ -88,6 +89,38 @@ export const SponsorshipsTable: React.FC<Props> = ({
         toast({
           type: 'success',
           message: LOCALES.APP.SPONSORSHIP.TOAST.CANCELED,
+        });
+      } else {
+        toast({ type: 'error', message: message || LOCALES.APP.ERROR.UNKNOWN });
+      }
+
+      if (refetch) {
+        refetch();
+      }
+
+      setRowLoading(false);
+    } catch (e) {
+      setRowLoading(false);
+    }
+  };
+
+  const handleToggleEmailDelivery = async (sponsorshipId: string, enabled: boolean) => {
+    try {
+      if (!sponsorshipId) return;
+
+      setRowLoading(true);
+      setSponsorshipId(sponsorshipId);
+
+      // toggle email delivery
+      const { success, message } = await apiClient.toggleSponsorshipEmailDelivery({
+        query: { sponsorshipId },
+        payload: { enabled },
+      });
+
+      if (success) {
+        toast({
+          type: 'success',
+          message: `Email delivery ${enabled ? 'enabled' : 'disabled'}`,
         });
       } else {
         toast({ type: 'error', message: message || LOCALES.APP.ERROR.UNKNOWN });
@@ -214,6 +247,10 @@ export const SponsorshipsTable: React.FC<Props> = ({
                   <ActionMenu
                     actions={[
                       {
+                        label: row.original.email_delivery_enabled ? 'Disable emails' : 'Enable emails',
+                        onClick: () => handleToggleEmailDelivery(rowId, !row.original.email_delivery_enabled),
+                      },
+                      {
                         label: 'Cancel',
                         onClick: () => handleCancelModal(rowId),
                       },
@@ -229,7 +266,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
   ];
 
   const rows: DataTableRow<SponsorshipTableData>[] = data.map(
-    ({ id, creator, amount, type, createdAt, status, user, message }, key) => ({
+    ({ id, creator, amount, type, createdAt, status, user, message, email_delivery_enabled }, key) => ({
       id: id ? id : `${key}`,
       type,
       status,
@@ -237,6 +274,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
       amount,
       date: createdAt,
       message,
+      email_delivery_enabled,
     }),
   );
 

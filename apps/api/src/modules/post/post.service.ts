@@ -450,6 +450,7 @@ export class PostService {
             place,
             public: privacy.public,
             sponsored: privacy.sponsored,
+            email_sent: privacy.public, // Mark email as sent if creating a public post
             author: { connect: { id: userId } },
             waypoint: waypoint ? { connect: { id: waypoint.id } } : undefined,
           },
@@ -504,6 +505,21 @@ export class PostService {
 
       this.logger.log('post_create: success');
 
+      // Trigger email delivery for monthly sponsors (only for public entries)
+      if (privacy.public) {
+        this.eventService.trigger({
+          event: EVENTS.ENTRY_CREATED,
+          data: {
+            entryId: post.public_id,
+            creatorId: userId,
+            entryTitle: title,
+            entryContent: content,
+            entryPlace: place,
+            entryDate: date,
+          },
+        });
+      }
+
       const response: IPostCreateResponse = {
         id: post.public_id,
       };
@@ -541,7 +557,7 @@ export class PostService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      // check post
+      // check post and get current state
       const post = await this.prisma.post
         .findFirstOrThrow({
           where: {
@@ -551,7 +567,14 @@ export class PostService {
           },
           select: {
             id: true,
+            public_id: true,
             waypoint_id: true,
+            public: true,
+            email_sent: true,
+            title: true,
+            content: true,
+            place: true,
+            date: true,
           },
         })
         .catch(() => {
@@ -560,8 +583,13 @@ export class PostService {
       const { waypoint } = payload;
 
       // update the post
-      await this.prisma.$transaction(async (tx) => {
+      const result = await this.prisma.$transaction(async (tx) => {
         this.logger.log('post_update: post');
+
+        // Check if post is changing from private to public
+        const wasPrivate = !post.public;
+        const isBecomingPublic = payload.public;
+        const shouldTriggerEmail = wasPrivate && isBecomingPublic && !post.email_sent;
 
         // update the post
         await tx.post.update({
@@ -573,8 +601,18 @@ export class PostService {
             sponsored: payload.sponsored,
             place: payload.place,
             date: payload.date,
+            email_sent: shouldTriggerEmail ? true : post.email_sent, // Mark email as sent if triggering
           },
         });
+
+        // Return info needed for email trigger
+        return { shouldTriggerEmail, postData: {
+          publicId: post.public_id,
+          title: payload.title || post.title,
+          content: normalizeText(payload.content) || post.content,
+          place: payload.place || post.place,
+          date: payload.date || post.date,
+        }};
 
         // update the waypoint
         if (waypoint) {
@@ -671,7 +709,24 @@ export class PostService {
             });
           }
         }
+        
+        return { shouldTriggerEmail: false, postData: null };
       });
+
+      // Trigger email delivery if post changed from private to public
+      if (result.shouldTriggerEmail && result.postData) {
+        this.eventService.trigger({
+          event: EVENTS.ENTRY_CREATED,
+          data: {
+            entryId: result.postData.publicId,
+            creatorId: userId,
+            entryTitle: result.postData.title,
+            entryContent: result.postData.content,
+            entryPlace: result.postData.place,
+            entryDate: result.postData.date,
+          },
+        });
+      }
 
       this.logger.log('post_update: success');
     } catch (e) {

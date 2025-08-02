@@ -44,6 +44,11 @@ export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
   @IsString()
   @IsOptional()
   message?: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  emailDelivery?: boolean;
 }
 
 export class SponsorshipTierUpdateDto implements ISponsorshipTierUpdatePayload {

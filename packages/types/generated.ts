@@ -649,6 +649,7 @@ export interface ISponsorCheckoutPayload {
   sponsorshipTierId?: string;
   oneTimePaymentAmount?: number;
   message?: string;
+  emailDelivery?: boolean;
 }
 
 export interface ISponsorCheckoutResponse {
@@ -663,6 +664,7 @@ export interface ISponsorshipDetail {
   status: string;
   currency: string;
   message?: string;
+  email_delivery_enabled?: boolean;
   user?: {
     username: string;
     // name: string;

@@ -139,6 +139,7 @@ model Sponsorship {
   stripe_subscription_id String?          @db.VarChar(30)
   status                 String?          @default("pending")
   message                String?          @db.VarChar(500)
+  email_delivery_enabled Boolean?         @default(true)
   creator                User             @relation("creator_sponsorships", fields: [creator_id], references: [id], onDelete: Cascade)
   tier                   SponsorshipTier? @relation(fields: [tier_id], references: [id], onDelete: Cascade)
   user                   User             @relation("user_sponsorships", fields: [user_id], references: [id], onDelete: Cascade)
@@ -212,6 +213,7 @@ model Post {
   likes_count           Int?               @default(0)
   waypoint_id           Int?
   sponsored             Boolean?           @default(false)
+  email_sent            Boolean?           @default(false)
   bookmarks             PostBookmark[]     @relation("post_bookmarks")
   likes                 PostLike[]         @relation("post_likes")
   media                 PostMedia[]

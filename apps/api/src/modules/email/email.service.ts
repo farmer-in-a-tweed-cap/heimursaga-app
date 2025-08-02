@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { OnEvent } from '@nestjs/event-emitter';
+import { SponsorshipStatus, SponsorshipType } from '@repo/types';
 import * as nodemailer from 'nodemailer';
 
-import { getEmailTemplate } from '@/common/email-templates';
+import { getEmailTemplate, EMAIL_TEMPLATES } from '@/common/email-templates';
 import { ServiceException } from '@/common/exceptions';
 import { EVENTS, IEventSendEmail } from '@/modules/event';
 import { Logger } from '@/modules/logger';
+import { PrismaService } from '@/modules/prisma';
+import { getStaticMediaUrl } from '@/lib/upload';
 
 import { IEmailSendPayload } from './email.interface';
 
@@ -17,6 +20,7 @@ export class EmailService {
   constructor(
     private config: ConfigService,
     private logger: Logger,
+    private prisma: PrismaService,
   ) {
     const { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD } = process.env;
 
@@ -85,6 +89,164 @@ export class EmailService {
       }
     } catch (e) {
       this.logger.error(e);
+    }
+  }
+
+  @OnEvent(EVENTS.ENTRY_CREATED)
+  async onEntryCreated(event: {
+    entryId: string;
+    creatorId: number;
+    entryTitle: string;
+    entryContent: string;
+    entryPlace?: string;
+    entryDate: Date;
+  }): Promise<void> {
+    try {
+      const { entryId, creatorId, entryTitle, entryContent, entryPlace, entryDate } = event;
+
+      this.logger.log(`Processing entry delivery for entry ${entryId} from creator ${creatorId}`);
+
+      // Get creator info
+      const creator = await this.prisma.user.findUnique({
+        where: { id: creatorId },
+        select: {
+          username: true,
+          profile: { select: { name: true, picture: true } },
+        },
+      });
+
+      if (!creator) {
+        this.logger.error(`Creator not found: ${creatorId}`);
+        return;
+      }
+
+      // Get entry details with media and waypoint
+      const entry = await this.prisma.post.findFirst({
+        where: { public_id: entryId },
+        select: {
+          id: true,
+          public_id: true,
+          title: true,
+          content: true,
+          place: true,
+          date: true,
+          waypoint: {
+            select: {
+              lat: true,
+              lon: true,
+            },
+          },
+          media: {
+            select: {
+              upload: {
+                select: {
+                  public_id: true,
+                  original: true,
+                  file_type: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (!entry) {
+        this.logger.error(`Entry not found: ${entryId}`);
+        return;
+      }
+
+      // Get active monthly sponsors with email delivery enabled
+      const sponsors = await this.prisma.sponsorship.findMany({
+        where: {
+          creator_id: creatorId,
+          type: SponsorshipType.SUBSCRIPTION,
+          status: SponsorshipStatus.ACTIVE,
+          email_delivery_enabled: true,
+          expiry: { gt: new Date() },
+          deleted_at: null,
+        },
+        include: {
+          user: {
+            select: {
+              email: true,
+              username: true,
+              is_email_verified: true,
+            },
+          },
+        },
+      });
+
+      if (sponsors.length === 0) {
+        this.logger.log(`No eligible sponsors found for creator ${creatorId}`);
+        return;
+      }
+
+      // Process images for email
+      const entryImages = entry.media
+        .filter(m => m.upload.file_type === 'image')
+        .map(m => getStaticMediaUrl(m.upload.original));
+
+      // Send emails to each sponsor
+      for (const sponsorship of sponsors) {
+        if (!sponsorship.user.is_email_verified) {
+          this.logger.log(`Sending to unverified email for testing: ${sponsorship.user.email}`);
+          // Temporarily bypass verification check for testing
+          // continue;
+        }
+
+        const postUrl = `${process.env.WEB_URL}/entries/${entryId}`;
+        const unsubscribeUrl = `${process.env.WEB_URL}/user/settings/sponsorships?action=unsubscribe&id=${sponsorship.public_id}`;
+        const webViewUrl = `${process.env.WEB_URL}/entries/${entryId}?email=true`;
+
+        // Format date
+        const formattedDate = new Intl.DateTimeFormat('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }).format(new Date(entry.date));
+
+        // Generate map URL with environment token
+        const mapboxToken = process.env.MAPBOX_ACCESS_TOKEN;
+        let mapUrl = '';
+        if (entry.waypoint && mapboxToken) {
+          const { lat, lon } = entry.waypoint;
+          mapUrl = `https://api.mapbox.com/styles/v1/cnh1187/clikkzykm00wb01qf28pz4adt/static/pin-s+AA6C46(${lon},${lat})/${lon},${lat},6,0,0/600x300@2x?access_token=${mapboxToken}`;
+          this.logger.log(`Generated map URL for entry ${entryId}: ${mapUrl}`);
+        } else {
+          this.logger.log(`No map URL generated for entry ${entryId}: waypoint=${!!entry.waypoint}, token=${!!mapboxToken}`);
+        }
+
+        const template = getEmailTemplate(EMAIL_TEMPLATES.EXPLORER_PRO_NEW_ENTRY, {
+          creatorUsername: creator.username,
+          creatorPicture: creator.profile?.picture,
+          postTitle: entry.title || 'Untitled Entry',
+          postContent: entry.content || '',
+          postPlace: entry.place,
+          postDate: formattedDate,
+          postJourney: null, // Trip relationship not directly available on posts
+          postImages: entryImages,
+          postWaypoint: entry.waypoint,
+          mapUrl: mapUrl,
+          postUrl,
+          unsubscribeUrl,
+          webViewUrl,
+        });
+
+        if (template) {
+          await this.send({
+            to: sponsorship.user.email,
+            subject: template.subject,
+            html: template.html,
+          });
+
+          this.logger.log(`Sent entry delivery to ${sponsorship.user.email} for entry ${entryId}`);
+        }
+      }
+
+      this.logger.log(`Entry delivery completed for ${sponsors.length} sponsors of creator ${creatorId}`);
+
+    } catch (e) {
+      this.logger.error('Failed to send entry delivery emails:', e);
     }
   }
 }

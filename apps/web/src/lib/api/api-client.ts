@@ -598,6 +598,15 @@ export const apiClient = {
       body: JSON.stringify({}),
       ...config,
     }),
+  toggleSponsorshipEmailDelivery: async (
+    { query, payload }: IApiClientQueryWithPayload<{ sponsorshipId: string }, { enabled: boolean }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.SPONSORSHIPS.EMAIL_DELIVERY(query.sponsorshipId), {
+      method: API_METHODS.PATCH,
+      body: JSON.stringify(payload),
+      ...config,
+    }),
   // insights
   getPostInsights: async (config?: RequestConfig) =>
     api.request<IPostInsightsGetResponse>(API_ROUTER.USER.INSIGHTS.POST, {

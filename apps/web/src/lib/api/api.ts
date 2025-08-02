@@ -99,6 +99,7 @@ export const API_ROUTER = {
   SPONSORSHIPS: {
     GET: 'sponsorships',
     CANCEL: (id: string) => `sponsorships/${id}/cancel`,
+    EMAIL_DELIVERY: (id: string) => `sponsorships/${id}/email-delivery`,
   },
   STRIPE: {
     CREATE_SETUP_INTENT: 'stripe/create-setup-intent',

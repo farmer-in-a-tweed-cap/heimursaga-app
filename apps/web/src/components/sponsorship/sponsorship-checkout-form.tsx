@@ -5,6 +5,7 @@ import { ISponsorshipTier, SponsorshipType } from '@repo/types';
 import {
   Button,
   ChipGroup,
+  Checkbox,
   Form,
   FormControl,
   FormField,
@@ -84,6 +85,7 @@ const schema = z.object({
     .string()
     .max(MESSAGE_LENGTH, zodMessage.string.max('message', MESSAGE_LENGTH))
     .optional(),
+  emailDelivery: z.boolean().default(true).optional(),
 });
 
 export const FormComponent: React.FC<Props> = ({
@@ -120,6 +122,7 @@ export const FormComponent: React.FC<Props> = ({
       paymentMethodId:
         paymentMethods.length >= 1 ? paymentMethods[0].id : undefined,
       message: '',
+      emailDelivery: true,
     },
   });
 
@@ -148,7 +151,7 @@ export const FormComponent: React.FC<Props> = ({
 
         const { sponsorshipType } = state;
         const sponsorshipTierId = sponsorship?.id;
-        const { oneTimePaymentAmount, paymentMethodId, message } = values;
+        const { oneTimePaymentAmount, paymentMethodId, message, emailDelivery } = values;
         const creatorId = username;
 
         // console.log('submit:', {
@@ -164,6 +167,7 @@ export const FormComponent: React.FC<Props> = ({
           sponsorshipType,
           paymentMethodId,
           message,
+          emailDelivery: sponsorshipType === SponsorshipType.SUBSCRIPTION ? emailDelivery : false,
         };
 
         // initiate a checkout
@@ -408,11 +412,44 @@ export const FormComponent: React.FC<Props> = ({
                 />
               </div>
             </div>
+            
+            {sponsorshipType === SponsorshipType.SUBSCRIPTION && (
+              <div className="flex flex-col">
+                <h2 className="font-medium text-lg">Email Delivery</h2>
+                <div className="mt-4 flex flex-col">
+                  <FormField
+                    control={form.control}
+                    name="emailDelivery"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <div className="flex items-center space-x-3">
+                            <Checkbox
+                              id="emailDelivery"
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                            <label 
+                              htmlFor="emailDelivery" 
+                              className="text-sm font-medium leading-relaxed cursor-pointer"
+                            >
+                              Deliver new entries directly to my inbox (monthly sponsor perk)
+                            </label>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            )}
+            
             <div className="flex flex-col">
               <div>
                 <span className="font-medium text-base">
                   {sponsorshipType === SponsorshipType.SUBSCRIPTION
-                    ? `You’ll pay ${currency.symbol}${sponsorshipMonthlyAmount} monthly on the ${dateformat().format('D')}th.`
+                    ? `You'll pay ${currency.symbol}${sponsorshipMonthlyAmount} monthly on the ${dateformat().format('D')}th.`
                     : `You'll pay ${currency.symbol}${oneTimePaymentAmount}`}
                 </span>
               </div>

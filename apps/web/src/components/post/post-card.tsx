@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, CardContent, NormalizedText } from '@repo/ui/components';
+import { Badge, Card, CardContent, NormalizedText } from '@repo/ui/components';
 import { LockSimpleIcon, MapPinIcon, CalendarIcon, PathIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
@@ -50,6 +50,7 @@ export type PostCardProps = {
   liked?: boolean;
   likesCount?: number;
   public?: boolean;
+  sponsored?: boolean;
   extended?: boolean;
   userbar?: {
     href?: string;
@@ -85,6 +86,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   bookmarked = false,
   bookmarksCount = 0,
   public: isPublic = true,
+  sponsored = false,
   actions = {
     like: true,
     bookmark: true,
@@ -150,6 +152,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                 <h2 className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}>
                   {title}
                 </h2>
+                {sponsored && (
+                  <Badge variant="default" className="text-xs h-4 px-1.5 py-0 text-[10px]">
+                    Sponsored
+                  </Badge>
+                )}
                 {!isPublic && (
                   <LockSimpleIcon 
                     size={extended ? 20 : 16} 
@@ -245,6 +252,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                 >
                   {title}
                 </h2>
+                {sponsored && (
+                  <Badge variant="default" className="text-xs h-4 px-1.5 py-0 text-[10px]">
+                    Sponsored
+                  </Badge>
+                )}
                 {!isPublic && (
                   <LockSimpleIcon 
                     size={extended ? 20 : 16} 
