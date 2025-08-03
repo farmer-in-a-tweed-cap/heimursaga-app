@@ -19,7 +19,7 @@ export default async function Page() {
         <div className="flex flex-col items-center gap-4 pt-4">
           <h1 className="text-2xl font-medium text-center">Welcome to Heimursaga</h1>
           <p className="text-gray-600 text-center max-w-md">
-            Share your journey, raise money, and inspire the world.
+            Share your stories, raise money, and inspire the world.
           </p>
         </div>
 

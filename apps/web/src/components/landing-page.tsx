@@ -204,7 +204,7 @@ export const LandingPage: React.FC = () => {
                 <span className="block text-white">WELCOME TO</span>
               </h1>
               
-              <div className={isMobile ? 'w-64 h-48' : 'w-96 h-72 lg:w-[36rem] lg:h-[28rem] mr-6'}>
+              <div className={isMobile ? 'w-64 h-48 mr-6' : 'w-96 h-72 lg:w-[36rem] lg:h-[28rem] mr-10'}>
                 <Logo size="xlg" color="light" />
               </div>
             </div>
