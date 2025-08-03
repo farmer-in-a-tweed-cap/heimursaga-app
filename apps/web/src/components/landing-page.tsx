@@ -28,13 +28,13 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
   <div className={`container mx-auto px-4 py-20 mobile-feature-card`}>
     <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-16 lg:gap-12 max-w-6xl mx-auto`}>
       <div className={`lg:w-1/2 text-center lg:text-left`}>
-        <div className="inline-block px-4 py-2 text-sm uppercase font-light mb-4 text-white" style={{ backgroundColor: '#4676AC' }}>
+        <div className="inline-block px-4 py-2 text-sm uppercase font-normal mb-4 text-white" style={{ backgroundColor: '#4676AC' }}>
           {title}
         </div>
         <h3 className="text-4xl lg:text-5xl font-light text-black mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
           {subtitle}
         </h3>
-        <p className="text-lg text-gray-700 font-light leading-relaxed max-w-xl">
+        <p className="text-lg text-gray-700 font-normal leading-relaxed max-w-xl">
           {description}
         </p>
       </div>
@@ -46,7 +46,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
               alt={imageAlt || subtitle} 
               width={800}
               height={320}
-              className={`relative w-full h-60 sm:h-80 rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300 ${mobileImageAlign === 'left' ? 'object-cover object-left lg:object-top lg:object-center' : 'object-cover'}`}
+              className={`relative w-full h-64 rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300 ${mobileImageAlign === 'left' ? 'object-cover object-left lg:object-top lg:object-center' : 'object-cover'}`}
               style={{ border: '4px solid #AC6D46' }}
             />
           </div>
@@ -57,16 +57,16 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
 );
 
 const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPopular = false }) => (
-  <div className={`relative rounded-3xl shadow-xl p-8 transform hover:scale-105 transition-all duration-300 ${isPopular ? 'border-4 border-blue-500' : 'border border-gray-600'}`} style={{ backgroundColor: '#252525' }}>
+  <div className={`relative rounded-3xl shadow-xl p-8 transform hover:scale-105 transition-all duration-300 ${isPopular ? 'border-4 border-blue-500' : 'border border-gray-600'}`} style={{ backgroundColor: '#505050' }}>
     {isPopular && (
       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-        <div className="text-white text-sm font-light px-6 py-2 rounded-full shadow-lg" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
+        <div className="text-white text-sm font-normal px-6 py-2 rounded-full shadow-lg" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
           Most Popular
         </div>
       </div>
     )}
     <div className="text-center mb-8">
-      <h3 className="text-2xl font-light text-white mb-2" style={{}}>{title}</h3>
+      <h3 className="text-2xl font-normal text-white mb-2" style={{}}>{title}</h3>
       <div className="text-4xl font-semibold mb-6" style={{ color: '#4676AC', fontFamily: 'Lato, sans-serif' }}>
         {price}
       </div>
@@ -79,12 +79,12 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-          <span className="text-gray-300 font-light" style={{}}>{feature}</span>
+          <span className="text-gray-300 font-normal" style={{}}>{feature}</span>
         </li>
       ))}
     </ul>
     <Link 
-      href={ROUTER.SIGNUP}
+      href={`${ROUTER.SIGNUP}?upgrade=pro`}
       className="w-full py-4 px-6 rounded-xl font-normal text-lg transition-all duration-300 text-white hover:opacity-90 block text-center shadow-lg hover:shadow-xl"
       style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}
     >
@@ -186,13 +186,13 @@ export const LandingPage: React.FC = () => {
         {/* Hero Section */}
         <div className="relative min-h-screen text-white overflow-hidden z-10"
              style={{
-               height: isMobile ? '100vh' : 'auto',
-               minHeight: isMobile && isMobileSafari ? '-webkit-fill-available' : '100vh'
+               height: isMobile && isMobileSafari ? '100svh' : (isMobile ? '100vh' : 'auto'),
+               minHeight: isMobile && isMobileSafari ? '100svh' : '100vh'
              }}>
           <div className="relative z-30 w-full h-screen"
                style={{
-                 height: isMobile ? '100vh' : '100vh',
-                 minHeight: isMobile && isMobileSafari ? '-webkit-fill-available' : '100vh'
+                 height: isMobile && isMobileSafari ? '100svh' : '100vh',
+                 minHeight: isMobile && isMobileSafari ? '100svh' : '100vh'
                }}>
             {/* Logo at top */}
             <div className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 z-50 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} 
@@ -200,7 +200,7 @@ export const LandingPage: React.FC = () => {
                    top: isMobile ? '1rem' : '8px', 
                    marginTop: isMobile ? '0' : '-60px' 
                  }}>
-              <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight hidden">
+              <h1 className="text-4xl lg:text-4xl font-normal mb-1 leading-tight hidden">
                 <span className="block text-white">WELCOME TO</span>
               </h1>
               
@@ -253,17 +253,17 @@ export const LandingPage: React.FC = () => {
         </div>
 
       {/* Quiet Platform Section */}
-      <div className="py-20 relative z-10" style={{ backgroundColor: '#f8f9fa' }}>
+      <div className="py-20 relative z-10" style={{ backgroundColor: '#e9ecef' }}>
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-4xl mx-auto">
-            {/* <div className="inline-block px-6 py-3 text-sm uppercase font-light mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
+            {/* <div className="inline-block px-6 py-3 text-sm uppercase font-normal mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
               Quality Over Quantity
             </div> */}
             <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
-              A Quiet Place for Exploration
+              A Quiet Place for Explorers
             </h2>
             <p className="text-xl text-gray-700 font-light leading-relaxed mb-12 max-w-3xl mx-auto">
-              Heimursaga is intentionally designed for the explorer, for the traveler, for the people who like to "get away", and for the people who want to share what they found. Heimursaga is fundamentally a journaling and fundraising tool, but its also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. With no commenting, chats, or distracting social features, our minimal interface lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
+              Heimursaga is intentionally designed for the explorer, for the traveler, for the people who like to "get away", and for the people who want to share what they found. Heimursaga is fundamentally a journaling and fundraising tool, but it's also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. With no commenting, chat, or distracting social features, our minimal interface lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
             </p>
             <div className="grid md:grid-cols-2 gap-12 mt-12">
               <div className="text-center">
@@ -273,7 +273,7 @@ export const LandingPage: React.FC = () => {
                   </svg>
                 </div>
                 <h3 className="text-xl font-medium text-black mb-4">Distraction-Free Experience</h3>
-                <p className="text-gray-600 font-light leading-relaxed">
+                <p className="text-gray-600 font-normal leading-relaxed">
                   No commenting, no trolls, no doomscrolling, no social pressure. Just pure storytelling without the noise of traditional social media.
                 </p>
               </div>
@@ -284,8 +284,8 @@ export const LandingPage: React.FC = () => {
                   </svg>
                 </div>
                 <h3 className="text-xl font-medium text-black mb-4">Appreciation Over Engagement</h3>
-                <p className="text-gray-600 font-light leading-relaxed">
-                  Support explorers through meaningful sponsorship instead of fleeting interactions. Show appreciation through action, not just words.
+                <p className="text-gray-600 font-normal leading-relaxed">
+                  Connect with explorers through financial sponsorship. Your support becomes a tangible way to show appreciation for their adventures.
                 </p>
               </div>
             </div>
@@ -306,7 +306,7 @@ export const LandingPage: React.FC = () => {
         <FeatureCard
           title="Text-Focused"
           subtitle="Journal"
-          description="Every user gets a journal where their geo-tagged entries are logged. Entry photo uploads and privacy settings are included, as well as entry grouping to show journey lines on the map. Follow or sponsor other explorers by visiting their journal."
+          description="Every user gets a journal where their geo-tagged entries are logged. Photo uploads and privacy settings are included, as well as entry grouping to show journey lines on the map. Follow or sponsor other explorers by visiting their journal."
           imageSrc="/journal.png"
           imageAlt="Journal writing interface"
           reverse={true}
@@ -315,7 +315,7 @@ export const LandingPage: React.FC = () => {
         <FeatureCard
           title="Payment-Enabled"
           subtitle="Sponsor"
-          description="A robust Stripe integration allows Explorer Pro users to receive subscription or one-time sponsorship payments from their supporters. Manage payouts and set subscription amounts right from your Heimursaga dashboard. Entries have an exclusive sponsor-only setting allowing explorers to reward their sponsors!"
+          description="A robust Stripe integration allows Explorer Pro users to receive subscription or one-time sponsorship payments from their supporters. Manage payouts and set subscription amounts right from your Heimursaga dashboard. Entries have an exclusive sponsor-only setting allowing explorers to reward their sponsors."
           imageSrc="/sponsor.png"
           imageAlt="Sponsorship payment interface"
           mobileImageAlign="left"
@@ -323,10 +323,10 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* AI Content Policy Section */}
-      <div className="py-20 relative z-10" style={{ backgroundColor: '#f8f9fa' }}>
+      <div className="py-20 relative z-10" style={{ backgroundColor: '#e9ecef' }}>
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-4xl mx-auto">
-            <div className="inline-block px-6 py-3 text-sm uppercase font-light mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
+            <div className="inline-block px-6 py-3 text-sm uppercase font-normal mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
               Human-First
             </div>
             <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
@@ -343,7 +343,7 @@ export const LandingPage: React.FC = () => {
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-black mb-2">Content Detection</h3>
-                <p className="text-gray-600 font-light">Advanced algorithms identify and flag AI-generated content before it reaches the platform.</p>
+                <p className="text-gray-600 font-normal">Advanced algorithms identify and flag AI-generated content before it reaches the platform.</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
@@ -353,7 +353,7 @@ export const LandingPage: React.FC = () => {
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-black mb-2">Human Review</h3>
-                <p className="text-gray-600 font-light">Our community and moderation team help maintain the authenticity of shared experiences.</p>
+                <p className="text-gray-600 font-normal">Our community and moderation team help maintain the authenticity of shared experiences.</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
@@ -362,7 +362,7 @@ export const LandingPage: React.FC = () => {
                   </svg>
                 </div>
                 <h3 className="text-lg font-medium text-black mb-2">Behavioral Analysis</h3>
-                <p className="text-gray-600 font-light">Posting patterns and user behavior help us identify and prevent automated content generation.</p>
+                <p className="text-gray-600 font-normal">Posting patterns and user behavior help us identify and prevent automated content generation.</p>
               </div>
             </div>
           </div>
@@ -396,7 +396,7 @@ export const LandingPage: React.FC = () => {
               title="EXPLORER PRO"
               price="$7/mo"
               features={[
-                "All Explorer features included",
+                "All Explorer features plus:",
                 "Receive sponsorship payments",
                 "View detailed entry statistics",
                 "Journey Builder (waypoint logging and entry grouping)"
@@ -406,12 +406,13 @@ export const LandingPage: React.FC = () => {
           </div>
           
           <div className="text-center mt-12">
-            <p className="text-gray-700 font-light mb-6" style={{}}>
+            <p className="text-gray-700 font-normal mb-6" style={{}}>
               Already have an account?
             </p>
             <Link 
               href={ROUTER.LOGIN}
-              className="inline-block py-3 px-8 rounded-xl font-normal text-lg transition-all duration-300 bg-gray-700 hover:bg-gray-600 text-white hover:opacity-90"
+              className="inline-block py-3 px-8 rounded-xl font-normal text-lg transition-all duration-300 text-white hover:opacity-90"
+              style={{ backgroundColor: '#505050' }}
                          >
               LOG IN
             </Link>
@@ -420,12 +421,12 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* Call to Action */}
-      <div className="relative py-32 text-white overflow-hidden z-10" style={{ backgroundColor: '#4676AC' }}>
+      <div className="relative py-32 text-white overflow-hidden z-10" style={{ backgroundColor: '#6b8cc4' }}>
         <div className="absolute inset-0 bg-black opacity-30"></div>
         <div className="relative z-10 container mx-auto px-4 text-center">
           <h2 className="text-5xl lg:text-6xl font-light mb-6" style={{}}>BE AN EXPLORER</h2>
           <h3 className="text-2xl lg:text-3xl font-normal mb-8" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>JOIN HEIMURSAGA TODAY</h3>
-          <p className="text-xl mb-12 max-w-3xl mx-auto text-gray-100 font-light leading-relaxed" style={{}}>
+          <p className="text-xl mb-12 max-w-3xl mx-auto text-gray-100 font-normal leading-relaxed" style={{}}>
             Every place has a story, what's yours? Like the explorers of old, it's never too late to inspire the world.
           </p>
             <div className="flex items-center justify-center">
@@ -452,7 +453,7 @@ export const LandingPage: React.FC = () => {
       </div>
 
       {/* Quote Section */}
-      <div className="py-16 text-white relative z-10" style={{ backgroundColor: '#AC6D46' }}>
+      <div className="py-16 text-gray-800 relative z-10" style={{ backgroundColor: 'white' }}>
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-4xl mx-auto">
             <blockquote className="text-1xl lg:text-2xl font-light mb-8 italic leading-relaxed" style={{}}>
@@ -461,7 +462,7 @@ export const LandingPage: React.FC = () => {
               Will be to arrive where we started<br />
               And know the place for the first time.
             </blockquote>
-            <cite className="text-xl text-gray-300 font-light" style={{}}>— T.S. Eliot</cite>
+            <cite className="text-xl text-gray-600 font-normal" style={{}}>— T.S. Eliot</cite>
           </div>
         </div>
       </div>
@@ -469,10 +470,10 @@ export const LandingPage: React.FC = () => {
       {/* Footer */}
       <footer className="text-white py-12 relative z-10" style={{ backgroundColor: '#252525' }}>
         <div className="container mx-auto px-4 text-center">
-          <div className="text-2xl font-light mb-4" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
+          <div className="text-2xl font-normal mb-4" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
             HEIMURSAGA
           </div>
-          <p className="text-gray-400 font-light" style={{}}>
+          <p className="text-gray-400 font-normal" style={{}}>
             © 2025 <a href="https://theperipetycompany.com/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-300 transition-colors no-underline">The Peripety Company</a>. All Rights Reserved.
           </p>
         </div>

@@ -18,6 +18,7 @@ import {
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { useSearchParams } from 'next/navigation';
 import { z } from 'zod';
 
 import { apiClient } from '@/lib/api';
@@ -54,6 +55,7 @@ export const SignupForm = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [mounted, setMounted] = useState(false);
   const { executeRecaptcha, isConfigured } = useRecaptcha();
+  const searchParams = useSearchParams();
 
   // Fix hydration issue
   useEffect(() => {
@@ -95,8 +97,15 @@ export const SignupForm = () => {
         });
 
         if (success) {
-          // redirect to the user guide for new users
-          redirect(ROUTER.USER_GUIDE);
+          // Check if user came from Explorer Pro signup
+          const upgradeParam = searchParams.get('upgrade');
+          if (upgradeParam === 'pro') {
+            // redirect to checkout for upgrade
+            redirect(ROUTER.UPGRADE_CHECKOUT);
+          } else {
+            // redirect to the user guide for new users
+            redirect(ROUTER.USER_GUIDE);
+          }
         } else {
           switch (message) {
             case AppErrorCode.EMAIL_ALREADY_IN_USE:

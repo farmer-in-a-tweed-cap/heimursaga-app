@@ -41,9 +41,12 @@ export default async function Page() {
             {LOCALES.APP.UPGRADE.WELCOME.CTA.DESCRIPTION}
           </p>
         </div>
-        <div className="mt-10 flex flex-col items-center justify-center">
+        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Button>
-            <Link href={ROUTER.HOME}>Go to app</Link>
+            <Link href={ROUTER.USER_GUIDE}>User Guide</Link>
+          </Button>
+          <Button variant="outline">
+            <Link href={ROUTER.HOME}>Explore</Link>
           </Button>
         </div>
       </div>
