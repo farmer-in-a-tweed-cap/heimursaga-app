@@ -115,7 +115,9 @@ export class AppService {
       // add users (exclude blocked users)
       const users = await this.prisma.user.findMany({
         where: {
-          blocked: { not: true },
+          NOT: {
+            blocked: true,
+          },
         },
         select: {
           username: true,

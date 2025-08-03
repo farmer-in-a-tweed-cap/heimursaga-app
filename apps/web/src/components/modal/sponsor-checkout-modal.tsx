@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  Button,
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/components';
@@ -13,6 +14,7 @@ import { ModalBaseProps } from './modal-provider';
 
 type SponsorCheckoutModalProps = ModalBaseProps<{
   username: string;
+  isEmailVerified?: boolean;
 }>;
 
 const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
@@ -21,7 +23,7 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
   onSubmit,
   onCancel,
 }) => {
-  const { username } = props || {};
+  const { username, isEmailVerified = true } = props || {};
   
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{
@@ -33,6 +35,12 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
   useEffect(() => {
     const fetchData = async () => {
       if (!username) return;
+      
+      // Don't fetch data if email is not verified
+      if (!isEmailVerified) {
+        setLoading(false);
+        return;
+      }
       
       try {
         setLoading(true);
@@ -57,7 +65,7 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
     };
 
     fetchData();
-  }, [username]);
+  }, [username, isEmailVerified]);
 
   const handleCancel = () => {
     close();
@@ -72,6 +80,40 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
       onSubmit();
     }
   };
+
+  // Check email verification before allowing sponsorship
+  if (!isEmailVerified) {
+    return (
+      <>
+        <DialogHeader className="flex-shrink-0">
+          <DialogTitle>Email Verification Required</DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <div className="p-8 text-center">
+            <div className="mb-4">
+              <p className="text-gray-600">
+                You need to verify your email address before you can sponsor other explorers.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              <Button
+                onClick={() => {
+                  close();
+                  window.location.href = ROUTER.USER.SETTINGS.PAGE_KEY('security');
+                }}
+                className="w-full"
+              >
+                Verify Email Address
+              </Button>
+              <Button variant="outline" onClick={handleCancel} className="w-full">
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   if (loading) {
     return (

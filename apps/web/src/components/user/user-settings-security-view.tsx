@@ -84,7 +84,7 @@ export const UserSettingsSecurityView: React.FC<Props> = ({
               {!isEmailVerified && (
                 <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                   <p className="text-sm text-yellow-800">
-                    <strong>Email verification required:</strong> You need to verify your email address to receive notifications and sponsored post emails. Check your inbox for a verification email or click the button above to resend it.
+                    <strong>Email verification required:</strong> You need to verify your email address to receive notifications and sponsored journal entry emails. Check your inbox for a verification email or click the button above to resend it.
                   </p>
                 </div>
               )}

@@ -16,6 +16,7 @@ import { ModalComponent, modalRegistry } from './modal-registry';
 interface IModalContextState<T = any> {
   id: string | null;
   full?: boolean;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   props?: T;
   onSubmit?: () => void;
   onCancel?: () => void;
@@ -55,6 +56,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<IModalContextState>({
     id: null,
     full: false,
+    size: 'sm',
     props: {},
   });
   const [ModalComponent, setModalComponent] = useState<ModalComponent | null>(
@@ -113,7 +115,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ModalContext.Provider value={{ context: state, setContext, preload }}>
       <Dialog open={open}>
-        <DialogContent full={state.full} onClose={handleClose}>
+        <DialogContent full={state.full} size={state.size} onClose={handleClose}>
           <Suspense fallback={<div>Loading...</div>}>{modalContent}</Suspense>
         </DialogContent>
       </Dialog>
