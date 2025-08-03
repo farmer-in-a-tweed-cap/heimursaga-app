@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 
 import { apiClient } from '@/lib/api';
 import { SponsorCheckoutSummary, SponsorshipCheckoutForm, StripeProvider } from '@/components';
+import { ROUTER } from '@/router';
 
 import { ModalBaseProps } from './modal-provider';
 
