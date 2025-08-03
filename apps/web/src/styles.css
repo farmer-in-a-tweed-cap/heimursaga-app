@@ -10,6 +10,45 @@
 @layer base {
   :root {
     --app-header-height: 50px;
+    
+    /* Mobile viewport consistency */
+    --vh: 1vh;
+    --mobile-vh: 100vh;
+  }
+  
+  /* Fix for mobile viewport inconsistencies */
+  html {
+    height: 100%;
+    height: -webkit-fill-available;
+  }
+  
+  body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    
+    /* Prevent horizontal scrolling on mobile */
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+    
+    /* Disable text size adjust on mobile browsers */
+    -webkit-text-size-adjust: 100%;
+    -moz-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    
+    /* Disable tap highlight */
+    -webkit-tap-highlight-color: transparent;
+    
+    /* Smooth scrolling */
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Force consistent rendering across browsers */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -192,4 +231,26 @@
   visibility: hidden !important;
   opacity: 0 !important;
   pointer-events: none !important;
+}
+
+/* Essential mobile viewport fixes only */
+@media (max-width: 768px) {
+  /* Feature card mobile consistency */
+  .mobile-feature-card {
+    padding: 1.5rem 1rem;
+  }
+  
+  .mobile-feature-card img {
+    height: 12rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .mobile-feature-card {
+    padding: 1rem 0.75rem;
+  }
+  
+  .mobile-feature-card img {
+    height: 10rem !important;
+  }
 }

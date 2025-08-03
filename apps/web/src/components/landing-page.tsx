@@ -25,7 +25,7 @@ interface PricingTierProps {
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description, imageSrc, imageAlt, reverse = false, mobileImageAlign = 'center' }) => (
-  <div className={`container mx-auto px-4 py-16`}>
+  <div className={`container mx-auto px-4 py-16 mobile-feature-card`}>
     <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} ${mobileImageAlign === 'left' ? 'items-start lg:items-center' : 'items-center'} gap-12 max-w-6xl mx-auto`}>
       <div className={`lg:w-1/2 ${mobileImageAlign === 'left' ? 'text-left' : 'text-center lg:text-left'}`}>
         <div className="inline-block px-4 py-2 text-sm uppercase font-light mb-4 text-white" style={{ backgroundColor: '#4676AC' }}>
@@ -105,9 +105,9 @@ export const LandingPage: React.FC = () => {
     const checkDeviceType = () => {
       const width = window.innerWidth;
       const height = window.innerHeight;
-      const isMobileWidth = width < 760;
+      const isMobileWidth = width < 768;
       
-      // Detect Safari on iOS - most basic approach
+      // Detect Safari on iOS
       const isMobileSafariDevice = isMobileWidth && 
         /iPad|iPhone|iPod/.test(navigator.userAgent) && 
         /Safari/.test(navigator.userAgent) && 
@@ -117,18 +117,35 @@ export const LandingPage: React.FC = () => {
       setIsMobileSafari(isMobileSafariDevice);
     };
     
+    // Set custom viewport height property for consistent mobile experience
+    const setVH = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+      document.documentElement.style.setProperty('--mobile-vh', `${window.innerHeight}px`);
+    };
+    
     checkDeviceType();
+    setVH();
     
     const handleResize = () => {
       checkDeviceType();
+      setVH();
+    };
+    
+    const handleOrientationChange = () => {
+      // Delay to account for viewport changes
+      setTimeout(() => {
+        setVH();
+        checkDeviceType();
+      }, 100);
     };
     
     window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
+    window.addEventListener('orientationchange', handleOrientationChange);
     
     return () => {
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
+      window.removeEventListener('orientationchange', handleOrientationChange);
     };
   }, []);
 
@@ -139,93 +156,102 @@ export const LandingPage: React.FC = () => {
   }, []);
 
   return (
-    <>
-      <style jsx>{`
-        @supports (-webkit-touch-callout: none) {
-          @media (max-width: 760px) {
-            .safari-mobile-text {
-              font-size: 1.5rem !important;
-            }
-            .safari-mobile-button {
-              bottom: 8rem !important;
-            }
-          }
-        }
-      `}</style>
-      <div className="min-h-screen relative">
-      
-      {/* Fixed Background Video */}
-      <div className="fixed inset-0 z-0">
-        <video
-          ref={videoRef}
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="w-full h-full object-cover"
-          poster="/bg.png"
-        >
-          <source src="/bg-video2.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-black opacity-50"></div>
-      </div>
-
-      {/* Hero Section */}
-      <div className="relative min-h-screen text-white overflow-hidden z-10">
-
- 
-        
-        <div className="relative z-30 w-full h-screen">
-          {/* Logo at top */}
-          <div className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 z-50 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ top: '8px', marginTop: isMobile ? '-50px' : '-60px' }}>
-            <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight hidden" style={{}}>
-              <span className="block text-white">WELCOME TO</span>
-            </h1>
-            
-            <div className="w-96 h-72 lg:w-[36rem] lg:h-[28rem] mr-6">
-              <Logo size="xlg" color="light" />
-            </div>
-          </div>
-          
-          {/* Text in middle */}
-          <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} style={{ transform: `translate(-50%, -50%) ${isVisible ? 'translateY(0)' : 'translateY(2.5rem)'}` }}>
-            <div className="text-xl sm:text-xl md:text-2xl lg:text-3xl font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center safari-mobile-text">
-              <p>You're an explorer.</p>
-              <p>Don't get lost in a sea of content creators.</p>
-              <p>Share your story and raise money on Heimursaga.</p>
-            </div>
-          </div>
-          
-          {/* Button near bottom */}
-          <div 
-            className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} safari-mobile-button`}
-            style={{ 
-              bottom: `calc(3rem + env(safe-area-inset-bottom, 0px))`
+    <div className="min-h-screen relative"
+         style={{
+           height: isMobile ? '100vh' : 'auto',
+           minHeight: isMobile && isMobileSafari ? '-webkit-fill-available' : '100vh'
+         }}>
+        {/* Fixed Background Video */}
+        <div className="fixed inset-0 z-0">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+            poster="/bg.png"
+            style={{
+              WebkitPlaysinline: true,
+              objectFit: 'cover',
+              height: isMobile && isMobileSafari ? '-webkit-fill-available' : '100%'
             }}
           >
-            <button className="font-normal py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
-              <Link href={ROUTER.HOME} className="flex items-center gap-3">
-                EXPLORE
-                <svg 
-                  width="20" 
-                  height="20" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                  className="transition-transform duration-300 group-hover:translate-x-1"
-                >
-                  <path d="M5 12h14M12 5l7 7-7 7"/>
-                </svg>
-              </Link>
-            </button>
-          </div>
-        </div>  
-      </div>
+            <source src="/bg-video2.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-black opacity-50"></div>
+        </div>
+
+        {/* Hero Section */}
+        <div className="relative min-h-screen text-white overflow-hidden z-10"
+             style={{
+               height: isMobile ? '100vh' : 'auto',
+               minHeight: isMobile && isMobileSafari ? '-webkit-fill-available' : '100vh'
+             }}>
+          <div className="relative z-30 w-full h-screen"
+               style={{
+                 height: isMobile ? '100vh' : '100vh',
+                 minHeight: isMobile && isMobileSafari ? '-webkit-fill-available' : '100vh'
+               }}>
+            {/* Logo at top */}
+            <div className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 z-50 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} 
+                 style={{ 
+                   top: isMobile ? '1rem' : '8px', 
+                   marginTop: isMobile ? '0' : '-60px' 
+                 }}>
+              <h1 className="text-4xl lg:text-4xl font-light mb-1 leading-tight hidden">
+                <span className="block text-white">WELCOME TO</span>
+              </h1>
+              
+              <div className={isMobile ? 'w-64 h-48' : 'w-96 h-72 lg:w-[36rem] lg:h-[28rem] mr-6'}>
+                <Logo size="xlg" color="light" />
+              </div>
+            </div>
+            
+            {/* Text in middle */}
+            <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} px-4`} 
+                 style={{ transform: `translate(-50%, -50%) ${isVisible ? 'translateY(0)' : 'translateY(2.5rem)'}` }}>
+              <div className={`font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-4 text-center`}
+                   style={{
+                     fontSize: isMobile ? (isMobileSafari ? '1.125rem' : '1rem') : '1.5rem',
+                     lineHeight: isMobile ? '1.4' : '1.6'
+                   }}>
+                <p>You're an explorer.</p>
+                <p>Don't get lost in a sea of content creators.</p>
+                <p>Share your story and raise money on Heimursaga.</p>
+              </div>
+            </div>
+            
+            {/* Button near bottom */}
+            <div 
+              className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
+              style={{ 
+                bottom: isMobile ? (isMobileSafari ? '4rem' : '3rem') : `calc(3rem + env(safe-area-inset-bottom, 0px))`
+              }}
+            >
+              <button className="font-normal py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
+                <Link href={ROUTER.HOME} className="flex items-center gap-3">
+                  EXPLORE
+                  <svg 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className="transition-transform duration-300 group-hover:translate-x-1"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </Link>
+              </button>
+            </div>
+          </div>  
+        </div>
 
       {/* Features Section */}
       <div className="py-20 relative z-10" style={{ backgroundColor: 'white' }}>
@@ -366,6 +392,5 @@ export const LandingPage: React.FC = () => {
         </div>
       </footer>
     </div>
-    </>
   );
 };

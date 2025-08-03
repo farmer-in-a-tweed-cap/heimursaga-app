@@ -79,9 +79,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  initialScale: 1,
   width: 'device-width',
+  initialScale: 1.0,
+  maximumScale: 1.0,
+  minimumScale: 1.0,
+  userScalable: false,
   viewportFit: 'cover',
+  themeColor: '#4676AC',
 };
 
 const { MAPBOX_ACCESS_TOKEN } = process.env;
@@ -107,6 +111,37 @@ export default async function RootLayout({ children }: Props) {
             defer
           />
         )}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Mobile viewport height fix
+              function setVH() {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', vh + 'px');
+                document.documentElement.style.setProperty('--mobile-vh', window.innerHeight + 'px');
+              }
+              
+              // Set on load
+              setVH();
+              
+              // Update on resize and orientation change
+              window.addEventListener('resize', setVH);
+              window.addEventListener('orientationchange', function() {
+                setTimeout(setVH, 100);
+              });
+              
+              // Prevent zoom on iOS
+              document.addEventListener('gesturestart', function (e) {
+                e.preventDefault();
+              });
+              
+              // Fix iOS viewport height issues
+              if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+                document.documentElement.style.setProperty('--ios-vh', window.innerHeight + 'px');
+              }
+            `,
+          }}
+        />
       </head>
       <body className={lato.className}>
         <AppProvider config={config}>
