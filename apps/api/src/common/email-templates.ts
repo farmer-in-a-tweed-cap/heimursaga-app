@@ -161,7 +161,7 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
             <div class="footer">
               <p class="footer-brand">HEIMURSAGA</p>
               <p class="footer-text">
-                © ${new Date().getFullYear()} Heimursaga, an app for explorers. Share stories. Raise Money. Inspire the world.
+                © ${new Date().getFullYear()} Heimursaga, an app for explorers. Share your stories. Raise money. Inspire the world.
               </p>
               <p style="margin-top: 15px; color: #6c757d; font-size: 12px; font-weight: 400;">
                 Happy exploring!
@@ -229,7 +229,7 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
             
             <div class="footer">
               <p class="footer-text">
-                © ${new Date().getFullYear()} Heimursaga, an app for explorers. Share stories. Raise Money. Inspire the world.
+                © ${new Date().getFullYear()} Heimursaga, an app for explorers. Share your stories. Raise money. Inspire the world.
               </p>
             </div>
           </div>
@@ -385,7 +385,7 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
                 <a href="${v.unsubscribeUrl}">Unsubscribe</a>
               </div>
               <p style="margin-top: 20px; color: #adb5bd; font-size: 12px;">
-                © ${new Date().getFullYear()} Heimursaga, an app for explorers. Share stories. Raise Money. Inspire the world.
+                © ${new Date().getFullYear()} Heimursaga, an app for explorers. Share your stories. Raise money. Inspire the world.
               </p>
             </div>
           </div>

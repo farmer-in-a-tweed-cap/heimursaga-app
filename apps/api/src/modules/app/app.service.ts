@@ -69,9 +69,9 @@ export class AppService {
         ...[
           { path: '/' },
           { path: '/explore' },
-          { path: '/blog' },
           { path: '/login' },
           { path: '/signup' },
+          { path: '/user-guide' },
           { path: [router.legal, 'terms'].join('/') },
           { path: [router.legal, 'privacy'].join('/') },
         ].map(
@@ -112,8 +112,11 @@ export class AppService {
           ),
       );
 
-      // add users
+      // add users (exclude blocked users)
       const users = await this.prisma.user.findMany({
+        where: {
+          blocked: { not: true },
+        },
         select: {
           username: true,
           updated_at: true,
