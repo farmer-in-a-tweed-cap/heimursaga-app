@@ -35,11 +35,12 @@ import {
   PostTripAddButton,
   TripSelectModalProps,
   TripSelectModalSubmitHandler,
+  AIDetectionWarning,
 } from '@/components';
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { FILE_ACCEPT } from '@/constants';
-import { useMap, useModal, useSession, useUploads } from '@/hooks';
+import { useAIDetection, useImageAIDetection, useMap, useModal, useSession, useUploads } from '@/hooks';
 import { dateformat, normalizeText, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
 
@@ -101,6 +102,17 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     maxFiles: session.creator ? 3 : 1,
     maxSize: APP_CONFIG.UPLOAD.MAX_FILE_SIZE,
   });
+
+  // AI Content Detection
+  const aiDetection = useAIDetection('post-edit-content-textarea', {
+    enabled: true,
+    checkPaste: true,
+    checkAIphrases: true,
+    debounceMs: 2000,
+  });
+
+  // Image AI Detection
+  const imageAIDetection = useImageAIDetection();
 
   const [loading, setLoading] = useState<{
     post: boolean;
@@ -542,11 +554,24 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                             <p className="text-xs text-gray-500 mb-2">in 100-1,000 words, if there's more write a series!</p>
                             <FormControl>
                               <Textarea
+                                id="post-edit-content-textarea"
                                 className="min-h-[180px]"
                                 disabled={loading.post}
                                 {...field}
+                                onPaste={aiDetection.trackPaste}
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  aiDetection.analyzeText(e.target.value);
+                                }}
                               />
                             </FormControl>
+                            {aiDetection.hasWarnings && (
+                              <AIDetectionWarning
+                                warnings={aiDetection.warnings}
+                                onDismiss={aiDetection.clearWarnings}
+                                className="mt-2"
+                              />
+                            )}
                             <FormMessage />
                           </FormItem>
                         );
@@ -573,10 +598,39 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                     maxFiles={uploader.maxFiles}
                     maxSize={uploader.maxSize}
                     loader={uploader.loader}
-                    onChange={uploader.handleFileChange}
+                    onChange={(files) => {
+                      uploader.handleFileChange(files);
+                      // Analyze new files for AI content
+                      files.forEach((file) => {
+                        if (file.file) {
+                          imageAIDetection.analyzeImage(file.file);
+                        }
+                      });
+                    }}
                     onLoad={uploader.handleFileLoad}
-                    onRemove={uploader.handleFileRemove}
+                    onRemove={(file) => {
+                      uploader.handleFileRemove(file);
+                      // Clear AI detection results for removed file
+                      if (file.file?.name) {
+                        imageAIDetection.clearResult(file.file.name);
+                      }
+                    }}
                   />
+                  {/* Display image AI detection warnings */}
+                  {uploader.files.map((file) => {
+                    if (!file.file?.name) return null;
+                    const warnings = imageAIDetection.getWarningsForFile(file.file.name);
+                    if (warnings.length === 0) return null;
+                    
+                    return (
+                      <AIDetectionWarning
+                        key={file.file.name}
+                        warnings={warnings.map(warning => `${file.file?.name}: ${warning}`)}
+                        onDismiss={() => file.file?.name && imageAIDetection.clearResult(file.file.name)}
+                        className="mt-2"
+                      />
+                    );
+                  })}
                 </FormItem>
               </CardContent>
             </Card>

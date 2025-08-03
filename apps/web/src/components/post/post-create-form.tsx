@@ -40,10 +40,11 @@ import {
   PostTripAddButton,
   TripSelectModalProps,
   TripSelectModalSubmitHandler,
+  AIDetectionWarning,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { FILE_ACCEPT } from '@/constants';
-import { useMap, useModal, useScroll, useSession, useUploads } from '@/hooks';
+import { useAIDetection, useImageAIDetection, useMap, useModal, useScroll, useSession, useUploads } from '@/hooks';
 import { dateformat, redirect, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
@@ -117,6 +118,17 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     maxFiles: session.creator ? 3 : 1,
     maxSize: APP_CONFIG.UPLOAD.MAX_FILE_SIZE,
   });
+
+  // AI Content Detection
+  const aiDetection = useAIDetection('post-content-textarea', {
+    enabled: true,
+    checkPaste: true,
+    checkAIphrases: true,
+    debounceMs: 2000, // Longer debounce for less interruption
+  });
+
+  // Image AI Detection
+  const imageAIDetection = useImageAIDetection();
 
   const handleLocationPickModal = () => {
     modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_SELECT, {
@@ -443,11 +455,24 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                           <p className="text-xs text-gray-500 mb-2">in 100-1,000 words, if there's more write a series!</p>
                           <FormControl>
                             <Textarea
+                              id="post-content-textarea"
                               className="min-h-[180px]"
                               disabled={loading}
                               {...field}
+                              onPaste={aiDetection.trackPaste}
+                              onChange={(e) => {
+                                field.onChange(e);
+                                aiDetection.analyzeText(e.target.value);
+                              }}
                             />
                           </FormControl>
+                          {aiDetection.hasWarnings && (
+                            <AIDetectionWarning
+                              warnings={aiDetection.warnings}
+                              onDismiss={aiDetection.clearWarnings}
+                              className="mt-2"
+                            />
+                          )}
                           <FormMessage />
                         </FormItem>
                       );
@@ -474,10 +499,39 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                     maxFiles={uploader.maxFiles}
                     maxSize={uploader.maxSize}
                     loader={uploader.loader}
-                    onChange={uploader.handleFileChange}
+                    onChange={(files) => {
+                      uploader.handleFileChange(files);
+                      // Analyze new files for AI content
+                      files.forEach((file) => {
+                        if (file.file) {
+                          imageAIDetection.analyzeImage(file.file);
+                        }
+                      });
+                    }}
                     onLoad={uploader.handleFileLoad}
-                    onRemove={uploader.handleFileRemove}
+                    onRemove={(file) => {
+                      uploader.handleFileRemove(file);
+                      // Clear AI detection results for removed file
+                      if (file.file?.name) {
+                        imageAIDetection.clearResult(file.file.name);
+                      }
+                    }}
                   />
+                  {/* Display image AI detection warnings */}
+                  {uploader.files.map((file) => {
+                    if (!file.file?.name) return null;
+                    const warnings = imageAIDetection.getWarningsForFile(file.file.name);
+                    if (warnings.length === 0) return null;
+                    
+                    return (
+                      <AIDetectionWarning
+                        key={file.file.name}
+                        warnings={warnings.map(warning => `${file.file?.name}: ${warning}`)}
+                        onDismiss={() => file.file?.name && imageAIDetection.clearResult(file.file.name)}
+                        className="mt-2"
+                      />
+                    );
+                  })}
                 </FormItem>
               </CardContent>
             </Card>

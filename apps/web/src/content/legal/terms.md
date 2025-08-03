@@ -25,6 +25,7 @@ The possible use cases for Heimursaga are many, but the misuse of this platform 
 ### 3.1 Prohibited Content
 Heimursaga journal entries or explorer profiles must not contain:
 
+- AI-generated text or image content
 - Obscene language or expletives
 - Sexually explicit language or stories
 - Graphic or excessively descriptive accounts of violence
@@ -46,6 +47,7 @@ We encourage high-quality, authentic storytelling that:
 ### 4.1 Prohibited Media
 The following types of media are not permitted:
 
+- AI-generated images or avatars
 - Sexually graphic or suggestive avatars or photos
 - Avatars or photos depicting any kind of violence or gore
 - Avatars or photos with commercial text or branding

@@ -25,9 +25,9 @@ interface PricingTierProps {
 }
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description, imageSrc, imageAlt, reverse = false, mobileImageAlign = 'center' }) => (
-  <div className={`container mx-auto px-4 py-16 mobile-feature-card`}>
-    <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} ${mobileImageAlign === 'left' ? 'items-start lg:items-center' : 'items-center'} gap-12 max-w-6xl mx-auto`}>
-      <div className={`lg:w-1/2 ${mobileImageAlign === 'left' ? 'text-left' : 'text-center lg:text-left'}`}>
+  <div className={`container mx-auto px-4 py-20 mobile-feature-card`}>
+    <div className={`flex flex-col ${reverse ? 'lg:flex-row-reverse' : 'lg:flex-row'} items-center gap-16 lg:gap-12 max-w-6xl mx-auto`}>
+      <div className={`lg:w-1/2 text-center lg:text-left`}>
         <div className="inline-block px-4 py-2 text-sm uppercase font-light mb-4 text-white" style={{ backgroundColor: '#4676AC' }}>
           {title}
         </div>
@@ -39,14 +39,14 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
         </p>
       </div>
       {imageSrc && (
-        <div className={`lg:w-1/2 ${mobileImageAlign === 'left' ? 'self-start w-full' : ''}`}>
+        <div className="lg:w-1/2 mb-8 lg:mb-0">
           <div className="relative group">
             <Image 
               src={imageSrc} 
               alt={imageAlt || subtitle} 
               width={800}
               height={320}
-              className={`relative w-full h-80 rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300 ${mobileImageAlign === 'left' ? 'object-cover object-left lg:object-center' : 'object-cover'}`}
+              className={`relative w-full aspect-square rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300 ${mobileImageAlign === 'left' ? 'object-cover object-left lg:object-center' : 'object-cover'}`}
               style={{ border: '4px solid #AC6D46' }}
             />
           </div>
@@ -67,15 +67,15 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
     )}
     <div className="text-center mb-8">
       <h3 className="text-2xl font-light text-white mb-2" style={{}}>{title}</h3>
-      <div className="text-4xl font-light mb-6" style={{ color: '#4676AC', fontFamily: 'Lato, sans-serif' }}>
+      <div className="text-4xl font-semibold mb-6" style={{ color: '#4676AC', fontFamily: 'Lato, sans-serif' }}>
         {price}
       </div>
     </div>
     <ul className="space-y-4 mb-8">
       {features.map((feature, index) => (
         <li key={index} className="flex items-start">
-          <div className="flex-shrink-0 w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3">
-            <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mr-3" style={{ backgroundColor: '#E6F0FF' }}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#4676AC' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
@@ -253,7 +253,7 @@ export const LandingPage: React.FC = () => {
         </div>
 
       {/* Features Section */}
-      <div className="py-20 relative z-10" style={{ backgroundColor: 'white' }}>
+      <div className="py-16 relative z-10" style={{ backgroundColor: 'white' }}>
         <FeatureCard
           title="Map-Centric"
           subtitle="Explore"
@@ -279,6 +279,53 @@ export const LandingPage: React.FC = () => {
           imageAlt="Sponsorship payment interface"
           mobileImageAlign="left"
         />
+      </div>
+
+      {/* AI Content Policy Section */}
+      <div className="py-20 relative z-10" style={{ backgroundColor: '#f8f9fa' }}>
+        <div className="container mx-auto px-4 text-center">
+          <div className="max-w-4xl mx-auto">
+            <div className="inline-block px-6 py-3 text-sm uppercase font-light mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
+              Human-First
+            </div>
+            <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
+              Authentic Stories, Human Voices
+            </h2>
+            <p className="text-xl text-gray-700 font-light leading-relaxed mb-8 max-w-3xl mx-auto">
+              While AI has its place in our world, exploration and discovery is for humans. Heimursaga implements multiple safeguards to ensure the platform is free from AI-generated text and image content.
+            </p>
+            <div className="grid md:grid-cols-3 gap-8 mt-12">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-black mb-2">Content Detection</h3>
+                <p className="text-gray-600 font-light">Advanced algorithms identify and flag AI-generated content before it reaches the platform.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-black mb-2">Human Review</h3>
+                <p className="text-gray-600 font-light">Our community and moderation team help maintain the authenticity of shared experiences.</p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                  </svg>
+                </div>
+                <h3 className="text-lg font-medium text-black mb-2">Behavioral Analysis</h3>
+                <p className="text-gray-600 font-light">Posting patterns and user behavior help us identify and prevent automated content generation.</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Call to Action */}
@@ -367,7 +414,6 @@ export const LandingPage: React.FC = () => {
       <div className="py-16 text-white relative z-10" style={{ backgroundColor: '#AC6D46' }}>
         <div className="container mx-auto px-4 text-center">
           <div className="max-w-4xl mx-auto">
-            <div className="text-6xl mb-8" style={{ color: 'white' }}>"</div>
             <blockquote className="text-1xl lg:text-2xl font-light mb-8 italic leading-relaxed" style={{}}>
               We shall not cease from exploration<br />
               And the end of all our exploring<br />

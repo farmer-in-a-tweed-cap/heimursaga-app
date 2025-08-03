@@ -25,3 +25,4 @@ export * from './list/menu';
 export * from './payout';
 export * from './admin';
 export * from './landing-page';
+export * from './ai-detection';
