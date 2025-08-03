@@ -98,6 +98,22 @@ export class PayoutService {
         (stripeAccount?.requirements?.pending_verification?.length || 0) <= 0 ||
         false;
 
+      // get automatic payout settings
+      const stripeInterval = stripeAccount?.settings?.payouts?.schedule?.interval;
+      const validInterval = (['manual', 'daily', 'weekly', 'monthly'].includes(stripeInterval)) 
+        ? stripeInterval as 'manual' | 'daily' | 'weekly' | 'monthly'
+        : 'manual' as const;
+        
+      const automaticPayouts = stripeAccount?.settings?.payouts
+        ? {
+            enabled: validInterval !== 'manual',
+            schedule: {
+              interval: validInterval,
+              delayDays: stripeAccount.settings.payouts.schedule?.delay_days,
+            },
+          }
+        : { enabled: false, schedule: { interval: 'manual' as const } };
+
       const response: IPayoutMethodGetResponse = {
         results,
         data: payoutMethod
@@ -113,6 +129,7 @@ export class PayoutService {
                 stripeAccountId: stripe_account_id,
                 currency,
                 country,
+                automaticPayouts,
               }),
             )
           : [],

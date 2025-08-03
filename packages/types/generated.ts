@@ -570,6 +570,13 @@ export interface IPayoutMethodBaseDetail {
   currency?: string;
   country?: string;
   stripeAccountId?: string;
+  automaticPayouts?: {
+    enabled: boolean;
+    schedule?: {
+      interval: 'manual' | 'daily' | 'weekly' | 'monthly';
+      delayDays?: number;
+    };
+  };
 }
 
 export interface IPayoutMethodGetResponse {

@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger 
 } from '@repo/ui/components';
-import { BellIcon, FeatherIcon } from '@repo/ui/icons';
+import { BellIcon, FeatherIcon, CaretDownIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 
@@ -144,7 +144,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
           <div className="flex-1"></div>
           
           {/* Centered Logo */}
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center -ml-[15px] lg:ml-[50px]">
             <Link href={ROUTER.HOME}>
               <Logo size="lg" color="dark" />
             </Link>
@@ -181,7 +181,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
                 {/* User Avatar with Username and Role */}
                 <DropdownMenu>
                 <DropdownMenuTrigger>
-                  <div className="flex flex-row gap-3 items-center hover:bg-gray-50 rounded-lg p-2 transition-colors">
+                  <div className="flex flex-row gap-3 items-center hover:bg-gray-50 rounded-lg p-2 transition-colors cursor-pointer">
                     <UserAvatar
                       src={picture}
                       className={cn(isCreator ? 'border-2 border-primary' : '')}
@@ -192,6 +192,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
                         {roleLabel}
                       </span>
                     </div>
+                    <CaretDownIcon size={16} className="text-gray-400 ml-1" />
                   </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-background min-w-[240px] mr-4 mt-2 p-0 py-2">
@@ -246,9 +247,11 @@ export const AppTopNavbar: React.FC<Props> = () => {
       {/* Mobile Top Navbar - Logo only (when bottom navbar is visible) */}
       <div className="flex lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-16 shadow-sm">
         <div className="w-full px-6 flex items-center justify-center">
-          <Link href={ROUTER.HOME}>
-            <Logo size="lg" color="dark" />
-          </Link>
+          <div className="-ml-[15px]">
+            <Link href={ROUTER.HOME}>
+              <Logo size="lg" color="dark" />
+            </Link>
+          </div>
         </div>
       </div>
     </>

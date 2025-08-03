@@ -43,6 +43,7 @@ export const PayoutBillingView = () => {
 
   const payoutMethod = payoutMethodQuery?.data?.data?.[0];
   const updateAvailable = !!payoutMethod?.id;
+  const automaticPayouts = payoutMethod?.automaticPayouts;
 
   const stripeBackUrl = process?.env?.NEXT_PUBLIC_APP_BASE_URL
     ? new URL(
@@ -161,6 +162,43 @@ export const PayoutBillingView = () => {
                   <Badge variant="outline">Not connected</Badge>
                 )}
               </div>
+              {/* Automatic Payout Status */}
+              {payoutMethod && automaticPayouts && (
+                <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">
+                        Automatic Payouts
+                      </span>
+                      <div className="mt-1">
+                        {automaticPayouts.enabled ? (
+                          <div className="flex items-center">
+                            <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                            <span className="text-sm text-green-700 font-medium">
+                              Enabled - {automaticPayouts.schedule?.interval}
+                              {automaticPayouts.schedule?.delayDays && ` (${automaticPayouts.schedule.delayDays} day delay)`}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+                            <span className="text-sm text-gray-600 font-medium">
+                              Manual payouts only
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    {automaticPayouts.enabled 
+                      ? "Funds are automatically transferred to your bank account based on your schedule. You can still create manual payouts."
+                      : "You must manually request payouts when you want to withdraw funds."
+                    }
+                  </p>
+                </div>
+              )}
+              
               <div className="mt-3">
                 <span className="text-sm text-gray-500">
                   {LOCALES.APP.PAYOUTS.BILLING.STRIPE.PAYOUT_FEE_WARNING}

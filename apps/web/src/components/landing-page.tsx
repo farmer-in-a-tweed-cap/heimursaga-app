@@ -210,13 +210,13 @@ export const LandingPage: React.FC = () => {
             </div>
             
             {/* Text in middle */}
-            <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'} px-4`} 
+            <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} 
                  style={{ transform: `translate(-50%, -50%) ${isVisible ? 'translateY(0)' : 'translateY(2.5rem)'}` }}>
-              <div className={`font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-4 text-center`}
-                   style={{
-                     fontSize: isMobile ? (isMobileSafari ? '1.125rem' : '1rem') : '1.5rem',
-                     lineHeight: isMobile ? '1.4' : '1.6'
-                   }}>
+              <div className={`text-xl sm:text-xl md:text-2xl lg:text-3xl font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center ${isMobileSafari ? 'safari-mobile-text' : ''}`}
+                   style={isMobile ? {
+                     fontSize: isMobileSafari ? '1.125rem' : '1rem',
+                     lineHeight: '1.4'
+                   } : {}}>
                 <p>You're an explorer.</p>
                 <p>Don't get lost in a sea of content creators.</p>
                 <p>Share your story and raise money on Heimursaga.</p>

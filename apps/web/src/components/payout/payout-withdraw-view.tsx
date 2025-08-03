@@ -40,12 +40,21 @@ export const PayoutWithdrawView = () => {
     retry: 0,
   });
 
+  const payoutMethodQuery = useQuery({
+    queryKey: [API_QUERY_KEYS.PAYOUT_METHODS],
+    queryFn: () => apiClient.getUserPayoutMethods().then(({ data }) => data),
+    enabled: !!session?.username,
+    retry: 0,
+  });
+
   const payoutBalance = balanceQuery.data;
   const withdrawalDisabled = payoutBalance?.available?.amount
     ? payoutBalance?.available?.amount <= 0
     : true;
 
   const payouts = payoutQuery.data?.data || [];
+  const payoutMethod = payoutMethodQuery?.data?.data?.[0];
+  const automaticPayouts = payoutMethod?.automaticPayouts;
 
   const amount = 5;
   const symbol = payoutBalance?.available?.symbol || '$';
@@ -119,6 +128,28 @@ export const PayoutWithdrawView = () => {
                   <span>{symbol}</span>
                   <span>{balance.available.toFixed(2)}</span>
                 </div>
+                
+                {/* Automatic Payout Status */}
+                {automaticPayouts && (
+                  <div className="mt-3">
+                    {automaticPayouts.enabled ? (
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                        <span className="text-xs text-green-700 font-medium">
+                          Auto-payouts: {automaticPayouts.schedule?.interval}
+                          {automaticPayouts.schedule?.delayDays && ` (${automaticPayouts.schedule.delayDays}d delay)`}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+                        <span className="text-xs text-gray-600 font-medium">
+                          Manual payouts only
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex mt-4">
                 <Button

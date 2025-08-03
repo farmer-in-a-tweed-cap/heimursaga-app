@@ -138,7 +138,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
   const columns: DataTableColumn<SponsorshipTableData>[] = [
     {
       accessorKey: 'username',
-      header: () => (context === 'user' ? 'Creator' : 'User'),
+      header: () => (context === 'user' ? 'Explorer' : 'User'),
       cell: ({ row }) => {
         const username = row.original.username;
         return (
