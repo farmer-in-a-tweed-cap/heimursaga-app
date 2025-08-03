@@ -132,6 +132,7 @@ export interface IUserSettingsUpdateQuery {
 export interface IUserSettingsProfileGetResponse {
   username: string;
   email: string;
+  isEmailVerified?: boolean;
   // name: string;
   bio: string;
   picture: string;

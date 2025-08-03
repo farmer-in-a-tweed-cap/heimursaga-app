@@ -8,6 +8,7 @@ import { ROUTER } from '@/router';
 
 import { UserSettingsPaymentMethodView } from './user-settings-payment-method-view';
 import { UserSettingsProfileView } from './user-settings-profile-view';
+import { UserSettingsSecurityView } from './user-settings-security-view';
 import { UserSettingsSponsorshipsView } from './user-settings-sponsorships-view';
 
 const SECTION_KEYS = {
@@ -23,6 +24,7 @@ const SECTION_TABS: { key: string; label: string }[] = [
   { key: SECTION_KEYS.PROFILE, label: 'Profile' },
   { key: SECTION_KEYS.PAYMENT_METHODS, label: 'Payment methods' },
   { key: SECTION_KEYS.SPONSORSHIPS, label: 'Sponsorships' },
+  { key: SECTION_KEYS.SECURITY, label: 'Security' },
   // { key: SECTION_KEYS.BILLING, label: 'Billing & payouts' },
 ];
 
@@ -32,6 +34,7 @@ type Props = {
     profile?: {
       username: string;
       email: string;
+      isEmailVerified?: boolean;
       // name: string;
       bio: string;
       picture: string;
@@ -75,6 +78,12 @@ export const UserSettings: React.FC<Props> = ({ section, data }) => {
         )}
         {sectionKey === SECTION_KEYS.SPONSORSHIPS && (
           <UserSettingsSponsorshipsView />
+        )}
+        {sectionKey === SECTION_KEYS.SECURITY && (
+          <UserSettingsSecurityView 
+            email={data?.profile?.email || ''}
+            isEmailVerified={data?.profile?.isEmailVerified}
+          />
         )}
       </div>
     </div>

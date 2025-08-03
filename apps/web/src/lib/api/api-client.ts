@@ -136,6 +136,22 @@ export const apiClient = {
     api.request<void>(API_ROUTER.VALIDATE_TOKEN(token), {
       cookie: config ? config.cookie : undefined,
     }),
+  sendEmailVerification: async (payload: { email: string }) =>
+    api.request<void>(API_ROUTER.SEND_EMAIL_VERIFICATION, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+    }),
+  verifyEmail: async (payload: { token: string }) =>
+    api.request<void>(API_ROUTER.VERIFY_EMAIL, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+    }),
+  resendEmailVerification: async (config?: RequestConfig) =>
+    api.request<{ success: boolean; message: string }>(API_ROUTER.RESEND_EMAIL_VERIFICATION, {
+      method: API_METHODS.POST,
+      body: JSON.stringify({}),
+      ...config,
+    }),
   // posts
   getPosts: async (config?: RequestConfig) =>
     api.request<IPostQueryResponse>(API_ROUTER.POSTS.GET, {

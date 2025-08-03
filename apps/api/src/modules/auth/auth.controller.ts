@@ -114,4 +114,27 @@ export class AuthController {
   async validateToken(@Param('token') token: string) {
     return this.authService.validateToken(token);
   }
+
+  @Public()
+  @Post('send-email-verification')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 verification emails per 5 minutes
+  async sendEmailVerification(@Body() body: { email: string }) {
+    return this.authService.sendEmailVerification(body.email);
+  }
+
+  @Public()
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 verification attempts per minute
+  async verifyEmail(@Body() body: { token: string }) {
+    return this.authService.verifyEmail(body.token);
+  }
+
+  @Post('resend-email-verification')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 2, ttl: 300000 } }) // 2 resend attempts per 5 minutes
+  async resendEmailVerification(@Session() session: ISession) {
+    return this.authService.resendEmailVerification(session);
+  }
 }

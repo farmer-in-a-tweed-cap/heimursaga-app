@@ -6,6 +6,9 @@ export const API_ROUTER = {
   LOGOUT: 'auth/logout',
   RESET_PASSWORD: 'auth/reset-password',
   CHANGE_PASSWORD: 'auth/change-password',
+  SEND_EMAIL_VERIFICATION: 'auth/send-email-verification',
+  VERIFY_EMAIL: 'auth/verify-email',
+  RESEND_EMAIL_VERIFICATION: 'auth/resend-email-verification',
   VALIDATE_TOKEN: (token: string) => `/auth/tokens/${token}`,
   GET_SESSION_USER: 'auth/user',
   MAP: {

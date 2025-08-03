@@ -512,19 +512,128 @@ export class AuthService {
     }
   }
 
+  async sendEmailVerification(email: string): Promise<void> {
+    try {
+      const { APP_BASE_URL } = process.env;
+      const maxRequests = config.verification_request_limit || 0;
+
+      // check if the user exists
+      const user = await this.prisma.user
+        .findFirstOrThrow({ where: { email } })
+        .catch(() => null);
+      if (!user)
+        throw new ServiceBadRequestException('user with this email not found');
+
+      // generate a token
+      const token = generator.verificationToken();
+
+      // check if there are too many verifications
+      const limited = await this.prisma.emailVerification
+        .count({
+          where: {
+            email,
+            expired: false,
+          },
+        })
+        .then((count) => (count >= maxRequests ? true : false));
+      if (limited)
+        throw new ServiceForbiddenException(
+          'you requested too many verifications, try later again',
+        );
+
+      // set expiration date (24 hours for email verification)
+      const expiresAt = dateformat().add(24, 'h').toDate();
+
+      // create a verification
+      const verification = await this.prisma.emailVerification.create({
+        data: {
+          token,
+          email,
+          expired_at: expiresAt,
+        },
+      });
+      if (!verification)
+        throw new ServiceBadRequestException('email verification can not be sent');
+
+      // generate a link
+      const link = new URL(
+        `verify-email?token=${token}`,
+        APP_BASE_URL,
+      ).toString();
+
+      // send the email
+      this.eventService.trigger<IEventSendEmail>({
+        event: EVENTS.SEND_EMAIL,
+        data: {
+          to: email,
+          template: EMAIL_TEMPLATES.EMAIL_VERIFICATION,
+          vars: { verification_link: link },
+        },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('email verification can not be sent');
+      throw exception;
+    }
+  }
+
+  async verifyEmail(token: string): Promise<void> {
+    try {
+      if (!token)
+        throw new ServiceBadRequestException('token is expired or invalid');
+
+      // validate the token
+      const verification = await this.prisma.emailVerification.findFirstOrThrow(
+        {
+          where: { token, expired: false },
+          select: { email: true },
+        },
+      );
+
+      // update the user and expire the token
+      await this.prisma.$transaction(async (tx) => {
+        // update the user
+        await tx.user.update({
+          where: { email: verification.email },
+          data: { is_email_verified: true },
+        });
+
+        // expire the token
+        await tx.emailVerification.updateMany({
+          where: { email: verification.email },
+          data: {
+            expired: true,
+            expired_at: dateformat().toDate(),
+          },
+        });
+      });
+
+      // send welcome email after successful verification
+      this.eventService.trigger<IEventSendEmail>({
+        event: EVENTS.SEND_EMAIL,
+        data: {
+          to: verification.email,
+          template: EMAIL_TEMPLATES.WELCOME,
+        },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('token is expired or invalid');
+      throw exception;
+    }
+  }
+
   @OnEvent(EVENTS.SIGNUP_COMPLETE)
   async onSignupComplete(payload: IEventSignupComplete): Promise<void> {
     try {
       const { email } = payload;
 
-      // send a welcome email
-      this.eventService.trigger<IEventSendEmail>({
-        event: EVENTS.SEND_EMAIL,
-        data: {
-          to: email,
-          template: EMAIL_TEMPLATES.WELCOME,
-        },
-      });
+      // send email verification
+      await this.sendEmailVerification(email);
     } catch (e) {
       this.logger.error(e);
     }
@@ -614,6 +723,44 @@ export class AuthService {
       if (similarUsernameCount >= 5) {
         throw new ServiceForbiddenException('Suspicious registration pattern detected');
       }
+    }
+  }
+
+  async resendEmailVerification(session: ISession) {
+    try {
+      const { userId } = session;
+
+      // check access
+      const access = !!userId;
+      if (!access) throw new ServiceForbiddenException();
+
+      // Get user details
+      const user = await this.prisma.user.findFirst({
+        where: { id: userId },
+        select: {
+          email: true,
+          is_email_verified: true,
+        },
+      });
+
+      if (!user) {
+        throw new ServiceNotFoundException('User not found');
+      }
+
+      if (user.is_email_verified) {
+        throw new ServiceBadRequestException('Email is already verified');
+      }
+
+      // Send verification email using existing method
+      await this.sendEmailVerification(user.email);
+
+      return { success: true, message: 'Verification email sent' };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceBadRequestException('Failed to send verification email');
+      throw exception;
     }
   }
 }

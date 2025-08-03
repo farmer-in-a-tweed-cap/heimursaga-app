@@ -1,6 +1,7 @@
 export const EMAIL_TEMPLATES = {
   WELCOME: 'welcome',
   PASSWORD_RESET: 'password_reset',
+  EMAIL_VERIFICATION: 'email_verification',
   EXPLORER_PRO_NEW_ENTRY: 'explorer_pro_new_entry',
 };
 
@@ -8,14 +9,233 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
   [
     {
       key: EMAIL_TEMPLATES.WELCOME,
-      subject: 'welcome to heirmursaga',
-      html: () => `welcome to heirmursaga!`,
+      subject: 'Welcome to Heimursaga! 🌍',
+      html: () => `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Welcome to Heimursaga</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8f9fa; }
+            .container { max-width: 600px; margin: 0 auto; background: white; }
+            .header { background: #AC6D46; padding: 40px 30px; text-align: center; }
+            .header h1 { color: white; font-size: 32px; font-weight: 600; margin: 0 0 10px 0; }
+            .header p { color: rgba(255,255,255,0.9); font-size: 18px; margin: 0; font-weight: 400; }
+            .content { padding: 40px 30px; }
+            .welcome-section { text-align: center; margin-bottom: 40px; }
+            .welcome-title { font-size: 24px; font-weight: 600; color: #1a1a1a; margin: 0 0 15px 0; }
+            .welcome-text { font-size: 16px; color: #2c2c2c; margin: 0 0 30px 0; line-height: 1.6; font-weight: 400; }
+            .features-section { margin: 40px 0; }
+            .features-title { font-size: 20px; font-weight: 600; color: #1a1a1a; margin: 0 0 20px 0; text-align: center; }
+            .feature { margin-bottom: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #4676AC; }
+            .feature-content h3 { font-size: 16px; font-weight: 600; color: #1a1a1a; margin: 0 0 5px 0; }
+            .feature-content p { font-size: 14px; color: #6c757d; margin: 0; font-weight: 400; }
+            .pro-badge { background: #AC6D46; color: white; font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; margin-left: 8px; text-transform: uppercase; }
+            .cta-section { text-align: center; margin: 40px 0; padding: 30px; background: #4676AC; border-radius: 12px; }
+            .cta-section h3 { color: white; font-size: 20px; font-weight: 600; margin: 0 0 15px 0; }
+            .cta-button { display: inline-block; background: #AC6D46; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background 0.3s; margin: 10px 0; }
+            .cta-button:hover { background: #8b5a37; }
+            .cta-text { color: rgba(255,255,255,0.9); font-size: 14px; margin: 15px 0 0 0; font-weight: 400; }
+            .logo-section { text-align: center; padding: 20px 30px; background: white; }
+            .logo { max-width: 200px; height: auto; }
+            .upgrade-section { margin: 30px 0; padding: 25px; background: #f8f9fa; border: 2px solid #AC6D46; border-radius: 8px; text-align: center; }
+            .upgrade-title { font-size: 18px; font-weight: 600; color: #AC6D46; margin: 0 0 10px 0; }
+            .upgrade-text { font-size: 14px; color: #2c2c2c; margin: 0 0 15px 0; font-weight: 400; }
+            .upgrade-button { display: inline-block; background: #AC6D46; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; transition: all 0.3s; }
+            .upgrade-button:hover { background: #8b5a37; }
+            .tips-section { margin: 30px 0; padding: 25px; background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; }
+            .tips-title { font-size: 18px; font-weight: 600; color: #1a1a1a; margin: 0 0 15px 0; }
+            .tip { font-size: 14px; color: #2c2c2c; margin: 8px 0; font-weight: 400; }
+            .footer { background: #252525; padding: 25px; text-align: center; }
+            .footer-text { color: #6c757d; font-size: 14px; margin: 0; font-weight: 400; }
+            .footer-brand { color: #AC6D46; font-size: 16px; font-weight: 600; margin: 0 0 10px 0; }
+            @media (max-width: 600px) {
+              .container { margin: 0; }
+              .header { padding: 30px 20px; }
+              .content { padding: 30px 20px; }
+              .logo-section { padding: 15px 20px; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <!-- Logo -->
+            <div class="logo-section">
+              <img src="${process.env.NEXT_PUBLIC_APP_BASE_URL || 'https://heimursaga.com'}/logo-lg-dark.svg" alt="Heimursaga" class="logo">
+            </div>
+            
+            <!-- Header -->
+            <div class="header">
+              <h1>Welcome to Heimursaga!</h1>
+              <p>Your journey of exploration begins now</p>
+            </div>
+
+            <!-- Content -->
+            <div class="content">
+              <!-- Welcome Message -->
+              <div class="welcome-section">
+                <h2 class="welcome-title">Welcome to our community of explorers!</h2>
+                <p class="welcome-text">
+                  Your email has been verified and you're now part of Heimursaga - where explorers share their stories, raise money for their adventures, and inspire others to explore the world.
+                </p>
+              </div>
+
+              <!-- Features -->
+              <div class="features-section">
+                <h3 class="features-title">What you can do on Heimursaga:</h3>
+                
+                <div class="feature">
+                  <div class="feature-content">
+                    <h3>Map-Centric Exploration</h3>
+                    <p>Use the map or feed to discover journal entries and explorers around the world</p>
+                  </div>
+                </div>
+
+                <div class="feature">
+                  <div class="feature-content">
+                    <h3>Text-Focused Journaling</h3>
+                    <p>Create geo-tagged entries with photos and share your adventures</p>
+                  </div>
+                </div>
+
+                <div class="feature">
+                  <div class="feature-content">
+                    <h3>Follow & Discover</h3>
+                    <p>Follow other explorers to stay updated on their adventures</p>
+                  </div>
+                </div>
+
+                <div class="feature">
+                  <div class="feature-content">
+                    <h3>Sponsor</h3>
+                    <p>Sponsor an explorer and receive all their journal entries in your email inbox, including exclusive sponsor-only entries!</p>
+                  </div>
+                </div>
+
+                <div class="feature">
+                  <div class="feature-content">
+                    <h3>Plan Journeys <span class="pro-badge">Pro</span></h3>
+                    <p>Create trip itineraries and organize waypoints and journal entries with Journey Builder</p>
+                  </div>
+                </div>
+
+                <div class="feature">
+                  <div class="feature-content">
+                    <h3>Receive Sponsorships <span class="pro-badge">Pro</span></h3>
+                    <p>Connect with sponsors and receive payments to support your explorations</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CTA Section -->
+              <div class="cta-section">
+                <h3>Ready to start exploring?</h3>
+                <a href="${process.env.NEXT_PUBLIC_APP_BASE_URL || 'https://heimursaga.com'}/explore" class="cta-button">Start Exploring</a>
+                <p class="cta-text">
+                  Discover amazing stories and connect with fellow explorers
+                </p>
+              </div>
+
+              <!-- Upgrade Section -->
+              <div class="upgrade-section">
+                <h3 class="upgrade-title">Want to unlock all features?</h3>
+                <p class="upgrade-text">
+                  Upgrade to Explorer Pro ($7/month) to receive sponsorships, plan and share journeys, and access detailed analytics.
+                </p>
+                <a href="${process.env.NEXT_PUBLIC_APP_BASE_URL || 'https://heimursaga.com'}/upgrade" class="upgrade-button">Upgrade to Pro</a>
+              </div>
+
+              <!-- Quick Tips -->
+              <div class="tips-section">
+                <h3 class="tips-title">Quick Tips to Get Started:</h3>
+                <div class="tip">• Complete your profile to help others discover you</div>
+                <div class="tip">• Create your first journal entry about a recent adventure</div>
+                <div class="tip">• Follow other explorers whose content inspires you</div>
+                <div class="tip">• Sponsor an explorer!</div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+              <p class="footer-brand">HEIMURSAGA</p>
+              <p class="footer-text">
+                © ${new Date().getFullYear()} Heimursaga, an app for explorers. Share stories. Raise Money. Inspire the world.
+              </p>
+              <p style="margin-top: 15px; color: #6c757d; font-size: 12px; font-weight: 400;">
+                Happy exploring!
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
     },
     {
       key: EMAIL_TEMPLATES.PASSWORD_RESET,
       subject: 'reset password',
       html: (v: { reset_link: string }) =>
         `reset your password using the link below\n, ${v?.reset_link}`,
+    },
+    {
+      key: EMAIL_TEMPLATES.EMAIL_VERIFICATION,
+      subject: 'verify your email address',
+      html: (v: { verification_link: string }) => `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Verify Your Email Address</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8f9fa; }
+            .container { max-width: 600px; margin: 0 auto; background: white; }
+            .content { padding: 40px 30px; text-align: center; }
+            .header { margin-bottom: 30px; }
+            .title { font-size: 28px; font-weight: 600; color: #1a1a1a; margin: 0 0 10px 0; }
+            .subtitle { font-size: 16px; color: #6c757d; margin: 0 0 30px 0; }
+            .message { font-size: 16px; color: #2c2c2c; margin: 0 0 30px 0; line-height: 1.6; }
+            .cta-button { display: inline-block; background: #4676AC; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; transition: background 0.3s; margin: 20px 0; }
+            .cta-button:hover { background: #3a629a; }
+            .footer { background: #f8f9fa; padding: 25px; text-align: center; border-top: 1px solid #e9ecef; }
+            .footer-text { color: #6c757d; font-size: 14px; margin: 0; }
+            .alt-link { color: #6c757d; font-size: 14px; word-break: break-all; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="content">
+              <div class="header">
+                <h1 class="title">Verify Your Email Address</h1>
+                <p class="subtitle">Welcome to Heimursaga!</p>
+              </div>
+              
+              <p class="message">
+                Thank you for signing up! To complete your registration and start exploring, please verify your email address by clicking the button below.
+              </p>
+              
+              <a href="${v.verification_link}" class="cta-button">Verify Email Address</a>
+              
+              <p class="message">
+                This verification link will expire in 24 hours. If you didn't create an account with Heimursaga, you can safely ignore this email.
+              </p>
+              
+              <p style="margin-top: 30px; font-size: 14px; color: #6c757d;">
+                If the button doesn't work, copy and paste this link into your browser:<br>
+                <span class="alt-link">${v.verification_link}</span>
+              </p>
+            </div>
+            
+            <div class="footer">
+              <p class="footer-text">
+                © ${new Date().getFullYear()} Heimursaga, an app for explorers. Share stories. Raise Money. Inspire the world.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
     },
     {
       key: EMAIL_TEMPLATES.EXPLORER_PRO_NEW_ENTRY,
@@ -165,7 +385,7 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
                 <a href="${v.unsubscribeUrl}">Unsubscribe</a>
               </div>
               <p style="margin-top: 20px; color: #adb5bd; font-size: 12px;">
-                © ${new Date().getFullYear()} Heimursaga. Connecting explorers worldwide.
+                © ${new Date().getFullYear()} Heimursaga, an app for explorers. Share stories. Raise Money. Inspire the world.
               </p>
             </div>
           </div>

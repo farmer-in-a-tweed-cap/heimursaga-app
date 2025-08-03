@@ -9,6 +9,8 @@ import {
   ServiceBadRequestException,
   ServiceForbiddenException,
 } from '@/common/exceptions';
+import { EMAIL_TEMPLATES } from '@/common/email-templates';
+import { EventService, EVENTS, IEventSendEmail } from '@/modules/event';
 import { PrismaService } from '@/modules/prisma';
 
 @Injectable()
@@ -16,6 +18,7 @@ export class AppService {
   constructor(
     private readonly prisma: PrismaService,
     private emailService: EmailService,
+    private eventService: EventService,
   ) {}
 
   async test() {
@@ -24,7 +27,16 @@ export class AppService {
       const access = getEnv() === ENVIRONMENTS.DEVELOPMENT;
       if (!access) throw new ServiceForbiddenException();
 
-      // test
+      // Send test welcome email
+      this.eventService.trigger<IEventSendEmail>({
+        event: EVENTS.SEND_EMAIL,
+        data: {
+          to: 'cnhamilton1@yahoo.com',
+          template: EMAIL_TEMPLATES.WELCOME,
+        },
+      });
+      
+      return { message: 'Test welcome email sent to cnhamilton1@yahoo.com' };
     } catch (error) {
       throw new ServiceForbiddenException();
     }

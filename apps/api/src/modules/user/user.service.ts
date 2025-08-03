@@ -1037,6 +1037,7 @@ export class SessionUserService {
               select: {
                 email: true,
                 username: true,
+                is_email_verified: true,
                 profile: {
                   select: {
                     name: true,
@@ -1052,10 +1053,11 @@ export class SessionUserService {
                 },
               },
             })
-            .then(({ email, username, profile }) => {
+            .then(({ email, username, is_email_verified, profile }) => {
               return {
                 email,
                 username,
+                isEmailVerified: is_email_verified,
                 picture: profile?.picture
                   ? getStaticMediaUrl(profile?.picture)
                   : '',
