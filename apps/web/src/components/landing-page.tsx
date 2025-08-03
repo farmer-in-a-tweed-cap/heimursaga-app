@@ -172,7 +172,6 @@ export const LandingPage: React.FC = () => {
             className="w-full h-full object-cover"
             poster="/bg.png"
             style={{
-              WebkitPlaysinline: true,
               objectFit: 'cover',
               height: isMobile && isMobileSafari ? '-webkit-fill-available' : '100%'
             }}
