@@ -39,14 +39,14 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
         </p>
       </div>
       {imageSrc && (
-        <div className="lg:w-1/2 mb-8 lg:mb-0">
+        <div className="lg:w-1/2 mb-12 lg:mb-0">
           <div className="relative group">
             <Image 
               src={imageSrc} 
               alt={imageAlt || subtitle} 
               width={800}
               height={320}
-              className={`relative w-full aspect-square rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300 ${mobileImageAlign === 'left' ? 'object-cover object-left lg:object-center' : 'object-cover'}`}
+              className={`relative w-full h-60 sm:h-80 rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300 ${mobileImageAlign === 'left' ? 'object-cover object-left lg:object-top lg:object-center' : 'object-cover'}`}
               style={{ border: '4px solid #AC6D46' }}
             />
           </div>
@@ -252,6 +252,47 @@ export const LandingPage: React.FC = () => {
           </div>  
         </div>
 
+      {/* Quiet Platform Section */}
+      <div className="py-20 relative z-10" style={{ backgroundColor: '#f8f9fa' }}>
+        <div className="container mx-auto px-4 text-center">
+          <div className="max-w-4xl mx-auto">
+            {/* <div className="inline-block px-6 py-3 text-sm uppercase font-light mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
+              Quality Over Quantity
+            </div> */}
+            <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
+              A Quiet Place for Exploration
+            </h2>
+            <p className="text-xl text-gray-700 font-light leading-relaxed mb-12 max-w-3xl mx-auto">
+              Heimursaga is intentionally designed for the explorer, for the traveler, for the people who like to "get away", and for the people who want to share what they found. Heimursaga is fundamentally a journaling and fundraising tool, but its also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. With no commenting, chats, or distracting social features, our minimal interface lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
+            </p>
+            <div className="grid md:grid-cols-2 gap-12 mt-12">
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-black mb-4">Distraction-Free Experience</h3>
+                <p className="text-gray-600 font-light leading-relaxed">
+                  No commenting, no trolls, no doomscrolling, no social pressure. Just pure storytelling without the noise of traditional social media.
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                  </svg>
+                </div>
+                <h3 className="text-xl font-medium text-black mb-4">Appreciation Over Engagement</h3>
+                <p className="text-gray-600 font-light leading-relaxed">
+                  Support explorers through meaningful sponsorship instead of fleeting interactions. Show appreciation through action, not just words.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Features Section */}
       <div className="py-16 relative z-10" style={{ backgroundColor: 'white' }}>
         <FeatureCard
@@ -328,38 +369,6 @@ export const LandingPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Call to Action */}
-      <div className="relative py-32 text-white overflow-hidden z-10" style={{ backgroundColor: '#4676AC' }}>
-        <div className="absolute inset-0 bg-black opacity-30"></div>
-        <div className="relative z-10 container mx-auto px-4 text-center">
-          <h2 className="text-5xl lg:text-6xl font-light mb-6" style={{}}>BE AN EXPLORER</h2>
-          <h3 className="text-2xl lg:text-3xl font-normal mb-8" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>JOIN HEIMURSAGA TODAY</h3>
-          <p className="text-xl mb-12 max-w-3xl mx-auto text-gray-100 font-light leading-relaxed" style={{}}>
-            Every place has a story, what's yours? Like the explorers of old, it's never too late to inspire the world.
-          </p>
-            <div className="flex items-center justify-center">
-              <button className="font-normal py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
-                <Link href={ROUTER.HOME} className="flex items-center gap-3">
-                  START YOUR JOURNEY
-                  <svg 
-                    width="20" 
-                    height="20" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                    className="transition-transform duration-300 group-hover:translate-x-1"
-                  >
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </Link>
-              </button>
-            </div>
-        </div>
-      </div>
-
       {/* Pricing Section */}
       <div className="py-32 relative z-10" style={{ backgroundColor: 'white' }}>
         <div className="container mx-auto px-4">
@@ -407,6 +416,38 @@ export const LandingPage: React.FC = () => {
               LOG IN
             </Link>
           </div>
+        </div>
+      </div>
+
+      {/* Call to Action */}
+      <div className="relative py-32 text-white overflow-hidden z-10" style={{ backgroundColor: '#4676AC' }}>
+        <div className="absolute inset-0 bg-black opacity-30"></div>
+        <div className="relative z-10 container mx-auto px-4 text-center">
+          <h2 className="text-5xl lg:text-6xl font-light mb-6" style={{}}>BE AN EXPLORER</h2>
+          <h3 className="text-2xl lg:text-3xl font-normal mb-8" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>JOIN HEIMURSAGA TODAY</h3>
+          <p className="text-xl mb-12 max-w-3xl mx-auto text-gray-100 font-light leading-relaxed" style={{}}>
+            Every place has a story, what's yours? Like the explorers of old, it's never too late to inspire the world.
+          </p>
+            <div className="flex items-center justify-center">
+              <button className="font-normal py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
+                <Link href={ROUTER.HOME} className="flex items-center gap-3">
+                  START YOUR JOURNEY
+                  <svg 
+                    width="20" 
+                    height="20" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className="transition-transform duration-300 group-hover:translate-x-1"
+                  >
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                </Link>
+              </button>
+            </div>
         </div>
       </div>
 

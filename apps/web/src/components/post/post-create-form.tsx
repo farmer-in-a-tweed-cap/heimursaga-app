@@ -509,11 +509,13 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                       });
                     }}
                     onLoad={uploader.handleFileLoad}
-                    onRemove={(file) => {
-                      uploader.handleFileRemove(file);
+                    onRemove={(fileId) => {
+                      // Find the file before removing it
+                      const fileToRemove = uploader.files.find(f => f.id === fileId);
+                      uploader.handleFileRemove(fileId);
                       // Clear AI detection results for removed file
-                      if (file.file?.name) {
-                        imageAIDetection.clearResult(file.file.name);
+                      if (fileToRemove?.file?.name) {
+                        imageAIDetection.clearResult(fileToRemove.file.name);
                       }
                     }}
                   />
