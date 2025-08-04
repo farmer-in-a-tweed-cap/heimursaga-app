@@ -6,6 +6,7 @@ import { ROUTER } from '@/router';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from '@repo/ui/lib/utils';
+import { InstagramLogo, XLogo } from '@repo/ui/icons';
 
 interface FeatureCardProps {
   title: string;
@@ -34,7 +35,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
         <h3 className="text-4xl lg:text-5xl font-light text-black mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
           {subtitle}
         </h3>
-        <p className="text-lg text-gray-700 font-normal leading-relaxed max-w-xl">
+        <p className="text-lg text-black font-light leading-relaxed max-w-xl">
           {description}
         </p>
       </div>
@@ -96,7 +97,6 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
 export const LandingPage: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isMobileSafari, setIsMobileSafari] = useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -104,48 +104,15 @@ export const LandingPage: React.FC = () => {
     
     const checkDeviceType = () => {
       const width = window.innerWidth;
-      const height = window.innerHeight;
       const isMobileWidth = width < 768;
-      
-      // Detect Safari on iOS
-      const isMobileSafariDevice = isMobileWidth && 
-        /iPad|iPhone|iPod/.test(navigator.userAgent) && 
-        /Safari/.test(navigator.userAgent) && 
-        !/CriOS|FxiOS|EdgiOS|Chrome/.test(navigator.userAgent);
-      
       setIsMobile(isMobileWidth);
-      setIsMobileSafari(isMobileSafariDevice);
-    };
-    
-    // Set custom viewport height property for consistent mobile experience
-    const setVH = () => {
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty('--vh', `${vh}px`);
-      document.documentElement.style.setProperty('--mobile-vh', `${window.innerHeight}px`);
     };
     
     checkDeviceType();
-    setVH();
-    
-    const handleResize = () => {
-      checkDeviceType();
-      setVH();
-    };
-    
-    const handleOrientationChange = () => {
-      // Delay to account for viewport changes
-      setTimeout(() => {
-        setVH();
-        checkDeviceType();
-      }, 100);
-    };
-    
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleOrientationChange);
+    window.addEventListener('resize', checkDeviceType);
     
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleOrientationChange);
+      window.removeEventListener('resize', checkDeviceType);
     };
   }, []);
 
@@ -156,11 +123,7 @@ export const LandingPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen relative"
-         style={{
-           height: isMobile ? '100vh' : 'auto',
-           minHeight: isMobile && isMobileSafari ? '-webkit-fill-available' : '100vh'
-         }}>
+    <div className="min-h-screen relative" style={{ height: '100vh', minHeight: '100vh' }}>
         {/* Fixed Background Video */}
         <div className="fixed inset-0 z-0">
           <video
@@ -173,7 +136,7 @@ export const LandingPage: React.FC = () => {
             poster="/bg.png"
             style={{
               objectFit: 'cover',
-              height: isMobile && isMobileSafari ? '-webkit-fill-available' : '100%'
+              height: '100%'
             }}
           >
             <source src="/bg-video2.mp4" type="video/mp4" />
@@ -184,26 +147,14 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* Hero Section */}
-        <div className="relative min-h-screen text-white overflow-hidden z-10"
-             style={{
-               height: isMobile && isMobileSafari ? '100svh' : (isMobile ? '100vh' : 'auto'),
-               minHeight: isMobile && isMobileSafari ? '100svh' : '100vh'
-             }}>
-          <div className="relative z-30 w-full h-screen"
-               style={{
-                 height: isMobile && isMobileSafari ? '100svh' : '100vh',
-                 minHeight: isMobile && isMobileSafari ? '100svh' : '100vh'
-               }}>
+        <div className="relative min-h-screen text-white overflow-hidden z-10">
+          <div className="relative z-30 w-full h-screen" style={{ height: '100vh', minHeight: '100vh' }}>
             {/* Logo at top */}
             <div className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 z-50 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} 
                  style={{ 
                    top: isMobile ? '1rem' : '8px', 
                    marginTop: isMobile ? '0' : '-60px' 
                  }}>
-              <h1 className="text-4xl lg:text-4xl font-normal mb-1 leading-tight hidden">
-                <span className="block text-white">WELCOME TO</span>
-              </h1>
-              
               <div className={isMobile ? 'w-64 h-48 mr-6' : 'w-96 h-72 lg:w-[36rem] lg:h-[28rem] mr-10'}>
                 <Logo size="xlg" color="light" />
               </div>
@@ -212,11 +163,7 @@ export const LandingPage: React.FC = () => {
             {/* Text in middle */}
             <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`} 
                  style={{ transform: `translate(-50%, -50%) ${isVisible ? 'translateY(0)' : 'translateY(2.5rem)'}` }}>
-              <div className={`text-xl sm:text-xl md:text-2xl lg:text-3xl font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center ${isMobileSafari ? 'safari-mobile-text' : ''}`}
-                   style={isMobile ? {
-                     fontSize: isMobileSafari ? '1.125rem' : '1rem',
-                     lineHeight: '1.4'
-                   } : {}}>
+              <div className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-light max-w-4xl mx-auto text-gray-200 leading-relaxed space-y-6 text-center px-4">
                 <p>You're an explorer.</p>
                 <p>Don't get lost in a sea of content creators.</p>
                 <p>Share your story and raise money on Heimursaga.</p>
@@ -227,10 +174,10 @@ export const LandingPage: React.FC = () => {
             <div 
               className={`absolute left-0 right-0 flex justify-center transform transition-all duration-1000 ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}
               style={{ 
-                bottom: isMobile ? (isMobileSafari ? '4rem' : '3rem') : `calc(3rem + env(safe-area-inset-bottom, 0px))`
+                bottom: isMobile ? '6rem' : '3rem'
               }}
             >
-              <button className="font-normal py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
+              <button className={`font-normal rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90 ${isMobile ? 'py-3 px-8 text-lg' : 'py-4 px-12 text-xl'}`} style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
                 <Link href={ROUTER.HOME} className="flex items-center gap-3">
                   EXPLORE
                   <svg 
@@ -252,185 +199,182 @@ export const LandingPage: React.FC = () => {
           </div>  
         </div>
 
-      {/* Quiet Platform Section */}
-      <div className="py-20 relative z-10" style={{ backgroundColor: '#e9ecef' }}>
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-4xl mx-auto">
-            {/* <div className="inline-block px-6 py-3 text-sm uppercase font-normal mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
-              Quality Over Quantity
-            </div> */}
-            <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
-              A Quiet Place for Explorers
-            </h2>
-            <p className="text-xl text-gray-700 font-light leading-relaxed mb-12 max-w-3xl mx-auto">
-              Heimursaga is intentionally designed for the explorer, for the traveler, for the people who like to "get away", and for the people who want to share what they found. Heimursaga is fundamentally a journaling and fundraising tool, but it's also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. With no commenting, chat, or distracting social features, our minimal interface lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
-            </p>
-            <div className="grid md:grid-cols-2 gap-12 mt-12">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
-                  </svg>
+        {/* Philosophy Section */}
+        <div className="py-20 relative z-10" style={{ backgroundColor: '#e9ecef' }}>
+          <div className="container mx-auto px-4 text-center">
+            <div className="max-w-4xl mx-auto">
+              <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
+                A Quiet Place for Explorers
+              </h2>
+              <p className="text-xl text-black font-light leading-relaxed mb-12 max-w-3xl mx-auto">
+                Heimursaga is intentionally designed for the explorer, for the traveler, for the people who like to "get away", and for the people who want to share what they found. Heimursaga is fundamentally a journaling and fundraising tool, but it's also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. Our minimal interface lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
+              </p>
+              <div className="grid md:grid-cols-2 gap-12 mt-12">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-medium text-black mb-4">Distraction-Free Experience</h3>
+                  <p className="text-black font-light leading-relaxed">
+                    No commenting, no trolls, no doomscrolling, no social pressure. Just pure storytelling without the noise of traditional social media.
+                  </p>
                 </div>
-                <h3 className="text-xl font-medium text-black mb-4">Distraction-Free Experience</h3>
-                <p className="text-gray-600 font-normal leading-relaxed">
-                  No commenting, no trolls, no doomscrolling, no social pressure. Just pure storytelling without the noise of traditional social media.
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                  </svg>
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-medium text-black mb-4">Appreciation Over Engagement</h3>
+                  <p className="text-black font-light leading-relaxed">
+                    Connect with explorers through financial sponsorship. Your support becomes a tangible way to show appreciation for their adventures.
+                  </p>
                 </div>
-                <h3 className="text-xl font-medium text-black mb-4">Appreciation Over Engagement</h3>
-                <p className="text-gray-600 font-normal leading-relaxed">
-                  Connect with explorers through financial sponsorship. Your support becomes a tangible way to show appreciation for their adventures.
-                </p>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Features Section */}
-      <div className="py-16 relative z-10" style={{ backgroundColor: 'white' }}>
-        <FeatureCard
-          title="Map-Centric"
-          subtitle="Explore"
-          description="At Heimursaga, the map is everything, just like it is for the explorer. Use the map or the feed to discover journal entries and explorers around the world."
-          imageSrc="/explore.png"
-          imageAlt="Map exploration interface"
-        />
+        {/* Features Section */}
+        <div className="py-16 relative z-10" style={{ backgroundColor: 'white' }}>
+          <FeatureCard
+            title="Map-Centric"
+            subtitle="Explore"
+            description="At Heimursaga, the map is everything, just like it is for the explorer. Use the map or the feed to discover journal entries and explorers around the world."
+            imageSrc="/explore.png"
+            imageAlt="Map exploration interface"
+          />
 
-        <FeatureCard
-          title="Text-Focused"
-          subtitle="Journal"
-          description="Every user gets a journal where their geo-tagged entries are logged. Photo uploads and privacy settings are included, as well as entry grouping to show journey lines on the map. Follow or sponsor other explorers by visiting their journal."
-          imageSrc="/journal.png"
-          imageAlt="Journal writing interface"
-          reverse={true}
-        />
+          <FeatureCard
+            title="Text-Focused"
+            subtitle="Journal"
+            description="Every user gets a journal where their geo-tagged entries are logged. Photo uploads and privacy settings are included, as well as entry grouping to show journey lines on the map. Follow or sponsor other explorers by visiting their journal."
+            imageSrc="/journal.png"
+            imageAlt="Journal writing interface"
+            reverse={true}
+          />
 
-        <FeatureCard
-          title="Payment-Enabled"
-          subtitle="Sponsor"
-          description="A robust Stripe integration allows Explorer Pro users to receive subscription or one-time sponsorship payments from their supporters. Manage payouts and set subscription amounts right from your Heimursaga dashboard. Entries have an exclusive sponsor-only setting allowing explorers to reward their sponsors."
-          imageSrc="/sponsor.png"
-          imageAlt="Sponsorship payment interface"
-          mobileImageAlign="left"
-        />
-      </div>
+          <FeatureCard
+            title="Payment-Enabled"
+            subtitle="Sponsor"
+            description="A robust Stripe integration allows Explorer Pro users to receive subscription or one-time sponsorship payments from their supporters. Manage payouts and set subscription amounts right from your Heimursaga dashboard. Entries have an exclusive sponsor-only setting allowing explorers to reward their sponsors."
+            imageSrc="/sponsor.png"
+            imageAlt="Sponsorship payment interface"
+            mobileImageAlign="left"
+          />
+        </div>
 
-      {/* AI Content Policy Section */}
-      <div className="py-20 relative z-10" style={{ backgroundColor: '#e9ecef' }}>
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-4xl mx-auto">
-            <div className="inline-block px-6 py-3 text-sm uppercase font-normal mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
-              Human-First
-            </div>
-            <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
-              Authentic Stories, Human Voices
-            </h2>
-            <p className="text-xl text-gray-700 font-light leading-relaxed mb-8 max-w-3xl mx-auto">
-              While AI has its place in our world, exploration and discovery is for humans. Heimursaga implements multiple safeguards to ensure the platform is free from AI-generated text and image content.
-            </p>
-            <div className="grid md:grid-cols-3 gap-8 mt-12">
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
-                <h3 className="text-lg font-medium text-black mb-2">Content Detection</h3>
-                <p className="text-gray-600 font-normal">Advanced algorithms identify and flag AI-generated content before it reaches the platform.</p>
+        {/* AI Content Policy Section */}
+        <div className="py-20 relative z-10" style={{ backgroundColor: '#e9ecef' }}>
+          <div className="container mx-auto px-4 text-center">
+            <div className="max-w-4xl mx-auto">
+              <div className="inline-block px-6 py-3 text-sm uppercase font-normal mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
+                Human-First
               </div>
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                  </svg>
+              <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
+                Authentic Stories, Human Voices
+              </h2>
+              <p className="text-xl text-black font-light leading-relaxed mb-8 max-w-3xl mx-auto">
+                While AI has its place in our world, exploration and discovery is for humans. Heimursaga implements multiple safeguards to ensure the platform is free from AI-generated text and image content.
+              </p>
+              <div className="grid md:grid-cols-3 gap-8 mt-12">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-black mb-2">Content Detection</h3>
+                  <p className="text-black font-light">Advanced algorithms identify and flag AI-generated content before it reaches the platform.</p>
                 </div>
-                <h3 className="text-lg font-medium text-black mb-2">Human Review</h3>
-                <p className="text-gray-600 font-normal">Our community and moderation team help maintain the authenticity of shared experiences.</p>
-              </div>
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                  </svg>
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-black mb-2">Human Review</h3>
+                  <p className="text-black font-light">Our community and moderation team help maintain the authenticity of shared experiences.</p>
                 </div>
-                <h3 className="text-lg font-medium text-black mb-2">Behavioral Analysis</h3>
-                <p className="text-gray-600 font-normal">Posting patterns and user behavior help us identify and prevent automated content generation.</p>
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-medium text-black mb-2">Platform Integrity</h3>
+                  <p className="text-black font-light">Transparent policies and consistent enforcement ensure authentic human connection and storytelling.</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Pricing Section */}
-      <div className="py-32 relative z-10" style={{ backgroundColor: 'white' }}>
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-20">
-            <h2 className="text-5xl lg:text-6xl font-light text-black mb-6" style={{}}>
-              Choose Your Adventure
-            </h2>
-            <p className="text-xl text-gray-700 font-light max-w-2xl mx-auto" style={{}}>
-              Start your journey with our free plan or unlock premium features with Explorer Pro
-            </p>
-          </div>
-          
-          <div className="grid lg:grid-cols-2 gap-12 max-w-4xl mx-auto">
-            <PricingTier
-              title="EXPLORER"
-              price="FREE FOREVER"
-              features={[
-                "Write and share journal entries",
-                "Bookmark and highlight entries",
-                "Follow and sponsor other explorers",
-                "Access exclusive entries from sponsored explorers"
-              ]}
-            />
-            <PricingTier
-              title="EXPLORER PRO"
-              price="$7/mo"
-              features={[
-                "All Explorer features plus:",
-                "Receive sponsorship payments",
-                "View detailed entry statistics",
-                "Journey Builder (waypoint logging and entry grouping)"
-              ]}
-              isPopular={false}
-            />
-          </div>
-          
-          <div className="text-center mt-12">
-            <p className="text-gray-700 font-normal mb-6" style={{}}>
-              Already have an account?
-            </p>
-            <Link 
-              href={ROUTER.LOGIN}
-              className="inline-block py-3 px-8 rounded-xl font-normal text-lg transition-all duration-300 text-black hover:opacity-90"
-              style={{ backgroundColor: '#e9ecef' }}
-                         >
-              LOG IN
-            </Link>
+        {/* Pricing Section */}
+        <div className="py-32 relative z-10" style={{ backgroundColor: 'white' }}>
+          <div className="container mx-auto px-4">
+            <div className="text-center mb-20">
+              <h2 className="text-5xl lg:text-6xl font-light text-black mb-6" style={{}}>
+                Choose Your Adventure
+              </h2>
+              <p className="text-xl text-black font-light max-w-2xl mx-auto" style={{}}>
+                Start your journey with our free plan or unlock premium features with Explorer Pro
+              </p>
+            </div>
+            
+            <div className="grid lg:grid-cols-2 gap-12 max-w-4xl mx-auto">
+              <PricingTier
+                title="EXPLORER"
+                price="FREE FOREVER"
+                features={[
+                  "Write and share journal entries",
+                  "Bookmark and highlight entries",
+                  "Follow and sponsor other explorers",
+                  "Access exclusive entries from sponsored explorers"
+                ]}
+              />
+              <PricingTier
+                title="EXPLORER PRO"
+                price="$7/mo"
+                features={[
+                  "All Explorer features plus:",
+                  "Receive sponsorship payments",
+                  "View detailed entry statistics",
+                  "Journey Builder (waypoint logging and entry grouping)"
+                ]}
+                isPopular={false}
+              />
+            </div>
+            
+            <div className="text-center mt-12">
+              <p className="text-gray-700 font-normal mb-6" style={{}}>
+                Already have an account?
+              </p>
+              <Link 
+                href={ROUTER.LOGIN}
+                className="inline-block py-3 px-8 rounded-xl font-normal text-lg transition-all duration-300 text-black hover:opacity-90"
+                style={{ backgroundColor: '#e9ecef' }}
+              >
+                LOG IN
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Call to Action */}
-      <div className="relative py-32 text-white overflow-hidden z-10" style={{ backgroundColor: '#4676AC' }}>
-        <div className="absolute inset-0 bg-black opacity-30"></div>
-        <div className="relative z-10 container mx-auto px-4 text-center">
-          <h2 className="text-5xl lg:text-6xl font-light mb-6" style={{}}>BE AN EXPLORER</h2>
-          <h3 className="text-2xl lg:text-3xl font-normal mb-8" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>JOIN HEIMURSAGA TODAY</h3>
-          <p className="text-xl mb-12 max-w-3xl mx-auto text-gray-100 font-normal leading-relaxed" style={{}}>
-            Every place has a story, what's yours? It's never too late to inspire the world.
-          </p>
+        {/* Call to Action */}
+        <div className="relative py-32 text-white overflow-hidden z-10" style={{ backgroundColor: '#4676AC' }}>
+          <div className="absolute inset-0 bg-black opacity-30"></div>
+          <div className="relative z-10 container mx-auto px-4 text-center">
+            <h2 className="text-5xl lg:text-6xl font-light mb-6" style={{}}>BE AN EXPLORER</h2>
+            <h3 className="text-2xl lg:text-3xl font-normal mb-8" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>JOIN HEIMURSAGA TODAY</h3>
+            <p className="text-xl mb-12 max-w-3xl mx-auto text-white font-light leading-relaxed" style={{}}>
+              Every place has a story, what's yours? It's never too late to inspire the world.
+            </p>
             <div className="flex items-center justify-center">
-              <button className="font-normal py-4 px-12 rounded-full text-xl transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
+              <button className={`font-normal rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90 ${isMobile ? 'py-3 px-8 text-lg' : 'py-4 px-12 text-xl'}`} style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
                 <Link href={ROUTER.HOME} className="flex items-center gap-3">
                   START YOUR JOURNEY
                   <svg 
@@ -449,57 +393,43 @@ export const LandingPage: React.FC = () => {
                 </Link>
               </button>
             </div>
+          </div>
         </div>
-      </div>
 
-      {/* Quote Section */}
-      <div className="py-16 text-gray-800 relative z-10" style={{ backgroundColor: 'white' }}>
-        <div className="container mx-auto px-4 text-center">
-          <div className="max-w-4xl mx-auto">
-            <blockquote className="text-1xl lg:text-2xl font-light mb-8 italic leading-relaxed" style={{}}>
-              We shall not cease from exploration<br />
-              And the end of all our exploring<br />
-              Will be to arrive where we started<br />
-              And know the place for the first time.
-            </blockquote>
-            <cite className="text-xl text-gray-600 font-normal" style={{}}>— T.S. Eliot</cite>
+        {/* Quote Section */}
+        <div className="py-16 text-gray-900 relative z-10" style={{ backgroundColor: '#e9ecef' }}>
+          <div className="container mx-auto px-4 text-center">
+            <div className="max-w-4xl mx-auto">
+              <blockquote className="text-1xl lg:text-2xl font-light mb-8 italic leading-relaxed" style={{}}>
+                We shall not cease from exploration<br />
+                And the end of all our exploring<br />
+                Will be to arrive where we started<br />
+                And know the place for the first time.
+              </blockquote>
+              <cite className="text-xl text-gray-600 font-light" style={{}}>— T.S. Eliot</cite>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Footer */}
-      <footer className="text-white py-12 relative z-10" style={{ backgroundColor: '#252525' }}>
-        <div className="container mx-auto px-4 text-center">
-          <div className="text-2xl font-normal mb-4" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
-            HEIMURSAGA
+        {/* Footer */}
+        <footer className="text-white py-12 relative z-10" style={{ backgroundColor: '#252525' }}>
+          <div className="container mx-auto px-4 text-center">
+            <div className="text-2xl font-normal mb-4" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
+              HEIMURSAGA
+            </div>
+            <div className="flex justify-center space-x-6 mb-6">
+              <a href="https://instagram.com/heimursaga" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                <InstagramLogo size={24} />
+              </a>
+              <a href="https://twitter.com/heimursaga" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
+                <XLogo size={24} />
+              </a>
+            </div>
+            <p className="text-gray-400 font-normal" style={{}}>
+              © 2025 <a href="https://theperipetycompany.com/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-300 transition-colors no-underline">The Peripety Company</a>. All Rights Reserved.
+            </p>
           </div>
-          <div className="flex items-center justify-center gap-6 mb-4">
-            <a 
-              href="https://instagram.com/heimursaga" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-              </svg>
-            </a>
-            <a 
-              href="https://twitter.com/heimursaga" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
-              </svg>
-            </a>
-          </div>
-          <p className="text-gray-400 font-normal" style={{}}>
-            © 2025 <a href="https://theperipetycompany.com/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-300 transition-colors no-underline">The Peripety Company</a>. All Rights Reserved.
-          </p>
-        </div>
-      </footer>
+        </footer>
     </div>
   );
 };
