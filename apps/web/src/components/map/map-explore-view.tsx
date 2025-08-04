@@ -779,6 +779,7 @@ export const MapExploreView: React.FC<Props> = () => {
                           id={post.id}
                           date={date}
                           place={post.place}
+                          sponsored={post.sponsored}
                           actions={{ like: false, bookmark: false, edit: false }}
                           userbar={
                             // Only show userbar in non-journey contexts

@@ -78,6 +78,7 @@ export const MapTripView: React.FC<Props> = ({ trip }) => {
                 title={post?.title}
                 content={post?.content}
                 date={post?.date}
+                sponsored={post?.sponsored}
                 author={post?.author}
                 actions={{ like: false, bookmark: true }}
               />

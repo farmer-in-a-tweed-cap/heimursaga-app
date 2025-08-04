@@ -3,6 +3,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AuthModule } from '@/modules/auth';
+import { DevModule } from '@/modules/dev';
 import { EmailModule } from '@/modules/email';
 import { EventModule } from '@/modules/event';
 import { LoggerModule } from '@/modules/logger';
@@ -53,6 +54,7 @@ import { AppService } from './app.service';
     StripeModule,
     PrismaModule,
     AuthModule,
+    DevModule,
     PostModule,
     UploadModule,
     UserModule,

@@ -84,6 +84,7 @@ export default async function Page({ params }: Props) {
             content={data.content}
             place={data.place}
             public={data.public}
+            sponsored={data.sponsored}
             author={data.author}
             userbar={
               data?.author?.username

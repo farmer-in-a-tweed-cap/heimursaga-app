@@ -144,26 +144,28 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
         ) : (
           // Global/Following/User context: new restructured layout
-          <div className="relative flex flex-row justify-between items-start">
+          <div className="relative flex flex-row justify-between items-start gap-4">
             {/* Left side: Title and date */}
-            <div className="flex flex-col">
+            <div className="flex flex-col flex-1 min-w-0">
               {/* Title */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <h2 className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}>
                   {title}
                 </h2>
-                {sponsored && (
-                  <Badge variant="default" className="text-xs h-4 px-1.5 py-0 text-[10px]">
-                    Sponsored
-                  </Badge>
-                )}
-                {!isPublic && (
-                  <LockSimpleIcon 
-                    size={extended ? 20 : 16} 
-                    className="text-[#4676AC]" 
-                    weight="bold"
-                  />
-                )}
+                <div className="flex items-center gap-2">
+                  {sponsored && (
+                    <Badge variant="default" className="text-xs h-4 px-1.5 py-0 text-[10px]">
+                      Sponsored
+                    </Badge>
+                  )}
+                  {!isPublic && (
+                    <LockSimpleIcon 
+                      size={extended ? 20 : 16} 
+                      className="text-[#4676AC]" 
+                      weight="bold"
+                    />
+                  )}
+                </div>
               </div>
               
               {/* Location | Date */}
@@ -194,7 +196,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             </div>
 
             {/* Right side: Edit button for owned entries, User info for others */}
-            <div className="flex flex-col items-end z-20">
+            <div className="flex flex-col items-end z-20 flex-shrink-0">
               {actions.edit ? (
                 // Show edit button for entries owned by current user
                 <PostEditButton postId={id} />
@@ -214,7 +216,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     fallback={author?.username}
                     className={`w-8 h-8 border-2 border-solid ${author?.creator ? 'border-primary' : 'border-transparent'}`}
                   />
-                  <span className="text-xs text-gray-600 mt-1">{author?.username}</span>
+                  <span className="text-xs text-gray-600 mt-1 max-w-20 truncate">{author?.username}</span>
                 </Link>
               ) : userbar?.click ? (
                 <div className="cursor-pointer flex flex-col items-end" onClick={userbar?.click}>
@@ -223,7 +225,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     fallback={author?.username}
                     className={`w-8 h-8 border-2 border-solid ${author?.creator ? 'border-primary' : 'border-transparent'}`}
                   />
-                  <span className="text-xs text-gray-600 mt-1">{author?.username}</span>
+                  <span className="text-xs text-gray-600 mt-1 max-w-20 truncate">{author?.username}</span>
                 </div>
               ) : author?.username ? (
                 <Link
@@ -235,7 +237,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     fallback={author?.username}
                     className={`w-8 h-8 border-2 border-solid ${author?.creator ? 'border-primary' : 'border-transparent'}`}
                   />
-                  <span className="text-xs text-gray-600 mt-1">{author?.username}</span>
+                  <span className="text-xs text-gray-600 mt-1 max-w-20 truncate">{author?.username}</span>
                 </Link>
               ) : null}
             </div>
@@ -246,24 +248,26 @@ export const PostCard: React.FC<PostCardProps> = ({
             // Journey context: show title/date in content area (original layout)
             <div className="mt-6">
               {/* Title */}
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <h2
                   className={cn('font-medium', extended ? 'text-2xl' : 'text-base')}
                 >
                   {title}
                 </h2>
-                {sponsored && (
-                  <Badge variant="default" className="text-xs h-4 px-1.5 py-0 text-[10px]">
-                    Sponsored
-                  </Badge>
-                )}
-                {!isPublic && (
-                  <LockSimpleIcon 
-                    size={extended ? 20 : 16} 
-                    className="text-[#4676AC]" 
-                    weight="bold"
-                  />
-                )}
+                <div className="flex items-center gap-2">
+                  {sponsored && (
+                    <Badge variant="default" className="text-xs h-4 px-1.5 py-0 text-[10px]">
+                      Sponsored
+                    </Badge>
+                  )}
+                  {!isPublic && (
+                    <LockSimpleIcon 
+                      size={extended ? 20 : 16} 
+                      className="text-[#4676AC]" 
+                      weight="bold"
+                    />
+                  )}
+                </div>
               </div>
               
               {/* Location | Date */}

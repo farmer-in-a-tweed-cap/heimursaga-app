@@ -178,6 +178,7 @@ export class PostService {
         date: post.date,
         title: post.title,
         public: post.public,
+        sponsored: post.sponsored,
         content: post.content.slice(0, 140),
         author: post.author
           ? {

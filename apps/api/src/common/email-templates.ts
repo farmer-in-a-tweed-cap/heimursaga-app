@@ -10,7 +10,7 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
     {
       key: EMAIL_TEMPLATES.WELCOME,
       subject: 'Welcome to Heimursaga! 🌍',
-      html: () => `
+      html: (v: { username?: string } = {}) => `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -76,10 +76,9 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
             <div class="content">
               <!-- Welcome Message -->
               <div class="welcome-section">
-                <h2 class="welcome-title">Welcome to our community of explorers!</h2>
-                <p class="welcome-text">
-                  Your email has been verified and you're now part of Heimursaga - where explorers share their stories, raise money for their adventures, and inspire others to explore the world.
-                </p>
+                <p class="welcome-text">Dear ${v.username || 'Explorer'},</p>
+                <p class="welcome-text">I'd like to personally thank you for giving Heimursaga a try. We know you have a lot of options when it comes to fundraising and journaling platforms, but with Heimursaga we believe we've made something special. Join us on this adventure, it's just the beginning!</p>
+                <p class="welcome-text">Cheers,<br>explorer1</p>
               </div>
 
               <!-- Features -->
