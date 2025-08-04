@@ -16,7 +16,7 @@ import { Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import { SponsorCheckoutDto, SponsorshipTierUpdateDto } from './sponsor.dto';
+import { SponsorCheckoutDto, SponsorshipTierUpdateDto, SponsorshipTierCreateDto } from './sponsor.dto';
 import { SponsorService } from './sponsor.service';
 
 @ApiTags('sponsor')
@@ -89,6 +89,19 @@ export class SponsorshipTierController {
   async getSponsorshipTiers(@Session() session: ISession) {
     return await this.sponsorService.getSponsorshipTiers({
       query: {},
+      session,
+    });
+  }
+
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  async createSponsorshipTier(
+    @Body() body: SponsorshipTierCreateDto,
+    @Session() session: ISession,
+  ) {
+    return await this.sponsorService.createSponsorshipTier({
+      query: {},
+      payload: body,
       session,
     });
   }

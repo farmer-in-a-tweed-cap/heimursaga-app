@@ -153,6 +153,7 @@ model SponsorshipTier {
   price                 Int           @default(0)
   description           String?       @db.VarChar(500)
   is_available          Boolean?      @default(false)
+  priority              Int?          @default(1)
   user_id               Int
   created_at            DateTime?     @default(now())
   updated_at            DateTime?     @updatedAt

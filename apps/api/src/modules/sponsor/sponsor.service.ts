@@ -10,7 +10,9 @@ import {
   ISponsorshipGetAllResponse,
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
+  ISponsorshipTierCreatePayload,
   PayoutMethodPlatform,
+  SponsorshipBillingPeriod,
   SponsorshipStatus,
   SponsorshipType,
   UserNotificationContext,
@@ -55,6 +57,13 @@ export class SponsorService {
     private stripeService: StripeService,
   ) {}
 
+  /**
+   * Calculate yearly amount from monthly amount (monthly * 12 * 0.9 = 10% discount)
+   */
+  private calculateYearlyAmount(monthlyAmount: number): number {
+    return Math.round(monthlyAmount * 12 * 0.9);
+  }
+
   async checkout({
     session,
     payload,
@@ -69,6 +78,7 @@ export class SponsorService {
         oneTimePaymentAmount,
         creatorId,
         paymentMethodId,
+        billingPeriod = SponsorshipBillingPeriod.MONTHLY,
         message = '',
         emailDelivery = true,
       } = payload;
@@ -202,7 +212,12 @@ export class SponsorService {
             const sponsorshipTier = await tx.sponsorshipTier
               .findFirstOrThrow({
                 where: { public_id: sponsorshipTierId },
-                select: { id: true, price: true, stripe_price_month_id: true },
+                select: { 
+                  id: true, 
+                  price: true, 
+                  stripe_price_month_id: true,
+                  stripe_price_year_id: true,
+                },
               })
               .catch(() => {
                 throw new ServiceBadRequestException(
@@ -210,9 +225,26 @@ export class SponsorService {
                 );
               });
 
-            const stripePriceId = sponsorshipTier.stripe_price_month_id;
-            const subscriptionAmount = sponsorshipTier.price;
+            // determine stripe price ID and amount based on billing period
+            const isYearly = billingPeriod === SponsorshipBillingPeriod.YEARLY;
+            const stripePriceId = isYearly 
+              ? sponsorshipTier.stripe_price_year_id 
+              : sponsorshipTier.stripe_price_month_id;
+            
+            // calculate subscription amount (yearly = monthly * 12 * 0.9)
+            const monthlyAmount = sponsorshipTier.price;
+            const subscriptionAmount = isYearly 
+              ? this.calculateYearlyAmount(monthlyAmount)
+              : monthlyAmount;
+            
             const applicationFeePercent = APPLICATION_FEE;
+
+            // validate that the required stripe price exists
+            if (!stripePriceId) {
+              throw new ServiceBadRequestException(
+                `${isYearly ? 'Yearly' : 'Monthly'} pricing not available for this tier`,
+              );
+            }
 
             this.logger.log(
               `sponsorship tier ${sponsorshipTier.id} is available to use`,
@@ -486,6 +518,16 @@ export class SponsorService {
                 },
               },
             },
+            _count: {
+              select: {
+                sponsorships: {
+                  where: {
+                    status: SponsorshipStatus.ACTIVE,
+                    deleted_at: null,
+                  },
+                },
+              },
+            },
           },
         })
         .catch(() => {
@@ -494,12 +536,12 @@ export class SponsorService {
 
       const response = {
         data: data.map(
-          ({ price, description, public_id: id, is_available, user }) => ({
+          ({ price, description, public_id: id, is_available, user, _count }) => ({
             price: integerToDecimal(price),
             description,
             id,
             isAvailable: is_available,
-            membersCount: 0,
+            membersCount: _count.sponsorships,
             creator: user
               ? {
                   username: user.username,
@@ -548,6 +590,7 @@ export class SponsorService {
             public_id: generator.publicId(),
             price: config.sponsorship.default_amount,
             is_available: false,
+            priority: 1,
             user_id: userId,
           },
         });
@@ -556,32 +599,44 @@ export class SponsorService {
       const data = await this.prisma.sponsorshipTier.findMany({
         where,
         select: {
+          id: true,
           public_id: true,
           price: true,
           stripe_price_month_id: true,
           description: true,
           is_available: true,
+          priority: true,
           members_count: true,
+          _count: {
+            select: {
+              sponsorships: {
+                where: {
+                  status: SponsorshipStatus.ACTIVE,
+                  deleted_at: null,
+                },
+              },
+            },
+          },
         },
-        orderBy: [{ id: 'desc' }],
-        take: 1,
+        orderBy: [{ priority: 'asc' }, { id: 'asc' }],
+        take: 3, // Support up to 3 tiers
       });
 
       const response: ISponsorshipTierGetAllResponse = {
-        data: data
-          .slice(0, 1)
-          .map(
+        data: data.map(
             ({
               price,
               description,
               public_id: id,
               is_available,
-              members_count,
+              priority,
+              _count,
             }) => ({
               price: integerToDecimal(price),
               description,
+              priority,
               id,
-              membersCount: members_count,
+              membersCount: _count.sponsorships,
               isAvailable: is_available,
             }),
           ),
@@ -598,6 +653,60 @@ export class SponsorService {
     }
   }
 
+  async createSponsorshipTier({
+    session,
+    payload,
+  }: ISessionQueryWithPayload<
+    {},
+    ISponsorshipTierCreatePayload
+  >): Promise<{ id: string }> {
+    try {
+      const { userId, userRole } = session;
+      const { price, description, isAvailable = false, priority } = payload;
+
+      // check access
+      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      if (!access) throw new ServiceForbiddenException();
+
+      // check tier count limit (max 3 tiers)
+      const existingCount = await this.prisma.sponsorshipTier.count({
+        where: {
+          user_id: userId,
+          deleted_at: null,
+        },
+      });
+
+      if (existingCount >= 3) {
+        throw new ServiceBadRequestException('Maximum 3 sponsorship tiers allowed');
+      }
+
+      // determine priority if not provided
+      const finalPriority = priority || existingCount + 1;
+
+      const tier = await this.prisma.sponsorshipTier.create({
+        data: {
+          public_id: generator.publicId(),
+          price: decimalToInteger(price),
+          description,
+          is_available: isAvailable,
+          priority: finalPriority,
+          user_id: userId,
+        },
+        select: {
+          public_id: true,
+        },
+      });
+
+      return { id: tier.public_id };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceBadRequestException('sponsorship tier not created');
+      throw exception;
+    }
+  }
+
   async updateSponsorshipTier({
     query,
     payload,
@@ -608,7 +717,7 @@ export class SponsorService {
   >): Promise<void> {
     try {
       const { userId } = session;
-      const { price, isAvailable, description } = payload;
+      const { price, isAvailable, description, priority } = payload;
       const { id } = query;
 
       const currency = CurrencyCode.USD;
@@ -650,6 +759,7 @@ export class SponsorService {
             price: true,
             stripe_product_id: true,
             stripe_price_month_id: true,
+            stripe_price_year_id: true,
           },
         })
         .catch(() => {
@@ -657,7 +767,8 @@ export class SponsorService {
         });
 
       let stripeProductId = tier.stripe_product_id;
-      let stripePriceId = tier.stripe_price_month_id;
+      let stripePriceMonthId = tier.stripe_price_month_id;
+      let stripePriceYearId = tier.stripe_price_year_id;
 
       // get a stripe account
       const stripeAccount = await this.stripeService.stripe.accounts
@@ -693,80 +804,112 @@ export class SponsorService {
         this.logger.log(`stripe product created (${stripeProduct.id})`);
 
         stripeProductId = stripeProduct.id as string;
-        stripePriceId = stripeProduct.default_price as string;
+        stripePriceMonthId = stripeProduct.default_price as string;
       }
 
       const priceChanged = price
         ? price >= 1
-          ? tier.price !== price
+          ? tier.price !== decimalToInteger(price)
           : false
         : false;
 
-      // create a stripe price if not attached yet or the amount changed
-      if (!stripePriceId || priceChanged) {
+      // determine the amounts for monthly and yearly pricing
+      const monthlyAmount = priceChanged 
+        ? decimalToInteger(price) 
+        : tier.price || config.sponsorship.default_amount;
+      const yearlyAmount = this.calculateYearlyAmount(monthlyAmount);
+
+      // create or update stripe prices if needed
+      const needsMonthlyPrice = !stripePriceMonthId || priceChanged;
+      const needsYearlyPrice = !stripePriceYearId || priceChanged;
+
+      if (needsMonthlyPrice || needsYearlyPrice) {
         try {
-          // create a stripe price
-          const stripePrice = await this.stripeService.stripe.prices.create({
-            currency,
-            unit_amount: priceChanged
-              ? decimalToInteger(price)
-              : config.sponsorship.default_amount,
-            recurring: { interval: 'month' },
-            product: stripeProductId,
-          });
+          // store old price IDs for archiving later
+          const oldMonthlyPriceId = stripePriceMonthId;
+          const oldYearlyPriceId = stripePriceYearId;
 
-          // set the price as default in the stripe product
-          await this.stripeService.stripe.products.update(stripeProductId, {
-            default_price: stripePrice.id,
-          });
+          // create monthly price if needed
+          if (needsMonthlyPrice) {
+            const monthlyPrice = await this.stripeService.stripe.prices.create({
+              currency,
+              unit_amount: monthlyAmount,
+              recurring: { interval: 'month' },
+              product: stripeProductId,
+            });
 
-        // archive the previous price
-        await this.stripeService.stripe.prices.update(stripePriceId, {
-          active: false,
-        });
+            stripePriceMonthId = monthlyPrice.id;
+            this.logger.log(`stripe monthly price created (${stripePriceMonthId})`);
+          }
 
-          stripePriceId = stripePrice.id as string;
+          // create yearly price if needed
+          if (needsYearlyPrice) {
+            const yearlyPrice = await this.stripeService.stripe.prices.create({
+              currency,
+              unit_amount: yearlyAmount,
+              recurring: { interval: 'year' },
+              product: stripeProductId,
+            });
 
-          this.logger.log(`stripe price updated (${stripePriceId})`);
+            stripePriceYearId = yearlyPrice.id;
+            this.logger.log(`stripe yearly price created (${stripePriceYearId})`);
+          }
 
-          // update the sponsorship tier
-          await this.prisma.sponsorshipTier.update({
-            where: { id: tier.id },
-            data: {
-              stripe_price_month_id: stripePriceId,
-            },
-          });
+          // set new monthly price as default in the stripe product
+          if (needsMonthlyPrice) {
+            await this.stripeService.stripe.products.update(stripeProductId, {
+              default_price: stripePriceMonthId,
+            });
+            this.logger.log(`stripe product default price updated to (${stripePriceMonthId})`);
+          }
+
+          // now archive old prices (after setting new default)
+          if (needsMonthlyPrice && oldMonthlyPriceId && oldMonthlyPriceId !== stripePriceMonthId) {
+            await this.stripeService.stripe.prices.update(oldMonthlyPriceId, {
+              active: false,
+            });
+            this.logger.log(`archived old monthly price (${oldMonthlyPriceId})`);
+          }
+
+          if (needsYearlyPrice && oldYearlyPriceId && oldYearlyPriceId !== stripePriceYearId) {
+            await this.stripeService.stripe.prices.update(oldYearlyPriceId, {
+              active: false,
+            });
+            this.logger.log(`archived old yearly price (${oldYearlyPriceId})`);
+          }
+
         } catch (stripeError) {
           // If the product doesn't exist (test vs live mode mismatch), create a new one
           if (stripeError.code === 'resource_missing') {
             this.logger.log(`stripe product not found in current mode, creating new product [..]`);
             
-            // create a stripe product (identical to normal tier creation)
+            // create a stripe product with monthly default price
             const stripeProduct = await this.stripeService.stripe.products.create({
               name: `creator_${user.id}__sponsorship`,
               active: true,
               default_price_data: {
                 currency,
-                unit_amount: priceChanged
-                  ? decimalToInteger(price)
-                  : config.sponsorship.default_amount,
-                recurring: { interval },
+                unit_amount: monthlyAmount,
+                recurring: { interval: 'month' },
               },
             });
 
             this.logger.log(`stripe product created (${stripeProduct.id})`);
 
             stripeProductId = stripeProduct.id as string;
-            stripePriceId = stripeProduct.default_price as string;
+            stripePriceMonthId = stripeProduct.default_price as string;
 
-            // update the sponsorship tier with new product/price IDs
-            await this.prisma.sponsorshipTier.update({
-              where: { id: tier.id },
-              data: {
-                stripe_product_id: stripeProductId,
-                stripe_price_month_id: stripePriceId,
-              },
+            // create yearly price for the new product
+            const yearlyPrice = await this.stripeService.stripe.prices.create({
+              currency,
+              unit_amount: yearlyAmount,
+              recurring: { interval: 'year' },
+              product: stripeProductId,
             });
+
+            stripePriceYearId = yearlyPrice.id;
+            this.logger.log(`stripe yearly price created for new product (${stripePriceYearId})`);
+
           } else {
             throw stripeError; // Re-throw other Stripe errors
           }
@@ -780,8 +923,10 @@ export class SponsorService {
           price: price ? decimalToInteger(price) : undefined,
           description,
           is_available: isAvailable,
+          priority,
           stripe_product_id: stripeProductId,
-          stripe_price_month_id: stripePriceId,
+          stripe_price_month_id: stripePriceMonthId,
+          stripe_price_year_id: stripePriceYearId,
         },
       });
 
