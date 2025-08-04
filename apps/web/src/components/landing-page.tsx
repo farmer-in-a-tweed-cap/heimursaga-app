@@ -39,14 +39,14 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
         </p>
       </div>
       {imageSrc && (
-        <div className="lg:w-1/2 mb-12 lg:mb-0 px-4 sm:px-0">
+        <div className="w-full lg:w-1/2 mb-12 lg:mb-0 px-8 lg:px-0">
           <div className="relative group">
             <Image 
               src={imageSrc} 
               alt={imageAlt || subtitle} 
               width={800}
               height={320}
-              className={`relative w-full h-64 rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300 ${mobileImageAlign === 'left' ? 'object-cover object-left lg:object-top lg:object-center' : 'object-cover'}`}
+              className={`relative w-full h-64 lg:h-64 rounded-2xl shadow-2xl transform group-hover:scale-105 transition-transform duration-300 ${mobileImageAlign === 'left' ? 'object-cover object-left-top' : 'object-cover'} aspect-square lg:aspect-auto`}
               style={{ border: '4px solid #AC6D46' }}
             />
           </div>
