@@ -41,6 +41,7 @@ type Props = {
   };
   onSubmit?: SponsorshipTierEditFormSubmitHandler;
   onCancel?: () => void;
+  loading?: boolean;
 };
 
 export type SponsorshipTierEditFormSubmitHandler = (data?: {
@@ -53,6 +54,7 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
   defaultValues,
   onSubmit,
   onCancel,
+  loading: externalLoading = false,
 }) => {
   const toast = useToast();
 
@@ -71,11 +73,17 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
-        if (!sponsorshipTierId) return;
+        const { price, description } = values;
+
+        // If no sponsorshipTierId, this is a create operation
+        if (!sponsorshipTierId) {
+          if (onSubmit) {
+            onSubmit({ price, description });
+          }
+          return;
+        }
 
         setLoading(true);
-
-        const { price, description } = values;
 
         // update the sponsorship tier
         const { success, message } = await apiClient.updateSponsorshipTierById({
@@ -125,6 +133,8 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
     },
   );
 
+  const isLoading = loading || externalLoading;
+
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit}>
@@ -150,6 +160,9 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
                       }}
                     />
                   </FormControl>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Yearly subscriptions are automatically calculated at a 10% discount
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}
@@ -169,10 +182,10 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
             />
           </div>
           <div className="mt-6 flex flex-row gap-2">
-            <Button type="submit" loading={loading}>
+            <Button type="submit" loading={isLoading}>
               Save
             </Button>
-            <Button variant="outline" disabled={loading} onClick={onCancel}>
+            <Button variant="outline" disabled={isLoading} onClick={onCancel}>
               Cancel
             </Button>
           </div>

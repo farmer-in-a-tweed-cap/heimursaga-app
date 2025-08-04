@@ -5,6 +5,7 @@ import {
   MapQueryContext,
   PlanExpiryPeriod,
   SponsorshipType,
+  SponsorshipBillingPeriod,
 } from './enums';
 
 // general
@@ -533,6 +534,7 @@ export interface ISponsorshipTier {
   price: number;
   description: string;
   isAvailable?: boolean;
+  priority?: number;
   membersCount?: number;
   creator?: {
     username: string;
@@ -557,6 +559,32 @@ export interface ISponsorshipTierUpdatePayload {
   price?: number;
   description?: string;
   isAvailable?: boolean;
+  priority?: number;
+}
+
+export interface ISponsorshipTierCreatePayload {
+  price: number;
+  description: string;
+  isAvailable?: boolean;
+  priority?: number;
+}
+
+export interface ISponsorshipTierWithPricing {
+  id: string;
+  price: number;
+  description: string;
+  isAvailable?: boolean;
+  priority?: number;
+  membersCount?: number;
+  pricing: {
+    monthly: number;
+    yearly: number; // monthly * 12 * 0.9
+  };
+  creator?: {
+    username: string;
+    picture: string;
+    bio: string;
+  };
 }
 
 // payout
@@ -656,6 +684,7 @@ export interface ISponsorCheckoutPayload {
   sponsorshipType: string;
   paymentMethodId: string;
   sponsorshipTierId?: string;
+  billingPeriod?: SponsorshipBillingPeriod;
   oneTimePaymentAmount?: number;
   message?: string;
   emailDelivery?: boolean;

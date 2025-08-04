@@ -414,9 +414,10 @@ export const LandingPage: React.FC = () => {
         {/* Footer */}
         <footer className="text-white py-12 relative z-10" style={{ backgroundColor: '#252525' }}>
           <div className="container mx-auto px-4 text-center">
-            <div className="text-2xl font-normal mb-4" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
+            <div className="text-2xl font-normal" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
               HEIMURSAGA
             </div>
+            <div className="text-gray-400 font-normal text-center mb-6"><small>Made in Maine</small></div>
             <div className="flex justify-center space-x-6 mb-6">
               <a href="https://instagram.com/heimursaga" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white transition-colors">
                 <InstagramLogo size={24} />
@@ -429,6 +430,7 @@ export const LandingPage: React.FC = () => {
               © 2025 <a href="https://theperipetycompany.com/" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-300 transition-colors no-underline">The Peripety Company</a>. All Rights Reserved.
             </p>
           </div>
+
         </footer>
     </div>
   );

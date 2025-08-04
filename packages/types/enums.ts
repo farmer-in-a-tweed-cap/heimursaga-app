@@ -55,6 +55,11 @@ export enum SponsorshipType {
   ONE_TIME_PAYMENT = 'one_time_payment',
   SUBSCRIPTION = 'subscription',
 }
+
+export enum SponsorshipBillingPeriod {
+  MONTHLY = 'monthly',
+  YEARLY = 'yearly',
+}
 export enum CurrencyCode {
   USD = 'usd',
 }

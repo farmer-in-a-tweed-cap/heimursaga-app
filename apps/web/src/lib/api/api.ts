@@ -40,6 +40,7 @@ export const API_ROUTER = {
   },
   SPONSORSHIP_TIERS: {
     GET: `/sponsorship-tiers`,
+    CREATE: `/sponsorship-tiers`,
     GET_BY_ID: (id: string) => `/sponsorship-tiers/${id}`,
     UPDATE: (id: string) => `/sponsorship-tiers/${id}`,
     DELETE: (id: string) => `/sponsorship-tiers/${id}`,

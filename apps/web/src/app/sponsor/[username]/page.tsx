@@ -30,7 +30,7 @@ export default async function Page({ params }: Props) {
       apiClient.getUserByUsername({ username }, { cookie }),
     ]);
 
-  const sponsorship = sponsorshipTierQuery.data?.data?.[0];
+  const sponsorships = sponsorshipTierQuery.data?.data || [];
   const paymentMethods = paymentMethodQuery.data?.data;
   const creator = creatorQuery.data;
 
@@ -49,7 +49,7 @@ export default async function Page({ params }: Props) {
             )}
             <SponsorshipCheckoutForm
               username={username}
-              sponsorship={sponsorship}
+              sponsorships={sponsorships}
               paymentMethods={paymentMethods}
             />
           </div>

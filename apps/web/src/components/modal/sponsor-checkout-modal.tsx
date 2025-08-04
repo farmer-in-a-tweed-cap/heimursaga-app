@@ -28,9 +28,11 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
   
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<{
-    sponsorship?: any;
+    sponsorships?: any[];
     paymentMethods?: { id: string; label: string }[];
     creator?: any;
+    userSponsorships?: any[];
+    existingSponsorship?: any;
   }>({});
 
   useEffect(() => {
@@ -46,17 +48,29 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
       try {
         setLoading(true);
         
-        const [sponsorshipTierQuery, paymentMethodQuery, creatorQuery] =
+        const [sponsorshipTierQuery, paymentMethodQuery, creatorQuery, userSponsorshipsQuery] =
           await Promise.all([
             apiClient.getSponsorshipTiersByUsername({ username }),
             apiClient.getUserPaymentMethods(),
             apiClient.getUserByUsername({ username }),
+            apiClient.getUserSponsorships(),
           ]);
 
+        // Check if user already sponsors this creator
+        const userSponsorships = userSponsorshipsQuery.data?.data || [];
+        const existingSponsorship = userSponsorships.find(
+          (sponsorship: any) => 
+            sponsorship.creator?.username === username && 
+            sponsorship.type === 'subscription' &&
+            (sponsorship.status === 'active' || sponsorship.status === 'pending')
+        );
+
         setData({
-          sponsorship: sponsorshipTierQuery.data?.data?.[0],
+          sponsorships: sponsorshipTierQuery.data?.data || [],
           paymentMethods: paymentMethodQuery.data?.data,
           creator: creatorQuery.data,
+          userSponsorships,
+          existingSponsorship,
         });
       } catch (error) {
         console.error('Failed to fetch sponsor data:', error);
@@ -93,7 +107,7 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
           <div className="p-8 text-center">
             <div className="mb-4">
               <p className="text-gray-600">
-                You need to verify your email address before you can sponsor other explorers.
+                You need to verify your email address before you can sponsor an explorer.
               </p>
             </div>
             <div className="flex flex-col gap-3">
@@ -152,21 +166,54 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
         <DialogTitle>Sponsor {data.creator?.username}</DialogTitle>
       </DialogHeader>
       
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="w-full flex flex-col lg:flex-row gap-6 lg:gap-8 p-4 lg:p-6 min-h-full">
-          {/* Creator Summary - Responsive layout */}
-          <div className="flex-shrink-0 lg:w-48">
+      <div className="flex-1 min-h-0 overflow-y-auto max-h-[80vh]">
+        <div className="w-full flex flex-col gap-6 p-4 lg:p-6 max-w-4xl mx-auto">
+          {/* Creator Summary - Top layout */}
+          <div className="flex-shrink-0">
             <SponsorCheckoutSummary user={data.creator} />
           </div>
           
-          {/* Sponsorship Form */}
+          {/* Existing Sponsorship Notice */}
+          {data.existingSponsorship && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-start space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-2 h-2 mt-2 bg-blue-500 rounded-full"></div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-medium text-blue-900 mb-2">
+                    You're already sponsoring {data.creator?.username}
+                  </h4>
+                  <p className="text-sm text-blue-700 mb-3">
+                    You can still make one-time payments, but subscription options are disabled since you already have an active recurring sponsorship.
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    To change to a different recurring sponsorship tier, please{' '}
+                    <button
+                      onClick={() => {
+                        handleCancel();
+                        window.location.href = '/user/settings/sponsorships';
+                      }}
+                      className="underline hover:text-blue-800 font-medium"
+                    >
+                      visit your sponsorship settings
+                    </button>
+                    {' '}to cancel your current sponsorship first, then return here to set up a new one.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Sponsorship Form - Full width */}
           <div className="flex-1 min-w-0">
             <SponsorshipCheckoutForm
               username={username}
-              sponsorship={data.sponsorship}
+              sponsorships={data.sponsorships}
               paymentMethods={data.paymentMethods}
               onSuccess={handleSuccess}
               onCancel={handleCancel}
+              existingSponsorship={data.existingSponsorship}
             />
           </div>
         </div>

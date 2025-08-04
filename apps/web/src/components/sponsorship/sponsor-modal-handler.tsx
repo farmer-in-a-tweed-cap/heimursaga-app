@@ -27,7 +27,6 @@ export const SponsorModalHandler = () => {
     if (sponsorUsername) {
       modal.open(MODALS.SPONSOR_CHECKOUT, {
         props: { username: sponsorUsername },
-        full: true,
       });
     }
   }, [searchParams, modal, mounted]);

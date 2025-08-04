@@ -31,6 +31,7 @@ import {
   ISponsorshipGetAllResponse,
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
+  ISponsorshipTierCreatePayload,
   IStripeCreateSetupIntentResponse,
   IStripePlatformAccountLinkGeneratePayload,
   ISubscriptionPlanGetAllResponse,
@@ -434,6 +435,29 @@ export const apiClient = {
     api.request<void>(API_ROUTER.SPONSORSHIP_TIERS.UPDATE(query.id), {
       method: API_METHODS.PUT,
       body: JSON.stringify(payload),
+      cookie: config ? config.cookie : undefined,
+    }),
+  createSponsorshipTier: async (
+    {
+      query,
+      payload,
+    }: IApiClientQueryWithPayload<
+      {},
+      ISponsorshipTierCreatePayload
+    >,
+    config?: RequestConfig,
+  ) =>
+    api.request<{ id: string }>(API_ROUTER.SPONSORSHIP_TIERS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      cookie: config ? config.cookie : undefined,
+    }),
+  deleteSponsorshipTierById: async (
+    { query }: IApiClientQuery<{ id: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.SPONSORSHIP_TIERS.DELETE(query.id), {
+      method: API_METHODS.DELETE,
       cookie: config ? config.cookie : undefined,
     }),
   getSponsorshipTiersByUsername: async (

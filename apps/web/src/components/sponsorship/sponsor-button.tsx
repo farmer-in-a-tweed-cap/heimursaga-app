@@ -31,7 +31,6 @@ export const SponsorButton: React.FC<Props> = ({ username }) => {
         username,
         isEmailVerified: session?.isEmailVerified 
       },
-      full: true,
     });
   };
 

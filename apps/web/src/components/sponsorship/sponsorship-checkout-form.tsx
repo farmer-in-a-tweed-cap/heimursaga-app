@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ISponsorshipTier, SponsorshipType } from '@repo/types';
+import { ISponsorshipTier, SponsorshipType, SponsorshipBillingPeriod } from '@repo/types';
 import {
   Button,
   ChipGroup,
@@ -41,10 +41,11 @@ import { ROUTER } from '@/router';
 
 type Props = {
   username?: string;
-  sponsorship?: ISponsorshipTier;
+  sponsorships?: ISponsorshipTier[];
   paymentMethods?: { id: string; label: string }[];
   onSuccess?: () => void;
   onCancel?: () => void;
+  existingSponsorship?: any;
 };
 
 const MESSAGE_LENGTH = 200;
@@ -66,6 +67,10 @@ const DATA = {
     { label: 'One-time', value: SponsorshipType.ONE_TIME_PAYMENT },
     { label: 'Monthly', value: SponsorshipType.SUBSCRIPTION },
   ],
+  BILLING_PERIOD_OPTIONS: [
+    { label: 'Monthly', value: SponsorshipBillingPeriod.MONTHLY },
+    { label: 'Yearly', value: SponsorshipBillingPeriod.YEARLY, discount: '10% off' },
+  ],
 };
 
 const schema = z.object({
@@ -86,14 +91,17 @@ const schema = z.object({
     .max(MESSAGE_LENGTH, zodMessage.string.max('message', MESSAGE_LENGTH))
     .optional(),
   emailDelivery: z.boolean().default(true).optional(),
+  selectedTierId: z.string().optional(),
+  billingPeriod: z.nativeEnum(SponsorshipBillingPeriod).default(SponsorshipBillingPeriod.MONTHLY),
 });
 
 export const FormComponent: React.FC<Props> = ({
   username,
-  sponsorship,
+  sponsorships = [],
   paymentMethods = [],
   onSuccess,
   onCancel,
+  existingSponsorship,
 }) => {
   const stripe = useStripe();
   const modal = useModal();
@@ -109,10 +117,14 @@ export const FormComponent: React.FC<Props> = ({
     paymentMethodType: string;
     paymentMethodId?: string;
     paymentMethods: { id: string; label: string }[];
+    selectedTierId?: string;
+    billingPeriod: SponsorshipBillingPeriod;
   }>({
     sponsorshipType: SponsorshipType.ONE_TIME_PAYMENT,
     paymentMethodType: PAYMENT_METHOD_TYPES.CARD,
     paymentMethods,
+    selectedTierId: sponsorships.length > 0 ? sponsorships[0].id : undefined,
+    billingPeriod: SponsorshipBillingPeriod.MONTHLY,
   });
 
   const form = useForm<z.infer<typeof schema>>({
@@ -123,21 +135,38 @@ export const FormComponent: React.FC<Props> = ({
         paymentMethods.length >= 1 ? paymentMethods[0].id : undefined,
       message: '',
       emailDelivery: true,
+      selectedTierId: sponsorships.length > 0 ? sponsorships[0].id : undefined,
+      billingPeriod: SponsorshipBillingPeriod.MONTHLY,
     },
   });
 
-  const { sponsorshipType, paymentMethodType } = state;
+  const { sponsorshipType, paymentMethodType, selectedTierId, billingPeriod } = state;
 
   const oneTimePaymentAmount = form.watch('oneTimePaymentAmount') || 0;
   const paymentMethodId = form.watch('paymentMethodId');
   const message = form.watch('message');
-  const sponsorshipEnabled = !!sponsorship;
-  const sponsorshipMonthlyAmount = sponsorship?.price || 0;
+  const selectedTier = sponsorships.find(tier => tier.id === selectedTierId);
+  const sponsorshipEnabled = sponsorships.length > 0;
+  const sponsorshipMonthlyAmount = selectedTier?.price || 0;
+  const sponsorshipYearlyAmount = selectedTier ? Math.round(selectedTier.price * 12 * 0.9) : 0;
+  const currentSponsorshipAmount = billingPeriod === SponsorshipBillingPeriod.YEARLY 
+    ? sponsorshipYearlyAmount 
+    : sponsorshipMonthlyAmount;
   const currency = { symbol: '$' };
   const payButtonEnabled = !!stripe && !!paymentMethodId;
 
   const handleSponsorshipTypeSelect = (sponsorshipType: string) => {
     setState((state) => ({ ...state, sponsorshipType }));
+  };
+
+  const handleTierSelect = (tierId: string) => {
+    setState((state) => ({ ...state, selectedTierId: tierId }));
+    form.setValue('selectedTierId', tierId);
+  };
+
+  const handleBillingPeriodSelect = (period: SponsorshipBillingPeriod) => {
+    setState((state) => ({ ...state, billingPeriod: period }));
+    form.setValue('billingPeriod', period);
   };
 
   const handleSubmit = form.handleSubmit(
@@ -149,8 +178,8 @@ export const FormComponent: React.FC<Props> = ({
 
         setLoading((loading) => ({ ...loading, form: true }));
 
-        const { sponsorshipType } = state;
-        const sponsorshipTierId = sponsorship?.id;
+        const { sponsorshipType, billingPeriod } = state;
+        const sponsorshipTierId = selectedTier?.id;
         const { oneTimePaymentAmount, paymentMethodId, message, emailDelivery } = values;
         const creatorId = username;
 
@@ -168,6 +197,7 @@ export const FormComponent: React.FC<Props> = ({
           paymentMethodId,
           message,
           emailDelivery: sponsorshipType === SponsorshipType.SUBSCRIPTION ? emailDelivery : false,
+          billingPeriod: sponsorshipType === SponsorshipType.SUBSCRIPTION ? billingPeriod : undefined,
         };
 
         // initiate a checkout
@@ -250,7 +280,12 @@ export const FormComponent: React.FC<Props> = ({
     modal.preload([MODALS.INFO]);
 
     setLoading((loading) => ({ ...loading, paymentMethods: false }));
-  }, []);
+    
+    // Force one-time payment if user already sponsors this creator
+    if (existingSponsorship) {
+      setState((state) => ({ ...state, sponsorshipType: SponsorshipType.ONE_TIME_PAYMENT }));
+    }
+  }, [existingSponsorship]);
 
   return (
     <Form {...form}>
@@ -272,7 +307,7 @@ export const FormComponent: React.FC<Props> = ({
                   classNames={{ group: 'w-full grid grid-cols-2' }}
                   value={sponsorshipType}
                   items={
-                    sponsorshipEnabled
+                    sponsorshipEnabled && !existingSponsorship
                       ? DATA.SPONSORSHIP_OPTIONS
                       : [
                           DATA.SPONSORSHIP_OPTIONS[0],
@@ -315,13 +350,82 @@ export const FormComponent: React.FC<Props> = ({
                     </div>
                   )}
                   {sponsorshipType === SponsorshipType.SUBSCRIPTION &&
-                  sponsorship ? (
-                    <div className="flex flex-col">
-                      <SponsorshipTierCard
-                        id={sponsorship.id}
-                        price={sponsorship.price}
-                        description={sponsorship.description}
-                      />
+                  sponsorshipEnabled && !existingSponsorship ? (
+                    <div className="flex flex-col space-y-6">
+                      {/* Tier Selection */}
+                      {sponsorships.length > 1 && (
+                        <div className="flex flex-col">
+                          <h3 className="font-medium text-base mb-3">Choose your tier</h3>
+                          <div className="grid gap-3">
+                            {sponsorships.map((tier) => (
+                              <div
+                                key={tier.id}
+                                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                                  selectedTierId === tier.id
+                                    ? 'border-blue-500 bg-blue-50'
+                                    : 'border-gray-200 hover:border-gray-300'
+                                }`}
+                                onClick={() => handleTierSelect(tier.id)}
+                              >
+                                <div className="flex flex-col">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-base font-medium">
+                                      ${tier.price}/month
+                                    </span>
+                                    {tier.priority && (
+                                      <span className="text-xs text-gray-500">
+                                        Tier {tier.priority}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {tier.description && (
+                                    <p className="mt-2 text-sm text-gray-600">
+                                      {tier.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Billing Period Selection */}
+                      <div className="flex flex-col">
+                        <h3 className="font-medium text-base mb-3">Billing period</h3>
+                        <ChipGroup
+                          classNames={{ group: 'w-full grid grid-cols-2 gap-2' }}
+                          value={billingPeriod}
+                          items={DATA.BILLING_PERIOD_OPTIONS.map(option => ({
+                            ...option,
+                            label: option.discount ? `${option.label} (${option.discount})` : option.label,
+                          }))}
+                          onSelect={(period) => handleBillingPeriodSelect(period as SponsorshipBillingPeriod)}
+                        />
+                      </div>
+
+                      {/* Selected Tier Summary */}
+                      {selectedTier && (
+                        <div className="flex flex-col">
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <span className="text-base font-medium">
+                                ${currentSponsorshipAmount}/{billingPeriod === SponsorshipBillingPeriod.YEARLY ? 'year' : 'month'}
+                              </span>
+                              {billingPeriod === SponsorshipBillingPeriod.YEARLY && (
+                                <span className="text-sm text-green-600 font-medium">
+                                  Save ${(sponsorshipMonthlyAmount * 12) - sponsorshipYearlyAmount}
+                                </span>
+                              )}
+                            </div>
+                            {selectedTier.description && (
+                              <p className="mt-2 text-sm text-gray-600">
+                                {selectedTier.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <></>
@@ -449,7 +553,7 @@ export const FormComponent: React.FC<Props> = ({
               <div>
                 <span className="font-medium text-base">
                   {sponsorshipType === SponsorshipType.SUBSCRIPTION
-                    ? `You'll pay ${currency.symbol}${sponsorshipMonthlyAmount} monthly on the ${dateformat().format('D')}th.`
+                    ? `You'll pay ${currency.symbol}${currentSponsorshipAmount} ${billingPeriod === SponsorshipBillingPeriod.YEARLY ? 'yearly' : `monthly on the ${dateformat().format('D')}th`}.`
                     : `You'll pay ${currency.symbol}${oneTimePaymentAmount}`}
                 </span>
               </div>
