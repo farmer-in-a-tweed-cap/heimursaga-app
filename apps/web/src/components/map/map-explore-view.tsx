@@ -53,6 +53,7 @@ type Waypoint = {
     content: string;
     place?: string;
     bookmarked: boolean;
+    sponsored?: boolean;
     date?: Date;
     author: {
       username: string;

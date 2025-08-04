@@ -427,6 +427,7 @@ export interface IWaypointDetail extends IWaypoint {
     content?: string;
     date?: Date;
     place?: string;
+    sponsored?: boolean;
     author?: {
       username: string;
       name?: string;
