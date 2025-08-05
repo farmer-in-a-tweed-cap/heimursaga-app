@@ -9,6 +9,7 @@ import {
 } from '@repo/types';
 import {
   Badge,
+  Button,
   DataTable,
   DataTableColumn,
   DataTableRow,
@@ -17,6 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components';
+import { ArrowUpDown } from 'lucide-react';
 import { useToast } from '@repo/ui/hooks';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -37,6 +39,7 @@ type SponsorshipTableData = {
   status: string;
   message?: string;
   email_delivery_enabled?: boolean;
+  tier?: string;
 };
 
 type Props = {
@@ -138,7 +141,16 @@ export const SponsorshipsTable: React.FC<Props> = ({
   const columns: DataTableColumn<SponsorshipTableData>[] = [
     {
       accessorKey: 'username',
-      header: () => (context === 'user' ? 'Explorer' : 'User'),
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="h-auto p-0 font-medium hover:bg-transparent"
+        >
+          {context === 'user' ? 'Explorer' : 'User'}
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const username = row.original.username;
         return (
@@ -154,12 +166,30 @@ export const SponsorshipsTable: React.FC<Props> = ({
     },
     {
       accessorKey: 'amount',
-      header: () => 'Amount',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="h-auto p-0 font-medium hover:bg-transparent"
+        >
+          Amount
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => <span>${row.getValue('amount')}</span>,
     },
     {
       accessorKey: 'status',
-      header: () => 'Status',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="h-auto p-0 font-medium hover:bg-transparent"
+        >
+          Status
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const status = row.original?.status;
         return (
@@ -180,7 +210,16 @@ export const SponsorshipsTable: React.FC<Props> = ({
     },
     {
       accessorKey: 'type',
-      header: () => 'Type',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="h-auto p-0 font-medium hover:bg-transparent"
+        >
+          Type
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const value = row.getValue('type');
         const label =
@@ -190,16 +229,51 @@ export const SponsorshipsTable: React.FC<Props> = ({
         return <Badge variant="outline">{label}</Badge>;
       },
     },
+    {
+      accessorKey: 'tier',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="h-auto p-0 font-medium hover:bg-transparent"
+        >
+          Tier
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
+      cell: ({ row }) => {
+        const tierTitle = row.getValue('tier') as string;
+        return tierTitle || '-';
+      },
+    },
 
     {
       accessorKey: 'date',
-      header: () => 'Date',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="h-auto p-0 font-medium hover:bg-transparent"
+        >
+          Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) =>
         dateformat(row.getValue('date')).format('MMM DD, YYYY'),
     },
     {
       accessorKey: 'message',
-      header: () => 'Message',
+      header: ({ column }) => (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+          className="h-auto p-0 font-medium hover:bg-transparent"
+        >
+          Message
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      ),
       cell: ({ row }) => {
         const value =
           typeof row.getValue('message') === 'string'
@@ -266,7 +340,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
   ];
 
   const rows: DataTableRow<SponsorshipTableData>[] = data.map(
-    ({ id, creator, amount, type, createdAt, status, user, message, email_delivery_enabled }, key) => ({
+    ({ id, creator, amount, type, createdAt, status, user, message, email_delivery_enabled, tier }, key) => ({
       id: id ? id : `${key}`,
       type,
       status,
@@ -275,6 +349,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
       date: createdAt,
       message,
       email_delivery_enabled,
+      tier: tier?.title,
     }),
   );
 

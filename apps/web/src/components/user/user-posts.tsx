@@ -85,6 +85,8 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
       ))}
     </div>
   ) : (
-    <>no entries</>
+    <div className="text-center py-8 text-gray-500">
+      {me ? "Share your stories" : "No public journal entries logged"}
+    </div>
   );
 };

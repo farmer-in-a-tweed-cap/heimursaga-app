@@ -458,6 +458,7 @@ export const apiClient = {
   ) =>
     api.request<void>(API_ROUTER.SPONSORSHIP_TIERS.DELETE(query.id), {
       method: API_METHODS.DELETE,
+      contentType: API_CONTENT_TYPES.FORM_DATA, // This removes content-type header
       cookie: config ? config.cookie : undefined,
     }),
   getSponsorshipTiersByUsername: async (

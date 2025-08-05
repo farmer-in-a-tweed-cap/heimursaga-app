@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
+import { LOCALES } from '@/locales';
 
 import { useModal, useSession } from '@/hooks';
 
@@ -171,6 +172,11 @@ export const PayoutWithdrawView = () => {
               )}
             </CardContent>
           </Card>
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <span className="text-sm text-blue-700">
+              {LOCALES.APP.PAYOUTS.BILLING.STRIPE.PAYOUT_FEE_WARNING}
+            </span>
+          </div>
           <Card>
             <CardHeader>
               <CardTitle>Activity</CardTitle>

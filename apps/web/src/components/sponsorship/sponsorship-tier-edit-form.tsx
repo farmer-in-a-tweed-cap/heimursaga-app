@@ -174,7 +174,12 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
                 <FormItem>
                   <FormLabel>Tier description</FormLabel>
                   <FormControl>
-                    <Textarea className="min-h-[80px]" required {...field} />
+                    <Textarea 
+                      className="min-h-[80px]" 
+                      placeholder="Examples: what are your sponsors supporting? What can they expect from you? Are there additional perks?"
+                      required 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

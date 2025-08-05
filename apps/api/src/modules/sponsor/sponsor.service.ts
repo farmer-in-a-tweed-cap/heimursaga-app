@@ -618,7 +618,7 @@ export class SponsorService {
             },
           },
         },
-        orderBy: [{ priority: 'asc' }, { id: 'asc' }],
+        orderBy: [{ price: 'asc' }, { id: 'asc' }],
         take: 3, // Support up to 3 tiers
       });
 
@@ -1099,6 +1099,13 @@ export class SponsorService {
               },
             },
           },
+          tier: {
+            select: {
+              public_id: true,
+              description: true,
+              priority: true,
+            },
+          },
           created_at: true,
         },
         take,
@@ -1115,6 +1122,7 @@ export class SponsorService {
             status,
             user,
             type,
+            tier,
             created_at,
             message,
           }) => ({
@@ -1129,6 +1137,13 @@ export class SponsorService {
                   username: user.username,
                   name: user.profile.name,
                   picture: user.profile.picture,
+                }
+              : undefined,
+            tier: tier
+              ? {
+                  id: tier.public_id,
+                  description: tier.description,
+                  title: `Tier ${tier.priority}`,
                 }
               : undefined,
             createdAt: created_at,

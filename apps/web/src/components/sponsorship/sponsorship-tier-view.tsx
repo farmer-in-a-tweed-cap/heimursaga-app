@@ -95,7 +95,7 @@ export const SponsorshipTierView = () => {
           {sponsorshipsCount > 0 && (
             <div className="space-y-3">
               {sponsorships
-                .sort((a, b) => (a.priority || 1) - (b.priority || 1))
+                .sort((a, b) => a.price - b.price)
                 .map((tier, key) => (
                   <SponsorshipTierManageCard
                     key={tier.id}

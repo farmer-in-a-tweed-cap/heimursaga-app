@@ -198,12 +198,6 @@ export const PayoutBillingView = () => {
                   </p>
                 </div>
               )}
-              
-              <div className="mt-3">
-                <span className="text-sm text-gray-500">
-                  {LOCALES.APP.PAYOUTS.BILLING.STRIPE.PAYOUT_FEE_WARNING}
-                </span>
-              </div>
               <div className="mt-6">
                 {payoutMethod ? (
                   <Button

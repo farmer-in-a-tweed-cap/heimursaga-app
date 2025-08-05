@@ -224,11 +224,17 @@ export class Api {
           // @ts-ignore
           delete headers['Content-Type'];
           break;
+        case undefined:
+          // Explicitly no content type - don't set any
+          break;
         default:
-          headers = {
-            ...headers,
-            'Content-Type': API_HEADERS.CONTENT_TYPE.JSON,
-          };
+          // Only set JSON content type if there's a body
+          if (body) {
+            headers = {
+              ...headers,
+              'Content-Type': API_HEADERS.CONTENT_TYPE.JSON,
+            };
+          }
           break;
       }
 

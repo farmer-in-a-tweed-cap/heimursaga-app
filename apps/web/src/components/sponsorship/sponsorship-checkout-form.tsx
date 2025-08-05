@@ -357,7 +357,7 @@ export const FormComponent: React.FC<Props> = ({
                         <div className="flex flex-col">
                           <h3 className="font-medium text-base mb-3">Choose your tier</h3>
                           <div className="grid gap-3">
-                            {sponsorships.map((tier) => (
+                            {sponsorships.sort((a, b) => a.price - b.price).map((tier) => (
                               <div
                                 key={tier.id}
                                 className={`p-4 border rounded-lg cursor-pointer transition-all ${
@@ -559,10 +559,17 @@ export const FormComponent: React.FC<Props> = ({
               </div>
               <div className="mt-4">
                 <p className="text-xs text-gray-600 font-normal">
-                  {billingPeriod === SponsorshipBillingPeriod.YEARLY 
-                    ? `By clicking Subscribe now, you agree to Terms of Use and Privacy Policy. This subscription automatically renews yearly, and you'll be notified in advance if the yearly amount increases. Cancel anytime in your account settings.`
-                    : LOCALES.APP.CHECKOUT.PAGE.TERMS
-                  }
+                  By clicking Subscribe now, you agree to{' '}
+                  <a href="/legal/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    Terms of Use
+                  </a>{' '}
+                  and{' '}
+                  <a href="/legal/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                    Privacy Policy
+                  </a>
+                  . This subscription automatically renews{' '}
+                  {billingPeriod === SponsorshipBillingPeriod.YEARLY ? 'yearly' : 'monthly'}, and you'll be notified in advance if the{' '}
+                  {billingPeriod === SponsorshipBillingPeriod.YEARLY ? 'yearly' : 'monthly'} amount increases. Cancel anytime in your account settings.
                 </p>
               </div>
               <div className="mt-8 flex flex-col gap-3">
@@ -591,11 +598,8 @@ export const FormComponent: React.FC<Props> = ({
               </div>
             </div>
           </div>
-          <div className="mt-6 flex flex-col gap-4">
+          <div className="mt-6">
             <StripeSecurityBadge variant="badge" />
-            <span className="text-sm font-medium text-gray-600">
-              legal_menu
-            </span>
           </div>
         </div>
       </form>

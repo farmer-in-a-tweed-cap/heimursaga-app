@@ -713,6 +713,11 @@ export interface ISponsorshipDetail {
     // name: string;
     picture: string;
   };
+  tier?: {
+    id: string;
+    description: string;
+    title: string;
+  };
   createdAt?: Date;
 }
 

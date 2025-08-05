@@ -79,6 +79,7 @@ const schema = z.object({
     .max(500, zodMessage.string.max('portfolio', 500))
     .or(z.literal(''))
     .optional(),
+  picture: z.any().optional(), // File object for new picture
 });
 
 type Props = {
@@ -91,9 +92,8 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   const session = useSession();
 
   const [loading, setLoading] = useState<{
-    picture: boolean;
     settings: boolean;
-  }>({ picture: false, settings: false });
+  }>({ settings: false });
 
   // Always show sponsors_fund field for creators in settings
   const isCreator = session?.role === UserRole.CREATOR;
@@ -149,6 +149,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
           sponsors_fund_type: 'custom', // Start with custom, will be updated by useEffect
           sponsors_fund_journey_id: '',
           portfolio: data.portfolio || '',
+          picture: undefined,
         }
       : {
           // name: '',
@@ -159,6 +160,7 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
           sponsors_fund_type: 'custom',
           sponsors_fund_journey_id: '',
           portfolio: '',
+          picture: undefined,
         },
   });
 
@@ -203,11 +205,21 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
   const handleSubmit = form.handleSubmit(
     async (values: z.infer<typeof schema>) => {
       try {
-        const { bio, location_from, location_lives, sponsors_fund, sponsors_fund_type, sponsors_fund_journey_id, portfolio } = values;
+        const { bio, location_from, location_lives, sponsors_fund, sponsors_fund_type, sponsors_fund_journey_id, portfolio, picture } = values;
 
         setLoading((loading) => ({ ...loading, settings: true }));
 
-        // save the changes
+        // Save profile picture if a new one was selected
+        if (picture instanceof File) {
+          const pictureResponse = await apiClient.updateUserPicture({ file: picture });
+          if (!pictureResponse.success) {
+            toast({ type: 'error', message: 'Failed to update profile picture' });
+            setLoading((loading) => ({ ...loading, settings: false }));
+            return;
+          }
+        }
+
+        // Save other profile settings
         const { success } = await apiClient.updateUserProfileSettings({
           query: {},
           payload: {
@@ -236,26 +248,8 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
     },
   );
 
-  const handlePictureUpdate = async (file: File) => {
-    try {
-      setLoading((loading) => ({ ...loading, picture: true }));
-
-      // save the changes
-      const response = await apiClient.updateUserPicture({ file });
-
-      if (response.success) {
-        toast({ type: 'success', message: 'Profile picture updated' });
-        router.refresh(); // Refresh to show updated picture
-      } else {
-        toast({ type: 'error', message: response.message || 'Failed to update profile picture' });
-      }
-
-      setLoading((loading) => ({ ...loading, picture: false }));
-    } catch (e: any) {
-      setLoading((loading) => ({ ...loading, picture: false }));
-      const errorMessage = e?.response?.data?.message || e?.message || 'Failed to update profile picture';
-      toast({ type: 'error', message: errorMessage });
-    }
+  const handlePictureChange = (file: File) => {
+    form.setValue('picture', file);
   };
 
   return (
@@ -263,9 +257,9 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
       <CardContent>
         <UserAvatarUploadPicker
           src={data?.picture}
-          loading={loading.picture}
+          loading={loading.settings}
           fallback={data?.username}
-          onChange={handlePictureUpdate}
+          onChange={handlePictureChange}
         />
         <Form {...form}>
           <form onSubmit={handleSubmit}>
@@ -334,7 +328,6 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
                           <Textarea
                             className="min-h-[120px]"
                             disabled={loading.settings}
-                            required
                             {...field}
                           />
                         </FormControl>

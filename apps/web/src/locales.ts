@@ -88,7 +88,7 @@ export const LOCALES = {
         STRIPE: {
           TITLE: 'Stripe',
           PAYOUT_FEE_WARNING:
-            'Payout fee is 1% of the amount transferred, with a minimum of USD $0.25 and a maximum of USD $20*',
+            'Heimursaga charges a 10% platform fee on all payments and Stripe charges 2.9% + $0.30 per transaction. Example: your sponsor pays you $5.00, fees total $0.50, your payout amount would be $4.50',
         },
       },
     },
