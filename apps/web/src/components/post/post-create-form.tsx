@@ -171,6 +171,13 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check if uploads are still in progress
+    const pendingUploads = uploader.files.filter(file => file.file && !file.uploadId && file.loading !== false);
+    if (pendingUploads.length > 0) {
+      toast({ type: 'error', message: 'Please wait for photo uploads to complete' });
+      return;
+    }
+    
     const formData = form.getValues();
     
     // For private entries (drafts), minimal validation
@@ -204,7 +211,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
 
         const uploads: string[] = uploader.files
           .map(({ uploadId }) => uploadId)
-          .filter((el) => typeof el === 'string');
+          .filter((el) => typeof el === 'string' && el.length > 0);
 
         setLoading(true);
 

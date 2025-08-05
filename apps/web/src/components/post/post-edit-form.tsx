@@ -116,12 +116,8 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
 
   const [loading, setLoading] = useState<{
     post: boolean;
-    privacy: boolean;
-    trip: boolean;
   }>({
     post: false,
-    privacy: false,
-    trip: false,
   });
   const [trip, setTrip] = useState<{ id: string; title: string } | null>(
     values?.trip || null,
@@ -157,37 +153,10 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     });
   };
 
-  const handleTripRemove = async () => {
-    try {
-      const waypointId = values?.waypoint?.id;
-      const tripId = values?.trip?.id;
-      const enabled = waypointId && tripId;
-
-      if (!enabled) return;
-
-      setLoading((prev) => ({ ...prev, trip: true }));
-
-      // delete the trip waypoint
-      const { success } = await apiClient.deleteTripWaypoint({
-        query: {
-          tripId,
-          waypointId,
-        },
-      });
-
-      if (success) {
-        setTrip(null);
-
-        toast({ type: 'success', message: 'Journey removed' });
-      } else {
-        toast({ type: 'error', message: 'Journey not removed' });
-      }
-
-      setLoading((prev) => ({ ...prev, trip: false }));
-    } catch (e) {
-      toast({ type: 'error', message: 'Journey not removed' });
-      setLoading((prev) => ({ ...prev, trip: false }));
-    }
+  const handleTripRemove = () => {
+    // Simply remove the trip from local state
+    // The actual removal will happen during form submission
+    setTrip(null);
   };
 
   const handleLocationPickModal = () => {
@@ -209,45 +178,26 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     });
   };
 
-  const handlePrivacyChange = async (payload: {
+  const handlePrivacyChange = (payload: {
     sponsored?: boolean;
     public?: boolean;
   }) => {
-    try {
-      if (!postId) return;
-
-      setLoading((loading) => ({ ...loading, privacy: true }));
-
-      // Apply toggle interdependency logic
-      let newPrivacy = { ...privacy };
-      
-      if (typeof payload?.public !== 'undefined') {
-        newPrivacy.public = payload.public;
-        // If making private, also disable sponsored
-        if (!payload.public) {
-          newPrivacy.sponsored = false;
-        }
+    // Apply toggle interdependency logic without API calls
+    let newPrivacy = { ...privacy };
+    
+    if (typeof payload?.public !== 'undefined') {
+      newPrivacy.public = payload.public;
+      // If making private, also disable sponsored
+      if (!payload.public) {
+        newPrivacy.sponsored = false;
       }
-      
-      if (typeof payload?.sponsored !== 'undefined') {
-        newPrivacy.sponsored = payload.sponsored;
-      }
-
-      setPrivacy(newPrivacy);
-
-      // update the post
-      await apiClient.updatePost({
-        query: { id: postId },
-        payload: {
-          public: newPrivacy.public,
-          sponsored: newPrivacy.sponsored,
-        },
-      });
-
-      setLoading((loading) => ({ ...loading, privacy: false }));
-    } catch (e) {
-      setLoading((loading) => ({ ...loading, privacy: false }));
     }
+    
+    if (typeof payload?.sponsored !== 'undefined') {
+      newPrivacy.sponsored = payload.sponsored;
+    }
+
+    setPrivacy(newPrivacy);
   };
 
   const handleValidationError = () => {
@@ -267,6 +217,13 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     e.preventDefault();
     
     if (!postId) return;
+    
+    // Check if uploads are still in progress
+    const pendingUploads = uploader.files.filter(file => file.file && !file.uploadId && file.loading !== false);
+    if (pendingUploads.length > 0) {
+      toast({ type: 'error', message: 'Please wait for photo uploads to complete' });
+      return;
+    }
     
     const formData = form.getValues();
     
@@ -297,29 +254,32 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       }
 
       try {
-        const tripId = trip?.id;
+        const tripId = trip?.id || null;
 
         const uploads: string[] = uploader.files
           .map(({ uploadId }) => uploadId)
-          .filter((el) => typeof el === 'string');
+          .filter((el) => typeof el === 'string' && el.length > 0);
 
-        setLoading((loading) => ({ ...loading, post: true }));
+        setLoading({ post: true });
+
+        const updatePayload = {
+          ...formData,
+          content: content?.trim() || ' ', // Send a space if content is empty to satisfy API validation
+          public: privacy.public,
+          sponsored: privacy.sponsored,
+          waypoint: {
+            lat: marker?.lat,
+            lon: marker?.lon,
+          },
+          tripId,
+          uploads,
+        };
+
 
         // update the post (draft)
         const { success } = await apiClient.updatePost({
           query: { id: postId },
-          payload: {
-            ...formData,
-            content: content?.trim() || ' ', // Send a space if content is empty to satisfy API validation
-            public: privacy.public,
-            sponsored: privacy.sponsored,
-            waypoint: {
-              lat: marker?.lat,
-              lon: marker?.lon,
-            },
-            tripId,
-            uploads,
-          },
+          payload: updatePayload,
         });
 
         if (success) {
@@ -334,20 +294,20 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
             message: 'Entry saved',
           });
           
-          setLoading((loading) => ({ ...loading, post: false }));
+          setLoading({ post: false });
         } else {
           toast({
             type: 'error',
             message: LOCALES.APP.POSTS.TOAST.NOT_SAVED,
           });
-          setLoading((loading) => ({ ...loading, post: false }));
+          setLoading({ post: false });
         }
       } catch (e) {
         toast({
           type: 'error',
           message: LOCALES.APP.POSTS.TOAST.NOT_SAVED,
         });
-        setLoading((loading) => ({ ...loading, post: false }));
+        setLoading({ post: false });
       }
       return;
     }
@@ -356,7 +316,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     form.handleSubmit(
       async (values: z.infer<typeof schema>) => {
         try {
-          const tripId = trip?.id;
+          const tripId = trip?.id || null;
           const { marker } = map;
 
           // Check map marker for public entries too
@@ -367,24 +327,27 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
 
           const uploads: string[] = uploader.files
             .map(({ uploadId }) => uploadId)
-            .filter((el) => typeof el === 'string');
+            .filter((el) => typeof el === 'string' && el.length > 0);
 
-          setLoading((loading) => ({ ...loading, post: true }));
+          setLoading({ post: true });
+
+          const updatePayload = {
+            ...values,
+            public: privacy.public,
+            sponsored: privacy.sponsored,
+            waypoint: {
+              lat: marker?.lat,
+              lon: marker?.lon,
+            },
+            tripId,
+            uploads,
+          };
+
 
           // update the post
           const { success } = await apiClient.updatePost({
             query: { id: postId },
-            payload: {
-              ...values,
-              public: privacy.public,
-              sponsored: privacy.sponsored,
-              waypoint: {
-                lat: marker?.lat,
-                lon: marker?.lon,
-              },
-              tripId,
-              uploads,
-            },
+            payload: updatePayload,
           });
 
           if (success) {
@@ -399,20 +362,20 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
               message: 'Entry saved',
             });
             
-            setLoading((loading) => ({ ...loading, post: false }));
+            setLoading({ post: false });
           } else {
             toast({
               type: 'error',
               message: LOCALES.APP.POSTS.TOAST.NOT_SAVED,
             });
-            setLoading((loading) => ({ ...loading, post: false }));
+            setLoading({ post: false });
           }
         } catch (e) {
           toast({
             type: 'error',
             message: LOCALES.APP.POSTS.TOAST.NOT_SAVED,
           });
-          setLoading((loading) => ({ ...loading, post: false }));
+          setLoading({ post: false });
         }
       },
       handleValidationError,
@@ -456,7 +419,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                 <CardContent>
                   <PostTripAddButton
                     trip={trip || undefined}
-                    loading={loading.trip}
+                    loading={loading.post}
                     onAdd={handleTripSelectModal}
                     onRemove={handleTripRemove}
                   />
@@ -649,7 +612,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                       <FormLabel>Public</FormLabel>
                       <Switch
                         checked={privacy.public}
-                        disabled={loading.privacy || privacy.sponsored}
+                        disabled={loading.post || privacy.sponsored}
                         onCheckedChange={(checked) =>
                           handlePrivacyChange({ public: checked })
                         }
@@ -662,7 +625,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                         <FormLabel>Sponsored</FormLabel>
                         <Switch
                           checked={privacy.sponsored}
-                          disabled={loading.privacy || !privacy.public}
+                          disabled={loading.post || !privacy.public}
                           onCheckedChange={(checked) =>
                             handlePrivacyChange({ sponsored: checked })
                           }

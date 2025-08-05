@@ -606,14 +606,14 @@ export class PostService {
           },
         });
 
-        // Return info needed for email trigger
-        return { shouldTriggerEmail, postData: {
+        // Store email trigger info for later use
+        const emailTriggerData = {
           publicId: post.public_id,
           title: payload.title || post.title,
           content: normalizeText(payload.content) || post.content,
           place: payload.place || post.place,
           date: payload.date || post.date,
-        }};
+        };
 
         // update the waypoint
         if (waypoint) {
@@ -679,39 +679,43 @@ export class PostService {
           }
         }
 
-        // attach to the trip
-        if (tripId) {
+        // handle trip association
+        if (tripId !== undefined) {
           this.logger.log('post_update: trip');
 
-          // get trip
-          const trip = await tx.trip.findFirst({
-            where: { public_id: tripId, author_id: userId, deleted_at: null },
-            select: { id: true },
-          });
-          if (!trip) return;
-
-          // check if waypoint is already attached to the trip
-          const existingRelation = await tx.tripWaypoint.findUnique({
-            where: {
-              trip_id_waypoint_id: {
-                trip_id: trip.id,
-                waypoint_id: post.waypoint_id,
-              },
-            },
-          });
-
-          // only create the relationship if it doesn't exist
-          if (!existingRelation) {
-            await tx.tripWaypoint.create({
-              data: {
-                trip_id: trip.id,
+          // First, remove any existing trip associations for this waypoint
+          if (post.waypoint_id) {
+            await tx.tripWaypoint.deleteMany({
+              where: {
                 waypoint_id: post.waypoint_id,
               },
             });
           }
+
+          // If tripId is provided (not null), add the new association
+          if (tripId) {
+            // get trip
+            const trip = await tx.trip.findFirst({
+              where: { public_id: tripId, author_id: userId, deleted_at: null },
+              select: { id: true },
+            });
+            
+            if (trip && post.waypoint_id) {
+              await tx.tripWaypoint.create({
+                data: {
+                  trip_id: trip.id,
+                  waypoint_id: post.waypoint_id,
+                },
+              });
+            }
+          }
         }
         
-        return { shouldTriggerEmail: false, postData: null };
+        // Return email trigger info
+        return { 
+          shouldTriggerEmail, 
+          postData: shouldTriggerEmail ? emailTriggerData : null 
+        };
       });
 
       // Trigger email delivery if post changed from private to public
