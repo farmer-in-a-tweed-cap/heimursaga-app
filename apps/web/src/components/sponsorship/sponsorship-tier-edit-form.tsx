@@ -95,7 +95,7 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
         });
 
         if (success) {
-          toast({ type: 'success', message: 'sponsorship tier updated' });
+          toast({ type: 'success', message: 'Sponsorship tier updated' });
 
           if (onSubmit) {
             onSubmit({
@@ -113,7 +113,7 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
               message: LOCALES.APP.SPONSORSHIP.TOAST.STRIPE_NOT_VERIFIED
             });
           } else {
-            toast({ type: 'error', message: 'sponsorship tier not updated' });
+            toast({ type: 'error', message: 'Sponsorship tier not updated' });
           }
           setLoading(false);
         }
@@ -126,7 +126,7 @@ export const SponsorshipTierEditForm: React.FC<Props> = ({
             message: LOCALES.APP.SPONSORSHIP.TOAST.STRIPE_NOT_VERIFIED
           });
         } else {
-          toast({ type: 'error', message: 'sponsorship tier not updated' });
+          toast({ type: 'error', message: 'Sponsorship tier not updated' });
         }
         setLoading(false);
       }

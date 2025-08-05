@@ -83,12 +83,12 @@ export const PayoutBillingView = () => {
           }
         }
       } else {
-        toast({ type: 'error', message: 'payout method not created' });
+        toast({ type: 'error', message: 'Payout method not created' });
         setLoading((loading) => ({ ...loading, button: false }));
       }
     } catch (e) {
       setLoading((loading) => ({ ...loading, button: false }));
-      toast({ type: 'error', message: 'payout method not created' });
+      toast({ type: 'error', message: 'Payout method not created' });
     }
   };
 
@@ -99,7 +99,7 @@ export const PayoutBillingView = () => {
       if (!payoutMethodId) {
         toast({
           type: 'error',
-          message: 'payout method not available',
+          message: 'Payout method not available',
         });
         return;
       }
@@ -125,13 +125,13 @@ export const PayoutBillingView = () => {
           return redirect(url);
         }
       } else {
-        toast({ type: 'error', message: 'payout method not updated' });
+        toast({ type: 'error', message: 'Payout method not updated' });
       }
 
       setLoading((loading) => ({ ...loading, button: false }));
     } catch (e) {
       setLoading((loading) => ({ ...loading, button: false }));
-      toast({ type: 'error', message: 'payout method not updated' });
+      toast({ type: 'error', message: 'Payout method not updated' });
     }
   };
 

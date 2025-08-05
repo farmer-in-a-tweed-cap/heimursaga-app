@@ -178,14 +178,14 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       if (success) {
         setTrip(null);
 
-        toast({ type: 'success', message: 'journey removed' });
+        toast({ type: 'success', message: 'Journey removed' });
       } else {
-        toast({ type: 'error', message: 'journey not removed' });
+        toast({ type: 'error', message: 'Journey not removed' });
       }
 
       setLoading((prev) => ({ ...prev, trip: false }));
     } catch (e) {
-      toast({ type: 'error', message: 'journey not removed' });
+      toast({ type: 'error', message: 'Journey not removed' });
       setLoading((prev) => ({ ...prev, trip: false }));
     }
   };
@@ -331,7 +331,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
           // Show success toast
           toast({
             type: 'success',
-            message: 'entry saved',
+            message: 'Entry saved',
           });
           
           setLoading((loading) => ({ ...loading, post: false }));
@@ -396,7 +396,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
             // Show success toast
             toast({
               type: 'success',
-              message: 'entry saved',
+              message: 'Entry saved',
             });
             
             setLoading((loading) => ({ ...loading, post: false }));

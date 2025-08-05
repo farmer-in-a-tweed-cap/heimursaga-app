@@ -41,7 +41,7 @@ const schema = z
       .max(20, zodMessage.string.max('password', 20)),
   })
   .refine((data) => data.password === data.passwordConfirmation, {
-    message: 'passwords must match',
+    message: 'Passwords must match',
     path: ['passwordConfirmation'],
   });
 
@@ -79,13 +79,13 @@ export const ChangePasswordForm: React.FC<Props> = ({ token }) => {
         if (success) {
           redirect(ROUTER.LOGIN);
         } else {
-          toast({ type: 'error', message: 'token is invalid' });
+          toast({ type: 'error', message: 'Token is invalid' });
         }
 
         setLoading(false);
       } catch (e) {
         setLoading(false);
-        toast({ type: 'error', message: 'token is invalid' });
+        toast({ type: 'error', message: 'Token is invalid' });
       }
     },
   );

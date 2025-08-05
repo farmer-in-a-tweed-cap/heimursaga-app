@@ -100,7 +100,7 @@ export const UserNotificationCard: React.FC<Props> = ({
             className="z-20"
           >
             <Avatar className="w-[40px] h-[40px]">
-              <AvatarImage src={mentionUser?.picture} />
+              <AvatarImage src={mentionUser?.picture} className="object-cover w-full h-full" />
               <AvatarFallback>
                 {mentionUser?.username?.slice(0, 1)}
               </AvatarFallback>

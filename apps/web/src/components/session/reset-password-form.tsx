@@ -58,14 +58,14 @@ export const ResetPasswordForm = () => {
         const { success } = await apiClient.resetPassword({ email });
 
         if (success) {
-          toast({ type: 'success', message: 'we sent you a reset link.' });
+          toast({ type: 'success', message: 'We sent you a reset link.' });
         } else {
-          toast({ type: 'success', message: 'something went wrong.' });
+          toast({ type: 'error', message: 'Something went wrong.' });
         }
 
         setLoading(false);
       } catch (e) {
-        toast({ type: 'success', message: 'something went wrong.' });
+        toast({ type: 'error', message: 'Something went wrong.' });
         setLoading(false);
       }
     },

@@ -54,22 +54,17 @@ const schema = z.object({
     .max(50, zodMessage.string.max('email', 50)),
   bio: z
     .string()
-    .nonempty(zodMessage.required('bio'))
-    .min(0, zodMessage.string.min('bio', 0))
     .max(140, zodMessage.string.max('bio', 140)),
   location_lives: z
     .string()
-    .min(0, zodMessage.string.min('currently', 0))
     .max(50, zodMessage.string.max('currently', 50))
     .optional(),
   location_from: z
     .string()
-    .min(0, zodMessage.string.min('from', 0))
     .max(50, zodMessage.string.max('from', 50))
     .optional(),
   sponsors_fund: z
     .string()
-    .min(0, zodMessage.string.min('sponsors fund', 0))
     .max(500, zodMessage.string.max('sponsors fund', 500))
     .optional(),
   sponsors_fund_type: z
@@ -80,8 +75,9 @@ const schema = z.object({
     .optional(),
   portfolio: z
     .string()
-    .min(0, zodMessage.string.min('portfolio', 0))
+    .url('Please enter a valid URL (e.g., https://instagram.com/username)')
     .max(500, zodMessage.string.max('portfolio', 500))
+    .or(z.literal(''))
     .optional(),
 });
 
@@ -226,16 +222,16 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
         });
 
         if (success) {
-          toast({ type: 'success', message: 'settings updated' });
+          toast({ type: 'success', message: 'Settings updated' });
           router.refresh();
         } else {
-          toast({ type: 'error', message: 'settings not updated' });
+          toast({ type: 'error', message: 'Settings not updated' });
         }
 
         setLoading((loading) => ({ ...loading, settings: false }));
       } catch (e) {
         setLoading((loading) => ({ ...loading, settings: false }));
-        toast({ type: 'error', message: 'settings not updated' });
+        toast({ type: 'error', message: 'Settings not updated' });
       }
     },
   );
@@ -247,9 +243,13 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
       // save the changes
       await apiClient.updateUserPicture({ file });
 
+      toast({ type: 'success', message: 'Profile picture updated' });
+      router.refresh(); // Refresh to show updated picture
+
       setLoading((loading) => ({ ...loading, picture: false }));
     } catch (e) {
       setLoading((loading) => ({ ...loading, picture: false }));
+      toast({ type: 'error', message: 'Failed to update profile picture' });
     }
   };
 

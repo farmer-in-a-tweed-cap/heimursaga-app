@@ -253,7 +253,7 @@ const FormComponent: React.FC<Props> = ({
             modal.open<InfoModalProps>(MODALS.INFO, {
               props: {
                 title: 'error',
-                message: 'checkout failed',
+                message: 'Checkout failed',
               },
             });
             setLoading(false);
@@ -317,7 +317,7 @@ const FormComponent: React.FC<Props> = ({
           modal.open<InfoModalProps>(MODALS.INFO, {
             props: {
               title: 'error',
-              message: 'checkout failed',
+              message: 'Checkout failed',
             },
           });
           setLoading(false);
@@ -326,7 +326,7 @@ const FormComponent: React.FC<Props> = ({
         modal.open<InfoModalProps>(MODALS.INFO, {
           props: {
             title: 'error',
-            message: 'something went wrong',
+            message: 'Something went wrong',
           },
         });
         setLoading(false);

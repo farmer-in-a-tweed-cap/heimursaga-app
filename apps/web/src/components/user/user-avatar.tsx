@@ -30,7 +30,7 @@ export const UserAvatar: React.FC<Props> = ({
     <Skeleton className={styles} />
   ) : (
     <Avatar className={styles}>
-      <AvatarImage src={src} alt={fallback} />
+      <AvatarImage src={src} alt={fallback} className="object-cover w-full h-full" />
       <AvatarFallback>
         <UserIcon size={18} weight="bold" />
       </AvatarFallback>

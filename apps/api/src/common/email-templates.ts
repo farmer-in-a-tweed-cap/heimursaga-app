@@ -79,7 +79,7 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
                 <p class="welcome-text">Dear ${v.username || 'Explorer'},</p>
                 <p class="welcome-text">I'd like to personally thank you for giving Heimursaga a try. I know you have a lot of options when it comes to fundraising and journaling platforms, but I think you'll find this app is something special. Welcome to exploration with Heimursaga, this is just the beginning!</p>
                 <p class="welcome-text">Cheers,<br>explorer1</p>
-                <p>P.S. We're always available at admin@heimursaga.com if you have any questions, comments or suggestions.</p>
+                <p><small>P.S. We're always available at admin@heimursaga.com if you have any questions, comments or suggestions.</small></p>
               </div>
 
               <!-- Features -->

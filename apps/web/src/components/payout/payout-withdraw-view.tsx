@@ -76,7 +76,7 @@ export const PayoutWithdrawView = () => {
       });
 
       if (success) {
-        toast({ type: 'success', message: 'payout successfully created.' });
+        toast({ type: 'success', message: 'Payout successfully created.' });
         payoutQuery.refetch();
         balanceQuery.refetch();
       } else {

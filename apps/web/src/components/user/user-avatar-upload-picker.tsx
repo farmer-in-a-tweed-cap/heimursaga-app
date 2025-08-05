@@ -83,7 +83,11 @@ export const UserAvatarUploadPicker: React.FC<Props> = ({
             )}
           </div>
           <AvatarFallback>{fallback?.slice(0, 1)}</AvatarFallback>
-          <AvatarImage src={preview || ''} alt="" />
+          <AvatarImage 
+            src={preview || ''} 
+            alt="" 
+            className="object-cover w-full h-full"
+          />
         </Avatar>
         <div className="mt-4">
           <Button
