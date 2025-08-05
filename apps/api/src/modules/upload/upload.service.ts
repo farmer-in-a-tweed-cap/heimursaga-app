@@ -143,26 +143,34 @@ export class UploadService {
           break;
       }
 
-      const buffers = {
-        original: await sharp(file.buffer)
-          .rotate() // Auto-rotate based on EXIF orientation data
-          .resize(size.original.width, size.original.height, {
-            fit: 'cover',
-            position: 'center',
-          })
-          .webp({ quality: 90 }) // High quality for original
-          .toBuffer(),
-        thumbnail: thumbnail
-          ? await sharp(file.buffer)
-              .rotate() // Auto-rotate based on EXIF orientation data
-              .resize(size.thumbnail.width, size.thumbnail.height, {
-                fit: 'cover',
-                position: 'center',
-              })
-              .webp({ quality: 75 })
-              .toBuffer()
-          : null,
-      };
+      let buffers;
+      try {
+        buffers = {
+          original: await sharp(file.buffer)
+            .rotate() // Auto-rotate based on EXIF orientation data
+            .resize(size.original.width, size.original.height, {
+              fit: 'cover',
+              position: 'center',
+            })
+            .webp({ quality: 90 }) // High quality for original
+            .toBuffer(),
+          thumbnail: thumbnail
+            ? await sharp(file.buffer)
+                .rotate() // Auto-rotate based on EXIF orientation data
+                .resize(size.thumbnail.width, size.thumbnail.height, {
+                  fit: 'cover',
+                  position: 'center',
+                })
+                .webp({ quality: 75 })
+                .toBuffer()
+            : null,
+        };
+      } catch (sharpError) {
+        this.logger.error('Sharp processing error:', sharpError);
+        throw new ServiceBadRequestException(
+          'Unsupported image format or corrupted file. Please use JPEG, PNG, or HEIC files.'
+        );
+      }
 
       const uploads = [
         {

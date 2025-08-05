@@ -559,7 +559,10 @@ export const FormComponent: React.FC<Props> = ({
               </div>
               <div className="mt-4">
                 <p className="text-xs text-gray-600 font-normal">
-                  {LOCALES.APP.CHECKOUT.PAGE.TERMS}
+                  {billingPeriod === SponsorshipBillingPeriod.YEARLY 
+                    ? `By clicking Subscribe now, you agree to Terms of Use and Privacy Policy. This subscription automatically renews yearly, and you'll be notified in advance if the yearly amount increases. Cancel anytime in your account settings.`
+                    : LOCALES.APP.CHECKOUT.PAGE.TERMS
+                  }
                 </p>
               </div>
               <div className="mt-8 flex flex-col gap-3">

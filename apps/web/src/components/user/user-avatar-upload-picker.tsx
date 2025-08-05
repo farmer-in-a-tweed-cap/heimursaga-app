@@ -8,6 +8,7 @@ import {
   Spinner,
 } from '@repo/ui/components';
 import { cn } from '@repo/ui/lib/utils';
+import { useToast } from '@repo/ui/hooks';
 import { useRef, useState } from 'react';
 
 type Props = {
@@ -17,7 +18,7 @@ type Props = {
   onChange?: (file: File) => void;
 };
 
-const FILE_ACCEPT = 'image/jpeg,image/png';
+const FILE_ACCEPT = 'image/jpeg,image/png,image/heic,image/heif';
 
 const MULTIPLE = false;
 

@@ -212,7 +212,7 @@ export class SessionUserController {
     FileInterceptor('file', {
       limits: {
         files: 1,
-        fileSize: 2 * 1024 * 1024,
+        fileSize: 10 * 1024 * 1024, // 10MB to support HEIC files
       },
     }),
   )

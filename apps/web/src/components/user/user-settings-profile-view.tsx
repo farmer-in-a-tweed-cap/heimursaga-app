@@ -241,15 +241,20 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
       setLoading((loading) => ({ ...loading, picture: true }));
 
       // save the changes
-      await apiClient.updateUserPicture({ file });
+      const response = await apiClient.updateUserPicture({ file });
 
-      toast({ type: 'success', message: 'Profile picture updated' });
-      router.refresh(); // Refresh to show updated picture
+      if (response.success) {
+        toast({ type: 'success', message: 'Profile picture updated' });
+        router.refresh(); // Refresh to show updated picture
+      } else {
+        toast({ type: 'error', message: response.message || 'Failed to update profile picture' });
+      }
 
       setLoading((loading) => ({ ...loading, picture: false }));
-    } catch (e) {
+    } catch (e: any) {
       setLoading((loading) => ({ ...loading, picture: false }));
-      toast({ type: 'error', message: 'Failed to update profile picture' });
+      const errorMessage = e?.response?.data?.message || e?.message || 'Failed to update profile picture';
+      toast({ type: 'error', message: errorMessage });
     }
   };
 
