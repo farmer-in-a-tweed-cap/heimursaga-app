@@ -253,84 +253,85 @@ export const LandingPage: React.FC = () => {
               <div className="text-center p-6">
                 <h3 className="text-lg font-medium text-black mb-3">Digital Nomads & Remote Workers</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Document your work-from-anywhere journey and build a community of location-independent followers.
+                  Document your work-from-anywhere journey, sharing coworking spaces, local insights, and productivity tips with location-independent followers.
                 </p>
               </div>
               
               <div className="text-center p-6">
                 <h3 className="text-lg font-medium text-black mb-3">Adventure & Outdoor Enthusiasts</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Share hiking trails, climbing routes, and extreme sports adventures with gear reviews and safety tips.
+                  Share hiking trails, climbing routes, and extreme sports adventures with detailed gear reviews, safety tips, and expedition stories.
                 </p>
               </div>
               
               <div className="text-center p-6">
                 <h3 className="text-lg font-medium text-black mb-3">Cultural Immersion Travelers</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Connect authentic local experiences with audiences seeking genuine cultural insights.
+                  Share authentic local experiences and deep cultural insights with audiences seeking genuine connections beyond typical tourist content.
                 </p>
               </div>
               
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Travel Content Creators</h3>
+                <h3 className="text-lg font-medium text-black mb-3">Travel Content Creators & Photographers</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Monetize your storytelling through subscriber sponsorships while maintaining creative freedom.
+                  Complement your social media presence and digital portfolio with deeper storytelling, behind-the-scenes insights, and direct support from dedicated followers.
                 </p>
               </div>
               
               <div className="text-center p-6">
                 <h3 className="text-lg font-medium text-black mb-3">Van Life & RV Communities</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Share routes, camping spots, and lifestyle tips with fellow road trip enthusiasts.
+                  Share your journey path, camping and parking spots, and lifestyle insights with fellow road trip enthusiasts and supporters.
                 </p>
               </div>
               
               <div className="text-center p-6">
                 <h3 className="text-lg font-medium text-black mb-3">Study Abroad & Gap Year Students</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Document personal growth and cultural learning experiences during extended stays.
+                  Document personal growth and cultural learning experiences during extended stays, connecting with family and friends back home.
                 </p>
               </div>
               
               <div className="text-center p-6">
                 <h3 className="text-lg font-medium text-black mb-3">Researchers & Academics</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Share field research, archaeological discoveries, and scientific expeditions with educational audiences.
+                  Share field research, archaeological discoveries, and scientific expeditions with educational audiences, supporters, and potential research collaborators.
                 </p>
               </div>
               
-              <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Travel Photographers</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
-                  Share stunning visual stories and behind-the-scenes insights from unique locations worldwide.
-                </p>
-              </div>
               
               <div className="text-center p-6">
                 <h3 className="text-lg font-medium text-black mb-3">Food & Culinary Explorers</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Chronicle culinary journeys and partner with local restaurants and food brands.
+                  Chronicle culinary journeys and food discoveries, building connections with local restaurants, food brands, and fellow food enthusiasts.
                 </p>
               </div>
               
               <div className="text-center p-6">
                 <h3 className="text-lg font-medium text-black mb-3">Solo Travel Enthusiasts</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Share personal growth stories and connect with other independent travelers.
+                  Share personal growth stories and solo adventures while connecting with other independent travelers and building a supportive community.
                 </p>
               </div>
               
               <div className="text-center p-6">
                 <h3 className="text-lg font-medium text-black mb-3">Travel Professionals & Guides</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Showcase expertise and build audiences for consulting, guiding, or tourism services.
+                  Showcase destination expertise and professional insights to complement your business website and build stronger client relationships.
                 </p>
               </div>
               
               <div className="text-center p-6">
                 <h3 className="text-lg font-medium text-black mb-3">Expedition Leaders</h3>
                 <p className="text-black font-light text-sm leading-relaxed">
-                  Lead and document challenging expeditions, mountaineering, and remote wilderness adventures.
+                  Document expeditions, mountaineering, and remote wilderness adventures while building a following that supports future exploration.
+                </p>
+              </div>
+              
+              <div className="text-center p-6">
+                <h3 className="text-lg font-medium text-black mb-3">Pilots & Sailors</h3>
+                <p className="text-black font-light text-sm leading-relaxed">
+                  Share aviation and maritime journeys, documenting unique perspectives from the skies and seas with fellow enthusiasts and supporters.
                 </p>
               </div>
             </div>
@@ -423,7 +424,7 @@ export const LandingPage: React.FC = () => {
         <div className="py-32 relative z-10" style={{ backgroundColor: 'white' }}>
           <div className="container mx-auto px-4">
             <div className="text-center mb-20">
-              <h2 className="text-5xl lg:text-6xl font-light text-black mb-6" style={{}}>
+              <h2 className="text-4xl lg:text-5xl font-light text-black mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
                 Choose Your Adventure
               </h2>
               <p className="text-xl text-black font-light max-w-2xl mx-auto" style={{}}>
