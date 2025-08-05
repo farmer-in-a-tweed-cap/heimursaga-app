@@ -18,7 +18,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@repo/ui/components';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowsDownUp } from '@repo/ui/icons';
 import { useToast } from '@repo/ui/hooks';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -148,7 +148,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
           className="h-auto p-0 font-medium hover:bg-transparent"
         >
           {context === 'user' ? 'Explorer' : 'User'}
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          <ArrowsDownUp className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => {
@@ -173,7 +173,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
           className="h-auto p-0 font-medium hover:bg-transparent"
         >
           Amount
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          <ArrowsDownUp className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => <span>${row.getValue('amount')}</span>,
@@ -187,7 +187,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
           className="h-auto p-0 font-medium hover:bg-transparent"
         >
           Status
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          <ArrowsDownUp className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => {
@@ -217,7 +217,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
           className="h-auto p-0 font-medium hover:bg-transparent"
         >
           Type
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          <ArrowsDownUp className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => {
@@ -238,7 +238,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
           className="h-auto p-0 font-medium hover:bg-transparent"
         >
           Tier
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          <ArrowsDownUp className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => {
@@ -256,7 +256,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
           className="h-auto p-0 font-medium hover:bg-transparent"
         >
           Date
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          <ArrowsDownUp className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) =>
@@ -271,7 +271,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
           className="h-auto p-0 font-medium hover:bg-transparent"
         >
           Message
-          <ArrowUpDown className="ml-2 h-4 w-4" />
+          <ArrowsDownUp className="ml-2 h-4 w-4" />
         </Button>
       ),
       cell: ({ row }) => {
