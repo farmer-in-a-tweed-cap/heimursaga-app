@@ -303,7 +303,22 @@ export class UserService {
         lat: true,
         lon: true,
         waypoint: {
-          select: { id: true, lat: true, lon: true },
+          select: { 
+            id: true, 
+            lat: true, 
+            lon: true,
+            trips: {
+              select: {
+                trip: {
+                  select: {
+                    public_id: true,
+                    title: true,
+                  },
+                },
+              },
+              take: 1,
+            },
+          },
         },
         date: true,
         place: true,
@@ -369,9 +384,11 @@ export class UserService {
           ({
             public_id: id,
             title,
-            created_at: date,
+            date,
+            created_at,
             content,
             sponsored,
+            place,
             lat,
             lon,
             waypoint,
@@ -386,9 +403,20 @@ export class UserService {
             date,
             content,
             sponsored,
+            place,
             lat,
             lon,
-            waypoint,
+            waypoint: waypoint ? {
+              id: waypoint.id,
+              lat: waypoint.lat,
+              lon: waypoint.lon,
+            } : undefined,
+            trip: waypoint?.trips?.[0]?.trip
+              ? {
+                  id: waypoint.trips[0].trip.public_id,
+                  title: waypoint.trips[0].trip.title,
+                }
+              : undefined,
             author: author.profile
               ? {
                   name: author.profile?.name,
@@ -868,7 +896,22 @@ export class SessionUserService {
         lat: true,
         lon: true,
         waypoint: {
-          select: { id: true, lat: true, lon: true },
+          select: { 
+            id: true, 
+            lat: true, 
+            lon: true,
+            trips: {
+              select: {
+                trip: {
+                  select: {
+                    public_id: true,
+                    title: true,
+                  },
+                },
+              },
+              take: 1,
+            },
+          },
         },
         date: true,
         place: true,
@@ -964,10 +1007,12 @@ export class SessionUserService {
           ({
             public_id: id,
             title,
-            created_at: date,
+            date,
+            created_at,
             content,
             public: isPublic,
             sponsored,
+            place,
             lat,
             lon,
             author,
@@ -983,9 +1028,20 @@ export class SessionUserService {
             content,
             public: isPublic,
             sponsored,
+            place,
             lat,
             lon,
-            waypoint,
+            waypoint: waypoint ? {
+              id: waypoint.id,
+              lat: waypoint.lat,
+              lon: waypoint.lon,
+            } : undefined,
+            trip: waypoint?.trips?.[0]?.trip
+              ? {
+                  id: waypoint.trips[0].trip.public_id,
+                  title: waypoint.trips[0].trip.title,
+                }
+              : undefined,
             author: {
               name: author.profile?.name,
               username: author?.username,

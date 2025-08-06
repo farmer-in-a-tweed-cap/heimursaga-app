@@ -35,17 +35,25 @@ export const UserBookmarks: React.FC<Props> = () => {
     <LoadingSpinner />
   ) : bookmarks.length > 0 ? (
     <div className="w-full flex flex-col gap-3">
-      {bookmarks.map(({ author, ...post }, key) => (
+      {bookmarks.map(({ author, waypoint, ...post }, key) => (
         <PostCard
           key={key}
           {...post}
+          date={waypoint?.date || post.date}
           sponsored={post.sponsored}
           author={{
             name: author?.username,
             username: author?.username,
             picture: author?.picture,
+            creator: author?.creator,
           }}
-          waypoint={post?.waypoint}
+          waypoint={waypoint}
+          actions={{
+            like: false,
+            bookmark: false,
+            edit: false,
+            share: true,
+          }}
           onClick={() => handlePostClick(post.id)}
         />
       ))}

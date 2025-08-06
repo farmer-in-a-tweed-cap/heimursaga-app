@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@repo/ui/hooks';
 
 import { apiClient, API_QUERY_KEYS } from '@/lib/api';
 
@@ -81,6 +82,7 @@ export const TripEditForm: React.FC<Props> = ({
 }) => {
   const modal = useModal();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const [loading, setLoading] = useState<{ trip: boolean; waypoint: boolean }>({
     trip: false,
     waypoint: false,
@@ -146,6 +148,7 @@ export const TripEditForm: React.FC<Props> = ({
         if (success) {
           setWaypointCreating(false);
           setLoading((state) => ({ ...state, waypoint: false }));
+          toast({ type: 'success', message: 'Waypoint added' });
 
           if (waypointId) {
             const waypoint = {
@@ -162,9 +165,11 @@ export const TripEditForm: React.FC<Props> = ({
           }
         } else {
           setLoading((state) => ({ ...state, waypoint: false }));
+          toast({ type: 'error', message: 'Failed to add waypoint' });
         }
       } catch (e) {
         setLoading((state) => ({ ...state, waypoint: false }));
+        toast({ type: 'error', message: 'Failed to add waypoint' });
       }
     };
 
@@ -204,47 +209,49 @@ export const TripEditForm: React.FC<Props> = ({
         });
 
         if (success) {
+          toast({ type: 'success', message: 'Waypoint removed' });
           if (onWaypointDelete) {
             onWaypointDelete(waypointId);
           }
+        } else {
+          toast({ type: 'error', message: 'Failed to remove waypoint' });
         }
       } catch (e) {
-        //
+        toast({ type: 'error', message: 'Failed to remove waypoint' });
       }
     }
   };
 
-  const handleSubmit = form.handleSubmit(
-    async (values: z.infer<typeof schema>) => {
-      try {
-        const { title, public: isPublic } = values;
-        const tripId = trip?.id;
+  const handleTripUpdate = async (values: { title?: string; public?: boolean }) => {
+    try {
+      const tripId = trip?.id;
+      if (!tripId) return;
 
-        if (!tripId) return;
+      setLoading((state) => ({ ...state, trip: true }));
+      onLoading(true);
 
-        setLoading((state) => ({ ...state, trip: true }));
-        onLoading(true);
+      // update the trip
+      const { success } = await apiClient.updateTrip({
+        query: { tripId },
+        payload: values,
+      });
 
-        // update the trip
-        const { success } = await apiClient.updateTrip({
-          query: { tripId },
-          payload: { title, public: isPublic },
-        });
-
-        if (success) {
-          setLoading((state) => ({ ...state, trip: false }));
-          onLoading(false);
-          onSubmit({ title, public: isPublic });
-        } else {
-          setLoading((state) => ({ ...state, trip: false }));
-          onLoading(false);
-        }
-      } catch (e) {
+      if (success) {
         setLoading((state) => ({ ...state, trip: false }));
         onLoading(false);
+        onSubmit(values);
+        toast({ type: 'success', message: 'Journey updated' });
+      } else {
+        setLoading((state) => ({ ...state, trip: false }));
+        onLoading(false);
+        toast({ type: 'error', message: 'Failed to update journey' });
       }
-    },
-  );
+    } catch (e) {
+      setLoading((state) => ({ ...state, trip: false }));
+      onLoading(false);
+      toast({ type: 'error', message: 'Failed to update journey' });
+    }
+  };
 
   const handleDelete = async () => {
     // First show confirmation
@@ -285,16 +292,17 @@ export const TripEditForm: React.FC<Props> = ({
 
       if (response.success) {
         console.log('Delete successful, invalidating cache and calling onDelete');
+        toast({ type: 'success', message: 'Journey deleted' });
         // Invalidate the trips cache so the list refreshes
         await queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.TRIPS] });
         onDelete();
       } else {
         console.error('Delete failed:', response);
-        // Could show an error message here
+        toast({ type: 'error', message: 'Failed to delete journey' });
       }
     } catch (e) {
       console.error('Failed to delete journey:', e);
-      // Could show an error message here
+      toast({ type: 'error', message: 'Failed to delete journey' });
     }
   };
 
@@ -310,7 +318,7 @@ export const TripEditForm: React.FC<Props> = ({
             </ul>
           </div>
           <Form {...form}>
-            <form id={TRIP_EDIT_FORM_ID} onSubmit={handleSubmit}>
+            <div className="space-y-6">
               <FormField
                 control={form.control}
                 name="title"
@@ -318,7 +326,17 @@ export const TripEditForm: React.FC<Props> = ({
                   <FormItem>
                     <FormLabel>Title</FormLabel>
                     <FormControl>
-                      <Input disabled={loading.trip} required {...field} />
+                      <Input 
+                        disabled={loading.trip} 
+                        required 
+                        {...field}
+                        onBlur={(e) => {
+                          field.onBlur(e);
+                          if (e.target.value !== trip?.title) {
+                            handleTripUpdate({ title: e.target.value });
+                          }
+                        }}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -328,12 +346,15 @@ export const TripEditForm: React.FC<Props> = ({
                 control={form.control}
                 name="public"
                 render={({ field }) => (
-                  <FormItem className="mt-6">
+                  <FormItem className="flex items-center justify-between">
                     <FormLabel>Public</FormLabel>
                     <FormControl>
                       <Switch
                         checked={field.value}
-                        onCheckedChange={field.onChange}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          handleTripUpdate({ public: checked });
+                        }}
                         disabled={loading.trip}
                       />
                     </FormControl>
@@ -341,20 +362,7 @@ export const TripEditForm: React.FC<Props> = ({
                   </FormItem>
                 )}
               />
-              {/* <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Input disabled={loading} required {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                /> */}
-            </form>
+            </div>
           </Form>
         </Section>
         <Section title="Waypoints">
@@ -391,6 +399,7 @@ export const TripEditForm: React.FC<Props> = ({
                         
                         setWaypointEditing(false);
                         setWaypointEditingId(null);
+                        toast({ type: 'success', message: 'Waypoint updated' });
                       }}
                     />
                   </div>

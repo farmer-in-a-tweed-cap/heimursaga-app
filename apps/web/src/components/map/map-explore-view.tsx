@@ -539,6 +539,9 @@ export const MapExploreView: React.FC<Props> = () => {
       queryKey: [API_QUERY_KEYS.MAP.QUERY] 
     });
 
+    // Close entry drawer if it's open
+    map.handleDrawerClose();
+
     setParams({
       context: MAP_CONTEXT_PARAMS.JOURNEY,
       filter: MAP_FILTER_PARAMS.POST,

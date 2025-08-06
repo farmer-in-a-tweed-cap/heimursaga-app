@@ -238,16 +238,16 @@ export const MapTripCard: React.FC<{
   };
 
   return (
-    <div className="relative box-border p-4">
+    <div className="relative box-border p-4 w-full">
       {/* Back button positioned absolutely */}
       {(backUrl || onBack) && (
-        <div className="absolute left-4 top-4">
+        <div className="absolute left-4 top-4 z-10">
           <BackButton href={backUrl} onClick={onBack} />
         </div>
       )}
       
       {/* Centered content with conditional margin based on back button presence and centering preference */}
-      <div className={`flex flex-col items-center justify-center text-center ${(backUrl || onBack) && !centered ? 'ml-12 mr-4' : ''}`}>
+      <div className={`flex flex-col items-center justify-center text-center w-full ${(backUrl || onBack) && !centered ? 'ml-12 mr-4' : ''} ${centered && (backUrl || onBack) ? 'pr-12' : ''}`}>
         {loading ? (
           <div className="flex flex-col items-center gap-2">
             <Skeleton className="w-10 h-10 rounded-full" />

@@ -55,10 +55,11 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
     <LoadingSpinner />
   ) : results >= 1 ? (
     <div className="w-full flex flex-col gap-3">
-      {posts.map(({ author, ...post }, key) => (
+      {posts.map(({ author, waypoint, ...post }, key) => (
         <PostCard
           key={key}
           {...post}
+          date={waypoint?.date || post.date}
           href={post.id ? ROUTER.ENTRIES.DETAIL(post.id) : '#'}
           sponsored={post.sponsored}
           author={{
@@ -74,7 +75,7 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
                 }
               : undefined
           }
-          waypoint={post?.waypoint}
+          waypoint={waypoint}
           actions={{
             like: !me,
             bookmark: !me,

@@ -216,41 +216,36 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
 
   const sidebarContent = (
     <>
-      {trip && (
-        <MapTripCard
-          title={trip.title}
-          startDate={trip.startDate}
-          endDate={trip.endDate}
-          backUrl={backUrl}
-        />
-      )}
-      <div className="w-full h-full flex flex-col overflow-y-scroll">
-        <div className="w-full h-auto px-6 py-4">
-          <TripEditForm
-            trip={trip}
-            waypoint={waypoint}
-            waypoints={waypoints}
-            map={{ center: map.center }}
-            onLoading={(loading: boolean) => setLoading(loading)}
-            onWaypointCreateSubmit={handleWaypointCreateSubmit}
-            onWaypointCreateStart={handleWaypointCreateStart}
-            onWaypointCreateCancel={handleWaypointCreateCancel}
-            onWaypointEditStart={handleWaypointEditStart}
-            onWaypointEditCancel={handleWaypointEditCancel}
-            onWaypointEditSubmit={handleWaypointEditSubmit}
-            onWaypointDelete={handleWaypointDelete}
-            onDelete={handleDelete}
+      <div className="w-full">
+        {trip && (
+          <MapTripCard
+            title={trip.title}
+            startDate={trip.startDate}
+            endDate={trip.endDate}
+            backUrl={backUrl}
+            centered={true}
           />
-        </div>
-        <div className="sticky bottom-0 left-0 right-0 flex flex-col bg-background px-4 py-4 box-border">
-          <Button
-            size="lg"
-            type="submit"
-            form={TRIP_EDIT_FORM_ID}
-            loading={loading}
-          >
-            Save changes
-          </Button>
+        )}
+      </div>
+      <div className="w-full flex-1 flex flex-col relative min-h-0">
+        <div className="flex-1 overflow-y-auto scrollbar-hide min-h-0">
+          <div className="w-full px-6 py-4 pb-24">
+            <TripEditForm
+              trip={trip}
+              waypoint={waypoint}
+              waypoints={waypoints}
+              map={{ center: map.center }}
+              onLoading={(loading: boolean) => setLoading(loading)}
+              onWaypointCreateSubmit={handleWaypointCreateSubmit}
+              onWaypointCreateStart={handleWaypointCreateStart}
+              onWaypointCreateCancel={handleWaypointCreateCancel}
+              onWaypointEditStart={handleWaypointEditStart}
+              onWaypointEditCancel={handleWaypointEditCancel}
+              onWaypointEditSubmit={handleWaypointEditSubmit}
+              onWaypointDelete={handleWaypointDelete}
+              onDelete={handleDelete}
+            />
+          </div>
         </div>
       </div>
     </>

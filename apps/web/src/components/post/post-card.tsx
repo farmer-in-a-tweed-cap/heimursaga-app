@@ -297,8 +297,8 @@ export const PostCard: React.FC<PostCardProps> = ({
               )}
             </div>
           )}
-          {waypoint && (
-            <div className={extended ? "py-8" : "py-4"}>
+          {waypoint && extended && (
+            <div className="py-8">
               <MapStaticPreview
                 href={
                   id

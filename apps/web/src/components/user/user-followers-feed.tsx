@@ -28,7 +28,9 @@ export const UserFollowersFeed: React.FC<Props> = ({ username }) => {
   return loading ? (
     <LoadingSpinner />
   ) : results < 1 ? (
-    <>no followers</>
+    <div className="text-center text-gray-500 py-8">
+      <p>No followers</p>
+    </div>
   ) : (
     <div className="w-full flex flex-col gap-2">
       {followers.map(({ username, creator, ...follower }, key) => (

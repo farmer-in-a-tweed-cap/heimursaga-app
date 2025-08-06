@@ -131,10 +131,7 @@ export const UserJourneys: React.FC<Props> = ({ username, isOwnProfile = false }
 
   return (
     <div className="text-center text-gray-500 py-8">
-      <p>No journeys found for {username}</p>
-      <p className="text-sm mt-2">
-        Debug: Results={results}, Trips length={trips.length}
-      </p>
+      <p>No journeys found</p>
     </div>
   );
 };
