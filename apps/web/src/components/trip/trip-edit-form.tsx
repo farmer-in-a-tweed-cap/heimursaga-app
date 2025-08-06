@@ -230,16 +230,25 @@ export const TripEditForm: React.FC<Props> = ({
       setLoading((state) => ({ ...state, trip: true }));
       onLoading(true);
 
+      // Build payload with required title field
+      const payload = {
+        title: values.title ?? trip?.title ?? '',
+        ...(values.public !== undefined && { public: values.public }),
+      };
+
       // update the trip
       const { success } = await apiClient.updateTrip({
         query: { tripId },
-        payload: values,
+        payload,
       });
 
       if (success) {
         setLoading((state) => ({ ...state, trip: false }));
         onLoading(false);
-        onSubmit(values);
+        onSubmit({
+          title: values.title ?? trip?.title ?? '',
+          public: values.public ?? trip?.public ?? true,
+        });
         toast({ type: 'success', message: 'Journey updated' });
       } else {
         setLoading((state) => ({ ...state, trip: false }));
@@ -331,7 +340,7 @@ export const TripEditForm: React.FC<Props> = ({
                         required 
                         {...field}
                         onBlur={(e) => {
-                          field.onBlur(e);
+                          field.onBlur();
                           if (e.target.value !== trip?.title) {
                             handleTripUpdate({ title: e.target.value });
                           }

@@ -39,7 +39,7 @@ export const UserBookmarks: React.FC<Props> = () => {
         <PostCard
           key={key}
           {...post}
-          date={waypoint?.date || post.date}
+          date={post.date}
           sponsored={post.sponsored}
           author={{
             name: author?.username,

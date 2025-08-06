@@ -59,7 +59,7 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
         <PostCard
           key={key}
           {...post}
-          date={waypoint?.date || post.date}
+          date={post.date}
           href={post.id ? ROUTER.ENTRIES.DETAIL(post.id) : '#'}
           sponsored={post.sponsored}
           author={{
