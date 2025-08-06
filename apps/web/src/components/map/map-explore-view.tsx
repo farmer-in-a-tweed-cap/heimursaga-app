@@ -954,7 +954,7 @@ export const MapExploreView: React.FC<Props> = () => {
                               : {},
                           })),
                           config: {
-                            cluster: showClusters,
+                            cluster: false, // Never cluster in journey context to show all waypoints
                           },
                         },
                         {

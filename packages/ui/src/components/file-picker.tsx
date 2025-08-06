@@ -129,7 +129,7 @@ const FilePickerPreview: React.FC<{
   onRemove?: (e: React.MouseEvent, id: number) => void;
 }> = ({ id, loading = false, src, onRemove }) => {
   return (
-    <div className="relative aspect-square overflow-hidden rounded-xl flex items-center justify-center border-2 border-accent border-solid">
+    <div className="relative aspect-square overflow-hidden rounded-xl flex items-center justify-center border-2 border-accent border-solid bg-gray-50">
       {loading && (
         <div className="z-30 absolute inset-0 bg-accent opacity-50">
           <LoadingSpinner />
@@ -137,9 +137,7 @@ const FilePickerPreview: React.FC<{
       )}
       <img
         src={src}
-        className="z-10 w-auto aspect-square"
-        width={400}
-        height={300}
+        className="z-10 w-full h-full object-cover"
         alt=""
       />
       <div className="z-20 absolute inset-0 opacity-0 hover:opacity-100 transition-all">

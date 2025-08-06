@@ -42,11 +42,13 @@ export const DatePicker: React.FC<Props> = ({
             />
           </div>
           <Input
-            value={date ? format(date) : 'dd/mm/yyyy'}
+            value={date ? format(date) : ''}
+            placeholder="Select date"
             className={cn(
               disabled ? 'cursor-not-allowed' : 'cursor-pointer',
               'pl-9',
             )}
+            readOnly
             disabled={disabled}
             {...inputProps}
           />
