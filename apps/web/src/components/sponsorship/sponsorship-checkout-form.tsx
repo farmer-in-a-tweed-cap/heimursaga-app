@@ -506,7 +506,6 @@ export const FormComponent: React.FC<Props> = ({
                           className="min-h-[120px]"
                           disabled={loading.form}
                           maxLength={MESSAGE_LENGTH}
-                          required
                           {...field}
                         />
                       </FormControl>
