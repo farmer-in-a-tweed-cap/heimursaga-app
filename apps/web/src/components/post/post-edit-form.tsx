@@ -254,11 +254,11 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       }
 
       try {
-        const tripId = trip?.id || null;
+        const tripId = trip?.id;
 
         const uploads: string[] = uploader.files
           .map(({ uploadId }) => uploadId)
-          .filter((el) => typeof el === 'string' && el.length > 0);
+          .filter((el): el is string => typeof el === 'string' && el.length > 0);
 
         setLoading({ post: true });
 
@@ -316,7 +316,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     form.handleSubmit(
       async (values: z.infer<typeof schema>) => {
         try {
-          const tripId = trip?.id || null;
+          const tripId = trip?.id;
           const { marker } = map;
 
           // Check map marker for public entries too
@@ -327,7 +327,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
 
           const uploads: string[] = uploader.files
             .map(({ uploadId }) => uploadId)
-            .filter((el) => typeof el === 'string' && el.length > 0);
+            .filter((el): el is string => typeof el === 'string' && el.length > 0);
 
           setLoading({ post: true });
 

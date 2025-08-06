@@ -211,7 +211,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
 
         const uploads: string[] = uploader.files
           .map(({ uploadId }) => uploadId)
-          .filter((el) => typeof el === 'string' && el.length > 0);
+          .filter((el): el is string => typeof el === 'string' && el.length > 0);
 
         setLoading(true);
 
@@ -264,7 +264,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
 
           const uploads: string[] = uploader.files
             .map(({ uploadId }) => uploadId)
-            .filter((el) => typeof el === 'string');
+            .filter((el): el is string => typeof el === 'string' && el.length > 0);
 
           setLoading(true);
 
