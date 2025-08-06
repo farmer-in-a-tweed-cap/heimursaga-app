@@ -227,7 +227,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
                   href={ROUTER.SIGNUP}
                   className="text-sm font-medium text-gray-600 hover:text-gray-900"
                 >
-                  create account
+                  Sign up
                 </Link>
                 <Link href={ROUTER.LOGIN}>
                   <Button 

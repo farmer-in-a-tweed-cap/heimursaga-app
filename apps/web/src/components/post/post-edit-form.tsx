@@ -203,11 +203,25 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
   const handleValidationError = () => {
     const errors = form.formState.errors;
     if (errors.title) {
-      toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.TITLE_REQUIRED });
+      if (errors.title.type === 'too_big') {
+        toast({ type: 'error', message: 'Title must not exceed 50 characters' });
+      } else {
+        toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.TITLE_REQUIRED });
+      }
     } else if (errors.content) {
-      toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.CONTENT_REQUIRED });
+      if (errors.content.message?.includes('100 words')) {
+        toast({ type: 'error', message: 'Content must be at least 100 words' });
+      } else if (errors.content.message?.includes('1000 words')) {
+        toast({ type: 'error', message: 'Content must not exceed 1000 words' });
+      } else {
+        toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.CONTENT_REQUIRED });
+      }
     } else if (errors.place) {
-      toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.LOCATION_REQUIRED });
+      if (errors.place.type === 'too_big') {
+        toast({ type: 'error', message: 'Place must not exceed 50 characters' });
+      } else {
+        toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.LOCATION_REQUIRED });
+      }
     } else {
       toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.FIELDS_REQUIRED });
     }

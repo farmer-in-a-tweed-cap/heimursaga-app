@@ -39,7 +39,7 @@ export default async function Page() {
               className="flex items-center justify-center py-4 px-6 text-lg font-medium text-gray-900 bg-white border-2 rounded-lg hover:bg-gray-50 transition-colors"
               style={{ borderColor: '#AC6D46' }}
             >
-              Create account
+              Sign up
             </Link>
           </div>
 

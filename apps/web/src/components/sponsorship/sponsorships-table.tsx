@@ -147,7 +147,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           className="h-auto p-0 font-medium hover:bg-transparent"
         >
-          {context === 'user' ? 'Explorer' : 'User'}
+          {context === 'user' ? 'Explorer' : 'Explorer'}
           <ArrowsDownUp className="ml-2 h-4 w-4" />
         </Button>
       ),
