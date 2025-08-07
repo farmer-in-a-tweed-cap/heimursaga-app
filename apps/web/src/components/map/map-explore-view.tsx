@@ -320,9 +320,9 @@ export const MapExploreView: React.FC<Props> = () => {
       map.handleDrawerOpen();
       setParams({ entry_id: postId });
     } else {
-      // On desktop, use the two-click system
-      if (focusedWaypointId === postId) {
-        // Second click - open the full entry card
+      // On desktop, bypass two-click system if drawer is already open
+      if (map.drawer || focusedWaypointId === postId) {
+        // Drawer is open OR second click - open the full entry card
         map.handleDrawerOpen();
         setParams({ entry_id: postId });
       } else {
