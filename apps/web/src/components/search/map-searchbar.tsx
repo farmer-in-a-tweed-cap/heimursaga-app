@@ -85,7 +85,8 @@ export const MapSearchbar: React.FC<Props> = ({
         apiClient.search({
           query: {},
           payload: { search },
-        }).then(({ data }) => {
+        }).then((response) => {
+          const data = response.data as any;
           if (!data?.data) return [];
           
           const { users = [], entries = [] } = data.data;

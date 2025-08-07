@@ -6,6 +6,7 @@ import Head from 'next/head';
 import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import Script from 'next/script';
 import { Lato } from 'next/font/google';
 
 const lato = Lato({
@@ -111,18 +112,6 @@ export default async function RootLayout({ children }: Props) {
             defer
           />
         )}
-        {/* Google tag (gtag.js) */}
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-RCFRCB2E0L" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-RCFRCB2E0L');
-            `,
-          }}
-        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -156,6 +145,20 @@ export default async function RootLayout({ children }: Props) {
         />
       </head>
       <body className={lato.className}>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-RCFRCB2E0L"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-RCFRCB2E0L');
+          `}
+        </Script>
+        
         <AppProvider config={config}>
           {children}
           <CookieConsent />
