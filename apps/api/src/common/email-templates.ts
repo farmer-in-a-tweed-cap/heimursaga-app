@@ -339,9 +339,11 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
 
               <!-- Entry Content -->
               <div class="entry-content">
-                ${v.postContent.split('\n').map(paragraph => 
-                  paragraph.trim() ? `<p>${paragraph.trim()}</p>` : ''
-                ).join('')}
+                ${v.postContent
+                  .split('\\n')
+                  .filter(line => line.trim() !== '')
+                  .map(line => `<p>${line.trim()}</p>`)
+                  .join('')}
               </div>
 
               <!-- Entry Images -->

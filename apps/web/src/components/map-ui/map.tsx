@@ -470,7 +470,7 @@ export const Map: React.FC<Props> = ({
 
       const { title = '', date = new Date(), username = '' } = (properties as any) || {};
       const content = properties?.content
-        ? properties?.content.split('\n').join(' ')
+        ? properties?.content.split('\\n').join(' ')
         : '';
 
       const popupContent = `
@@ -1008,7 +1008,7 @@ export const Map: React.FC<Props> = ({
           const { lat, lon, properties } = waypoint;
           const { title = '', date = new Date(), username = '' } = (properties as any) || {};
           const content = properties?.content
-            ? properties?.content.split('\n').join(' ')
+            ? properties?.content.split('\\n').join(' ')
             : '';
 
           const popupContent = `
