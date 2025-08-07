@@ -355,6 +355,7 @@ model Checkout {
   transaction_type         String?
   sponsorship_tier_id      Int?
   message                  String?        @db.VarChar(500)
+  email_delivery_enabled   Boolean?       @default(true)
   creator                  User?          @relation("creator_checkouts", fields: [creator_id], references: [id], onDelete: Cascade)
   payment_method           PaymentMethod? @relation(fields: [payment_method_id], references: [id], onDelete: Cascade)
   plan                     Plan?          @relation(fields: [plan_id], references: [id], onDelete: Cascade)

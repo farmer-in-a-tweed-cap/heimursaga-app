@@ -315,6 +315,7 @@ export class SponsorService {
               creator_id: creator.id,
               stripe_payment_intent_id: stripePaymentIntentId,
               stripe_subscription_id: stripeSubscriptionId,
+              email_delivery_enabled: emailDelivery,
             },
             select: {
               id: true,
@@ -395,6 +396,7 @@ export class SponsorService {
             sponsorship_tier_id: true,
             stripe_subscription_id: true,
             message: true,
+            email_delivery_enabled: true,
           },
         });
 
@@ -432,7 +434,7 @@ export class SponsorService {
             message: checkout.message,
             currency: checkout.currency,
             stripe_subscription_id: checkout.stripe_subscription_id,
-            email_delivery_enabled: checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION ? true : false,
+            email_delivery_enabled: checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION ? checkout.email_delivery_enabled : false,
             expiry:
               checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
                 ? expiry

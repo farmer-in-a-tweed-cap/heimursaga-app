@@ -181,7 +181,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
           <div
             className={cn(
               'w-full box-border flex flex-row items-center',
-              collapsed ? 'justify-center' : 'pl-4 pr-8',
+              collapsed ? 'justify-center items-center h-16 -mt-2' : 'pl-4 pr-8',
             )}
           >
             <Link href={ROUTER.HOME}>
@@ -239,19 +239,6 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                 collapsed ? 'items-center justify-center' : 'px-2',
               )}
             >
-              {showCreateButton && (
-                <CreatePostButton
-                  variant="secondary"
-                  collapsed={collapsed}
-                  classNames={{
-                    button: collapsed 
-                      ? 'min-w-auto bg-white hover:bg-accent' 
-                      : 'w-[210px] bg-white hover:bg-accent mx-auto',
-                  }}
-                >
-                  Log Entry
-                </CreatePostButton>
-              )}
               <UserNavbar collapsed={collapsed} />
             </div>
           ) : (

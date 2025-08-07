@@ -131,7 +131,7 @@ export const LoginForm = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full" loading={loading}>
-                  Login
+                  Log in
                 </Button>
                 {/* <Button variant="outline" className="w-full" disabled>
                 Login with Google

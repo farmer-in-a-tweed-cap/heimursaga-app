@@ -321,7 +321,7 @@ export const SponsorshipsTable: React.FC<Props> = ({
                   <ActionMenu
                     actions={[
                       {
-                        label: row.original.email_delivery_enabled ? 'Disable emails' : 'Enable emails',
+                        label: row.original.email_delivery_enabled === true ? 'Disable emails' : 'Enable emails',
                         onClick: () => handleToggleEmailDelivery(rowId, !row.original.email_delivery_enabled),
                       },
                       {
