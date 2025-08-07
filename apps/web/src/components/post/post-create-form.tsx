@@ -52,26 +52,23 @@ import { ROUTER } from '@/router';
 const schema = z.object({
   title: z
     .string()
-    .nonempty(zodMessage.required('title'))
-    .max(50, zodMessage.string.max('title', 50)),
+    .min(1, 'Title is required')
+    .max(50, 'Title must not exceed 50 characters'),
   content: z
     .string()
-    .nonempty(zodMessage.required('content'))
-    .min(1, zodMessage.required('content'))
-    .refine((content) => {
+    .min(1, 'Content is required')
+    .refine((content, ctx) => {
       const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
-      return wordCount >= 100;
-    }, { message: 'Content must be at least 100 words' })
-    .refine((content) => {
-      const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+      
+      // We'll handle public vs private validation in the component
       return wordCount <= 1000;
     }, { message: 'Content must not exceed 1000 words' }),
   place: z
     .string()
-    .nonempty(zodMessage.required('place'))
-    .max(50, zodMessage.string.max('place', 50)),
-  date: z.date().optional(),
-  journeyId: z.string().nonempty(zodMessage.required('journey')).optional(),
+    .min(1, 'Place is required')
+    .max(50, 'Place must not exceed 50 characters'),
+  date: z.date({ required_error: 'Date is required' }),
+  journeyId: z.string().optional(),
 });
 
 type Props = {
@@ -88,15 +85,20 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   const session = useSession();
   const toast = useToast();
 
-  const form = useForm<z.infer<typeof schema>>({
-    resolver: zodResolver(schema),
-    defaultValues: {
-      title: '',
-      content: '',
-      place: '',
-      date: new Date(),
-    },
-  });
+  // Helper function to show validation error toasts
+  const showValidationError = (errors: any) => {
+    if (errors.title) {
+      toast({ type: 'error', message: errors.title.message || 'Title is required' });
+    } else if (errors.content) {
+      toast({ type: 'error', message: errors.content.message || 'Content is required' });
+    } else if (errors.place) {
+      toast({ type: 'error', message: errors.place.message || 'Place is required' });
+    } else if (errors.date) {
+      toast({ type: 'error', message: errors.date.message || 'Date is required' });
+    } else {
+      toast({ type: 'error', message: 'Please fix the form errors and try again' });
+    }
+  };
 
   const [loading, setLoading] = useState<boolean>(false);
   const [trip, setTrip] = useState<{ id: string; title: string } | null>(null);
@@ -107,6 +109,17 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   }>({
     public: true,
     sponsored: false,
+  });
+
+  const form = useForm<z.infer<typeof schema>>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      title: '',
+      content: '',
+      place: '',
+      date: new Date(),
+    },
+    mode: 'onChange', // Validate on change for real-time feedback
   });
 
   const map = useMap({
@@ -177,163 +190,90 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
       toast({ type: 'error', message: 'Please wait for photo uploads to complete' });
       return;
     }
-    
-    const formData = form.getValues();
-    
-    // For private entries (drafts), minimal validation
-    if (!privacy.public) {
-      const { title, content, place, date } = formData;
-      const { marker } = map;
-      
-      // Check required fields for private entries
-      if (!title?.trim()) {
-        toast({ type: 'error', message: 'Title is required' });
-        return;
-      }
-      
-      if (!place?.trim()) {
-        toast({ type: 'error', message: 'Place is required' });
-        return;
-      }
-      
-      if (!date) {
-        toast({ type: 'error', message: 'Date is required' });
-        return;
-      }
-      
-      if (!marker) {
-        toast({ type: 'error', message: 'Please select a location on the map' });
-        return;
-      }
 
-      try {
-        const tripId = trip?.id;
-
-        const uploads: string[] = uploader.files
-          .map(({ uploadId }) => uploadId)
-          .filter((el): el is string => typeof el === 'string' && el.length > 0);
-
-        setLoading(true);
-
-        // create a post (draft)
-        const { success, data } = await apiClient.createPost({
-          title,
-          content: content?.trim() || ' ', // Send a space if content is empty to satisfy API validation
-          place,
-          date,
-          lat: marker?.lat,
-          lon: marker?.lon,
-          public: privacy.public,
-          sponsored: privacy.sponsored,
-          waypointId: waypoint?.id,
-          uploads,
-          tripId,
-        });
-
-        if (success) {
-          const postId = data?.id;
-
-          // redirect to post detail page
-          if (postId) {
-            redirect(ROUTER.ENTRIES.DETAIL(postId));
-          }
-        } else {
-          setLoading(false);
-          toast({ type: 'error', message: LOCALES.APP.POSTS.TOAST.NOT_LOGGED });
-        }
-      } catch (e) {
-        setLoading(false);
-        toast({ type: 'error', message: LOCALES.APP.POSTS.TOAST.NOT_LOGGED });
-      }
+    // Check map marker
+    if (!map.marker) {
+      toast({ type: 'error', message: 'Please select a location on the map' });
       return;
     }
 
-    // For public entries, use full validation
-    form.handleSubmit(
-      async (values: z.infer<typeof schema>) => {
-        try {
-          const { title, content, place, date } = values;
-          const tripId = trip?.id;
-          const { marker } = map;
+    const formData = form.getValues();
+    const { title, content, place, date } = formData;
+    
+    // Custom validation for public entries
+    if (privacy.public && content) {
+      const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+      if (wordCount < 100) {
+        toast({ type: 'error', message: 'Public entries must be at least 100 words' });
+        return;
+      }
+    }
 
-          // Check map marker for public entries too
-          if (!marker) {
-            toast({ type: 'error', message: 'Please select a location on the map' });
-            return;
-          }
+    // Trigger form validation and show toast for errors
+    const isValid = await form.trigger();
+    if (!isValid) {
+      showValidationError(form.formState.errors);
+      return;
+    }
 
-          const uploads: string[] = uploader.files
-            .map(({ uploadId }) => uploadId)
-            .filter((el): el is string => typeof el === 'string' && el.length > 0);
+    try {
+      const tripId = trip?.id;
+      const { marker } = map;
 
-          setLoading(true);
+      const uploads: string[] = uploader.files
+        .map(({ uploadId }) => uploadId)
+        .filter((el): el is string => typeof el === 'string' && el.length > 0);
 
-          // create a post
-          const { success, data } = await apiClient.createPost({
-            title,
-            content,
-            place,
-            date,
-            lat: marker?.lat,
-            lon: marker?.lon,
-            public: privacy.public,
-            sponsored: privacy.sponsored,
-            waypointId: waypoint?.id,
-            uploads,
-            tripId,
-          });
+      setLoading(true);
 
-          if (success) {
-            const postId = data?.id;
+      // create a post
+      const { success, data } = await apiClient.createPost({
+        title,
+        content: content || (privacy.public ? content : ' '), // Private entries can have minimal content
+        place,
+        date,
+        lat: marker?.lat,
+        lon: marker?.lon,
+        public: privacy.public,
+        sponsored: privacy.sponsored,
+        waypointId: waypoint?.id,
+        uploads,
+        tripId,
+      });
 
-            // redirect to post detail page
-            if (postId) {
-              redirect(ROUTER.ENTRIES.DETAIL(postId));
-            }
-          } else {
-            setLoading(false);
-            toast({ type: 'error', message: LOCALES.APP.POSTS.TOAST.NOT_LOGGED });
-          }
-        } catch (e) {
-          setLoading(false);
-          toast({ type: 'error', message: LOCALES.APP.POSTS.TOAST.NOT_LOGGED });
+      if (success) {
+        const postId = data?.id;
+        if (postId) {
+          redirect(ROUTER.ENTRIES.DETAIL(postId));
         }
-      },
-      () => {
-        const errors = form.formState.errors;
-        if (errors.title) {
-          if (errors.title.type === 'too_big') {
-            toast({ type: 'error', message: 'Title must not exceed 50 characters' });
-          } else {
-            toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.TITLE_REQUIRED });
-          }
-        } else if (errors.content) {
-          if (errors.content.message?.includes('100 words')) {
-            toast({ type: 'error', message: 'Content must be at least 100 words' });
-          } else if (errors.content.message?.includes('1000 words')) {
-            toast({ type: 'error', message: 'Content must not exceed 1000 words' });
-          } else {
-            toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.CONTENT_REQUIRED });
-          }
-        } else if (errors.place) {
-          if (errors.place.type === 'too_big') {
-            toast({ type: 'error', message: 'Place must not exceed 50 characters' });
-          } else {
-            toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.LOCATION_REQUIRED });
-          }
-        } else if (errors.date) {
-          toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.DATE_REQUIRED });
-        } else {
-          toast({ type: 'error', message: LOCALES.APP.POSTS.VALIDATION.FIELDS_REQUIRED });
-        }
-      },
-    )(e);
+      } else {
+        setLoading(false);
+        toast({ type: 'error', message: 'Failed to create entry. Please try again.' });
+      }
+    } catch (e) {
+      setLoading(false);
+      toast({ type: 'error', message: 'Something went wrong. Please try again.' });
+    }
   };
 
   useEffect(() => {
     // cache modals
     modal.preload([MODALS.MAP_LOCATION_SELECT, MODALS.TRIP_SELECT]);
   }, []);
+
+  // Watch for form validation errors and show toast when fields lose focus
+  useEffect(() => {
+    const subscription = form.watch((value, { name, type }) => {
+      if (type === 'change') {
+        // Clear any previous errors for this field when user starts typing
+        const fieldName = name as keyof typeof form.formState.errors;
+        if (fieldName && form.formState.errors[fieldName]) {
+          form.clearErrors(fieldName);
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
 
   return (
@@ -402,7 +342,20 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                         <FormLabel>Title</FormLabel>
                         <p className="text-xs text-gray-500 mb-2">a unique and descriptive title</p>
                         <FormControl>
-                          <Input disabled={loading} required {...field} />
+                          <Input 
+                            disabled={loading} 
+                            {...field} 
+                            onBlur={async (e) => {
+                              field.onBlur();
+                              const isFieldValid = await form.trigger('title');
+                              if (!isFieldValid && form.formState.errors.title) {
+                                toast({ 
+                                  type: 'error', 
+                                  message: form.formState.errors.title.message || 'Title is required' 
+                                });
+                              }
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -443,7 +396,20 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                         <FormLabel>Place</FormLabel>
                         <p className="text-xs text-gray-500 mb-2">the place where it happened - the official name or your own name</p>
                         <FormControl>
-                          <Input disabled={loading} {...field} />
+                          <Input 
+                            disabled={loading} 
+                            {...field} 
+                            onBlur={async (e) => {
+                              field.onBlur();
+                              const isFieldValid = await form.trigger('place');
+                              if (!isFieldValid && form.formState.errors.place) {
+                                toast({ 
+                                  type: 'error', 
+                                  message: form.formState.errors.place.message || 'Place is required' 
+                                });
+                              }
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -459,10 +425,11 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                       const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
 
                       const getWordCountColor = () => {
+                        if (!privacy.public) return 'text-gray-400'; // Private entries - no color coding
                         if (wordCount < 100) return 'text-red-400';
                         if (wordCount > 1000) return 'text-red-400';
                         if (wordCount > 900) return 'text-orange-400';
-                        return 'text-gray-400';
+                        return 'text-green-400';
                       };
 
                       return (
@@ -470,10 +437,12 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                           <div className="flex items-center justify-between">
                             <FormLabel>Tell your story</FormLabel>
                             <span className={`text-xs ${getWordCountColor()}`}>
-                              {wordCount} / 1000 words
+                              {wordCount} {privacy.public ? '/ 1000 words' : 'words'}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500 mb-2">in 100-1,000 words, if there's more write a series!</p>
+                          <p className="text-xs text-gray-500 mb-2">
+                            {privacy.public ? 'Public entries: 100-1,000 words' : 'Private entries: any length'}
+                          </p>
                           <FormControl>
                             <Textarea
                               id="post-content-textarea"
@@ -484,6 +453,27 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                               onChange={(e) => {
                                 field.onChange(e);
                                 aiDetection.analyzeText(e.target.value);
+                              }}
+                              onBlur={async (e) => {
+                                field.onBlur();
+                                const content = e.target.value;
+                                
+                                // Custom validation for public entries
+                                if (privacy.public && content) {
+                                  const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
+                                  if (wordCount < 100) {
+                                    toast({ type: 'error', message: 'Public entries must be at least 100 words' });
+                                    return;
+                                  }
+                                }
+                                
+                                const isFieldValid = await form.trigger('content');
+                                if (!isFieldValid && form.formState.errors.content) {
+                                  toast({ 
+                                    type: 'error', 
+                                    message: form.formState.errors.content.message || 'Content is required' 
+                                  });
+                                }
                               }}
                             />
                           </FormControl>

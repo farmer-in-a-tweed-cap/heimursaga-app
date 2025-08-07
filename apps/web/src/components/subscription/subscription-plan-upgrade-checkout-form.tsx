@@ -545,9 +545,17 @@ const FormComponent: React.FC<Props> = ({
             <StripeSecurityBadge variant="text" className="mt-4" />
           </div>
         </div>
-        <div className="flex mt-4">
+        <div className="flex flex-col gap-3 mt-4">
           <Button type="submit" className="w-full" loading={loading}>
             Upgrade
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={() => router.push(ROUTER.HOME)}
+          >
+            Cancel
           </Button>
         </div>
         {children && <div className="mt-4 flex flex-col">{children}</div>}

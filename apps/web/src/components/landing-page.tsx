@@ -207,9 +207,9 @@ export const LandingPage: React.FC = () => {
                 A Quiet Place for Explorers
               </h2>
               <p className="text-xl text-black font-light leading-relaxed mb-12 max-w-3xl mx-auto">
-                Heimursaga is intentionally designed for the explorer, for the traveler, for the people who like to "get away", and for the people who want to share what they found. Heimursaga is fundamentally a journaling and fundraising tool, but it's also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. Our minimal interface lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
+                Heimursaga is intentionally designed for the explorer, for the traveler, for the people who like to "get away", and for the people who want to share what they found. Heimursaga is fundamentally a journaling and fundraising tool, but it's also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. Our minimal interface and quality-over-quantity philosophy lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
               </p>
-              <div className="grid md:grid-cols-2 gap-12 mt-12">
+              <div className="grid md:grid-cols-3 gap-12 mt-12">
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
                     <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,6 +230,17 @@ export const LandingPage: React.FC = () => {
                   <h3 className="text-xl font-medium text-black mb-4">Appreciation Over Engagement</h3>
                   <p className="text-black font-light leading-relaxed">
                     Connect with explorers through financial sponsorship. Your support becomes a tangible way to show appreciation for their adventures.
+                  </p>
+                </div>
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
+                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                  </div>
+                  <h3 className="text-xl font-medium text-black mb-4">Human-First Stories</h3>
+                  <p className="text-black font-light leading-relaxed">
+                    Authentic experiences from real explorers. We actively prevent AI-generated content to preserve the genuine human spirit of adventure.
                   </p>
                 </div>
               </div>
