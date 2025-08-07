@@ -117,6 +117,11 @@ export const apiClient = {
       body: JSON.stringify({}),
       ...config,
     }),
+  search: async ({ payload }: IApiClientQueryWithPayload<{}, { search: string }>) =>
+    api.request<{ users: any[]; entries: any[] }>(API_ROUTER.SEARCH, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+    }),
   resetPassword: async (payload: IPasswordResetPayload) =>
     api.request<void>(API_ROUTER.RESET_PASSWORD, {
       method: API_METHODS.POST,

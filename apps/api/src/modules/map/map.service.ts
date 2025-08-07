@@ -64,7 +64,7 @@ export class MapService {
   }: IQueryWithSession<IMapQueryPayload>): Promise<IMapQueryResponse> {
     try {
       const { userId } = session;
-      const { context, location, username, tripId } = query;
+      const { context, location, username, tripId, prioritizeEntryId } = query;
       const locationFilter =
         location &&
         [
@@ -307,13 +307,27 @@ export class MapService {
 
       const finalWaypoints = filteredWaypoints.filter(Boolean);
       
+      let sortedWaypoints = sortByDate({
+        elements: finalWaypoints,
+        key: 'date',
+        order: 'desc',
+      });
+
+      // If prioritizeEntryId is specified, move that entry to the top
+      if (prioritizeEntryId) {
+        const prioritizedIndex = sortedWaypoints.findIndex(
+          waypoint => waypoint.post?.id === prioritizeEntryId
+        );
+        if (prioritizedIndex > 0) {
+          const prioritizedWaypoint = sortedWaypoints[prioritizedIndex];
+          sortedWaypoints.splice(prioritizedIndex, 1);
+          sortedWaypoints.unshift(prioritizedWaypoint);
+        }
+      }
+
       const response: IMapQueryResponse = {
         results: finalWaypoints.length,
-        waypoints: sortByDate({
-          elements: finalWaypoints,
-          key: 'date',
-          order: 'desc',
-        }),
+        waypoints: sortedWaypoints,
       };
 
       return response;

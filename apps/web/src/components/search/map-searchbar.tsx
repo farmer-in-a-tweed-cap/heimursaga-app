@@ -13,8 +13,20 @@ type MapSearchItem = {
   id: string;
   name: string;
   context?: string;
+  type?: 'location' | 'user' | 'entry' | 'text';
   center?: [number, number];
   bounds?: [number, number, number, number];
+  // Additional data for non-location results
+  username?: string;
+  picture?: string;
+  role?: string;
+  title?: string;
+  place?: string;
+  lat?: number;
+  lon?: number;
+  author?: {
+    username: string;
+  };
 };
 
 export type MapSearchbarChangeHandler = (data: {
@@ -23,7 +35,7 @@ export type MapSearchbarChangeHandler = (data: {
 }) => void;
 
 export type MapSearchbarSubmitHandler = (data: {
-  context: 'text' | 'location';
+  context: 'text' | 'location' | 'user' | 'entry';
   item: MapSearchItem;
 }) => void;
 
@@ -50,17 +62,66 @@ export const MapSearchbar: React.FC<Props> = ({
 
   const handleSearch = async (search: string) => {
     try {
-      if (!search || !mapbox.token) return;
-
+      if (!search) return;
+      
       setLoading(true);
 
-      // fetch results
-      const results = await apiClient.mapbox
-        .search({
-          token: mapbox.token,
-          search,
+      // Fetch all search results in parallel
+      const [locationResults, searchResults] = await Promise.all([
+        // Mapbox location search
+        mapbox.token
+          ? apiClient.mapbox
+              .search({
+                token: mapbox.token,
+                search,
+              })
+              .then(({ items }) => 
+                items.map(item => ({ ...item, type: 'location' as const }))
+              )
+              .catch(() => [])
+          : Promise.resolve([]),
+        
+        // User and entry search
+        apiClient.search({
+          query: {},
+          payload: { search },
+        }).then(({ data }) => {
+          if (!data?.data) return [];
+          
+          const { users = [], entries = [] } = data.data;
+          
+          return [
+            // Map users
+            ...users.map((user: any) => ({
+              id: `user-${user.id}`,
+              name: `@${user.username}`,
+              context: user.role === 'CREATOR' ? 'Explorer Pro' : 'Explorer',
+              type: 'user' as const,
+              username: user.username,
+              picture: user.picture,
+              role: user.role,
+            })),
+            // Map entries
+            ...entries.map((entry: any) => ({
+              id: `entry-${entry.id}`,
+              name: entry.title,
+              context: `${entry.place} • @${entry.author.username}`,
+              type: 'entry' as const,
+              title: entry.title,
+              place: entry.place,
+              author: entry.author,
+              lat: entry.lat,
+              lon: entry.lon,
+            })),
+          ];
+        }).catch((error) => {
+          console.error('Search API error:', error);
+          return [];
         })
-        .then(({ items }) => items);
+      ]);
+
+      // Prioritize entries by putting them first, then users, then locations
+      const allResults = [...searchResults, ...locationResults];
 
       // update the state
       setResults((prev) => {
@@ -68,9 +129,9 @@ export const MapSearchbar: React.FC<Props> = ({
           ({ id }) => id === SEARCHBAR_CUSTOM_ITEM_ID,
         );
         if (searchItem) {
-          return [searchItem, ...results];
+          return [searchItem, ...allResults];
         } else {
-          return results;
+          return allResults;
         }
       });
 
@@ -94,6 +155,16 @@ export const MapSearchbar: React.FC<Props> = ({
       if (result.id === SEARCHBAR_CUSTOM_ITEM_ID) {
         onSubmit({
           context: 'text',
+          item: result,
+        });
+      } else if (result.type === 'user') {
+        onSubmit({
+          context: 'user',
+          item: result,
+        });
+      } else if (result.type === 'entry') {
+        onSubmit({
+          context: 'entry',
           item: result,
         });
       } else {

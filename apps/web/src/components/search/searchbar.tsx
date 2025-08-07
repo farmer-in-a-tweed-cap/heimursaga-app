@@ -1,7 +1,7 @@
 'use client';
 
 import { Input, Spinner } from '@repo/ui/components';
-import { MagnifyingGlassIcon, XIcon } from '@repo/ui/icons';
+import { MagnifyingGlass, X, User, BookBookmark, MapPin } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useEffect, useState } from 'react';
 
@@ -12,6 +12,7 @@ type Props = {
     id: string;
     name: string;
     context?: string;
+    type?: 'location' | 'user' | 'entry' | 'text';
   }[];
   clear?: boolean;
   loading?: boolean;
@@ -87,7 +88,7 @@ export const Searchbar: React.FC<Props> = ({
             {loading ? (
               <Spinner size={16} className="text-gray-500" />
             ) : (
-              <MagnifyingGlassIcon
+              <MagnifyingGlass
                 size={16}
                 weight="bold"
                 className="text-gray-600"
@@ -106,7 +107,7 @@ export const Searchbar: React.FC<Props> = ({
           {clear && (
             <div className="absolute right-0 top-0 bottom-0 w-[36px] flex items-center justify-center">
               <button onClick={handleClear}>
-                <XIcon size={16} weight="bold" className="text-gray-600" />
+                <X size={16} weight="bold" className="text-gray-600" />
               </button>
             </div>
           )}
@@ -119,36 +120,44 @@ export const Searchbar: React.FC<Props> = ({
           )}
         >
           <div className="w-full flex flex-col p-1">
-            {results.map(({ id, name, context }, key) => (
-              <div
-                key={key}
-                className={cn(
-                  'h-[50px] cursor-pointer hover:bg-accent px-4 box-border flex rounded-xl',
-                  id === SEARCHBAR_CUSTOM_ITEM_ID
-                    ? 'flex-row justify-start items-center gap-2'
-                    : 'flex-col items-start justify-center',
-                )}
-                onClick={onResultClick ? () => onResultClick(id) : undefined}
-              >
-                {id === SEARCHBAR_CUSTOM_ITEM_ID ? (
-                  <>
-                    <MagnifyingGlassIcon size={18} weight="bold" />
-                    <span className="text-sm font-medium text-black">
-                      {name}
-                    </span>
-                  </>
-                ) : (
-                  <>
+            {results.map(({ id, name, context, type }, key) => {
+              const getIcon = () => {
+                if (id === SEARCHBAR_CUSTOM_ITEM_ID || type === 'text') {
+                  return <MagnifyingGlass size={18} weight="bold" className="text-gray-600" />;
+                }
+                switch (type) {
+                  case 'user':
+                    return <User size={18} weight="bold" style={{ color: '#4676AC' }} />;
+                  case 'entry':
+                    return <BookBookmark size={18} weight="bold" style={{ color: '#AC6D46' }} />;
+                  case 'location':
+                    return <MapPin size={18} weight="bold" style={{ color: '#4676AC' }} />;
+                  default:
+                    return <MagnifyingGlass size={18} weight="bold" className="text-gray-600" />;
+                }
+              };
+
+              return (
+                <div
+                  key={key}
+                  className={cn(
+                    'min-h-[50px] cursor-pointer hover:bg-accent px-4 box-border flex rounded-xl',
+                    'flex-row justify-start items-center gap-3',
+                  )}
+                  onClick={onResultClick ? () => onResultClick(id) : undefined}
+                >
+                  {getIcon()}
+                  <div className="flex flex-col justify-center flex-1">
                     <span className="text-sm font-medium text-black">
                       {name}
                     </span>
                     {context && (
                       <span className="text-xs text-gray-500">{context}</span>
                     )}
-                  </>
-                )}
-              </div>
-            ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

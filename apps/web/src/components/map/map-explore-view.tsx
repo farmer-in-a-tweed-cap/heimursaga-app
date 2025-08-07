@@ -116,6 +116,7 @@ export const MapExploreView: React.FC<Props> = () => {
   } | null>(null);
   const [userInitiatedFlyTo, setUserInitiatedFlyTo] = useState<boolean>(false);
   const [journeyTransitioning, setJourneyTransitioning] = useState<boolean>(false);
+  const [prioritizedEntryId, setPrioritizedEntryId] = useState<string | null>(null);
 
   const [search, setSearch] = useState<{
     value?: string;
@@ -203,6 +204,7 @@ export const MapExploreView: React.FC<Props> = () => {
                 ? search.query
                 : undefined
               : undefined,
+          prioritizeEntryId: prioritizedEntryId || undefined,
         })
         .then(({ data }) => data);
     },
@@ -447,6 +449,7 @@ export const MapExploreView: React.FC<Props> = () => {
     
     setFocusedWaypointId(null);
     setPreviousView(null);
+    setPrioritizedEntryId(null);
     
     // Close any open entry drawer
     map.handleDrawerClose();
@@ -524,6 +527,52 @@ export const MapExploreView: React.FC<Props> = () => {
         }
 
         map.updateBounds(bbox);
+      }
+    }
+
+    if (context === 'user' && item.username) {
+      // Switch to user context on the explore page
+      handleUserClick(item.username);
+    }
+
+    if (context === 'entry') {
+      // Handle entry search results with flyTo functionality
+      const entryId = item.id.replace('entry-', ''); // Remove the prefix we added
+      
+      
+      // Try to find the entry in current waypoints first
+      const waypoint = waypoints.find(wp => wp.post?.id === entryId);
+      if (waypoint) {
+        // Entry is already loaded, use existing click handler
+        handlePostClick(entryId);
+      } else if (item.lat && item.lon && map.mapbox) {
+        // Entry not in current bounds, but we have coordinates - fly to it
+        // Save current view state
+        setPreviousView({
+          center: map.center,
+          zoom: map.zoom,
+          bounds: map.bounds
+        });
+        
+        // Fly to the entry location without opening drawer
+        setUserInitiatedFlyTo(true);
+        const duration = 1000;
+        map.mapbox.flyTo({
+          center: [item.lon, item.lat],
+          zoom: 14,
+          duration: duration
+        });
+        
+        // Reset flag after animation and set focused waypoint
+        setTimeout(() => {
+          setUserInitiatedFlyTo(false);
+          setFocusedWaypointId(entryId);
+          setPrioritizedEntryId(entryId);
+        }, duration + 100);
+      } else {
+        // Fallback - just open the entry drawer
+        map.handleDrawerOpen();
+        setParams({ entry_id: entryId });
       }
     }
   };

@@ -363,6 +363,7 @@ export interface IMapQueryPayload {
   search?: string;
   username?: string;
   tripId?: string;
+  prioritizeEntryId?: string;
 }
 
 export interface IMapQueryResponse {

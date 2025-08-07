@@ -1,6 +1,7 @@
 export const API_ROUTER = {
   SITEMAP: 'sitemap',
   TEST: 'test',
+  SEARCH: 'search',
   LOGIN: 'auth/login',
   SIGNUP: 'auth/signup',
   LOGOUT: 'auth/logout',
