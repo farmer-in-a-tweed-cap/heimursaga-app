@@ -57,7 +57,7 @@ const schema = z.object({
   content: z
     .string()
     .min(1, 'Content is required')
-    .refine((content, ctx) => {
+    .refine((content) => {
       const wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;
       
       // We'll handle public vs private validation in the component
