@@ -1,6 +1,6 @@
 import { PageNotFound } from '@/components';
 
-import { AppLayout } from './layout';
+import { AppLayout } from '@/layouts';
 
 export default async function Page() {
   return (

@@ -63,8 +63,7 @@ export class PayoutService {
       const take = 20;
 
       // get payout methods
-      const results = 1;
-      const payoutMethod = await this.prisma.payoutMethod.findFirstOrThrow({
+      const payoutMethod = await this.prisma.payoutMethod.findFirst({
         where,
         select: {
           public_id: true,
@@ -74,6 +73,8 @@ export class PayoutService {
         take,
         orderBy: [{ id: 'desc' }],
       });
+
+      const results = payoutMethod ? 1 : 0;
 
       // get stripe account
       const stripeAccount = payoutMethod.stripe_account_id

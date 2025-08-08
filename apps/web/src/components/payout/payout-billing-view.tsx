@@ -6,6 +6,8 @@ import {
   StripePlayformAccountLinkMode,
 } from '@repo/types';
 import {
+  Alert,
+  AlertDescription,
   Badge,
   Button,
   Card,
@@ -44,6 +46,7 @@ export const PayoutBillingView = () => {
   const payoutMethod = payoutMethodQuery?.data?.data?.[0];
   const updateAvailable = !!payoutMethod?.id;
   const automaticPayouts = payoutMethod?.automaticPayouts;
+  const isStripeConnected = session.stripeAccountConnected || false;
 
   const stripeBackUrl = process?.env?.NEXT_PUBLIC_APP_BASE_URL
     ? new URL(
@@ -137,6 +140,14 @@ export const PayoutBillingView = () => {
 
   return (
     <div className="flex flex-col">
+      {!isStripeConnected && (
+        <Alert className="mb-6 bg-yellow-50 border-yellow-200">
+          <AlertDescription>
+            <strong>Complete your Stripe Connect setup</strong> to enable sponsorship tiers, receive sponsorships, and process payouts. Click "Connect" below to get started.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {payoutMethodQuery.isLoading ? (
         <LoadingSpinner />
       ) : (
@@ -150,20 +161,18 @@ export const PayoutBillingView = () => {
                 {LOCALES.APP.PAYOUTS.BILLING.STRIPE.TITLE}
               </span>
               <div>
-                {payoutMethod ? (
-                  payoutMethod.isVerified ? (
-                    <span className="text-base font-medium">
-                      {payoutMethod?.email || '******'}
-                    </span>
-                  ) : (
-                    <Badge variant="outline">Pending</Badge>
-                  )
+                {payoutMethod && isStripeConnected && payoutMethod.isVerified ? (
+                  <span className="text-base font-medium">
+                    {payoutMethod?.email || '******'}
+                  </span>
+                ) : payoutMethod && isStripeConnected ? (
+                  <Badge variant="outline">Pending</Badge>
                 ) : (
                   <Badge variant="outline">Not connected</Badge>
                 )}
               </div>
-              {/* Automatic Payout Status */}
-              {payoutMethod && automaticPayouts && (
+              {/* Automatic Payout Status - only show when all conditions are met */}
+              {payoutMethod && isStripeConnected && payoutMethod.isVerified && automaticPayouts && (
                 <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-md">
                   <div className="flex items-center justify-between">
                     <div>
@@ -199,7 +208,7 @@ export const PayoutBillingView = () => {
                 </div>
               )}
               <div className="mt-6">
-                {payoutMethod ? (
+                {payoutMethod && isStripeConnected ? (
                   <Button
                     variant="outline"
                     loading={loading.button}
@@ -212,10 +221,10 @@ export const PayoutBillingView = () => {
                   <Button
                     variant="outline"
                     loading={loading.button}
-                    disabled={updateAvailable}
+                    disabled={loading.button}
                     onClick={handlePayoutMethodCreate}
                   >
-                    Connect
+                    {payoutMethod ? 'Connect' : 'Connect'}
                   </Button>
                 )}
               </div>

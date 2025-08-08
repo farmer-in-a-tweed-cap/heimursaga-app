@@ -1,5 +1,7 @@
 'use client';
 
+import { Alert, AlertDescription } from '@repo/ui/components';
+
 import { TabNavbar } from '../nav';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -28,15 +30,23 @@ export const SponsorshipView: React.FC<Props> = ({ section }) => {
   const session = useSession();
 
   const [tab, setTab] = useState<string>(section || TABS.TIERS);
+  
+  const isStripeConnected = session.stripeAccountConnected || false;
+  const requiresStripe = [TABS.TIERS, TABS.SPONSORS, TABS.PAYOUTS];
 
-  const tabs: { key: string; label: string }[] = [
-    { key: TABS.TIERS, label: 'Tiers' },
-    { key: TABS.SPONSORS, label: 'Sponsors' },
-    { key: TABS.PAYOUTS, label: 'Payouts' },
+  const tabs: { key: string; label: string; disabled?: boolean }[] = [
+    { key: TABS.TIERS, label: 'Tiers', disabled: !isStripeConnected },
+    { key: TABS.SPONSORS, label: 'Sponsors', disabled: !isStripeConnected },
+    { key: TABS.PAYOUTS, label: 'Payouts', disabled: !isStripeConnected },
     { key: TABS.ACCOUNT, label: 'Account' },
   ];
 
   const handleTabChange = (tab: string) => {
+    // Prevent navigation to disabled tabs
+    if (!isStripeConnected && requiresStripe.includes(tab)) {
+      return;
+    }
+    
     setTab(tab);
     router.push([ROUTER.SPONSORSHIP.ROOT, tab].join('/'), {
       scroll: false,
@@ -45,11 +55,18 @@ export const SponsorshipView: React.FC<Props> = ({ section }) => {
 
   useEffect(() => {
     if (!section) {
-      router.push([ROUTER.SPONSORSHIP.ROOT, TABS.TIERS].join('/'), {
+      // Redirect to account tab if Stripe not connected, otherwise tiers
+      const defaultTab = !isStripeConnected ? TABS.ACCOUNT : TABS.TIERS;
+      router.push([ROUTER.SPONSORSHIP.ROOT, defaultTab].join('/'), {
+        scroll: false,
+      });
+    } else if (!isStripeConnected && requiresStripe.includes(section)) {
+      // If accessing a Stripe-required tab without connection, redirect to account
+      router.push([ROUTER.SPONSORSHIP.ROOT, TABS.ACCOUNT].join('/'), {
         scroll: false,
       });
     }
-  }, []);
+  }, [section, isStripeConnected]);
 
   return (
     <div className="flex flex-col w-full">
@@ -65,9 +82,23 @@ export const SponsorshipView: React.FC<Props> = ({ section }) => {
         />
       </div>
       <div className="mt-2 flex flex-col w-full py-4">
-        {tab === TABS.TIERS && <SponsorshipTierView />}
-        {tab === TABS.SPONSORS && <CreatorSponsorships />}
-        {tab === TABS.PAYOUTS && <PayoutWithdrawView />}
+        {!isStripeConnected && requiresStripe.includes(tab) && (
+          <Alert className="mb-6">
+            <AlertDescription>
+              ⚠️ Complete your Stripe Connect setup in the Account tab to enable sponsorship features.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {tab === TABS.TIERS && (
+          isStripeConnected ? <SponsorshipTierView /> : null
+        )}
+        {tab === TABS.SPONSORS && (
+          isStripeConnected ? <CreatorSponsorships /> : null
+        )}
+        {tab === TABS.PAYOUTS && (
+          isStripeConnected ? <PayoutWithdrawView /> : null
+        )}
         {tab === TABS.ACCOUNT && <PayoutBillingView />}
       </div>
     </div>

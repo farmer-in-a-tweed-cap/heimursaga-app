@@ -24,6 +24,7 @@ export const UserProfilePage: React.FC<Props> = ({
 }) => {
   const router = useRouter();
   const isCreator = user.creator ? user.creator : false;
+  const canReceiveSponsorship = isCreator && user.stripeAccountConnected;
 
   const location = {
     visible: user.locationFrom || user.locationLives,
@@ -113,7 +114,7 @@ export const UserProfilePage: React.FC<Props> = ({
       </div> */}
       <UserProfileButtons
         me={user?.you}
-        creator={isCreator}
+        creator={canReceiveSponsorship}
         followed={user?.followed}
         user={user}
       />

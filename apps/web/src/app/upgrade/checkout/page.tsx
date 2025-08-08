@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 
 import { apiClient } from '@/lib/api';
 
-import { CheckoutLayout } from '@/app/layout';
+import { CheckoutLayout } from '@/layouts';
 
 import {
   BulletList,

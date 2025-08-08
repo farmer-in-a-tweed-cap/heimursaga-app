@@ -6,7 +6,7 @@ import { notFound } from 'next/navigation';
 import path from 'path';
 import DOMPurify from 'isomorphic-dompurify';
 
-import { AppLayout } from '@/app/layout';
+import { AppLayout } from '@/layouts';
 
 import { PageHeaderTitle } from '@/components';
 

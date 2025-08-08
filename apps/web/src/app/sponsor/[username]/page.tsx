@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
 
-import { CheckoutLayout } from '@/app/layout';
+import { CheckoutLayout } from '@/layouts';
 
 import { SponsorCheckoutSummary, SponsorshipCheckoutForm } from '@/components';
 

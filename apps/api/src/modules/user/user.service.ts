@@ -178,6 +178,7 @@ export class UserService {
           id: true,
           username: true,
           role: true,
+          is_stripe_account_connected: true,
           profile: {
             select: {
               name: true,
@@ -212,6 +213,7 @@ export class UserService {
         followed: userId ? user.followers.length > 0 : false,
         you: userId ? userId === user.id : false,
         creator: user.role === UserRole.CREATOR,
+        stripeAccountConnected: user.is_stripe_account_connected,
         locationFrom: user.profile?.location_from,
         locationLives: user.profile?.location_lives,
         sponsorsFund: user.profile?.sponsors_fund,

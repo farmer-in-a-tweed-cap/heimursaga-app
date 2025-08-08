@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 
-import { MapLayout } from '@/app/layout';
+import { MapLayout } from '@/layouts';
 
 import { TripCreateView } from '@/components';
 

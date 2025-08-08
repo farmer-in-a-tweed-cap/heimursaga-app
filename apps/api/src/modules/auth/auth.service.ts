@@ -66,6 +66,7 @@ export class AuthService {
           email: true,
           is_email_verified: true,
           is_premium: true,
+          is_stripe_account_connected: true,
           profile: {
             select: {
               // name: true,
@@ -82,6 +83,7 @@ export class AuthService {
         username,
         is_email_verified: isEmailVerified,
         is_premium: isPremium,
+        is_stripe_account_connected: isStripeAccountConnected,
       } = user;
       const { picture } = user?.profile || {};
 
@@ -93,6 +95,7 @@ export class AuthService {
         picture: getStaticMediaUrl(picture),
         isEmailVerified,
         isPremium,
+        stripeAccountConnected: isStripeAccountConnected,
       };
     } catch (e) {
       this.logger.error(e);

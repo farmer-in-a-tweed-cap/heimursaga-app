@@ -1,4 +1,4 @@
-import { MapLayout } from '../layout';
+import { MapLayout } from '@/layouts';
 
 import { MapExploreView } from '@/components';
 

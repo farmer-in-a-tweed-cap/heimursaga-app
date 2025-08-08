@@ -6,6 +6,7 @@ type Props = {
   tabs: {
     label: string;
     key: string;
+    disabled?: boolean;
   }[];
   activeTab: string;
   classNames?: {
@@ -21,7 +22,9 @@ export const TabNavbar: React.FC<Props> = ({
   classNames,
   onChange,
 }) => {
-  const handleClick = (tab: string) => {
+  const handleClick = (tab: string, disabled?: boolean) => {
+    if (disabled) return;
+    
     if (activeTab !== tab) {
       if (onChange) {
         onChange(tab);
@@ -42,14 +45,18 @@ export const TabNavbar: React.FC<Props> = ({
           classNames?.tabs,
         )}
       >
-        {tabs.map(({ label, key: tab }, key) => (
+        {tabs.map(({ label, key: tab, disabled }, key) => (
           <button
             key={key}
             className={cn(
-              'w-auto flex flex-col items-center gap-2 font-medium justify-start text-sm text-left hover:text-black rounded-none',
-              activeTab === tab ? 'text-black' : 'text-black/70',
+              'w-auto flex flex-col items-center gap-2 font-medium justify-start text-sm text-left rounded-none',
+              disabled 
+                ? 'text-gray-400 cursor-not-allowed' 
+                : 'hover:text-black',
+              activeTab === tab ? 'text-black' : disabled ? 'text-gray-400' : 'text-black/70',
             )}
-            onClick={() => handleClick(tab)}
+            onClick={() => handleClick(tab, disabled)}
+            disabled={disabled}
           >
             <span>{label}</span>
             <span

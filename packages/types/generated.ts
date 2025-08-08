@@ -45,6 +45,7 @@ export interface ISessionUser {
   // name: string;
   isEmailVerified: boolean;
   isPremium: boolean;
+  stripeAccountConnected?: boolean;
 }
 
 export interface ISessionUserGetResponse extends ISessionUser {}
@@ -98,6 +99,7 @@ export interface IUserDetail {
   followed?: boolean;
   you?: boolean;
   creator?: boolean;
+  stripeAccountConnected?: boolean;
 
   postsCount?: number;
   blocked?: boolean;

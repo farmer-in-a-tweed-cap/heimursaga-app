@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
 
-import { MapLayout } from '@/app/layout';
+import { MapLayout } from '@/layouts';
 
 import { MapTripView, PageNotFound } from '@/components';
 
