@@ -11,18 +11,27 @@ import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
 
 import { ROUTER } from '@/router';
+import { useSession } from '@/hooks';
 
 type Props = {
   collapsed?: boolean;
 };
 
 export const UserNavbar: React.FC<Props> = ({ collapsed = false }) => {
+  const session = useSession();
+  
   const legalLinks = [
     {
       href: ROUTER.USER_GUIDE,
       label: 'User guide',
       openNewTab: false,
     },
+    // Only show support link for logged-in users since it requires authentication
+    ...(session?.logged ? [{
+      href: ROUTER.SUPPORT,
+      label: 'Support',
+      openNewTab: false,
+    }] : []),
     {
       href: ROUTER.LEGAL.PRIVACY,
       label: 'Privacy policy',

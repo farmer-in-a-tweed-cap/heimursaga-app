@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function UserGuidePage() {
   return (
     <AppLayout secure={false}>
-      <div className="w-full max-w-4xl">
+      <div className="w-full max-w-3xl flex flex-col gap-6">
         <UserGuide />
       </div>
     </AppLayout>

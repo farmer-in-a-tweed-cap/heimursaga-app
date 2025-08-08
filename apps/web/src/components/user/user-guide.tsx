@@ -24,7 +24,7 @@ export const UserGuide = () => {
   const session = useSession();
   
   return (
-    <div className="w-full flex flex-col gap-8">
+    <div className="w-full flex flex-col gap-6">
       {/* Header */}
       <div className="text-center">
         <h1 className="text-3xl font-bold mb-4">Welcome to Heimursaga</h1>

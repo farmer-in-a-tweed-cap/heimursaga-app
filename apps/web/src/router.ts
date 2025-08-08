@@ -87,4 +87,5 @@ export const ROUTER = {
     PRIVACY: '/legal/privacy',
     TERMS: '/legal/terms',
   },
+  SUPPORT: '/support',
 };

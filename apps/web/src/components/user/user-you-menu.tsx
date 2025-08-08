@@ -182,6 +182,11 @@ export const UserYouMenu = () => {
         isMainItem: false,
       },
       {
+        href: ROUTER.SUPPORT,
+        label: 'Support',
+        isMainItem: false,
+      },
+      {
         href: ROUTER.LEGAL.PRIVACY,
         label: 'Privacy policy',
         isMainItem: false,

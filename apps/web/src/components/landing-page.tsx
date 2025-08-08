@@ -207,7 +207,7 @@ export const LandingPage: React.FC = () => {
                 A Quiet Place for Explorers
               </h2>
               <p className="text-xl text-black font-light leading-relaxed mb-12 max-w-3xl mx-auto">
-                Heimursaga is intentionally designed for the explorer, for the traveler, for the people who like to get away, and for the people who want to share what they found. Heimursaga is fundamentally a journaling and fundraising tool, but it's also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. Our minimal interface and quality-over-quantity philosophy lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
+                Heimursaga (HAY-mur-sah-gah) is an app intentionally designed for the explorer, for the traveler, for the people who like to get away, and for the people who want to share what they've found. Heimursaga is fundamentally a journaling and fundraising tool, but it's also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. Our minimal interface and quality-over-quantity philosophy lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
               </p>
               <div className="grid md:grid-cols-3 gap-12 mt-12">
                 <div className="text-center">
