@@ -154,6 +154,7 @@ export class MapService {
               some: {
                 title: search ? { contains: search } : undefined,
                 public: true,
+                is_draft: false,
                 deleted_at: null,
                 waypoint_id: { not: null },
               },
@@ -169,6 +170,7 @@ export class MapService {
                 some: {
                   title: search ? { contains: search } : undefined,
                   public: true,
+                  is_draft: false,
                   deleted_at: null,
                   author: {
                     followers: {
@@ -189,6 +191,7 @@ export class MapService {
               some: {
                 public_id: { not: null },
                 public: true,
+                is_draft: false,
                 deleted_at: null,
                 author: {
                   username,
@@ -198,7 +201,7 @@ export class MapService {
           };
           break;
         case MapQueryContext.TRIP:
-          // For TRIP context, ignore waypoint public field and only check trip public field
+          // For TRIP context, show waypoints attached to public journeys with published posts
           where = {
             deleted_at: null,
             trips: tripId
@@ -211,6 +214,13 @@ export class MapService {
                   },
                 }
               : undefined,
+            posts: {
+              some: {
+                public: true,
+                is_draft: false,
+                deleted_at: null,
+              },
+            },
           };
           break;
         default:

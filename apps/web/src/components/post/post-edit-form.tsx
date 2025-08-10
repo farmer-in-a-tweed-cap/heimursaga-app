@@ -40,9 +40,10 @@ import {
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { FILE_ACCEPT } from '@/constants';
-import { useAIDetection, useAutoSave, useImageAIDetection, useMap, useModal, useSession, useUploads } from '@/hooks';
-import { dateformat, normalizeText, zodMessage } from '@/lib';
+import { useAIDetection, useImageAIDetection, useMap, useModal, useSession, useUploads } from '@/hooks';
+import { dateformat, normalizeText, redirect, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
+import { ROUTER } from '@/router';
 
 const schema = z.object({
   title: z
@@ -128,8 +129,10 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
 
   const [loading, setLoading] = useState<{
     post: boolean;
+    delete: boolean;
   }>({
     post: false,
+    delete: false,
   });
   const [trip, setTrip] = useState<{ id: string; title: string } | null>(
     values?.trip || null,
@@ -154,29 +157,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     mode: 'onChange', // Validate on change for real-time feedback
   });
 
-  // Watch form values for auto-save
-  const watchedValues = form.watch();
-
-  // Auto-save hook - for edit forms, we always have a postId
-  const autoSave = useAutoSave({
-    postId,
-    data: {
-      title: watchedValues.title,
-      content: watchedValues.content,
-      place: watchedValues.place,
-      date: watchedValues.date,
-      public: privacy.public,
-      sponsored: privacy.sponsored,
-      waypoint: map.marker ? {
-        lat: map.marker.lat,
-        lon: map.marker.lon,
-      } : undefined,
-      tripId: trip?.id,
-      // For edit forms, maintain existing draft status unless explicitly publishing
-      isDraft: values?.isDraft,
-    },
-    enabled: true, // Always enabled for edit forms
-  });
+  // Auto-save is disabled for edit forms to prevent issues with published entries
 
   const handleTripSelectModal = () => {
     modal.open<TripSelectModalProps>(MODALS.TRIP_SELECT, {
@@ -283,7 +264,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
         .map(({ uploadId }) => uploadId)
         .filter((el): el is string => typeof el === 'string' && el.length > 0);
 
-      setLoading({ post: true });
+      setLoading({ ...loading, post: true });
 
       const updatePayload = {
         title,
@@ -319,20 +300,71 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
           message: 'Entry saved',
         });
         
-        setLoading({ post: false });
+        setLoading({ ...loading, post: false });
       } else {
         toast({
           type: 'error',
           message: 'Failed to save entry. Please try again.',
         });
-        setLoading({ post: false });
+        setLoading({ ...loading, post: false });
       }
     } catch (e) {
       toast({
         type: 'error',
         message: 'Something went wrong. Please try again.',
       });
-      setLoading({ post: false });
+      setLoading({ post: false, delete: false });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!postId) return;
+
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this entry? This action cannot be undone.'
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setLoading({ ...loading, delete: true });
+
+      const { success } = await apiClient.deletePost({
+        query: { postId },
+      });
+
+      if (success) {
+        // Invalidate relevant queries to update the UI
+        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.POSTS] });
+        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.MAP.QUERY] });
+        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER.POSTS] });
+        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER_FEED] });
+        
+        toast({
+          type: 'success',
+          message: 'Entry deleted successfully',
+        });
+
+        // Redirect to user's profile page
+        const username = session.username;
+        if (username) {
+          redirect(ROUTER.USERS.DETAIL(username));
+        } else {
+          redirect(ROUTER.HOME);
+        }
+      } else {
+        toast({
+          type: 'error',
+          message: 'Failed to delete entry. Please try again.',
+        });
+        setLoading({ ...loading, delete: false });
+      }
+    } catch (e) {
+      toast({
+        type: 'error',
+        message: 'Something went wrong. Please try again.',
+      });
+      setLoading({ ...loading, delete: false });
     }
   };
 
@@ -412,7 +444,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                           <p className="text-xs text-gray-500 mb-2">a unique and descriptive title</p>
                           <FormControl>
                             <Input 
-                              disabled={loading.post} 
+                              disabled={loading.post || loading.delete} 
                               {...field} 
                               onBlur={async (e) => {
                                 field.onBlur();
@@ -446,7 +478,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                               }
                               date={field.value}
                               onChange={field.onChange}
-                              disabled={loading.post}
+                              disabled={loading.post || loading.delete}
                               disabledDates={{ after: new Date() }}
                               inputProps={{
                                 name: field.name,
@@ -466,7 +498,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                           <p className="text-xs text-gray-500 mb-2">the place where it happened - the official name or your own name</p>
                           <FormControl>
                             <Input 
-                              disabled={loading.post} 
+                              disabled={loading.post || loading.delete} 
                               {...field} 
                               onBlur={async (e) => {
                                 field.onBlur();
@@ -516,7 +548,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                               <Textarea
                                 id="post-edit-content-textarea"
                                 className="min-h-[180px]"
-                                disabled={loading.post}
+                                disabled={loading.post || loading.delete}
                                 {...field}
                                 onPaste={aiDetection.trackPaste}
                                 onChange={(e) => {
@@ -630,7 +662,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                       <FormLabel>Public</FormLabel>
                       <Switch
                         checked={privacy.public}
-                        disabled={loading.post || privacy.sponsored}
+                        disabled={loading.post || loading.delete || privacy.sponsored}
                         onCheckedChange={(checked) =>
                           handlePrivacyChange({ public: checked })
                         }
@@ -643,7 +675,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                         <FormLabel>Sponsored</FormLabel>
                         <Switch
                           checked={privacy.sponsored}
-                          disabled={loading.post || !privacy.public}
+                          disabled={loading.post || loading.delete || !privacy.public}
                           onCheckedChange={(checked) =>
                             handlePrivacyChange({ sponsored: checked })
                           }
@@ -657,17 +689,23 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                     type="submit"
                     className="min-w-[140px]"
                     loading={loading.post}
+                    disabled={loading.delete}
                   >
                     {values?.isDraft 
                       ? (privacy.public ? 'Publish Entry' : 'Publish Private Entry')
                       : (privacy.public ? 'Save Entry' : 'Save Private Entry')
                     }
                   </Button>
-                  {autoSave.isAutoSaving && (
-                    <span className="text-sm text-gray-500">
-                      Auto-saving...
-                    </span>
-                  )}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="min-w-[140px]"
+                    loading={loading.delete}
+                    disabled={loading.post || loading.delete}
+                    onClick={handleDelete}
+                  >
+                    Delete Entry
+                  </Button>
                 </div>
               </CardContent>
             </Card>

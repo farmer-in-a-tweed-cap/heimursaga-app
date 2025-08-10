@@ -74,7 +74,6 @@ export const useAutoSave = ({
       };
       const dataString = JSON.stringify(dataForComparison);
       
-      
       // Only save if data has actually changed
       if (dataString === lastSavedData.current) {
         return;
@@ -103,7 +102,7 @@ export const useAutoSave = ({
           } : undefined,
           tripId: saveData.tripId,
           uploads: saveData.uploads,
-          isDraft: true, // Auto-saves are always drafts
+          isDraft: saveData.isDraft !== undefined ? saveData.isDraft : true, // Preserve existing draft status or default to draft
         });
       } else {
         // Create new draft post
@@ -119,7 +118,7 @@ export const useAutoSave = ({
           waypointId: saveData.waypointId,
           tripId: saveData.tripId,
           uploads: saveData.uploads,
-          isDraft: true, // Auto-saves are always drafts
+          isDraft: saveData.isDraft !== undefined ? saveData.isDraft : true, // Default to draft for new posts
         });
       }
     },
