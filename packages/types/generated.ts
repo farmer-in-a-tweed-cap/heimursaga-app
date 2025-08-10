@@ -273,6 +273,7 @@ export interface IPostDetail {
   media?: { id: string; thumbnail: string }[];
   public?: boolean;
   sponsored?: boolean;
+  isDraft?: boolean;
   liked?: boolean;
   bookmarked?: boolean;
   likesCount?: number;
@@ -312,6 +313,7 @@ export interface IPostCreatePayload {
   lon?: number;
   public?: boolean;
   sponsored?: boolean;
+  isDraft?: boolean;
   place?: string;
   date?: Date;
   uploads?: string[];
@@ -329,6 +331,7 @@ export interface IPostUpdatePayload {
   waypoint?: IWaypointUpdatePayload;
   public?: boolean;
   sponsored?: boolean;
+  isDraft?: boolean;
   place?: string;
   date?: Date;
   uploads?: string[];

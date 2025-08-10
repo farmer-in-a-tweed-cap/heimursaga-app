@@ -19,6 +19,7 @@ export const MODALS = {
   SPONSOR_CHECKOUT: 'sponsor_checkout',
   ADMIN_ENTRY_PREVIEW: 'admin_entry_preview',
   ADMIN_USER_PREVIEW: 'admin_user_preview',
+  DRAFT_RECOVERY: 'draft_recovery',
 };
 
 export const modalRegistry: IModalRegistry = {
@@ -31,4 +32,5 @@ export const modalRegistry: IModalRegistry = {
   [MODALS.SPONSOR_CHECKOUT]: () => import('./sponsor-checkout-modal'),
   [MODALS.ADMIN_ENTRY_PREVIEW]: () => import('./admin-entry-preview-modal'),
   [MODALS.ADMIN_USER_PREVIEW]: () => import('./admin-user-preview-modal'),
+  [MODALS.DRAFT_RECOVERY]: () => import('../draft/draft-recovery-modal'),
 };

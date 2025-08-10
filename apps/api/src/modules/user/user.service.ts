@@ -894,6 +894,7 @@ export class SessionUserService {
         content: true,
         public: true,
         sponsored: true,
+        is_draft: true,
         author_id: true,
         lat: true,
         lon: true,
@@ -949,6 +950,7 @@ export class SessionUserService {
           where = {
             ...where,
             author: { id: userId },
+            is_draft: false, // Exclude drafts from user's feed/profile view
           };
           break;
         case 'bookmarks':
@@ -968,7 +970,7 @@ export class SessionUserService {
         case 'drafts':
           where = {
             ...where,
-            public: false,
+            is_draft: true,
             author: { id: userId },
           };
           break;
@@ -1014,6 +1016,7 @@ export class SessionUserService {
             content,
             public: isPublic,
             sponsored,
+            is_draft,
             place,
             lat,
             lon,
@@ -1030,6 +1033,7 @@ export class SessionUserService {
             content,
             public: isPublic,
             sponsored,
+            isDraft: is_draft,
             place,
             lat,
             lon,

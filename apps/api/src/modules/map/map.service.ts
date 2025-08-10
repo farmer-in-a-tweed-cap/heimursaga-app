@@ -89,6 +89,11 @@ export class MapService {
         lon: true,
         date: true,
         posts: {
+          where: {
+            is_draft: false,
+            public: true,
+            deleted_at: null,
+          },
           select: {
             public_id: true,
             title: true,
@@ -97,6 +102,7 @@ export class MapService {
             date: true,
             public: true,
             sponsored: true,
+            is_draft: true,
             author_id: true,
             bookmarks: userId
               ? {
@@ -132,10 +138,6 @@ export class MapService {
               },
             },
             created_at: true,
-          },
-          where: {
-            public: true,
-            deleted_at: null,
           },
           take: 1,
         },
@@ -287,6 +289,7 @@ export class MapService {
                   place: post.place,
                   date: post.date,
                   sponsored: post.sponsored,
+                  isDraft: post.is_draft,
                   author: {
                     username: post.author.username,
                     picture: getStaticMediaUrl(post.author.profile.picture),

@@ -24,7 +24,7 @@ import {
 } from '@repo/ui/components';
 import { useToast } from '@repo/ui/hooks';
 import { MapPinIcon, PathIcon, XIcon } from '@repo/ui/icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -42,9 +42,10 @@ import {
   TripSelectModalSubmitHandler,
   AIDetectionWarning,
 } from '@/components';
+import { DraftRecoveryModalProps } from '@/components/draft/draft-recovery-modal';
 import { APP_CONFIG } from '@/config';
 import { FILE_ACCEPT } from '@/constants';
-import { useAIDetection, useImageAIDetection, useMap, useModal, useScroll, useSession, useUploads } from '@/hooks';
+import { useAIDetection, useAutoSave, useImageAIDetection, useMap, useModal, useScroll, useSession, useUploads } from '@/hooks';
 import { dateformat, redirect, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
@@ -84,6 +85,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   const modal = useModal();
   const session = useSession();
   const toast = useToast();
+  const queryClient = useQueryClient();
 
   // Helper function to show validation error toasts
   const showValidationError = (errors: any) => {
@@ -101,7 +103,9 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   };
 
   const [loading, setLoading] = useState<boolean>(false);
+  const [draftPostId, setDraftPostId] = useState<string | null>(null);
   const [trip, setTrip] = useState<{ id: string; title: string } | null>(null);
+  const [showDraftModal, setShowDraftModal] = useState<boolean>(false);
   
   const [privacy, setPrivacy] = useState<{
     public: boolean;
@@ -123,13 +127,43 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   });
 
   const map = useMap({
-    marker: waypoint ? waypoint : undefined,
+    marker: waypoint ? { lat: waypoint.lat, lon: waypoint.lon } : undefined,
+    center: waypoint ? { lat: waypoint.lat, lon: waypoint.lon } : undefined,
     zoom: waypoint ? APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM : 0,
   });
+
+
+  // Watch form values for auto-save
+  const watchedValues = form.watch();
 
   const uploader = useUploads({
     maxFiles: session.creator ? 3 : 1,
     maxSize: APP_CONFIG.UPLOAD.MAX_FILE_SIZE,
+  });
+
+  // Process uploads for auto-save
+  const uploadsForAutoSave = uploader.files
+    .map(({ uploadId }) => uploadId)
+    .filter((el): el is string => typeof el === 'string' && el.length > 0);
+
+  // Auto-save hook
+  const autoSave = useAutoSave({
+    postId: draftPostId || undefined,
+    data: {
+      title: watchedValues.title,
+      content: watchedValues.content,
+      place: watchedValues.place,
+      date: watchedValues.date,
+      public: privacy.public,
+      sponsored: privacy.sponsored,
+      lat: map.marker?.lat,
+      lon: map.marker?.lon,
+      waypointId: waypoint?.id,
+      tripId: trip?.id,
+      uploads: uploadsForAutoSave,
+    },
+    enabled: session.logged, // Only enable auto-save when logged in
+    onDraftCreated: setDraftPostId,
   });
 
   // AI Content Detection
@@ -142,6 +176,30 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
 
   // Image AI Detection
   const imageAIDetection = useImageAIDetection();
+
+  // Check for existing drafts on component mount
+  const { data: draftsResponse, isLoading: draftsLoading, error: draftsError } = useQuery({
+    queryKey: [API_QUERY_KEYS.USER_DRAFTS],
+    queryFn: () => apiClient.getDrafts(),
+    enabled: session.logged && !draftPostId, // Wait for session to be logged in
+    retry: 1, // Retry once if it fails
+  });
+
+
+  // Show draft recovery modal if drafts exist
+  useEffect(() => {
+    const draftsList = draftsResponse?.data?.data || [];
+    if (session.logged && Array.isArray(draftsList) && draftsList.length > 0 && !draftPostId && !showDraftModal) {
+      modal.open<DraftRecoveryModalProps>(MODALS.DRAFT_RECOVERY, {
+        full: false,
+        props: {
+          onDraftSelected: handleDraftSelected,
+          drafts: draftsList as any,
+        },
+      });
+      setShowDraftModal(true); // Prevent multiple modals
+    }
+  }, [draftsResponse, draftPostId, showDraftModal, modal, session.logged]);
 
   const handleLocationPickModal = () => {
     modal.open<MapLocationPickModalProps>(MODALS.MAP_LOCATION_SELECT, {
@@ -179,6 +237,69 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
 
   const handleTripRemove = () => {
     setTrip(null);
+  };
+
+  const handleDraftSelected = async (draftId: string) => {
+    try {
+      // Fetch the draft details to populate the form
+      const { data: draftData } = await apiClient.getPostById({ query: { id: draftId } });
+      
+      if (draftData) {
+        // Populate form with draft data
+        form.reset({
+          title: draftData.title || '',
+          content: draftData.content || '',
+          place: draftData.place || '',
+          date: draftData.date ? new Date(draftData.date) : new Date(),
+        });
+
+        // Set privacy settings
+        setPrivacy({
+          public: draftData.public || false,
+          sponsored: draftData.sponsored || false,
+        });
+
+        // Set map marker if waypoint exists
+        if (draftData.waypoint) {
+          map.setMarker({
+            lat: draftData.waypoint.lat,
+            lon: draftData.waypoint.lon,
+          });
+          map.setCenter({
+            lat: draftData.waypoint.lat,
+            lon: draftData.waypoint.lon,
+          });
+          map.setZoom(APP_CONFIG.MAP.DEFAULT.PREVIEW.ZOOM);
+        }
+
+        // Set trip if exists
+        if (draftData.trip) {
+          setTrip({
+            id: draftData.trip.id,
+            title: draftData.trip.title,
+          });
+        }
+
+        // Restore uploaded photos from draft
+        if (draftData.media && draftData.media.length > 0) {
+          const restoredFiles = draftData.media.map((mediaItem, index) => ({
+            id: Date.now() + index, // Generate unique integer ID for uploader
+            uploadId: mediaItem.id,
+            src: mediaItem.thumbnail,
+            file: undefined, // No original file since it's already uploaded
+            loading: false,
+          }));
+          
+          // Reset the uploader with the restored files
+          uploader.setFiles(restoredFiles);
+        }
+
+        // Set the draft ID so we know to update instead of create
+        setDraftPostId(draftId);
+      }
+    } catch (error) {
+      toast({ type: 'error', message: 'Failed to load draft' });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -226,29 +347,59 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
 
       setLoading(true);
 
-      // create a post
-      const { success, data } = await apiClient.createPost({
-        title,
-        content: content || (privacy.public ? content : ' '), // Private entries can have minimal content
-        place,
-        date,
-        lat: marker?.lat,
-        lon: marker?.lon,
-        public: privacy.public,
-        sponsored: privacy.sponsored,
-        waypointId: waypoint?.id,
-        uploads,
-        tripId,
-      });
+      if (draftPostId) {
+        // Update existing draft to publish it
+        const { success } = await apiClient.updatePost({
+          query: { id: draftPostId },
+          payload: {
+            title,
+            content: content || (privacy.public ? content : ' '),
+            place,
+            date,
+            public: privacy.public,
+            sponsored: privacy.sponsored,
+            waypoint: {
+              lat: marker?.lat,
+              lon: marker?.lon,
+            },
+            tripId,
+            uploads,
+            isDraft: false, // Publishing the draft
+          },
+        });
 
-      if (success) {
-        const postId = data?.id;
-        if (postId) {
-          redirect(ROUTER.ENTRIES.DETAIL(postId));
+        if (success) {
+          redirect(ROUTER.ENTRIES.DETAIL(draftPostId));
+        } else {
+          setLoading(false);
+          toast({ type: 'error', message: 'Failed to publish entry. Please try again.' });
         }
       } else {
-        setLoading(false);
-        toast({ type: 'error', message: 'Failed to create entry. Please try again.' });
+        // Create a new published post
+        const { success, data } = await apiClient.createPost({
+          title,
+          content: content || (privacy.public ? content : ' '), // Private entries can have minimal content
+          place,
+          date,
+          lat: marker?.lat,
+          lon: marker?.lon,
+          public: privacy.public,
+          sponsored: privacy.sponsored,
+          waypointId: waypoint?.id,
+          uploads,
+          tripId,
+          isDraft: false, // Creating a published post
+        });
+
+        if (success) {
+          const postId = data?.id;
+          if (postId) {
+            redirect(ROUTER.ENTRIES.DETAIL(postId));
+          }
+        } else {
+          setLoading(false);
+          toast({ type: 'error', message: 'Failed to create entry. Please try again.' });
+        }
       }
     } catch (e) {
       setLoading(false);
@@ -291,7 +442,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                 <div className="w-full h-auto mb-4">
                   <MapPreview
                     zoom={map.zoom}
-                    center={map.marker}
+                    center={map.center}
                     marker={map.marker}
                     overlay={waypoint ? false : true}
                     onClick={handleLocationPickModal}
@@ -594,19 +745,46 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                   )}
                 </div>
                 <div className="mt-6">
-                  <Button
-                    type="submit"
-                    className="min-w-[140px]"
-                    loading={loading}
-                  >
-                    {privacy.public ? 'Log Entry' : 'Log Private Entry'}
-                  </Button>
+                  {/* Auto-save status */}
+                  <div className="mb-3 min-h-[20px]">
+                    {autoSave.isAutoSaving ? (
+                      <span className="text-xs text-gray-500">
+                        Auto-saving...
+                      </span>
+                    ) : autoSave.lastSaveError ? (
+                      <span className="text-xs text-red-500">
+                        Auto-save failed
+                      </span>
+                    ) : draftPostId ? (
+                      <span className="text-xs text-green-600">
+                        Draft saved
+                      </span>
+                    ) : (
+                      <span className="text-xs text-gray-400">
+                        {/* Empty state - no status to show */}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-3 items-center flex-wrap">
+                    <Button
+                      type="submit"
+                      className="min-w-[140px]"
+                      loading={loading}
+                    >
+                      {draftPostId 
+                        ? 'Publish Entry'
+                        : 'Log Entry'
+                      }
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
         </form>
       </Form>
+
     </div>
   );
 };

@@ -29,7 +29,8 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
         
         const userPosts = allPostsResult.data?.data?.filter(post => 
           post.author?.username === username && 
-          post.public === true
+          post.public === true &&
+          !post.isDraft
         ) || [];
         
         // Sort by creation date descending (newest first)

@@ -40,7 +40,7 @@ import {
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { FILE_ACCEPT } from '@/constants';
-import { useAIDetection, useImageAIDetection, useMap, useModal, useSession, useUploads } from '@/hooks';
+import { useAIDetection, useAutoSave, useImageAIDetection, useMap, useModal, useSession, useUploads } from '@/hooks';
 import { dateformat, normalizeText, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
 
@@ -152,6 +152,30 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       date: values?.date ? new Date(values?.date) : new Date(),
     },
     mode: 'onChange', // Validate on change for real-time feedback
+  });
+
+  // Watch form values for auto-save
+  const watchedValues = form.watch();
+
+  // Auto-save hook - for edit forms, we always have a postId
+  const autoSave = useAutoSave({
+    postId,
+    data: {
+      title: watchedValues.title,
+      content: watchedValues.content,
+      place: watchedValues.place,
+      date: watchedValues.date,
+      public: privacy.public,
+      sponsored: privacy.sponsored,
+      waypoint: map.marker ? {
+        lat: map.marker.lat,
+        lon: map.marker.lon,
+      } : undefined,
+      tripId: trip?.id,
+      // For edit forms, maintain existing draft status unless explicitly publishing
+      isDraft: values?.isDraft,
+    },
+    enabled: true, // Always enabled for edit forms
   });
 
   const handleTripSelectModal = () => {
@@ -268,6 +292,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
         date,
         public: privacy.public,
         sponsored: privacy.sponsored,
+        isDraft: false, // Publishing the entry
         waypoint: {
           lat: marker?.lat,
           lon: marker?.lon,
@@ -627,14 +652,22 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                     </FormControl>
                   )}
                 </div>
-                <div className="mt-6">
+                <div className="mt-6 flex gap-3 items-center flex-wrap">
                   <Button
                     type="submit"
                     className="min-w-[140px]"
                     loading={loading.post}
                   >
-                    {privacy.public ? 'Save Entry' : 'Save Private Entry'}
+                    {values?.isDraft 
+                      ? (privacy.public ? 'Publish Entry' : 'Publish Private Entry')
+                      : (privacy.public ? 'Save Entry' : 'Save Private Entry')
+                    }
                   </Button>
+                  {autoSave.isAutoSaving && (
+                    <span className="text-sm text-gray-500">
+                      Auto-saving...
+                    </span>
+                  )}
                 </div>
               </CardContent>
             </Card>

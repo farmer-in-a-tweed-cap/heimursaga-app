@@ -18,14 +18,14 @@ import {
 } from 'class-validator';
 
 export class PostCreateDto implements IPostCreatePayload {
-  @ApiProperty({ required: true })
+  @ApiProperty({ required: false })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   title: string;
 
-  @ApiProperty({ required: true })
+  @ApiProperty({ required: false })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   content: string;
 
   @ApiProperty({ required: false })
@@ -73,6 +73,11 @@ export class PostCreateDto implements IPostCreatePayload {
   @IsString()
   @IsOptional()
   tripId: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isDraft?: boolean;
 }
 
 export class PostUpdateDto implements IPostUpdatePayload {
@@ -86,11 +91,12 @@ export class PostUpdateDto implements IPostUpdatePayload {
   @IsOptional()
   content: string;
 
-  @ApiProperty({ required: true })
+  @ApiProperty({ required: false })
   @IsObject()
+  @IsOptional()
   @ValidateNested()
   @Type(() => PostWaypointCreateDto)
-  waypoint: IWaypointCreatePayload;
+  waypoint?: IWaypointCreatePayload;
 
   @ApiProperty({ required: false })
   @IsBoolean()
@@ -122,6 +128,11 @@ export class PostUpdateDto implements IPostUpdatePayload {
   @IsString()
   @IsOptional()
   tripId: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isDraft?: boolean;
 }
 
 class PostWaypointCreateDto implements IWaypointCreatePayload {

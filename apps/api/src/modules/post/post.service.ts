@@ -58,12 +58,78 @@ export class PostService {
     return !!sponsorship;
   }
 
+  async getDrafts({ session }: ISessionQuery): Promise<IPostGetAllResponse> {
+    try {
+      const { userId } = session;
+
+      // Only authenticated users can get their drafts
+      if (!userId) throw new ServiceForbiddenException();
+
+      const where = {
+        public_id: { not: null },
+        author_id: userId,
+        is_draft: true,
+        deleted_at: null,
+      } as Prisma.PostWhereInput;
+
+      const take = 20; // Limit drafts to recent ones
+
+      // get drafts
+      const results = await this.prisma.post.count({ where });
+      const data = await this.prisma.post
+        .findMany({
+          where,
+          select: {
+            public_id: true,
+            title: true,
+            content: true,
+            public: true,
+            sponsored: true,
+            is_draft: true,
+            place: true,
+            date: true,
+            created_at: true,
+            updated_at: true,
+          },
+          take,
+          orderBy: [{ updated_at: 'desc' }], // Most recently updated drafts first
+        });
+
+      const processedData = data.map((post) => ({
+        id: post.public_id,
+        title: post.title,
+        content: post.content?.slice(0, 140) || '',
+        place: post.place,
+        date: post.date,
+        public: post.public,
+        sponsored: post.sponsored,
+        isDraft: post.is_draft,
+        createdAt: post.created_at,
+        updatedAt: post.updated_at,
+      }));
+
+      const response: IPostGetAllResponse = {
+        data: processedData,
+        results,
+      };
+
+      return response;
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceNotFoundException('drafts not found');
+      throw exception;
+    }
+  }
+
   async getPosts({ session }: ISessionQuery): Promise<IPostGetAllResponse> {
     try {
       const { userId, userRole } = session;
 
       let where = {
         public_id: { not: null },
+        is_draft: false, // Exclude drafts from public views
       } as Prisma.PostWhereInput;
 
       const take = 500;
@@ -110,6 +176,7 @@ export class PostService {
             content: true,
             public: true,
             sponsored: true,
+            is_draft: true,
             lat: true,
             lon: true,
             place: true,
@@ -179,6 +246,7 @@ export class PostService {
         title: post.title,
         public: post.public,
         sponsored: post.sponsored,
+        isDraft: post.is_draft,
         content: post.content.slice(0, 140),
         author: post.author
           ? {
@@ -235,18 +303,24 @@ export class PostService {
           where = {
             ...where,
             deleted_at: null,
-            OR: [{ author_id: userId }, { public: true }],
+            OR: [
+              { author_id: userId }, // Authors can see their own drafts
+              { public: true, is_draft: false }, // Everyone can see published public posts
+            ],
           };
           break;
         case UserRole.USER:
           where = {
             ...where,
             deleted_at: null,
-            OR: [{ author_id: userId }, { public: true }],
+            OR: [
+              { author_id: userId }, // Users can see their own drafts
+              { public: true, is_draft: false }, // Everyone can see published public posts
+            ],
           };
           break;
         default:
-          where = { ...where, deleted_at: null, public: true };
+          where = { ...where, deleted_at: null, public: true, is_draft: false };
           break;
       }
 
@@ -259,6 +333,7 @@ export class PostService {
           content: true,
           public: true,
           sponsored: true,
+          is_draft: true,
           author_id: true,
           place: true,
           date: true,
@@ -345,6 +420,7 @@ export class PostService {
         bookmarksCount: post.bookmarks_count,
         public: post.public,
         sponsored: post.sponsored,
+        isDraft: post.is_draft,
         waypoint: post.waypoint,
         trip: trip
           ? {
@@ -396,12 +472,26 @@ export class PostService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      const { title, lat, lon, date, place, waypointId, tripId } = payload;
+      const { title, lat, lon, date, place, waypointId, tripId, isDraft } = payload;
       const privacy = {
         public: payload.public,
         sponsored: payload.sponsored,
       };
       const content = normalizeText(payload.content);
+
+      // Validate required fields for published posts (non-drafts)
+      if (!isDraft) {
+        if (!title || title.trim().length === 0) {
+          throw new ServiceBadRequestException('Title is required for published posts');
+        }
+        if (!content || content.trim().length === 0) {
+          throw new ServiceBadRequestException('Content is required for published posts');
+        }
+        if (!place || place.trim().length === 0) {
+          throw new ServiceBadRequestException('Place is required for published posts');
+        }
+      }
+
 
       this.logger.log('post_create');
 
@@ -425,19 +515,21 @@ export class PostService {
       const { post } = await this.prisma.$transaction(async (tx) => {
         this.logger.log('post_create: waypoint');
 
-        // create a waypoint
+        // create a waypoint (only if we have coordinates or using existing waypoint)
         const waypoint = waypointId
           ? await tx.waypoint.findFirstOrThrow({
               where: { id: waypointId },
               select: { id: true },
             })
-          : await tx.waypoint.create({
+          : (lat != null && lon != null)
+          ? await tx.waypoint.create({
               data: {
                 lat,
                 lon,
               },
               select: { id: true },
-            });
+            })
+          : null;
 
         this.logger.log('post_create: post');
 
@@ -445,13 +537,14 @@ export class PostService {
         const post = await tx.post.create({
           data: {
             public_id: generator.publicId(),
-            title,
-            content,
-            date,
-            place,
+            title: title || '',
+            content: content || ' ', // Ensure non-empty content for database constraints
+            date: date || new Date(),
+            place: place || '',
             public: privacy.public,
             sponsored: privacy.sponsored,
-            email_sent: privacy.public, // Mark email as sent if creating a public post
+            is_draft: isDraft === true,
+            email_sent: privacy.public && !isDraft, // Only send email for published, non-draft posts
             author: { connect: { id: userId } },
             waypoint: waypoint ? { connect: { id: waypoint.id } } : undefined,
           },
@@ -506,8 +599,8 @@ export class PostService {
 
       this.logger.log('post_create: success');
 
-      // Trigger email delivery for monthly sponsors (only for public entries)
-      if (privacy.public) {
+      // Trigger email delivery for monthly sponsors (only for public, published entries)
+      if (privacy.public && !isDraft) {
         this.eventService.trigger({
           event: EVENTS.ENTRY_CREATED,
           data: {
@@ -571,6 +664,7 @@ export class PostService {
             public_id: true,
             waypoint_id: true,
             public: true,
+            is_draft: true,
             email_sent: true,
             title: true,
             content: true,
@@ -587,10 +681,12 @@ export class PostService {
       const result = await this.prisma.$transaction(async (tx) => {
         this.logger.log('post_update: post');
 
-        // Check if post is changing from private to public
+        // Check if post is changing from draft to published or private to public
         const wasPrivate = !post.public;
+        const wasDraft = post.is_draft;
         const isBecomingPublic = payload.public;
-        const shouldTriggerEmail = wasPrivate && isBecomingPublic && !post.email_sent;
+        const isBecomingPublished = !payload.isDraft && wasDraft;
+        const shouldTriggerEmail = (wasPrivate && isBecomingPublic || isBecomingPublished) && !post.email_sent && payload.public;
 
         // update the post
         await tx.post.update({
@@ -602,6 +698,7 @@ export class PostService {
             sponsored: payload.sponsored,
             place: payload.place,
             date: payload.date,
+            is_draft: payload.isDraft !== undefined ? payload.isDraft : post.is_draft,
             email_sent: shouldTriggerEmail ? true : post.email_sent, // Mark email as sent if triggering
           },
         });

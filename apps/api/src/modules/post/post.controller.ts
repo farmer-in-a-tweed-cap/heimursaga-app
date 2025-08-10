@@ -24,6 +24,12 @@ import { PostService } from './post.service';
 export class PostController {
   constructor(private postService: PostService) {}
 
+  @Get('drafts')
+  @HttpCode(HttpStatus.OK)
+  async getDrafts(@Session() session: ISession) {
+    return await this.postService.getDrafts({ query: {}, session });
+  }
+
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -47,10 +53,6 @@ export class PostController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() body: PostCreateDto, @Session() session: ISession) {
-    console.log(body);
-
-    // throw new BadRequestException();
-
     return await this.postService.create({
       query: {},
       payload: body,

@@ -164,6 +164,11 @@ export const apiClient = {
       method: API_METHODS.GET,
       ...config,
     }),
+  getDrafts: async (config?: RequestConfig) =>
+    api.request<IPostQueryResponse>(API_ROUTER.USER.DRAFTS, {
+      method: API_METHODS.GET,
+      ...config,
+    }),
   getPostById: async (
     { query }: IApiClientQuery<{ id: string }>,
     config?: RequestConfig,
