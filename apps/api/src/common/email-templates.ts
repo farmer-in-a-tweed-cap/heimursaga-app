@@ -430,7 +430,7 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
         <body>
           <div class="container">
             <div class="header">
-              <h1>🎉 New User Signup</h1>
+              <h1>New User Signup</h1>
             </div>
             
             <div class="content">
