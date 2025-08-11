@@ -19,6 +19,8 @@ type PromoValidation = {
     percentOff?: number;
     amountOff?: number;
     currency: string;
+    duration?: string;
+    durationInMonths?: number;
   };
 };
 
@@ -51,6 +53,23 @@ export const CheckoutPageClient: React.FC<Props> = ({ plan }) => {
   const originalPrice = promoValidation.valid && promoValidation.discount
     ? (promoValidation.discount.originalAmount / 100).toFixed(2)
     : null;
+
+  const formatDiscountPeriod = (duration?: string, durationInMonths?: number): string => {
+    if (!duration) return '';
+    
+    switch (duration) {
+      case 'once':
+        return ' for the first month';
+      case 'repeating':
+        if (durationInMonths === 1) return ' for the first month';
+        if (durationInMonths) return ` for the first ${durationInMonths} months`;
+        return ' for a limited time';
+      case 'forever':
+        return ' permanently';
+      default:
+        return '';
+    }
+  };
 
   return (
     <div className="w-full h-auto flex flex-col lg:flex-row lg:justify-between gap-10 py-10">
@@ -93,8 +112,8 @@ export const CheckoutPageClient: React.FC<Props> = ({ plan }) => {
           {promoValidation.valid && promoValidation.discount && (
             <div className="mt-2 text-sm text-green-600">
               {promoValidation.discount.percentOff
-                ? `${promoValidation.discount.percentOff}% discount applied`
-                : `${plan.currencySymbol}${(promoValidation.discount.amountOff! / 100).toFixed(2)} discount applied`
+                ? `${promoValidation.discount.percentOff}% discount applied${formatDiscountPeriod(promoValidation.discount.duration, promoValidation.discount.durationInMonths)}`
+                : `${plan.currencySymbol}${(promoValidation.discount.amountOff! / 100).toFixed(2)} discount applied${formatDiscountPeriod(promoValidation.discount.duration, promoValidation.discount.durationInMonths)}`
               }
             </div>
           )}

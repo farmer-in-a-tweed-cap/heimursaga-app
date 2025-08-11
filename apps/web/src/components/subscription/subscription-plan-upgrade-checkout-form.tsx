@@ -45,6 +45,8 @@ type PromoValidation = {
     percentOff?: number;
     amountOff?: number;
     currency: string;
+    duration?: string;
+    durationInMonths?: number;
   };
 };
 
@@ -181,6 +183,8 @@ const FormComponent: React.FC<Props> = ({
               percentOff: data.coupon.percentOff,
               amountOff: data.coupon.amountOff,
               currency: data.pricing.currency,
+              duration: data.coupon.duration,
+              durationInMonths: data.coupon.durationInMonths,
             },
           });
         } else {

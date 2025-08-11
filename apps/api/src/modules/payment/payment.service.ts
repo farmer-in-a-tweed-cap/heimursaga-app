@@ -1202,6 +1202,8 @@ export class PaymentService {
             percentOff: coupon.percent_off,
             amountOff: coupon.amount_off,
             currency: coupon.currency,
+            duration: coupon.duration,
+            durationInMonths: coupon.duration_in_months,
           },
           pricing: {
             originalAmount: plan.unitAmount,
