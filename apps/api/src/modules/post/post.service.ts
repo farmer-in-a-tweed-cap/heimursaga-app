@@ -325,7 +325,7 @@ export class PostService {
       }
 
       // get a post
-      const post = await this.prisma.post.findFirstOrThrow({
+      const post = await this.prisma.post.findFirst({
         where,
         select: {
           public_id: true,
@@ -377,6 +377,11 @@ export class PostService {
           created_at: true,
         },
       });
+
+      // handle case where post was not found (deleted, private, or doesn't exist)
+      if (!post) {
+        throw new ServiceNotFoundException('Entry not found');
+      }
 
       // get trip
       const trip = post.waypoint.id

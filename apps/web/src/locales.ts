@@ -46,8 +46,8 @@ export const LOCALES = {
       TOAST: {
         CANCELED: 'sponsorship canceled',
         STRIPE_NOT_VERIFIED: 'Please complete your Stripe account verification to update sponsorship tiers',
-        ONE_TIME_PAYMENT_SENT: 'one-time sponsorship payment sent!',
-        MONTHLY_PAYMENT_SENT: 'monthly sponsorship payment sent!',
+        ONE_TIME_PAYMENT_SENT: 'One-time sponsorship payment sent!',
+        MONTHLY_PAYMENT_SENT: 'Monthly sponsorship payment sent!',
       },
     },
     USERS: {

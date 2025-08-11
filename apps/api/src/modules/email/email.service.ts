@@ -130,6 +130,7 @@ export class EmailService {
           content: true,
           place: true,
           date: true,
+          sponsored: true,
           waypoint: {
             select: {
               lat: true,
@@ -189,9 +190,8 @@ export class EmailService {
       // Send emails to each sponsor
       for (const sponsorship of sponsors) {
         if (!sponsorship.user.is_email_verified) {
-          this.logger.log(`Sending to unverified email for testing: ${sponsorship.user.email}`);
-          // Temporarily bypass verification check for testing
-          // continue;
+          this.logger.log(`Skipping unverified email: ${sponsorship.user.email}`);
+          continue;
         }
 
         const postUrl = `${process.env.WEB_URL}/entries/${entryId}`;
@@ -230,6 +230,7 @@ export class EmailService {
           postUrl,
           unsubscribeUrl,
           webViewUrl,
+          sponsored: entry.sponsored || false,
         });
 
         if (template) {

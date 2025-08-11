@@ -30,3 +30,5 @@ export * from './user-you-menu';
 export * from './user-you-header';
 
 export * from './user-guide';
+
+export * from './email-verification-banner';

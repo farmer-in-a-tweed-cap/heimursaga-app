@@ -48,7 +48,6 @@ export class NotificationService {
     IUserNotificationCreatePayload
   >): Promise<void> {
     try {
-      console.log({ payload });
 
       const { userId, mentionUserId, mentionPostId, context, body, sponsorshipType, sponsorshipAmount, sponsorshipCurrency } = payload;
 

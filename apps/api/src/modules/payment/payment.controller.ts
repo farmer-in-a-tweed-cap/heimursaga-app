@@ -46,10 +46,6 @@ export class PaymentMethodController {
     @Body() body: PaymentMethodCreateDto,
     @Session() session: ISession,
   ) {
-    console.log('create payment method', {
-      body,
-      session,
-    });
 
     return await this.paymentService.createPaymentMethod({
       query: {},

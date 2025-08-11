@@ -127,7 +127,6 @@ export class StripeService {
       });
       if (!user) throw new ServiceForbiddenException('customer not found');
 
-      console.log({ user });
 
       // get the customer
       const customer = await this.getOrCreateCustomer({
@@ -139,7 +138,6 @@ export class StripeService {
       });
       if (!customer) throw new ServiceForbiddenException('customer not found');
 
-      console.log({ customer });
 
       // create a payment intent with the order amount and currency
       const paymentIntent = await this.stripe.paymentIntents.create({
@@ -150,7 +148,6 @@ export class StripeService {
         customer: customer.id,
       });
 
-      console.log({ paymentIntent });
 
       return paymentIntent;
     } catch (e) {

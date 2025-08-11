@@ -518,7 +518,6 @@ export class MapService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      console.log({ id, deleted_at: null, author_id: userId });
 
       // get a waypoint
       const waypoint = await this.prisma.waypoint

@@ -1,5 +1,5 @@
 import { FastifyCorsOptions, fastifyCors } from '@fastify/cors';
-// import { FastifyCsrfOptions, fastifyCsrf } from '@fastify/csrf-protection';
+import fastifyCsrf from '@fastify/csrf-protection';
 import fastifyHelmet, { FastifyHelmetOptions } from '@fastify/helmet';
 import { FastifyMultipartOptions, fastifyMultipart } from '@fastify/multipart';
 import {
@@ -85,16 +85,16 @@ export async function app() {
       },
     } satisfies FastifyMultipartOptions);
 
-    // CSRF protection - temporarily disabled due to plugin loading issue
-    // await fastify.register(fastifyCsrf as any, {
-    //   sessionPlugin: '@fastify/secure-session',
-    //   cookieOpts: {
-    //     signed: false,
-    //     secure: IS_PRODUCTION,
-    //     httpOnly: false, // Allow frontend to read CSRF token
-    //     sameSite: 'strict',
-    //   },
-    // });
+    // CSRF protection
+    await fastify.register(fastifyCsrf as any, {
+      sessionPlugin: '@fastify/secure-session',
+      cookieOpts: {
+        signed: false,
+        secure: IS_PRODUCTION,
+        httpOnly: false, // Allow frontend to read CSRF token
+        sameSite: 'strict',
+      },
+    });
 
     // security headers
     await fastify.register(fastifyHelmet as any, {

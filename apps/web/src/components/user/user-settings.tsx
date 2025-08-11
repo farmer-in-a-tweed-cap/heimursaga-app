@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { TabNavbar } from '@/components';
 import { ROUTER } from '@/router';
 
+import { EmailVerificationBanner } from './email-verification-banner';
 import { UserSettingsPaymentMethodView } from './user-settings-payment-method-view';
 import { UserSettingsProfileView } from './user-settings-profile-view';
 import { UserSettingsSecurityView } from './user-settings-security-view';
@@ -69,6 +70,14 @@ export const UserSettings: React.FC<Props> = ({ section, data }) => {
         }}
         onChange={handleChange}
       />
+      
+      {/* Show email verification banner across all settings pages if not verified */}
+      {data?.profile?.email && !data?.profile?.isEmailVerified && (
+        <div className="mb-6">
+          <EmailVerificationBanner email={data.profile.email} />
+        </div>
+      )}
+      
       <div className="flex flex-col">
         {sectionKey === SECTION_KEYS.PROFILE && (
           <UserSettingsProfileView data={data?.profile} />

@@ -256,6 +256,7 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
         postUrl: string;
         unsubscribeUrl: string;
         webViewUrl: string;
+        sponsored?: boolean;
       }) => `
         <!DOCTYPE html>
         <html lang="en">
@@ -296,6 +297,7 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
             .footer-links a { color: #6c757d; text-decoration: none; margin: 0 15px; font-size: 13px; }
             .footer-links a:hover { color: #AC6D46; }
             .explorer-pro-badge { background: linear-gradient(135deg, #AC6D46 0%, #8b5a37 100%); color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+            .sponsored-badge { background: #AA6C46; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 8px; display: inline-block; }
             @media (max-width: 600px) {
               .container { margin: 0; }
               .content { padding: 20px; }
@@ -315,7 +317,7 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
                 <div class="header-content">
                   <div class="left-content">
                     <div class="title-row">
-                      <h2 class="entry-title">${v.postTitle}</h2>
+                      <h2 class="entry-title">${v.postTitle}${v.sponsored ? '<span class="sponsored-badge">Sponsored</span>' : ''}</h2>
                     </div>
                     <div class="location-date">
                       📍 ${v.postPlace ? `<span>${v.postPlace} | </span>` : ''}${v.postDate}
@@ -340,11 +342,17 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
 
               <!-- Entry Content -->
               <div class="entry-content">
-                ${v.postContent
-                  .split('\\n')
-                  .filter(line => line.trim() !== '')
-                  .map(line => `<p>${line.trim()}</p>`)
-                  .join('')}
+                ${(() => {
+                  // Handle both actual newlines (\n) and escaped newlines (\\n)
+                  const normalizedContent = v.postContent.replace(/\\\\n/g, '\n');
+                  
+                  // Split on double newlines to get paragraphs, not individual lines
+                  return normalizedContent
+                    .split('\n\n')
+                    .filter(paragraph => paragraph.trim() !== '')
+                    .map(paragraph => `<p>${paragraph.trim()}</p>`)
+                    .join('');
+                })()}
               </div>
 
               <!-- Entry Images -->

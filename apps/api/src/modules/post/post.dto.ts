@@ -14,18 +14,26 @@ import {
   IsObject,
   IsOptional,
   IsString,
+  Length,
+  MaxLength,
   ValidateNested,
 } from 'class-validator';
 
+import { SanitizeContent, SanitizeText } from '@/lib/sanitizer';
+
 export class PostCreateDto implements IPostCreatePayload {
   @ApiProperty({ required: false })
+  @SanitizeText()
   @IsString()
   @IsOptional()
+  @MaxLength(200, { message: 'Title must be less than 200 characters' })
   title: string;
 
   @ApiProperty({ required: false })
+  @SanitizeContent()
   @IsString()
   @IsOptional()
+  @MaxLength(10000, { message: 'Content must be less than 10,000 characters' })
   content: string;
 
   @ApiProperty({ required: false })
@@ -49,8 +57,10 @@ export class PostCreateDto implements IPostCreatePayload {
   sponsored: boolean;
 
   @ApiProperty({ required: false })
+  @SanitizeText()
   @IsString()
   @IsOptional()
+  @MaxLength(250, { message: 'Place must be less than 250 characters' })
   place: string;
 
   @ApiProperty({ required: false })
@@ -70,6 +80,7 @@ export class PostCreateDto implements IPostCreatePayload {
   waypointId: number;
 
   @ApiProperty({ required: false })
+  @SanitizeText()
   @IsString()
   @IsOptional()
   tripId: string;
@@ -82,13 +93,17 @@ export class PostCreateDto implements IPostCreatePayload {
 
 export class PostUpdateDto implements IPostUpdatePayload {
   @ApiProperty({ required: false })
+  @SanitizeText()
   @IsString()
   @IsOptional()
+  @MaxLength(200, { message: 'Title must be less than 200 characters' })
   title: string;
 
   @ApiProperty({ required: false })
+  @SanitizeContent()
   @IsString()
   @IsOptional()
+  @MaxLength(10000, { message: 'Content must be less than 10,000 characters' })
   content: string;
 
   @ApiProperty({ required: false })
@@ -109,8 +124,10 @@ export class PostUpdateDto implements IPostUpdatePayload {
   sponsored: boolean;
 
   @ApiProperty({ required: false })
+  @SanitizeText()
   @IsString()
   @IsOptional()
+  @MaxLength(250, { message: 'Place must be less than 250 characters' })
   place: string;
 
   @ApiProperty({ required: false })
@@ -125,6 +142,7 @@ export class PostUpdateDto implements IPostUpdatePayload {
   uploads?: string[];
 
   @ApiProperty({ required: false })
+  @SanitizeText()
   @IsString()
   @IsOptional()
   tripId: string;

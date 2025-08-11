@@ -28,11 +28,15 @@ export const LogoSpinner: React.FC<Props> = ({
   const logoSrc = color === 'light' ? '/logo-sm-light.svg' : '/logo-sm-dark.svg';
 
   return (
-    <div className={cn(
-      'animate-spin',
-      getSizeClasses(),
-      className
-    )}>
+    <div 
+      className={cn(
+        getSizeClasses(),
+        className
+      )}
+      style={{ 
+        animation: 'spin 2s linear infinite' // Slower 2-second rotation instead of 1s
+      }}
+    >
       <Image
         src={logoSrc}
         width={48}

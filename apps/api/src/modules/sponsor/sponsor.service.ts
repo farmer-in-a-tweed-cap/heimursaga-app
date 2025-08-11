@@ -292,13 +292,6 @@ export class SponsorService {
             (stripePaymentIntentId = paymentIntent.id),
               (clientSecret = paymentIntent.client_secret);
 
-            console.log({
-              subscriptionId: subscription.id,
-              subscriptionAmount,
-              invoice,
-              clientSecret,
-              stripePaymentIntentId,
-            });
           }
 
           // create a checkout
@@ -334,10 +327,6 @@ export class SponsorService {
             [StripeMetadataKey.CREATOR_ID]: creator.id,
           };
 
-          console.log('update metadata', {
-            stripePaymentIntentId,
-            metadata,
-          });
 
           if (stripePaymentIntentId) {
             await this.stripeService.stripe.paymentIntents.update(
