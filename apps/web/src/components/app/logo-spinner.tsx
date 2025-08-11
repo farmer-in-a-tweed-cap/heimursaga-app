@@ -14,13 +14,13 @@ export const LogoSpinner: React.FC<Props> = ({
   const getSizeClasses = () => {
     switch (size) {
       case 'sm':
-        return 'w-10 h-10 lg:w-12 lg:h-12'; // 40px mobile, 48px desktop
-      case 'md':
         return 'w-12 h-12 lg:w-16 lg:h-16'; // 48px mobile, 64px desktop
+      case 'md':
+        return 'w-16 h-16 lg:w-20 lg:h-20'; // 64px mobile, 80px desktop
       case 'lg':
-        return 'w-16 h-16 lg:w-24 lg:h-24'; // 64px mobile, 96px desktop
+        return 'w-20 h-20 lg:w-28 lg:h-28'; // 80px mobile, 112px desktop
       default:
-        return 'w-10 h-10 lg:w-12 lg:h-12';
+        return 'w-12 h-12 lg:w-16 lg:h-16';
     }
   };
 
