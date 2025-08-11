@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { cn } from '@repo/ui/lib/utils';
 
 type Props = {
@@ -15,31 +14,17 @@ export const LogoSpinner: React.FC<Props> = ({
   const getSizeClasses = () => {
     switch (size) {
       case 'sm':
-        return 'w-10 h-10'; // 40px - bigger than standard spinner (24px)
+        return 'w-10 h-10 lg:w-12 lg:h-12'; // 40px mobile, 48px desktop
       case 'md':
-        return 'w-14 h-14'; // 56px - bigger than standard spinner (32px)
+        return 'w-12 h-12 lg:w-16 lg:h-16'; // 48px mobile, 64px desktop
       case 'lg':
-        return 'w-20 h-20'; // 80px - bigger than standard spinner (48px)
+        return 'w-16 h-16 lg:w-24 lg:h-24'; // 64px mobile, 96px desktop
       default:
-        return 'w-10 h-10';
-    }
-  };
-
-  const getImageDimensions = () => {
-    switch (size) {
-      case 'sm':
-        return { width: 40, height: 40 };
-      case 'md':
-        return { width: 56, height: 56 };
-      case 'lg':
-        return { width: 80, height: 80 };
-      default:
-        return { width: 40, height: 40 };
+        return 'w-10 h-10 lg:w-12 lg:h-12';
     }
   };
 
   const logoSrc = color === 'light' ? '/logo-sm-light.svg' : '/logo-sm-dark.svg';
-  const imageDimensions = getImageDimensions();
 
   return (
     <div 
@@ -51,13 +36,14 @@ export const LogoSpinner: React.FC<Props> = ({
         animation: 'spin 2s linear infinite' // Slower 2-second rotation instead of 1s
       }}
     >
-      <Image
+      <img
         src={logoSrc}
-        width={imageDimensions.width}
-        height={imageDimensions.height}
         alt=""
-        className="w-full h-full object-contain"
-        priority={false}
+        style={{
+          width: '100%',
+          height: '100%',
+          imageRendering: 'crisp-edges',
+        }}
       />
     </div>
   );
