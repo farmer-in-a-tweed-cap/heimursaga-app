@@ -7,7 +7,7 @@ import {
   MapPinIcon, 
   Feather, 
   ShareFatIcon,
-  CompassRose,
+  GlobeX,
   BookBookmark,
   MagnifyingGlassIcon,
   UserIcon,
@@ -116,6 +116,15 @@ export const UserGuide = () => {
               </ol>
             </div>
           </div>
+          
+          <div className="bg-blue-50 p-4 rounded-lg mt-6">
+            <h3 className="text-lg font-medium mb-2 text-blue-900">Auto-Save & Drafts</h3>
+            <p className="text-sm text-blue-800">
+              Your entries are automatically saved as drafts while you write! 
+              If you leave the page, you can return later and continue from where you left off. 
+              Look for the auto-save indicator above the "Log Entry" button.
+            </p>
+          </div>
         </CardContent>
       </Card>
 
@@ -124,7 +133,7 @@ export const UserGuide = () => {
       <Card>
         <CardHeader>
           <h2 className="text-2xl font-semibold flex items-center gap-2">
-            <CompassRose size={24} />
+            <GlobeX size={24} />
             Exploring Content
           </h2>
         </CardHeader>
@@ -167,7 +176,7 @@ export const UserGuide = () => {
           </div>
           
           <div className="bg-green-50 p-4 rounded-lg mt-6">
-            <h3 className="text-lg font-medium mb-2 text-green-900">💡 Sponsor an Explorer!</h3>
+            <h3 className="text-lg font-medium mb-2 text-green-900">Sponsor an Explorer!</h3>
             <p className="text-sm text-green-800">
               Found an explorer whose adventures inspire you? Consider sponsoring their journeys! 
               Sponsorships help passionate travelers share authentic experiences and create amazing content. 
@@ -413,11 +422,10 @@ export const UserGuide = () => {
             <div>
               <h3 className="text-lg font-medium mb-3">Growing Your Audience</h3>
               <ul className="space-y-2 text-gray-600">
-                <li>• Post consistently and regularly</li>
+                <li>• Log entries consistently and regularly</li>
                 <li>• Engage with other explorers</li>
-                <li>• Use relevant location tags</li>
+                <li>• Use accurate geo-tags</li>
                 <li>• Share unique perspectives</li>
-                <li>• Respond to highlights and follows</li>
               </ul>
             </div>
           </div>
@@ -436,7 +444,7 @@ export const UserGuide = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
-                href="mailto:support@heimursaga.com" 
+                href={ROUTER.SUPPORT} 
                 className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
               >
                 Contact Support

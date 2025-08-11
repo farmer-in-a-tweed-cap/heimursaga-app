@@ -6,7 +6,7 @@ import { BadgeDot } from '@repo/ui/components';
 import {
   BookBookmark,
   Bookmarks,
-  CompassRose,
+  GlobeX,
   Feather,
   IconProps,
   UserIcon,
@@ -109,7 +109,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
       },
       {
         href: ROUTER.EXPLORE.RESET,
-        icon: (props) => <CompassRose {...props} />,
+        icon: (props) => <GlobeX {...props} />,
         label: 'Explore',
       },
     ],
@@ -121,7 +121,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
       },
       {
         href: ROUTER.EXPLORE.RESET,
-        icon: (props) => <CompassRose {...props} />,
+        icon: (props) => <GlobeX {...props} />,
         label: 'Explore',
       },
       {

@@ -11,7 +11,7 @@ import {
   BookBookmark,
   Bookmarks,
   ChartPieSliceIcon,
-  CompassRose,
+  GlobeX,
   HandCoinsIcon,
   HouseIcon,
   IconProps,
@@ -62,7 +62,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.EXPLORE.RESET,
         base: ROUTER.HOME,
         label: 'Explore',
-        icon: CompassRose,
+        icon: GlobeX,
       },
     ],
     user: [
@@ -70,7 +70,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.EXPLORE.RESET,
         base: ROUTER.HOME,
         label: 'Explore',
-        icon: CompassRose,
+        icon: GlobeX,
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
@@ -90,7 +90,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         href: ROUTER.EXPLORE.RESET,
         base: ROUTER.HOME,
         label: 'Explore',
-        icon: CompassRose,
+        icon: GlobeX,
       },
       {
         href: username ? ROUTER.USERS.DETAIL(username) : '#',
