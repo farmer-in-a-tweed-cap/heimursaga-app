@@ -142,9 +142,9 @@ export const UserSettingsProfileView: React.FC<Props> = ({ data }) => {
           email: data.email,
           username: data.username,
           // name: data.name,
-          bio: data.bio,
-          location_from: data.locationFrom,
-          location_lives: data.locationLives,
+          bio: data.bio || '',
+          location_from: data.locationFrom || '',
+          location_lives: data.locationLives || '',
           sponsors_fund: data.sponsorsFund || '',
           sponsors_fund_type: 'custom', // Start with custom, will be updated by useEffect
           sponsors_fund_journey_id: '',

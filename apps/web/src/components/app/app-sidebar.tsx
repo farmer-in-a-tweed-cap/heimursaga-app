@@ -200,6 +200,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                     <TooltipTrigger>
                       <Link
                         href={href}
+                        prefetch={false}
                         className={cn(
                           'w-full flex h-[40px] justify-between app-sidebar-link overflow-hidden',
                           isActiveLink(base) ? 'app-sidebar-link-active' : '',

@@ -3,6 +3,10 @@ import { cookies } from 'next/headers';
 
 import { apiClient } from '@/lib/api';
 
+// Ensure this page is always dynamically rendered and not cached
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import { PageNotFound, UserProfilePage } from '@/components';
 import { AppLayout } from '@/layouts';
 

@@ -5,6 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDebounce } from 'use-debounce';
 import { apiClient, API_QUERY_KEYS } from '@/lib/api';
 import { IPostUpdatePayload } from '@repo/types';
+import { useCacheRefresh } from './use-cache-refresh';
 
 interface UseAutoSaveProps {
   postId?: string;
@@ -30,15 +31,14 @@ export const useAutoSave = ({
   const [debouncedData] = useDebounce(data, delay);
   const lastSavedData = useRef<string>('');
   const queryClient = useQueryClient();
+  const { refreshAfterPostUpdate } = useCacheRefresh();
 
   const updatePostMutation = useMutation({
     mutationFn: (payload: IPostUpdatePayload) =>
       apiClient.updatePost({ query: { id: postId! }, payload }),
-    onSuccess: () => {
-      // Invalidate user posts cache to ensure profile feed updates
-      queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.GET_USER_POSTS] });
-      queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER_FEED] });
-      queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER_DRAFTS] });
+    onSuccess: async () => {
+      // Use centralized cache refresh for post updates
+      await refreshAfterPostUpdate(postId);
     },
     onError: (error) => {
       console.error('Auto-save update failed:', error);
@@ -47,14 +47,13 @@ export const useAutoSave = ({
 
   const createPostMutation = useMutation({
     mutationFn: (payload: any) => apiClient.createPost(payload),
-    onSuccess: (response) => {
-      if (response?.data?.id && onDraftCreated) {
-        onDraftCreated(response.data.id);
+    onSuccess: async (response) => {
+      const newPostId = response?.data?.id;
+      if (newPostId && onDraftCreated) {
+        onDraftCreated(newPostId);
       }
-      // Invalidate user posts cache to ensure profile feed updates
-      queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.GET_USER_POSTS] });
-      queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER_FEED] });
-      queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER_DRAFTS] });
+      // Use centralized cache refresh for post creation
+      await refreshAfterPostUpdate(newPostId);
     },
     onError: (error) => {
       console.error('Auto-save create failed:', error);

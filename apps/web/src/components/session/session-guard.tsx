@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
+import { LogoSpinner } from '@/components/app/logo-spinner';
 
 interface SessionGuardProps {
   children: ReactNode;
@@ -65,7 +66,7 @@ const SessionGuardContent: React.FC<SessionGuardProps> = ({
   if (!isMounted || !hasInitialized) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LogoSpinner size="md" />
       </div>
     );
   }
@@ -74,7 +75,7 @@ const SessionGuardContent: React.FC<SessionGuardProps> = ({
   if (session.isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LogoSpinner size="md" />
       </div>
     );
   }
@@ -97,7 +98,7 @@ export const SessionGuard = dynamic(() => Promise.resolve(SessionGuardContent), 
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center min-h-screen">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <LogoSpinner size="md" />
     </div>
   ),
 });

@@ -40,7 +40,7 @@ import {
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { FILE_ACCEPT } from '@/constants';
-import { useAIDetection, useImageAIDetection, useMap, useModal, useSession, useUploads } from '@/hooks';
+import { useAIDetection, useImageAIDetection, useMap, useModal, useSession, useUploads, useCacheRefresh } from '@/hooks';
 import { dateformat, normalizeText, redirect, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
@@ -77,6 +77,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
   const toast = useToast();
   const session = useSession();
   const queryClient = useQueryClient();
+  const { refreshAfterPostUpdate } = useCacheRefresh();
 
   // Helper function to show validation error toasts
   const showValidationError = (errors: any) => {
@@ -289,10 +290,8 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       });
 
       if (success) {
-        // Invalidate relevant queries to update the UI
-        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.POSTS] });
-        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.MAP.QUERY] });
-        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER.POSTS] });
+        // Use centralized cache refresh for post updates
+        await refreshAfterPostUpdate(postId);
         
         // Show success toast
         toast({
@@ -343,11 +342,8 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       });
 
       if (success) {
-        // Invalidate relevant queries to update the UI
-        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.POSTS] });
-        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.MAP.QUERY] });
-        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER.POSTS] });
-        queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER_FEED] });
+        // Use centralized cache refresh for post deletion
+        await refreshAfterPostUpdate(postId);
         
         toast({
           type: 'success',
