@@ -24,16 +24,17 @@ export const LogoSpinner: React.FC<Props> = ({
     }
   };
 
-  const logoSrc = color === 'light' ? '/logo-sm-light.svg' : '/logo-sm-dark.svg';
+  const logoSrc = color === 'light' ? '/heimursaga_badge.svg' : '/heimursaga_badge.svg'; // Using same optimized SVG for both
 
   return (
     <div 
       className={cn(
         getSizeClasses(),
+        'animate-spin',
         className
       )}
       style={{ 
-        animation: 'spin 2s linear infinite' // Slower 2-second rotation instead of 1s
+        animationDuration: '2s',
       }}
     >
       <img
@@ -43,6 +44,8 @@ export const LogoSpinner: React.FC<Props> = ({
           width: '100%',
           height: '100%',
           imageRendering: 'crisp-edges',
+          // Apply color filter for light variant if needed
+          filter: color === 'light' ? 'brightness(0) saturate(100%) invert(100%)' : 'none',
         }}
       />
     </div>
