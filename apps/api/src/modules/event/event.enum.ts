@@ -22,4 +22,5 @@ export const EVENTS = {
   SPONSORSHIP_CHECKOUT_COMPLETE: 'sponsorship_checkout_complete',
   SIGNUP_COMPLETE: 'signup_complete',
   ENTRY_CREATED: 'entry_created',
+  ADMIN_NEW_USER_SIGNUP: 'admin_new_user_signup',
 };

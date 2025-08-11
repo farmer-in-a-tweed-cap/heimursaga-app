@@ -20,6 +20,7 @@ export const MODALS = {
   ADMIN_ENTRY_PREVIEW: 'admin_entry_preview',
   ADMIN_USER_PREVIEW: 'admin_user_preview',
   DRAFT_RECOVERY: 'draft_recovery',
+  DELETE_CONFIRMATION: 'delete_confirmation',
 };
 
 export const modalRegistry: IModalRegistry = {
@@ -33,4 +34,5 @@ export const modalRegistry: IModalRegistry = {
   [MODALS.ADMIN_ENTRY_PREVIEW]: () => import('./admin-entry-preview-modal'),
   [MODALS.ADMIN_USER_PREVIEW]: () => import('./admin-user-preview-modal'),
   [MODALS.DRAFT_RECOVERY]: () => import('../draft/draft-recovery-modal'),
+  [MODALS.DELETE_CONFIRMATION]: () => import('./delete-confirmation-modal'),
 };

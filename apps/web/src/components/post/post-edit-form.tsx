@@ -317,14 +317,23 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!postId) return;
 
-    const confirmed = window.confirm(
-      'Are you sure you want to delete this entry? This action cannot be undone.'
-    );
+    modal.open(MODALS.DELETE_CONFIRMATION, {
+      full: false,
+      props: {
+        title: 'Delete Entry',
+        message: 'Are you sure you want to delete this journal entry? This will permanently remove the entry and all associated data.',
+        itemType: 'entry',
+        isLoading: loading.delete,
+        onConfirm: handleDeleteConfirmed,
+      },
+    });
+  };
 
-    if (!confirmed) return;
+  const handleDeleteConfirmed = async () => {
+    if (!postId) return;
 
     try {
       setLoading({ ...loading, delete: true });
@@ -370,7 +379,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
 
   // cache modals
   useEffect(() => {
-    modal.preload([MODALS.TRIP_SELECT, MODALS.MAP_LOCATION_SELECT]);
+    modal.preload([MODALS.TRIP_SELECT, MODALS.MAP_LOCATION_SELECT, MODALS.DELETE_CONFIRMATION]);
   }, [modal.preload]);
 
   // Watch for form validation errors and show toast when fields lose focus

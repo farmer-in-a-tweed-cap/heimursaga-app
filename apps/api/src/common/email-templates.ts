@@ -3,6 +3,7 @@ export const EMAIL_TEMPLATES = {
   PASSWORD_RESET: 'password_reset',
   EMAIL_VERIFICATION: 'email_verification',
   EXPLORER_PRO_NEW_ENTRY: 'explorer_pro_new_entry',
+  ADMIN_NEW_USER_SIGNUP: 'admin_new_user_signup',
 };
 
 const templates: { key: string; subject: string | ((v?: any) => string); html: (v?: any) => string }[] =
@@ -388,6 +389,82 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
               </div>
               <p style="margin-top: 20px; color: #adb5bd; font-size: 12px;">
                 © ${new Date().getFullYear()} Heimursaga, an app for explorers. Share your stories. Raise money. Inspire the world.
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+    },
+    {
+      key: EMAIL_TEMPLATES.ADMIN_NEW_USER_SIGNUP,
+      subject: (v: { username: string; email: string }) => `New user signup: ${v.username}`,
+      html: (v: { 
+        username: string;
+        email: string;
+        signupDate: string;
+        userProfileUrl?: string;
+      }) => `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>New User Signup Notification</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; background-color: #f8f9fa; }
+            .container { max-width: 600px; margin: 0 auto; background: white; }
+            .header { background: #4676AC; padding: 30px; text-align: center; }
+            .header h1 { color: white; font-size: 24px; font-weight: 600; margin: 0; }
+            .content { padding: 30px; }
+            .user-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .info-row { display: flex; justify-content: space-between; margin: 8px 0; }
+            .info-label { font-weight: 600; color: #2c2c2c; }
+            .info-value { color: #6c757d; }
+            .cta-button { display: inline-block; background: #AC6D46; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 14px; transition: all 0.3s; margin-top: 15px; }
+            .cta-button:hover { background: #8b5a37; }
+            .footer { background: #252525; padding: 20px; text-align: center; }
+            .footer-text { color: #6c757d; font-size: 14px; margin: 0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🎉 New User Signup</h1>
+            </div>
+            
+            <div class="content">
+              <p>A new user has signed up for Heimursaga!</p>
+              
+              <div class="user-info">
+                <div class="info-row">
+                  <span class="info-label">Username:</span>
+                  <span class="info-value">${v.username}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Email:</span>
+                  <span class="info-value">${v.email}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Signup Date:</span>
+                  <span class="info-value">${v.signupDate}</span>
+                </div>
+              </div>
+              
+              ${v.userProfileUrl ? `
+                <div style="text-align: center;">
+                  <a href="${v.userProfileUrl}" class="cta-button">View User Profile</a>
+                </div>
+              ` : ''}
+              
+              <p style="margin-top: 30px; color: #6c757d; font-size: 14px;">
+                This is an automated notification from the Heimursaga platform.
+              </p>
+            </div>
+            
+            <div class="footer">
+              <p class="footer-text">
+                © ${new Date().getFullYear()} Heimursaga Admin Notifications
               </p>
             </div>
           </div>

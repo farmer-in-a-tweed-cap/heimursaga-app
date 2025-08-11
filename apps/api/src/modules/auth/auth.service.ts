@@ -32,6 +32,7 @@ import {
   EventService,
   IEventSendEmail,
   IEventSignupComplete,
+  IEventAdminNewUserSignup,
 } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
@@ -239,6 +240,17 @@ export class AuthService {
       this.eventService.trigger<IEventSignupComplete>({
         event: EVENTS.SIGNUP_COMPLETE,
         data: { email },
+      });
+
+      // trigger admin notification event
+      this.eventService.trigger<IEventAdminNewUserSignup>({
+        event: EVENTS.ADMIN_NEW_USER_SIGNUP,
+        data: {
+          username,
+          email,
+          signupDate: new Date().toISOString(),
+          userProfileUrl: `${process.env.NEXT_PUBLIC_APP_BASE_URL || 'https://heimursaga.com'}/${username}`,
+        },
       });
 
       if (returnCredentials) {
@@ -637,6 +649,37 @@ export class AuthService {
 
       // send email verification
       await this.sendEmailVerification(email);
+    } catch (e) {
+      this.logger.error(e);
+    }
+  }
+
+  @OnEvent(EVENTS.ADMIN_NEW_USER_SIGNUP)
+  async onAdminNewUserSignup(payload: IEventAdminNewUserSignup): Promise<void> {
+    try {
+      const { username, email, signupDate, userProfileUrl } = payload;
+
+      // send admin notification email
+      this.eventService.trigger<IEventSendEmail>({
+        event: EVENTS.SEND_EMAIL,
+        data: {
+          to: 'admin@heimursaga.com',
+          template: EMAIL_TEMPLATES.ADMIN_NEW_USER_SIGNUP,
+          vars: {
+            username,
+            email,
+            signupDate: new Date(signupDate).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              timeZoneName: 'short',
+            }),
+            userProfileUrl,
+          },
+        },
+      });
     } catch (e) {
       this.logger.error(e);
     }

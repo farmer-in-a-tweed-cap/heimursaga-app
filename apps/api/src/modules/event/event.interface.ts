@@ -12,3 +12,10 @@ export interface IEventSendEmail<T = any> extends IEmailSendPayload<T> {}
 export interface IEventSignupComplete {
   email: string;
 }
+
+export interface IEventAdminNewUserSignup {
+  username: string;
+  email: string;
+  signupDate: string;
+  userProfileUrl?: string;
+}
