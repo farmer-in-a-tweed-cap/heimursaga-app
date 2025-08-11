@@ -36,7 +36,7 @@ export const generateMetadata = async ({
   const title = `${user.username}${user.bio ? ` - ${user.bio}` : ''}`;
   const description = user.bio 
     ? `${user.bio} • ${user.creator ? 'Creator' : 'Explorer'} on Heimursaga${user.locationLives ? ` • Currently in ${user.locationLives}` : ''}${user.locationFrom ? ` • From ${user.locationFrom}` : ''}`
-    : `Follow ${user.username}'s journey on Heimursaga - a platform for modern explorers to share their adventures and connect with fellow travelers.`;
+    : `Follow ${user.username}'s journey on Heimursaga - an app for explorers. Share your stories. Raise money. Inspire the world.`;
 
   // Use user avatar or fallback to default image
   const ogImage = user.picture || '/og-image.jpg';
