@@ -20,18 +20,13 @@ export const useUploads = (state?: State) => {
   const maxSize = state?.maxSize || APP_CONFIG.UPLOAD.MAX_FILE_SIZE;
 
   const loader = async ({ id, file }: FilePickerFile) => {
-    console.log('file:', { id, file });
-
     if (!file) return;
-
-    console.log('file uploading..', file);
 
     // upload
     const { success, data } = await apiClient.uploadImage({ file });
     const uploadId = data?.uploadId;
 
     if (success) {
-      console.log('file uploaded', data);
 
       setFiles((files) => {
         const index = files.findIndex((file) => file.id === id);

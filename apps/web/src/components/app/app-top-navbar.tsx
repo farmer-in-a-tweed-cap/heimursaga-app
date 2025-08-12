@@ -22,6 +22,7 @@ import { useSession } from '@/hooks';
 
 import { Logo } from './logo';
 import { UserAvatar } from '../user/user-avatar';
+import { NotificationDropdownTray } from '../notification/notification-dropdown-tray';
 
 const getRoleLabel = (role: string) => {
   switch (role) {
@@ -166,17 +167,22 @@ export const AppTopNavbar: React.FC<Props> = () => {
                   </Button>
                 </Link>
                 
-                {/* Notifications */}
-                <Link href={ROUTER.NOTIFICATIONS} className="mx-3">
-                  <Button variant="ghost" size="lg" className="relative !px-1">
-                    <BellIcon size={20} weight="bold" className="text-gray-600 !size-5" />
-                    {badges.notifications >= 1 && (
-                      <div className="absolute -top-1 -right-1">
-                        <BadgeCount count={badges.notifications} />
-                      </div>
-                    )}
-                  </Button>
-                </Link>
+                {/* Notifications with Dropdown Tray */}
+                <NotificationDropdownTray 
+                  badgeCount={badges.notifications}
+                  className="mx-3"
+                >
+                  <Link href={ROUTER.NOTIFICATIONS}>
+                    <Button variant="ghost" size="lg" className="relative !px-1">
+                      <BellIcon size={20} weight="bold" className="text-gray-600 !size-5" />
+                      {badges.notifications >= 1 && (
+                        <div className="absolute -top-1 -right-1">
+                          <BadgeCount count={badges.notifications} />
+                        </div>
+                      )}
+                    </Button>
+                  </Link>
+                </NotificationDropdownTray>
                 
                 {/* User Avatar with Username and Role */}
                 <DropdownMenu>

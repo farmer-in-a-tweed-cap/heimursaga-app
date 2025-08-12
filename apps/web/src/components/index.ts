@@ -27,3 +27,4 @@ export * from './admin';
 export * from './landing-page';
 export * from './ai-detection';
 export * from './draft';
+export * from './notification';

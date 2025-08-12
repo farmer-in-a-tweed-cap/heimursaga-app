@@ -13,8 +13,6 @@ export const useScroll = () => {
 
   const setRef = useCallback(
     (key: string) => (element: HTMLElement | null) => {
-      console.log('set ref', element);
-
       refs.current[key] = element;
     },
     [],

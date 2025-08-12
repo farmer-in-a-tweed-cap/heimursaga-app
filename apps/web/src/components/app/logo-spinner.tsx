@@ -37,6 +37,7 @@ export const LogoSpinner: React.FC<Props> = ({
         animationDuration: '2s',
       }}
     >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={logoSrc}
         alt=""

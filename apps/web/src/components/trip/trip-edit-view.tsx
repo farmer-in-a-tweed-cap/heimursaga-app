@@ -193,8 +193,6 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
         key: 'date',
       });
 
-      console.log({ waypoint, prev, sorted });
-
       return sorted;
     });
 
@@ -209,7 +207,6 @@ export const TripEditView: React.FC<Props> = ({ source, trip }) => {
   };
 
   const handleDelete = () => {
-    console.log('handleDelete called, redirecting to:', ROUTER.JOURNEYS.HOME);
     // Navigate back to journeys list after successful deletion
     router.push(ROUTER.JOURNEYS.HOME);
   };

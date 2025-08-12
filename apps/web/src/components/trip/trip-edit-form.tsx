@@ -286,8 +286,6 @@ export const TripEditForm: React.FC<Props> = ({
   const performDelete = async () => {
     try {
       const tripId = trip?.id;
-      console.log('Attempting to delete trip with ID:', tripId);
-      
       if (!tripId) {
         console.error('No trip ID available');
         return;
@@ -297,10 +295,7 @@ export const TripEditForm: React.FC<Props> = ({
         query: { tripId },
       });
 
-      console.log('Delete response:', response);
-
       if (response.success) {
-        console.log('Delete successful, invalidating cache and calling onDelete');
         toast({ type: 'success', message: 'Journey deleted' });
         // Invalidate the trips cache so the list refreshes
         await queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.TRIPS] });
