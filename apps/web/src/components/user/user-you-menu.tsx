@@ -246,7 +246,7 @@ export const UserYouMenu = () => {
         
         {/* Divider between primary and submenu items */}
         {links.some(link => !link.isMainItem) && (
-          <div className="border-t border-gray-300 my-2 w-full" style={{ minHeight: '1px' }}></div>
+          <div className="w-full h-px bg-gray-300 my-2"></div>
         )}
         
         {/* Submenu Items (text-only, indented) */}
@@ -263,7 +263,7 @@ export const UserYouMenu = () => {
         {/* Legal Links */}
         {legalLinks.length > 0 && (
           <>
-            <div className="border-t border-gray-300 my-2 w-full" style={{ minHeight: '1px' }}></div>
+            <div className="w-full h-px bg-gray-300 my-2"></div>
             {legalLinks.map(({ href, label, isMainItem }, key) => (
               <Link
                 key={key}
@@ -282,7 +282,7 @@ export const UserYouMenu = () => {
         )}
         
         {/* Theme Toggle */}
-        <div className="border-t border-gray-300 my-2 w-full" style={{ minHeight: '1px' }}></div>
+        <div className="w-full h-px bg-gray-300 my-2"></div>
         <button
           onClick={toggleTheme}
           className="flex items-center justify-between py-3 px-4 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100 transition-colors text-left"
@@ -294,7 +294,7 @@ export const UserYouMenu = () => {
         {/* Logout */}
         {session?.logged && (
           <>
-            <div className="border-t border-gray-300 my-2 w-full" style={{ minHeight: '1px' }}></div>
+            <div className="w-full h-px bg-gray-300 my-2"></div>
             <button
               onClick={handleLogout}
               className="flex items-center py-3 px-4 text-base font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors text-left"
