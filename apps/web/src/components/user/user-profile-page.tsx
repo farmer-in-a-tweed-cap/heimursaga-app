@@ -114,7 +114,8 @@ export const UserProfilePage: React.FC<Props> = ({
       </div> */}
       <UserProfileButtons
         me={user?.you}
-        creator={canReceiveSponsorship}
+        creator={isCreator}
+        canReceiveSponsorship={canReceiveSponsorship}
         followed={user?.followed}
         user={user}
       />

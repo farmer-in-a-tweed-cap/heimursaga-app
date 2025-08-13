@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from '@repo/ui/components';
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components';
 import { HandCoinsIcon } from '@repo/ui/icons';
 
 import { MODALS } from '@/components';
@@ -9,14 +9,15 @@ import { ROUTER } from '@/router';
 
 type Props = {
   username?: string;
+  disabled?: boolean;
 };
 
-export const SponsorButton: React.FC<Props> = ({ username }) => {
+export const SponsorButton: React.FC<Props> = ({ username, disabled = false }) => {
   const modal = useModal();
   const session = useSession();
 
   const handleSponsorClick = () => {
-    if (!username) return;
+    if (!username || disabled) return;
     
     // Check if user's email is verified
     if (!session?.isEmailVerified) {
@@ -35,9 +36,21 @@ export const SponsorButton: React.FC<Props> = ({ username }) => {
   };
 
   return (
-    <Button variant="outline" onClick={handleSponsorClick} disabled={!username}>
-      <HandCoinsIcon size={20} weight="bold" />
-      <span>Sponsor</span>
-    </Button>
+    <Tooltip>
+      <TooltipTrigger>
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={handleSponsorClick} 
+          disabled={!username || disabled}
+          className="!rounded-full !w-10 !h-10 !min-w-10 !min-h-10 !p-0"
+        >
+          <HandCoinsIcon size={20} weight="bold" />
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        Sponsor
+      </TooltipContent>
+    </Tooltip>
   );
 };

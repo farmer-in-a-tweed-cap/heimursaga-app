@@ -55,6 +55,10 @@ import {
   IUserSettingsProfileGetResponse,
   IUserSettingsProfileUpdatePayload,
   IWaypointCreatePayload,
+  IMessageSendPayload,
+  IMessagesGetResponse,
+  IConversationsGetResponse,
+  IMessageUnreadCountResponse,
   IWaypointCreateResponse,
   IWaypointGetByIdResponse,
   IWaypointUpdatePayload,
@@ -858,6 +862,42 @@ export const apiClient = {
       }
     },
   },
+
+  // messaging
+  messages: {
+    getConversations: async (config?: RequestConfig) =>
+      api.request<IConversationsGetResponse>(API_ROUTER.MESSAGES.CONVERSATIONS, {
+        method: API_METHODS.GET,
+        ...config,
+      }),
+
+    getConversation: async ({ query }: IApiClientQuery<{ username: string }>, config?: RequestConfig) =>
+      api.request<IMessagesGetResponse>(API_ROUTER.MESSAGES.CONVERSATION(query.username), {
+        method: API_METHODS.GET,
+        ...config,
+      }),
+
+    sendMessage: async ({ payload }: IApiClientQueryWithPayload<{}, IMessageSendPayload>, config?: RequestConfig) =>
+      api.request<void>(API_ROUTER.MESSAGES.SEND, {
+        method: API_METHODS.POST,
+        body: JSON.stringify(payload),
+        contentType: API_CONTENT_TYPES.JSON,
+        ...config,
+      }),
+
+    markMessageRead: async ({ query }: IApiClientQuery<{ messageId: string }>, config?: RequestConfig) =>
+      api.request<void>(API_ROUTER.MESSAGES.MARK_READ(query.messageId), {
+        method: API_METHODS.PATCH,
+        body: JSON.stringify({}),
+        ...config,
+      }),
+
+    getUnreadCount: async (config?: RequestConfig) =>
+      api.request<IMessageUnreadCountResponse>(API_ROUTER.MESSAGES.UNREAD_COUNT, {
+        method: API_METHODS.GET,
+        ...config,
+      }),
+  },
 };
 
 export const API_QUERY_KEYS = {
@@ -900,4 +940,9 @@ export const API_QUERY_KEYS = {
     POST: 'post_insights',
   },
   TRIPS: 'trips',
+  MESSAGES: {
+    CONVERSATIONS: 'messages_conversations',
+    CONVERSATION: 'messages_conversation',
+    UNREAD_COUNT: 'messages_unread_count',
+  },
 };

@@ -41,6 +41,10 @@ export const ROUTER = {
   UPGRADE_SUCCESS: '/upgrade/success',
   UPGRADE_CHECKOUT: '/upgrade/checkout',
   NOTIFICATIONS: '/notifications',
+  MESSAGES: {
+    HOME: '/messages',
+    CONVERSATION: (username: string) => `/messages/${username}`,
+  },
   USER: {
     PROFILE: '/user/profile',
     SETTINGS: {

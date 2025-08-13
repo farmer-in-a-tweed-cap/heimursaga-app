@@ -11,6 +11,7 @@ import {
   BookBookmark,
   Bookmarks,
   ChartPieSliceIcon,
+  ChatCircleTextIcon,
   GlobeX,
   HandCoinsIcon,
   HouseIcon,
@@ -25,6 +26,8 @@ import { ForwardRefExoticComponent, RefAttributes } from 'react';
 import { CreatePostButton, Logo, UserNavbar } from '@/components';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
+import { useQuery } from '@tanstack/react-query';
+import { apiClient, API_QUERY_KEYS } from '@/lib/api';
 
 type SidebarLink = {
   href: string;
@@ -45,6 +48,14 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
 
   const username = session?.username;
   const userRole = session?.role as UserRole;
+
+  // Get unread message count for creators
+  const { data: unreadCount } = useQuery({
+    queryKey: [API_QUERY_KEYS.MESSAGES.UNREAD_COUNT],
+    queryFn: () => apiClient.messages.getUnreadCount().then(({ data }) => data),
+    refetchInterval: 15000, // Check every 15 seconds - same as messages view
+    enabled: session.logged && userRole === UserRole.CREATOR, // Only for creators
+  });
 
   const showCreateButton =
     session.logged &&
@@ -99,6 +110,12 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         icon: BookBookmark,
       },
       {
+        href: ROUTER.BOOKMARKS.HOME,
+        base: ROUTER.BOOKMARKS.HOME,
+        label: 'Bookmarks',
+        icon: Bookmarks,
+      },
+      {
         href: ROUTER.JOURNEYS.HOME,
         base: ROUTER.JOURNEYS.HOME,
         label: 'Journeys',
@@ -117,10 +134,10 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
         icon: ChartPieSliceIcon,
       },
       {
-        href: ROUTER.BOOKMARKS.HOME,
-        base: ROUTER.BOOKMARKS.HOME,
-        label: 'Bookmarks',
-        icon: Bookmarks,
+        href: ROUTER.MESSAGES.HOME,
+        base: ROUTER.MESSAGES.HOME,
+        label: 'Messages',
+        icon: ChatCircleTextIcon,
       },
     ],
     admin: [
@@ -207,11 +224,16 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                         )}
                       >
                         <div className="relative flex flex-row justify-start items-center gap-2">
-                          <Icon
-                            size={20}
-                            weight="regular"
-                            className="app-sidebar-link-icon"
-                          />
+                          <div className="relative">
+                            <Icon
+                              size={20}
+                              weight="regular"
+                              className="app-sidebar-link-icon"
+                            />
+                            {label === 'Messages' && (unreadCount?.count || 0) > 0 && (
+                              <div className="absolute -top-1 -right-1 bg-[rgb(170,108,70)] rounded-full w-3 h-3"></div>
+                            )}
+                          </div>
                           <span
                             className={cn(
                               'text-base leading-none',

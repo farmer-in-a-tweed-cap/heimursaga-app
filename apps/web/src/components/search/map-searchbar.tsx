@@ -95,7 +95,7 @@ export const MapSearchbar: React.FC<Props> = ({
             // Map users
             ...users.map((user: any) => ({
               id: `user-${user.id}`,
-              name: `@${user.username}`,
+              name: user.username,
               context: user.role === 'CREATOR' ? 'Explorer Pro' : 'Explorer',
               type: 'user' as const,
               username: user.username,
@@ -106,7 +106,7 @@ export const MapSearchbar: React.FC<Props> = ({
             ...entries.map((entry: any) => ({
               id: `entry-${entry.id}`,
               name: entry.title,
-              context: `${entry.place} • @${entry.author.username}`,
+              context: `${entry.place} • ${entry.author.username}`,
               type: 'entry' as const,
               title: entry.title,
               place: entry.place,

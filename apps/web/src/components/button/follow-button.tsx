@@ -1,6 +1,7 @@
 'use client';
 
-import { Button } from '@repo/ui/components';
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components';
+import { UserPlus, UserCheck } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 
 type Props = {
@@ -15,16 +16,29 @@ export const FollowButton: React.FC<Props> = ({
   onClick,
 }) => {
   return (
-    <Button
-      disabled={disabled}
-      className={cn(
-        followed
-          ? 'transition-all bg-accent hover:bg-accent text-gray-800'
-          : '',
-      )}
-      onClick={disabled ? () => {} : onClick}
-    >
-      {followed ? 'Following' : 'Follow'}
-    </Button>
+    <Tooltip>
+      <TooltipTrigger>
+        <Button
+          disabled={disabled}
+          size="sm"
+          className={cn(
+            '!rounded-full !w-10 !h-10 !min-w-10 !min-h-10 !p-0',
+            followed
+              ? 'bg-accent hover:bg-accent text-gray-800'
+              : 'bg-primary hover:bg-primary/90 text-white',
+          )}
+          onClick={disabled ? () => {} : onClick}
+        >
+          {followed ? (
+            <UserCheck size={20} weight="regular" />
+          ) : (
+            <UserPlus size={20} weight="regular" />
+          )}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        {followed ? 'Unfollow' : 'Follow'}
+      </TooltipContent>
+    </Tooltip>
   );
 };

@@ -13,7 +13,8 @@ import {
   UserIcon,
   GearIcon,
   PathIcon,
-  HandCoinsIcon
+  HandCoinsIcon,
+  ChatCircleTextIcon
 } from '@repo/ui/icons';
 import Link from 'next/link';
 
@@ -393,6 +394,58 @@ export const UserGuide = () => {
                 <li>• Deliver on promised content for your sponsors</li>
                 <li>• Maintain authenticity in your travel storytelling and experiences</li>
                 <li>• Follow local laws and regulations for sponsored content and income reporting</li>
+              </ul>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Private Messaging */}
+      <Card>
+        <CardHeader>
+          <h2 className="text-2xl font-semibold flex items-center gap-2">
+            <ChatCircleTextIcon size={24} />
+            Private Messaging (Explorer Pro)
+          </h2>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-lg font-medium mb-2">Connect with Fellow Explorers</h3>
+              <p className="text-gray-600">
+                Explorer Pro members can send private messages to other Explorer Pro users to share experiences, 
+                plan adventures together, or discuss travel opportunities.
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h3 className="text-lg font-medium mb-3">Getting Started</h3>
+                <ol className="space-y-2 text-gray-600">
+                  <li>1. Upgrade to Explorer Pro</li>
+                  <li>2. Visit another Explorer Pro member's profile</li>
+                  <li>3. Click the "Message" button between Follow and Sponsor</li>
+                  <li>4. Start your conversation!</li>
+                </ol>
+              </div>
+              <div>
+                <h3 className="text-lg font-medium mb-3">Messaging Features</h3>
+                <ul className="space-y-2 text-gray-600">
+                  <li>• Private one-on-one conversations</li>
+                  <li>• Real-time message delivery</li>
+                  <li>• Message read receipts</li>
+                  <li>• Access via sidebar navigation</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="bg-amber-50 p-4 rounded-lg">
+              <h3 className="text-lg font-medium mb-2 text-amber-900">Messaging Guidelines</h3>
+              <ul className="space-y-1 text-sm text-amber-800">
+                <li>• Only Explorer Pro members can send and receive messages</li>
+                <li>• Keep conversations respectful and travel-focused</li>
+                <li>• Use messaging to connect, collaborate, and share experiences</li>
+                <li>• Report any inappropriate behavior through our support system</li>
               </ul>
             </div>
           </div>

@@ -62,7 +62,7 @@ export const generateMetadata = async ({
       card: 'summary_large_image',
       title,
       description,
-      creator: `@${user.username}`,
+      creator: user.username,
       images: [ogImage],
     },
   };

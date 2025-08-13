@@ -49,6 +49,8 @@ model User {
   sessions                    UserSession[]
   subscriptions               UserSubscription[]
   waypoints                   Waypoint[]
+  sent_messages               Message[]      @relation("SentMessages")
+  received_messages           Message[]      @relation("ReceivedMessages")
 
   @@map("users")
 }
@@ -441,6 +443,26 @@ model UserNotification {
   user                 User?     @relation("user_notifications", fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("user_notifications")
+}
+
+model Message {
+  id           Int       @id @default(autoincrement())
+  public_id    String    @unique @db.VarChar(14)
+  content      String    @db.Text
+  sender_id    Int
+  recipient_id Int
+  is_read      Boolean   @default(false)
+  deleted_at   DateTime?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  
+  sender       User      @relation("SentMessages", fields: [sender_id], references: [id], onDelete: Cascade)
+  recipient    User      @relation("ReceivedMessages", fields: [recipient_id], references: [id], onDelete: Cascade)
+  
+  @@index([sender_id, recipient_id])
+  @@index([recipient_id, sender_id])
+  @@index([created_at])
+  @@map("messages")
 }
 
 enum CheckoutStatus {

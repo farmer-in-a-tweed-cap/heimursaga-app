@@ -34,7 +34,7 @@ export const PostButtons: React.FC<Props> = ({
   return (
     <div
       className={cn(
-        'flex flex-row items-center justify-start gap-1',
+        'flex flex-row items-center justify-start gap-3',
         className,
       )}
     >

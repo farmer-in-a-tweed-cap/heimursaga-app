@@ -24,6 +24,7 @@ export * from './user-avatar';
 export * from './user-bar';
 
 export * from './user-profile-buttons';
+export * from './user-message-button';
 export * from './verification-badge';
 
 export * from './user-you-menu';

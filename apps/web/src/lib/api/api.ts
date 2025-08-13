@@ -39,6 +39,13 @@ export const API_ROUTER = {
     },
     POSTS: '/user/posts',
   },
+  MESSAGES: {
+    CONVERSATIONS: '/messages/conversations',
+    CONVERSATION: (username: string) => `/messages/conversations/${username}`,
+    SEND: '/messages/send',
+    MARK_READ: (messageId: string) => `/messages/mark-read/${messageId}`,
+    UNREAD_COUNT: '/messages/unread-count',
+  },
   SPONSORSHIP_TIERS: {
     GET: `/sponsorship-tiers`,
     CREATE: `/sponsorship-tiers`,

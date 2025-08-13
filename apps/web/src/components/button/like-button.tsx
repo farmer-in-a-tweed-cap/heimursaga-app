@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@repo/ui/components';
-import { HighlighterCircle } from '@repo/ui/icons';
+import { HighlighterCircle, CheckIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 
 type Props = {
@@ -18,23 +18,31 @@ export const LikeButton: React.FC<Props> = ({
   onClick,
 }) => {
   return (
-    <Button
-      variant="ghost"
-      className={cn(
-        'transition-all hover:bg-accent rounded-full h-[32px]',
-        disabled ? '' : 'hover:bg-accent',
+    <div className="relative">
+      <Button
+        variant="ghost"
+        size="sm"
+        className={cn(
+          'transition-all !rounded-full !w-8 !h-8 !min-w-8 !min-h-8 !p-0',
+          liked 
+            ? 'bg-gray-100 hover:bg-gray-200 text-gray-400'
+            : 'bg-primary hover:bg-primary/90 !text-white',
+          disabled ? 'opacity-50' : '',
+        )}
+        title={liked ? 'Remove highlight' : 'Highlight'}
+        disabled={disabled}
+        onClick={disabled ? () => {} : onClick}
+      >
+        <HighlighterCircle
+          size={20}
+          weight={liked ? 'fill' : 'regular'}
+        />
+      </Button>
+      {liked && (
+        <div className="absolute -top-1 -right-1 bg-gray-400 rounded-full w-3.5 h-3.5 flex items-center justify-center">
+          <CheckIcon size={10} weight="bold" className="text-white" />
+        </div>
       )}
-      title="Like"
-      size="sm"
-      disabled={disabled}
-      onClick={disabled ? () => {} : onClick}
-    >
-      <HighlighterCircle
-        size={24}
-        weight={liked ? 'duotone' : 'bold'}
-        style={{ color: liked ? '#AC6D46' : '#4676AC' }}
-      />
-      <span style={{ color: liked ? '#AC6D46' : '#4676AC' }}>{likesCount}</span>
-    </Button>
+    </div>
   );
 };

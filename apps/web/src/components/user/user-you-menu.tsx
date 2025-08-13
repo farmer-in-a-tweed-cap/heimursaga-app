@@ -5,6 +5,7 @@ import { BadgeCount } from '@repo/ui/components';
 import { 
   Bell,
   ChartPieSliceIcon,
+  ChatCircleTextIcon,
   HandCoinsIcon,
   PathIcon,
 } from '@repo/ui/icons';
@@ -86,7 +87,15 @@ export const UserYouMenu = () => {
     enabled: session?.logged,
   });
 
+  // Get unread message count for creators
+  const { data: unreadCount } = useQuery({
+    queryKey: [API_QUERY_KEYS.MESSAGES.UNREAD_COUNT],
+    queryFn: () => apiClient.messages.getUnreadCount().then(({ data }) => data),
+    enabled: session.logged && userRole === UserRole.CREATOR, // Only for creators
+  });
+
   const unreadNotifications = badgeQuery.isFetched ? (badgeQuery.data?.notifications || 0) : 0;
+  const unreadMessages = unreadCount?.count || 0;
 
   // Define navigation links based on user role (excluding items already in mobile bottom nav)
   // Items with icons are from desktop sidebar, items without are submenu items
@@ -137,6 +146,13 @@ export const UserYouMenu = () => {
         label: 'Notifications',
         icon: Bell,
         badge: unreadNotifications,
+        isMainItem: true,
+      },
+      {
+        href: ROUTER.MESSAGES.HOME,
+        label: 'Messages',
+        icon: ChatCircleTextIcon,
+        badge: unreadMessages,
         isMainItem: true,
       },
       // Submenu items (text-only, indented)

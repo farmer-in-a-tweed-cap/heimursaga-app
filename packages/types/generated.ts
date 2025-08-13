@@ -787,3 +787,52 @@ export interface ITripUpdatePayload {
 export interface ISearchQueryPayload {
   search: string;
 }
+
+// messaging
+export interface IMessageSendPayload {
+  content: string;
+  recipientUsername: string;
+}
+
+export interface IMessageDetail {
+  id: string;
+  content: string;
+  senderId: number;
+  recipientId: number;
+  isRead: boolean;
+  createdAt: Date;
+  sender: {
+    username: string;
+    name?: string;
+    picture?: string;
+  };
+  recipient: {
+    username: string;
+    name?: string;
+    picture?: string;
+  };
+}
+
+export interface IConversationDetail {
+  recipientUsername: string;
+  recipientName?: string;
+  recipientPicture?: string;
+  lastMessage: {
+    content: string;
+    createdAt: Date;
+    isFromMe: boolean;
+  };
+  unreadCount: number;
+}
+
+export interface IMessagesGetResponse {
+  data: IMessageDetail[];
+}
+
+export interface IConversationsGetResponse {
+  data: IConversationDetail[];
+}
+
+export interface IMessageUnreadCountResponse {
+  count: number;
+}

@@ -29,12 +29,12 @@ export const PostShareButton: React.FC<Props> = ({ postId }) => {
   return (
     <Button
       variant="ghost"
-      className="transition-all hover:bg-accent rounded-full h-[32px]"
       size="sm"
+      className="transition-all !rounded-full !w-8 !h-8 !min-w-8 !min-h-8 !p-0 bg-gray-100 hover:bg-gray-200 text-gray-400"
       title="Share"
       onClick={handleClick}
     >
-      <ShareFatIcon size={24} weight="bold" style={{ color: '#4676AC' }} />
+      <ShareFatIcon size={20} weight="bold" />
     </Button>
   );
 };

@@ -58,7 +58,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
 );
 
 const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPopular = false }) => (
-  <div className={`relative rounded-3xl shadow-xl p-8 transform hover:scale-105 transition-all duration-300 ${isPopular ? 'border-4 border-blue-500' : 'border border-gray-300'}`} style={{ backgroundColor: '#e9ecef' }}>
+  <div className={`relative rounded-3xl shadow-xl p-8 transform hover:scale-105 transition-all duration-300 flex flex-col h-full ${isPopular ? 'border-4 border-blue-500' : 'border border-gray-300'}`} style={{ backgroundColor: '#e9ecef' }}>
     {isPopular && (
       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
         <div className="text-white text-sm font-normal px-6 py-2 rounded-full shadow-lg" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
@@ -72,7 +72,7 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
         {price}
       </div>
     </div>
-    <ul className="space-y-4 mb-8">
+    <ul className="space-y-4 mb-8 flex-grow">
       {features.map((feature, index) => (
         <li key={index} className="flex items-start">
           <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center mr-3" style={{ backgroundColor: '#E6F0FF' }}>
@@ -204,7 +204,7 @@ export const LandingPage: React.FC = () => {
           <div className="container mx-auto px-4 text-center">
             <div className="max-w-4xl mx-auto">
               <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
-                A Quiet Place for Explorers
+                A Place for Explorers
               </h2>
               <p className="text-xl text-black font-light leading-relaxed mb-12 max-w-3xl mx-auto">
                 Heimursaga (HAY-mur-sah-gah) is an app intentionally designed for the explorer, for the traveler, for the people who like to get away, and for the people who want to share what they've found. Heimursaga is fundamentally a journaling and fundraising tool, but it's also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. Our minimal interface and quality-over-quantity philosophy lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
@@ -465,9 +465,12 @@ export const LandingPage: React.FC = () => {
                 price="$7/mo"
                 features={[
                   "All Explorer features plus:",
-                  "Receive sponsorship payments",
-                  "View detailed entry statistics",
-                  "Journey Builder (waypoint logging and entry grouping)"
+                  "Receive sponsorships",
+                  "Create custom subscription tiers",
+                  "Post sponsor-only entries",
+                  "Build journeys",
+                  "View entry analytics",
+                  "Send private messages"
                 ]}
                 isPopular={false}
               />

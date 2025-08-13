@@ -73,12 +73,12 @@ export const LOCALES = {
             'Enjoy an enhanced experience, exclusive pro tools, and secure sponsorship payment handling.',
         },
         FEATURES: [
-          `Accept sponsor payments`,
-          `Set sponsor subscription price`,
+          `Receive sponsorships`,
+          `Create custom subscription tiers`,
           `Post sponsor-only entries`,
-          `Plan and share journeys`,
-          `View journal entry analytics`,
-          `Private messaging (coming soon)`
+          `Build journeys`,
+          `View entry analytics`,
+          `Send private messages`
         ],
         TERMS: `By subscribing, you agree to our Purchaser Terms of Service. Subscriptions auto-renew until canceled. Cancel anytime, at least 24 hours prior to renewal to avoid additional charges. Manage your subscription through the platform you subscribed on.`,
       },

@@ -261,7 +261,7 @@ export class SponsorService {
                 collection_method: 'charge_automatically',
                 payment_behavior: 'allow_incomplete',
                 metadata: {
-                  description: `@${user.username} sponsors @${creator.username}`,
+                  description: `${user.username} sponsors ${creator.username}`,
                 },
                 payment_settings: {
                   payment_method_types: ['card'],

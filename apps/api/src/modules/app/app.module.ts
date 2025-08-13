@@ -8,6 +8,7 @@ import { EmailModule } from '@/modules/email';
 import { EventModule } from '@/modules/event';
 import { LoggerModule } from '@/modules/logger';
 import { MapModule } from '@/modules/map';
+import { MessageModule } from '@/modules/message';
 import { NotificationModule } from '@/modules/notification';
 import { PaymentModule } from '@/modules/payment';
 import { PayoutModule } from '@/modules/payout';
@@ -59,6 +60,7 @@ import { AppService } from './app.service';
     UploadModule,
     UserModule,
     MapModule,
+    MessageModule,
     PaymentModule,
     SponsorModule,
     PayoutModule,

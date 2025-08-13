@@ -99,6 +99,10 @@ export const AppTopNavbar: React.FC<Props> = () => {
         label: 'Journal',
       },
       {
+        href: ROUTER.MESSAGES.HOME,
+        label: 'Messages',
+      },
+      {
         href: ROUTER.USER.SETTINGS.HOME,
         label: 'Settings',
       },
