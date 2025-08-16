@@ -113,7 +113,7 @@ export const MapDrawer: React.FC<{
             </div>
 
             <div className="mt-6">
-              <NormalizedText text={normalizeText(post.content)} />
+              <NormalizedText text={normalizeText(post.content || '')} />
             </div>
             
             {post?.media && (
