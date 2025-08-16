@@ -50,30 +50,9 @@ export class PostController {
     });
   }
 
-  @Post('debug-echo')
-  @HttpCode(HttpStatus.OK)
-  async debugEcho(@Body() body: any) {
-    console.log('=== DEBUG ECHO ===');
-    console.log('Raw body:', body);
-    console.log('Content:', JSON.stringify(body.content));
-    console.log('Has newlines:', body.content?.includes('\n'));
-    console.log('==================');
-    return {
-      received: body,
-      contentLength: body.content?.length,
-      hasNewlines: body.content?.includes('\n'),
-      contentPreview: body.content?.substring(0, 100)
-    };
-  }
-
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() body: PostCreateDto, @Session() session: ISession) {
-    console.log('=== CREATE CONTROLLER ===');
-    console.log('Raw content received:', JSON.stringify(body.content));
-    console.log('Has newlines:', body.content?.includes('\n'));
-    console.log('=========================');
-    
     return await this.postService.create({
       query: {},
       payload: body,
@@ -88,10 +67,6 @@ export class PostController {
     @Body() body: PostUpdateDto,
     @Session() session: ISession,
   ) {
-    console.log('=== UPDATE CONTROLLER ===');
-    console.log('Raw content received:', JSON.stringify(body.content));
-    console.log('Has newlines:', body.content?.includes('\n'));
-    console.log('=========================');
     return await this.postService.update({
       query: { publicId: param.id },
       session,

@@ -315,29 +315,6 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     const formData = form.getValues();
     const { title, content, place, date } = formData;
     
-    // Debug FIRST: Log the content IMMEDIATELY 
-    console.log('=== FORM SUBMIT DEBUG START ===');
-    console.log('Form submission content debug:', {
-      content: content?.substring(0, 200) + '...',
-      length: content?.length || 0,
-      hasNewlines: content?.includes('\n') || false,
-      hasCarriageReturns: content?.includes('\r') || false,
-      newlineCount: (content?.match(/\n/g) || []).length,
-      firstNewlineAt: content?.indexOf('\n') || -1,
-    });
-    
-    // Save to localStorage immediately
-    const debugData = {
-      content: content?.substring(0, 200) + '...',
-      length: content?.length || 0,
-      hasNewlines: content?.includes('\n') || false,
-      newlineCount: (content?.match(/\n/g) || []).length,
-      timestamp: new Date().toISOString()
-    };
-    localStorage.setItem('debug-content', JSON.stringify(debugData));
-    console.log('Saved to localStorage:', debugData);
-    console.log('=== FORM SUBMIT DEBUG END ===');
-    
     // Check if uploads are still in progress
     const pendingUploads = uploader.files.filter(file => file.file && !file.uploadId && file.loading !== false);
     if (pendingUploads.length > 0) {
@@ -643,22 +620,8 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                               onPaste={aiDetection.trackPaste}
                               onChange={(e) => {
                                 const value = e.target.value;
-                                console.log('TEXTAREA INPUT:', {
-                                  raw: JSON.stringify(value.substring(0, 100)),
-                                  hasNewlines: value.includes('\n'),
-                                  formValue: form.getValues().content,
-                                });
-                                
                                 field.onChange(e);
                                 aiDetection.analyzeText(value);
-                                
-                                // Check form value after onChange
-                                setTimeout(() => {
-                                  console.log('FORM AFTER CHANGE:', {
-                                    formContent: JSON.stringify(form.getValues().content?.substring(0, 100)),
-                                    hasNewlines: form.getValues().content?.includes('\n'),
-                                  });
-                                }, 0);
                               }}
                               onBlur={async (e) => {
                                 field.onBlur();
