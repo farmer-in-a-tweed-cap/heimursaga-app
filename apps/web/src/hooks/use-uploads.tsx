@@ -61,6 +61,19 @@ export const useUploads = (state?: State) => {
     setFiles((files) => files.filter((file) => file.id !== fileId));
   };
 
+  const handleCaptionChange = (fileId: number, caption: string) => {
+    setFiles((files) => {
+      const index = files.findIndex((file) => file.id === fileId);
+      if (index < 0) return files;
+
+      const element = files[index];
+      const list = [...files];
+      list[index] = { ...element, caption };
+
+      return list;
+    });
+  };
+
   return {
     files,
     setFiles,
@@ -70,5 +83,6 @@ export const useUploads = (state?: State) => {
     handleFileLoad,
     handleFileChange,
     handleFileRemove,
+    handleCaptionChange,
   };
 };

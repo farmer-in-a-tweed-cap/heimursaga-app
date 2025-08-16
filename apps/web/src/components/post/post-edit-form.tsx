@@ -107,10 +107,11 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
 
   const uploader = useUploads({
     files: values?.media
-      ? values?.media?.map(({ id, thumbnail }, key) => ({
+      ? values?.media?.map(({ id, thumbnail, caption }, key) => ({
           id: key,
           uploadId: id,
           src: thumbnail,
+          caption: caption || undefined,
         }))
       : [],
     maxFiles: session.creator ? 3 : 1,
@@ -265,6 +266,14 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
         .map(({ uploadId }) => uploadId)
         .filter((el): el is string => typeof el === 'string' && el.length > 0);
 
+      // Collect captions for uploads
+      const uploadCaptions: { [uploadId: string]: string } = {};
+      uploader.files.forEach(file => {
+        if (file.uploadId && file.caption && file.caption.trim()) {
+          uploadCaptions[file.uploadId] = file.caption.trim();
+        }
+      });
+
       setLoading({ ...loading, post: true });
 
       const updatePayload = {
@@ -281,6 +290,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
         },
         tripId,
         uploads,
+        uploadCaptions,
       };
 
       // update the post
@@ -635,6 +645,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                         imageAIDetection.clearResult(fileToRemove.file.name);
                       }
                     }}
+                    onCaptionChange={uploader.handleCaptionChange}
                   />
                   {/* Display image AI detection warnings */}
                   {uploader.files.map((file) => {

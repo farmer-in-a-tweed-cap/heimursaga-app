@@ -6,7 +6,7 @@ import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { dateformat } from '@/lib/date-format';
+import { dateformat, normalizeText } from '@/lib';
 
 import { MapStaticPreview, PostButtons, UserBar, UserAvatar } from '@/components';
 import { APP_CONFIG } from '@/config';
@@ -21,7 +21,7 @@ export type PostCardProps = {
   classNames?: {
     card?: string;
   };
-  media?: { thumbnail: string }[];
+  media?: { thumbnail: string; caption?: string }[];
   id?: string;
   title?: string;
   content?: string;
@@ -322,20 +322,27 @@ export const PostCard: React.FC<PostCardProps> = ({
               </p>
             )}
           </div>
-          {media.length >= 1 && (
-            <div className={`mt-6 grid ${extended ? 'grid-cols-1' : 'grid-cols-2'} gap-2`}>
-              {media.map(({ thumbnail }, key) => (
+          {extended && media.length >= 1 && (
+            <div className={`mt-6 flex flex-col gap-4`}>
+              {media.map(({ thumbnail, caption }, key) => (
                 <div
                   key={key}
-                  className="w-full h-auto overflow-hidden rounded-xl"
+                  className="w-full flex flex-col gap-2"
                 >
-                  <Image
-                    src={thumbnail}
-                    width={extended ? 800 : 400}
-                    height={extended ? 600 : 300}
-                    className="w-full h-auto"
-                    alt=""
-                  />
+                  <div className="w-full h-auto overflow-hidden rounded-xl">
+                    <Image
+                      src={thumbnail}
+                      width={800}
+                      height={600}
+                      className="w-full h-auto"
+                      alt={caption || ""}
+                    />
+                  </div>
+                  {caption && (
+                    <p className="text-sm text-gray-600 italic px-2">
+                      {caption}
+                    </p>
+                  )}
                 </div>
               ))}
             </div>

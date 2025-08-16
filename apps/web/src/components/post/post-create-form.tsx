@@ -161,6 +161,12 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
       waypointId: waypoint?.id,
       tripId: trip?.id,
       uploads: uploadsForAutoSave,
+      uploadCaptions: uploader.files.reduce((acc, file) => {
+        if (file.uploadId && file.caption && file.caption.trim()) {
+          acc[file.uploadId] = file.caption.trim();
+        }
+        return acc;
+      }, {} as { [uploadId: string]: string }),
     },
     enabled: session.logged, // Only enable auto-save when logged in
     onDraftCreated: setDraftPostId,
@@ -288,6 +294,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
             src: mediaItem.thumbnail,
             file: undefined, // No original file since it's already uploaded
             loading: false,
+            caption: mediaItem.caption || undefined,
           }));
           
           // Reset the uploader with the restored files
@@ -305,6 +312,32 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const formData = form.getValues();
+    const { title, content, place, date } = formData;
+    
+    // Debug FIRST: Log the content IMMEDIATELY 
+    console.log('=== FORM SUBMIT DEBUG START ===');
+    console.log('Form submission content debug:', {
+      content: content?.substring(0, 200) + '...',
+      length: content?.length || 0,
+      hasNewlines: content?.includes('\n') || false,
+      hasCarriageReturns: content?.includes('\r') || false,
+      newlineCount: (content?.match(/\n/g) || []).length,
+      firstNewlineAt: content?.indexOf('\n') || -1,
+    });
+    
+    // Save to localStorage immediately
+    const debugData = {
+      content: content?.substring(0, 200) + '...',
+      length: content?.length || 0,
+      hasNewlines: content?.includes('\n') || false,
+      newlineCount: (content?.match(/\n/g) || []).length,
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem('debug-content', JSON.stringify(debugData));
+    console.log('Saved to localStorage:', debugData);
+    console.log('=== FORM SUBMIT DEBUG END ===');
+    
     // Check if uploads are still in progress
     const pendingUploads = uploader.files.filter(file => file.file && !file.uploadId && file.loading !== false);
     if (pendingUploads.length > 0) {
@@ -317,9 +350,6 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
       toast({ type: 'error', message: 'Please select a location on the map' });
       return;
     }
-
-    const formData = form.getValues();
-    const { title, content, place, date } = formData;
     
     // Custom validation for public entries
     if (privacy.public && content) {
@@ -345,6 +375,14 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
         .map(({ uploadId }) => uploadId)
         .filter((el): el is string => typeof el === 'string' && el.length > 0);
 
+      // Collect captions for uploads
+      const uploadCaptions: { [uploadId: string]: string } = {};
+      uploader.files.forEach(file => {
+        if (file.uploadId && file.caption && file.caption.trim()) {
+          uploadCaptions[file.uploadId] = file.caption.trim();
+        }
+      });
+
       setLoading(true);
 
       if (draftPostId) {
@@ -353,7 +391,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
           query: { id: draftPostId },
           payload: {
             title,
-            content: content || (privacy.public ? content : ' '),
+            content: content || ' ',
             place,
             date,
             public: privacy.public,
@@ -364,6 +402,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
             },
             tripId,
             uploads,
+            uploadCaptions,
             isDraft: false, // Publishing the draft
           },
         });
@@ -378,7 +417,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
         // Create a new published post
         const { success, data } = await apiClient.createPost({
           title,
-          content: content || (privacy.public ? content : ' '), // Private entries can have minimal content
+          content: content || ' ',
           place,
           date,
           lat: marker?.lat,
@@ -387,6 +426,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
           sponsored: privacy.sponsored,
           waypointId: waypoint?.id,
           uploads,
+          uploadCaptions,
           tripId,
           isDraft: false, // Creating a published post
         });
@@ -602,8 +642,23 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                               {...field}
                               onPaste={aiDetection.trackPaste}
                               onChange={(e) => {
+                                const value = e.target.value;
+                                console.log('TEXTAREA INPUT:', {
+                                  raw: JSON.stringify(value.substring(0, 100)),
+                                  hasNewlines: value.includes('\n'),
+                                  formValue: form.getValues().content,
+                                });
+                                
                                 field.onChange(e);
-                                aiDetection.analyzeText(e.target.value);
+                                aiDetection.analyzeText(value);
+                                
+                                // Check form value after onChange
+                                setTimeout(() => {
+                                  console.log('FORM AFTER CHANGE:', {
+                                    formContent: JSON.stringify(form.getValues().content?.substring(0, 100)),
+                                    hasNewlines: form.getValues().content?.includes('\n'),
+                                  });
+                                }, 0);
                               }}
                               onBlur={async (e) => {
                                 field.onBlur();
@@ -680,6 +735,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                         imageAIDetection.clearResult(fileToRemove.file.name);
                       }
                     }}
+                    onCaptionChange={uploader.handleCaptionChange}
                   />
                   {/* Display image AI detection warnings */}
                   {uploader.files.map((file) => {

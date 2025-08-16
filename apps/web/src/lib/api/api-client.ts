@@ -181,23 +181,56 @@ export const apiClient = {
       method: API_METHODS.GET,
       ...config,
     }),
-  createPost: async (body: IPostCreatePayload) =>
-    api.request<IPostCreateResponse>(API_ROUTER.POSTS.CREATE, {
+  createPost: async (body: IPostCreatePayload) => {
+    // Debug: Log what we're about to send
+    const apiClientDebug = {
+      content: body.content?.substring(0, 200) + '...',
+      length: body.content?.length || 0,
+      hasNewlines: body.content?.includes('\n') || false,
+      newlineCount: (body.content?.match(/\n/g) || []).length,
+    };
+    console.log('API Client createPost debug:', apiClientDebug);
+    
+    const stringifiedBody = JSON.stringify(body);
+    const jsonDebug = {
+      stringifiedContent: stringifiedBody.substring(0, 300) + '...',
+      hasBackslashN: stringifiedBody.includes('\\n'),
+      hasActualN: stringifiedBody.includes('\n'),
+    };
+    console.log('API Client JSON.stringify debug:', jsonDebug);
+    
+    // Save to localStorage to survive redirect
+    const existingDebug = JSON.parse(localStorage.getItem('debug-content') || '{}');
+    localStorage.setItem('debug-content', JSON.stringify({
+      ...existingDebug,
+      apiClient: apiClientDebug,
+      jsonStringify: jsonDebug,
+      timestamp: new Date().toISOString()
+    }));
+    
+    return api.request<IPostCreateResponse>(API_ROUTER.POSTS.CREATE, {
       method: API_METHODS.POST,
-      body: JSON.stringify(body),
-    }),
+      body: stringifiedBody,
+    });
+  },
   updatePost: async (
     {
       query,
       payload,
     }: IApiClientQueryWithPayload<{ id: string }, IPostUpdatePayload>,
     config?: RequestConfig,
-  ) =>
-    api.request<IPostUpdatePayload>(API_ROUTER.POSTS.UPDATE(query.id), {
+  ) => {
+    console.log('=== UPDATE POST DEBUG ===');
+    console.log('Raw payload.content:', JSON.stringify(payload.content));
+    console.log('Has newlines:', payload.content?.includes('\n'));
+    console.log('=========================');
+    
+    return api.request<IPostUpdatePayload>(API_ROUTER.POSTS.UPDATE(query.id), {
       method: API_METHODS.PUT,
       body: JSON.stringify(payload),
       cookie: config ? config.cookie : undefined,
-    }),
+    });
+  },
   deletePost: async ({ query }: IApiClientQuery<{ postId: string }>) =>
     api.request<void>(API_ROUTER.POSTS.DELETE(query.postId), {
       method: API_METHODS.DELETE,

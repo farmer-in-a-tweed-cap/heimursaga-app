@@ -107,7 +107,7 @@ export const useAutoSave = ({
         // Create new draft post
         createPostMutation.mutate({
           title: saveData.title || '',
-          content: saveData.content || ' ', // API requires content
+          content: saveData.content || '',
           place: saveData.place || '',
           date: saveData.date || new Date(),
           lat: saveData.lat || 0, // Default coordinates for drafts

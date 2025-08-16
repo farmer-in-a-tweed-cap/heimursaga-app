@@ -122,6 +122,17 @@ export class MapService {
                 },
               },
             },
+            media: {
+              select: {
+                caption: true,
+                upload: {
+                  select: {
+                    public_id: true,
+                    thumbnail: true,
+                  },
+                },
+              },
+            },
             waypoint: {
               select: {
                 trips: {
@@ -312,6 +323,13 @@ export class MapService {
                         title: post.waypoint.trips[0].trip.title,
                       }
                     : undefined,
+                  media: post.media
+                    ? post.media.map(({ upload, caption }) => ({
+                        id: upload?.public_id,
+                        thumbnail: getStaticMediaUrl(upload?.thumbnail),
+                        caption: caption || undefined,
+                      }))
+                    : [],
                 }
               : undefined,
           };

@@ -277,6 +277,7 @@ model TripWaypoint {
 model PostMedia {
   post_id    Int
   upload_id  Int
+  caption    String?   @db.VarChar(200)
   created_at DateTime? @default(now())
   post       Post      @relation(fields: [post_id], references: [id], onDelete: Cascade)
   upload     Upload    @relation(fields: [upload_id], references: [id], onDelete: Cascade)

@@ -31,18 +31,16 @@ export function sanitizeUserContent(input: string): string {
   // First sanitize to remove any HTML/scripts
   const sanitized = purify.sanitize(input);
   
-  // Normalize line breaks: convert single newlines within paragraphs to spaces,
-  // but preserve double newlines as paragraph breaks
+  // Preserve line breaks and paragraph formatting
   return sanitized
     .trim()
-    // Replace multiple consecutive whitespace/newlines with double newlines
-    .replace(/\n\s*\n\s*/g, '\n\n')
-    // Convert single newlines within paragraphs to spaces
-    .replace(/([^\n])\n([^\n])/g, '$1 $2')
-    // Clean up any extra spaces
-    .replace(/\s+/g, ' ')
-    // Restore paragraph breaks
-    .replace(/\n\n/g, '\n\n');
+    // Normalize carriage returns to newlines
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    // Clean up excessive spacing while preserving single and double newlines
+    .replace(/[ \t]+/g, ' ')  // Convert multiple spaces/tabs to single space
+    .replace(/\n[ \t]+/g, '\n')  // Remove spaces after newlines
+    .replace(/[ \t]+\n/g, '\n'); // Remove spaces before newlines
 }
 
 /**

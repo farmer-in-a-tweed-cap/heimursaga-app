@@ -270,7 +270,7 @@ export interface IPostDetail {
     lat: number;
     lon: number;
   };
-  media?: { id: string; thumbnail: string }[];
+  media?: { id: string; thumbnail: string; caption?: string }[];
   public?: boolean;
   sponsored?: boolean;
   isDraft?: boolean;
@@ -317,6 +317,7 @@ export interface IPostCreatePayload {
   place?: string;
   date?: Date;
   uploads?: string[];
+  uploadCaptions?: { [uploadId: string]: string };
   waypointId?: number;
   tripId?: string;
 }
@@ -335,6 +336,7 @@ export interface IPostUpdatePayload {
   place?: string;
   date?: Date;
   uploads?: string[];
+  uploadCaptions?: { [uploadId: string]: string };
   tripId?: string;
 }
 

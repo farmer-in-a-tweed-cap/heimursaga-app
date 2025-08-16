@@ -64,6 +64,7 @@ type Waypoint = {
       id: string;
       title: string;
     };
+    media?: { id: string; thumbnail: string; caption?: string }[];
   };
 };
 
@@ -837,6 +838,7 @@ export const MapExploreView: React.FC<Props> = () => {
                           date={date}
                           place={post.place}
                           sponsored={post.sponsored}
+                          media={post.media}
                           actions={{ like: false, bookmark: false, edit: false }}
                           userbar={
                             // Only show userbar in non-journey contexts

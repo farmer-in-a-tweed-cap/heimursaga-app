@@ -15,7 +15,7 @@ import Link from 'next/link';
 
 import { CloseButton, PostButtons, UserBar, UserAvatar } from '@/components';
 import { MAP_VIEW_PARAMS } from '@/hooks';
-import { dateformat } from '@/lib';
+import { dateformat, normalizeText } from '@/lib';
 import { ROUTER } from '@/router';
 
 export const MapDrawer: React.FC<{
@@ -113,23 +113,27 @@ export const MapDrawer: React.FC<{
             </div>
 
             <div className="mt-6">
-              <NormalizedText text={post.content} />
+              <NormalizedText text={normalizeText(post.content)} />
             </div>
             
             {post?.media && (
               <div className="mt-6 grid grid-cols-1 gap-2">
                 {post.media?.map((media, key) => (
-                  <div
-                    key={key}
-                    className="w-full h-auto overflow-hidden rounded-xl"
-                  >
-                    <Image
-                      src={media?.thumbnail}
-                      width={800}
-                      height={600}
-                      className="w-full h-auto"
-                      alt=""
-                    />
+                  <div key={key} className="w-full h-auto">
+                    <div className="w-full h-auto overflow-hidden rounded-xl">
+                      <Image
+                        src={media?.thumbnail}
+                        width={800}
+                        height={600}
+                        className="w-full h-auto"
+                        alt=""
+                      />
+                    </div>
+                    {media.caption && (
+                      <p className="text-sm text-gray-600 italic px-2 mt-2">
+                        {media.caption}
+                      </p>
+                    )}
                   </div>
                 ))}
               </div>

@@ -12,6 +12,7 @@ export type FilePickerFile = {
   uploadId?: string;
   loading?: boolean;
   file?: File;
+  caption?: string;
 };
 
 type Props = {
@@ -25,6 +26,7 @@ type Props = {
   onChange?: (files: FilePickerFile[]) => void;
   onLoad?: FilePickerLoadHandler;
   onRemove?: (id: number) => void;
+  onCaptionChange?: (id: number, caption: string) => void;
 };
 
 export type FilePickerLoadHandler = (file: { id: number; src: string }) => void;
@@ -40,6 +42,7 @@ export const FilePicker: React.FC<Props> = ({
   onChange,
   onLoad,
   onRemove,
+  onCaptionChange,
 }) => {
   const fileCount = files.length;
 
@@ -86,6 +89,12 @@ export const FilePicker: React.FC<Props> = ({
     }
   };
 
+  const handleCaptionChange = (fileId: number, caption: string) => {
+    if (onCaptionChange) {
+      onCaptionChange(fileId, caption);
+    }
+  };
+
   return (
     <div className="w-full h-auto flex flex-col justify-start">
       <div
@@ -106,15 +115,34 @@ export const FilePicker: React.FC<Props> = ({
       </div>
 
       {files.length >= 1 && (
-        <div className="mt-4 grid grid-cols-6 gap-2">
+        <div className="mt-4 flex flex-col gap-4">
           {files.map((file, key) => (
-            <FilePickerPreview
-              key={key}
-              id={file.id}
-              src={file.src}
-              loading={file.loading}
-              onRemove={handleFileRemove}
-            />
+            <div key={key} className="flex flex-col gap-2">
+              <div className="w-32 h-32">
+                <FilePickerPreview
+                  id={file.id}
+                  src={file.src}
+                  loading={file.loading}
+                  onRemove={handleFileRemove}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-gray-700">
+                  Caption (optional)
+                </label>
+                <input
+                  type="text"
+                  value={file.caption || ''}
+                  onChange={(e) => handleCaptionChange(file.id, e.target.value)}
+                  placeholder="Add a caption..."
+                  maxLength={200}
+                  className="px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <span className="text-xs text-gray-500">
+                  {(file.caption || '').length}/200 characters
+                </span>
+              </div>
+            </div>
           ))}
         </div>
       )}

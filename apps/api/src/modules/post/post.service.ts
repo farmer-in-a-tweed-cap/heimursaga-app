@@ -342,6 +342,7 @@ export class PostService {
           bookmarks_count: true,
           media: {
             select: {
+              caption: true,
               upload: {
                 select: {
                   public_id: true,
@@ -434,9 +435,10 @@ export class PostService {
             }
           : undefined,
         media: post.media
-          ? post.media.map(({ upload }) => ({
+          ? post.media.map(({ upload, caption }) => ({
               id: upload?.public_id,
               thumbnail: getStaticMediaUrl(upload?.thumbnail),
+              caption: caption || undefined,
             }))
           : [],
         author: post.author
@@ -477,7 +479,7 @@ export class PostService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      const { title, lat, lon, date, place, waypointId, tripId, isDraft } = payload;
+      const { title, lat, lon, date, place, waypointId, tripId, isDraft, uploadCaptions } = payload;
       const privacy = {
         public: payload.public,
         sponsored: payload.sponsored,
@@ -561,7 +563,7 @@ export class PostService {
         // create post media
         const uploads = await tx.upload.findMany({
           where: { public_id: { in: payload.uploads || [] } },
-          select: { id: true },
+          select: { id: true, public_id: true },
         });
 
         if (uploads.length >= 1) {
@@ -569,6 +571,7 @@ export class PostService {
             data: uploads.map((upload) => ({
               post_id: post.id,
               upload_id: upload.id,
+              caption: uploadCaptions?.[upload.public_id || ''] || null,
             })),
           });
         }
@@ -646,7 +649,7 @@ export class PostService {
     try {
       const { publicId } = query;
       const { userId } = session;
-      const { uploads, tripId } = payload;
+      const { uploads, tripId, uploadCaptions } = payload;
 
       this.logger.log('post_update');
 
@@ -743,6 +746,7 @@ export class PostService {
               upload: {
                 select: { id: true, public_id: true, thumbnail: true },
               },
+              caption: true,
             },
           });
 
@@ -767,17 +771,41 @@ export class PostService {
 
           // create post media
           if (mediaAdded.length >= 1) {
-            const uploads = await tx.upload.findMany({
+            const uploadsToAdd = await tx.upload.findMany({
               where: { public_id: { in: mediaAdded } },
-              select: { id: true },
+              select: { id: true, public_id: true },
             });
 
             await tx.postMedia.createMany({
-              data: uploads.map((upload) => ({
+              data: uploadsToAdd.map((upload) => ({
                 post_id: post.id,
                 upload_id: upload.id,
+                caption: uploadCaptions?.[upload.public_id || ''] || null,
               })),
             });
+          }
+
+          // update captions for existing media
+          if (uploadCaptions) {
+            const mediaToUpdate = media.filter(({ upload }) => 
+              uploads.includes(upload.public_id || '') &&
+              uploadCaptions[upload.public_id || ''] !== undefined
+            );
+
+            for (const mediaItem of mediaToUpdate) {
+              const newCaption = uploadCaptions[mediaItem.upload.public_id || ''];
+              if (newCaption !== mediaItem.caption) {
+                await tx.postMedia.update({
+                  where: {
+                    post_id_upload_id: {
+                      post_id: post.id,
+                      upload_id: mediaItem.upload.id,
+                    },
+                  },
+                  data: { caption: newCaption || null },
+                });
+              }
+            }
           }
         }
 
