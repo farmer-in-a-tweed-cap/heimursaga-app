@@ -13,21 +13,13 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from 'lucide-react';
+// Unused icons import removed
 import * as React from 'react';
 
 import { Button } from './button';
-import { Checkbox } from './checkbox';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from './dropdown-menu';
-import { Input } from './input';
+// Unused Checkbox import removed
+// Unused DropdownMenu imports removed
+// Unused Input import removed
 import { LoadingSpinner } from './spinner';
 import {
   Table,

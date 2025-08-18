@@ -22,14 +22,14 @@ type Props = {
   maxSize?: number;
   placeholder?: string;
   disabled?: boolean;
-  loader?: (file: FilePickerFile) => Promise<void>;
-  onChange?: (files: FilePickerFile[]) => void;
+  loader?: (_file: FilePickerFile) => Promise<void>;
+  onChange?: (_files: FilePickerFile[]) => void;
   onLoad?: FilePickerLoadHandler;
-  onRemove?: (id: number) => void;
-  onCaptionChange?: (id: number, caption: string) => void;
+  onRemove?: (_id: number) => void;
+  onCaptionChange?: (_id: number, _caption: string) => void;
 };
 
-export type FilePickerLoadHandler = (file: { id: number; src: string }) => void;
+export type FilePickerLoadHandler = (_file: { id: number; src: string }) => void;
 
 export const FilePicker: React.FC<Props> = ({
   maxFiles = 1,
@@ -154,7 +154,7 @@ const FilePickerPreview: React.FC<{
   id: number;
   loading?: boolean;
   src?: string;
-  onRemove?: (e: React.MouseEvent, id: number) => void;
+  onRemove?: (_e: React.MouseEvent, _id: number) => void;
 }> = ({ id, loading = false, src, onRemove }) => {
   return (
     <div className="relative aspect-square overflow-hidden rounded-xl flex items-center justify-center border-2 border-accent border-solid bg-gray-50">

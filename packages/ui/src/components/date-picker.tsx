@@ -9,9 +9,9 @@ import { Input } from './input';
 import { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 type Props = {
-  format: (date: Date) => string;
+  format: (_date: Date) => string;
   date?: Date;
-  onChange?: (date: Date) => void;
+  onChange?: (_date: Date) => void;
   disabled?: boolean;
   disabledDates?: any; // For react-day-picker disabled prop
   inputProps?: React.ComponentProps<'input'>;

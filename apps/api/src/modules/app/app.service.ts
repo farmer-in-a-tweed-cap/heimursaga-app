@@ -5,12 +5,12 @@ import { ISitemapGetResponse } from '@repo/types';
 import { getEnv } from '@/lib/utils';
 
 import { ENVIRONMENTS } from '@/common/constants';
+import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
   ServiceBadRequestException,
   ServiceForbiddenException,
 } from '@/common/exceptions';
-import { EMAIL_TEMPLATES } from '@/common/email-templates';
-import { EventService, EVENTS, IEventSendEmail } from '@/modules/event';
+import { EVENTS, EventService, IEventSendEmail } from '@/modules/event';
 import { PrismaService } from '@/modules/prisma';
 
 @Injectable()
@@ -35,7 +35,7 @@ export class AppService {
           template: EMAIL_TEMPLATES.WELCOME,
         },
       });
-      
+
       return { message: 'Test welcome email sent to cnhamilton1@yahoo.com' };
     } catch (error) {
       throw new ServiceForbiddenException();
@@ -129,7 +129,7 @@ export class AppService {
         ...users.map(
           ({ username, updated_at }) =>
             ({
-              path: username,
+              path: `user/${username}`,
               date: updated_at,
               priority: 1,
               changefreq: 'daily',

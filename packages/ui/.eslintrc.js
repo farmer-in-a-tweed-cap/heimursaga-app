@@ -6,4 +6,11 @@ module.exports = {
   parserOptions: {
     project: true,
   },
+  rules: {
+    "no-redeclare": "off", // Allow React imports since they're needed for TypeScript
+    "no-unused-vars": ["warn", { 
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_"
+    }]
+  },
 };

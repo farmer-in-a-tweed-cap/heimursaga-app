@@ -11,7 +11,7 @@ type ChipItem = {
 type ChipProps = ChipItem & {
   children?: React.ReactNode;
   className?: string;
-  onClick?: (value: string) => void;
+  onClick?: (_value: string) => void;
 };
 
 export const Chip: React.FC<ChipProps> = ({
@@ -57,7 +57,7 @@ type ChipGroupProps = {
   };
 
   disabled?: boolean;
-  onSelect?: (value: string) => void;
+  onSelect?: (_value: string) => void;
 };
 
 export const ChipGroup: React.FC<ChipGroupProps> = ({

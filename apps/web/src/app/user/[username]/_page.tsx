@@ -47,7 +47,7 @@ export const generateMetadata = async ({
     openGraph: {
       title,
       description,
-      url: `${process.env.NEXT_PUBLIC_APP_BASE_URL}/${username}`,
+      url: `${process.env.NEXT_PUBLIC_APP_BASE_URL}/user/${username}`,
       type: 'profile',
       images: [
         {
