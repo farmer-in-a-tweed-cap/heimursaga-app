@@ -1,12 +1,9 @@
-# Web deployment optimization - exclude heavy files not needed at runtime
+# Monorepo deployment optimization - works for both web and API apps
 
-# API app entirely (not needed for web deployment)
-apps/api/
-
-# Git history is very heavy (57MB)
+# Git history is very heavy (57MB) - not needed at runtime
 .git/
 
-# Documentation and logs
+# Documentation and logs - not needed in production
 *.md
 *.log
 docs/
@@ -21,7 +18,7 @@ README*
 **/node_modules/.cache/
 **/.pnpm-store/
 
-# Test files
+# Test files - not needed at runtime
 **/__tests__/
 **/*.test.*
 **/*.spec.*
