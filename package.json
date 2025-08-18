@@ -10,7 +10,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "heroku-postbuild": "if [ \"$APP\" = \"web\" ]; then pnpm run build:web && pnpm prune --prod; elif [ \"$APP\" = \"api\" ]; then pnpm run build:api && pnpm prune --prod; else echo 'no valid APP environment variable detected, please set APP to \"web\" or \"api\"'; exit 1; fi",
+    "heroku-postbuild": "if [ \"$APP\" = \"web\" ]; then pnpm run build:web && rm -rf node_modules && pnpm install --prod --frozen-lockfile; elif [ \"$APP\" = \"api\" ]; then pnpm run build:api && rm -rf node_modules && pnpm install --prod --frozen-lockfile; else echo 'no valid APP environment variable detected, please set APP to \"web\" or \"api\"'; exit 1; fi",
     "build:web": "turbo run build --filter=web",
     "build:api": "turbo run build --filter=api",
     "start:web": "turbo run start --filter=web",
