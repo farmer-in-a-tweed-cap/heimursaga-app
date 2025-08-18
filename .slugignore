@@ -42,3 +42,27 @@ README*
 **/node_modules/prettier/
 **/node_modules/@trivago/
 **/node_modules/turbo/
+
+# Additional heavy packages not needed at runtime
+**/node_modules/@babel/
+**/node_modules/webpack/
+**/node_modules/@next/swc-*/
+**/node_modules/esbuild/
+**/node_modules/@swc/
+**/node_modules/terser/
+**/node_modules/postcss/
+**/node_modules/autoprefixer/
+**/node_modules/tailwindcss/
+
+# Package manager files and caches
+**/node_modules/.bin/
+**/node_modules/.cache/
+**/node_modules/**/test/
+**/node_modules/**/tests/
+**/node_modules/**/*.test.js
+**/node_modules/**/*.spec.js
+**/node_modules/**/__tests__/
+**/node_modules/**/docs/
+**/node_modules/**/documentation/
+**/node_modules/**/*.md
+**/node_modules/**/*.map
