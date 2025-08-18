@@ -1,0 +1,47 @@
+# Web deployment optimization - exclude heavy files not needed at runtime
+
+# API app entirely (not needed for web deployment)
+apps/api/
+
+# Git history is very heavy (57MB)
+.git/
+
+# Documentation and logs
+*.md
+*.log
+docs/
+README*
+
+# Development files and caches
+**/.env.*
+!**/.env.example
+**/.turbo/
+**/coverage/
+**/.next/cache/
+**/node_modules/.cache/
+**/.pnpm-store/
+
+# Test files
+**/__tests__/
+**/*.test.*
+**/*.spec.*
+**/test/
+
+# IDE files
+**/.vscode/
+**/.idea/
+**/.DS_Store
+
+# Source maps and dev configs (post-build optimization)
+**/*.map
+**/.eslintrc.*
+**/.prettierrc*
+
+# Heavy development dependencies that aren't needed at runtime
+**/node_modules/@types/
+**/node_modules/typescript/
+**/node_modules/eslint/
+**/node_modules/@typescript-eslint/
+**/node_modules/prettier/
+**/node_modules/@trivago/
+**/node_modules/turbo/
