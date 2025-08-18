@@ -66,10 +66,13 @@ module.exports = withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   silent: !process.env.CI,
-  widenClientFileUpload: true,
+  widenClientFileUpload: false,
   reactComponentAnnotation: {
-    enabled: true,
+    enabled: false,
   },
   hideSourceMaps: true,
   disableLogger: true,
+  sourcemaps: {
+    disable: true,
+  },
 });
