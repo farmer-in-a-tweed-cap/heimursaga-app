@@ -33,3 +33,9 @@ README*
 **/*.map
 **/.eslintrc.*
 **/.prettierrc*
+
+# Sentry build artifacts and source maps (not needed in production)
+**/.sentryclirc
+**/sentry.properties
+**/*.js.map
+**/node_modules/@sentry/cli/

@@ -24,7 +24,6 @@ import { UserModule } from '@/modules/user';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { SentryTestController } from './sentry-test.controller';
 
 @Module({
   imports: [
@@ -70,7 +69,7 @@ import { SentryTestController } from './sentry-test.controller';
     SearchModule,
     RecaptchaModule,
   ],
-  controllers: [AppController, SentryTestController],
+  controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
