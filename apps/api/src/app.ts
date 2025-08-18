@@ -17,6 +17,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { getEnv, sleep } from '@/lib/utils';
 
 import { HttpExceptionFilter } from '@/common/exception-filters';
+import { SentryExceptionFilter } from '@/common/filters/sentry-exception.filter';
 import { ServiceExceptionInterceptor } from '@/common/interceptors';
 import { AppModule } from '@/modules/app';
 import { Logger } from '@/modules/logger';
@@ -141,7 +142,7 @@ export async function app() {
     });
 
     // set global filters, interceptors and pipes
-    app.useGlobalFilters(new HttpExceptionFilter());
+    app.useGlobalFilters(new SentryExceptionFilter(), new HttpExceptionFilter());
     app.useGlobalInterceptors(new ServiceExceptionInterceptor());
     app.useGlobalPipes(
       new ValidationPipe({

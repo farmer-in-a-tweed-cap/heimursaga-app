@@ -1,8 +1,12 @@
 const { NEXT_PUBLIC_API_BASE_URL } = process.env;
+const { withSentryConfig } = require('@sentry/nextjs');
 
-module.exports = {
+const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@repo/ui'],
+  experimental: {
+    instrumentationHook: true,
+  },
   images: {
     remotePatterns: [
       {
@@ -57,3 +61,15 @@ module.exports = {
     ];
   },
 };
+
+module.exports = withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  reactComponentAnnotation: {
+    enabled: true,
+  },
+  hideSourceMaps: true,
+  disableLogger: true,
+});
