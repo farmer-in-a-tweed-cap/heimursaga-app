@@ -3,10 +3,8 @@ import { Platform } from 'react-native';
 // API Configuration
 export const API_CONFIG = {
   BASE_URL: __DEV__ 
-    ? Platform.OS === 'ios' 
-      ? 'http://localhost:3001/api'  // iOS simulator localhost
-      : 'http://10.0.2.2:3001/api'   // Android emulator localhost
-    : 'https://production-api-url.com/api', // Replace with actual production URL
+    ? 'http://192.168.1.196:5001/v1'  // Local development - use your Mac's IP for physical device testing
+    : 'https://production-api-url.com/v1', // Replace with actual production URL
   TIMEOUT: 30000,
 };
 
@@ -33,7 +31,7 @@ export const API_ROUTES = {
   LOGIN: '/auth/login',
   SIGNUP: '/auth/signup',
   LOGOUT: '/auth/logout',
-  SESSION: '/session',
+  SESSION: '/auth/user',
   RESET_PASSWORD: '/auth/reset-password',
   CHANGE_PASSWORD: '/auth/change-password',
   VERIFY_EMAIL: '/auth/verify-email',
