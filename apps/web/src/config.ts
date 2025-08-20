@@ -7,10 +7,14 @@ export const APP_CONFIG = {
       PREVIEW: {
         ZOOM: 6,
       },
-      ZOOM: 3,
+      ZOOM: 1,
       CENTER: {
-        LAT: 46.50069923496966,
-        LON: 0.9528208794568513,
+        LAT: 0,
+        LON: 0,
+      },
+      MOBILE: {
+        LAT: 23.63616407196423,
+        LON: -29.287003843914874,
       },
       BOUNDS: {
         NE: { LAT: 62.21387721205932, LON: 41.55034517716538 },

@@ -209,18 +209,20 @@ export const MapViewContainer: React.FC<{
         extended ? 'rounded-l-none' : 'desktop:rounded-l-2xl',
       )}
     >
-      <div className="z-20 absolute hidden desktop:flex top-4 left-4">
-        <button
-          className="drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
-          onClick={onExtend}
-        >
-          {extended ? (
-            <CaretLineRightIcon size={18} weight="bold" />
-          ) : (
-            <CaretLineLeftIcon size={18} weight="bold" />
-          )}
-        </button>
-      </div>
+      {onExtend && typeof onExtend === 'function' && onExtend.toString() !== '() => {}' && (
+        <div className="z-20 absolute hidden desktop:flex top-4 left-4">
+          <button
+            className="drop-shadow text-black bg-white hover:bg-white/90 p-2 rounded-full"
+            onClick={onExtend}
+          >
+            {extended ? (
+              <CaretLineRightIcon size={18} weight="bold" />
+            ) : (
+              <CaretLineLeftIcon size={18} weight="bold" />
+            )}
+          </button>
+        </div>
+      )}
       {children}
     </div>
   );

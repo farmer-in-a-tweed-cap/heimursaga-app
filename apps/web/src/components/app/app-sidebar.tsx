@@ -20,7 +20,7 @@ import {
 } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { ForwardRefExoticComponent, RefAttributes } from 'react';
 
 import { CreatePostButton, Logo, UserNavbar } from '@/components';
@@ -43,11 +43,22 @@ type Props = {
 };
 
 export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
+  const router = useRouter();
   const pathname = usePathname();
   const session = useSession();
 
   const username = session?.username;
   const userRole = session?.role as UserRole;
+
+  const handleLogoClick = () => {
+    if (pathname === ROUTER.HOME) {
+      // Already on home page - navigate to clean home URL
+      window.location.href = ROUTER.HOME;
+    } else {
+      // Navigate to home page
+      router.push(ROUTER.HOME);
+    }
+  };
 
   // Get unread message count for creators
   const { data: unreadCount } = useQuery({
@@ -201,13 +212,13 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
               collapsed ? 'justify-center items-center h-16 -mt-2' : 'pl-4 pr-8',
             )}
           >
-            <Link href={ROUTER.HOME}>
+            <button onClick={handleLogoClick} className="focus:outline-none">
               {collapsed ? (
                 <Logo color="light" size="sm" />
               ) : (
                 <Logo color="light" size="xlg" />
               )}
-            </Link>
+            </button>
           </div>
           <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-2">
             <div className={cn("lg:w-full flex flex-col gap-2", collapsed ? "items-center" : "")}>

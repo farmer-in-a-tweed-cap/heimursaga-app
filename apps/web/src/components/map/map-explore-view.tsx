@@ -3,7 +3,7 @@
 import { MapSearchbar, MapSearchbarSubmitHandler } from '../search';
 import { MapQueryContext, MapQueryFilterParam } from '@repo/types';
 import { Button, ChipGroup, LoadingSpinner } from '@repo/ui/components';
-import { ArrowLeft } from '@repo/ui/icons';
+import { ArrowLeft, Crosshair } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
@@ -81,8 +81,8 @@ export const MapExploreView: React.FC<Props> = () => {
   const { params, setParams } = useAppParams({
     context: MAP_CONTEXT_PARAMS.GLOBAL,
     filter: MAP_FILTER_PARAMS.POST,
-    lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON.toString(),
-    lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT.toString(),
+    lon: screen.mobile ? APP_CONFIG.MAP.DEFAULT.MOBILE.LON.toString() : APP_CONFIG.MAP.DEFAULT.CENTER.LON.toString(),
+    lat: screen.mobile ? APP_CONFIG.MAP.DEFAULT.MOBILE.LAT.toString() : APP_CONFIG.MAP.DEFAULT.CENTER.LAT.toString(),
     zoom: APP_CONFIG.MAP.DEFAULT.ZOOM.toString(),
   });
 
@@ -102,7 +102,15 @@ export const MapExploreView: React.FC<Props> = () => {
             lat: parseFloat(params.lat),
             lon: parseFloat(params.lon),
           }
-        : undefined,
+        : screen.mobile
+        ? {
+            lat: APP_CONFIG.MAP.DEFAULT.MOBILE.LAT,
+            lon: APP_CONFIG.MAP.DEFAULT.MOBILE.LON,
+          }
+        : {
+            lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
+            lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON,
+          },
     zoom: params.zoom ? parseFloat(params.zoom) : APP_CONFIG.MAP.DEFAULT.ZOOM,
   });
 
@@ -110,6 +118,24 @@ export const MapExploreView: React.FC<Props> = () => {
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [hoveredPostId, setHoveredPostId] = useState<string | null>(null);
   const [focusedWaypointId, setFocusedWaypointId] = useState<string | null>(null);
+  // Initialize hasInteracted based on URL params - if there's a search or non-default position, user has interacted
+  const [hasInteracted, setHasInteracted] = useState<boolean>(() => {
+    const defaultLat = screen.mobile ? APP_CONFIG.MAP.DEFAULT.MOBILE.LAT.toString() : APP_CONFIG.MAP.DEFAULT.CENTER.LAT.toString();
+    const defaultLon = screen.mobile ? APP_CONFIG.MAP.DEFAULT.MOBILE.LON.toString() : APP_CONFIG.MAP.DEFAULT.CENTER.LON.toString();
+    const defaultZoom = APP_CONFIG.MAP.DEFAULT.ZOOM.toString();
+    return !!(params.search || params.lat !== defaultLat || params.lon !== defaultLon || params.zoom !== defaultZoom);
+  });
+  const [isAnimating, setIsAnimating] = useState<boolean>(false);
+  const [isSearchAnimating, setIsSearchAnimating] = useState<boolean>(false);
+  const [isGeolocateAnimating, setIsGeolocateAnimating] = useState<boolean>(false);
+  const [userFlyToCompleted, setUserFlyToCompleted] = useState<boolean>(false);
+  // Initialize hasEverSearched based on URL params - if there's a search or non-default position, user has searched
+  const [hasEverSearched, setHasEverSearched] = useState<boolean>(() => {
+    const defaultLat = screen.mobile ? APP_CONFIG.MAP.DEFAULT.MOBILE.LAT.toString() : APP_CONFIG.MAP.DEFAULT.CENTER.LAT.toString();
+    const defaultLon = screen.mobile ? APP_CONFIG.MAP.DEFAULT.MOBILE.LON.toString() : APP_CONFIG.MAP.DEFAULT.CENTER.LON.toString();
+    const defaultZoom = APP_CONFIG.MAP.DEFAULT.ZOOM.toString();
+    return !!(params.search || params.lat !== defaultLat || params.lon !== defaultLon || params.zoom !== defaultZoom);
+  });
   const [previousView, setPreviousView] = useState<{
     center: { lat: number; lon: number };
     zoom: number;
@@ -121,7 +147,7 @@ export const MapExploreView: React.FC<Props> = () => {
 
   const [search, setSearch] = useState<{
     value?: string;
-    context: 'text' | 'location';
+    context: 'text' | 'location' | 'user' | 'entry';
     query: string | null;
     loading: boolean;
   }>({
@@ -144,6 +170,17 @@ export const MapExploreView: React.FC<Props> = () => {
     journey: filter === MAP_FILTER_PARAMS.JOURNEY,
   };
 
+
+  // Enable query when map is loaded, has bounds, user has interacted, and no search animation is running
+  const queryEnabled = map.loaded &&
+    [
+      MAP_CONTEXT_PARAMS.GLOBAL,
+      MAP_CONTEXT_PARAMS.FOLLOWING,
+      MAP_CONTEXT_PARAMS.USER,
+      MAP_CONTEXT_PARAMS.JOURNEY,
+    ].some((ctx) => ctx === context) &&
+    (contexts.journey ? !!tripId : (contexts.user ? !!map.bounds && !isSearchAnimating : !!map.bounds && (!!search.query || hasEverSearched) && !isSearchAnimating && !isGeolocateAnimating));
+
   const mapQuery = useQuery({
     queryKey: userId
       ? [
@@ -164,6 +201,7 @@ export const MapExploreView: React.FC<Props> = () => {
             : 'no_bounds',
           search.query || 'search',
           map.loaded, // Include map loaded state to re-trigger when map loads
+          hasInteracted, // Include interaction state to re-trigger when user interacts
         ]
       : [
           API_QUERY_KEYS.MAP.QUERY,
@@ -181,33 +219,34 @@ export const MapExploreView: React.FC<Props> = () => {
             : 'no_bounds',
           search.query || 'search',
           map.loaded, // Include map loaded state to re-trigger when map loads
+          hasInteracted, // Include interaction state to re-trigger when user interacts
         ],
     queryFn: async () => {
-      return apiClient
-        .mapQuery({
-          context: context,
-          username:
-            context === MAP_CONTEXT_PARAMS.USER
+      const queryParams = {
+        context: context,
+        username:
+          context === MAP_CONTEXT_PARAMS.USER
+            ? userId
               ? userId
-                ? userId
-                : undefined
-              : undefined,
-          location: contexts.journey ? undefined : { bounds: map.bounds },
-          tripId:
-            context === MAP_CONTEXT_PARAMS.JOURNEY
+              : undefined
+            : undefined,
+        location: contexts.journey ? undefined : { bounds: map.bounds },
+        tripId:
+          context === MAP_CONTEXT_PARAMS.JOURNEY
+            ? tripId
               ? tripId
-                ? tripId
-                : undefined
-              : undefined,
-          search:
-            search.context === 'text'
-              ? search.query
-                ? search.query
-                : undefined
-              : undefined,
-          prioritizeEntryId: prioritizedEntryId || undefined,
-        })
-        .then(({ data }) => data);
+              : undefined
+            : undefined,
+        search: undefined, // Don't apply search filters on page refresh - just load all waypoints in bounds
+        prioritizeEntryId: prioritizedEntryId || undefined,
+      };
+      
+      
+      return apiClient
+        .mapQuery(queryParams)
+        .then(({ data }) => {
+          return data;
+        });
     },
     enabled:
       map.loaded &&
@@ -217,8 +256,9 @@ export const MapExploreView: React.FC<Props> = () => {
         MAP_CONTEXT_PARAMS.USER,
         MAP_CONTEXT_PARAMS.JOURNEY,
       ].some((ctx) => ctx === context) &&
-      // For journey context, only need tripId; for others, need bounds
-      (contexts.journey ? !!tripId : !!map.bounds),
+      queryEnabled,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
     retry: 0,
   });
 
@@ -264,7 +304,9 @@ export const MapExploreView: React.FC<Props> = () => {
   const user = userQuery.data;
   const showClusters = contexts.map || contexts.user;
 
-  const mapLoading = mapQuery.isPending || mapQuery.isLoading;
+  // Only show loading if query is enabled and actually loading, and user should see loading
+  const mapLoading = (mapQuery.isPending || mapQuery.isLoading) && 
+    (contexts.journey || contexts.user || (hasInteracted && !isSearchAnimating));
   const mapResults = mapQuery.data?.results || 0;
 
   const trips = tripsQuery.data?.data || [];
@@ -308,11 +350,21 @@ export const MapExploreView: React.FC<Props> = () => {
       zoom = 0,
     } = data;
     map.handleMove(data);
+    
+    // Clear search params when map is manually moved to prevent coordinate/search conflicts
     setParams({
       lat: `${lat}`,
       lon: `${lon}`,
       zoom: `${zoom}`,
+      search: null, // Clear search when manually moving map
     });
+    
+    // Clear search state to match
+    setSearch((prev) => ({ ...prev, query: null, value: '' }));
+    
+    // Mark as interacted when map moves
+    setHasInteracted(true);
+    setHasEverSearched(true); // Prevent overlay from reappearing after manual interaction
   };
 
   const handlePostClick = (postId: string) => {
@@ -344,14 +396,19 @@ export const MapExploreView: React.FC<Props> = () => {
           // Fly to the waypoint
           if (map.mapbox) {
             setUserInitiatedFlyTo(true);
-            const duration = contexts.journey ? 2000 : 1000; // Slower in journey context
+            
+            // Set up moveend handler for when flyTo completes
+            const handleMoveEnd = () => {
+              setUserInitiatedFlyTo(false);
+              map.mapbox?.off('moveend', handleMoveEnd);
+            };
+            
+            map.mapbox?.on('moveend', handleMoveEnd);
             map.mapbox.flyTo({
               center: [waypoint.lon, waypoint.lat],
               zoom: 14,
-              duration: duration
+              speed: 1.2
             });
-            // Reset flag after animation completes with extra buffer
-            setTimeout(() => setUserInitiatedFlyTo(false), duration + 1000);
           }
           
           setFocusedWaypointId(postId);
@@ -374,9 +431,20 @@ export const MapExploreView: React.FC<Props> = () => {
     map.handleDrawerOpen();
     setParams({ entry_id: postId });
     
-    // TODO: Add map centering logic for entry drawer
-    // When feed drawer is closed and entry drawer opens, center marker in left visible area
-    // This feature needs further investigation of the map update mechanism
+    // Center marker in left visible area when entry drawer opens
+    if (map.mapbox && feature?.geometry?.coordinates) {
+      const [lon, lat] = feature.geometry.coordinates;
+      
+      // Small delay to let drawer opening animation start
+      setTimeout(() => {
+        map.mapbox?.flyTo({
+          center: [lon, lat],
+          zoom: Math.max(map.zoom, 12),
+          speed: 1.2,
+          padding: { left: 150, top: 50, right: 50, bottom: 50 }
+        });
+      }, 100);
+    }
   };
 
   const handlePostDrawerClose = () => {
@@ -395,7 +463,7 @@ export const MapExploreView: React.FC<Props> = () => {
       map.mapbox.flyTo({
         center: [waypoints[0].lon, waypoints[0].lat],
         zoom: 14,
-        duration: duration
+        speed: 1.2
       });
     } else if (coordinates.length > 1) {
       // Multiple points - fit bounds to include all points
@@ -417,10 +485,9 @@ export const MapExploreView: React.FC<Props> = () => {
       map.mapbox.fitBounds(
         [minLon - lonPadding, minLat - latPadding, maxLon + lonPadding, maxLat + latPadding],
         {
-          duration: duration,
+          speed: 1.2,
           padding: 40, // Increased padding for better visibility
-          maxZoom: 15, // Prevent zooming in too much on close points
-          linear: false // Use easing for smoother animation
+          maxZoom: 15 // Prevent zooming in too much on close points
         }
       );
     }
@@ -430,6 +497,10 @@ export const MapExploreView: React.FC<Props> = () => {
     if (contexts.journey) {
       // In journey context, fit bounds to show all waypoints
       fitJourneyBounds();
+    } else if (contexts.user) {
+      // In user context, switch back to global context
+      handleUserBack();
+      return;
     } else if (previousView && map.mapbox) {
       // In other contexts, return to previous view state
       const duration = 1000;
@@ -438,7 +509,7 @@ export const MapExploreView: React.FC<Props> = () => {
         map.mapbox.fitBounds(
           [previousView.bounds.sw.lon, previousView.bounds.sw.lat, previousView.bounds.ne.lon, previousView.bounds.ne.lat],
           {
-            duration: duration,
+            speed: 1.2,
             padding: 20
           }
         );
@@ -447,7 +518,7 @@ export const MapExploreView: React.FC<Props> = () => {
         map.mapbox.flyTo({
           center: [previousView.center.lon, previousView.center.lat],
           zoom: previousView.zoom,
-          duration: duration
+          speed: 1.2
         });
       }
     }
@@ -495,24 +566,72 @@ export const MapExploreView: React.FC<Props> = () => {
   };
 
   const handleSearchClear = () => {
-    setSearch((prev) => ({ ...prev, value: '', query: null }));
-    setParams({ search: null });
+    // Do nothing - just clear the input value, keep everything else as is
+    setSearch((prev) => ({ ...prev, value: '' }));
+  };
+
+  const handleGeolocate = () => {
+    if (!map.mapbox) return;
+
+    // Start animation - this hides overlay and blocks query
+    setIsGeolocateAnimating(true);
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          // Set up one-time event listener for when the flyTo completes
+          const handleMoveEnd = () => {
+            // Set everything after flyTo completes
+            setIsGeolocateAnimating(false); // End animation
+            setHasEverSearched(true);
+            setSearch((prev) => ({ ...prev, query: 'My Location', context: 'location' }));
+            setParams({ search: 'My Location' });
+            map.mapbox?.off('moveend', handleMoveEnd);
+          };
+          
+          map.mapbox?.on('moveend', handleMoveEnd);
+          map.mapbox?.flyTo({
+            center: [longitude, latitude],
+            zoom: 15,
+            speed: 1.2,
+          });
+        },
+        (error) => {
+          console.error('Geolocation error:', error);
+          alert('Unable to retrieve your location');
+          setIsGeolocateAnimating(false); // End animation on error
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      );
+    } else {
+      alert('Geolocation is not supported by your browser');
+      setIsGeolocateAnimating(false); // End animation on error
+    }
   };
 
   const handleSearchSubmit: MapSearchbarSubmitHandler = (data) => {
     const { context, item } = data;
     const query = item.name;
 
+
     if (context === 'text') {
       setSearch((prev) => ({ ...prev, query, context: 'text' }));
       setParams({ search: query });
+      setHasEverSearched(true);
     }
 
     if (context === 'location') {
-      setSearch((prev) => ({ ...prev, query, context: 'location' }));
+      // Start animation - this opens sidebar immediately
+      setIsSearchAnimating(true);
+      setHasInteracted(true);
 
-      // update map
-      if (item.bounds) {
+      // update map with smooth flyTo animation
+      if (item.bounds && map.mapbox) {
         const lon = item.center?.[0];
         const lat = item.center?.[1];
 
@@ -526,29 +645,57 @@ export const MapExploreView: React.FC<Props> = () => {
             lon: item.bounds[2],
           },
         };
-
-        if (query && lon && lat) {
-          setParams({ search: query, lon: `${lon}`, lat: `${lat}` });
-        }
-
-        map.updateBounds(bbox);
+        
+        // Set up moveend handler for when fitBounds completes
+        const handleMoveEnd = () => {
+          setIsSearchAnimating(false);
+          setHasEverSearched(true);
+          setSearch((prev) => ({ ...prev, query, context: 'location' }));
+          if (query && lon && lat) {
+            setParams({ search: query, lon: `${lon}`, lat: `${lat}` });
+          }
+          map.mapbox?.off('moveend', handleMoveEnd);
+        };
+        
+        map.mapbox?.on('moveend', handleMoveEnd);
+        
+        // Use smooth fitBounds animation instead of instant updateBounds
+        map.mapbox.fitBounds(
+          [bbox.sw.lon, bbox.sw.lat, bbox.ne.lon, bbox.ne.lat],
+          {
+            speed: 1.2,
+            padding: 40
+          }
+        );
       }
     }
 
     if (context === 'user' && item.username) {
+      setSearch((prev) => ({ ...prev, query, context: 'user' }));
+      setParams({ search: query });
+      setHasEverSearched(true);
+      
       // Switch to user context on the explore page
       handleUserClick(item.username);
+      
+      // Reset flags for new user search
+      setUserFlyToCompleted(false);
+      setIsSearchAnimating(false);
     }
 
     if (context === 'entry') {
+      // Start animation - this opens sidebar and hides overlay immediately
+      setIsSearchAnimating(true);
+      setHasInteracted(true);
+      
       // Handle entry search results with flyTo functionality
       const entryId = item.id.replace('entry-', ''); // Remove the prefix we added
-      
       
       // Try to find the entry in current waypoints first
       const waypoint = waypoints.find(wp => wp.post?.id === entryId);
       if (waypoint) {
         // Entry is already loaded, use existing click handler
+        setIsSearchAnimating(false); // End animation immediately
         handlePostClick(entryId);
       } else if (item.lat && item.lon && map.mapbox) {
         // Entry not in current bounds, but we have coordinates - fly to it
@@ -561,21 +708,33 @@ export const MapExploreView: React.FC<Props> = () => {
         
         // Fly to the entry location without opening drawer
         setUserInitiatedFlyTo(true);
-        const duration = 1000;
-        map.mapbox.flyTo({
-          center: [item.lon, item.lat],
-          zoom: 14,
-          duration: duration
-        });
         
-        // Reset flag after animation and set focused waypoint
-        setTimeout(() => {
+        // Set up moveend handler for when flyTo completes
+        const handleMoveEnd = () => {
+          setIsSearchAnimating(false);
           setUserInitiatedFlyTo(false);
           setFocusedWaypointId(entryId);
           setPrioritizedEntryId(entryId);
-        }, duration + 100);
+          setHasEverSearched(true);
+          // Set search params only after flyTo completes
+          setSearch((prev) => ({ ...prev, query, context: 'entry' }));
+          setParams({ search: query });
+          map.mapbox?.off('moveend', handleMoveEnd);
+        };
+        
+        map.mapbox?.on('moveend', handleMoveEnd);
+        map.mapbox.flyTo({
+          center: [item.lon, item.lat],
+          zoom: 14,
+          speed: 1.2,
+          padding: screen.mobile ? { left: 0, top: 50, right: 0, bottom: 50 } : { left: 150, top: 50, right: 50, bottom: 50 }
+        });
       } else {
-        // Fallback - just open the entry drawer
+        // Fallback - just set search and open drawer
+        setIsSearchAnimating(false); // End animation immediately
+        setHasEverSearched(true);
+        setSearch((prev) => ({ ...prev, query, context: 'entry' }));
+        setParams({ search: query });
         map.handleDrawerOpen();
         setParams({ entry_id: entryId });
       }
@@ -620,7 +779,7 @@ export const MapExploreView: React.FC<Props> = () => {
       context: MAP_CONTEXT_PARAMS.GLOBAL,
       filter: MAP_FILTER_PARAMS.POST,
       user: null,
-      entry_id: null,
+      // Don't clear entry_id to preserve open drawer
     });
   };
 
@@ -650,6 +809,11 @@ export const MapExploreView: React.FC<Props> = () => {
         ? [...waypoints].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         : waypoints;
       setWaypoints(sortedWaypoints);
+      
+      // For user searches, trigger flyTo animation after waypoints are loaded
+      if (contexts.user && search.context === 'user' && !isSearchAnimating && !userFlyToCompleted && waypoints.length > 0) {
+        setIsSearchAnimating(true);
+      }
     }
   }, [mapQuery.data?.waypoints, contexts.journey, contexts.user, contexts.map, tripId, userId]);
 
@@ -689,10 +853,108 @@ export const MapExploreView: React.FC<Props> = () => {
     }
   }, [tripId]); // Only clear when tripId changes, not on every context change
 
+
+  // Force refetch when query becomes enabled after page load
+  useEffect(() => {
+    if (queryEnabled && mapQuery.isStale) {
+      mapQuery.refetch();
+    }
+  }, [queryEnabled]);
+
+  // Fit bounds when user waypoints are loaded from search
+  useEffect(() => {
+    
+    if (contexts.user && waypoints.length > 0 && map.mapbox && isSearchAnimating) {
+      const coordinates = waypoints.map(wp => [wp.lon, wp.lat]);
+      const duration = 1500;
+      
+      if (coordinates.length === 1) {
+        // Single point - center map on it
+        map.mapbox.flyTo({
+          center: [waypoints[0].lon, waypoints[0].lat],
+          zoom: 14,
+          speed: 1.2
+        });
+      } else if (coordinates.length > 1) {
+        // Multiple points - fit bounds to include all points
+        const lats = coordinates.map(coord => coord[1]);
+        const lons = coordinates.map(coord => coord[0]);
+        
+        const minLat = Math.min(...lats);
+        const maxLat = Math.max(...lats);
+        const minLon = Math.min(...lons);
+        const maxLon = Math.max(...lons);
+        
+        // Add padding to bounds
+        const latRange = maxLat - minLat;
+        const lonRange = maxLon - minLon;
+        const latPadding = Math.max(latRange * 0.1, 0.01);
+        const lonPadding = Math.max(lonRange * 0.1, 0.01);
+        
+        map.mapbox.fitBounds(
+          [minLon - lonPadding, minLat - latPadding, maxLon + lonPadding, maxLat + latPadding],
+          {
+            speed: 1.2,
+            padding: 40,
+            maxZoom: 15
+          }
+        );
+      }
+      
+      // Set up moveend handler for when animation completes
+      const handleMoveEnd = () => {
+        setIsSearchAnimating(false);
+        setUserFlyToCompleted(true);
+        map.mapbox?.off('moveend', handleMoveEnd);
+      };
+      
+      map.mapbox?.on('moveend', handleMoveEnd);
+    }
+  }, [contexts.user, waypoints, map.mapbox, isSearchAnimating]);
+
+  // Check if overlay should be visible
+  const overlayVisible = contexts.map && !search.query && !hasEverSearched && !isGeolocateAnimating && !isSearchAnimating;
+
   return (
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-gray-50">
-      <MapViewSwitch view={view} onToggle={handleViewToggle} />
-      <MapSidebar opened={map.sidebar} view={view}>
+      {/* Search-first overlay - show when no interaction has occurred and no search is active */}
+      {overlayVisible && (
+        <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto px-6 -mt-32">
+            <h2 className="text-2xl font-medium text-gray-800 mb-2">
+              Your Journey Begins Here...
+            </h2>
+            <p className="text-gray-600 mb-8">
+              Geolocate, search for places, entries, or explorers
+            </p>
+            <div className="w-full max-w-sm mx-auto flex gap-2 items-center">
+              <div className="flex-1">
+                <MapSearchbar
+                  value={search.value}
+                  query={search.query}
+                  onChange={handleSearchChange}
+                  onClear={handleSearchClear}
+                  onSubmit={handleSearchSubmit}
+                />
+              </div>
+              <button
+                onClick={handleGeolocate}
+                className="flex items-center justify-center bg-white border border-input rounded-full hover:bg-gray-50 transition-colors"
+                style={{ width: '37px', height: '37px' }}
+                title="Use my location"
+              >
+                <Crosshair size={16} weight="regular" className="text-gray-600" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Hide MapViewSwitch on mobile when overlay is visible */}
+      {!(overlayVisible && screen.mobile) && (
+        <MapViewSwitch view={view} onToggle={handleViewToggle} />
+      )}
+      <MapSidebar opened={isGeolocateAnimating || isSearchAnimating || !(contexts.map && !search.query && !hasEverSearched)} view={view}>
         <div className="relative flex flex-col w-full h-full">
           {contexts.map && (
             <>
@@ -907,7 +1169,9 @@ export const MapExploreView: React.FC<Props> = () => {
                     ),
                   )
                 ) : (
-                  <>no journeys found</>
+                  <div className="flex items-center justify-center h-32 text-gray-500">
+                    No journeys found
+                  </div>
                 )}
               </>
             )}
@@ -925,18 +1189,20 @@ export const MapExploreView: React.FC<Props> = () => {
 
       <MapViewContainer
         extended={!map.sidebar}
-        onExtend={map.handleSidebarToggle}
       >
         <div className="z-10 relative !w-full h-full overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 z-20 w-full h-[70px] flex justify-between box-border px-10 items-center desktop:hidden">
-            <MapSearchbar
-              value={search.value}
-              query={search.query}
-              onClear={handleSearchClear}
-              onChange={handleSearchChange}
-              onSubmit={handleSearchSubmit}
-            />
-          </div>
+          {/* Hide mobile search bar when overlay is visible */}
+          {!(overlayVisible && screen.mobile) && (
+            <div className="absolute top-0 left-0 right-0 z-20 w-full h-[70px] flex justify-between box-border px-10 items-center desktop:hidden">
+              <MapSearchbar
+                value={search.value}
+                query={search.query}
+                onClear={handleSearchClear}
+                onChange={handleSearchChange}
+                onSubmit={handleSearchSubmit}
+              />
+            </div>
+          )}
           {mapbox.token && (
             <Map
               token={mapbox.token}

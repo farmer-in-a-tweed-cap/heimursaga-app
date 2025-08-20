@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter, usePathname } from 'next/navigation';
 import { UserRole } from '@repo/types';
 import { 
   BadgeCount, 
@@ -40,11 +41,23 @@ const getRoleLabel = (role: string) => {
 type Props = {};
 
 export const AppTopNavbar: React.FC<Props> = () => {
+  const router = useRouter();
+  const pathname = usePathname();
   const session = useSession();
   const { picture, username, role } = session || {};
   const roleLabel = getRoleLabel(role || '');
   const isCreator = session?.creator;
   const userRole = session?.role as UserRole;
+
+  const handleLogoClick = () => {
+    if (pathname === ROUTER.HOME) {
+      // Already on home page - navigate to clean home URL
+      window.location.href = ROUTER.HOME;
+    } else {
+      // Navigate to home page
+      router.push(ROUTER.HOME);
+    }
+  };
 
   const badgeQuery = useQuery({
     queryKey: [API_QUERY_KEYS.USER.BADGE_COUNT],
@@ -150,9 +163,9 @@ export const AppTopNavbar: React.FC<Props> = () => {
           
           {/* Centered Logo */}
           <div className="flex items-center justify-center -ml-[15px] lg:ml-[50px]">
-            <Link href={ROUTER.HOME}>
+            <button onClick={handleLogoClick} className="focus:outline-none">
               <Logo size="lg" color="dark" />
-            </Link>
+            </button>
           </div>
           
           {/* Right side elements */}
@@ -258,9 +271,9 @@ export const AppTopNavbar: React.FC<Props> = () => {
       <div className="flex lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-16 shadow-sm">
         <div className="w-full px-6 flex items-center justify-center">
           <div className="-ml-[15px]">
-            <Link href={ROUTER.HOME}>
+            <button onClick={handleLogoClick} className="focus:outline-none">
               <Logo size="lg" color="dark" />
-            </Link>
+            </button>
           </div>
         </div>
       </div>
