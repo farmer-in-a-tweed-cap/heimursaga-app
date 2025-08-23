@@ -3,12 +3,12 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { AuthNavigator } from './AuthNavigator';
-import { HomeScreen } from '../screens/HomeScreen';
+import { TabNavigator } from './TabNavigator';
 import { useAuth } from '../hooks';
 
 export type RootStackParamList = {
   Auth: undefined;
-  Home: undefined;
+  Main: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -39,8 +39,8 @@ export const AppNavigator: React.FC = () => {
       >
         {isAuthenticated ? (
           <Stack.Screen
-            name="Home"
-            component={HomeScreen}
+            name="Main"
+            component={TabNavigator}
             options={{
               animationTypeForReplace: 'push',
             }}
