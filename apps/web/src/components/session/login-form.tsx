@@ -18,6 +18,7 @@ import {
 import { useToast } from '@repo/ui/hooks';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
+import { NavigationLink } from '@/components';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -110,12 +111,12 @@ export const LoginForm = () => {
                       <FormItem>
                         <div className="flex items-center">
                           <Label htmlFor="password">Password</Label>
-                          <Link
+                          <NavigationLink
                             href={ROUTER.RESET_PASSWORD}
                             className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                           >
                             Forgot your password?
-                          </Link>
+                          </NavigationLink>
                         </div>
                         <FormControl>
                           <Input
@@ -139,12 +140,12 @@ export const LoginForm = () => {
               </div>
               <div className="mt-4 text-center text-sm">
                 Don&apos;t have an account?{' '}
-                <Link
+                <NavigationLink
                   href={ROUTER.SIGNUP}
                   className="underline underline-offset-4"
                 >
                   Sign up
-                </Link>
+                </NavigationLink>
               </div>
             </form>
           </Form>

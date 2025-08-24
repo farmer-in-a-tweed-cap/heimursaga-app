@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 import { dateformat, normalizeText } from '@/lib';
 
-import { MapStaticPreview, PostButtons, UserBar, UserAvatar } from '@/components';
+import { MapStaticPreview, PostButtons, UserBar, UserAvatar, NavigationLink } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
@@ -122,7 +122,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     >
       <CardContent>
         {href ? (
-          <Link href={href} className="z-10 absolute inset-0"></Link>
+          <NavigationLink href={href} className="z-10 absolute inset-0"></NavigationLink>
         ) : onClick ? (
           <div
             className="z-10 absolute inset-0 cursor-pointer"

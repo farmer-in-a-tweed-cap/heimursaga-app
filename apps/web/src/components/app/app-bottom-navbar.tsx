@@ -17,7 +17,7 @@ import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 
-import { useSession, useApp } from '@/hooks';
+import { useSession, useApp, useNavigation } from '@/hooks';
 import { ROUTER } from '@/router';
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
@@ -32,6 +32,7 @@ type NavLink = {
 export const AppBottomNavbar: React.FC<Props> = () => {
   const { role, logged, username, creator, ...user } = useSession();
   const { context, setContext } = useApp();
+  const { navigateTo, isNavigating } = useNavigation();
   const pathname = usePathname();
   
   const isDark = context.app.navbarTheme === 'dark';
@@ -200,15 +201,17 @@ export const AppBottomNavbar: React.FC<Props> = () => {
         // Extra padding for login button to prevent text cutoff
         links[0].label === 'Log in' ? "px-4" : "px-3"
       )}>
-        <Link
-          href={links[0].href}
+        <button
+          onClick={() => navigateTo(links[0].href)}
+          disabled={isNavigating}
           className={cn(
             'flex flex-col items-center justify-center',
             isDark 
               ? (isActiveLink(links[0].href) ? 'text-white' : 'text-gray-400')
               : (isActiveLink(links[0].href) ? 'text-black' : 'text-gray-500'),
             // Adjust spacing for login button to fit in navbar
-            links[0].label ? 'gap-0' : 'gap-1'
+            links[0].label ? 'gap-0' : 'gap-1',
+            isNavigating && "opacity-60 transition-opacity"
           )}
         >
           <div className={cn(
@@ -219,7 +222,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
             {typeof links[0].icon === 'function' && links[0].icon.length === 0 ? links[0].icon({} as any) : links[0].icon({ size: links[0].label ? 18 : 20, weight: "regular" as any })}
           </div>
           {links[0].label && <span className="text-[10px] font-medium whitespace-nowrap mt-1">{links[0].label}</span>}
-        </Link>
+        </button>
       </div>
 
       {/* Center items - Middle menu items */}
@@ -227,20 +230,22 @@ export const AppBottomNavbar: React.FC<Props> = () => {
         <div className="flex flex-row justify-evenly w-full max-w-[200px]">
           {links.slice(1, -1).map(({ label, href, icon: Icon }, index) => (
             <div key={index + 1} className="w-[64px] flex justify-center">
-              <Link
-                href={href}
+              <button
+                onClick={() => navigateTo(href)}
+                disabled={isNavigating}
                 className={cn(
                   'flex flex-col items-center justify-center gap-1',
                   isDark 
                     ? (isActiveLink(href) ? 'text-white' : 'text-gray-400')
                     : (isActiveLink(href) ? 'text-black' : 'text-gray-500'),
+                  isNavigating && "opacity-60 transition-opacity"
                 )}
               >
                 <div className="w-[28px] h-[28px] flex items-center justify-center">
                   <Icon size={24} weight="regular" />
                 </div>
                 {label && <span className="text-xs font-normal whitespace-nowrap">{label}</span>}
-              </Link>
+              </button>
             </div>
           ))}
         </div>
@@ -248,15 +253,17 @@ export const AppBottomNavbar: React.FC<Props> = () => {
 
       {/* Right item - Avatar/Login */}
       <div className="flex-shrink-0 px-3">
-        <Link
-          href={links[links.length - 1].href}
+        <button
+          onClick={() => navigateTo(links[links.length - 1].href)}
+          disabled={isNavigating}
           className={cn(
             'flex flex-col items-center justify-center',
             isDark 
               ? (isActiveLink(links[links.length - 1].href) ? 'text-white' : 'text-gray-400')
               : (isActiveLink(links[links.length - 1].href) ? 'text-black' : 'text-gray-500'),
             // Adjust spacing for login button to fit in navbar
-            links[links.length - 1].label ? 'gap-0' : 'gap-1'
+            links[links.length - 1].label ? 'gap-0' : 'gap-1',
+            isNavigating && "opacity-60 transition-opacity"
           )}
         >
           <div className={cn(
@@ -267,7 +274,7 @@ export const AppBottomNavbar: React.FC<Props> = () => {
             {typeof links[links.length - 1].icon === 'function' && links[links.length - 1].icon.length === 0 ? links[links.length - 1].icon({} as any) : links[links.length - 1].icon({ size: links[links.length - 1].label ? 18 : 20, weight: "regular" as any })}
           </div>
           {links[links.length - 1].label && <span className="text-[10px] font-medium whitespace-nowrap mt-1">{links[links.length - 1].label}</span>}
-        </Link>
+        </button>
       </div>
     </div>
   );

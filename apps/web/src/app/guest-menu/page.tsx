@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 import { ROUTER } from '@/router';
 import { AppLayout } from '@/layouts';
-import { Logo } from '@/components';
+import { Logo, NavigationLink } from '@/components';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,20 +27,20 @@ export default async function Page() {
         <div className="flex flex-col gap-3 mt-4">
           {/* Authentication */}
           <div className="flex flex-col gap-2">
-            <Link
+            <NavigationLink
               href={ROUTER.LOGIN}
               className="flex items-center justify-center py-4 px-6 text-lg font-medium text-white rounded-lg transition-colors shadow-lg"
               style={{ backgroundColor: '#AC6D46' }}
             >
               Log in
-            </Link>
-            <Link
+            </NavigationLink>
+            <NavigationLink
               href={ROUTER.SIGNUP}
               className="flex items-center justify-center py-4 px-6 text-lg font-medium text-gray-900 bg-white border-2 rounded-lg hover:bg-gray-50 transition-colors"
               style={{ borderColor: '#AC6D46' }}
             >
               Sign up
-            </Link>
+            </NavigationLink>
           </div>
 
           {/* Divider */}
@@ -48,12 +48,12 @@ export default async function Page() {
           
           {/* Information Links */}
           <div className="flex flex-col gap-2">
-            <Link
+            <NavigationLink
               href={ROUTER.USER_GUIDE}
               className="flex items-center py-3 px-4 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100 transition-colors"
             >
               User guide
-            </Link>
+            </NavigationLink>
             <Link
               href={ROUTER.LEGAL.PRIVACY}
               target="_blank"

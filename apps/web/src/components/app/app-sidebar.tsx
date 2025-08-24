@@ -24,7 +24,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { ForwardRefExoticComponent, RefAttributes } from 'react';
 
 import { CreatePostButton, Logo, UserNavbar } from '@/components';
-import { useSession } from '@/hooks';
+import { useSession, useNavigation } from '@/hooks';
 import { ROUTER } from '@/router';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient, API_QUERY_KEYS } from '@/lib/api';
@@ -45,6 +45,7 @@ type Props = {
 export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const { navigateTo, isNavigating } = useNavigation();
   const session = useSession();
 
   const username = session?.username;
@@ -56,7 +57,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
       window.location.href = ROUTER.HOME;
     } else {
       // Navigate to home page
-      router.push(ROUTER.HOME);
+      navigateTo(ROUTER.HOME);
     }
   };
 
@@ -225,16 +226,20 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
               {links.map(
                 ({ href, base, label, icon: Icon }, key) => (
                   <Tooltip key={key}>
-                    <TooltipTrigger>
-                      <Link
-                        href={href}
-                        prefetch={false}
-                        className={cn(
-                          'w-full flex h-[40px] justify-between app-sidebar-link overflow-hidden',
-                          isActiveLink(base) ? 'app-sidebar-link-active' : '',
-                        )}
-                      >
-                        <div className="relative flex flex-row justify-start items-center gap-2">
+                    <TooltipTrigger
+                      onClick={() => navigateTo(href)}
+                      disabled={isNavigating}
+                      className={cn(
+                        'w-full flex h-[40px] overflow-hidden transition-opacity border-0 bg-transparent outline-none focus:outline-none',
+                        collapsed ? 'app-sidebar-link-collapsed justify-center' : 'app-sidebar-link justify-between',
+                        isActiveLink(base) ? 'app-sidebar-link-active' : '',
+                        isNavigating && 'opacity-60 transition-opacity'
+                      )}
+                    >
+                        <div className={cn(
+                          "relative flex flex-row items-center gap-2",
+                          collapsed ? "justify-center" : "justify-start"
+                        )}>
                           <div className="relative">
                             <Icon
                               size={20}
@@ -254,7 +259,6 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                             {label}
                           </span>
                         </div>
-                      </Link>
                     </TooltipTrigger>
                     {collapsed && (
                       <TooltipContent side="right">
@@ -280,8 +284,13 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
               {collapsed ? (
                 <UserNavbar collapsed={collapsed} />
               ) : (
-                <Button variant="secondary" className="w-full" asChild>
-                  <a href={ROUTER.LOGIN}>Log in</a>
+                <Button 
+                  variant="secondary" 
+                  className="w-full" 
+                  onClick={() => navigateTo(ROUTER.LOGIN)}
+                  disabled={isNavigating}
+                >
+                  Log in
                 </Button>
               )}
             </div>

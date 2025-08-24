@@ -1,5 +1,6 @@
 import { UserRole } from '@repo/types';
 import '@repo/ui/globals.css';
+import '../styles.css';
 import { cn } from '@repo/ui/lib/utils';
 import { Metadata, Viewport } from 'next';
 import Head from 'next/head';

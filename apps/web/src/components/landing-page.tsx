@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from 'react';
-import { Logo } from '@/components';
+import { Logo, NavigationLink, NavigationButton } from '@/components';
 import { ROUTER } from '@/router';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -84,13 +84,13 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
         </li>
       ))}
     </ul>
-    <Link 
+    <NavigationLink 
       href={`${ROUTER.SIGNUP}?upgrade=pro`}
       className="w-full py-4 px-6 rounded-xl font-normal text-lg transition-all duration-300 text-white hover:opacity-90 block text-center shadow-lg hover:shadow-xl"
       style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}
     >
       SIGN UP
-    </Link>
+    </NavigationLink>
   </div>
 );
 
@@ -177,24 +177,26 @@ export const LandingPage: React.FC = () => {
                 bottom: isMobile ? '6rem' : '3rem'
               }}
             >
-              <button className={`font-normal rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90 ${isMobile ? 'py-3 px-8 text-lg' : 'py-4 px-12 text-xl'}`} style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
-                <Link href={ROUTER.HOME} className="flex items-center gap-3">
-                  EXPLORE
-                  <svg 
-                    width="20" 
-                    height="20" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                    className="transition-transform duration-300 group-hover:translate-x-1"
-                  >
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </Link>
-              </button>
+              <NavigationLink 
+                href={ROUTER.HOME}
+                className={`font-normal rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90 flex items-center gap-3 ${isMobile ? 'py-3 px-8 text-lg' : 'py-4 px-12 text-xl'}`} 
+                style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}
+              >
+                EXPLORE
+                <svg 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  className="transition-transform duration-300 group-hover:translate-x-1"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </NavigationLink>
             </div>
           </div>  
         </div>
@@ -350,13 +352,13 @@ export const LandingPage: React.FC = () => {
               <p className="text-lg text-black font-light italic max-w-2xl mx-auto mb-8">
                 Ready to turn your adventures into a sustainable income? Join explorers who are building meaningful communities around authentic travel experiences.
               </p>
-              <Link 
+              <NavigationLink 
                 href={ROUTER.SIGNUP}
                 className="inline-block py-4 px-6 rounded-xl font-normal text-lg transition-all duration-300 text-white hover:opacity-90 shadow-lg hover:shadow-xl"
                 style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}
               >
                 SIGN UP
-              </Link>
+              </NavigationLink>
             </div>
           </div>
         </div>
@@ -480,13 +482,13 @@ export const LandingPage: React.FC = () => {
               <p className="text-gray-700 font-normal mb-6" style={{}}>
                 Already have an account?
               </p>
-              <Link 
+              <NavigationLink 
                 href={ROUTER.LOGIN}
                 className="inline-block py-3 px-8 rounded-xl font-normal text-lg transition-all duration-300 text-black hover:opacity-90"
                 style={{ backgroundColor: '#e9ecef' }}
               >
                 LOG IN
-              </Link>
+              </NavigationLink>
             </div>
           </div>
         </div>
@@ -501,24 +503,26 @@ export const LandingPage: React.FC = () => {
               Every place has a story, what's yours? It's never too late to inspire the world.
             </p>
             <div className="flex items-center justify-center">
-              <button className={`font-normal rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90 ${isMobile ? 'py-3 px-8 text-lg' : 'py-4 px-12 text-xl'}`} style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
-                <Link href={ROUTER.HOME} className="flex items-center gap-3">
-                  START YOUR JOURNEY
-                  <svg 
-                    width="20" 
-                    height="20" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                    className="transition-transform duration-300 group-hover:translate-x-1"
-                  >
-                    <path d="M5 12h14M12 5l7 7-7 7"/>
-                  </svg>
-                </Link>
-              </button>
+              <NavigationLink 
+                href={ROUTER.HOME}
+                className={`font-normal rounded-full transition-all duration-300 transform hover:scale-110 shadow-2xl text-white hover:opacity-90 flex items-center gap-3 ${isMobile ? 'py-3 px-8 text-lg' : 'py-4 px-12 text-xl'}`} 
+                style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}
+              >
+                START YOUR JOURNEY
+                <svg 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                  className="transition-transform duration-300 group-hover:translate-x-1"
+                >
+                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+              </NavigationLink>
             </div>
           </div>
         </div>

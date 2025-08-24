@@ -28,3 +28,7 @@ export * from './landing-page';
 export * from './ai-detection';
 export * from './draft';
 export * from './notification';
+
+// Navigation components
+export * from './navigation-link';
+export * from './navigation-button';

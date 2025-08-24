@@ -19,11 +19,12 @@ import { useQuery } from '@tanstack/react-query';
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 import { redirect } from '@/lib';
 import { ROUTER } from '@/router';
-import { useSession } from '@/hooks';
+import { useSession, useNavigation } from '@/hooks';
 
 import { Logo } from './logo';
 import { UserAvatar } from '../user/user-avatar';
 import { NotificationDropdownTray } from '../notification/notification-dropdown-tray';
+import { NavigationButton, NavigationLink } from '@/components';
 
 const getRoleLabel = (role: string) => {
   switch (role) {
@@ -43,6 +44,7 @@ type Props = {};
 export const AppTopNavbar: React.FC<Props> = () => {
   const router = useRouter();
   const pathname = usePathname();
+  const { navigateTo, isNavigating } = useNavigation();
   const session = useSession();
   const { picture, username, role } = session || {};
   const roleLabel = getRoleLabel(role || '');
@@ -55,7 +57,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
       window.location.href = ROUTER.HOME;
     } else {
       // Navigate to home page
-      router.push(ROUTER.HOME);
+      navigateTo(ROUTER.HOME);
     }
   };
 
@@ -81,13 +83,13 @@ export const AppTopNavbar: React.FC<Props> = () => {
         session.clearSession();
       }
       
-      redirect(ROUTER.HOME);
+      window.location.href = ROUTER.HOME;
     } catch (e) {
       // Even if logout API fails, clear the local session
       if (session.clearSession) {
         session.clearSession();
       }
-      redirect(ROUTER.HOME);
+      window.location.href = ROUTER.HOME;
     }
   };
 
@@ -173,32 +175,34 @@ export const AppTopNavbar: React.FC<Props> = () => {
             {session?.logged ? (
               <div className="flex items-center">
                 {/* Create Entry Button */}
-                <Link href={ROUTER.ENTRIES.CREATE} className="mr-2">
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
-                  >
-                    <FeatherIcon size={16} className="mr-1" />
-                    Log Entry
-                  </Button>
-                </Link>
+                <NavigationButton 
+                  href={ROUTER.ENTRIES.CREATE}
+                  variant="default" 
+                  size="sm" 
+                  className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white mr-2"
+                >
+                  <FeatherIcon size={16} className="mr-1" />
+                  Log Entry
+                </NavigationButton>
                 
                 {/* Notifications with Dropdown Tray */}
                 <NotificationDropdownTray 
                   badgeCount={badges.notifications}
                   className="mx-3"
                 >
-                  <Link href={ROUTER.NOTIFICATIONS}>
-                    <Button variant="ghost" size="lg" className="relative !px-1">
-                      <BellIcon size={20} weight="bold" className="text-gray-600 !size-5" />
-                      {badges.notifications >= 1 && (
-                        <div className="absolute -top-1 -right-1">
-                          <BadgeCount count={badges.notifications} />
-                        </div>
-                      )}
-                    </Button>
-                  </Link>
+                  <NavigationButton 
+                    href={ROUTER.NOTIFICATIONS}
+                    variant="ghost" 
+                    size="lg" 
+                    className="relative !px-1"
+                  >
+                    <BellIcon size={20} weight="bold" className="text-gray-600 !size-5" />
+                    {badges.notifications >= 1 && (
+                      <div className="absolute -top-1 -right-1">
+                        <BadgeCount count={badges.notifications} />
+                      </div>
+                    )}
+                  </NavigationButton>
                 </NotificationDropdownTray>
                 
                 {/* User Avatar with Username and Role */}
@@ -220,17 +224,22 @@ export const AppTopNavbar: React.FC<Props> = () => {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-background min-w-[240px] mr-4 mt-2 p-0 py-2">
                   {links.map(({ href, label }, key) => (
-                    <DropdownMenuItem key={key} asChild>
-                      <Link
-                        href={href}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          window.location.href = href;
-                        }}
-                        className="text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer"
-                      >
-                        {label}
-                      </Link>
+                    <DropdownMenuItem 
+                      key={key} 
+                      className={cn(
+                        "text-sm bg-background font-normal !text-gray-700 !px-4 !rounded-none hover:!bg-accent py-2 hover:cursor-pointer",
+                        isNavigating && "opacity-60 transition-opacity"
+                      )}
+                      onClick={() => navigateTo(href)}
+                      disabled={isNavigating}
+                    >
+                      {/* 
+                        NOTE: Previously used e.preventDefault() + window.location.href 
+                        to force full page reloads. Reverted to client-side navigation 
+                        for better UX. If issues arise, revert to:
+                        <Link href={href} onClick={(e) => { e.preventDefault(); window.location.href = href; }}>
+                      */}
+                      {label}
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
@@ -246,21 +255,23 @@ export const AppTopNavbar: React.FC<Props> = () => {
             ) : (
               /* Logged out state - Login button and create account link */
               <div className="flex items-center space-x-4">
-                <Link 
+                <NavigationLink 
                   href={ROUTER.SIGNUP}
-                  className="text-sm font-medium text-gray-600 hover:text-gray-900"
+                  className={cn(
+                    "text-sm font-medium text-gray-600 hover:text-gray-900",
+                    isNavigating && "opacity-60 transition-opacity"
+                  )}
                 >
                   Sign up
-                </Link>
-                <Link href={ROUTER.LOGIN}>
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
-                  >
-                    Log in
-                  </Button>
-                </Link>
+                </NavigationLink>
+                <NavigationButton
+                  href={ROUTER.LOGIN}
+                  variant="default" 
+                  size="sm" 
+                  className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
+                >
+                  Log in
+                </NavigationButton>
               </div>
             )}
           </div>

@@ -62,6 +62,7 @@ const formatNotificationText = (notification: IUserNotification, entryTitle?: st
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 import { UserAvatar } from '../user/user-avatar';
+import { useNavigation } from '@/hooks';
 
 type Props = {
   children: React.ReactNode;
@@ -76,6 +77,7 @@ export const NotificationDropdownTray: React.FC<Props> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const queryClient = useQueryClient();
+  const { navigateTo, isNavigating } = useNavigation();
 
   // Fetch notifications when hovering
   const { data: notificationsData, isLoading } = useQuery({
@@ -167,10 +169,9 @@ export const NotificationDropdownTray: React.FC<Props> = ({
               {unreadNotifications.length > 0 && (
                 <div className="mt-4 pt-3 border-t border-gray-200">
                   <button 
-                    className="text-sm text-[#AC6D46] hover:text-[#AC6D46]/80 font-medium w-full text-center transition-colors"
-                    onClick={() => {
-                      window.location.href = '/notifications';
-                    }}
+                    className={`text-sm text-[#AC6D46] hover:text-[#AC6D46]/80 font-medium w-full text-center transition-colors ${isNavigating ? 'opacity-60' : ''}`}
+                    onClick={() => navigateTo('/notifications')}
+                    disabled={isNavigating}
                   >
                     View all notifications
                   </button>
