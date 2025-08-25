@@ -519,6 +519,18 @@ export class PaymentService {
                 userPlan.subscription.stripe_subscription_id,
                 { expand: ['discount.coupon'] }
               );
+              
+              // Debug logging for promo detection
+              this.logger.debug(`Stripe subscription data for ${userPlan.subscription.stripe_subscription_id}:`, {
+                hasDiscount: !!stripeSubscription.discount,
+                discountEnd: stripeSubscription.discount?.end,
+                couponId: stripeSubscription.discount?.coupon?.id,
+                couponPercentOff: stripeSubscription.discount?.coupon?.percent_off,
+                couponAmountOff: stripeSubscription.discount?.coupon?.amount_off,
+                subscriptionStatus: stripeSubscription.status,
+                currentPeriodEnd: stripeSubscription.current_period_end,
+              });
+              
               // Use Stripe's current_period_end which includes promo extensions
               actualExpiry = new Date(stripeSubscription.current_period_end * 1000);
               
@@ -626,6 +638,18 @@ export class PaymentService {
             userPlan.subscription.stripe_subscription_id,
             { expand: ['discount.coupon'] }
           );
+          
+          // Debug logging for promo detection
+          this.logger.debug(`Stripe subscription data for ${userPlan.subscription.stripe_subscription_id}:`, {
+            hasDiscount: !!stripeSubscription.discount,
+            discountEnd: stripeSubscription.discount?.end,
+            couponId: stripeSubscription.discount?.coupon?.id,
+            couponPercentOff: stripeSubscription.discount?.coupon?.percent_off,
+            couponAmountOff: stripeSubscription.discount?.coupon?.amount_off,
+            subscriptionStatus: stripeSubscription.status,
+            currentPeriodEnd: stripeSubscription.current_period_end,
+          });
+          
           // Use Stripe's current_period_end which includes promo extensions
           actualExpiry = new Date(stripeSubscription.current_period_end * 1000);
           
