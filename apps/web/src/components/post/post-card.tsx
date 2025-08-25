@@ -21,7 +21,7 @@ export type PostCardProps = {
   classNames?: {
     card?: string;
   };
-  media?: { thumbnail: string; caption?: string }[];
+  media?: { thumbnail: string; original?: string; caption?: string }[];
   id?: string;
   title?: string;
   content?: string;
@@ -326,22 +326,26 @@ export const PostCard: React.FC<PostCardProps> = ({
           </div>
           {extended && media.length >= 1 && (
             <div className={`mt-6 flex flex-col gap-4`}>
-              {media.map(({ thumbnail, caption }, key) => (
+              {media.map(({ thumbnail, original, caption }, key) => (
                 <div
                   key={key}
-                  className="w-full flex flex-col gap-2"
+                  className="flex flex-col gap-2"
                 >
-                  <div className="w-full h-auto overflow-hidden rounded-xl">
-                    <Image
-                      src={thumbnail}
-                      width={800}
-                      height={600}
-                      className="w-full h-auto"
-                      alt={caption || ""}
-                    />
-                  </div>
+                  <Image
+                    src={original || thumbnail} // Use HD original if available, fallback to thumbnail
+                    width={800}
+                    height={600}
+                    className="max-w-lg max-h-[500px] rounded-xl object-contain"
+                    alt={caption || ""}
+                    style={{ 
+                      maxWidth: '32rem',
+                      maxHeight: '500px',
+                      height: 'auto',
+                      width: 'auto'
+                    }}
+                  />
                   {caption && (
-                    <p className="text-sm text-gray-600 italic px-2">
+                    <p className="text-sm text-gray-600 italic">
                       {caption}
                     </p>
                   )}

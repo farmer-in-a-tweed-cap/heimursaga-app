@@ -56,7 +56,8 @@ export const MapDrawer: React.FC<{
         {loading ? (
           <LoadingSpinner />
         ) : post ? (
-          <div className="w-full flex flex-col p-8 pb-20">
+          <div className="w-full flex justify-center p-8 pb-20">
+            <div className="w-full max-w-2xl flex flex-col">
             {/* Top section with title and avatar */}
             <div className="relative flex flex-row justify-between items-start">
               {/* Left side: Title info */}
@@ -117,20 +118,24 @@ export const MapDrawer: React.FC<{
             </div>
             
             {post?.media && (
-              <div className="mt-6 grid grid-cols-1 gap-2">
+              <div className="mt-6 flex flex-col gap-4">
                 {post.media?.map((media, key) => (
-                  <div key={key} className="w-full h-auto">
-                    <div className="w-full h-auto overflow-hidden rounded-xl">
-                      <Image
-                        src={media?.thumbnail}
-                        width={800}
-                        height={600}
-                        className="w-full h-auto"
-                        alt=""
-                      />
-                    </div>
+                  <div key={key} className="flex flex-col gap-2">
+                    <Image
+                      src={media?.original || media?.thumbnail}
+                      width={800}
+                      height={600}
+                      className="max-w-lg max-h-[500px] rounded-xl object-contain"
+                      alt={media.caption || ""}
+                      style={{ 
+                        maxWidth: '32rem',
+                        maxHeight: '500px',
+                        height: 'auto',
+                        width: 'auto'
+                      }}
+                    />
                     {media.caption && (
-                      <p className="text-sm text-gray-600 italic px-2 mt-2">
+                      <p className="text-sm text-gray-600 italic">
                         {media.caption}
                       </p>
                     )}
@@ -163,6 +168,7 @@ export const MapDrawer: React.FC<{
                 bookmarked={post.bookmarked}
                 bookmarksCount={post.bookmarksCount}
               />
+            </div>
             </div>
           </div>
         ) : (

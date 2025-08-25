@@ -35,10 +35,16 @@ export default async function Page() {
       <div className="flex flex-col py-8 items-center">
         <div className="w-full max-w-xl flex flex-col items-center text-base gap-6">
           <h2 className="font-medium text-5xl">
-            {LOCALES.APP.UPGRADE.PAGE.CTA.TITLE}
+            {plan?.active 
+              ? LOCALES.APP.UPGRADE.WELCOME.CTA.TITLE 
+              : LOCALES.APP.UPGRADE.PAGE.CTA.TITLE
+            }
           </h2>
           <p className="text-center">
-            {LOCALES.APP.UPGRADE.PAGE.CTA.DESCRIPTION}
+            {plan?.active 
+              ? LOCALES.APP.UPGRADE.WELCOME.CTA.DESCRIPTION
+              : LOCALES.APP.UPGRADE.PAGE.CTA.DESCRIPTION
+            }
           </p>
         </div>
         {plan && (

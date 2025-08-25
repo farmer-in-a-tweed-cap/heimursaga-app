@@ -13,6 +13,15 @@ type Props = {
   features?: string[];
   active?: boolean;
   expiry?: Date;
+  promo?: {
+    hasActivePromo: boolean;
+    isFreePeriod: boolean;
+    percentOff?: number;
+    amountOff?: number;
+    duration?: string;
+    durationInMonths?: number;
+    promoEnd?: Date;
+  } | null;
 };
 
 export const SubscriptionPlanCard: React.FC<Props> = ({
@@ -24,6 +33,7 @@ export const SubscriptionPlanCard: React.FC<Props> = ({
   features = [],
   active = false,
   expiry,
+  promo,
 }) => {
   return (
     <div className="bg-accent p-8 box-border rounded-xl">
@@ -59,9 +69,71 @@ export const SubscriptionPlanCard: React.FC<Props> = ({
       )}
       {active && (
         <div className="mt-8">
-          <span className="text-base">
-            Next payment: {dateformat(expiry).format('MMM DD, YYYY')}
-          </span>
+          {promo?.hasActivePromo ? (
+            <div className="space-y-2">
+              {promo.isFreePeriod ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="success" className="text-xs">
+                      Free Period Active
+                    </Badge>
+                    {promo.percentOff && (
+                      <span className="text-sm text-green-600 font-medium">
+                        {promo.percentOff}% off
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-base">
+                    {promo.promoEnd ? (
+                      <>
+                        Free until: {dateformat(promo.promoEnd).format('MMM DD, YYYY')}
+                        <br />
+                        <span className="text-sm text-gray-600">
+                          Next payment: {dateformat(expiry).format('MMM DD, YYYY')} ({currencySymbol}{priceMonthly}/month)
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        Next free billing: {dateformat(expiry).format('MMM DD, YYYY')}
+                        <br />
+                        <span className="text-sm text-gray-600">
+                          Free for {promo.durationInMonths || 'unlimited'} months
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs">
+                      Promo Active
+                    </Badge>
+                    {promo.percentOff && (
+                      <span className="text-sm text-green-600 font-medium">
+                        {promo.percentOff}% off
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-base">
+                    Next payment: {dateformat(expiry).format('MMM DD, YYYY')}
+                    {promo.promoEnd && (
+                      <>
+                        <br />
+                        <span className="text-sm text-gray-600">
+                          Promo ends: {dateformat(promo.promoEnd).format('MMM DD, YYYY')}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <span className="text-base">
+              Next payment: {dateformat(expiry).format('MMM DD, YYYY')}
+            </span>
+          )}
         </div>
       )}
     </div>

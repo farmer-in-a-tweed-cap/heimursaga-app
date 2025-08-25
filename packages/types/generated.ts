@@ -230,6 +230,15 @@ export interface ISubscriptionPlanDetail {
   discountYearly: number;
   currency: string;
   currencySymbol: string;
+  promo?: {
+    hasActivePromo: boolean;
+    isFreePeriod: boolean;
+    percentOff?: number;
+    amountOff?: number;
+    duration?: string;
+    durationInMonths?: number;
+    promoEnd?: Date;
+  } | null;
 }
 
 export interface ISubscriptionPlanGetAllResponse {

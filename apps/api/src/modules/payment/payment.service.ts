@@ -489,6 +489,7 @@ export class PaymentService {
               subscription: {
                 select: {
                   expiry: true,
+                  stripe_subscription_id: true,
                 },
               },
             },
@@ -496,34 +497,68 @@ export class PaymentService {
         },
       });
 
-      const response: ISubscriptionPlanGetAllResponse = {
-        data: data.map(
-          ({
+      const planData = await Promise.all(data.map(
+        async ({
+          slug,
+          name,
+          price_year,
+          price_month,
+          discount_year,
+          users = [],
+        }) => {
+          const userPlan = users.find(({ user_id }) => userId === user_id);
+          const isActive = users.length >= 1 && userPlan !== undefined;
+          
+          let actualExpiry = userPlan?.subscription?.expiry;
+          let promoInfo = null;
+          
+          // If user has active subscription, get real expiry from Stripe (includes promos)
+          if (isActive && userPlan?.subscription?.stripe_subscription_id) {
+            try {
+              const stripeSubscription = await this.stripeService.stripe.subscriptions.retrieve(
+                userPlan.subscription.stripe_subscription_id,
+                { expand: ['discount.coupon'] }
+              );
+              // Use Stripe's current_period_end which includes promo extensions
+              actualExpiry = new Date(stripeSubscription.current_period_end * 1000);
+              
+              // Check for active discount/promo
+              if (stripeSubscription.discount && stripeSubscription.discount.coupon) {
+                const coupon = stripeSubscription.discount.coupon;
+                promoInfo = {
+                  hasActivePromo: true,
+                  isFreePeriod: coupon.percent_off === 100 || coupon.amount_off >= stripeSubscription.items.data[0].price.unit_amount,
+                  percentOff: coupon.percent_off,
+                  amountOff: coupon.amount_off,
+                  duration: coupon.duration,
+                  durationInMonths: coupon.duration_in_months,
+                  promoEnd: stripeSubscription.discount.end ? new Date(stripeSubscription.discount.end * 1000) : null,
+                };
+              }
+            } catch (error) {
+              // If Stripe fails, fall back to database expiry
+              this.logger.warn(`Failed to fetch Stripe subscription ${userPlan.subscription.stripe_subscription_id}: ${error.message}`);
+              actualExpiry = userPlan?.subscription?.expiry;
+            }
+          }
+          
+          return {
             slug,
             name,
-            price_year,
-            price_month,
-            discount_year,
-            users = [],
-          }) => ({
-            slug,
-            name,
-            active:
-              users.length >= 1
-                ? users.some(({ user_id }) => userId === user_id)
-                : false,
-            expiry:
-              users.length >= 1
-                ? users.find(({ user_id }) => userId === user_id)?.subscription
-                    ?.expiry
-                : undefined,
+            active: isActive,
+            expiry: actualExpiry,
             priceMonthly: integerToDecimal(price_month),
             priceYearly: integerToDecimal(price_year),
             discountYearly: discount_year,
             currency: CurrencyCode.USD,
             currencySymbol: CurrencySymbol.USD,
-          }),
-        ),
+            promo: promoInfo,
+          };
+        })
+      );
+
+      const response: ISubscriptionPlanGetAllResponse = {
+        data: planData,
       };
 
       return response;
@@ -565,6 +600,7 @@ export class PaymentService {
                 subscription: {
                   select: {
                     expiry: true,
+                    stripe_subscription_id: true,
                   },
                 },
               },
@@ -576,6 +612,42 @@ export class PaymentService {
         });
 
       const { name, price_year, price_month, discount_year, users } = data;
+      
+      const userPlan = users.find(({ user_id }) => userId === user_id);
+      const isActive = users.length >= 1 && userPlan !== undefined;
+      
+      let actualExpiry = userPlan?.subscription?.expiry;
+      let promoInfo = null;
+      
+      // If user has active subscription, get real expiry from Stripe (includes promos)
+      if (isActive && userPlan?.subscription?.stripe_subscription_id) {
+        try {
+          const stripeSubscription = await this.stripeService.stripe.subscriptions.retrieve(
+            userPlan.subscription.stripe_subscription_id,
+            { expand: ['discount.coupon'] }
+          );
+          // Use Stripe's current_period_end which includes promo extensions
+          actualExpiry = new Date(stripeSubscription.current_period_end * 1000);
+          
+          // Check for active discount/promo
+          if (stripeSubscription.discount && stripeSubscription.discount.coupon) {
+            const coupon = stripeSubscription.discount.coupon;
+            promoInfo = {
+              hasActivePromo: true,
+              isFreePeriod: coupon.percent_off === 100 || coupon.amount_off >= stripeSubscription.items.data[0].price.unit_amount,
+              percentOff: coupon.percent_off,
+              amountOff: coupon.amount_off,
+              duration: coupon.duration,
+              durationInMonths: coupon.duration_in_months,
+              promoEnd: stripeSubscription.discount.end ? new Date(stripeSubscription.discount.end * 1000) : null,
+            };
+          }
+        } catch (error) {
+          // If Stripe fails, fall back to database expiry
+          this.logger.warn(`Failed to fetch Stripe subscription ${userPlan.subscription.stripe_subscription_id}: ${error.message}`);
+          actualExpiry = userPlan?.subscription?.expiry;
+        }
+      }
 
       const response: ISubscriptionPlanGetBySlugResponse = {
         slug,
@@ -585,15 +657,9 @@ export class PaymentService {
         discountYearly: discount_year,
         currency: CurrencyCode.USD,
         currencySymbol: CurrencySymbol.USD,
-        active:
-          users.length >= 1
-            ? users.some(({ user_id }) => userId === user_id)
-            : false,
-        expiry:
-          users.length >= 1
-            ? users.find(({ user_id }) => userId === user_id)?.subscription
-                ?.expiry
-            : undefined,
+        active: isActive,
+        expiry: actualExpiry,
+        promo: promoInfo,
       };
 
       return response;
