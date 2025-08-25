@@ -1,13 +1,13 @@
 'use client';
 
 import { cn } from '@repo/ui/lib/utils';
-import { ReactNode } from 'react';
+import React from 'react';
 
 import { useNavigation } from '@/hooks';
 
 type NavigationLinkProps = {
   href: string;
-  children: ReactNode;
+  children: React.ReactNode;
   className?: string;
   disabled?: boolean;
   replace?: boolean;

@@ -122,7 +122,9 @@ export const PostCard: React.FC<PostCardProps> = ({
     >
       <CardContent>
         {href ? (
-          <NavigationLink href={href} className="z-10 absolute inset-0"></NavigationLink>
+          <NavigationLink href={href} className="z-10 absolute inset-0">
+            <span className="sr-only">View post</span>
+          </NavigationLink>
         ) : onClick ? (
           <div
             className="z-10 absolute inset-0 cursor-pointer"

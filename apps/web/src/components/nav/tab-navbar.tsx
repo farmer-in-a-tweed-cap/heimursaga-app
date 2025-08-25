@@ -14,6 +14,7 @@ type Props = {
     tabs?: string;
   };
   onChange?: (tab: string) => void;
+  isLoading?: boolean;
 };
 
 export const TabNavbar: React.FC<Props> = ({
@@ -21,9 +22,10 @@ export const TabNavbar: React.FC<Props> = ({
   activeTab,
   classNames,
   onChange,
+  isLoading = false,
 }) => {
   const handleClick = (tab: string, disabled?: boolean) => {
-    if (disabled) return;
+    if (disabled || isLoading) return;
     
     if (activeTab !== tab) {
       if (onChange) {
@@ -49,14 +51,15 @@ export const TabNavbar: React.FC<Props> = ({
           <button
             key={key}
             className={cn(
-              'w-auto flex flex-col items-center gap-2 font-medium justify-start text-sm text-left rounded-none',
-              disabled 
+              'w-auto flex flex-col items-center gap-2 font-medium justify-start text-sm text-left rounded-none transition-opacity',
+              disabled || isLoading
                 ? 'text-gray-400 cursor-not-allowed' 
                 : 'hover:text-black',
-              activeTab === tab ? 'text-black' : disabled ? 'text-gray-400' : 'text-black/70',
+              activeTab === tab ? 'text-black' : (disabled || isLoading) ? 'text-gray-400' : 'text-black/70',
+              isLoading && 'opacity-50'
             )}
             onClick={() => handleClick(tab, disabled)}
-            disabled={disabled}
+            disabled={disabled || isLoading}
           >
             <span>{label}</span>
             <span
