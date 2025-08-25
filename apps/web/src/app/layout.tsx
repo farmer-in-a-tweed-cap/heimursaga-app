@@ -170,14 +170,14 @@ export default async function RootLayout({ children }: Props) {
   );
 }
 
-export const SessionLayout = ({
+const SessionLayout = ({
   children,
   initialSession,
 }: Props & { initialSession?: any }) => {
   return <SessionProvider state={initialSession}>{children}</SessionProvider>;
 };
 
-export const AppLayout = ({
+const AppLayout = ({
   children,
   initialSession,
   secure = true,
@@ -208,7 +208,7 @@ export const AppLayout = ({
   );
 };
 
-export const MapLayout = ({
+const MapLayout = ({
   children,
   initialSession,
   secure = true,
@@ -237,7 +237,7 @@ export const MapLayout = ({
   );
 };
 
-export const LoginLayout = async ({
+const LoginLayout = async ({
   children,
 }: {
   children: React.ReactNode;
@@ -264,7 +264,7 @@ export const LoginLayout = async ({
   );
 };
 
-export const AdminLayout = ({ 
+const AdminLayout = ({ 
   children,
   initialSession 
 }: { 
@@ -287,7 +287,7 @@ export const AdminLayout = ({
   );
 };
 
-export const CheckoutLayout = ({ 
+const CheckoutLayout = ({ 
   children,
   initialSession 
 }: { 
@@ -310,7 +310,7 @@ export const CheckoutLayout = ({
   );
 };
 
-export const AppLayoutWithoutSidebar = ({
+const AppLayoutWithoutSidebar = ({
   children,
   initialSession,
 }: {
@@ -331,3 +331,13 @@ export const AppLayoutWithoutSidebar = ({
   );
 };
 
+// Export layout components
+export { 
+  SessionLayout,
+  AppLayout, 
+  MapLayout,
+  LoginLayout,
+  AdminLayout,
+  CheckoutLayout,
+  AppLayoutWithoutSidebar 
+};

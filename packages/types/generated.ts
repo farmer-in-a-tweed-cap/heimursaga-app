@@ -279,7 +279,7 @@ export interface IPostDetail {
     lat: number;
     lon: number;
   };
-  media?: { id: string; thumbnail: string; caption?: string }[];
+  media?: { id: string; thumbnail: string; original?: string; caption?: string }[];
   public?: boolean;
   sponsored?: boolean;
   isDraft?: boolean;
