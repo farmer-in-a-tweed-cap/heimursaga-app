@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, ReactNode, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 
@@ -9,10 +9,10 @@ import { ROUTER } from '@/router';
 import { LogoSpinner } from '@/components/app/logo-spinner';
 
 interface SessionGuardProps {
-  children: ReactNode;
+  children: React.ReactNode;
   secure?: boolean;
   roles?: string[];
-  fallback?: ReactNode;
+  fallback?: React.ReactNode;
 }
 
 const SessionGuardContent: React.FC<SessionGuardProps> = ({
@@ -93,12 +93,5 @@ const SessionGuardContent: React.FC<SessionGuardProps> = ({
   return <>{children}</>;
 };
 
-// Export as dynamic component with no SSR to prevent hydration issues
-export const SessionGuard = dynamic(() => Promise.resolve(SessionGuardContent), {
-  ssr: false,
-  loading: () => (
-    <div className="flex items-center justify-center min-h-screen">
-      <LogoSpinner size="md" />
-    </div>
-  ),
-});
+// Export the component directly now that we handle session at page level
+export const SessionGuard: React.FC<SessionGuardProps> = SessionGuardContent;

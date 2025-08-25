@@ -1,7 +1,7 @@
-import { FastifyCorsOptions, fastifyCors } from '@fastify/cors';
+import fastifyCors, { FastifyCorsOptions } from '@fastify/cors';
 import fastifyCsrf from '@fastify/csrf-protection';
 import fastifyHelmet, { FastifyHelmetOptions } from '@fastify/helmet';
-import { FastifyMultipartOptions, fastifyMultipart } from '@fastify/multipart';
+import fastifyMultipart, { FastifyMultipartOptions } from '@fastify/multipart';
 import {
   SecureSessionPluginOptions as FastifySecureSessionOptions,
   fastifySecureSession,

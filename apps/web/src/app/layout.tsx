@@ -1,3 +1,4 @@
+import React from 'react';
 import { UserRole } from '@repo/types';
 import '@repo/ui/globals.css';
 import '../styles.css';
@@ -169,55 +170,24 @@ export default async function RootLayout({ children }: Props) {
   );
 }
 
-export const SessionLayout = async ({
+export const SessionLayout = ({
   children,
-  secure = true,
-  roles = [],
-}: Props & { roles?: string[]; secure?: boolean }) => {
-  const cookie = cookies().toString();
-  
-  let session = null;
-  let sessionError = null;
-  
-  // Try to get session with retry logic
-  try {
-    const response = await apiClient.getSession({ cookie });
-    session = response.data;
-  } catch (error) {
-    sessionError = error;
-    console.warn('Server-side session fetch failed:', error);
-    
-    // If it's a server error (not auth error), don't redirect immediately
-    // Let the client-side session handling take over
-    if (secure && ((error as any)?.status === 401 || (error as any)?.status === 403)) {
-      return redirect(ROUTER.LOGIN);
-    }
-  }
-
-  if (secure && session) {
-    // check roles
-    if (roles.length >= 1) {
-      const access = roles.some((role) => role === session.role);
-      if (!access) {
-        return redirect(ROUTER.HOME);
-      }
-    }
-  }
-
-  // For secure pages without a session, let client-side session recovery handle it
-  // This prevents immediate redirects when there are temporary server issues
-  return <SessionProvider state={session || undefined}>{children}</SessionProvider>;
+  initialSession,
+}: Props & { initialSession?: any }) => {
+  return <SessionProvider state={initialSession}>{children}</SessionProvider>;
 };
 
 export const AppLayout = ({
   children,
+  initialSession,
   secure = true,
 }: {
   children: React.ReactNode;
+  initialSession?: any;
   secure?: boolean;
 }) => {
   return (
-    <SessionLayout secure={false}>
+    <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={secure}>
         <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-row">
           <AppSidebar collapsed={true} />
@@ -240,13 +210,15 @@ export const AppLayout = ({
 
 export const MapLayout = ({
   children,
+  initialSession,
   secure = true,
 }: {
   children: React.ReactNode;
+  initialSession?: any;
   secure?: boolean;
 }) => {
   return (
-    <SessionLayout secure={false}>
+    <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={secure}>
         <div className="w-full h-dvh bg-gray-50 text-black flex flex-row overflow-hidden">
           <AppSidebar collapsed={true} />
@@ -292,9 +264,15 @@ export const LoginLayout = async ({
   );
 };
 
-export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
+export const AdminLayout = ({ 
+  children,
+  initialSession 
+}: { 
+  children: React.ReactNode;
+  initialSession?: any;
+}) => {
   return (
-    <SessionLayout secure={false}>
+    <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={true} roles={[UserRole.ADMIN]}>
         <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-row">
           <AppSidebar collapsed={true} />
@@ -309,9 +287,15 @@ export const AdminLayout = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export const CheckoutLayout = ({ children }: { children: React.ReactNode }) => {
+export const CheckoutLayout = ({ 
+  children,
+  initialSession 
+}: { 
+  children: React.ReactNode;
+  initialSession?: any;
+}) => {
   return (
-    <SessionLayout secure={false}>
+    <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={true}>
         <div className="w-full h-[55px] bg-white flex flex-row justify-center items-center border-b border-solid border-gray-200">
           <Link href={ROUTER.HOME}>
@@ -328,11 +312,13 @@ export const CheckoutLayout = ({ children }: { children: React.ReactNode }) => {
 
 export const AppLayoutWithoutSidebar = ({
   children,
+  initialSession,
 }: {
   children: React.ReactNode;
+  initialSession?: any;
 }) => {
   return (
-    <SessionLayout secure={false}>
+    <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={true}>
         <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-col justify-start">
           <div className="w-full h-auto min-h-dvh flex flex-col py-6 items-center justify-start">

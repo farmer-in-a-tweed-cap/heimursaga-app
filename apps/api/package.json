@@ -35,6 +35,7 @@
     "@fastify/multipart": "^7.x",
     "@fastify/rate-limit": "^10.2.2",
     "@fastify/secure-session": "^7.x",
+    "@fastify/static": "^7.0.4",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^4.0.1",
     "@nestjs/core": "^10.0.0",

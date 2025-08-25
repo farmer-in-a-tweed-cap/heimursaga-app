@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { UserAvatar } from '../user';
 import { UserRole } from '@repo/types';
 import { BadgeDot } from '@repo/ui/components';
