@@ -37,7 +37,7 @@ export const APP_CONFIG = {
     BRAND_COLOR: 'AA6C46',
   },
   UPLOAD: {
-    MAX_FILE_SIZE: 10, // mb
+    MAX_FILE_SIZE: 15, // mb - increased for higher quality uploads
     MAX_FILES: 4,
   },
 };

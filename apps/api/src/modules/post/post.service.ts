@@ -347,6 +347,7 @@ export class PostService {
                 select: {
                   public_id: true,
                   thumbnail: true,
+                  original: true,
                 },
               },
             },
@@ -438,6 +439,7 @@ export class PostService {
           ? post.media.map(({ upload, caption }) => ({
               id: upload?.public_id,
               thumbnail: getStaticMediaUrl(upload?.thumbnail),
+              original: getStaticMediaUrl(upload?.original), // Add HD original URL
               caption: caption || undefined,
             }))
           : [],

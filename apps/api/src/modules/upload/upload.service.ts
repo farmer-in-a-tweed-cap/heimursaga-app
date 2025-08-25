@@ -60,9 +60,36 @@ export class UploadService {
     session,
   }: ISessionQueryWithPayload<{}, IMediaUploadPayload>) {
     //Promise<IMediaUploadResponse> {
+    this.logger.debug('Upload service called', { payload: { context: payload?.context, thumbnail: payload?.thumbnail, aspect: payload?.aspect }, session: { userId: session?.userId } });
+    
     try {
       const { context, thumbnail = true, aspect = 'auto', file } = payload;
       const { userId } = session;
+      
+      if (!file) {
+        this.logger.error('No file provided in upload payload');
+        throw new ServiceBadRequestException('No file provided');
+      }
+      
+      if (!file.buffer) {
+        this.logger.error('File buffer is missing');
+        throw new ServiceBadRequestException('Invalid file data');
+      }
+
+      // Log upload attempt with file info for debugging
+      this.logger.debug(`Upload attempt: file received, size: ${file.buffer?.length || 0} bytes, type: ${file.mimetype}`);
+
+      // Validate file size (additional check beyond multer)
+      const maxSizeBytes = 15 * 1024 * 1024; // 15MB
+      const fileSize = file.buffer?.length || 0;
+      if (fileSize > maxSizeBytes) {
+        throw new ServiceBadRequestException(`File size ${Math.round(fileSize / 1024 / 1024)}MB exceeds maximum of 15MB`);
+      }
+
+      // Validate file type
+      if (!SUPPORTED_FORMATS.includes(file.mimetype)) {
+        throw new ServiceBadRequestException(`Unsupported file format. Please use JPEG, PNG, WebP, HEIC, or HEIF files.`);
+      }
 
       const access = !!userId;
 
@@ -101,74 +128,208 @@ export class UploadService {
           });
       }
 
-      // generate metadata
-      const metadata = {
-        ext: 'webp',
-        mimetype: 'image/webp',
+      // Determine optimal output format - preserve original for HD quality when possible
+      let outputFormat = 'webp';
+      let outputMimetype = 'image/webp';
+      
+      // For HD quality, try to preserve original format for smaller files
+      const bufferSize = file.buffer?.length || 0;
+      const fileSizeMB = bufferSize / (1024 * 1024);
+      
+      if (fileSizeMB < 8 && (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png')) {
+        // Keep original format for smaller files to preserve maximum quality
+        outputFormat = file.mimetype === 'image/jpeg' ? 'jpeg' : 'png';
+        outputMimetype = file.mimetype;
+      }
+      
+      const outputMetadata = {
+        ext: outputFormat === 'jpeg' ? 'jpg' : outputFormat,
+        mimetype: outputMimetype,
       };
       const hash = crypto.randomBytes(24).toString('hex');
       const keys = {
-        original: `${hash}.${metadata.ext}`,
-        thumbnail: `${hash}_thumbnail.${metadata.ext}`,
+        original: `${hash}.${outputMetadata.ext}`,
+        thumbnail: `${hash}_thumbnail.${outputMetadata.ext}`,
       };
       const paths = {
         original: `${bucket}/${keys.original}`,
         thumbnail: `${bucket}/${keys.thumbnail}`,
       };
 
-      // convert to webp and resize
-      const size = {
-        original: {
-          width: 0,
-          height: 0,
-        },
-        thumbnail: {
-          width: 0,
-          height: 0,
-        },
-      };
-
-      switch (aspect) {
-        case 'auto':
-          size.original.width = 1200;
-          size.original.height = 900;
-          size.thumbnail.width = 400;
-          size.thumbnail.height = 300;
-          break;
-        case 'square':
-          size.original.width = 800;
-          size.original.height = 800;
-          size.thumbnail.width = 240;
-          size.thumbnail.height = 240;
-          break;
+      // Get original image metadata to preserve aspect ratio
+      this.logger.debug('Starting image metadata extraction');
+      const imageInfo = sharp(file.buffer);
+      const imageMetadata = await imageInfo.metadata();
+      const { width: originalWidth, height: originalHeight } = imageMetadata;
+      
+      if (!originalWidth || !originalHeight) {
+        throw new ServiceBadRequestException('Unable to read image dimensions. Please check if the file is a valid image.');
       }
+      
+      this.logger.debug(`Image metadata: ${originalWidth}x${originalHeight}, format: ${imageMetadata.format}`);
+      
+      // Calculate optimal sizes while preserving aspect ratio
+      // HD quality limits - much higher resolution
+      const maxOriginalWidth = 4096;  // 4K width
+      const maxOriginalHeight = 3072; // 4K height  
+      const maxThumbnailWidth = 1200; // HD thumbnail
+      const maxThumbnailHeight = 900; // HD thumbnail
+
+      // Calculate resize dimensions preserving aspect ratio
+      const originalAspectRatio = originalWidth / originalHeight;
+      
+      let originalSize, thumbnailSize;
+      
+      if (aspect === 'square') {
+        // For square aspect, crop to square but use higher resolution
+        originalSize = { width: 1200, height: 1200 };
+        thumbnailSize = { width: 300, height: 300 };
+      } else {
+        // Preserve original aspect ratio - only resize if image is larger than limits
+        if (originalWidth <= maxOriginalWidth && originalHeight <= maxOriginalHeight) {
+          // Keep original size if within limits
+          originalSize = { width: originalWidth, height: originalHeight };
+        } else if (originalWidth > originalHeight) {
+          // Landscape - scale down
+          originalSize = {
+            width: Math.min(maxOriginalWidth, originalWidth),
+            height: Math.min(maxOriginalWidth / originalAspectRatio, maxOriginalHeight)
+          };
+        } else {
+          // Portrait or square - scale down  
+          originalSize = {
+            width: Math.min(maxOriginalHeight * originalAspectRatio, maxOriginalWidth),
+            height: Math.min(maxOriginalHeight, originalHeight)
+          };
+        }
+        
+        // Thumbnail sizing
+        if (originalWidth > originalHeight) {
+          // Landscape
+          thumbnailSize = {
+            width: Math.min(maxThumbnailWidth, originalWidth),
+            height: Math.min(maxThumbnailWidth / originalAspectRatio, maxThumbnailHeight)
+          };
+        } else {
+          // Portrait or square
+          thumbnailSize = {
+            width: Math.min(maxThumbnailHeight * originalAspectRatio, maxThumbnailWidth),
+            height: Math.min(maxThumbnailHeight, originalHeight)
+          };
+        }
+      }
+
+      this.logger.debug(`Processing sizes - Original: ${Math.round(originalSize.width)}x${Math.round(originalSize.height)}, Thumbnail: ${Math.round(thumbnailSize.width)}x${Math.round(thumbnailSize.height)}`);
+      this.logger.debug(`Input image: ${originalWidth}x${originalHeight}, Output format: ${outputFormat}, File size: ${fileSizeMB.toFixed(2)}MB`);
 
       let buffers;
       try {
-        buffers = {
-          original: await sharp(file.buffer)
-            .rotate() // Auto-rotate based on EXIF orientation data
-            .resize(size.original.width, size.original.height, {
-              fit: 'cover',
-              position: 'center',
+        this.logger.debug('Starting Sharp image processing');
+        const startTime = Date.now();
+        
+        // Process original with timeout handling
+        let sharpInstance = sharp(file.buffer).rotate(); // Auto-rotate based on EXIF orientation data
+        
+        // Only resize if needed (image is larger than target size)
+        if (originalWidth > originalSize.width || originalHeight > originalSize.height || aspect === 'square') {
+          sharpInstance = sharpInstance.resize(Math.round(originalSize.width), Math.round(originalSize.height), {
+            fit: aspect === 'square' ? 'cover' : 'inside', // Preserve aspect ratio unless square
+            position: 'center',
+            withoutEnlargement: true, // Don't upscale small images
+          });
+        }
+        
+        let originalPromise;
+        if (outputFormat === 'jpeg') {
+          originalPromise = sharpInstance
+            .jpeg({ 
+              quality: 98,   // High quality JPEG
+              progressive: true,
+              mozjpeg: true  // Better compression
             })
-            .webp({ quality: 90 }) // High quality for original
-            .toBuffer(),
-          thumbnail: thumbnail
-            ? await sharp(file.buffer)
-                .rotate() // Auto-rotate based on EXIF orientation data
-                .resize(size.thumbnail.width, size.thumbnail.height, {
-                  fit: 'cover',
-                  position: 'center',
-                })
-                .webp({ quality: 75 })
-                .toBuffer()
-            : null,
-        };
+            .toBuffer();
+        } else if (outputFormat === 'png') {
+          originalPromise = sharpInstance
+            .png({ 
+              quality: 100,  // Lossless PNG
+              compressionLevel: 6,
+              progressive: true
+            })
+            .toBuffer();
+        } else {
+          // WebP fallback
+          originalPromise = sharpInstance
+            .webp({ 
+              quality: 100,  // Lossless WebP
+              lossless: true,
+              effort: 6
+            })
+            .toBuffer();
+        }
+
+        // Process thumbnail
+        let thumbnailPromise;
+        if (thumbnail) {
+          let thumbnailSharp = sharp(file.buffer)
+            .rotate() // Auto-rotate based on EXIF orientation data
+            .resize(Math.round(thumbnailSize.width), Math.round(thumbnailSize.height), {
+              fit: aspect === 'square' ? 'cover' : 'inside', // Preserve aspect ratio unless square
+              position: 'center',
+              withoutEnlargement: true,
+            });
+          
+          if (outputFormat === 'jpeg') {
+            thumbnailPromise = thumbnailSharp
+              .jpeg({ 
+                quality: 95,  // High quality thumbnail
+                progressive: true,
+                mozjpeg: true
+              })
+              .toBuffer();
+          } else if (outputFormat === 'png') {
+            thumbnailPromise = thumbnailSharp
+              .png({ 
+                quality: 100,
+                compressionLevel: 6
+              })
+              .toBuffer();
+          } else {
+            thumbnailPromise = thumbnailSharp
+              .webp({ 
+                quality: 95,  // High quality WebP thumbnail
+                effort: 4
+              })
+              .toBuffer();
+          }
+        } else {
+          thumbnailPromise = Promise.resolve(null);
+        }
+
+        // Process both images in parallel with timeout
+        const timeoutMs = 30000; // 30 second timeout
+        buffers = await Promise.race([
+          Promise.all([originalPromise, thumbnailPromise]).then(([original, thumbnail]) => ({
+            original,
+            thumbnail
+          })),
+          new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Image processing timeout')), timeoutMs)
+          )
+        ]);
+
+        const processingTime = Date.now() - startTime;
+        this.logger.debug(`Sharp processing completed in ${processingTime}ms`);
       } catch (sharpError) {
         this.logger.error('Sharp processing error:', sharpError);
+        
+        if (sharpError.message === 'Image processing timeout') {
+          throw new ServiceBadRequestException(
+            'Image processing timeout. Please try uploading a smaller image or different format.'
+          );
+        }
+        
         throw new ServiceBadRequestException(
-          'Unsupported image format or corrupted file. Please use JPEG, PNG, or HEIC files.'
+          'Unable to process image. Please ensure the file is a valid image (JPEG, PNG, WebP, HEIC, or HEIF) and try again.'
         );
       }
 
@@ -186,18 +347,29 @@ export class UploadService {
       ].filter((upload) => upload);
 
       // upload the files to s3
-      await Promise.all(
-        uploads.map(({ key, buffer }) =>
-          this.s3.send(
-            new PutObjectCommand({
-              Bucket: bucket,
-              ContentType: metadata.mimetype,
-              Key: key,
-              Body: buffer,
-            }),
+      this.logger.debug(`Uploading ${uploads.length} files to S3`);
+      const s3StartTime = Date.now();
+      
+      try {
+        await Promise.all(
+          uploads.map(({ key, buffer }) =>
+            this.s3.send(
+              new PutObjectCommand({
+                Bucket: bucket,
+                ContentType: outputMetadata.mimetype,
+                Key: key,
+                Body: buffer,
+              }),
+            ),
           ),
-        ),
-      );
+        );
+        
+        const s3UploadTime = Date.now() - s3StartTime;
+        this.logger.debug(`S3 upload completed in ${s3UploadTime}ms`);
+      } catch (s3Error) {
+        this.logger.error('S3 upload error:', s3Error);
+        throw new ServiceBadRequestException('Failed to save image. Please try again.');
+      }
 
       // save the upload to the database
       const upload = await this.prisma.upload
@@ -215,15 +387,27 @@ export class UploadService {
         });
 
       // return original and thumbnail files
-      return {
+      const result = {
         uploadId: upload.public_id,
         original: getStaticMediaUrl(paths.original),
         thumbnail: getStaticMediaUrl(paths.thumbnail),
       };
+      
+      this.logger.debug(`Upload complete - Original URL: ${result.original}, Thumbnail URL: ${result.thumbnail}`);
+      return result;
     } catch (e) {
-      this.logger.error(e);
+      this.logger.error('Upload service error:', e);
 
-      if (e.status) throw new ServiceException(e.message, e.status);
+      if (e instanceof ServiceBadRequestException) {
+        throw e; // Re-throw our custom errors with user-friendly messages
+      }
+      
+      if (e.status) {
+        throw new ServiceException(e.message, e.status);
+      }
+      
+      // Generic fallback for unexpected errors
+      throw new ServiceBadRequestException('Upload failed. Please try again with a different image.');
     }
   }
 

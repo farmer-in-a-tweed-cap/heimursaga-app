@@ -36,7 +36,7 @@ export const FilePicker: React.FC<Props> = ({
   accept,
   maxSize = 2,
   files = [],
-  placeholder = 'Click and select some files to upload',
+  placeholder = 'Click to select photos or drag and drop',
   disabled = false,
   loader,
   onChange,
@@ -118,7 +118,7 @@ export const FilePicker: React.FC<Props> = ({
         <div className="mt-4 flex flex-col gap-4">
           {files.map((file, key) => (
             <div key={key} className="flex flex-col gap-2">
-              <div className="w-32 h-32">
+              <div className="w-32 min-h-32 max-h-48">
                 <FilePickerPreview
                   id={file.id}
                   src={file.src}
@@ -157,7 +157,7 @@ const FilePickerPreview: React.FC<{
   onRemove?: (_e: React.MouseEvent, _id: number) => void;
 }> = ({ id, loading = false, src, onRemove }) => {
   return (
-    <div className="relative aspect-square overflow-hidden rounded-xl flex items-center justify-center border-2 border-accent border-solid bg-gray-50">
+    <div className="relative w-full h-full overflow-hidden rounded-xl flex items-center justify-center border-2 border-accent border-solid bg-gray-50">
       {loading && (
         <div className="z-30 absolute inset-0 bg-accent opacity-50">
           <LoadingSpinner />
@@ -165,7 +165,7 @@ const FilePickerPreview: React.FC<{
       )}
       <img
         src={src}
-        className="z-10 w-full h-full object-cover"
+        className="z-10 w-full h-full object-contain" // Changed from object-cover to object-contain to preserve aspect ratio
         alt=""
       />
       <div className="z-20 absolute inset-0 opacity-0 hover:opacity-100 transition-all">

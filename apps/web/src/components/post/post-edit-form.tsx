@@ -40,7 +40,7 @@ import {
 import { MapLocationPickModalProps } from '@/components';
 import { APP_CONFIG } from '@/config';
 import { FILE_ACCEPT } from '@/constants';
-import { useAIDetection, useImageAIDetection, useMap, useModal, useSession, useUploads, useCacheRefresh } from '@/hooks';
+import { useAIDetection, useImageAIDetection, useMap, useModal, useNavigation, useSession, useUploads, useCacheRefresh } from '@/hooks';
 import { dateformat, normalizeText, redirect, zodMessage } from '@/lib';
 import { LOCALES } from '@/locales';
 import { ROUTER } from '@/router';
@@ -77,7 +77,8 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
   const toast = useToast();
   const session = useSession();
   const queryClient = useQueryClient();
-  const { refreshAfterPostUpdate } = useCacheRefresh();
+  const { navigateTo } = useNavigation();
+  const { refreshAfterPostUpdate, cacheInvalidator } = useCacheRefresh();
 
   // Helper function to show validation error toasts
   const showValidationError = (errors: any) => {
@@ -300,16 +301,30 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
       });
 
       if (success) {
-        // Use centralized cache refresh for post updates
-        await refreshAfterPostUpdate(postId);
-        
-        // Show success toast
-        toast({
-          type: 'success',
-          message: 'Entry saved',
-        });
-        
-        setLoading({ ...loading, post: false });
+        try {
+          // Nuclear option: Clear all cache to ensure fresh data
+          queryClient.clear();
+          
+          // Show success toast
+          toast({
+            type: 'success',
+            message: 'Entry saved',
+          });
+          
+          setLoading({ ...loading, post: false });
+          
+          // Use window.location for hard navigation to bypass all cache
+          window.location.href = ROUTER.ENTRIES.DETAIL(postId);
+        } catch (cacheError) {
+          console.error('Cache refresh error:', cacheError);
+          // Still show success since the API call worked
+          toast({
+            type: 'success',
+            message: 'Entry saved',
+          });
+          setLoading({ ...loading, post: false });
+          window.location.href = ROUTER.ENTRIES.DETAIL(postId);
+        }
       } else {
         toast({
           type: 'error',

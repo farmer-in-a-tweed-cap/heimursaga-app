@@ -17,7 +17,7 @@ import { ISession } from '@/common/interfaces';
 import { IUploadedFile } from './upload.interface';
 import { UploadService } from './upload.service';
 
-const UPLOAD_MAX_FILE_SIZE = 10; // mb
+const UPLOAD_MAX_FILE_SIZE = 15; // mb - increased for higher quality uploads
 
 @ApiTags('upload')
 @Controller('upload')
