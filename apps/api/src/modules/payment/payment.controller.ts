@@ -92,18 +92,10 @@ export class PlansController {
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAll(@Session() session: ISession) {
-    console.log(`/plans endpoint hit for user: ${session?.userId || 'anonymous'}`);
-    try {
-      const result = await this.paymentService.getPlans({
-        query: {},
-        session,
-      });
-      console.log(`/plans endpoint success for user: ${session?.userId}, plans count: ${result?.data?.length || 0}`);
-      return result;
-    } catch (error) {
-      console.error(`/plans endpoint error for user: ${session?.userId}:`, error);
-      throw error;
-    }
+    return await this.paymentService.getPlans({
+      query: {},
+      session,
+    });
   }
 
   @Public()

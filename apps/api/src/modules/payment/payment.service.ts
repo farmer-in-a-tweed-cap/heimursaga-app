@@ -469,14 +469,8 @@ export class PaymentService {
   async getPlans({
     session,
   }: IQueryWithSession<{}>): Promise<ISubscriptionPlanGetAllResponse> {
-    console.log(`=== getPlans service method started ===`);
-    console.log(`Session data:`, { userId: session?.userId, hasSession: !!session });
-    
     try {
       const { userId } = session;
-      
-      // Debug logging for API call
-      console.log(`getPlans API called for user: ${userId}`);
 
       // get plans
       const data = await this.prisma.plan.findMany({
@@ -515,14 +509,6 @@ export class PaymentService {
           const userPlan = users.find(({ user_id }) => userId === user_id);
           const isActive = users.length >= 1 && userPlan !== undefined;
           
-          // Debug logging for subscription detection
-          console.log(`User ${userId} subscription check:`, {
-            hasUserPlan: !!userPlan,
-            isActive,
-            hasStripeSubscriptionId: !!userPlan?.subscription?.stripe_subscription_id,
-            stripeSubscriptionId: userPlan?.subscription?.stripe_subscription_id,
-            usersCount: users.length
-          });
           
           let actualExpiry = userPlan?.subscription?.expiry;
           let promoInfo = null;
@@ -535,16 +521,6 @@ export class PaymentService {
                 { expand: ['discount.coupon'] }
               );
               
-              // Debug logging for promo detection
-              console.log(`Stripe subscription data for ${userPlan.subscription.stripe_subscription_id}:`, {
-                hasDiscount: !!stripeSubscription.discount,
-                discountEnd: stripeSubscription.discount?.end,
-                couponId: stripeSubscription.discount?.coupon?.id,
-                couponPercentOff: stripeSubscription.discount?.coupon?.percent_off,
-                couponAmountOff: stripeSubscription.discount?.coupon?.amount_off,
-                subscriptionStatus: stripeSubscription.status,
-                currentPeriodEnd: stripeSubscription.current_period_end,
-              });
               
               // Use Stripe's current_period_end which includes promo extensions
               actualExpiry = new Date(stripeSubscription.current_period_end * 1000);
@@ -569,7 +545,7 @@ export class PaymentService {
             }
           }
           
-          const result = {
+          return {
             slug,
             name,
             active: isActive,
@@ -581,15 +557,6 @@ export class PaymentService {
             currencySymbol: CurrencySymbol.USD,
             promo: promoInfo,
           };
-          
-          console.log(`Plan result for user ${userId}:`, {
-            slug: result.slug,
-            active: result.active,
-            hasPromo: !!result.promo,
-            promoData: result.promo
-          });
-          
-          return result;
         })
       );
 
