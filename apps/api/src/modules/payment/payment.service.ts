@@ -469,8 +469,14 @@ export class PaymentService {
   async getPlans({
     session,
   }: IQueryWithSession<{}>): Promise<ISubscriptionPlanGetAllResponse> {
+    this.logger.debug(`=== getPlans service method started ===`);
+    this.logger.debug(`Session data:`, { userId: session?.userId, hasSession: !!session });
+    
     try {
       const { userId } = session;
+      
+      // Debug logging for API call
+      this.logger.debug(`getPlans API called for user: ${userId}`);
 
       // get plans
       const data = await this.prisma.plan.findMany({
@@ -508,6 +514,15 @@ export class PaymentService {
         }) => {
           const userPlan = users.find(({ user_id }) => userId === user_id);
           const isActive = users.length >= 1 && userPlan !== undefined;
+          
+          // Debug logging for subscription detection
+          this.logger.debug(`User ${userId} subscription check:`, {
+            hasUserPlan: !!userPlan,
+            isActive,
+            hasStripeSubscriptionId: !!userPlan?.subscription?.stripe_subscription_id,
+            stripeSubscriptionId: userPlan?.subscription?.stripe_subscription_id,
+            usersCount: users.length
+          });
           
           let actualExpiry = userPlan?.subscription?.expiry;
           let promoInfo = null;
