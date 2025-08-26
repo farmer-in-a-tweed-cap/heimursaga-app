@@ -13,7 +13,6 @@ import { ApiTags } from '@nestjs/swagger';
 import { Public, Session } from '@/common/decorators';
 import { ParamPublicIdDto, ParamSlugDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
-import { Logger } from '@/modules/logger';
 
 import { PaymentMethodCreateDto, PlanUpgradeCheckoutDto, ValidatePromoCodeDto } from './payment.dto';
 import { PaymentService } from './payment.service';
@@ -87,16 +86,13 @@ export class PaymentIntentController {
 @ApiTags('plans')
 @Controller('plans')
 export class PlansController {
-  constructor(
-    private paymentService: PaymentService,
-    private logger: Logger,
-  ) {}
+  constructor(private paymentService: PaymentService) {}
 
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAll(@Session() session: ISession) {
-    this.logger.debug(`/plans endpoint hit for user: ${session?.userId || 'anonymous'}`);
+    console.log(`/plans endpoint hit for user: ${session?.userId || 'anonymous'}`);
     return await this.paymentService.getPlans({
       query: {},
       session,
