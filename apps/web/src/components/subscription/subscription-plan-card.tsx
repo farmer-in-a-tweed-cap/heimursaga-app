@@ -89,7 +89,7 @@ export const SubscriptionPlanCard: React.FC<Props> = ({
                         Free until: {dateformat(promo.promoEnd).format('MMM DD, YYYY')}
                         <br />
                         <span className="text-sm text-gray-600">
-                          Next payment: {dateformat(expiry).format('MMM DD, YYYY')} ({currencySymbol}{priceMonthly}/month)
+                          Next payment: {dateformat(promo.promoEnd).format('MMM DD, YYYY')} ({currencySymbol}{priceMonthly}/month)
                         </span>
                       </>
                     ) : (
