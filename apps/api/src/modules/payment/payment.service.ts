@@ -469,14 +469,14 @@ export class PaymentService {
   async getPlans({
     session,
   }: IQueryWithSession<{}>): Promise<ISubscriptionPlanGetAllResponse> {
-    this.logger.debug(`=== getPlans service method started ===`);
-    this.logger.debug(`Session data:`, { userId: session?.userId, hasSession: !!session });
+    console.log(`=== getPlans service method started ===`);
+    console.log(`Session data:`, { userId: session?.userId, hasSession: !!session });
     
     try {
       const { userId } = session;
       
       // Debug logging for API call
-      this.logger.debug(`getPlans API called for user: ${userId}`);
+      console.log(`getPlans API called for user: ${userId}`);
 
       // get plans
       const data = await this.prisma.plan.findMany({
@@ -516,7 +516,7 @@ export class PaymentService {
           const isActive = users.length >= 1 && userPlan !== undefined;
           
           // Debug logging for subscription detection
-          this.logger.debug(`User ${userId} subscription check:`, {
+          console.log(`User ${userId} subscription check:`, {
             hasUserPlan: !!userPlan,
             isActive,
             hasStripeSubscriptionId: !!userPlan?.subscription?.stripe_subscription_id,
@@ -536,7 +536,7 @@ export class PaymentService {
               );
               
               // Debug logging for promo detection
-              this.logger.debug(`Stripe subscription data for ${userPlan.subscription.stripe_subscription_id}:`, {
+              console.log(`Stripe subscription data for ${userPlan.subscription.stripe_subscription_id}:`, {
                 hasDiscount: !!stripeSubscription.discount,
                 discountEnd: stripeSubscription.discount?.end,
                 couponId: stripeSubscription.discount?.coupon?.id,
