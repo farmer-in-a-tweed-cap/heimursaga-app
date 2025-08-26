@@ -569,7 +569,7 @@ export class PaymentService {
             }
           }
           
-          return {
+          const result = {
             slug,
             name,
             active: isActive,
@@ -581,6 +581,15 @@ export class PaymentService {
             currencySymbol: CurrencySymbol.USD,
             promo: promoInfo,
           };
+          
+          console.log(`Plan result for user ${userId}:`, {
+            slug: result.slug,
+            active: result.active,
+            hasPromo: !!result.promo,
+            promoData: result.promo
+          });
+          
+          return result;
         })
       );
 
