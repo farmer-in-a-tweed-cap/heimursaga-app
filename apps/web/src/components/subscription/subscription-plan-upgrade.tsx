@@ -24,6 +24,15 @@ type Props = {
   features?: string[];
   active?: boolean;
   expiry?: Date;
+  promo?: {
+    hasActivePromo: boolean;
+    isFreePeriod: boolean;
+    percentOff?: number;
+    amountOff?: number;
+    duration?: string;
+    durationInMonths?: number;
+    promoEnd?: Date;
+  } | null;
 };
 
 export const SubscriptionPlanUpgrade: React.FC<Props> = ({
@@ -35,6 +44,7 @@ export const SubscriptionPlanUpgrade: React.FC<Props> = ({
   features = [],
   active = false,
   expiry,
+  promo,
 }) => {
   const modal = useModal();
   const toast = useToast();
@@ -104,6 +114,7 @@ export const SubscriptionPlanUpgrade: React.FC<Props> = ({
             active,
             expiry,
             features,
+            promo,
           }}
         />
       </div>
