@@ -630,16 +630,6 @@ export class PaymentService {
             { expand: ['discount.coupon'] }
           );
           
-          // Debug logging for promo detection
-          this.logger.debug(`Stripe subscription data for ${userPlan.subscription.stripe_subscription_id}:`, {
-            hasDiscount: !!stripeSubscription.discount,
-            discountEnd: stripeSubscription.discount?.end,
-            couponId: stripeSubscription.discount?.coupon?.id,
-            couponPercentOff: stripeSubscription.discount?.coupon?.percent_off,
-            couponAmountOff: stripeSubscription.discount?.coupon?.amount_off,
-            subscriptionStatus: stripeSubscription.status,
-            currentPeriodEnd: stripeSubscription.current_period_end,
-          });
           
           // Use Stripe's current_period_end which includes promo extensions
           actualExpiry = new Date(stripeSubscription.current_period_end * 1000);
@@ -786,7 +776,7 @@ export class PaymentService {
           }
         } catch (error) {
           // Invalid promotion code - continue without it
-          this.logger.warn(`Invalid promo code attempted: ${promoCode}`);
+          this.logger.warn(`Invalid promo code attempted`);
         }
       }
 
@@ -1193,7 +1183,6 @@ export class PaymentService {
     payload: { promoCode: string; planId: string; period: string };
   }) {
     try {
-      this.logger.log(`Starting promo code validation with payload:`, payload);
       const { userId } = session;
       const { promoCode, planId, period } = payload;
 
@@ -1237,7 +1226,7 @@ export class PaymentService {
         });
 
       // validate the promotion code
-      this.logger.log(`Validating promo code: ${promoCode}`);
+      this.logger.log(`Validating promo code`);
       const promotionCodes = await this.stripeService.stripe.promotionCodes.list({
         code: promoCode,
         active: true,
@@ -1245,7 +1234,7 @@ export class PaymentService {
       });
       
       if (promotionCodes.data.length === 0) {
-        this.logger.warn(`Promotion code not found: ${promoCode}`);
+        this.logger.warn(`Promotion code not found`);
         return {
           success: false,
           error: 'Invalid promo code',
@@ -1256,7 +1245,6 @@ export class PaymentService {
       this.logger.log(`Promotion code retrieved successfully`);
       this.logger.log(`Promotion code ID: ${promotionCode.id}`);
       this.logger.log(`Promotion code active: ${promotionCode.active}`);
-      this.logger.log(`Coupon details:`, JSON.stringify(promotionCode.coupon, null, 2));
 
       // Get the underlying coupon
       const coupon = promotionCode.coupon;
@@ -1303,7 +1291,7 @@ export class PaymentService {
       });
       return response;
     } catch (error) {
-      this.logger.error(`Error validating promo code ${payload.promoCode}:`, {
+      this.logger.error(`Error validating promo code:`, {
         message: error.message,
         type: error.type,
         code: error.code,
