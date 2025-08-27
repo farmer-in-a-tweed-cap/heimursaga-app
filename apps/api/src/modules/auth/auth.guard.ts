@@ -33,18 +33,38 @@ export class AuthGuard implements CanActivate {
         [context.getHandler(), context.getClass()],
       );
 
-      // validate session id
-      const sid = req.session.get(SESSION_KEYS.SID);
-      if (!sid) {
-        req.session.set(SESSION_KEYS.SID, generator.sessionId());
+      let userAuthenticated = false;
+
+      // First, try JWT token authentication
+      const authHeader = req.headers.authorization;
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const tokenData = await this.authService.verifyToken(token);
+        
+        if (tokenData) {
+          // Set user data for JWT auth
+          req.session.set(SESSION_KEYS.USER_ID, tokenData.userId);
+          req.session.set(SESSION_KEYS.USER_ROLE, tokenData.role);
+          userAuthenticated = true;
+        }
       }
 
-      // validate session
-      const session = await this.authService.validateSession({ sid });
+      // If no JWT token or invalid, try session-based auth
+      if (!userAuthenticated) {
+        // validate session id
+        const sid = req.session.get(SESSION_KEYS.SID);
+        if (!sid) {
+          req.session.set(SESSION_KEYS.SID, generator.sessionId());
+        }
 
-      if (session) {
-        req.session.set(SESSION_KEYS.USER_ID, session.userId);
-        req.session.set(SESSION_KEYS.USER_ROLE, session.role);
+        // validate session
+        const session = await this.authService.validateSession({ sid });
+
+        if (session) {
+          req.session.set(SESSION_KEYS.USER_ID, session.userId);
+          req.session.set(SESSION_KEYS.USER_ROLE, session.role);
+          userAuthenticated = true;
+        }
       }
 
       // check if route is public
@@ -52,7 +72,7 @@ export class AuthGuard implements CanActivate {
         case true:
           return true;
         case false:
-          if (!session) throw new ServiceUnauthorizedException();
+          if (!userAuthenticated) throw new ServiceUnauthorizedException();
           break;
       }
 
