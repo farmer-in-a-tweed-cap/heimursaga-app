@@ -212,7 +212,8 @@ export class MapService {
           };
           break;
         case MapQueryContext.TRIP:
-          // For TRIP context, show waypoints attached to public journeys with published posts
+          // For TRIP context, show all waypoints attached to public journeys
+          // This includes both waypoints with posts (journal entries) and waypoints without posts (pure waypoints)
           where = {
             deleted_at: null,
             trips: tripId
@@ -225,13 +226,7 @@ export class MapService {
                   },
                 }
               : undefined,
-            posts: {
-              some: {
-                public: true,
-                is_draft: false,
-                deleted_at: null,
-              },
-            },
+            // No longer require waypoints to have posts - show both entries and pure waypoints
           };
           break;
         default:
