@@ -37,7 +37,7 @@ const SessionGuardContent: React.FC<SessionGuardProps> = ({
     // We need to wait if:
     // 1. Session is explicitly loading, OR  
     // 2. We haven't initialized yet AND there's cached data (wait for API validation)
-    const hasCachedSession = typeof localStorage !== 'undefined' && localStorage.getItem('session_cache');
+    const hasCachedSession = typeof window !== 'undefined' && localStorage.getItem('session_cache');
     const shouldWaitForSession = session.isLoading || (!hasInitialized && hasCachedSession && !session.logged);
     
     if (shouldWaitForSession) {
