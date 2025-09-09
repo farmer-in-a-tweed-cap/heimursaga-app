@@ -1,13 +1,5 @@
 declare global {
   namespace Fastify {
-    interface FastifyRequest {
-      session: {
-        get(key: string): any;
-        set(key: string, value: any): void;
-        delete(): void;
-      };
-    }
-
     namespace Multer {
       interface File {
         fieldname: string;

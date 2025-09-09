@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -106,46 +105,6 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 password change attempts per 5 minutes
   async updatePassword(@Body() body: PasswordUpdateDto) {
     return this.authService.updatePassword(body);
-  }
-
-  // Mobile-specific endpoints using JWT tokens
-  @Public()
-  @Post('mobile/login')
-  @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
-  async mobileLogin(
-    @Req() req: IRequest,
-    @Body() body: LoginDto,
-    @Session() session: ISession,
-  ) {
-    const result = await this.authService.mobileLogin({
-      query: {},
-      payload: body,
-      session,
-    });
-
-    return {
-      success: true,
-      data: result,
-    };
-  }
-
-  @Public()
-  @Get('mobile/user')
-  @HttpCode(HttpStatus.OK)
-  @SkipThrottle()
-  async getMobileUser(@Headers('authorization') authHeader?: string) {
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('Authorization header missing or invalid');
-    }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-    const user = await this.authService.getTokenUser(token);
-    
-    return {
-      success: true,
-      data: user,
-    };
   }
 
   @Public()
