@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
   AppErrorCode,
@@ -47,6 +48,7 @@ export class AuthService {
     private prisma: PrismaService,
     private eventService: EventService,
     private recaptchaService: RecaptchaService,
+    private jwtService: JwtService,
   ) {}
 
   async getSessionUser(payload: ISession): Promise<ISessionUserGetResponse> {
@@ -167,6 +169,156 @@ export class AuthService {
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('login or password invalid');
       throw exception;
+    }
+  }
+
+  // New method for mobile JWT-based login
+  async mobileLogin({
+    payload,
+    session,
+  }: ISessionQueryWithPayload<{}, ILoginPayload>): Promise<{ token: string; user: ISessionUserGetResponse }> {
+    try {
+      const { login, password: plainPassword } = payload;
+      const { ip, userAgent } = session || {};
+
+      // Find the user by login (email or username)
+      const user = await this.prisma.user
+        .findFirst({
+          where: {
+            OR: [
+              { email: login },
+              { username: login },
+            ],
+            blocked: false,
+          },
+          select: { 
+            id: true, 
+            password: true,
+            email: true,
+            username: true,
+            role: true,
+            is_email_verified: true,
+            is_premium: true,
+            profile: {
+              select: {
+                picture: true,
+              },
+            },
+          },
+        });
+
+      // Check if user exists and password is correct
+      if (!user || !verifyPassword(plainPassword, user.password)) {
+        throw new ServiceForbiddenException('login or password invalid');
+      }
+
+      // Migrate old password format to new secure format
+      if (!user.password.includes(':')) {
+        const newHashedPassword = hashPassword(plainPassword);
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { password: newHashedPassword },
+        });
+      }
+
+      // Create JWT payload
+      const jwtPayload = {
+        sub: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        ip,
+        userAgent,
+      };
+
+      // Generate JWT token
+      const token = this.jwtService.sign(jwtPayload);
+
+      // Format user response
+      const userResponse: ISessionUserGetResponse = {
+        role: user.role as UserRole,
+        username: user.username,
+        email: user.email,
+        picture: user.profile?.picture ? getStaticMediaUrl(user.profile.picture) : undefined,
+        isEmailVerified: user.is_email_verified,
+        isPremium: user.is_premium,
+      };
+
+      return {
+        token,
+        user: userResponse,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('login or password invalid');
+      throw exception;
+    }
+  }
+
+  // New method to verify JWT tokens
+  async verifyToken(token: string): Promise<{
+    userId: number;
+    role: UserRole;
+    email: string;
+    username: string;
+  } | null> {
+    try {
+      const payload = this.jwtService.verify(token);
+      return {
+        userId: payload.sub,
+        role: payload.role,
+        email: payload.email,
+        username: payload.username,
+      };
+    } catch (error) {
+      this.logger.error('JWT verification failed:', error);
+      return null;
+    }
+  }
+
+  // Method to get user data from JWT token (equivalent to getSessionUser for tokens)
+  async getTokenUser(token: string): Promise<ISessionUserGetResponse> {
+    try {
+      const tokenData = await this.verifyToken(token);
+      if (!tokenData) {
+        throw new ServiceUnauthorizedException('Invalid token');
+      }
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: tokenData.userId },
+        select: {
+          role: true,
+          username: true,
+          email: true,
+          is_email_verified: true,
+          is_premium: true,
+          is_stripe_account_connected: true,
+          profile: {
+            select: {
+              picture: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        throw new ServiceNotFoundException('User not found');
+      }
+
+      return {
+        role: user.role as UserRole,
+        username: user.username,
+        email: user.email,
+        picture: user.profile?.picture ? getStaticMediaUrl(user.profile.picture) : undefined,
+        isEmailVerified: user.is_email_verified,
+        isPremium: user.is_premium,
+        stripeAccountConnected: user.is_stripe_account_connected,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      throw e.status ? e : new ServiceUnauthorizedException('Invalid token');
     }
   }
 

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 import { APP_GUARD } from '@nestjs/core';
 
 import { PrismaModule } from '@/modules/prisma';
@@ -10,7 +11,15 @@ import { AuthGuard, RolesGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, RecaptchaModule],
+  imports: [
+    ConfigModule, 
+    PrismaModule, 
+    RecaptchaModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'fallback-secret-key',
+      signOptions: { expiresIn: '24h' },
+    }),
+  ],
   controllers: [AuthController],
   providers: [
     AuthService,
