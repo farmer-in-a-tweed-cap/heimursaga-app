@@ -56,9 +56,12 @@ export class UserService {
   /**
    * Check if a user has an active sponsorship with a creator
    */
-  private async hasActiveSponsorship(userId: number, creatorId: number): Promise<boolean> {
+  private async hasActiveSponsorship(
+    userId: number,
+    creatorId: number,
+  ): Promise<boolean> {
     if (!userId) return false;
-    
+
     const sponsorship = await this.prisma.sponsorship.findFirst({
       where: {
         user_id: userId,
@@ -305,9 +308,9 @@ export class UserService {
         lat: true,
         lon: true,
         waypoint: {
-          select: { 
-            id: true, 
-            lat: true, 
+          select: {
+            id: true,
+            lat: true,
             lon: true,
             trips: {
               select: {
@@ -371,7 +374,10 @@ export class UserService {
             filteredPosts.push(post);
           }
           // For other users, check if they have an active sponsorship
-          else if (userId && await this.hasActiveSponsorship(userId, post.author_id)) {
+          else if (
+            userId &&
+            (await this.hasActiveSponsorship(userId, post.author_id))
+          ) {
             filteredPosts.push(post);
           }
           // Otherwise, skip this sponsored post
@@ -408,11 +414,13 @@ export class UserService {
             place,
             lat,
             lon,
-            waypoint: waypoint ? {
-              id: waypoint.id,
-              lat: waypoint.lat,
-              lon: waypoint.lon,
-            } : undefined,
+            waypoint: waypoint
+              ? {
+                  id: waypoint.id,
+                  lat: waypoint.lat,
+                  lon: waypoint.lon,
+                }
+              : undefined,
             trip: waypoint?.trips?.[0]?.trip
               ? {
                   id: waypoint.trips[0].trip.public_id,
@@ -856,9 +864,12 @@ export class SessionUserService {
   /**
    * Check if a user has an active sponsorship with a creator
    */
-  private async hasActiveSponsorship(userId: number, creatorId: number): Promise<boolean> {
+  private async hasActiveSponsorship(
+    userId: number,
+    creatorId: number,
+  ): Promise<boolean> {
     if (!userId) return false;
-    
+
     const sponsorship = await this.prisma.sponsorship.findFirst({
       where: {
         user_id: userId,
@@ -899,9 +910,9 @@ export class SessionUserService {
         lat: true,
         lon: true,
         waypoint: {
-          select: { 
-            id: true, 
-            lat: true, 
+          select: {
+            id: true,
+            lat: true,
             lon: true,
             trips: {
               select: {
@@ -961,10 +972,7 @@ export class SessionUserService {
                 user_id: userId,
               },
             },
-            OR: [
-              { public: true },
-              { author: { id: userId } }
-            ],
+            OR: [{ public: true }, { author: { id: userId } }],
           };
           break;
         case 'drafts':
@@ -996,7 +1004,10 @@ export class SessionUserService {
             filteredPosts.push(post);
           }
           // For other users, check if they have an active sponsorship
-          else if (userId && await this.hasActiveSponsorship(userId, post.author_id)) {
+          else if (
+            userId &&
+            (await this.hasActiveSponsorship(userId, post.author_id))
+          ) {
             filteredPosts.push(post);
           }
           // Otherwise, skip this sponsored post
@@ -1037,11 +1048,13 @@ export class SessionUserService {
             place,
             lat,
             lon,
-            waypoint: waypoint ? {
-              id: waypoint.id,
-              lat: waypoint.lat,
-              lon: waypoint.lon,
-            } : undefined,
+            waypoint: waypoint
+              ? {
+                  id: waypoint.id,
+                  lat: waypoint.lat,
+                  lon: waypoint.lon,
+                }
+              : undefined,
             trip: waypoint?.trips?.[0]?.trip
               ? {
                   id: waypoint.trips[0].trip.public_id,
@@ -1165,18 +1178,27 @@ export class SessionUserService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      const { name, bio, livesIn, from, sponsorsFund, sponsorsFundType, sponsorsFundJourneyId, portfolio } = payload;
+      const {
+        name,
+        bio,
+        livesIn,
+        from,
+        sponsorsFund,
+        sponsorsFundType,
+        sponsorsFundJourneyId,
+        portfolio,
+      } = payload;
 
       // update settings based on context
       switch (context) {
         case 'profile':
           await this.prisma.userProfile.update({
             where: { user_id: userId },
-            data: { 
-              name, 
-              bio, 
-              location_from: from, 
-              location_lives: livesIn, 
+            data: {
+              name,
+              bio,
+              location_from: from,
+              location_lives: livesIn,
               sponsors_fund: sponsorsFund,
               sponsors_fund_type: sponsorsFundType,
               sponsors_fund_journey_id: sponsorsFundJourneyId,
@@ -1356,9 +1378,7 @@ export class SessionUserService {
     }
   }
 
-  async markNotificationsAsRead({
-    session,
-  }: IQueryWithSession): Promise<void> {
+  async markNotificationsAsRead({ session }: IQueryWithSession): Promise<void> {
     try {
       const { userId } = session;
 
@@ -1368,12 +1388,12 @@ export class SessionUserService {
 
       // Mark all unread notifications as read for this user
       await this.prisma.userNotification.updateMany({
-        where: { 
-          user_id: userId, 
-          is_read: false 
+        where: {
+          user_id: userId,
+          is_read: false,
         },
-        data: { 
-          is_read: true 
+        data: {
+          is_read: true,
         },
       });
 

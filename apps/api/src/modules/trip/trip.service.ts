@@ -331,12 +331,14 @@ export class TripService {
         return post ? post.date : date;
       });
 
-      const startDate = waypointDates.length > 0 
-        ? new Date(Math.min(...waypointDates.map(d => d.getTime())))
-        : new Date(); // Fallback to current date if no waypoints
-      const endDate = waypointDates.length > 0 
-        ? new Date(Math.max(...waypointDates.map(d => d.getTime())))
-        : new Date(); // Fallback to current date if no waypoints
+      const startDate =
+        waypointDates.length > 0
+          ? new Date(Math.min(...waypointDates.map((d) => d.getTime())))
+          : new Date(); // Fallback to current date if no waypoints
+      const endDate =
+        waypointDates.length > 0
+          ? new Date(Math.max(...waypointDates.map((d) => d.getTime())))
+          : new Date(); // Fallback to current date if no waypoints
 
       const response: ITripGetByIdResponse = {
         id: public_id,
@@ -344,11 +346,13 @@ export class TripService {
         public: isPublic,
         startDate,
         endDate,
-        author: author ? {
-          username: author.username,
-          picture: getStaticMediaUrl(author.profile.picture),
-          creator: author.role === UserRole.CREATOR,
-        } : undefined,
+        author: author
+          ? {
+              username: author.username,
+              picture: getStaticMediaUrl(author.profile.picture),
+              creator: author.role === UserRole.CREATOR,
+            }
+          : undefined,
         waypoints: sortByDate({
           elements: waypoints.map(
             ({ waypoint: { id, lat, lon, title, date, posts } }) => {
@@ -382,7 +386,6 @@ export class TripService {
           order: 'asc',
         }),
       };
-
 
       return response;
     } catch (e) {

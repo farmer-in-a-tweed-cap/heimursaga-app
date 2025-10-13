@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { OnEvent } from '@nestjs/event-emitter';
+import { JwtService } from '@nestjs/jwt';
 import {
   AppErrorCode,
   ILoginPayload,
@@ -31,9 +31,9 @@ import { IPasswordResetEmailTemplateData } from '@/modules/email';
 import {
   EVENTS,
   EventService,
+  IEventAdminNewUserSignup,
   IEventSendEmail,
   IEventSignupComplete,
-  IEventAdminNewUserSignup,
 } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
@@ -118,17 +118,13 @@ export class AuthService {
       const { sid, ip, userAgent } = session || {};
 
       // First find the user by login (email or username)
-      const user = await this.prisma.user
-        .findFirst({
-          where: {
-            OR: [
-              { email: login },
-              { username: login },
-            ],
-            blocked: false,
-          },
-          select: { id: true, password: true },
-        });
+      const user = await this.prisma.user.findFirst({
+        where: {
+          OR: [{ email: login }, { username: login }],
+          blocked: false,
+        },
+        select: { id: true, password: true },
+      });
 
       // Check if user exists and password is correct
       if (!user || !verifyPassword(plainPassword, user.password)) {
@@ -176,36 +172,35 @@ export class AuthService {
   async mobileLogin({
     payload,
     session,
-  }: ISessionQueryWithPayload<{}, ILoginPayload>): Promise<{ token: string; user: ISessionUserGetResponse }> {
+  }: ISessionQueryWithPayload<{}, ILoginPayload>): Promise<{
+    token: string;
+    user: ISessionUserGetResponse;
+  }> {
     try {
       const { login, password: plainPassword } = payload;
       const { ip, userAgent } = session || {};
 
       // Find the user by login (email or username)
-      const user = await this.prisma.user
-        .findFirst({
-          where: {
-            OR: [
-              { email: login },
-              { username: login },
-            ],
-            blocked: false,
-          },
-          select: { 
-            id: true, 
-            password: true,
-            email: true,
-            username: true,
-            role: true,
-            is_email_verified: true,
-            is_premium: true,
-            profile: {
-              select: {
-                picture: true,
-              },
+      const user = await this.prisma.user.findFirst({
+        where: {
+          OR: [{ email: login }, { username: login }],
+          blocked: false,
+        },
+        select: {
+          id: true,
+          password: true,
+          email: true,
+          username: true,
+          role: true,
+          is_email_verified: true,
+          is_premium: true,
+          profile: {
+            select: {
+              picture: true,
             },
           },
-        });
+        },
+      });
 
       // Check if user exists and password is correct
       if (!user || !verifyPassword(plainPassword, user.password)) {
@@ -239,7 +234,9 @@ export class AuthService {
         role: user.role as UserRole,
         username: user.username,
         email: user.email,
-        picture: user.profile?.picture ? getStaticMediaUrl(user.profile.picture) : undefined,
+        picture: user.profile?.picture
+          ? getStaticMediaUrl(user.profile.picture)
+          : undefined,
         isEmailVerified: user.is_email_verified,
         isPremium: user.is_premium,
       };
@@ -311,7 +308,9 @@ export class AuthService {
         role: user.role as UserRole,
         username: user.username,
         email: user.email,
-        picture: user.profile?.picture ? getStaticMediaUrl(user.profile.picture) : undefined,
+        picture: user.profile?.picture
+          ? getStaticMediaUrl(user.profile.picture)
+          : undefined,
         isEmailVerified: user.is_email_verified,
         isPremium: user.is_premium,
         stripeAccountConnected: user.is_stripe_account_connected,
@@ -338,17 +337,26 @@ export class AuthService {
 
       // Verify reCAPTCHA token if provided (skip for localhost)
       const isDevelopment = process.env.NODE_ENV === 'development';
-      const isLocalhost = process.env.HOST === 'localhost' || process.env.HOST === '127.0.0.1' || !process.env.HOST;
-      
+      const isLocalhost =
+        process.env.HOST === 'localhost' ||
+        process.env.HOST === '127.0.0.1' ||
+        !process.env.HOST;
+
       if (!isDevelopment && !isLocalhost) {
         if (payload.recaptchaToken) {
-          const isValidRecaptcha = await this.recaptchaService.verifyToken(payload.recaptchaToken);
+          const isValidRecaptcha = await this.recaptchaService.verifyToken(
+            payload.recaptchaToken,
+          );
           if (!isValidRecaptcha) {
-            throw new ServiceForbiddenException('reCAPTCHA verification failed');
+            throw new ServiceForbiddenException(
+              'reCAPTCHA verification failed',
+            );
           }
         } else if (this.recaptchaService.isConfigured()) {
           // If reCAPTCHA is configured but no token provided, reject
-          throw new ServiceForbiddenException('reCAPTCHA verification required');
+          throw new ServiceForbiddenException(
+            'reCAPTCHA verification required',
+          );
         }
       }
 
@@ -720,7 +728,9 @@ export class AuthService {
         },
       });
       if (!verification)
-        throw new ServiceBadRequestException('email verification can not be sent');
+        throw new ServiceBadRequestException(
+          'email verification can not be sent',
+        );
 
       // generate a link
       const link = new URL(
@@ -837,23 +847,26 @@ export class AuthService {
     }
   }
 
-  private async detectSuspiciousRegistration(email: string, username: string): Promise<void> {
+  private async detectSuspiciousRegistration(
+    email: string,
+    username: string,
+  ): Promise<void> {
     // Check for suspicious email patterns (more specific to avoid false positives)
     const suspiciousEmailPatterns = [
       /^(user|test|fake|bot|temp)\d+@/i, // Specific bot patterns like user123@, test456@
-      /^\d{4,}@/,         // Starting with 4+ numbers like 12345@
+      /^\d{4,}@/, // Starting with 4+ numbers like 12345@
       /^[a-z]{1,2}\d{4,}@/i, // Very short letters + many numbers like ab1234@
       /^(admin|root|system)@/i, // System-like usernames
     ];
 
     // Check for suspicious username patterns
     const suspiciousUsernamePatterns = [
-      /^user\d+$/i,     // user123
-      /^test\d+$/i,     // test123
-      /^bot\d+$/i,      // bot123
-      /^fake\d+$/i,     // fake123
-      /^temp\d+$/i,     // temp123
-      /^\d+$/,          // All numbers
+      /^user\d+$/i, // user123
+      /^test\d+$/i, // test123
+      /^bot\d+$/i, // bot123
+      /^fake\d+$/i, // fake123
+      /^temp\d+$/i, // temp123
+      /^\d+$/, // All numbers
       /^[a-z]{1,3}\d{3,}$/i, // Short letters + many numbers
     ];
 
@@ -874,18 +887,20 @@ export class AuthService {
     const emailDomain = email.split('@')[1];
 
     // Check email patterns
-    if (suspiciousEmailPatterns.some(pattern => pattern.test(email))) {
+    if (suspiciousEmailPatterns.some((pattern) => pattern.test(email))) {
       throw new ServiceForbiddenException('Invalid email format detected');
     }
 
     // Check username patterns
-    if (suspiciousUsernamePatterns.some(pattern => pattern.test(username))) {
+    if (suspiciousUsernamePatterns.some((pattern) => pattern.test(username))) {
       throw new ServiceForbiddenException('Invalid username format detected');
     }
 
     // Check disposable email domains
     if (disposableEmailDomains.includes(emailDomain.toLowerCase())) {
-      throw new ServiceForbiddenException('Disposable email addresses are not allowed');
+      throw new ServiceForbiddenException(
+        'Disposable email addresses are not allowed',
+      );
     }
 
     // Check for too many similar registrations (basic pattern)
@@ -901,7 +916,9 @@ export class AuthService {
     });
 
     if (similarEmailCount >= 3) {
-      throw new ServiceForbiddenException('Too many similar registrations detected');
+      throw new ServiceForbiddenException(
+        'Too many similar registrations detected',
+      );
     }
 
     // Check for sequential username registrations
@@ -919,7 +936,9 @@ export class AuthService {
       });
 
       if (similarUsernameCount >= 5) {
-        throw new ServiceForbiddenException('Suspicious registration pattern detected');
+        throw new ServiceForbiddenException(
+          'Suspicious registration pattern detected',
+        );
       }
     }
   }

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+
 import { Logger } from '@/modules/logger';
 
 export interface RecaptchaVerifyResponse {
@@ -17,16 +18,20 @@ export class RecaptchaService {
 
   constructor(private logger: Logger) {
     this.secretKey = process.env.RECAPTCHA_SECRET_KEY || '';
-    
+
     if (!this.secretKey) {
-      this.logger.warn('RECAPTCHA_SECRET_KEY not found in environment variables');
+      this.logger.warn(
+        'RECAPTCHA_SECRET_KEY not found in environment variables',
+      );
     }
   }
 
   async verifyToken(token: string, remoteip?: string): Promise<boolean> {
     try {
       if (!this.secretKey) {
-        this.logger.warn('reCAPTCHA verification skipped - no secret key configured');
+        this.logger.warn(
+          'reCAPTCHA verification skipped - no secret key configured',
+        );
         return true; // Allow in development if not configured
       }
 
@@ -35,7 +40,7 @@ export class RecaptchaService {
       }
 
       const response = await this.makeVerificationRequest(token, remoteip);
-      
+
       if (!response.success) {
         this.logger.warn('reCAPTCHA verification failed', {
           errors: response['error-codes'],
@@ -46,13 +51,13 @@ export class RecaptchaService {
       // For reCAPTCHA v3, check the score
       if (response.score !== undefined) {
         const isHuman = response.score >= this.minScore;
-        
+
         this.logger.log('reCAPTCHA verification completed', {
           score: response.score,
           action: response.action,
           isHuman,
         });
-        
+
         return isHuman;
       }
 
@@ -65,8 +70,8 @@ export class RecaptchaService {
   }
 
   private async makeVerificationRequest(
-    token: string, 
-    remoteip?: string
+    token: string,
+    remoteip?: string,
   ): Promise<RecaptchaVerifyResponse> {
     const params = new URLSearchParams({
       secret: this.secretKey,
@@ -77,13 +82,16 @@ export class RecaptchaService {
       params.append('remoteip', remoteip);
     }
 
-    const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+    const response = await fetch(
+      'https://www.google.com/recaptcha/api/siteverify',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: params.toString(),
       },
-      body: params.toString(),
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`reCAPTCHA API request failed: ${response.status}`);

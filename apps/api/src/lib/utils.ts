@@ -42,7 +42,7 @@ export const getEnvFilePath = (): string => {
 export const hashPassword = (password: string): string => {
   // Generate a unique salt for each password
   const salt = crypto.randomBytes(32).toString('hex');
-  
+
   // Use 100,000 iterations for strong security
   const hash = crypto
     .pbkdf2Sync(password, salt, 100000, 64, 'sha512')
@@ -52,30 +52,36 @@ export const hashPassword = (password: string): string => {
   return `${salt}:${hash}`;
 };
 
-export const verifyPassword = (password: string, hashedPassword: string): boolean => {
+export const verifyPassword = (
+  password: string,
+  hashedPassword: string,
+): boolean => {
   try {
     // Check if this is a new format password (contains salt)
     if (hashedPassword.includes(':')) {
       // New format: salt:hash
       const [salt, hash] = hashedPassword.split(':');
-      
+
       if (!salt || !hash) {
         return false;
       }
-      
+
       // Hash the provided password with the stored salt
       const hashedAttempt = crypto
         .pbkdf2Sync(password, salt, 100000, 64, 'sha512')
         .toString('hex');
-      
+
       // Use constant-time comparison to prevent timing attacks
-      return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(hashedAttempt, 'hex'));
+      return crypto.timingSafeEqual(
+        Buffer.from(hash, 'hex'),
+        Buffer.from(hashedAttempt, 'hex'),
+      );
     } else {
       // Old format: just the hash (with empty salt and 1000 iterations)
       const oldHash = crypto
         .pbkdf2Sync(password, '', 1000, 64, 'sha512')
         .toString('hex');
-      
+
       return oldHash === hashedPassword;
     }
   } catch (error) {

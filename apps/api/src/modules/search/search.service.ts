@@ -105,13 +105,13 @@ export class SearchService {
       return {
         success: true,
         data: {
-          users: users.map(user => ({
+          users: users.map((user) => ({
             id: user.id.toString(),
             username: user.username,
             picture: user.profile?.picture || null,
             role: user.role,
           })),
-          entries: entries.map(entry => ({
+          entries: entries.map((entry) => ({
             id: entry.public_id,
             title: entry.title,
             place: entry.place,

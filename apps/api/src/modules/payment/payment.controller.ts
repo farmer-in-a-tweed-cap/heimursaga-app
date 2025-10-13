@@ -14,7 +14,11 @@ import { Public, Session } from '@/common/decorators';
 import { ParamPublicIdDto, ParamSlugDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import { PaymentMethodCreateDto, PlanUpgradeCheckoutDto, ValidatePromoCodeDto } from './payment.dto';
+import {
+  PaymentMethodCreateDto,
+  PlanUpgradeCheckoutDto,
+  ValidatePromoCodeDto,
+} from './payment.dto';
 import { PaymentService } from './payment.service';
 
 @ApiTags('payment-methods')
@@ -46,7 +50,6 @@ export class PaymentMethodController {
     @Body() body: PaymentMethodCreateDto,
     @Session() session: ISession,
   ) {
-
     return await this.paymentService.createPaymentMethod({
       query: {},
       payload: body,

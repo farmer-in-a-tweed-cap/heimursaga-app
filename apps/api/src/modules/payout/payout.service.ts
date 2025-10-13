@@ -100,11 +100,14 @@ export class PayoutService {
         false;
 
       // get automatic payout settings
-      const stripeInterval = stripeAccount?.settings?.payouts?.schedule?.interval;
-      const validInterval = (['manual', 'daily', 'weekly', 'monthly'].includes(stripeInterval)) 
-        ? stripeInterval as 'manual' | 'daily' | 'weekly' | 'monthly'
-        : 'manual' as const;
-        
+      const stripeInterval =
+        stripeAccount?.settings?.payouts?.schedule?.interval;
+      const validInterval = ['manual', 'daily', 'weekly', 'monthly'].includes(
+        stripeInterval,
+      )
+        ? (stripeInterval as 'manual' | 'daily' | 'weekly' | 'monthly')
+        : ('manual' as const);
+
       const automaticPayouts = stripeAccount?.settings?.payouts
         ? {
             enabled: validInterval !== 'manual',

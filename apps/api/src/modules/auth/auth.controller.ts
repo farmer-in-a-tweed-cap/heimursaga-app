@@ -141,7 +141,7 @@ export class AuthController {
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const user = await this.authService.getTokenUser(token);
-    
+
     return {
       success: true,
       data: user,

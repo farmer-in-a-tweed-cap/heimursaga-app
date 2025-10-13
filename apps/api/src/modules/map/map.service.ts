@@ -40,9 +40,12 @@ export class MapService {
   /**
    * Check if a user has an active sponsorship with a creator
    */
-  private async hasActiveSponsorship(userId: number, creatorId: number): Promise<boolean> {
+  private async hasActiveSponsorship(
+    userId: number,
+    creatorId: number,
+  ): Promise<boolean> {
     if (!userId) return false;
-    
+
     const sponsorship = await this.prisma.sponsorship.findFirst({
       where: {
         user_id: userId,
@@ -271,14 +274,17 @@ export class MapService {
             if (!userId) {
               return null;
             }
-            
+
             // Allow the post author to see their own sponsored posts
             if (userId === post.author_id) {
               // Author can see their own sponsored posts
             }
             // For other users, check if they have an active sponsorship
             else {
-              const hasSponsorship = await this.hasActiveSponsorship(userId, post.author_id);
+              const hasSponsorship = await this.hasActiveSponsorship(
+                userId,
+                post.author_id,
+              );
               if (!hasSponsorship) {
                 return null; // Filter out this post
               }
@@ -289,11 +295,13 @@ export class MapService {
             lat,
             lon,
             date: post ? post.date : date, // Use waypoint date if no post
-            waypoint: !post ? {
-              id: id,
-              title: title || '',
-              date: date,
-            } : undefined,
+            waypoint: !post
+              ? {
+                  id: id,
+                  title: title || '',
+                  date: date,
+                }
+              : undefined,
             post: post
               ? {
                   id: post.public_id,
@@ -328,12 +336,12 @@ export class MapService {
                 }
               : undefined,
           };
-        })
+        }),
       );
 
       const finalWaypoints = filteredWaypoints.filter(Boolean);
-      
-      let sortedWaypoints = sortByDate({
+
+      const sortedWaypoints = sortByDate({
         elements: finalWaypoints,
         key: 'date',
         order: 'desc',
@@ -342,7 +350,7 @@ export class MapService {
       // If prioritizeEntryId is specified, move that entry to the top
       if (prioritizeEntryId) {
         const prioritizedIndex = sortedWaypoints.findIndex(
-          waypoint => waypoint.post?.id === prioritizeEntryId
+          (waypoint) => waypoint.post?.id === prioritizeEntryId,
         );
         if (prioritizedIndex > 0) {
           const prioritizedWaypoint = sortedWaypoints[prioritizedIndex];
@@ -530,7 +538,6 @@ export class MapService {
       // check access
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
-
 
       // get a waypoint
       const waypoint = await this.prisma.waypoint

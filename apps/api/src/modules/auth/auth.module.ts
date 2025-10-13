@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { JwtModule } from '@nestjs/jwt';
 import { APP_GUARD } from '@nestjs/core';
+import { JwtModule } from '@nestjs/jwt';
 
 import { PrismaModule } from '@/modules/prisma';
 import { RecaptchaModule } from '@/modules/recaptcha/recaptcha.module';
@@ -12,8 +12,8 @@ import { AuthService } from './auth.service';
 
 @Module({
   imports: [
-    ConfigModule, 
-    PrismaModule, 
+    ConfigModule,
+    PrismaModule,
     RecaptchaModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'fallback-secret-key',

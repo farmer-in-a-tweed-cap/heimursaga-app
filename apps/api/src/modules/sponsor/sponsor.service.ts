@@ -8,9 +8,9 @@ import {
   ISponsorCheckoutPayload,
   ISponsorCheckoutResponse,
   ISponsorshipGetAllResponse,
+  ISponsorshipTierCreatePayload,
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
-  ISponsorshipTierCreatePayload,
   PayoutMethodPlatform,
   SponsorshipBillingPeriod,
   SponsorshipStatus,
@@ -212,9 +212,9 @@ export class SponsorService {
             const sponsorshipTier = await tx.sponsorshipTier
               .findFirstOrThrow({
                 where: { public_id: sponsorshipTierId },
-                select: { 
-                  id: true, 
-                  price: true, 
+                select: {
+                  id: true,
+                  price: true,
                   stripe_price_month_id: true,
                   stripe_price_year_id: true,
                 },
@@ -227,16 +227,16 @@ export class SponsorService {
 
             // determine stripe price ID and amount based on billing period
             const isYearly = billingPeriod === SponsorshipBillingPeriod.YEARLY;
-            const stripePriceId = isYearly 
-              ? sponsorshipTier.stripe_price_year_id 
+            const stripePriceId = isYearly
+              ? sponsorshipTier.stripe_price_year_id
               : sponsorshipTier.stripe_price_month_id;
-            
+
             // calculate subscription amount (yearly = monthly * 12 * 0.9)
             const monthlyAmount = sponsorshipTier.price;
-            const subscriptionAmount = isYearly 
+            const subscriptionAmount = isYearly
               ? this.calculateYearlyAmount(monthlyAmount)
               : monthlyAmount;
-            
+
             const applicationFeePercent = APPLICATION_FEE;
 
             // validate that the required stripe price exists
@@ -291,7 +291,6 @@ export class SponsorService {
             amount = subscriptionAmount;
             (stripePaymentIntentId = paymentIntent.id),
               (clientSecret = paymentIntent.client_secret);
-
           }
 
           // create a checkout
@@ -326,7 +325,6 @@ export class SponsorService {
             [StripeMetadataKey.USER_ID]: user.id,
             [StripeMetadataKey.CREATOR_ID]: creator.id,
           };
-
 
           if (stripePaymentIntentId) {
             await this.stripeService.stripe.paymentIntents.update(
@@ -423,7 +421,10 @@ export class SponsorService {
             message: checkout.message,
             currency: checkout.currency,
             stripe_subscription_id: checkout.stripe_subscription_id,
-            email_delivery_enabled: checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION ? checkout.email_delivery_enabled : false,
+            email_delivery_enabled:
+              checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
+                ? checkout.email_delivery_enabled
+                : false,
             expiry:
               checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
                 ? expiry
@@ -527,7 +528,14 @@ export class SponsorService {
 
       const response = {
         data: data.map(
-          ({ price, description, public_id: id, is_available, user, _count }) => ({
+          ({
+            price,
+            description,
+            public_id: id,
+            is_available,
+            user,
+            _count,
+          }) => ({
             price: integerToDecimal(price),
             description,
             id,
@@ -615,22 +623,22 @@ export class SponsorService {
 
       const response: ISponsorshipTierGetAllResponse = {
         data: data.map(
-            ({
-              price,
-              description,
-              public_id: id,
-              is_available,
-              priority,
-              _count,
-            }) => ({
-              price: integerToDecimal(price),
-              description,
-              priority,
-              id,
-              membersCount: _count.sponsorships,
-              isAvailable: is_available,
-            }),
-          ),
+          ({
+            price,
+            description,
+            public_id: id,
+            is_available,
+            priority,
+            _count,
+          }) => ({
+            price: integerToDecimal(price),
+            description,
+            priority,
+            id,
+            membersCount: _count.sponsorships,
+            isAvailable: is_available,
+          }),
+        ),
         results,
       };
 
@@ -647,10 +655,9 @@ export class SponsorService {
   async createSponsorshipTier({
     session,
     payload,
-  }: ISessionQueryWithPayload<
-    {},
-    ISponsorshipTierCreatePayload
-  >): Promise<{ id: string }> {
+  }: ISessionQueryWithPayload<{}, ISponsorshipTierCreatePayload>): Promise<{
+    id: string;
+  }> {
     try {
       const { userId, userRole } = session;
       const { price, description, isAvailable = false, priority } = payload;
@@ -668,7 +675,9 @@ export class SponsorService {
       });
 
       if (existingCount >= 3) {
-        throw new ServiceBadRequestException('Maximum 3 sponsorship tiers allowed');
+        throw new ServiceBadRequestException(
+          'Maximum 3 sponsorship tiers allowed',
+        );
       }
 
       // determine priority if not provided
@@ -805,8 +814,8 @@ export class SponsorService {
         : false;
 
       // determine the amounts for monthly and yearly pricing
-      const monthlyAmount = priceChanged 
-        ? decimalToInteger(price) 
+      const monthlyAmount = priceChanged
+        ? decimalToInteger(price)
         : tier.price || config.sponsorship.default_amount;
       const yearlyAmount = this.calculateYearlyAmount(monthlyAmount);
 
@@ -830,7 +839,9 @@ export class SponsorService {
             });
 
             stripePriceMonthId = monthlyPrice.id;
-            this.logger.log(`stripe monthly price created (${stripePriceMonthId})`);
+            this.logger.log(
+              `stripe monthly price created (${stripePriceMonthId})`,
+            );
           }
 
           // create yearly price if needed
@@ -843,7 +854,9 @@ export class SponsorService {
             });
 
             stripePriceYearId = yearlyPrice.id;
-            this.logger.log(`stripe yearly price created (${stripePriceYearId})`);
+            this.logger.log(
+              `stripe yearly price created (${stripePriceYearId})`,
+            );
           }
 
           // set new monthly price as default in the stripe product
@@ -851,39 +864,53 @@ export class SponsorService {
             await this.stripeService.stripe.products.update(stripeProductId, {
               default_price: stripePriceMonthId,
             });
-            this.logger.log(`stripe product default price updated to (${stripePriceMonthId})`);
+            this.logger.log(
+              `stripe product default price updated to (${stripePriceMonthId})`,
+            );
           }
 
           // now archive old prices (after setting new default)
-          if (needsMonthlyPrice && oldMonthlyPriceId && oldMonthlyPriceId !== stripePriceMonthId) {
+          if (
+            needsMonthlyPrice &&
+            oldMonthlyPriceId &&
+            oldMonthlyPriceId !== stripePriceMonthId
+          ) {
             await this.stripeService.stripe.prices.update(oldMonthlyPriceId, {
               active: false,
             });
-            this.logger.log(`archived old monthly price (${oldMonthlyPriceId})`);
+            this.logger.log(
+              `archived old monthly price (${oldMonthlyPriceId})`,
+            );
           }
 
-          if (needsYearlyPrice && oldYearlyPriceId && oldYearlyPriceId !== stripePriceYearId) {
+          if (
+            needsYearlyPrice &&
+            oldYearlyPriceId &&
+            oldYearlyPriceId !== stripePriceYearId
+          ) {
             await this.stripeService.stripe.prices.update(oldYearlyPriceId, {
               active: false,
             });
             this.logger.log(`archived old yearly price (${oldYearlyPriceId})`);
           }
-
         } catch (stripeError) {
           // If the product doesn't exist (test vs live mode mismatch), create a new one
           if (stripeError.code === 'resource_missing') {
-            this.logger.log(`stripe product not found in current mode, creating new product [..]`);
-            
+            this.logger.log(
+              `stripe product not found in current mode, creating new product [..]`,
+            );
+
             // create a stripe product with monthly default price
-            const stripeProduct = await this.stripeService.stripe.products.create({
-              name: `creator_${user.id}__sponsorship`,
-              active: true,
-              default_price_data: {
-                currency,
-                unit_amount: monthlyAmount,
-                recurring: { interval: 'month' },
-              },
-            });
+            const stripeProduct =
+              await this.stripeService.stripe.products.create({
+                name: `creator_${user.id}__sponsorship`,
+                active: true,
+                default_price_data: {
+                  currency,
+                  unit_amount: monthlyAmount,
+                  recurring: { interval: 'month' },
+                },
+              });
 
             this.logger.log(`stripe product created (${stripeProduct.id})`);
 
@@ -899,8 +926,9 @@ export class SponsorService {
             });
 
             stripePriceYearId = yearlyPrice.id;
-            this.logger.log(`stripe yearly price created for new product (${stripePriceYearId})`);
-
+            this.logger.log(
+              `stripe yearly price created for new product (${stripePriceYearId})`,
+            );
           } else {
             throw stripeError; // Re-throw other Stripe errors
           }
@@ -1251,13 +1279,16 @@ export class SponsorService {
         data: { email_delivery_enabled: enabled },
       });
 
-      this.logger.log(`Email delivery ${enabled ? 'enabled' : 'disabled'} for sponsorship ${sponsorshipId}`);
-
+      this.logger.log(
+        `Email delivery ${enabled ? 'enabled' : 'disabled'} for sponsorship ${sponsorshipId}`,
+      );
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
         ? new ServiceException(e.message, e.status)
-        : new ServiceBadRequestException('Failed to update email delivery preference');
+        : new ServiceBadRequestException(
+            'Failed to update email delivery preference',
+          );
       throw exception;
     }
   }

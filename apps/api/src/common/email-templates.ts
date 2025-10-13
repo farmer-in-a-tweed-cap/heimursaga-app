@@ -6,12 +6,15 @@ export const EMAIL_TEMPLATES = {
   ADMIN_NEW_USER_SIGNUP: 'admin_new_user_signup',
 };
 
-const templates: { key: string; subject: string | ((v?: any) => string); html: (v?: any) => string }[] =
-  [
-    {
-      key: EMAIL_TEMPLATES.WELCOME,
-      subject: 'Welcome to Heimursaga! 🌍',
-      html: (v: { username?: string } = {}) => `
+const templates: {
+  key: string;
+  subject: string | ((v?: any) => string);
+  html: (v?: any) => string;
+}[] = [
+  {
+    key: EMAIL_TEMPLATES.WELCOME,
+    subject: 'Welcome to Heimursaga! 🌍',
+    html: (v: { username?: string } = {}) => `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -172,17 +175,17 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
         </body>
         </html>
       `,
-    },
-    {
-      key: EMAIL_TEMPLATES.PASSWORD_RESET,
-      subject: 'reset password',
-      html: (v: { reset_link: string }) =>
-        `reset your password using the link below\n, ${v?.reset_link}`,
-    },
-    {
-      key: EMAIL_TEMPLATES.EMAIL_VERIFICATION,
-      subject: 'verify your email address',
-      html: (v: { verification_link: string }) => `
+  },
+  {
+    key: EMAIL_TEMPLATES.PASSWORD_RESET,
+    subject: 'reset password',
+    html: (v: { reset_link: string }) =>
+      `reset your password using the link below\n, ${v?.reset_link}`,
+  },
+  {
+    key: EMAIL_TEMPLATES.EMAIL_VERIFICATION,
+    subject: 'verify your email address',
+    html: (v: { verification_link: string }) => `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -237,27 +240,27 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
         </body>
         </html>
       `,
-    },
-    {
-      key: EMAIL_TEMPLATES.EXPLORER_PRO_NEW_ENTRY,
-      subject: (v: { creatorUsername: string; postTitle: string }) => 
-        `New journal entry from ${v.creatorUsername}`,
-      html: (v: {
-        creatorUsername: string;
-        creatorPicture?: string;
-        postTitle: string;
-        postContent: string;
-        postPlace?: string;
-        postDate: string;
-        postJourney?: string;
-        postImages?: string[];
-        postWaypoint?: { lat: number; lon: number };
-        mapUrl?: string;
-        postUrl: string;
-        unsubscribeUrl: string;
-        webViewUrl: string;
-        sponsored?: boolean;
-      }) => `
+  },
+  {
+    key: EMAIL_TEMPLATES.EXPLORER_PRO_NEW_ENTRY,
+    subject: (v: { creatorUsername: string; postTitle: string }) =>
+      `New journal entry from ${v.creatorUsername}`,
+    html: (v: {
+      creatorUsername: string;
+      creatorPicture?: string;
+      postTitle: string;
+      postContent: string;
+      postPlace?: string;
+      postDate: string;
+      postJourney?: string;
+      postImages?: string[];
+      postWaypoint?: { lat: number; lon: number };
+      mapUrl?: string;
+      postUrl: string;
+      unsubscribeUrl: string;
+      webViewUrl: string;
+      sponsored?: boolean;
+    }) => `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -332,35 +335,46 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
               <div class="section-divider"></div>
 
               <!-- Static Map -->
-              ${v.mapUrl ? `
+              ${
+                v.mapUrl
+                  ? `
                 <div class="entry-map">
                   <img src="${v.mapUrl}" alt="Entry location map" class="map-image">
                 </div>
                 <!-- Section Divider -->
                 <div class="section-divider"></div>
-              ` : ''}
+              `
+                  : ''
+              }
 
               <!-- Entry Content -->
               <div class="entry-content">
                 ${(() => {
                   // Handle both actual newlines (\n) and escaped newlines (\\n)
-                  const normalizedContent = v.postContent.replace(/\\\\n/g, '\n');
-                  
+                  const normalizedContent = v.postContent.replace(
+                    /\\\\n/g,
+                    '\n',
+                  );
+
                   // Split on double newlines to get paragraphs, not individual lines
                   return normalizedContent
                     .split('\n\n')
-                    .filter(paragraph => paragraph.trim() !== '')
-                    .map(paragraph => `<p>${paragraph.trim()}</p>`)
+                    .filter((paragraph) => paragraph.trim() !== '')
+                    .map((paragraph) => `<p>${paragraph.trim()}</p>`)
                     .join('');
                 })()}
               </div>
 
               <!-- Entry Images -->
-              ${v.postImages && v.postImages.length > 0 ? `
+              ${
+                v.postImages && v.postImages.length > 0
+                  ? `
                 <div class="entry-images">
-                  ${v.postImages.map(image => `<img src="${image}" alt="Entry image" class="entry-image">`).join('')}
+                  ${v.postImages.map((image) => `<img src="${image}" alt="Entry image" class="entry-image">`).join('')}
                 </div>
-              ` : ''}
+              `
+                  : ''
+              }
 
               <!-- Section Divider -->
               <div class="section-divider"></div>
@@ -403,16 +417,17 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
         </body>
         </html>
       `,
-    },
-    {
-      key: EMAIL_TEMPLATES.ADMIN_NEW_USER_SIGNUP,
-      subject: (v: { username: string; email: string }) => `New user signup: ${v.username}`,
-      html: (v: { 
-        username: string;
-        email: string;
-        signupDate: string;
-        userProfileUrl?: string;
-      }) => `
+  },
+  {
+    key: EMAIL_TEMPLATES.ADMIN_NEW_USER_SIGNUP,
+    subject: (v: { username: string; email: string }) =>
+      `New user signup: ${v.username}`,
+    html: (v: {
+      username: string;
+      email: string;
+      signupDate: string;
+      userProfileUrl?: string;
+    }) => `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -459,11 +474,15 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
                 </div>
               </div>
               
-              ${v.userProfileUrl ? `
+              ${
+                v.userProfileUrl
+                  ? `
                 <div style="text-align: center;">
                   <a href="${v.userProfileUrl}" class="cta-button">View User Profile</a>
                 </div>
-              ` : ''}
+              `
+                  : ''
+              }
               
               <p style="margin-top: 30px; color: #6c757d; font-size: 14px;">
                 This is an automated notification from the Heimursaga platform.
@@ -479,8 +498,8 @@ const templates: { key: string; subject: string | ((v?: any) => string); html: (
         </body>
         </html>
       `,
-    },
-  ];
+  },
+];
 
 export const getEmailTemplate = <T = any>(
   key: string,
@@ -490,9 +509,10 @@ export const getEmailTemplate = <T = any>(
   if (!template) return null;
 
   const html = template.html(vars);
-  const subject = typeof template.subject === 'function' 
-    ? template.subject(vars) 
-    : template.subject;
+  const subject =
+    typeof template.subject === 'function'
+      ? template.subject(vars)
+      : template.subject;
 
   return {
     subject,

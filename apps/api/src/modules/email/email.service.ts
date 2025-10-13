@@ -4,12 +4,13 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { SponsorshipStatus, SponsorshipType } from '@repo/types';
 import * as nodemailer from 'nodemailer';
 
-import { getEmailTemplate, EMAIL_TEMPLATES } from '@/common/email-templates';
+import { getStaticMediaUrl } from '@/lib/upload';
+
+import { EMAIL_TEMPLATES, getEmailTemplate } from '@/common/email-templates';
 import { ServiceException } from '@/common/exceptions';
 import { EVENTS, IEventSendEmail } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
-import { getStaticMediaUrl } from '@/lib/upload';
 
 import { IEmailSendPayload } from './email.interface';
 
@@ -102,9 +103,18 @@ export class EmailService {
     entryDate: Date;
   }): Promise<void> {
     try {
-      const { entryId, creatorId, entryTitle, entryContent, entryPlace, entryDate } = event;
+      const {
+        entryId,
+        creatorId,
+        entryTitle,
+        entryContent,
+        entryPlace,
+        entryDate,
+      } = event;
 
-      this.logger.log(`Processing entry delivery for entry ${entryId} from creator ${creatorId}`);
+      this.logger.log(
+        `Processing entry delivery for entry ${entryId} from creator ${creatorId}`,
+      );
 
       // Get creator info
       const creator = await this.prisma.user.findUnique({
@@ -184,13 +194,15 @@ export class EmailService {
 
       // Process images for email
       const entryImages = entry.media
-        .filter(m => m.upload.file_type === 'image')
-        .map(m => getStaticMediaUrl(m.upload.original));
+        .filter((m) => m.upload.file_type === 'image')
+        .map((m) => getStaticMediaUrl(m.upload.original));
 
       // Send emails to each sponsor
       for (const sponsorship of sponsors) {
         if (!sponsorship.user.is_email_verified) {
-          this.logger.log(`Skipping unverified email: ${sponsorship.user.email}`);
+          this.logger.log(
+            `Skipping unverified email: ${sponsorship.user.email}`,
+          );
           continue;
         }
 
@@ -213,25 +225,30 @@ export class EmailService {
           mapUrl = `https://api.mapbox.com/styles/v1/cnh1187/clikkzykm00wb01qf28pz4adt/static/pin-s+AA6C46(${lon},${lat})/${lon},${lat},6,0,0/600x300@2x?access_token=${mapboxToken}`;
           this.logger.log(`Generated map URL for entry ${entryId}: ${mapUrl}`);
         } else {
-          this.logger.log(`No map URL generated for entry ${entryId}: waypoint=${!!entry.waypoint}, token=${!!mapboxToken}`);
+          this.logger.log(
+            `No map URL generated for entry ${entryId}: waypoint=${!!entry.waypoint}, token=${!!mapboxToken}`,
+          );
         }
 
-        const template = getEmailTemplate(EMAIL_TEMPLATES.EXPLORER_PRO_NEW_ENTRY, {
-          creatorUsername: creator.username,
-          creatorPicture: creator.profile?.picture,
-          postTitle: entry.title || 'Untitled Entry',
-          postContent: entry.content || '',
-          postPlace: entry.place,
-          postDate: formattedDate,
-          postJourney: null, // Trip relationship not directly available on posts
-          postImages: entryImages,
-          postWaypoint: entry.waypoint,
-          mapUrl: mapUrl,
-          postUrl,
-          unsubscribeUrl,
-          webViewUrl,
-          sponsored: entry.sponsored || false,
-        });
+        const template = getEmailTemplate(
+          EMAIL_TEMPLATES.EXPLORER_PRO_NEW_ENTRY,
+          {
+            creatorUsername: creator.username,
+            creatorPicture: creator.profile?.picture,
+            postTitle: entry.title || 'Untitled Entry',
+            postContent: entry.content || '',
+            postPlace: entry.place,
+            postDate: formattedDate,
+            postJourney: null, // Trip relationship not directly available on posts
+            postImages: entryImages,
+            postWaypoint: entry.waypoint,
+            mapUrl: mapUrl,
+            postUrl,
+            unsubscribeUrl,
+            webViewUrl,
+            sponsored: entry.sponsored || false,
+          },
+        );
 
         if (template) {
           await this.send({
@@ -240,12 +257,15 @@ export class EmailService {
             html: template.html,
           });
 
-          this.logger.log(`Sent entry delivery to ${sponsorship.user.email} for entry ${entryId}`);
+          this.logger.log(
+            `Sent entry delivery to ${sponsorship.user.email} for entry ${entryId}`,
+          );
         }
       }
 
-      this.logger.log(`Entry delivery completed for ${sponsors.length} sponsors of creator ${creatorId}`);
-
+      this.logger.log(
+        `Entry delivery completed for ${sponsors.length} sponsors of creator ${creatorId}`,
+      );
     } catch (e) {
       this.logger.error('Failed to send entry delivery emails:', e);
     }

@@ -6,21 +6,21 @@ import { generator } from '@/lib/generator';
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
+  ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
   ServiceNotFoundException,
-  ServiceBadRequestException,
 } from '@/common/exceptions';
 import { ISession, ISessionQueryWithPayload } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
 import {
-  IMessageSendPayload,
+  IConversation,
+  IMessage,
   IMessageGetPayload,
   IMessageReadPayload,
-  IMessage,
-  IConversation,
+  IMessageSendPayload,
 } from './message.interface';
 
 @Injectable()
@@ -40,26 +40,32 @@ export class MessageService {
 
       // Verify sender is Explorer Pro
       if (userRole !== UserRole.CREATOR) {
-        throw new ServiceForbiddenException('Only Explorer Pro members can send messages');
+        throw new ServiceForbiddenException(
+          'Only Explorer Pro members can send messages',
+        );
       }
 
       // Get recipient and verify they're also Explorer Pro
       const recipient = await this.prisma.user.findFirst({
-        where: { 
+        where: {
           username: recipientUsername,
           role: UserRole.CREATOR, // Backend role check
-          blocked: false 
+          blocked: false,
         },
-        select: { id: true, username: true }
+        select: { id: true, username: true },
       });
 
       if (!recipient) {
-        throw new ServiceNotFoundException('Explorer Pro member not found or not available for messaging');
+        throw new ServiceNotFoundException(
+          'Explorer Pro member not found or not available for messaging',
+        );
       }
 
       // Prevent self-messaging
       if (recipient.id === userId) {
-        throw new ServiceBadRequestException('You cannot send messages to yourself');
+        throw new ServiceBadRequestException(
+          'You cannot send messages to yourself',
+        );
       }
 
       // Create the message
@@ -72,7 +78,9 @@ export class MessageService {
         },
       });
 
-      this.logger.log(`Message sent from Explorer Pro ${userId} to Explorer Pro ${recipient.id}`);
+      this.logger.log(
+        `Message sent from Explorer Pro ${userId} to Explorer Pro ${recipient.id}`,
+      );
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -92,17 +100,19 @@ export class MessageService {
 
       // Verify user is Explorer Pro
       if (userRole !== UserRole.CREATOR) {
-        throw new ServiceForbiddenException('Only Explorer Pro members can access messages');
+        throw new ServiceForbiddenException(
+          'Only Explorer Pro members can access messages',
+        );
       }
 
       // Get recipient
       const recipient = await this.prisma.user.findFirst({
-        where: { 
+        where: {
           username: recipientUsername,
           role: UserRole.CREATOR,
-          blocked: false 
+          blocked: false,
         },
-        select: { id: true }
+        select: { id: true },
       });
 
       if (!recipient) {
@@ -114,9 +124,9 @@ export class MessageService {
         where: {
           OR: [
             { sender_id: userId, recipient_id: recipient.id },
-            { sender_id: recipient.id, recipient_id: userId }
+            { sender_id: recipient.id, recipient_id: userId },
           ],
-          deleted_at: null
+          deleted_at: null,
         },
         select: {
           public_id: true,
@@ -131,10 +141,10 @@ export class MessageService {
               profile: {
                 select: {
                   name: true,
-                  picture: true
-                }
-              }
-            }
+                  picture: true,
+                },
+              },
+            },
           },
           recipient: {
             select: {
@@ -142,16 +152,16 @@ export class MessageService {
               profile: {
                 select: {
                   name: true,
-                  picture: true
-                }
-              }
-            }
-          }
+                  picture: true,
+                },
+              },
+            },
+          },
         },
-        orderBy: { created_at: 'asc' }
+        orderBy: { created_at: 'asc' },
       });
 
-      const response: IMessage[] = messages.map(message => ({
+      const response: IMessage[] = messages.map((message) => ({
         id: message.public_id,
         content: message.content,
         senderId: message.sender_id,
@@ -161,13 +171,17 @@ export class MessageService {
         sender: {
           username: message.sender.username,
           name: message.sender.profile?.name,
-          picture: message.sender.profile?.picture ? getStaticMediaUrl(message.sender.profile.picture) : undefined
+          picture: message.sender.profile?.picture
+            ? getStaticMediaUrl(message.sender.profile.picture)
+            : undefined,
         },
         recipient: {
           username: message.recipient.username,
           name: message.recipient.profile?.name,
-          picture: message.recipient.profile?.picture ? getStaticMediaUrl(message.recipient.profile.picture) : undefined
-        }
+          picture: message.recipient.profile?.picture
+            ? getStaticMediaUrl(message.recipient.profile.picture)
+            : undefined,
+        },
       }));
 
       return response;
@@ -180,26 +194,34 @@ export class MessageService {
     }
   }
 
-  async getConversations({ session }: { session: ISession }): Promise<IConversation[]> {
+  async getConversations({
+    session,
+  }: {
+    session: ISession;
+  }): Promise<IConversation[]> {
     try {
       const { userId, userRole } = session;
 
       // Verify user is Explorer Pro
       if (userRole !== UserRole.CREATOR) {
-        throw new ServiceForbiddenException('Only Explorer Pro members can access conversations');
+        throw new ServiceForbiddenException(
+          'Only Explorer Pro members can access conversations',
+        );
       }
 
       // Get latest message for each conversation
-      const conversations = await this.prisma.$queryRaw<Array<{
-        other_user_id: number;
-        other_username: string;
-        other_name: string;
-        other_picture: string;
-        last_content: string;
-        last_created_at: Date;
-        last_sender_id: number;
-        unread_count: bigint;
-      }>>`
+      const conversations = await this.prisma.$queryRaw<
+        Array<{
+          other_user_id: number;
+          other_username: string;
+          other_name: string;
+          other_picture: string;
+          last_content: string;
+          last_created_at: Date;
+          last_sender_id: number;
+          unread_count: bigint;
+        }>
+      >`
         WITH conversation_partners AS (
           SELECT DISTINCT
             CASE 
@@ -259,16 +281,18 @@ export class MessageService {
         ORDER BY lm.last_created_at DESC
       `;
 
-      const response: IConversation[] = conversations.map(conv => ({
+      const response: IConversation[] = conversations.map((conv) => ({
         recipientUsername: conv.other_username,
         recipientName: conv.other_name,
-        recipientPicture: conv.other_picture ? getStaticMediaUrl(conv.other_picture) : undefined,
+        recipientPicture: conv.other_picture
+          ? getStaticMediaUrl(conv.other_picture)
+          : undefined,
         lastMessage: {
           content: conv.last_content,
           createdAt: conv.last_created_at,
-          isFromMe: conv.last_sender_id === userId
+          isFromMe: conv.last_sender_id === userId,
         },
-        unreadCount: Number(conv.unread_count)
+        unreadCount: Number(conv.unread_count),
       }));
 
       return response;
@@ -291,7 +315,9 @@ export class MessageService {
 
       // Verify user is Explorer Pro
       if (userRole !== UserRole.CREATOR) {
-        throw new ServiceForbiddenException('Only Explorer Pro members can access messages');
+        throw new ServiceForbiddenException(
+          'Only Explorer Pro members can access messages',
+        );
       }
 
       // Update message as read (only if user is the recipient)
@@ -299,18 +325,22 @@ export class MessageService {
         where: {
           public_id: messageId,
           recipient_id: userId,
-          deleted_at: null
+          deleted_at: null,
         },
         data: {
-          is_read: true
-        }
+          is_read: true,
+        },
       });
 
       if (result.count === 0) {
-        throw new ServiceNotFoundException('Message not found or you are not the recipient');
+        throw new ServiceNotFoundException(
+          'Message not found or you are not the recipient',
+        );
       }
 
-      this.logger.log(`Message ${messageId} marked as read by Explorer Pro ${userId}`);
+      this.logger.log(
+        `Message ${messageId} marked as read by Explorer Pro ${userId}`,
+      );
     } catch (e) {
       this.logger.error(e);
       const exception = e.status
@@ -320,21 +350,27 @@ export class MessageService {
     }
   }
 
-  async getUnreadCount({ session }: { session: ISession }): Promise<{ count: number }> {
+  async getUnreadCount({
+    session,
+  }: {
+    session: ISession;
+  }): Promise<{ count: number }> {
     try {
       const { userId, userRole } = session;
 
       // Verify user is Explorer Pro
       if (userRole !== UserRole.CREATOR) {
-        throw new ServiceForbiddenException('Only Explorer Pro members can access message counts');
+        throw new ServiceForbiddenException(
+          'Only Explorer Pro members can access message counts',
+        );
       }
 
       const count = await this.prisma.message.count({
         where: {
           recipient_id: userId,
           is_read: false,
-          deleted_at: null
-        }
+          deleted_at: null,
+        },
       });
 
       return { count };

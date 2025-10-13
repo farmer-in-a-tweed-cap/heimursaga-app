@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+
 import { LoggerModule } from '@/modules/logger';
+
 import { RecaptchaService } from './recaptcha.service';
 
 @Module({

@@ -1,10 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   ISponsorCheckoutPayload,
-  ISponsorshipTierUpdatePayload,
   ISponsorshipTierCreatePayload,
-  SponsorshipType,
+  ISponsorshipTierUpdatePayload,
   SponsorshipBillingPeriod,
+  SponsorshipType,
 } from '@repo/types';
 import {
   IsBoolean,

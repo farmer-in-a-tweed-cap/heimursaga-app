@@ -42,14 +42,18 @@ export class UserSettingsProfileUpdateDto
   @SanitizeText()
   @IsString()
   @IsOptional()
-  @MaxLength(500, { message: 'Sponsor fund description must be less than 500 characters' })
+  @MaxLength(500, {
+    message: 'Sponsor fund description must be less than 500 characters',
+  })
   sponsorsFund: string;
 
   @ApiProperty({ required: false })
   @SanitizeText()
   @IsString()
   @IsOptional()
-  @MaxLength(50, { message: 'Sponsor fund type must be less than 50 characters' })
+  @MaxLength(50, {
+    message: 'Sponsor fund type must be less than 50 characters',
+  })
   sponsorsFundType: string;
 
   @ApiProperty({ required: false })

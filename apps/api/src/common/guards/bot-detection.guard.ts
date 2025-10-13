@@ -1,4 +1,9 @@
-import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import { Request } from 'express';
 
 @Injectable()
@@ -58,7 +63,7 @@ export class BotDetectionGuard implements CanActivate {
 
   private isSuspiciousUserAgent(userAgent: string): boolean {
     const lowerUserAgent = userAgent.toLowerCase();
-    
+
     // Skip check for known legitimate bots
     for (const knownBot of this.knownBots) {
       if (lowerUserAgent.includes(knownBot)) {
@@ -67,7 +72,7 @@ export class BotDetectionGuard implements CanActivate {
     }
 
     // Check against suspicious patterns
-    return this.suspiciousUserAgents.some(pattern => pattern.test(userAgent));
+    return this.suspiciousUserAgents.some((pattern) => pattern.test(userAgent));
   }
 
   private hasRapidRequests(request: Request): boolean {
@@ -100,6 +105,6 @@ export class BotDetectionGuard implements CanActivate {
       'x-requested-with',
     ];
 
-    return suspiciousHeaders.some(header => request.headers[header]);
+    return suspiciousHeaders.some((header) => request.headers[header]);
   }
 }

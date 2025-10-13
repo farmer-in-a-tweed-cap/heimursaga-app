@@ -1,6 +1,5 @@
 import { LoggerService } from '@nestjs/common';
-
-import { pino, Logger as PinoLogger } from 'pino';
+import { Logger as PinoLogger, pino } from 'pino';
 
 export class Logger implements LoggerService {
   logger: PinoLogger;

@@ -1,12 +1,25 @@
-import { Controller, Get, Post, Patch, Body, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { AuthGuard } from '@/modules/auth/auth.guard';
 import { Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
+import { AuthGuard } from '@/modules/auth/auth.guard';
+
 import { CreatorRoleGuard } from './creator-role.guard';
+import {
+  GetMessagesDto,
+  MarkMessageReadDto,
+  SendMessageDto,
+} from './message.dto';
 import { MessageService } from './message.service';
-import { SendMessageDto, GetMessagesDto, MarkMessageReadDto } from './message.dto';
 
 @ApiTags('Explorer Pro Messages')
 @Controller('messages')
@@ -17,14 +30,20 @@ export class MessageController {
   }
 
   @Post('send')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Send message to another Explorer Pro member',
-    description: 'Send a private message to another Explorer Pro member'
+    description: 'Send a private message to another Explorer Pro member',
   })
   @ApiResponse({ status: 201, description: 'Message sent successfully' })
-  @ApiResponse({ status: 403, description: 'Only Explorer Pro members can send messages' })
+  @ApiResponse({
+    status: 403,
+    description: 'Only Explorer Pro members can send messages',
+  })
   @ApiResponse({ status: 404, description: 'Explorer Pro member not found' })
-  async sendMessage(@Body() payload: SendMessageDto, @Session() session: ISession) {
+  async sendMessage(
+    @Body() payload: SendMessageDto,
+    @Session() session: ISession,
+  ) {
     return this.messageService.sendMessage({
       payload,
       session,
@@ -33,12 +52,18 @@ export class MessageController {
   }
 
   @Get('conversations')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get all conversations',
-    description: 'Get all conversations for the current Explorer Pro member'
+    description: 'Get all conversations for the current Explorer Pro member',
   })
-  @ApiResponse({ status: 200, description: 'Conversations retrieved successfully' })
-  @ApiResponse({ status: 403, description: 'Only Explorer Pro members can access conversations' })
+  @ApiResponse({
+    status: 200,
+    description: 'Conversations retrieved successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Only Explorer Pro members can access conversations',
+  })
   async getConversations(@Session() session: ISession) {
     console.log('getConversations endpoint called');
     return this.messageService.getConversations({
@@ -47,14 +72,21 @@ export class MessageController {
   }
 
   @Get('conversations/:username')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get conversation with specific Explorer Pro member',
-    description: 'Get all messages in a conversation with another Explorer Pro member'
+    description:
+      'Get all messages in a conversation with another Explorer Pro member',
   })
   @ApiResponse({ status: 200, description: 'Messages retrieved successfully' })
-  @ApiResponse({ status: 403, description: 'Only Explorer Pro members can access messages' })
+  @ApiResponse({
+    status: 403,
+    description: 'Only Explorer Pro members can access messages',
+  })
   @ApiResponse({ status: 404, description: 'Explorer Pro member not found' })
-  async getConversation(@Param('username') username: string, @Session() session: ISession) {
+  async getConversation(
+    @Param('username') username: string,
+    @Session() session: ISession,
+  ) {
     return this.messageService.getConversation({
       payload: { recipientUsername: username },
       session,
@@ -63,14 +95,23 @@ export class MessageController {
   }
 
   @Patch('mark-read/:messageId')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Mark message as read',
-    description: 'Mark a specific message as read'
+    description: 'Mark a specific message as read',
   })
   @ApiResponse({ status: 200, description: 'Message marked as read' })
-  @ApiResponse({ status: 403, description: 'Only Explorer Pro members can mark messages as read' })
-  @ApiResponse({ status: 404, description: 'Message not found or not recipient' })
-  async markMessageAsRead(@Param('messageId') messageId: string, @Session() session: ISession) {
+  @ApiResponse({
+    status: 403,
+    description: 'Only Explorer Pro members can mark messages as read',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Message not found or not recipient',
+  })
+  async markMessageAsRead(
+    @Param('messageId') messageId: string,
+    @Session() session: ISession,
+  ) {
     return this.messageService.markMessageAsRead({
       payload: { messageId },
       session,
@@ -79,12 +120,19 @@ export class MessageController {
   }
 
   @Get('unread-count')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get unread message count',
-    description: 'Get the number of unread messages for the current Explorer Pro member'
+    description:
+      'Get the number of unread messages for the current Explorer Pro member',
   })
-  @ApiResponse({ status: 200, description: 'Unread count retrieved successfully' })
-  @ApiResponse({ status: 403, description: 'Only Explorer Pro members can access message counts' })
+  @ApiResponse({
+    status: 200,
+    description: 'Unread count retrieved successfully',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Only Explorer Pro members can access message counts',
+  })
   async getUnreadCount(@Session() session: ISession) {
     return this.messageService.getUnreadCount({
       session,

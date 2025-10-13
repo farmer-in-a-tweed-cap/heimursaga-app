@@ -1,6 +1,11 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException } from '@nestjs/common';
-import { Response } from 'express';
+import {
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+} from '@nestjs/common';
 import * as Sentry from '@sentry/nestjs';
+import { Response } from 'express';
 
 @Catch()
 export class SentryExceptionFilter implements ExceptionFilter {

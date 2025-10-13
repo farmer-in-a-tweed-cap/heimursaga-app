@@ -40,9 +40,12 @@ export class PostService {
   /**
    * Check if a user has an active sponsorship with a creator
    */
-  private async hasActiveSponsorship(userId: number, creatorId: number): Promise<boolean> {
+  private async hasActiveSponsorship(
+    userId: number,
+    creatorId: number,
+  ): Promise<boolean> {
     if (!userId) return false;
-    
+
     const sponsorship = await this.prisma.sponsorship.findFirst({
       where: {
         user_id: userId,
@@ -76,24 +79,23 @@ export class PostService {
 
       // get drafts
       const results = await this.prisma.post.count({ where });
-      const data = await this.prisma.post
-        .findMany({
-          where,
-          select: {
-            public_id: true,
-            title: true,
-            content: true,
-            public: true,
-            sponsored: true,
-            is_draft: true,
-            place: true,
-            date: true,
-            created_at: true,
-            updated_at: true,
-          },
-          take,
-          orderBy: [{ updated_at: 'desc' }], // Most recently updated drafts first
-        });
+      const data = await this.prisma.post.findMany({
+        where,
+        select: {
+          public_id: true,
+          title: true,
+          content: true,
+          public: true,
+          sponsored: true,
+          is_draft: true,
+          place: true,
+          date: true,
+          created_at: true,
+          updated_at: true,
+        },
+        take,
+        orderBy: [{ updated_at: 'desc' }], // Most recently updated drafts first
+      });
 
       const processedData = data.map((post) => ({
         id: post.public_id,
@@ -167,52 +169,51 @@ export class PostService {
 
       // get posts
       const results = await this.prisma.post.count({ where });
-      const data = await this.prisma.post
-        .findMany({
-          where,
-          select: {
-            public_id: true,
-            title: true,
-            content: true,
-            public: true,
-            sponsored: true,
-            is_draft: true,
-            lat: true,
-            lon: true,
-            place: true,
-            date: true,
-            likes_count: true,
-            bookmarks_count: true,
-            author_id: true, // Need this for sponsorship check
-            // check if the session user has liked this post
-            likes: userId
-              ? {
-                  where: { user_id: userId },
-                  select: { post_id: true },
-                }
-              : undefined,
-            // check if the session user has bookmarked this post
-            bookmarks: userId
-              ? {
-                  where: { user_id: userId },
-                  select: { post_id: true },
-                }
-              : undefined,
-            author: {
-              select: {
-                username: true,
-                role: true,
-                profile: {
-                  select: { name: true, picture: true },
-                },
+      const data = await this.prisma.post.findMany({
+        where,
+        select: {
+          public_id: true,
+          title: true,
+          content: true,
+          public: true,
+          sponsored: true,
+          is_draft: true,
+          lat: true,
+          lon: true,
+          place: true,
+          date: true,
+          likes_count: true,
+          bookmarks_count: true,
+          author_id: true, // Need this for sponsorship check
+          // check if the session user has liked this post
+          likes: userId
+            ? {
+                where: { user_id: userId },
+                select: { post_id: true },
+              }
+            : undefined,
+          // check if the session user has bookmarked this post
+          bookmarks: userId
+            ? {
+                where: { user_id: userId },
+                select: { post_id: true },
+              }
+            : undefined,
+          author: {
+            select: {
+              username: true,
+              role: true,
+              profile: {
+                select: { name: true, picture: true },
               },
             },
-            created_at: true,
           },
-          take,
-          orderBy: [{ date: 'desc' }],
-        })
-      
+          created_at: true,
+        },
+        take,
+        orderBy: [{ date: 'desc' }],
+      });
+
       // Filter out sponsored posts that the user doesn't have access to
       const filteredPosts = [];
       for (const post of data) {
@@ -227,7 +228,10 @@ export class PostService {
             filteredPosts.push(post);
           }
           // For other users, check if they have an active sponsorship
-          else if (userId && await this.hasActiveSponsorship(userId, post.author_id)) {
+          else if (
+            userId &&
+            (await this.hasActiveSponsorship(userId, post.author_id))
+          ) {
             filteredPosts.push(post);
           }
           // Otherwise, skip this sponsored post
@@ -408,10 +412,13 @@ export class PostService {
       if (post.sponsored) {
         const isAuthor = userId && post.author_id === userId;
         const isAdmin = userRole === UserRole.ADMIN;
-        const hasSponsorship = userId && await this.hasActiveSponsorship(userId, post.author_id);
-        
+        const hasSponsorship =
+          userId && (await this.hasActiveSponsorship(userId, post.author_id));
+
         if (!isAuthor && !isAdmin && !hasSponsorship) {
-          throw new ServiceForbiddenException('Access denied to sponsored content');
+          throw new ServiceForbiddenException(
+            'Access denied to sponsored content',
+          );
         }
       }
 
@@ -481,7 +488,17 @@ export class PostService {
       const access = !!userId;
       if (!access) throw new ServiceForbiddenException();
 
-      const { title, lat, lon, date, place, waypointId, tripId, isDraft, uploadCaptions } = payload;
+      const {
+        title,
+        lat,
+        lon,
+        date,
+        place,
+        waypointId,
+        tripId,
+        isDraft,
+        uploadCaptions,
+      } = payload;
       const privacy = {
         public: payload.public,
         sponsored: payload.sponsored,
@@ -491,16 +508,21 @@ export class PostService {
       // Validate required fields for published posts (non-drafts)
       if (!isDraft) {
         if (!title || title.trim().length === 0) {
-          throw new ServiceBadRequestException('Title is required for published posts');
+          throw new ServiceBadRequestException(
+            'Title is required for published posts',
+          );
         }
         if (!content || content.trim().length === 0) {
-          throw new ServiceBadRequestException('Content is required for published posts');
+          throw new ServiceBadRequestException(
+            'Content is required for published posts',
+          );
         }
         if (!place || place.trim().length === 0) {
-          throw new ServiceBadRequestException('Place is required for published posts');
+          throw new ServiceBadRequestException(
+            'Place is required for published posts',
+          );
         }
       }
-
 
       this.logger.log('post_create');
 
@@ -530,15 +552,15 @@ export class PostService {
               where: { id: waypointId },
               select: { id: true },
             })
-          : (lat != null && lon != null)
-          ? await tx.waypoint.create({
-              data: {
-                lat,
-                lon,
-              },
-              select: { id: true },
-            })
-          : null;
+          : lat != null && lon != null
+            ? await tx.waypoint.create({
+                data: {
+                  lat,
+                  lon,
+                },
+                select: { id: true },
+              })
+            : null;
 
         this.logger.log('post_create: post');
 
@@ -696,7 +718,10 @@ export class PostService {
         const wasDraft = post.is_draft;
         const isBecomingPublic = payload.public;
         const isBecomingPublished = !payload.isDraft && wasDraft;
-        const shouldTriggerEmail = (wasPrivate && isBecomingPublic || isBecomingPublished) && !post.email_sent && payload.public;
+        const shouldTriggerEmail =
+          ((wasPrivate && isBecomingPublic) || isBecomingPublished) &&
+          !post.email_sent &&
+          payload.public;
 
         // update the post
         await tx.post.update({
@@ -708,7 +733,8 @@ export class PostService {
             sponsored: payload.sponsored,
             place: payload.place,
             date: payload.date,
-            is_draft: payload.isDraft !== undefined ? payload.isDraft : post.is_draft,
+            is_draft:
+              payload.isDraft !== undefined ? payload.isDraft : post.is_draft,
             email_sent: shouldTriggerEmail ? true : post.email_sent, // Mark email as sent if triggering
           },
         });
@@ -789,13 +815,15 @@ export class PostService {
 
           // update captions for existing media
           if (uploadCaptions) {
-            const mediaToUpdate = media.filter(({ upload }) => 
-              uploads.includes(upload.public_id || '') &&
-              uploadCaptions[upload.public_id || ''] !== undefined
+            const mediaToUpdate = media.filter(
+              ({ upload }) =>
+                uploads.includes(upload.public_id || '') &&
+                uploadCaptions[upload.public_id || ''] !== undefined,
             );
 
             for (const mediaItem of mediaToUpdate) {
-              const newCaption = uploadCaptions[mediaItem.upload.public_id || ''];
+              const newCaption =
+                uploadCaptions[mediaItem.upload.public_id || ''];
               if (newCaption !== mediaItem.caption) {
                 await tx.postMedia.update({
                   where: {
@@ -831,7 +859,7 @@ export class PostService {
               where: { public_id: tripId, author_id: userId, deleted_at: null },
               select: { id: true },
             });
-            
+
             if (trip && post.waypoint_id) {
               await tx.tripWaypoint.create({
                 data: {
@@ -842,11 +870,11 @@ export class PostService {
             }
           }
         }
-        
+
         // Return email trigger info
-        return { 
-          shouldTriggerEmail, 
-          postData: shouldTriggerEmail ? emailTriggerData : null 
+        return {
+          shouldTriggerEmail,
+          postData: shouldTriggerEmail ? emailTriggerData : null,
         };
       });
 

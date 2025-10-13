@@ -127,7 +127,6 @@ export class StripeService {
       });
       if (!user) throw new ServiceForbiddenException('customer not found');
 
-
       // get the customer
       const customer = await this.getOrCreateCustomer({
         email: user.email,
@@ -138,7 +137,6 @@ export class StripeService {
       });
       if (!customer) throw new ServiceForbiddenException('customer not found');
 
-
       // create a payment intent with the order amount and currency
       const paymentIntent = await this.stripe.paymentIntents.create({
         amount,
@@ -147,7 +145,6 @@ export class StripeService {
         payment_method_types: ['card'],
         customer: customer.id,
       });
-
 
       return paymentIntent;
     } catch (e) {
@@ -277,24 +274,26 @@ export class StripeService {
   async onInvoicePaymentSucceeded(event: Stripe.Invoice) {
     try {
       const { subscription } = event;
-      
+
       if (!subscription) return;
-      
+
       await sleep(1000);
-      
+
       // Retrieve the subscription to get metadata
       const stripeSubscription = await this.stripe.subscriptions.retrieve(
-        typeof subscription === 'string' ? subscription : subscription.id
+        typeof subscription === 'string' ? subscription : subscription.id,
       );
-      
+
       // Check if this is for a subscription (not a one-time payment)
       if (!stripeSubscription.metadata?.[StripeMetadataKey.CHECKOUT_ID]) {
         return;
       }
-      
+
       const metadata = stripeSubscription.metadata || {};
       const params = {
-        transaction: metadata?.[StripeMetadataKey.TRANSACTION] as PaymentTransactionType,
+        transaction: metadata?.[
+          StripeMetadataKey.TRANSACTION
+        ] as PaymentTransactionType,
         checkoutId: metadata?.[StripeMetadataKey.CHECKOUT_ID]
           ? parseInt(metadata?.[StripeMetadataKey.CHECKOUT_ID])
           : undefined,
@@ -305,7 +304,7 @@ export class StripeService {
           ? parseInt(metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID])
           : undefined,
       };
-      
+
       const { transaction, userId, checkoutId, subscriptionPlanId } = params;
 
       switch (transaction) {

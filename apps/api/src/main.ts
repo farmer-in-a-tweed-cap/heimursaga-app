@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+
 import * as Sentry from '@sentry/nestjs';
 
 import { getEnvFilePath } from '@/lib/utils';

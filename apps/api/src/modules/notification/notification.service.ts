@@ -48,8 +48,16 @@ export class NotificationService {
     IUserNotificationCreatePayload
   >): Promise<void> {
     try {
-
-      const { userId, mentionUserId, mentionPostId, context, body, sponsorshipType, sponsorshipAmount, sponsorshipCurrency } = payload;
+      const {
+        userId,
+        mentionUserId,
+        mentionPostId,
+        context,
+        body,
+        sponsorshipType,
+        sponsorshipAmount,
+        sponsorshipCurrency,
+      } = payload;
 
       // create a notification
       await this.prisma.userNotification.create({

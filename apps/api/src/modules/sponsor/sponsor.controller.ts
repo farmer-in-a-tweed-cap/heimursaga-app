@@ -16,7 +16,11 @@ import { Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import { SponsorCheckoutDto, SponsorshipTierUpdateDto, SponsorshipTierCreateDto } from './sponsor.dto';
+import {
+  SponsorCheckoutDto,
+  SponsorshipTierCreateDto,
+  SponsorshipTierUpdateDto,
+} from './sponsor.dto';
 import { SponsorService } from './sponsor.service';
 
 @ApiTags('sponsor')
