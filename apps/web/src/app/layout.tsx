@@ -9,12 +9,19 @@ import { cookies } from 'next/headers';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import Script from 'next/script';
-import { Lato } from 'next/font/google';
+import { Lato, Sulphur_Point } from 'next/font/google';
 
 const lato = Lato({
   subsets: ['latin'],
   weight: ['300', '400', '700', '900'],
   display: 'swap',
+});
+
+const sulphurPoint = Sulphur_Point({
+  subsets: ['latin'],
+  weight: ['300', '400', '700'],
+  display: 'swap',
+  variable: '--font-sulphur-point',
 });
 
 import { apiClient } from '@/lib/api';
@@ -146,7 +153,7 @@ export default async function RootLayout({ children }: Props) {
           }}
         />
       </head>
-      <body className={lato.className}>
+      <body className={`${lato.className} ${sulphurPoint.variable}`}>
         {/* Google Analytics */}
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-RCFRCB2E0L"

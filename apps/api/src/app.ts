@@ -29,7 +29,7 @@ export async function app() {
   try {
     // Temporarily suppress Fastify deprecation warnings until NestJS updates
     const originalEmitWarning = process.emitWarning;
-    process.emitWarning = function(warning, name?, code?) {
+    process.emitWarning = function (warning, name?, code?) {
       if (typeof code === 'string' && code === 'FSTDEP012') {
         // Skip the request.context deprecation warning from NestJS platform-fastify
         return;
@@ -57,7 +57,7 @@ export async function app() {
 
     // set fastify plugins
     await fastify.register<FastifyCorsOptions>(fastifyCors as any, {
-      origin: CORS_ORIGIN?.split(';') || [],
+      origin: CORS_ORIGIN?.split(';') || (IS_DEVELOPMENT ? true : []),
       credentials: true,
       methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
     } satisfies FastifyCorsOptions);
@@ -142,7 +142,10 @@ export async function app() {
     });
 
     // set global filters, interceptors and pipes
-    app.useGlobalFilters(new SentryExceptionFilter(), new HttpExceptionFilter());
+    app.useGlobalFilters(
+      new SentryExceptionFilter(),
+      new HttpExceptionFilter(),
+    );
     app.useGlobalInterceptors(new ServiceExceptionInterceptor());
     app.useGlobalPipes(
       new ValidationPipe({
