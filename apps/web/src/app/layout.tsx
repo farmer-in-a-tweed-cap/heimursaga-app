@@ -49,8 +49,8 @@ export const metadata: Metadata = {
     template: `%s | ${APP_CONFIG.APP.NAME}`,
     default: `${APP_CONFIG.APP.NAME} - Share Your Stories, Raise Money, Inspire the World`,
   },
-  description: 'Document your travels with geo-tagged journal entries, connect with fellow explorers, and raise money from sponsors who support your adventures. Join the community of modern explorers on Heimursaga.',
-  keywords: ['travel journal', 'travel blog', 'explorer', 'geo-tagged entries', 'travel sponsorship', 'adventure funding', 'travel community', 'journey mapping'],
+  description: 'Heimursaga is a travel journaling and fundraising platform. Document your travels with geo-tagged journal entries, connect with fellow explorers, and raise money from sponsors who support your adventures.',
+  keywords: ['Heimursaga', 'travel journal', 'travel blog', 'explorer', 'geo-tagged entries', 'travel sponsorship', 'adventure funding', 'travel community', 'journey mapping'],
   authors: [{ name: 'The Peripety Company' }],
   openGraph: {
     title: `${APP_CONFIG.APP.NAME} - Share Your Stories, Raise Money, Inspire the World`,

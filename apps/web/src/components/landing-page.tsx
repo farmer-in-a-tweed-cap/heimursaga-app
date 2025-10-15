@@ -99,6 +99,23 @@ export const LandingPage: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const videoRef = React.useRef<HTMLVideoElement>(null);
 
+  // Schema.org structured data for SEO
+  const schemaData = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Heimursaga",
+    "url": "https://heimursaga.com",
+    "description": "Heimursaga is a travel journaling and fundraising platform for explorers. Document your travels with geo-tagged journal entries and raise money from sponsors.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://heimursaga.com/explore?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    }
+  };
+
   useEffect(() => {
     setIsVisible(true);
     
@@ -124,6 +141,12 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen relative" style={{ height: '100vh', minHeight: '100vh' }}>
+        {/* Schema.org JSON-LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
+        />
+
         {/* Fixed Background Video */}
         <div className="fixed inset-0 z-0">
           <video
@@ -205,9 +228,9 @@ export const LandingPage: React.FC = () => {
         <div className="py-20 relative z-10" style={{ backgroundColor: 'white' }}>
           <div className="container mx-auto px-4 text-center">
             <div className="max-w-4xl mx-auto">
-              <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
+              <h1 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
                 A Place for Explorers
-              </h2>
+              </h1>
               <p className="text-xl text-black font-light leading-relaxed mb-12 max-w-3xl mx-auto">
                 Heimursaga (HAY-mur-sah-gah) is an app intentionally designed for the explorer, for the traveler, for the people who like to get away, and for the people who want to share what they've found. Heimursaga is fundamentally a journaling and fundraising tool, but it's also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. Our minimal interface and quality-over-quantity philosophy lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
               </p>
@@ -545,7 +568,26 @@ export const LandingPage: React.FC = () => {
         {/* Footer */}
         <footer className="text-white py-12 relative z-10" style={{ backgroundColor: '#252525' }}>
           <div className="container mx-auto px-4 text-center">
-            <div className="text-2xl font-normal" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
+            {/* Footer Links */}
+            <div className="flex flex-wrap justify-center gap-6 mb-8 text-gray-400 font-normal">
+              <Link href={ROUTER.HOME} className="hover:text-white transition-colors">
+                Explore
+              </Link>
+              <Link href={ROUTER.USER_GUIDE} className="hover:text-white transition-colors">
+                User Guide
+              </Link>
+              <Link href={ROUTER.LEGAL.TERMS} className="hover:text-white transition-colors">
+                Terms
+              </Link>
+              <Link href={ROUTER.LEGAL.PRIVACY} className="hover:text-white transition-colors">
+                Privacy
+              </Link>
+              <Link href={ROUTER.SUPPORT} className="hover:text-white transition-colors">
+                Support
+              </Link>
+            </div>
+
+            <div className="text-2xl font-normal mb-2" style={{ color: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
               HEIMURSAGA
             </div>
             <div className="text-gray-400 font-normal text-center mb-6"><small>Made in Maine</small></div>

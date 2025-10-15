@@ -2,6 +2,9 @@ import type { MetadataRoute } from 'next';
 
 import { apiClient } from '@/lib/api';
 
+// Revalidate the sitemap every 1 hour
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   try {
     const sitemap = await apiClient.generateSitemap();

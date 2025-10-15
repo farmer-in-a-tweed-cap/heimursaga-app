@@ -51,7 +51,7 @@ export class AppService {
       };
 
       const router = {
-        posts: 'posts',
+        entries: 'entries',
         legal: 'legal',
       };
 
@@ -85,7 +85,7 @@ export class AppService {
         ),
       );
 
-      // add posts
+      // add entries (posts)
       const posts = await this.prisma.post.findMany({
         where: {
           public: true,
@@ -104,7 +104,7 @@ export class AppService {
           .map(
             ({ public_id, updated_at }) =>
               ({
-                path: [router.posts, public_id].join('/'),
+                path: [router.entries, public_id].join('/'),
                 date: updated_at,
                 priority: 1,
                 changefreq: 'daily',
