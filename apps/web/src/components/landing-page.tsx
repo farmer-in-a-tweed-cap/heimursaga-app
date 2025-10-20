@@ -232,7 +232,7 @@ export const LandingPage: React.FC = () => {
                 A Place for Explorers
               </h1>
               <p className="text-xl text-black font-light leading-relaxed mb-12 max-w-3xl mx-auto">
-                Heimursaga (HAY-mur-sah-gah) is an app intentionally designed for the explorer, for the traveler, for the people who like to get away, and for the people who want to share what they've found. Heimursaga is fundamentally a journaling and fundraising tool, but it's also more than that. It's a peaceful space that prioritizes meaningful content over viral engagement; a social-media antidote. Our minimal interface and quality-over-quantity philosophy lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
+                Heimursaga (HAY-mur-sah-gah) is an app intentionally designed for the explorer, for the traveler, for the people who like to get away, and for the people who want to share what they've found. Heimursaga is a journaling and fundraising tool, but it's also more than that. It's a thoughtful space that prioritizes meaningful content over viral engagement; a social-media antidote. Our minimal interface and quality-over-quantity philosophy lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
               </p>
               <div className="grid md:grid-cols-3 gap-12 mt-12">
                 <div className="text-center">
@@ -241,9 +241,9 @@ export const LandingPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
                     </svg>
                   </div>
-                  <h3 className="text-xl font-medium text-black mb-4">Distraction-Free Experience</h3>
+                  <h3 className="text-xl font-medium text-black mb-4">Intentional by Design</h3>
                   <p className="text-black font-light leading-relaxed">
-                    No commenting, no trolls, no doomscrolling, no social pressure. Just pure storytelling without the noise of traditional social media.
+                    No algorithms, no infinite scroll, no pressure to go viral. Every feature is designed to encourage authentic sharing and genuine appreciation for exploration.
                   </p>
                 </div>
                 <div className="text-center">
@@ -252,9 +252,9 @@ export const LandingPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                     </svg>
                   </div>
-                  <h3 className="text-xl font-medium text-black mb-4">Appreciation Over Engagement</h3>
+                  <h3 className="text-xl font-medium text-black mb-4">Meaningful Support</h3>
                   <p className="text-black font-light leading-relaxed">
-                    Connect with explorers through financial sponsorship. Your support becomes a tangible way to show appreciation for their adventures.
+                    Engage thoughtfully through comments and show tangible appreciation through sponsorship. Your support directly empowers explorers to continue their journeys.
                   </p>
                 </div>
                 <div className="text-center">

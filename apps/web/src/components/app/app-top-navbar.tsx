@@ -66,6 +66,8 @@ export const AppTopNavbar: React.FC<Props> = () => {
     queryKey: [API_QUERY_KEYS.USER.BADGE_COUNT],
     queryFn: () => apiClient.getBadgeCount().then(({ data }) => data),
     enabled: session.logged,
+    refetchInterval: 30000, // Auto-poll every 30 seconds
+    refetchIntervalInBackground: false, // Don't poll when tab is not active
   });
 
   const badges = {

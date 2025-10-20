@@ -49,23 +49,11 @@ const DeleteConfirmationModal: React.FC<ModalBaseProps<DeleteConfirmationModalPr
           {title}
         </DialogTitle>
       </DialogHeader>
-      
+
       <div className="w-full py-4">
-        <div className="flex flex-col gap-4">
-          <p className="text-gray-700 leading-relaxed">
-            {message}
-          </p>
-          
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <div className="text-red-500 mt-0.5">⚠️</div>
-              <div className="text-sm text-red-700">
-                <strong>Warning:</strong> This action is permanent and cannot be undone. 
-                The {itemType} will be deleted immediately.
-              </div>
-            </div>
-          </div>
-        </div>
+        <p className="text-gray-700 leading-relaxed">
+          {message}
+        </p>
       </div>
 
       <DialogFooter>

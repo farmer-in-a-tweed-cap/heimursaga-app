@@ -87,6 +87,13 @@ export const API_ROUTER = {
     DELETE: (id: string) => `posts/${id}`,
     LIKE: (id: string) => `posts/${id}/like`,
     BOOKMARK: (id: string) => `posts/${id}/bookmark`,
+    COMMENTS: {
+      GET: (postId: string) => `posts/${postId}/comments`,
+      CREATE: (postId: string) => `posts/${postId}/comments`,
+      UPDATE: (commentId: string) => `comments/${commentId}`,
+      DELETE: (commentId: string) => `comments/${commentId}`,
+      TOGGLE: (postId: string) => `posts/${postId}/comments/toggle`,
+    },
   },
   PAYMENT_METHODS: {
     GET_ALL: 'payment-methods',

@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/api';
 
 import { PageNotFound } from '@/components/page';
 
-import { PostCard } from '@/components';
+import { PostCard, CommentSection } from '@/components';
 import { AppLayout } from '@/layouts';
 import { ROUTER } from '@/router';
 
@@ -107,6 +107,16 @@ export default async function Page({ params }: Props) {
             }
             extended
           />
+
+          {/* Comments Section */}
+          <div className="mt-8 pt-8 border-t border-gray-200">
+            <CommentSection
+              postId={data.id}
+              commentsEnabled={data.commentsEnabled}
+              initialCommentsCount={data.commentsCount}
+              postAuthorUsername={data.author?.username}
+            />
+          </div>
         </div>
       ) : (
         <PageNotFound />

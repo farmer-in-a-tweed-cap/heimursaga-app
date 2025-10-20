@@ -184,6 +184,8 @@ export class PostService {
           date: true,
           likes_count: true,
           bookmarks_count: true,
+          comments_count: true,
+          comments_enabled: true,
           author_id: true, // Need this for sponsorship check
           // check if the session user has liked this post
           likes: userId
@@ -266,6 +268,8 @@ export class PostService {
         bookmarked: userId ? post.bookmarks.length > 0 : false,
         likesCount: post.likes_count,
         bookmarksCount: post.bookmarks_count,
+        commentsCount: post.comments_count,
+        commentsEnabled: post.comments_enabled,
         createdAt: post.created_at,
       }));
 
@@ -344,6 +348,8 @@ export class PostService {
           waypoint: { select: { id: true, lat: true, lon: true } },
           likes_count: true,
           bookmarks_count: true,
+          comments_count: true,
+          comments_enabled: true,
           media: {
             select: {
               caption: true,
@@ -432,6 +438,8 @@ export class PostService {
         bookmarked: userId ? post.bookmarks.length > 0 : undefined,
         likesCount: post.likes_count,
         bookmarksCount: post.bookmarks_count,
+        commentsCount: post.comments_count,
+        commentsEnabled: post.comments_enabled,
         public: post.public,
         sponsored: post.sponsored,
         isDraft: post.is_draft,
@@ -979,6 +987,7 @@ export class PostService {
           where: { public_id: publicId, deleted_at: null },
           select: {
             id: true,
+            title: true,
             likes_count: true,
             author_id: true,
           },
@@ -1025,6 +1034,7 @@ export class PostService {
               userId: post.author_id,
               mentionUserId: userId,
               mentionPostId: post.id,
+              body: post.title,
             },
           });
         }

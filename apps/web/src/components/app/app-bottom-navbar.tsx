@@ -43,6 +43,8 @@ export const AppBottomNavbar: React.FC<Props> = () => {
     queryKey: [API_QUERY_KEYS.USER.BADGE_COUNT],
     queryFn: () => apiClient.getBadgeCount().then(({ data }) => data),
     enabled: logged,
+    refetchInterval: 30000, // Auto-poll every 30 seconds
+    refetchIntervalInBackground: false, // Don't poll when tab is not active
   });
 
   const unreadNotifications = badgeQuery.isFetched ? (badgeQuery.data?.notifications || 0) : 0;

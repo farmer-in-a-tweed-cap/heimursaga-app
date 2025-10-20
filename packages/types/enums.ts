@@ -37,6 +37,8 @@ export enum UserNotificationContext {
   LIKE = 'like',
   FOLLOW = 'follow',
   SPONSORSHIP = 'sponsorship',
+  COMMENT = 'comment',
+  COMMENT_REPLY = 'comment_reply',
 }
 
 export enum PayoutMethodPlatform {

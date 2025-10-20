@@ -287,6 +287,8 @@ export interface IPostDetail {
   bookmarked?: boolean;
   likesCount?: number;
   bookmarksCount?: number;
+  commentsCount?: number;
+  commentsEnabled?: boolean;
   place?: string;
   date?: Date;
   createdByMe?: boolean;
@@ -368,6 +370,47 @@ export interface IPostQueryMapResponse {
       geometry: { type: 'Point'; coordinates: [number, number, number] };
     };
   };
+}
+
+// comment
+export interface ICommentDetail {
+  id: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  author: {
+    username: string;
+    picture?: string;
+    creator?: boolean;
+  };
+  createdByMe: boolean;
+  parentId?: string;
+  repliesCount?: number;
+  replies?: ICommentDetail[];
+}
+
+export interface ICommentListResponse {
+  data: ICommentDetail[];
+  count: number;
+  hasMore: boolean;
+  nextCursor?: string;
+}
+
+export interface ICommentCreatePayload {
+  content: string;
+  parentId?: string;
+}
+
+export interface ICommentUpdatePayload {
+  content: string;
+}
+
+export interface ICommentDeleteResponse {
+  success: boolean;
+}
+
+export interface ICommentToggleResponse {
+  commentsEnabled: boolean;
 }
 
 // map

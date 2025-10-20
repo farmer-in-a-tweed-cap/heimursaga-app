@@ -49,8 +49,9 @@ model User {
   sessions                    UserSession[]
   subscriptions               UserSubscription[]
   waypoints                   Waypoint[]
-  sent_messages               Message[]      @relation("SentMessages")
-  received_messages           Message[]      @relation("ReceivedMessages")
+  sent_messages               Message[]          @relation("SentMessages")
+  received_messages           Message[]          @relation("ReceivedMessages")
+  comments                    Comment[]
 
   @@map("users")
 }
@@ -214,18 +215,43 @@ model Post {
   public_id             String?            @db.VarChar(14)
   bookmarks_count       Int?               @default(0)
   likes_count           Int?               @default(0)
+  comments_count        Int?               @default(0)
+  comments_enabled      Boolean?           @default(true)
   waypoint_id           Int?
   sponsored             Boolean?           @default(false)
   is_draft              Boolean?           @default(false)
   email_sent            Boolean?           @default(false)
   bookmarks             PostBookmark[]     @relation("post_bookmarks")
   likes                 PostLike[]         @relation("post_likes")
+  comments              Comment[]
   media                 PostMedia[]
   author                User               @relation(fields: [author_id], references: [id], onDelete: Cascade)
   waypoint              Waypoint?          @relation(fields: [waypoint_id], references: [id], onDelete: Cascade)
   notification_mentions UserNotification[] @relation("post_notification_mentions")
 
   @@map("posts")
+}
+
+model Comment {
+  id         Int       @id @default(autoincrement())
+  public_id  String    @unique @db.VarChar(14)
+  content    String    @db.VarChar(5000)
+  author_id  Int
+  post_id    Int
+  parent_id  Int?
+  deleted_at DateTime?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  author  User      @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  post    Post      @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([post_id, created_at])
+  @@index([author_id])
+  @@index([parent_id])
+  @@map("comments")
 }
 
 model Waypoint {
@@ -456,10 +482,10 @@ model Message {
   deleted_at   DateTime?
   created_at   DateTime  @default(now())
   updated_at   DateTime  @updatedAt
-  
-  sender       User      @relation("SentMessages", fields: [sender_id], references: [id], onDelete: Cascade)
-  recipient    User      @relation("ReceivedMessages", fields: [recipient_id], references: [id], onDelete: Cascade)
-  
+
+  sender    User @relation("SentMessages", fields: [sender_id], references: [id], onDelete: Cascade)
+  recipient User @relation("ReceivedMessages", fields: [recipient_id], references: [id], onDelete: Cascade)
+
   @@index([sender_id, recipient_id])
   @@index([recipient_id, sender_id])
   @@index([created_at])

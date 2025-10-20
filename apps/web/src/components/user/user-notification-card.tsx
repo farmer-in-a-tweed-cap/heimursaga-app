@@ -56,27 +56,51 @@ export const UserNotificationCard: React.FC<Props> = ({
         notification.url = ROUTER.USERS.DETAIL(mentionUser?.username);
       }
       break;
+    case UserNotificationContext.COMMENT: {
+      notification.mention = mentionUser.username;
+      let commentText = 'commented on your entry';
+      if (body) {
+        commentText += `: "${body}"`;
+      }
+      notification.text = commentText;
+      if (postId) {
+        notification.url = ROUTER.ENTRIES.DETAIL(postId);
+      }
+      break;
+    }
+    case UserNotificationContext.COMMENT_REPLY: {
+      notification.mention = mentionUser.username;
+      let replyText = 'replied to your comment';
+      if (body) {
+        replyText += ` on "${body}"`;
+      }
+      notification.text = replyText;
+      if (postId) {
+        notification.url = ROUTER.ENTRIES.DETAIL(postId);
+      }
+      break;
+    }
     case UserNotificationContext.SPONSORSHIP: {
       notification.mention = mentionUser.username;
-      
+
       // Build the sponsorship text with message and type/amount info
       let sponsorshipText = 'has sponsored you';
       if (body) {
         sponsorshipText += `: "${body}"`;
       }
-      
+
       // Add sponsorship type and amount information
       if (sponsorshipType && sponsorshipAmount) {
         const amount = (sponsorshipAmount / 100).toFixed(2); // Convert from cents to dollars
         const currency = sponsorshipCurrency || 'USD';
-        
+
         if (sponsorshipType === SponsorshipType.SUBSCRIPTION) {
           sponsorshipText += ` (monthly subscription: $${amount} ${currency})`;
         } else if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
           sponsorshipText += ` (one-time payment: $${amount} ${currency})`;
         }
       }
-      
+
       notification.text = sponsorshipText;
       if (mentionUser?.username) {
         notification.url = ROUTER.USERS.DETAIL(mentionUser?.username);

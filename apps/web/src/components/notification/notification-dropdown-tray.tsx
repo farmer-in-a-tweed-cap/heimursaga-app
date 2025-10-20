@@ -22,37 +22,51 @@ const getTimeAgo = (date: Date): string => {
 };
 
 // Format notification text to match the full notifications page
-const formatNotificationText = (notification: IUserNotification, entryTitle?: string): string => {
+const formatNotificationText = (notification: IUserNotification): string => {
   const { context, mentionUser, body, sponsorshipType, sponsorshipAmount, sponsorshipCurrency } = notification;
-  
+
   switch (context) {
     case UserNotificationContext.LIKE: {
       let likeText = `${mentionUser.username} highlighted your entry`;
-      if (entryTitle) {
-        likeText += `: "${entryTitle}"`;
+      if (body) {
+        likeText += `: "${body}"`;
       }
       return likeText;
     }
     case UserNotificationContext.FOLLOW:
       return `${mentionUser.username} followed you`;
+    case UserNotificationContext.COMMENT: {
+      let commentText = `${mentionUser.username} commented on your entry`;
+      if (body) {
+        commentText += `: "${body}"`;
+      }
+      return commentText;
+    }
+    case UserNotificationContext.COMMENT_REPLY: {
+      let replyText = `${mentionUser.username} replied to your comment`;
+      if (body) {
+        replyText += ` on "${body}"`;
+      }
+      return replyText;
+    }
     case UserNotificationContext.SPONSORSHIP: {
       let sponsorshipText = `${mentionUser.username} has sponsored you`;
       if (body) {
         sponsorshipText += `: "${body}"`;
       }
-      
+
       // Add sponsorship type and amount information
       if (sponsorshipType && sponsorshipAmount) {
         const amount = (sponsorshipAmount / 100).toFixed(2); // Convert from cents to dollars
         const currency = sponsorshipCurrency || 'USD';
-        
+
         if (sponsorshipType === SponsorshipType.SUBSCRIPTION) {
           sponsorshipText += ` (monthly subscription: $${amount} ${currency})`;
         } else if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
           sponsorshipText += ` (one-time payment: $${amount} ${currency})`;
         }
       }
-      
+
       return sponsorshipText;
     }
     default:
@@ -187,23 +201,27 @@ export const NotificationDropdownTray: React.FC<Props> = ({
 
 const NotificationItem: React.FC<{ notification: IUserNotification }> = ({ notification }) => {
   const { mentionUser, date, read, context, postId } = notification;
-  
-  // Fetch entry title for LIKE notifications
-  const { data: postData } = useQuery({
-    queryKey: [API_QUERY_KEYS.POSTS, postId],
-    queryFn: () => apiClient.getPostById({ query: { id: postId! } }).then(({ data }) => data),
-    enabled: context === UserNotificationContext.LIKE && !!postId,
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-  });
-  
+  const { navigateTo, isNavigating } = useNavigation();
+
   const timeAgo = getTimeAgo(new Date(date));
-  const entryTitle = postData?.title;
-  const formattedText = formatNotificationText(notification, entryTitle);
-  
+  const formattedText = formatNotificationText(notification);
+
+  // Determine if notification should link to entry page
+  const shouldLinkToEntry = (context === UserNotificationContext.LIKE || context === UserNotificationContext.COMMENT || context === UserNotificationContext.COMMENT_REPLY) && postId;
+
+  const handleClick = () => {
+    if (shouldLinkToEntry && !isNavigating) {
+      navigateTo(`/entries/${postId}`);
+    }
+  };
+
   return (
-    <div className={`flex gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors ${!read ? 'bg-blue-50/50' : ''}`}>
-      <UserAvatar 
-        src={mentionUser.picture} 
+    <div
+      className={`flex gap-3 p-3 rounded-lg transition-colors ${shouldLinkToEntry ? 'hover:bg-gray-50 cursor-pointer' : ''} ${!read ? 'bg-blue-50/50' : ''}`}
+      onClick={handleClick}
+    >
+      <UserAvatar
+        src={mentionUser.picture}
         className="w-8 h-8 flex-shrink-0"
       />
       <div className="flex-1 min-w-0">

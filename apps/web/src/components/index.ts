@@ -8,6 +8,7 @@ export * from './map';
 export * from './map-ui';
 
 export * from './post';
+export * from './comment';
 export * from './page';
 export * from './button';
 export * from './user';

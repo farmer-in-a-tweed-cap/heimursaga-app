@@ -13,7 +13,7 @@ import { cn } from '@repo/ui/lib/utils';
 import Image from 'next/image';
 import Link from 'next/link';
 
-import { CloseButton, PostButtons, UserBar, UserAvatar } from '@/components';
+import { CloseButton, CommentSection, PostButtons, UserBar, UserAvatar } from '@/components';
 import { MAP_VIEW_PARAMS } from '@/hooks';
 import { dateformat, normalizeText } from '@/lib';
 import { ROUTER } from '@/router';
@@ -167,6 +167,16 @@ export const MapDrawer: React.FC<{
                 likesCount={post.likesCount}
                 bookmarked={post.bookmarked}
                 bookmarksCount={post.bookmarksCount}
+              />
+            </div>
+
+            {/* Comments Section */}
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <CommentSection
+                postId={post.id}
+                commentsEnabled={post.commentsEnabled}
+                initialCommentsCount={post.commentsCount}
+                postAuthorUsername={post.author?.username}
               />
             </div>
             </div>

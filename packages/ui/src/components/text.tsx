@@ -3,8 +3,11 @@ type Props = {
 };
 
 export const NormalizedText: React.FC<Props> = ({ text = '' }) => {
+  // Normalize escaped newlines (\\n) to actual newlines (\n)
+  const normalizedText = text.replace(/\\n/g, '\n');
+
   // Split on double newlines to get paragraphs
-  const paragraphs = text
+  const paragraphs = normalizedText
     .split('\n\n')
     .filter((paragraph) => paragraph.trim() !== '')
     .map((paragraph, key) => {

@@ -3,6 +3,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AuthModule } from '@/modules/auth';
+import { CommentModule } from '@/modules/comment';
 import { DevModule } from '@/modules/dev';
 import { EmailModule } from '@/modules/email';
 import { EventModule } from '@/modules/event';
@@ -57,6 +58,7 @@ import { AppService } from './app.service';
     AuthModule,
     DevModule,
     PostModule,
+    CommentModule,
     UploadModule,
     UserModule,
     MapModule,

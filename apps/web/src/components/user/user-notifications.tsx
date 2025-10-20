@@ -2,7 +2,7 @@
 
 import { LoadingSpinner } from '@repo/ui/components';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
@@ -13,13 +13,15 @@ import { UserNotificationCard } from './user-notification-card';
 const UserNotificationsContent = () => {
   const session = useSession();
   const queryClient = useQueryClient();
-  
+  const hasMarkedAsRead = useRef(false);
+
   const notificationsQuery = useQuery({
     queryKey: [API_QUERY_KEYS.USER.NOTIFICATIONS, session.username],
     queryFn: () => apiClient.getUserNotifications().then(({ data }) => data),
     enabled: !!session.logged && !!session.username,
     retry: 3,
-    staleTime: 60000,
+    staleTime: 30000,
+    refetchInterval: 30000, // Auto-poll every 30 seconds
     refetchOnMount: true,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
@@ -31,18 +33,19 @@ const UserNotificationsContent = () => {
     mutationFn: () => apiClient.markNotificationsAsRead(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [API_QUERY_KEYS.USER.BADGE_COUNT] });
+      hasMarkedAsRead.current = true;
     },
   });
 
-  // Mark notifications as read when notifications are successfully loaded
+  // Mark notifications as read when notifications are successfully loaded (only once)
   useEffect(() => {
-    if (notificationsQuery.isSuccess && notificationsQuery.data && session.logged) {
+    if (notificationsQuery.isSuccess && notificationsQuery.data && session.logged && !hasMarkedAsRead.current) {
       const hasUnreadNotifications = notificationsQuery.data.data?.some(notification => !notification.read);
       if (hasUnreadNotifications && !markAsReadMutation.isPending) {
         markAsReadMutation.mutate();
       }
     }
-  }, [notificationsQuery.isSuccess, notificationsQuery.data, session.logged, markAsReadMutation]);
+  }, [notificationsQuery.isSuccess, session.logged]);
 
   const loading = notificationsQuery.isLoading;
   const error = notificationsQuery.error;

@@ -62,6 +62,12 @@ import {
   IWaypointCreateResponse,
   IWaypointGetByIdResponse,
   IWaypointUpdatePayload,
+  ICommentListResponse,
+  ICommentDetail,
+  ICommentCreatePayload,
+  ICommentUpdatePayload,
+  ICommentDeleteResponse,
+  ICommentToggleResponse,
 } from '@repo/types';
 import { config } from 'process';
 
@@ -259,6 +265,60 @@ export const apiClient = {
     api.request<{ bookmarksCount: number }>(API_ROUTER.POSTS.BOOKMARK(postId), {
       method: API_METHODS.POST,
       body: JSON.stringify({}),
+      cookie: config ? config.cookie : undefined,
+    }),
+  getComments: async (
+    { postId, limit, cursor }: { postId: string; limit?: number; cursor?: string },
+    config?: RequestConfig,
+  ) => {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    if (cursor) params.append('cursor', cursor);
+    const query = params.toString();
+    return api.request<ICommentListResponse>(
+      `${API_ROUTER.POSTS.COMMENTS.GET(postId)}${query ? `?${query}` : ''}`,
+      {
+        method: API_METHODS.GET,
+        cookie: config ? config.cookie : undefined,
+      },
+    );
+  },
+  createComment: async (
+    { postId, content, parentId }: { postId: string; content: string; parentId?: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<ICommentDetail>(API_ROUTER.POSTS.COMMENTS.CREATE(postId), {
+      method: API_METHODS.POST,
+      body: JSON.stringify({ content, parentId }),
+      cookie: config ? config.cookie : undefined,
+    }),
+  updateComment: async (
+    { commentId, content }: { commentId: string; content: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<ICommentDetail>(API_ROUTER.POSTS.COMMENTS.UPDATE(commentId), {
+      method: API_METHODS.PUT,
+      body: JSON.stringify({ content }),
+      cookie: config ? config.cookie : undefined,
+    }),
+  deleteComment: async (
+    { commentId }: { commentId: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<ICommentDeleteResponse>(
+      API_ROUTER.POSTS.COMMENTS.DELETE(commentId),
+      {
+        method: API_METHODS.DELETE,
+        body: JSON.stringify({}),
+        cookie: config ? config.cookie : undefined,
+      },
+    ),
+  togglePostComments: async (
+    { postId }: { postId: string },
+    config?: RequestConfig,
+  ) =>
+    api.request<ICommentToggleResponse>(API_ROUTER.POSTS.COMMENTS.TOGGLE(postId), {
+      method: API_METHODS.PATCH,
       cookie: config ? config.cookie : undefined,
     }),
   getUserFollowers: async (
