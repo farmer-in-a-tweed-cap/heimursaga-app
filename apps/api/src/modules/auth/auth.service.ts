@@ -335,27 +335,20 @@ export class AuthService {
       // Check for suspicious registration patterns
       await this.detectSuspiciousRegistration(email, username);
 
-      // Verify reCAPTCHA token if provided (skip for localhost)
-      const isDevelopment = process.env.NODE_ENV === 'development';
-      const isLocalhost =
-        process.env.HOST === 'localhost' ||
-        process.env.HOST === '127.0.0.1' ||
-        !process.env.HOST;
-
-      if (!isDevelopment && !isLocalhost) {
-        if (payload.recaptchaToken) {
-          const isValidRecaptcha = await this.recaptchaService.verifyToken(
-            payload.recaptchaToken,
-          );
-          if (!isValidRecaptcha) {
-            throw new ServiceForbiddenException(
-              'reCAPTCHA verification failed',
-            );
-          }
-        } else if (this.recaptchaService.isConfigured()) {
-          // If reCAPTCHA is configured but no token provided, reject
+      // Verify reCAPTCHA token when configured
+      if (this.recaptchaService.isConfigured()) {
+        if (!payload.recaptchaToken) {
           throw new ServiceForbiddenException(
             'reCAPTCHA verification required',
+          );
+        }
+
+        const isValidRecaptcha = await this.recaptchaService.verifyToken(
+          payload.recaptchaToken,
+        );
+        if (!isValidRecaptcha) {
+          throw new ServiceForbiddenException(
+            'reCAPTCHA verification failed',
           );
         }
       }
