@@ -508,7 +508,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Title</FormLabel>
-                        <p className="text-xs text-gray-500 mb-2">a unique and descriptive title</p>
+                        <p className="text-xs text-gray-400 mb-2">a unique and descriptive title</p>
                         <FormControl>
                           <Input 
                             disabled={loading} 
@@ -537,7 +537,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Date</FormLabel>
-                        <p className="text-xs text-gray-500 mb-2">date of occurrence - may be different from the date you log the entry</p>
+                        <p className="text-xs text-gray-400 mb-2">date of occurrence - may be different from the date you log the entry</p>
                         <FormControl>
                           <DatePicker
                             format={(date) =>
@@ -562,7 +562,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Place</FormLabel>
-                        <p className="text-xs text-gray-500 mb-2">the place where it happened - the official name or your own name</p>
+                        <p className="text-xs text-gray-400 mb-2">the place where it happened - the official name or your own name</p>
                         <FormControl>
                           <Input 
                             disabled={loading} 
@@ -608,7 +608,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                               {wordCount} {privacy.public ? '/ 1000 words' : 'words'}
                             </span>
                           </div>
-                          <p className="text-xs text-gray-500 mb-2">
+                          <p className="text-xs text-gray-400 mb-2">
                             {privacy.public ? 'Public entries: 100-1,000 words' : 'Private entries: any length'}
                           </p>
                           <FormControl>

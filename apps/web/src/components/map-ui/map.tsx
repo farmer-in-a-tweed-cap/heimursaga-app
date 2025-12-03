@@ -23,6 +23,7 @@ import {
   MapMoveHandler,
 } from '@/hooks';
 import { dateformat, normalizeText } from '@/lib';
+import { useTheme } from '@/contexts';
 
 import { MapNavigationControl } from './map-control';
 import { addSources, updateSources } from './map.utils';
@@ -49,22 +50,26 @@ export type MapLayer = {
   radius?: number;
 };
 
-const config = {
-  style: `mapbox://styles/${APP_CONFIG.MAPBOX.STYLE}`,
-  maxZoom: 18,
-  minZoom: 2,
-  point: {
-    radius: 8,
-    color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
-    colorHover: `#000`,
-    scale: 0.75,
-    draggable: false,
-  },
-  cluster: {
-    radius: 12,
-    color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
-    colorHover: `#000`,
-  },
+const getMapConfig = (theme: 'light' | 'dark') => {
+  const styleId = theme === 'dark' ? APP_CONFIG.MAPBOX.STYLE_DARK : APP_CONFIG.MAPBOX.STYLE;
+  const styleUrl = `mapbox://styles/${styleId}`;
+  return {
+    style: styleUrl,
+    maxZoom: 18,
+    minZoom: 2,
+    point: {
+      radius: 8,
+      color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
+      colorHover: theme === 'dark' ? `#fff` : `#000`,
+      scale: 0.75,
+      draggable: false,
+    },
+    cluster: {
+      radius: 12,
+      color: `#${APP_CONFIG.MAPBOX.BRAND_COLOR}`,
+      colorHover: theme === 'dark' ? `#fff` : `#000`,
+    },
+  };
 };
 
 export const MAP_SOURCES = {
@@ -169,6 +174,8 @@ export const Map: React.FC<Props> = ({
   onSourceClick,
   hoveredPostId,
 }) => {
+  const { resolvedTheme, isLoading: themeLoading } = useTheme();
+  const config = getMapConfig(resolvedTheme);
   const [mapLoaded, setMapLoaded] = useState(false);
 
   const isInternalUpdate = useRef<boolean>(false);
@@ -207,29 +214,32 @@ export const Map: React.FC<Props> = ({
     return <></>;
   }
 
-  const addLayer = (mapbox: mapboxgl.Map, id: string, source: string) => {
+  const addLayer = (mapbox: mapboxgl.Map, id: string, source: string, layerConfig?: ReturnType<typeof getMapConfig>) => {
     // Check if layer already exists before adding
     if (mapbox.getLayer(id)) {
       return; // Layer already exists, skip adding
     }
-    
+
+    // Use provided config or get current theme config
+    const currentConfig = layerConfig || getMapConfig(resolvedTheme);
+
     switch (id) {
-      case MAP_LAYERS.WAYPOINTS:
-        mapbox.addLayer({
+      case MAP_LAYERS.WAYPOINTS: {
+        const waypointLayerConfig = {
           id,
           source,
-          type: 'circle',
+          type: 'circle' as const,
           filter: ['!', ['has', 'point_count']],
           paint: {
             'circle-radius': styles?.layer?.waypoint.radius
               ? styles?.layer?.waypoint.radius
-              : [
+              : ([
                   'interpolate',
                   ['linear'],
                   ['zoom'],
-                  ...[0, config.point.radius],
-                  ...[5, config.point.radius],
-                ],
+                  0, currentConfig.point.radius,
+                  5, currentConfig.point.radius,
+                ] as any),
             'circle-color': [
               'case',
               [
@@ -237,19 +247,16 @@ export const Map: React.FC<Props> = ({
                 ['feature-state', MAP_FEATURE_STATE.WAYPOINT_HOVER],
                 true,
               ],
-              config.cluster.colorHover,
-              [
-                'case',
-                ['==', ['get', 'type'], 'waypoint'],
-                '#6B7280', // Dark gray for waypoints
-                config.cluster.color, // Original color for entries
-              ],
-            ],
+              currentConfig.cluster.colorHover,
+              currentConfig.cluster.color, // Use theme-aware brand color for all markers
+            ] as any,
             'circle-stroke-width': 1,
             'circle-stroke-color': '#ffffff',
           },
-        });
+        };
+        mapbox.addLayer(waypointLayerConfig as any);
         break;
+      }
       case MAP_LAYERS.WAYPOINT_LINES:
         mapbox.addLayer({
           id,
@@ -300,8 +307,8 @@ export const Map: React.FC<Props> = ({
             'circle-color': [
               'case',
               ['==', ['feature-state', 'hovered_cluster'], true],
-              config.cluster.colorHover,
-              config.cluster.color,
+              currentConfig.cluster.colorHover,
+              currentConfig.cluster.color,
             ],
             'circle-radius': [
               'interpolate',
@@ -350,7 +357,7 @@ export const Map: React.FC<Props> = ({
               50, 24,
               100, 28
             ],
-            'circle-color': config.cluster.color, // Match existing waypoint color
+            'circle-color': currentConfig.cluster.color, // Match existing waypoint color
             'circle-stroke-width': 3,
             'circle-stroke-color': '#ffffff',
             'circle-opacity': 0.9,
@@ -638,12 +645,11 @@ export const Map: React.FC<Props> = ({
   // update layers on change
   useEffect(() => {
     if (!mapboxRef.current || !mapLoaded || !layers.length) return;
-    
-    
+
     // Remove existing layers that are not in the new layer list
     const existingLayers = mapboxRef.current.getStyle()?.layers || [];
     const newLayerIds = layers.map(l => l.id);
-    
+
     existingLayers.forEach((layer) => {
       if (['waypoint_lines', 'waypoints', 'waypoint_order_numbers', 'clusters', 'cluster_count'].includes(layer.id)) {
         if (!newLayerIds.includes(layer.id)) {
@@ -651,7 +657,7 @@ export const Map: React.FC<Props> = ({
         }
       }
     });
-    
+
     // Add new layers that don't exist yet
     layers.forEach(({ id, source }) => {
       const existingLayer = mapboxRef.current?.getLayer(id);
@@ -663,6 +669,11 @@ export const Map: React.FC<Props> = ({
   }, [layers, mapLoaded]);
 
   useEffect(() => {
+    // Wait for theme to be loaded before initializing map
+    if (themeLoading) {
+      return;
+    }
+
     mapboxgl.accessToken = token;
 
     // check if the container element available
@@ -693,6 +704,7 @@ export const Map: React.FC<Props> = ({
       scrollZoom: true,
       dragRotate: false,
       touchPitch: false,
+      projection: { name: 'mercator' } as any,
     };
 
     if (center) {
@@ -750,6 +762,7 @@ export const Map: React.FC<Props> = ({
 
       if (!mapboxRef.current) return;
 
+
       // get bounds
       const bounds = mapboxRef.current.getBounds();
       const ne = bounds?.getNorthEast();
@@ -776,9 +789,10 @@ export const Map: React.FC<Props> = ({
 
       // add layers
       if (layers.length) {
+        const initialConfig = getMapConfig(resolvedTheme);
         layers.forEach(({ id, source }) => {
           if (!mapboxRef.current) return;
-          addLayer(mapboxRef.current, id, source);
+          addLayer(mapboxRef.current, id, source, initialConfig);
         });
       }
 
@@ -993,7 +1007,67 @@ export const Map: React.FC<Props> = ({
         markerRef.current.remove();
       }
     };
-  }, []);
+  }, [themeLoading]);
+
+  // Handle theme changes
+  useEffect(() => {
+    if (!mapboxRef.current || !mapLoaded) return;
+
+    const currentStyle = resolvedTheme === 'dark'
+      ? `mapbox://styles/${APP_CONFIG.MAPBOX.STYLE_DARK}`
+      : `mapbox://styles/${APP_CONFIG.MAPBOX.STYLE}`;
+
+    // Only change style if it's different from current
+    const map = mapboxRef.current;
+    const currentStyleUrl = map.getStyle()?.sprite;
+
+    // Check if we need to change styles - use the correct style IDs
+    const isDarkStyle = currentStyleUrl?.includes(APP_CONFIG.MAPBOX.STYLE_DARK.split('/')[1]);
+    const isLightStyle = currentStyleUrl?.includes(APP_CONFIG.MAPBOX.STYLE.split('/')[1]);
+    const needsChange =
+      (resolvedTheme === 'dark' && !isDarkStyle) ||
+      (resolvedTheme === 'light' && !isLightStyle);
+
+    if (!needsChange) {
+      return;
+    }
+
+    // Store current map state
+    const center = map.getCenter();
+    const zoom = map.getZoom();
+
+    // Set the new style
+    map.setStyle(currentStyle);
+
+    // Re-add sources and layers after style loads
+    map.once('style.load', () => {
+      // Restore map position first
+      map.setCenter(center);
+      map.setZoom(zoom);
+
+      // Re-add sources
+      if (sources && sources.length > 0) {
+        addSources({ mapbox: map, sources });
+      }
+
+      // Re-add layers with correct destructuring
+      if (layers && layers.length > 0) {
+        // Get the updated config for the current theme
+        const currentConfig = getMapConfig(resolvedTheme);
+
+        layers.forEach(({ id, source }) => {
+          // Remove layer if it exists
+          if (map.getLayer(id)) {
+            map.removeLayer(id);
+          }
+          addLayer(map, id, source, currentConfig);
+        });
+      }
+
+      // Trigger a resize to ensure map renders correctly
+      map.resize();
+    });
+  }, [resolvedTheme, mapLoaded]);
 
   // Handle external hover from feed items
   useEffect(() => {

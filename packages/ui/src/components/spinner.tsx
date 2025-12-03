@@ -8,7 +8,7 @@ type SpinnerProps = {
 };
 
 export const Spinner: React.FC<SpinnerProps> = ({ size = 18, className }) => {
-  return <Loader2 size={size} className={cn('animate-spin', className)} />;
+  return <Loader2 size={size} className={cn('animate-spin text-gray-900 dark:text-gray-100', className)} />;
 };
 
 export const LoadingSpinner: React.FC<SpinnerProps> = ({

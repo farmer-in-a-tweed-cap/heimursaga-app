@@ -71,7 +71,7 @@ const SessionGuardContent: React.FC<SessionGuardProps> = ({
   // Show loading until mounted and initialized
   if (!isMounted || !hasInitialized) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900">
         <LogoSpinner size="md" />
       </div>
     );
@@ -80,7 +80,7 @@ const SessionGuardContent: React.FC<SessionGuardProps> = ({
   // Show loading state while session is being validated
   if (session.isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-gray-900">
         <LogoSpinner size="md" />
       </div>
     );

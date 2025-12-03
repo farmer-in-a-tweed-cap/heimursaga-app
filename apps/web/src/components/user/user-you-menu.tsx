@@ -12,7 +12,7 @@ import {
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 
-import { useSession, useApp } from '@/hooks';
+import { useSession } from '@/hooks';
 import { ROUTER } from '@/router';
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 import { redirect } from '@/lib';
@@ -36,22 +36,8 @@ type Props = {};
 
 export const UserYouMenu = () => {
   const session = useSession();
-  const { context, setContext } = useApp();
   const userRole = session?.role as UserRole;
   const isCreator = session?.creator;
-  
-  const isDark = context.app.navbarTheme === 'dark';
-
-  const toggleTheme = () => {
-    if (setContext) {
-      setContext({
-        app: {
-          ...context.app,
-          navbarTheme: isDark ? 'light' : 'dark'
-        }
-      });
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -296,16 +282,6 @@ export const UserYouMenu = () => {
             ))}
           </>
         )}
-        
-        {/* Theme Toggle */}
-        <div className="w-full h-px bg-gray-300 my-2"></div>
-        <button
-          onClick={toggleTheme}
-          className="flex items-center justify-between py-3 px-4 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100 transition-colors text-left"
-        >
-          <span>Navbar theme</span>
-          <span className="text-sm text-gray-500 capitalize">{isDark ? 'Dark' : 'Light'}</span>
-        </button>
         
         {/* Logout */}
         {session?.logged && (

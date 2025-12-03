@@ -3,6 +3,7 @@
 export * from './app';
 export * from './form';
 export * from './dialog';
+export * from './theme';
 
 export * from './map';
 export * from './map-ui';

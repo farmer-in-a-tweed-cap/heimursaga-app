@@ -5,12 +5,14 @@ import { useState } from 'react';
 
 import { TabNavbar } from '@/components';
 import { ROUTER } from '@/router';
+import { useNavigation } from '@/hooks';
 
 import { EmailVerificationBanner } from './email-verification-banner';
 import { UserSettingsPaymentMethodView } from './user-settings-payment-method-view';
 import { UserSettingsProfileView } from './user-settings-profile-view';
 import { UserSettingsSecurityView } from './user-settings-security-view';
 import { UserSettingsSponsorshipsView } from './user-settings-sponsorships-view';
+import { UserSettingsDisplayView } from './user-settings-display-view';
 
 const SECTION_KEYS = {
   PROFILE: 'profile',
@@ -18,6 +20,7 @@ const SECTION_KEYS = {
   SPONSORSHIPS: 'sponsorships',
   NOTIFICATIONS: 'notifications',
   SECURITY: 'security',
+  DISPLAY: 'display',
   // BILLING: 'billing',
 };
 
@@ -26,6 +29,7 @@ const SECTION_TABS: { key: string; label: string }[] = [
   { key: SECTION_KEYS.PAYMENT_METHODS, label: 'Payment methods' },
   { key: SECTION_KEYS.SPONSORSHIPS, label: 'Sponsorships' },
   { key: SECTION_KEYS.SECURITY, label: 'Security' },
+  { key: SECTION_KEYS.DISPLAY, label: 'Display' },
   // { key: SECTION_KEYS.BILLING, label: 'Billing & payouts' },
 ];
 
@@ -45,6 +49,7 @@ type Props = {
 
 export const UserSettings: React.FC<Props> = ({ section, data }) => {
   const router = useRouter();
+  const { navigateTo, isNavigating } = useNavigation();
 
   const [state, setState] = useState<{ section: string }>({
     section,
@@ -54,9 +59,7 @@ export const UserSettings: React.FC<Props> = ({ section, data }) => {
 
   const handleChange = (section: string) => {
     setState((state) => ({ ...state, section }));
-    router.push([ROUTER.USER.SETTINGS.HOME, section].join('/'), {
-      scroll: false,
-    });
+    navigateTo([ROUTER.USER.SETTINGS.HOME, section].join('/'), false);
   };
 
   return (
@@ -69,6 +72,7 @@ export const UserSettings: React.FC<Props> = ({ section, data }) => {
           tabs: 'justify-start',
         }}
         onChange={handleChange}
+        isLoading={isNavigating}
       />
       
       {/* Show email verification banner across all settings pages if not verified */}
@@ -89,10 +93,13 @@ export const UserSettings: React.FC<Props> = ({ section, data }) => {
           <UserSettingsSponsorshipsView />
         )}
         {sectionKey === SECTION_KEYS.SECURITY && (
-          <UserSettingsSecurityView 
+          <UserSettingsSecurityView
             email={data?.profile?.email || ''}
             isEmailVerified={data?.profile?.isEmailVerified}
           />
+        )}
+        {sectionKey === SECTION_KEYS.DISPLAY && (
+          <UserSettingsDisplayView />
         )}
       </div>
     </div>

@@ -203,7 +203,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
     >
       <div
         className={cn(
-          'md:flex w-full h-dvh fixed top-0 bottom-0 left-0 bg-white flex-col z-50',
+          'md:flex w-full h-dvh fixed top-0 bottom-0 left-0 bg-white flex-col z-50 force-light-mode',
           collapsed ? 'desktop:max-w-[65px]' : 'desktop:max-w-[240px]',
         )}
       >

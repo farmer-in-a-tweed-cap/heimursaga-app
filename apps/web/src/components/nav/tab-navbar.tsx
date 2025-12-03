@@ -37,7 +37,7 @@ export const TabNavbar: React.FC<Props> = ({
   return (
     <div
       className={cn(
-        'w-full flex  flex-row justify-center items-center border-b-[1.5px] border-solid border-gray-200',
+        'w-full flex  flex-row justify-center items-center border-b-[1.5px] border-solid border-gray-200 dark:border-gray-700',
         classNames?.container,
       )}
     >
@@ -53,9 +53,9 @@ export const TabNavbar: React.FC<Props> = ({
             className={cn(
               'w-auto flex flex-col items-center gap-2 font-medium justify-start text-sm text-left rounded-none transition-opacity',
               disabled || isLoading
-                ? 'text-gray-400 cursor-not-allowed' 
-                : 'hover:text-black',
-              activeTab === tab ? 'text-black' : (disabled || isLoading) ? 'text-gray-400' : 'text-black/70',
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'hover:text-black dark:hover:text-white',
+              activeTab === tab ? 'text-black dark:text-white' : (disabled || isLoading) ? 'text-gray-400' : 'text-black/70 dark:text-gray-400',
               isLoading && 'opacity-50'
             )}
             onClick={() => handleClick(tab, disabled)}
@@ -65,7 +65,7 @@ export const TabNavbar: React.FC<Props> = ({
             <span
               className={cn(
                 'h-[2px] w-[75%]',
-                activeTab === tab ? 'bg-black' : 'bg-transparent',
+                activeTab === tab ? 'bg-black dark:bg-white' : 'bg-transparent',
               )}
             ></span>
           </button>

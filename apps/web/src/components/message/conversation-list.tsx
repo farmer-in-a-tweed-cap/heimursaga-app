@@ -42,11 +42,11 @@ export function ConversationList({ conversations }: ConversationListProps) {
           href={`/messages/${conversation.recipientUsername}`}
           className="block"
         >
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow p-4">
             <div className="flex items-center space-x-4">
             {/* Avatar */}
             <div className="relative">
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+              <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
                 {conversation.recipientPicture ? (
                   <Image
                     src={conversation.recipientPicture}
@@ -56,7 +56,7 @@ export function ConversationList({ conversations }: ConversationListProps) {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-gray-500 font-medium text-lg">
+                  <span className="text-gray-500 dark:text-gray-300 font-medium text-lg">
                     {(conversation.recipientName || conversation.recipientUsername).charAt(0).toUpperCase()}
                   </span>
                 )}
@@ -72,19 +72,19 @@ export function ConversationList({ conversations }: ConversationListProps) {
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center space-x-2">
-                  <span className={`font-medium truncate ${conversation.unreadCount > 0 ? 'text-gray-900' : 'text-gray-700'}`}>
+                  <span className={`font-medium truncate ${conversation.unreadCount > 0 ? 'text-gray-900 dark:text-white' : 'text-gray-700 dark:text-gray-300'}`}>
                     {conversation.recipientName || conversation.recipientUsername}
                   </span>
                 </div>
-                <span className="text-sm text-gray-500 flex-shrink-0">
+                <span className="text-sm text-gray-500 dark:text-gray-400 flex-shrink-0">
                   {formatTimeAgo(conversation.lastMessage.createdAt)}
                 </span>
               </div>
               
               <div className="flex items-center text-sm">
-                <span className={`truncate ${conversation.unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+                <span className={`truncate ${conversation.unreadCount > 0 ? 'text-gray-900 dark:text-white font-medium' : 'text-gray-600 dark:text-gray-400'}`}>
                   {conversation.lastMessage.isFromMe && (
-                    <span className="text-gray-500 mr-1">You:</span>
+                    <span className="text-gray-500 dark:text-gray-400 mr-1">You:</span>
                   )}
                   {formatMessagePreview(conversation.lastMessage.content)}
                 </span>

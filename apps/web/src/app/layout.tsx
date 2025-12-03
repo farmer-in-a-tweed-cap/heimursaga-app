@@ -34,6 +34,7 @@ import {
   AppTopNavbar,
   IAppContextStateConfig,
   Logo,
+  ThemeProviderWrapper,
 } from '@/components';
 import { SessionGuard } from '@/components/session/session-guard';
 import { CookieConsent } from '@/components/cookie-consent';
@@ -124,27 +125,40 @@ export default async function RootLayout({ children }: Props) {
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              // Apply theme immediately to prevent flash
+              (function() {
+                try {
+                  const theme = localStorage.getItem('theme') || 'system';
+                  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                  const shouldBeDark = theme === 'dark' || (theme === 'system' && systemPrefersDark);
+
+                  if (shouldBeDark) {
+                    document.documentElement.classList.add('dark');
+                  }
+                } catch (e) {}
+              })();
+
               // Mobile viewport height fix
               function setVH() {
                 const vh = window.innerHeight * 0.01;
                 document.documentElement.style.setProperty('--vh', vh + 'px');
                 document.documentElement.style.setProperty('--mobile-vh', window.innerHeight + 'px');
               }
-              
+
               // Set on load
               setVH();
-              
+
               // Update on resize and orientation change
               window.addEventListener('resize', setVH);
               window.addEventListener('orientationchange', function() {
                 setTimeout(setVH, 100);
               });
-              
+
               // Prevent zoom on iOS
               document.addEventListener('gesturestart', function (e) {
                 e.preventDefault();
               });
-              
+
               // Fix iOS viewport height issues
               if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
                 document.documentElement.style.setProperty('--ios-vh', window.innerHeight + 'px');
@@ -167,11 +181,13 @@ export default async function RootLayout({ children }: Props) {
             gtag('config', 'G-RCFRCB2E0L');
           `}
         </Script>
-        
-        <AppProvider config={config}>
-          {children}
-          <CookieConsent />
-        </AppProvider>
+
+        <ThemeProviderWrapper>
+          <AppProvider config={config}>
+            {children}
+            <CookieConsent />
+          </AppProvider>
+        </ThemeProviderWrapper>
       </body>
     </html>
   );
@@ -196,7 +212,7 @@ const AppLayout = ({
   return (
     <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={secure}>
-        <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-row">
+        <div className="w-full min-h-dvh bg-gray-50 dark:bg-gray-900 text-black dark:text-white flex flex-row">
           <AppSidebar collapsed={true} />
           <AppTopNavbar />
           <div className="relative w-full flex flex-col justify-start">
@@ -227,7 +243,7 @@ const MapLayout = ({
   return (
     <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={secure}>
-        <div className="w-full h-dvh bg-gray-50 text-black flex flex-row overflow-hidden">
+        <div className="w-full h-dvh bg-gray-50 dark:bg-gray-900 text-black dark:text-white flex flex-row overflow-hidden">
           <AppSidebar collapsed={true} />
           <AppTopNavbar />
           <div className="relative w-full h-dvh flex flex-col justify-start">
@@ -258,7 +274,7 @@ const LoginLayout = async ({
   if (logged) return redirect(ROUTER.HOME);
 
   return (
-    <div className="w-full min-h-dvh bg-dark text-dark-foreground flex flex-col items-center justify-start pt-16 desktop:pt-20">
+    <div className="w-full min-h-dvh bg-dark text-dark-foreground flex flex-col items-center justify-start pt-16 desktop:pt-20 force-dark-bg">
       <div className="w-full max-w-[240px] -ml-6 mb-12">
         <Link href={ROUTER.HOME}>
           <Logo size="xlg" color="light" />
@@ -281,7 +297,7 @@ const AdminLayout = ({
   return (
     <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={true} roles={[UserRole.ADMIN]}>
-        <div className="w-full min-h-dvh bg-gray-50 text-black flex flex-row">
+        <div className="w-full min-h-dvh bg-gray-50 dark:bg-gray-900 text-black dark:text-white flex flex-row">
           <AppSidebar collapsed={true} />
           <div className="relative w-full flex flex-col justify-start">
             <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">

@@ -257,8 +257,9 @@ export const MapExploreView: React.FC<Props> = () => {
         MAP_CONTEXT_PARAMS.JOURNEY,
       ].some((ctx) => ctx === context) &&
       queryEnabled,
-    refetchOnMount: true,
+    refetchOnMount: false,
     refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
     retry: 0,
   });
 
@@ -919,12 +920,12 @@ export const MapExploreView: React.FC<Props> = () => {
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-gray-50">
       {/* Search-first overlay - show when no interaction has occurred and no search is active */}
       {overlayVisible && (
-        <div className="absolute inset-0 z-50 bg-white/90 backdrop-blur-sm flex items-center justify-center">
+        <div className="absolute inset-0 z-50 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-6 -mt-32">
-            <h2 className="text-2xl font-medium text-gray-800 mb-2">
+            <h2 className="text-2xl font-medium text-gray-800 dark:text-white mb-2">
               Your Journey Begins Here...
             </h2>
-            <p className="text-gray-600 mb-8">
+            <p className="text-gray-600 dark:text-gray-200 mb-8">
               Geolocate, search for places, entries, or explorers
             </p>
             <div className="w-full max-w-sm mx-auto flex gap-2 items-center">
@@ -939,11 +940,11 @@ export const MapExploreView: React.FC<Props> = () => {
               </div>
               <button
                 onClick={handleGeolocate}
-                className="flex items-center justify-center bg-white border border-input rounded-full hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-center bg-white dark:bg-gray-800 border border-input dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 style={{ width: '37px', height: '37px' }}
                 title="Use my location"
               >
-                <Crosshair size={16} weight="regular" className="text-gray-600" />
+                <Crosshair size={16} weight="regular" className="text-gray-600 dark:text-gray-200" />
               </button>
             </div>
           </div>

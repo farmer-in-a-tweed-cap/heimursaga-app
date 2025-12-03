@@ -141,8 +141,8 @@ export const PayoutBillingView = () => {
   return (
     <div className="flex flex-col">
       {!isStripeConnected && (
-        <Alert className="mb-6 bg-yellow-50 border-yellow-200">
-          <AlertDescription>
+        <Alert className="mb-6 bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800">
+          <AlertDescription className="text-yellow-900 dark:text-yellow-100">
             <strong>Complete your Stripe Connect setup</strong> to enable sponsorship tiers, receive sponsorships, and process payouts. Click "Connect" below to get started.
           </AlertDescription>
         </Alert>

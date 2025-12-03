@@ -45,7 +45,9 @@ export const StripeProvider: React.FC<IStripeProviderProps> = ({
   }, []);
 
   return loading ? (
-    <LoadingSpinner />
+    <div className="w-full h-full min-h-[200px] bg-white dark:bg-gray-900 flex items-center justify-center">
+      <LoadingSpinner />
+    </div>
   ) : success ? (
     <Elements
       stripe={stripe}

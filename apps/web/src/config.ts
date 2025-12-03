@@ -34,6 +34,7 @@ export const APP_CONFIG = {
       ZOOM: 12,
     },
     STYLE: 'cnh1187/clikkzykm00wb01qf28pz4adt',
+    STYLE_DARK: 'cnh1187/cminkk0hb002d01qy60mm74g0',
     BRAND_COLOR: 'AA6C46',
   },
   UPLOAD: {

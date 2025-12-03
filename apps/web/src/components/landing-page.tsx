@@ -32,10 +32,10 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
         <div className="inline-block px-4 py-2 text-sm uppercase font-normal mb-4 text-white" style={{ backgroundColor: '#4676AC' }}>
           {title}
         </div>
-        <h3 className="text-4xl lg:text-5xl font-light text-black mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
+        <h3 className="text-4xl lg:text-5xl font-light text-black dark:text-white mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
           {subtitle}
         </h3>
-        <p className="text-lg text-black font-light leading-relaxed max-w-xl">
+        <p className="text-lg text-black dark:text-gray-200 font-light leading-relaxed max-w-xl">
           {description}
         </p>
       </div>
@@ -58,7 +58,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, subtitle, description,
 );
 
 const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPopular = false }) => (
-  <div className={`relative rounded-3xl shadow-xl p-8 transform hover:scale-105 transition-all duration-300 flex flex-col h-full ${isPopular ? 'border-4 border-blue-500' : 'border border-gray-300'}`} style={{ backgroundColor: '#e9ecef' }}>
+  <div className={`relative rounded-3xl shadow-xl p-8 transform hover:scale-105 transition-all duration-300 flex flex-col h-full bg-gray-100 dark:bg-gray-800 ${isPopular ? 'border-4 border-blue-500' : 'border border-gray-300 dark:border-gray-600'}`}>
     {isPopular && (
       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
         <div className="text-white text-sm font-normal px-6 py-2 rounded-full shadow-lg" style={{ backgroundColor: '#AC6D46', fontFamily: 'Lato, sans-serif' }}>
@@ -67,7 +67,7 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
       </div>
     )}
     <div className="text-center mb-8">
-      <h3 className="text-2xl font-normal text-black mb-2" style={{}}>{title}</h3>
+      <h3 className="text-2xl font-normal text-black dark:text-white mb-2" style={{}}>{title}</h3>
       <div className="text-4xl font-semibold mb-6" style={{ color: '#4676AC', fontFamily: 'Lato, sans-serif' }}>
         {price}
       </div>
@@ -80,7 +80,7 @@ const PricingTier: React.FC<PricingTierProps> = ({ title, price, features, isPop
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-          <span className="text-gray-700 font-normal" style={{}}>{feature}</span>
+          <span className="text-gray-700 dark:text-gray-200 font-normal" style={{}}>{feature}</span>
         </li>
       ))}
     </ul>
@@ -225,13 +225,13 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* Philosophy Section */}
-        <div className="py-20 relative z-10" style={{ backgroundColor: 'white' }}>
+        <div className="py-20 relative z-10 bg-white dark:bg-gray-300">
           <div className="container mx-auto px-4 text-center">
             <div className="max-w-4xl mx-auto">
-              <h1 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
+              <h1 className="text-4xl lg:text-5xl font-light text-black dark:text-white mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
                 A Place for Explorers
               </h1>
-              <p className="text-xl text-black font-light leading-relaxed mb-12 max-w-3xl mx-auto">
+              <p className="text-xl text-black dark:text-gray-200 font-light leading-relaxed mb-12 max-w-3xl mx-auto">
                 Heimursaga (HAY-mur-sah-gah) is an app intentionally designed for the explorer, for the traveler, for the people who like to get away, and for the people who want to share what they've found. Heimursaga is a journaling and fundraising tool, but it's also more than that. It's a thoughtful space that prioritizes meaningful content over viral engagement; a social-media antidote. Our minimal interface and quality-over-quantity philosophy lets you focus on what matters: exploration, discovery, and appreciation for the people who do it.
               </p>
               <div className="grid md:grid-cols-3 gap-12 mt-12">
@@ -241,8 +241,8 @@ export const LandingPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
                     </svg>
                   </div>
-                  <h3 className="text-xl font-medium text-black mb-4">Intentional by Design</h3>
-                  <p className="text-black font-light leading-relaxed">
+                  <h3 className="text-xl font-medium text-black dark:text-white mb-4">Intentional by Design</h3>
+                  <p className="text-black dark:text-gray-200 font-light leading-relaxed">
                     No algorithms, no infinite scroll, no pressure to go viral. Every feature is designed to encourage authentic sharing and genuine appreciation for exploration.
                   </p>
                 </div>
@@ -252,8 +252,8 @@ export const LandingPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                     </svg>
                   </div>
-                  <h3 className="text-xl font-medium text-black mb-4">Meaningful Support</h3>
-                  <p className="text-black font-light leading-relaxed">
+                  <h3 className="text-xl font-medium text-black dark:text-white mb-4">Meaningful Support</h3>
+                  <p className="text-black dark:text-gray-200 font-light leading-relaxed">
                     Engage thoughtfully through comments and show tangible appreciation through sponsorship. Your support directly empowers explorers to continue their journeys.
                   </p>
                 </div>
@@ -263,8 +263,8 @@ export const LandingPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
                   </div>
-                  <h3 className="text-xl font-medium text-black mb-4">Human-First Stories</h3>
-                  <p className="text-black font-light leading-relaxed">
+                  <h3 className="text-xl font-medium text-black dark:text-white mb-4">Human-First Stories</h3>
+                  <p className="text-black dark:text-gray-200 font-light leading-relaxed">
                     Authentic experiences from real explorers. We actively prevent AI-generated content to preserve the genuine human spirit of adventure.
                   </p>
                 </div>
@@ -274,105 +274,105 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* Who Uses Heimursaga Section */}
-        <div className="py-20 relative z-10" style={{ backgroundColor: '#e9ecef' }}>
+        <div className="py-20 relative z-10 bg-gray-100 dark:bg-gray-950">
           <div className="container mx-auto px-4">
             <div className="text-center mb-16">
               <div className="inline-block px-6 py-3 text-sm uppercase font-normal mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
                 Community
               </div>
-              <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
+              <h2 className="text-4xl lg:text-5xl font-light text-black dark:text-gray-900 mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
                 Who Are The Explorers?
               </h2>
             </div>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Adventure & Outdoor Enthusiasts</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-gray-900 mb-3">Adventure & Outdoor Enthusiasts</h3>
+                <p className="text-black dark:text-gray-800 font-light text-sm leading-relaxed">
                   Document outdoor adventures from hiking and climbing to extreme sports, sharing gear insights and stories with fellow adventurers and supporters.
                 </p>
               </div>
               
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Solo Travel Enthusiasts</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Solo Travel Enthusiasts</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Share personal growth stories and solo adventures while connecting with other independent travelers and building a supportive community.
                 </p>
               </div>
-              
+
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Travel Content Creators & Photographers</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Travel Content Creators & Photographers</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Complement your social media presence and digital portfolio with deeper storytelling, behind-the-scenes insights, and direct support from dedicated followers.
                 </p>
               </div>
-              
+
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Digital Nomads & Remote Workers</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Digital Nomads & Remote Workers</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Document your work-from-anywhere journey, sharing coworking spaces, local insights, and productivity tips with location-independent followers.
                 </p>
               </div>
-              
+
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Cultural Immersion Travelers</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Cultural Immersion Travelers</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Share authentic local experiences and deep cultural insights with audiences seeking genuine connections beyond typical tourist content.
                 </p>
               </div>
-              
+
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Food & Culinary Explorers</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Food & Culinary Explorers</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Chronicle culinary journeys and food discoveries, building connections with local restaurants, food brands, and fellow food enthusiasts.
                 </p>
               </div>
-              
+
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Van Life & RV Communities</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Van Life & RV Communities</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Share your journey path, camping and parking spots, and lifestyle insights with fellow road trip enthusiasts and supporters.
                 </p>
               </div>
-              
+
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Study Abroad & Gap Year Students</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Study Abroad & Gap Year Students</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Document personal growth and cultural learning experiences during extended stays, connecting with family and friends back home.
                 </p>
               </div>
-              
+
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Travel Professionals & Guides</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Travel Professionals & Guides</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Showcase destination expertise and professional insights to complement your business website and build stronger client relationships.
                 </p>
               </div>
-              
+
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Researchers & Academics</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Researchers & Academics</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Share field research, archaeological discoveries, and scientific expeditions with educational audiences, supporters, and potential research collaborators.
                 </p>
               </div>
-              
+
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Expedition Leaders</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Expedition Leaders</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Document expeditions, mountaineering, and remote wilderness adventures while building a following that supports future exploration.
                 </p>
               </div>
-              
+
               <div className="text-center p-6">
-                <h3 className="text-lg font-medium text-black mb-3">Pilots & Sailors</h3>
-                <p className="text-black font-light text-sm leading-relaxed">
+                <h3 className="text-lg font-medium text-black dark:text-white mb-3">Pilots & Sailors</h3>
+                <p className="text-black dark:text-gray-200 font-light text-sm leading-relaxed">
                   Share aviation and maritime journeys, documenting unique perspectives from the skies and seas with fellow enthusiasts and supporters.
                 </p>
               </div>
             </div>
             
             <div className="text-center mt-12">
-              <p className="text-lg text-black font-light italic max-w-2xl mx-auto mb-8">
+              <p className="text-lg text-black dark:text-gray-200 font-light italic max-w-2xl mx-auto mb-8">
                 Ready to turn your adventures into a sustainable income? Join explorers who are building meaningful communities around authentic travel experiences.
               </p>
               <NavigationLink 
@@ -387,7 +387,7 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* Features Section */}
-        <div className="py-16 relative z-10" style={{ backgroundColor: 'white' }}>
+        <div className="py-16 relative z-10 bg-white dark:bg-gray-300">
           <FeatureCard
             title="Map-Centric"
             subtitle="Explore"
@@ -416,16 +416,16 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* AI Content Policy Section */}
-        <div className="py-20 relative z-10" style={{ backgroundColor: '#e9ecef' }}>
+        <div className="py-20 relative z-10 bg-gray-100 dark:bg-gray-950">
           <div className="container mx-auto px-4 text-center">
             <div className="max-w-4xl mx-auto">
               <div className="inline-block px-6 py-3 text-sm uppercase font-normal mb-8 text-white" style={{ backgroundColor: '#4676AC' }}>
                 Human-First
               </div>
-              <h2 className="text-4xl lg:text-5xl font-light text-black mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
+              <h2 className="text-4xl lg:text-5xl font-light text-black dark:text-white mb-8 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
                 Authentic Stories, Human Voices
               </h2>
-              <p className="text-xl text-black font-light leading-relaxed mb-8 max-w-3xl mx-auto">
+              <p className="text-xl text-black dark:text-gray-200 font-light leading-relaxed mb-8 max-w-3xl mx-auto">
                 While AI has its place in our world, exploration and discovery is for humans. Heimursaga implements multiple safeguards to ensure the platform is free from AI-generated text and image content.
               </p>
               <div className="grid md:grid-cols-3 gap-8 mt-12">
@@ -435,8 +435,8 @@ export const LandingPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-black mb-2">Content Detection</h3>
-                  <p className="text-black font-light">Advanced algorithms identify and flag AI-generated content before it reaches the platform.</p>
+                  <h3 className="text-lg font-medium text-black dark:text-white mb-2">Content Detection</h3>
+                  <p className="text-black dark:text-gray-200 font-light">Advanced algorithms identify and flag AI-generated content before it reaches the platform.</p>
                 </div>
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
@@ -445,8 +445,8 @@ export const LandingPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-black mb-2">Human Review</h3>
-                  <p className="text-black font-light">Our community and moderation team help maintain the authenticity of shared experiences.</p>
+                  <h3 className="text-lg font-medium text-black dark:text-white mb-2">Human Review</h3>
+                  <p className="text-black dark:text-gray-200 font-light">Our community and moderation team help maintain the authenticity of shared experiences.</p>
                 </div>
                 <div className="text-center">
                   <div className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ backgroundColor: '#AC6D46' }}>
@@ -454,8 +454,8 @@ export const LandingPage: React.FC = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                     </svg>
                   </div>
-                  <h3 className="text-lg font-medium text-black mb-2">Platform Integrity</h3>
-                  <p className="text-black font-light">Transparent policies and consistent enforcement ensure authentic human connection and storytelling.</p>
+                  <h3 className="text-lg font-medium text-black dark:text-white mb-2">Platform Integrity</h3>
+                  <p className="text-black dark:text-gray-200 font-light">Transparent policies and consistent enforcement ensure authentic human connection and storytelling.</p>
                 </div>
               </div>
             </div>
@@ -463,13 +463,13 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* Pricing Section */}
-        <div className="py-32 relative z-10" style={{ backgroundColor: 'white' }}>
+        <div className="py-32 relative z-10 bg-white dark:bg-gray-300">
           <div className="container mx-auto px-4">
             <div className="text-center mb-20">
-              <h2 className="text-4xl lg:text-5xl font-light text-black mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
+              <h2 className="text-4xl lg:text-5xl font-light text-black dark:text-white mb-6 leading-tight" style={{ fontFamily: 'Sulphur Point, sans-serif' }}>
                 Choose Your Adventure
               </h2>
-              <p className="text-xl text-black font-light max-w-2xl mx-auto" style={{}}>
+              <p className="text-xl text-black dark:text-gray-200 font-light max-w-2xl mx-auto" style={{}}>
                 Start your journey with our free plan or unlock premium features with Explorer Pro
               </p>
             </div>
@@ -502,13 +502,12 @@ export const LandingPage: React.FC = () => {
             </div>
             
             <div className="text-center mt-12">
-              <p className="text-gray-700 font-normal mb-6" style={{}}>
+              <p className="text-gray-700 dark:text-gray-200 font-normal mb-6" style={{}}>
                 Already have an account?
               </p>
-              <NavigationLink 
+              <NavigationLink
                 href={ROUTER.LOGIN}
-                className="inline-block py-3 px-8 rounded-xl font-normal text-lg transition-all duration-300 text-black hover:opacity-90"
-                style={{ backgroundColor: '#e9ecef' }}
+                className="inline-block py-3 px-8 rounded-xl font-normal text-lg transition-all duration-300 text-black dark:text-white hover:opacity-90 bg-gray-100 dark:bg-gray-800"
               >
                 LOG IN
               </NavigationLink>
@@ -551,7 +550,7 @@ export const LandingPage: React.FC = () => {
         </div>
 
         {/* Quote Section */}
-        <div className="py-16 text-gray-900 relative z-10" style={{ backgroundColor: '#e9ecef' }}>
+        <div className="py-16 text-gray-900 dark:text-gray-100 relative z-10 bg-gray-100 dark:bg-gray-950">
           <div className="container mx-auto px-4 text-center">
             <div className="max-w-4xl mx-auto">
               <blockquote className="text-1xl lg:text-2xl font-light mb-8 italic leading-relaxed" style={{}}>
@@ -560,7 +559,7 @@ export const LandingPage: React.FC = () => {
                 Will be to arrive where we started<br />
                 And know the place for the first time.
               </blockquote>
-              <cite className="text-xl text-gray-600 font-light" style={{}}>— T.S. Eliot</cite>
+              <cite className="text-xl text-gray-600 dark:text-gray-300 font-light" style={{}}>— T.S. Eliot</cite>
             </div>
           </div>
         </div>

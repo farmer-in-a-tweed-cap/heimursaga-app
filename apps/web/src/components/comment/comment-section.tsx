@@ -176,7 +176,7 @@ export const CommentSection: React.FC<Props> = ({
   if (!commentsEnabled) {
     return (
       <div className="w-full py-6">
-        <p className="text-sm text-gray-500 text-center">
+        <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
           Comments are disabled for this post.
         </p>
       </div>
@@ -187,7 +187,7 @@ export const CommentSection: React.FC<Props> = ({
     <div className="w-full">
       {/* Header */}
       <div className="mb-4">
-        <h3 className="text-lg font-medium text-gray-900">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
           Comments {count > 0 && `(${count})`}
         </h3>
       </div>
@@ -200,20 +200,20 @@ export const CommentSection: React.FC<Props> = ({
               const parentComment = findParentComment(replyingTo);
               const contentPreview = parentComment?.content.slice(0, 60) + (parentComment?.content.length && parentComment.content.length > 60 ? '...' : '');
               return (
-                <div className="mb-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+                <div className="mb-2 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-gray-700">
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
                       Replying to {parentComment?.author.username}
                     </span>
                     <button
                       onClick={() => setReplyingTo(null)}
-                      className="text-xs text-gray-500 hover:text-gray-700"
+                      className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                     >
                       Cancel
                     </button>
                   </div>
                   {contentPreview && (
-                    <p className="text-xs text-gray-600 italic">
+                    <p className="text-xs text-gray-600 dark:text-gray-400 italic">
                       "{contentPreview}"
                     </p>
                   )}
@@ -223,8 +223,8 @@ export const CommentSection: React.FC<Props> = ({
             <CommentForm ref={commentFormRef} postId={postId} onSubmit={handleCreate} />
           </>
         ) : (
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-            <p className="text-sm text-gray-600 mb-3">
+          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-center">
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-3">
               You must be logged in to comment.
             </p>
             <Link
@@ -242,11 +242,11 @@ export const CommentSection: React.FC<Props> = ({
       <div className="space-y-1">
         {loading && comments.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-sm text-gray-500">Loading comments...</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Loading comments...</p>
           </div>
         ) : comments.length === 0 ? (
           <div className="py-8 text-center">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {isLoggedIn
                 ? 'No comments yet. Be the first to comment!'
                 : 'No comments yet.'}

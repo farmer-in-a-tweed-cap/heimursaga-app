@@ -2,6 +2,7 @@
 
 import { ICommentDetail } from '@repo/types';
 import { useState } from 'react';
+import Image from 'next/image';
 import { CommentForm } from './comment-form';
 import { formatDistanceToNow } from 'date-fns';
 import { useModal } from '@/hooks';
@@ -49,8 +50,8 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
 
   if (isDeleting) {
     return (
-      <div className="py-3 px-4 bg-gray-50 rounded-lg opacity-50">
-        <p className="text-sm text-gray-500">Deleting...</p>
+      <div className="py-3 px-4 bg-gray-50 dark:bg-gray-800 rounded-lg opacity-50">
+        <p className="text-sm text-gray-500 dark:text-gray-400">Deleting...</p>
       </div>
     );
   }
@@ -61,14 +62,16 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
         {/* Avatar */}
         <div className="flex-shrink-0">
           {comment.author.picture ? (
-            <img
+            <Image
               src={comment.author.picture}
               alt={comment.author.username}
+              width={32}
+              height={32}
               className={`w-8 h-8 rounded-full object-cover border-2 border-solid ${comment.author.creator ? 'border-primary' : 'border-transparent'}`}
             />
           ) : (
-            <div className={`w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center border-2 border-solid ${comment.author.creator ? 'border-primary' : 'border-transparent'}`}>
-              <span className="text-xs font-medium text-gray-600">
+            <div className={`w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center border-2 border-solid ${comment.author.creator ? 'border-primary' : 'border-transparent'}`}>
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-200">
                 {comment.author.username[0].toUpperCase()}
               </span>
             </div>
@@ -78,7 +81,7 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline gap-2 mb-1 flex-wrap">
-            <span className="font-medium text-sm text-gray-900">
+            <span className="font-medium text-sm text-gray-900 dark:text-white">
               {comment.author.username}
             </span>
             {isPostAuthor && (
@@ -86,7 +89,7 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
                 Author
               </span>
             )}
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 dark:text-gray-400">
               {timeAgo}
               {wasEdited && ' (edited)'}
             </span>
@@ -103,7 +106,7 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
             />
           ) : (
             <>
-              <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
+              <p className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words">
                 {comment.content}
               </p>
 
@@ -112,13 +115,13 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
                   <>
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="text-xs text-gray-500 hover:text-gray-700"
+                      className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                     >
                       Edit
                     </button>
                     <button
                       onClick={handleDelete}
-                      className="text-xs text-gray-500 hover:text-red-600"
+                      className="text-xs text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400"
                     >
                       Delete
                     </button>
@@ -127,7 +130,7 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
                 {!isReply && onReply && (
                   <button
                     onClick={() => onReply(comment.id)}
-                    className="text-xs text-gray-500 hover:text-gray-700"
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   >
                     Reply
                   </button>
@@ -140,7 +143,7 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
 
       {/* Render nested replies */}
       {!isReply && comment.replies && comment.replies.length > 0 && (
-        <div className="ml-11 mt-2 space-y-2 border-l-2 border-gray-200 pl-4">
+        <div className="ml-11 mt-2 space-y-2 border-l-2 border-gray-200 dark:border-gray-700 pl-4">
           {comment.replies.map((reply) => (
             <CommentItem
               key={reply.id}

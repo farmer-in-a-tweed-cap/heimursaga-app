@@ -165,6 +165,7 @@ export class CommentService {
             creator: reply.author.role === UserRole.CREATOR,
           },
           createdByMe: userId === reply.author_id,
+          parentId: comment.public_id,
         })) || [],
       }));
 
@@ -367,7 +368,6 @@ export class CommentService {
         select: {
           id: true,
           author_id: true,
-          created_at: true,
         },
       });
 
@@ -378,14 +378,6 @@ export class CommentService {
       // Check if the user is the author
       if (existingComment.author_id !== userId) {
         throw new ServiceForbiddenException('You can only edit your own comments');
-      }
-
-      // Check if comment is within edit window (15 minutes)
-      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
-      if (existingComment.created_at < fifteenMinutesAgo) {
-        throw new ServiceBadRequestException(
-          'Comments can only be edited within 15 minutes of posting',
-        );
       }
 
       // Update the comment

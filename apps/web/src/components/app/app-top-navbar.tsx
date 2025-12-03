@@ -21,6 +21,7 @@ import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 import { redirect } from '@/lib';
 import { ROUTER } from '@/router';
 import { useSession, useNavigation } from '@/hooks';
+import { useTheme } from '@/contexts';
 
 import { Logo } from './logo';
 import { UserAvatar } from '../user/user-avatar';
@@ -47,10 +48,25 @@ export const AppTopNavbar: React.FC<Props> = () => {
   const pathname = usePathname();
   const { navigateTo, isNavigating } = useNavigation();
   const session = useSession();
+  const { resolvedTheme } = useTheme();
   const { picture, username, role } = session || {};
   const roleLabel = getRoleLabel(role || '');
   const isCreator = session?.creator;
   const userRole = session?.role as UserRole;
+
+  // Theme-aware navbar styling
+  const isDarkMode = resolvedTheme === 'dark';
+  const navbarBg = isDarkMode ? 'rgb(60 60 60)' : 'rgb(255 255 255)';
+  const logoColor = isDarkMode ? 'light' : 'dark';
+  const textColor = isDarkMode ? 'text-white' : 'text-gray-600';
+  const textHoverColor = isDarkMode ? 'hover:text-white/80' : 'hover:text-gray-900';
+  const iconColor = isDarkMode ? 'text-white' : 'text-gray-600';
+  const usernameColor = isDarkMode ? 'text-white' : 'text-gray-900';
+  const roleColor = isDarkMode ? 'text-white/80' : 'text-gray-600';
+  const hoverBg = isDarkMode ? 'hover:bg-black/10' : 'hover:bg-gray-50';
+  const borderColor = isDarkMode ? '' : 'border-b border-gray-200';
+  const creatorBorder = 'border-primary'; // Always use primary color for creator border
+  const caretColor = isDarkMode ? 'text-white/70' : 'text-gray-400';
 
   const handleLogoClick = () => {
     if (pathname === ROUTER.HOME) {
@@ -161,7 +177,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
   return (
     <>
       {/* Desktop Top Navbar - Full version */}
-      <div className="hidden lg:flex fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-16 shadow-sm">
+      <div className={cn("hidden lg:flex fixed top-0 left-0 right-0 z-40 h-16 shadow-sm", borderColor)} style={{ backgroundColor: navbarBg }}>
         <div className="w-full px-6 flex items-center justify-between">
           {/* Left spacer */}
           <div className="flex-1"></div>
@@ -169,20 +185,20 @@ export const AppTopNavbar: React.FC<Props> = () => {
           {/* Centered Logo */}
           <div className="flex items-center justify-center -ml-[15px] lg:ml-[50px]">
             <button onClick={handleLogoClick} className="focus:outline-none">
-              <Logo size="lg" color="dark" />
+              <Logo size="lg" color={logoColor} />
             </button>
           </div>
           
           {/* Right side elements */}
-          <div className="flex-1 flex items-center justify-end">
+          <div className="flex-1 flex items-center justify-end gap-2">
             {session?.logged ? (
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 {/* Create Entry Button */}
-                <NavigationButton 
+                <NavigationButton
                   href={ROUTER.ENTRIES.CREATE}
-                  variant="default" 
-                  size="sm" 
-                  className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white mr-2"
+                  variant="default"
+                  size="sm"
+                  className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
                 >
                   <FeatherIcon size={16} className="mr-1" />
                   Log Entry
@@ -193,13 +209,13 @@ export const AppTopNavbar: React.FC<Props> = () => {
                   badgeCount={badges.notifications}
                   className="mx-3"
                 >
-                  <NavigationButton 
+                  <NavigationButton
                     href={ROUTER.NOTIFICATIONS}
-                    variant="ghost" 
-                    size="lg" 
+                    variant="ghost"
+                    size="lg"
                     className="relative !px-1"
                   >
-                    <BellIcon size={20} weight="bold" className="text-gray-600 !size-5" />
+                    <BellIcon size={20} weight="bold" className={cn(iconColor, "!size-5")} />
                     {badges.notifications >= 1 && (
                       <div className="absolute -top-1 -right-1">
                         <BadgeCount count={badges.notifications} />
@@ -211,18 +227,18 @@ export const AppTopNavbar: React.FC<Props> = () => {
                 {/* User Avatar with Username and Role */}
                 <DropdownMenu>
                 <DropdownMenuTrigger>
-                  <div className="flex flex-row gap-3 items-center hover:bg-gray-50 rounded-lg p-2 transition-colors cursor-pointer">
+                  <div className={cn("flex flex-row gap-3 items-center rounded-lg p-2 transition-colors cursor-pointer", hoverBg)}>
                     <UserAvatar
                       src={picture}
-                      className={cn(isCreator ? 'border-2 border-primary' : '')}
+                      className={cn(isCreator ? `border-2 ${creatorBorder}` : '')}
                     />
                     <div className="flex flex-col items-start text-sm">
-                      <span className="font-medium text-sm text-gray-900">{username}</span>
-                      <span className="font-normal text-xs capitalize text-gray-600">
+                      <span className={cn("font-medium text-sm", usernameColor)}>{username}</span>
+                      <span className={cn("font-normal text-xs capitalize", roleColor)}>
                         {roleLabel}
                       </span>
                     </div>
-                    <CaretDownIcon size={16} className="text-gray-400 ml-1" />
+                    <CaretDownIcon size={16} className={cn(caretColor, "ml-1")} />
                   </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-background min-w-[240px] mr-4 mt-2 p-0 py-2">
@@ -257,11 +273,13 @@ export const AppTopNavbar: React.FC<Props> = () => {
               </div>
             ) : (
               /* Logged out state - Login button and create account link */
-              <div className="flex items-center space-x-4">
-                <NavigationLink 
+              <div className="flex items-center gap-4">
+                <NavigationLink
                   href={ROUTER.SIGNUP}
                   className={cn(
-                    "text-sm font-medium text-gray-600 hover:text-gray-900",
+                    "text-sm font-medium",
+                    textColor,
+                    textHoverColor,
                     isNavigating && "opacity-60 transition-opacity"
                   )}
                 >
@@ -269,8 +287,8 @@ export const AppTopNavbar: React.FC<Props> = () => {
                 </NavigationLink>
                 <NavigationButton
                   href={ROUTER.LOGIN}
-                  variant="default" 
-                  size="sm" 
+                  variant="default"
+                  size="sm"
                   className="bg-[#AC6D46] hover:bg-[#AC6D46]/90 text-white"
                 >
                   Log in
@@ -282,11 +300,11 @@ export const AppTopNavbar: React.FC<Props> = () => {
       </div>
 
       {/* Mobile Top Navbar - Logo only (when bottom navbar is visible) */}
-      <div className="flex lg:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-16 shadow-sm">
+      <div className={cn("flex lg:hidden fixed top-0 left-0 right-0 z-40 h-16 shadow-sm", borderColor)} style={{ backgroundColor: navbarBg }}>
         <div className="w-full px-6 flex items-center justify-center">
-          <div className="-ml-[15px]">
+          <div className="flex items-center justify-center -ml-[15px]">
             <button onClick={handleLogoClick} className="focus:outline-none">
-              <Logo size="lg" color="dark" />
+              <Logo size="lg" color={logoColor} />
             </button>
           </div>
         </div>

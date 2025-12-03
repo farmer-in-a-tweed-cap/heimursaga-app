@@ -10,38 +10,48 @@
 @layer base {
   :root {
     --app-header-height: 50px;
-    
+
     /* Mobile viewport consistency */
     --vh: 1vh;
     --mobile-vh: 100vh;
   }
-  
+
   /* Fix for mobile viewport inconsistencies */
   html {
     height: 100%;
     height: -webkit-fill-available;
   }
-  
+
   body {
     min-height: 100vh;
     min-height: -webkit-fill-available;
-    
+
     /* Prevent horizontal scrolling on mobile */
     overflow-x: hidden;
     width: 100%;
     position: relative;
-    
+
     /* Disable text size adjust on mobile browsers */
     -webkit-text-size-adjust: 100%;
     -moz-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
     text-size-adjust: 100%;
-    
+
     /* Disable tap highlight */
     -webkit-tap-highlight-color: transparent;
-    
+
     /* Smooth scrolling */
     -webkit-overflow-scrolling: touch;
+
+    /* Default background color based on system preference */
+    background-color: white;
+  }
+
+  /* Set dark background for dark mode users before JS loads */
+  @media (prefers-color-scheme: dark) {
+    body {
+      background-color: rgb(17 24 39); /* gray-900 */
+    }
   }
   
   /* Force consistent rendering across browsers */
@@ -121,7 +131,7 @@
 }
 
 .map-popup {
-  @apply p-4 text-black text-sm flex flex-col justify-start items-start gap-2;
+  @apply p-4 text-black dark:text-white text-sm flex flex-col justify-start items-start gap-2;
   word-wrap: break-word;
   overflow-wrap: break-word;
   hyphens: auto;
@@ -141,7 +151,7 @@
 }
 
 .map-popup-date {
-  @apply text-sm font-normal text-neutral-700;
+  @apply text-sm font-normal text-neutral-700 dark:text-neutral-400;
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal;
@@ -170,6 +180,12 @@
   border: 1px solid rgba(0, 0, 0, 0.1) !important;
 }
 
+.dark .mapboxgl-popup-content {
+  background: rgb(31 41 55) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+}
+
 /* Original popup styles restored */
 .mapboxgl-popup-tip {
   width: 0 !important;
@@ -180,12 +196,20 @@
   margin-top: -1px !important;
 }
 
+.dark .mapboxgl-popup-tip {
+  border-top-color: rgb(31 41 55) !important;
+}
+
 /* Upward pointing tip for popups below marker */
 .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
   border-top: none !important;
   border-bottom: 10px solid white !important;
   margin-top: 1px !important;
   margin-bottom: -1px !important;
+}
+
+.dark .mapboxgl-popup-anchor-top .mapboxgl-popup-tip {
+  border-bottom-color: rgb(31 41 55) !important;
 }
 
 .mapboxgl-popup-anchor-top .mapboxgl-popup-tip::before {
@@ -280,6 +304,11 @@
   @apply transition-all w-[40px] h-[40px] select-none bg-white drop-shadow flex items-center justify-center rounded-full text-lg cursor-pointer scale-100 active:scale-95 hover:!bg-white hover:!opacity-100;
 }
 
+/* Dark mode map controls */
+.dark .map-control button {
+  @apply bg-gray-800 text-white hover:!bg-gray-700;
+}
+
 /* Hide reCAPTCHA badge */
 .grecaptcha-badge {
   visibility: hidden !important;
@@ -315,6 +344,10 @@ html body.navigating::after {
   z-index: 99999 !important;
   pointer-events: none !important;
   animation: pulse 1s infinite !important;
+}
+
+html.dark body.navigating::after {
+  background: rgb(31 41 55) !important;
 }
 
 @keyframes pulse {

@@ -19,6 +19,7 @@ import { useQuery } from '@tanstack/react-query';
 import Image from 'next/image';
 
 import { useSession, useApp, useNavigation } from '@/hooks';
+import { useTheme } from '@/contexts';
 import { ROUTER } from '@/router';
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
@@ -34,9 +35,10 @@ export const AppBottomNavbar: React.FC<Props> = () => {
   const { role, logged, username, creator, ...user } = useSession();
   const { context, setContext } = useApp();
   const { navigateTo, isNavigating } = useNavigation();
+  const { resolvedTheme } = useTheme();
   const pathname = usePathname();
-  
-  const isDark = context.app.navbarTheme === 'dark';
+
+  const isDark = resolvedTheme === 'dark';
 
   // Get notification count for badge
   const badgeQuery = useQuery({
@@ -182,21 +184,10 @@ export const AppBottomNavbar: React.FC<Props> = () => {
     return pathname === path || pathname.startsWith(path + '/');
   };
 
-  const toggleTheme = () => {
-    if (setContext) {
-      setContext({
-        app: {
-          ...context.app,
-          navbarTheme: isDark ? 'light' : 'dark'
-        }
-      });
-    }
-  };
-
   return (
     <div className={cn(
-      "w-full h-[70px] border-t border-solid flex flex-row items-center",
-      isDark ? "bg-dark border-gray-700" : "bg-background border-accent"
+      "w-full h-[70px] flex flex-row items-center force-light-mode",
+      isDark ? "bg-dark" : "bg-background border-t border-gray-200"
     )}>
       {/* Left item - Avatar/Explore/Login */}
       <div className={cn(
