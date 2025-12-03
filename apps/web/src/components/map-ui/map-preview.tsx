@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 
 import { APP_CONFIG } from '@/config';
 import { MapCoordinatesValue, useMap, useMapbox } from '@/hooks';
+import { useTheme } from '@/contexts';
 
 import { Map, MapSource } from './map';
 import { MapPreviewOverlay } from './map-preview-overlay';
@@ -111,11 +112,12 @@ export const MapStaticPreview: React.FC<Props> = ({
   onClick = () => {},
 }) => {
   const mapbox = useMapbox();
+  const { resolvedTheme } = useTheme();
 
   const token = mapbox.token;
   const width = 600;
   const height = 240;
-  const style = APP_CONFIG.MAPBOX.STYLE;
+  const style = resolvedTheme === 'dark' ? APP_CONFIG.MAPBOX.STYLE_DARK : APP_CONFIG.MAPBOX.STYLE;
   const color = APP_CONFIG.MAPBOX.BRAND_COLOR;
   const retina = '@2x';
 
@@ -127,7 +129,7 @@ export const MapStaticPreview: React.FC<Props> = ({
   return (
     <div
       className={cn(
-        'relative w-full aspect-5/2 h-auto bg-gray-50 rounded-xl overflow-hidden',
+        'relative w-full aspect-5/2 h-auto bg-gray-50 dark:bg-gray-800 rounded-xl overflow-hidden',
         className,
       )}
     >
