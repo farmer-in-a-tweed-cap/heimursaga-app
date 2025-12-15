@@ -10,6 +10,7 @@ import { UserAvatar } from './user-avatar';
 import { UserMapBanner } from './user-map-banner';
 import { UserPageSections } from './user-page-sections';
 import { UserProfileButtons } from './user-profile-buttons';
+import { ProfileCompletionBanner } from './profile-completion-banner';
 
 type Props = {
   user: IUserDetail;
@@ -47,6 +48,17 @@ export const UserProfilePage: React.FC<Props> = ({
 
   return (
     <div className="w-full max-w-4xl flex flex-col justify-start items-center">
+      {/* Profile Completion Banner - only show for own profile */}
+      {user.you && (
+        <div className="w-full max-w-2xl mb-6 px-4">
+          <ProfileCompletionBanner
+            hasBio={!!user.bio}
+            hasAvatar={!!user.picture}
+            dismissible={true}
+          />
+        </div>
+      )}
+
       <div className="z-10 w-full h-auto">
         <UserMapBanner className="z-30" username={user?.username} />
       </div>

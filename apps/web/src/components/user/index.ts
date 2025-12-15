@@ -33,3 +33,4 @@ export * from './user-you-header';
 export * from './user-guide';
 
 export * from './email-verification-banner';
+export * from './profile-completion-banner';
