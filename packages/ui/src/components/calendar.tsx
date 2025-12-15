@@ -25,7 +25,7 @@ function Calendar({
   });
 
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 100 }, (_, i) => currentYear - 50 + i);
+  const years = Array.from({ length: 500 }, (_, i) => currentYear - i).reverse();
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'

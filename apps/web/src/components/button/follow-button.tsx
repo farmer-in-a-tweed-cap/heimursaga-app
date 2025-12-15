@@ -22,10 +22,10 @@ export const FollowButton: React.FC<Props> = ({
           disabled={disabled}
           size="sm"
           className={cn(
-            '!rounded-full !w-10 !h-10 !min-w-10 !min-h-10 !p-0',
+            '!rounded-full !w-10 !h-10 !min-w-10 !min-h-10 !p-0 transition-all',
             followed
-              ? 'bg-accent hover:bg-accent text-gray-800'
-              : 'bg-primary hover:bg-primary/90 text-white',
+              ? 'bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 dark:active:bg-gray-500 dark:text-gray-300'
+              : 'bg-primary hover:bg-primary/90 active:bg-primary/80 text-white dark:active:bg-primary/70',
           )}
           onClick={disabled ? () => {} : onClick}
         >

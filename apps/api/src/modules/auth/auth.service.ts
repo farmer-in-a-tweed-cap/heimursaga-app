@@ -347,9 +347,7 @@ export class AuthService {
           payload.recaptchaToken,
         );
         if (!isValidRecaptcha) {
-          throw new ServiceForbiddenException(
-            'reCAPTCHA verification failed',
-          );
+          throw new ServiceForbiddenException('reCAPTCHA verification failed');
         }
       }
 

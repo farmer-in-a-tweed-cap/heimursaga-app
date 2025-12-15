@@ -38,12 +38,12 @@ export const SponsorButton: React.FC<Props> = ({ username, disabled = false }) =
   return (
     <Tooltip>
       <TooltipTrigger>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="ghost"
           size="sm"
-          onClick={handleSponsorClick} 
+          onClick={handleSponsorClick}
           disabled={!username || disabled}
-          className="!rounded-full !w-10 !h-10 !min-w-10 !min-h-10 !p-0"
+          className="transition-all !rounded-full !w-10 !h-10 !min-w-10 !min-h-10 !p-0 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 text-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 dark:active:bg-gray-500 dark:text-gray-300"
         >
           <HandCoinsIcon size={20} weight="bold" />
         </Button>

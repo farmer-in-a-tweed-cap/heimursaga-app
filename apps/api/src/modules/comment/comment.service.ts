@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { UserNotificationContext, UserRole } from '@repo/types';
 
 import { generator } from '@/lib/generator';
-import { UserRole, UserNotificationContext } from '@repo/types';
 
 import {
   ServiceBadRequestException,
@@ -10,12 +10,16 @@ import {
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import { ISessionQuery, ISessionQueryWithPayload } from '@/common/interfaces';
+import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
-import { PrismaService } from '@/modules/prisma';
-import { EventService, EVENTS } from '@/modules/event';
 import { IUserNotificationCreatePayload } from '@/modules/notification';
+import { PrismaService } from '@/modules/prisma';
 
-import { CommentCreateDto, CommentQueryDto, CommentUpdateDto } from './comment.dto';
+import {
+  CommentCreateDto,
+  CommentQueryDto,
+  CommentUpdateDto,
+} from './comment.dto';
 
 export interface ICommentDetail {
   id: string;
@@ -154,22 +158,25 @@ export class CommentService {
         },
         createdByMe: userId === comment.author_id,
         repliesCount: comment.replies?.length || 0,
-        replies: comment.replies?.map((reply) => ({
-          id: reply.public_id,
-          content: reply.content,
-          createdAt: reply.created_at,
-          updatedAt: reply.updated_at,
-          author: {
-            username: reply.author.username,
-            picture: reply.author.profile?.picture,
-            creator: reply.author.role === UserRole.CREATOR,
-          },
-          createdByMe: userId === reply.author_id,
-          parentId: comment.public_id,
-        })) || [],
+        replies:
+          comment.replies?.map((reply) => ({
+            id: reply.public_id,
+            content: reply.content,
+            createdAt: reply.created_at,
+            updatedAt: reply.updated_at,
+            author: {
+              username: reply.author.username,
+              picture: reply.author.profile?.picture,
+              creator: reply.author.role === UserRole.CREATOR,
+            },
+            createdByMe: userId === reply.author_id,
+            parentId: comment.public_id,
+          })) || [],
       }));
 
-      const nextCursor = hasMore ? data[data.length - 1].id.toString() : undefined;
+      const nextCursor = hasMore
+        ? data[data.length - 1].id.toString()
+        : undefined;
 
       const count = await this.prisma.comment.count({ where });
 
@@ -220,7 +227,9 @@ export class CommentService {
       }
 
       if (!post.comments_enabled) {
-        throw new ServiceForbiddenException('Comments are disabled for this post');
+        throw new ServiceForbiddenException(
+          'Comments are disabled for this post',
+        );
       }
 
       // Handle parent comment (for replies)
@@ -244,7 +253,9 @@ export class CommentService {
 
         // Prevent nesting beyond one level (no replies to replies)
         if (parentComment.parent_id !== null) {
-          throw new ServiceBadRequestException('Cannot reply to a reply. Please reply to the parent comment instead.');
+          throw new ServiceBadRequestException(
+            'Cannot reply to a reply. Please reply to the parent comment instead.',
+          );
         }
 
         parentCommentId = parentComment.id;
@@ -356,7 +367,9 @@ export class CommentService {
       const { userId } = session;
 
       if (!userId) {
-        throw new ServiceForbiddenException('You must be logged in to update a comment');
+        throw new ServiceForbiddenException(
+          'You must be logged in to update a comment',
+        );
       }
 
       // Find the comment
@@ -377,7 +390,9 @@ export class CommentService {
 
       // Check if the user is the author
       if (existingComment.author_id !== userId) {
-        throw new ServiceForbiddenException('You can only edit your own comments');
+        throw new ServiceForbiddenException(
+          'You can only edit your own comments',
+        );
       }
 
       // Update the comment
@@ -434,7 +449,9 @@ export class CommentService {
       const { userId, userRole } = session;
 
       if (!userId) {
-        throw new ServiceForbiddenException('You must be logged in to delete a comment');
+        throw new ServiceForbiddenException(
+          'You must be logged in to delete a comment',
+        );
       }
 
       // Find the comment
@@ -467,7 +484,9 @@ export class CommentService {
       const isAdmin = userRole === 'admin';
 
       if (!isAuthor && !isAdmin) {
-        throw new ServiceForbiddenException('You can only delete your own comments');
+        throw new ServiceForbiddenException(
+          'You can only delete your own comments',
+        );
       }
 
       // Count how many comments will be deleted (parent + replies)
@@ -543,7 +562,9 @@ export class CommentService {
 
       // Check if the user is the author
       if (post.author_id !== userId) {
-        throw new ServiceForbiddenException('You can only toggle comments on your own posts');
+        throw new ServiceForbiddenException(
+          'You can only toggle comments on your own posts',
+        );
       }
 
       // Toggle comments

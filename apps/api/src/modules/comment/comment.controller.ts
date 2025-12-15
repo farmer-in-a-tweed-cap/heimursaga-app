@@ -17,7 +17,11 @@ import { Public, Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import { CommentCreateDto, CommentQueryDto, CommentUpdateDto } from './comment.dto';
+import {
+  CommentCreateDto,
+  CommentQueryDto,
+  CommentUpdateDto,
+} from './comment.dto';
 import { CommentService } from './comment.service';
 
 @ApiTags('comments')
@@ -36,7 +40,10 @@ export class CommentController {
     @Query() query: CommentQueryDto,
     @Session() session: ISession,
   ) {
-    return await this.commentService.getCommentsByPost(param.id, query, { query: {}, session });
+    return await this.commentService.getCommentsByPost(param.id, query, {
+      query: {},
+      session,
+    });
   }
 
   /**
@@ -78,8 +85,14 @@ export class CommentController {
    */
   @Delete('comments/:id')
   @HttpCode(HttpStatus.OK)
-  async deleteComment(@Param() param: ParamPublicIdDto, @Session() session: ISession) {
-    return await this.commentService.deleteComment(param.id, { query: {}, session });
+  async deleteComment(
+    @Param() param: ParamPublicIdDto,
+    @Session() session: ISession,
+  ) {
+    return await this.commentService.deleteComment(param.id, {
+      query: {},
+      session,
+    });
   }
 
   /**
@@ -87,7 +100,13 @@ export class CommentController {
    */
   @Patch('posts/:id/comments/toggle')
   @HttpCode(HttpStatus.OK)
-  async toggleComments(@Param() param: ParamPublicIdDto, @Session() session: ISession) {
-    return await this.commentService.toggleComments(param.id, { query: {}, session });
+  async toggleComments(
+    @Param() param: ParamPublicIdDto,
+    @Session() session: ISession,
+  ) {
+    return await this.commentService.toggleComments(param.id, {
+      query: {},
+      session,
+    });
   }
 }

@@ -17,17 +17,17 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'min-w-[80px] bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 rounded-full',
+          'min-w-[80px] bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 active:bg-primary/80 dark:active:bg-primary/70 rounded-full',
         secondary:
-          'min-w-[80px] bg-secondary text-black shadow-xs hover:bg-secondary-hover hover:text-secondary-foreground rounded-full',
+          'min-w-[80px] bg-secondary text-black shadow-xs hover:bg-secondary-hover hover:text-secondary-foreground active:bg-gray-300 dark:active:bg-gray-600 rounded-full',
         destructive:
-          'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 rounded-full',
+          'bg-destructive text-white shadow-xs hover:bg-destructive/90 active:bg-destructive/80 dark:active:bg-destructive/70 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 rounded-full',
         outline:
-          'min-w-[80px] border border-input bg-transparent shadow-xs hover:bg-secondary rounded-full',
+          'min-w-[80px] border border-input bg-transparent shadow-xs hover:bg-secondary active:bg-gray-300 dark:active:bg-gray-700 rounded-full',
         ghost:
-          'hover:bg-secondary-hover hover:text-secondary-foreground rounded-full',
-        link: 'text-primary underline-offset-4 hover:underline',
-        icon: '!w-[32px] !h-[32px] bg-transparent rounded-full hover:bg-secondary-hover',
+          'hover:bg-secondary-hover hover:text-secondary-foreground active:bg-gray-300 dark:active:bg-gray-700 rounded-full',
+        link: 'text-primary underline-offset-4 hover:underline active:text-primary/80',
+        icon: '!w-[32px] !h-[32px] bg-transparent rounded-full hover:bg-secondary-hover active:bg-gray-300 dark:active:bg-gray-700',
       },
       size: {
         default: 'h-10 px-6 has-[>svg]:px-4',

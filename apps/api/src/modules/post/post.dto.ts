@@ -26,7 +26,7 @@ export class PostCreateDto implements IPostCreatePayload {
   @SanitizeText()
   @IsString()
   @IsOptional()
-  @MaxLength(200, { message: 'Title must be less than 200 characters' })
+  @MaxLength(75, { message: 'Title must be less than 75 characters' })
   title: string;
 
   @ApiProperty({ required: false })
@@ -96,7 +96,7 @@ export class PostUpdateDto implements IPostUpdatePayload {
   @SanitizeText()
   @IsString()
   @IsOptional()
-  @MaxLength(200, { message: 'Title must be less than 200 characters' })
+  @MaxLength(75, { message: 'Title must be less than 75 characters' })
   title: string;
 
   @ApiProperty({ required: false })

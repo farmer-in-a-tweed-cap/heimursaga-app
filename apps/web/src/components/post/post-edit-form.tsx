@@ -49,7 +49,7 @@ const schema = z.object({
   title: z
     .string()
     .min(1, 'Title is required')
-    .max(50, 'Title must not exceed 50 characters'),
+    .max(75, 'Title must not exceed 75 characters'),
   content: z
     .string()
     .min(1, 'Content is required')
