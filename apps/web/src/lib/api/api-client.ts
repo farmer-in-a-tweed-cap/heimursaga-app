@@ -888,7 +888,14 @@ export const apiClient = {
       try {
         const { search, token } = query;
 
-        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(search)}.json?access_token=${token}&limit=10&types=country,place&autocomplete=true&language=en`;
+        // Check if search looks like coordinates (lat,lon or lon,lat format)
+        const coordinatePattern = /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/;
+        const isCoordinateSearch = coordinatePattern.test(search.trim());
+
+        // If coordinates, use reverse geocoding; otherwise use forward geocoding with type filters
+        const url = isCoordinateSearch
+          ? `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(search)}.json?access_token=${token}&limit=10&language=en`
+          : `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(search)}.json?access_token=${token}&limit=10&types=country,place&autocomplete=true&language=en`;
         const response = await fetch(url, { method: 'GET' });
 
         if (!response.ok) {
