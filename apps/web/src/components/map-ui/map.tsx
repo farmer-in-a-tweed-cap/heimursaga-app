@@ -815,8 +815,65 @@ export const Map: React.FC<Props> = ({
           accessToken: token,
           mapboxgl: mapboxgl as any,
           marker: false, // Disable default marker since we have our own
-          placeholder: 'Search for places...',
+          placeholder: 'Search for places or coordinates...',
+          localGeocoder: (query: string) => {
+            // Check if query looks like coordinates (lat,lon or lon,lat)
+            const coordinatePattern = /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/;
+            const coordMatch = query.trim().match(coordinatePattern);
+
+            if (coordMatch) {
+              const [_, first, second] = coordMatch;
+              const num1 = parseFloat(first);
+              const num2 = parseFloat(second);
+
+              // Determine format and create proper lon,lat coordinates
+              let lon: number, lat: number;
+
+              if (Math.abs(num1) <= 90 && Math.abs(num2) <= 180) {
+                // lat,lon format - swap to lon,lat
+                lat = num1;
+                lon = num2;
+              } else {
+                // lon,lat format or invalid
+                lon = num1;
+                lat = num2;
+              }
+
+              // Return results in Mapbox feature format
+              return [{
+                id: 'coordinate-search',
+                type: 'Feature',
+                place_type: ['coordinate'],
+                place_name: `${lat.toFixed(6)}, ${lon.toFixed(6)}`,
+                center: [lon, lat],
+                geometry: {
+                  type: 'Point',
+                  coordinates: [lon, lat]
+                },
+                properties: {},
+                text: `${lat.toFixed(6)}, ${lon.toFixed(6)}`
+              }];
+            }
+
+            // Return null to use default Mapbox search
+            return null;
+          }
         });
+
+        // Handle result selection - fly to location
+        geocoderControl.on('result', (e: any) => {
+          if (!mapboxRef.current) return;
+
+          const { center } = e.result;
+          if (center) {
+            mapboxRef.current.flyTo({
+              center: center,
+              zoom: 12,
+              essential: true
+            });
+          }
+        });
+
         mapboxRef.current.addControl(geocoderControl as any, 'top-right');
       }
     });

@@ -888,42 +888,74 @@ export const apiClient = {
       try {
         const { search, token } = query;
 
-        // Check if search looks like coordinates (lat,lon or lon,lat format)
-        const coordinatePattern = /^-?\d+\.?\d*\s*,\s*-?\d+\.?\d*$/;
-        const isCoordinateSearch = coordinatePattern.test(search.trim());
+        // Check if search looks like coordinates (supports both lat,lon and lon,lat)
+        const coordinatePattern = /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/;
+        const coordMatch = search.trim().match(coordinatePattern);
 
-        // If coordinates, use reverse geocoding; otherwise use forward geocoding with type filters
-        const url = isCoordinateSearch
-          ? `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(search)}.json?access_token=${token}&limit=10&language=en`
-          : `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(search)}.json?access_token=${token}&limit=10&types=country,place&autocomplete=true&language=en`;
-        const response = await fetch(url, { method: 'GET' });
+        if (coordMatch) {
+          // Parse coordinates
+          const [_, first, second] = coordMatch;
+          const num1 = parseFloat(first);
+          const num2 = parseFloat(second);
 
-        if (!response.ok) {
-          throw new Error('mapbox request failed');
+          // Determine if it's lat,lon or lon,lat based on valid ranges
+          // Latitude: -90 to 90, Longitude: -180 to 180
+          let lon: number, lat: number;
+
+          if (Math.abs(num1) <= 90 && Math.abs(num2) <= 180) {
+            // Likely lat,lon format - swap to lon,lat for Mapbox
+            lat = num1;
+            lon = num2;
+          } else if (Math.abs(num2) <= 90 && Math.abs(num1) <= 180) {
+            // Already in lon,lat format
+            lon = num1;
+            lat = num2;
+          } else {
+            // Invalid coordinates, treat as regular search
+            lon = num1;
+            lat = num2;
+          }
+
+          // Return coordinates directly as a searchable result
+          // Create a small bounding box around the point for zoom context
+          const padding = 0.01; // approximately 1km at equator
+          const items = [{
+            id: 'coordinate-search',
+            name: `${lat.toFixed(6)}, ${lon.toFixed(6)}`,
+            context: 'Coordinates',
+            bounds: [lon - padding, lat - padding, lon + padding, lat + padding] as [number, number, number, number],
+            center: [lon, lat] as [number, number],
+          }];
+
+          return { items };
+        } else {
+          // Regular text search with type filters
+          const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(search)}.json?access_token=${token}&limit=10&types=country,place&autocomplete=true&language=en`;
+          const response = await fetch(url, { method: 'GET' });
+
+          if (!response.ok) {
+            throw new Error('mapbox request failed');
+          }
+
+          const json = await response.json();
+          const features = (json?.features as any[]) || [];
+
+          const items: {
+            id: string;
+            name: string;
+            context: string;
+            bounds: [number, number, number, number];
+            center: [number, number];
+          }[] = features.map(({ id, bbox, text, center, context = [] }) => ({
+            id,
+            name: text,
+            context: context.map(({ text }: any) => text).join(', '),
+            bounds: bbox,
+            center,
+          }));
+
+          return { items };
         }
-
-        const json = await response.json();
-        const features = (json?.features as any[]) || [];
-
-        const items: {
-          id: string;
-          name: string;
-          context: string;
-          bounds: [number, number, number, number];
-          center: [number, number];
-        }[] = features.map(({ id, bbox, text, center, context = [] }) => ({
-          id,
-          name: text,
-          context: context.map(({ text }: any) => text).join(', '),
-          bounds: bbox,
-          center,
-        }));
-
-        const result = {
-          items,
-        };
-
-        return result;
       } catch (e) {
         throw new Error('mapbox request failed');
       }
