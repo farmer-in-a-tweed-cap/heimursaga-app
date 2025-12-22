@@ -1,11 +1,11 @@
 'use client';
 
 import { Card, CardContent, CardHeader } from '@repo/ui/components';
-import { 
-  BookmarkSimpleIcon, 
-  HighlighterCircle, 
-  MapPinIcon, 
-  Feather, 
+import {
+  BookmarkSimpleIcon,
+  HighlighterCircle,
+  MapPinIcon,
+  Feather,
   ShareFatIcon,
   GlobeX,
   BookBookmark,
@@ -14,7 +14,8 @@ import {
   GearIcon,
   PathIcon,
   HandCoinsIcon,
-  ChatCircleTextIcon
+  ChatCircleTextIcon,
+  ChatCenteredTextIcon
 } from '@repo/ui/icons';
 import Link from 'next/link';
 
@@ -196,7 +197,7 @@ export const UserGuide = () => {
           </h2>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="text-center">
               <HighlighterCircle size={32} className="mx-auto mb-2 text-primary" />
               <h3 className="text-lg font-medium mb-2">Highlight</h3>
@@ -218,10 +219,26 @@ export const UserGuide = () => {
                 Copy links to share interesting entries with friends.
               </p>
             </div>
+            <div className="text-center">
+              <ChatCenteredTextIcon size={32} className="mx-auto mb-2 text-primary" />
+              <h3 className="text-lg font-medium mb-2">Comment</h3>
+              <p className="text-gray-600 text-sm">
+                Join the conversation and engage with explorers.
+              </p>
+            </div>
           </div>
-              <div className="bg-blue-50 p-4 rounded-lg mt-6">
+          <div className="bg-blue-50 p-4 rounded-lg mt-6">
             <p className="text-sm text-blue-800">
               <strong>Note:</strong> Heimursaga uses "highlight" instead of "like" - these terms are equivalent. Highlighting an entry is the best way to show appreciation for an explorer's work, alongside following and providing sponsorship support.
+            </p>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg mt-4">
+            <h3 className="text-lg font-medium mb-2 text-purple-900">About Comments</h3>
+            <p className="text-sm text-purple-800 mb-2">
+              Comments are a great way to engage with entries and connect with fellow explorers. Share your thoughts, ask questions, or offer travel tips. Entry authors can disable comments on individual entries if they prefer.
+            </p>
+            <p className="text-sm text-purple-800">
+              <strong>Tip:</strong> Keep comments respectful and travel-focused. Your comments are visible to all viewers of the entry.
             </p>
           </div>
         </CardContent>

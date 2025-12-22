@@ -23,26 +23,17 @@ export const MapDrawer: React.FC<{
   opened?: boolean;
   loading?: boolean;
   mobile?: boolean;
+  sidebarCollapsed?: boolean;
   onClose?: () => void;
-}> = ({ post, opened = false, loading = false, mobile = false, onClose }) => {
+}> = ({ post, opened = false, loading = false, mobile = false, sidebarCollapsed = true, onClose }) => {
   return (
     <div
       className={cn(
-        'z-50 bg-background w-full desktop:h-dvh desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll absolute right-0 top-0 desktop:top-0 bottom-0 border-2 border-solid border-accent',
+        'fixed desktop:absolute z-[100] bg-background w-full desktop:h-dvh desktop:rounded-none desktop:rounded-l-2xl overflow-y-scroll right-0 top-0 desktop:top-0 bottom-0 border-2 border-solid border-accent',
+        // Only account for MapSidebar (540px) - the flex layout already accounts for AppSidebar width
         'desktop:max-w-[calc(100%-540px)]',
         'transform transition-transform duration-300 ease-in-out',
         opened ? 'translate-x-0' : 'translate-x-full',
-
-        // 'hidden lg:flex relative w-full',
-        // collapsed ? 'lg:max-w-[65px]' : 'lg:max-w-[240px]',
-
-        // drawer
-        //   ? mobile
-        //     ? 'translate-y-0'
-        //     : 'translate-x-0'
-        //   : mobile
-        //     ? 'translate-y-full'
-        //     : 'translate-x-full',
       )}
     >
       <div className="flex flex-col">

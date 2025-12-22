@@ -115,6 +115,8 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
     sponsored: false,
   });
 
+  const [commentsEnabled, setCommentsEnabled] = useState<boolean>(true);
+
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -156,6 +158,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
       date: watchedValues.date,
       public: privacy.public,
       sponsored: privacy.sponsored,
+      commentsEnabled: commentsEnabled,
       lat: map.marker?.lat,
       lon: map.marker?.lon,
       waypointId: waypoint?.id,
@@ -401,6 +404,7 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
           lon: marker?.lon,
           public: privacy.public,
           sponsored: privacy.sponsored,
+          commentsEnabled: commentsEnabled,
           waypointId: waypoint?.id,
           uploads,
           uploadCaptions,
@@ -762,6 +766,17 @@ export const PostCreateForm: React.FC<Props> = ({ waypoint }) => {
                       </FormItem>
                     </FormControl>
                   )}
+                  <FormControl>
+                    <FormItem>
+                      <FormLabel>Comments Enabled</FormLabel>
+                      <Switch
+                        checked={commentsEnabled}
+                        aria-readonly
+                        disabled={loading}
+                        onCheckedChange={setCommentsEnabled}
+                      />
+                    </FormItem>
+                  </FormControl>
                 </div>
                 <div className="mt-6">
                   {/* Auto-save status */}

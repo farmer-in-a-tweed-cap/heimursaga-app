@@ -6,7 +6,7 @@ import { Button, ChipGroup, LoadingSpinner } from '@repo/ui/components';
 import { ArrowLeft, Crosshair } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
 
@@ -22,6 +22,7 @@ import {
   PostCard,
   TripCard,
   UserProfileCard,
+  useSidebar,
 } from '@/components';
 import { APP_CONFIG } from '@/config';
 import {
@@ -77,6 +78,10 @@ export const MapExploreView: React.FC<Props> = () => {
   const session = useSession();
   const screen = useScreen();
   const queryClient = useQueryClient();
+  const { collapsed: sidebarCollapsed } = useSidebar();
+  const sidebarResizingRef = useRef(false);
+  const lastMapPositionRef = useRef<{ lat: number; lon: number; zoom: number } | null>(null);
+  const mapInitializedRef = useRef(false);
 
   const { params, setParams } = useAppParams({
     context: MAP_CONTEXT_PARAMS.GLOBAL,
@@ -92,27 +97,38 @@ export const MapExploreView: React.FC<Props> = () => {
   const postId = params.entry_id as string;
   const tripId = params.journey_id as string;
 
+  const initialCenter = params.lat && params.lon
+    ? {
+        lat: parseFloat(params.lat),
+        lon: parseFloat(params.lon),
+      }
+    : screen.mobile
+    ? {
+        lat: APP_CONFIG.MAP.DEFAULT.MOBILE.LAT,
+        lon: APP_CONFIG.MAP.DEFAULT.MOBILE.LON,
+      }
+    : {
+        lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
+        lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON,
+      };
+  const initialZoom = params.zoom ? parseFloat(params.zoom) : APP_CONFIG.MAP.DEFAULT.ZOOM;
+
   const map = useMap({
     sidebar: true,
     context: params.context || MAP_CONTEXT_PARAMS.GLOBAL,
     filter: params.filter || MAP_FILTER_PARAMS.POST,
-    center:
-      params.lat && params.lon
-        ? {
-            lat: parseFloat(params.lat),
-            lon: parseFloat(params.lon),
-          }
-        : screen.mobile
-        ? {
-            lat: APP_CONFIG.MAP.DEFAULT.MOBILE.LAT,
-            lon: APP_CONFIG.MAP.DEFAULT.MOBILE.LON,
-          }
-        : {
-            lat: APP_CONFIG.MAP.DEFAULT.CENTER.LAT,
-            lon: APP_CONFIG.MAP.DEFAULT.CENTER.LON,
-          },
-    zoom: params.zoom ? parseFloat(params.zoom) : APP_CONFIG.MAP.DEFAULT.ZOOM,
+    center: initialCenter,
+    zoom: initialZoom,
   });
+
+  // Initialize lastMapPositionRef with the initial position to avoid treating first move as significant
+  if (!lastMapPositionRef.current) {
+    lastMapPositionRef.current = {
+      lat: initialCenter.lat,
+      lon: initialCenter.lon,
+      zoom: initialZoom,
+    };
+  }
 
   const [view, setView] = useState<string>(MAP_VIEW_PARAMS.MAP);
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
@@ -131,10 +147,8 @@ export const MapExploreView: React.FC<Props> = () => {
   const [userFlyToCompleted, setUserFlyToCompleted] = useState<boolean>(false);
   // Initialize hasEverSearched based on URL params - if there's a search or non-default position, user has searched
   const [hasEverSearched, setHasEverSearched] = useState<boolean>(() => {
-    const defaultLat = screen.mobile ? APP_CONFIG.MAP.DEFAULT.MOBILE.LAT.toString() : APP_CONFIG.MAP.DEFAULT.CENTER.LAT.toString();
-    const defaultLon = screen.mobile ? APP_CONFIG.MAP.DEFAULT.MOBILE.LON.toString() : APP_CONFIG.MAP.DEFAULT.CENTER.LON.toString();
-    const defaultZoom = APP_CONFIG.MAP.DEFAULT.ZOOM.toString();
-    return !!(params.search || params.lat !== defaultLat || params.lon !== defaultLon || params.zoom !== defaultZoom);
+    // Only set to true if there's an actual search query, not just position params
+    return !!params.search;
   });
   const [previousView, setPreviousView] = useState<{
     center: { lat: number; lon: number };
@@ -351,7 +365,22 @@ export const MapExploreView: React.FC<Props> = () => {
       zoom = 0,
     } = data;
     map.handleMove(data);
-    
+
+    // Check if this is a significant position change (not just a resize)
+    const lastPosition = lastMapPositionRef.current;
+    const isSignificantChange = !lastPosition ||
+      Math.abs(lastPosition.lat - lat) > 0.0001 ||
+      Math.abs(lastPosition.lon - lon) > 0.0001 ||
+      Math.abs(lastPosition.zoom - zoom) > 0.01;
+
+    // Update last position
+    lastMapPositionRef.current = { lat, lon, zoom };
+
+    // Skip updates during initial load, sidebar resize, or insignificant changes
+    if (!mapInitializedRef.current || sidebarResizingRef.current || !isSignificantChange) {
+      return;
+    }
+
     // Clear search params when map is manually moved to prevent coordinate/search conflicts
     setParams({
       lat: `${lat}`,
@@ -359,10 +388,10 @@ export const MapExploreView: React.FC<Props> = () => {
       zoom: `${zoom}`,
       search: null, // Clear search when manually moving map
     });
-    
+
     // Clear search state to match
     setSearch((prev) => ({ ...prev, query: null, value: '' }));
-    
+
     // Mark as interacted when map moves
     setHasInteracted(true);
     setHasEverSearched(true); // Prevent overlay from reappearing after manual interaction
@@ -862,6 +891,29 @@ export const MapExploreView: React.FC<Props> = () => {
     }
   }, [queryEnabled]);
 
+  // Track sidebar state changes to prevent overlay from hiding during sidebar toggle
+  const prevSidebarCollapsed = useRef(sidebarCollapsed);
+  useEffect(() => {
+    // Only set the flag if sidebar state actually changed (not on initial mount)
+    if (prevSidebarCollapsed.current !== sidebarCollapsed) {
+      sidebarResizingRef.current = true;
+      const timer = setTimeout(() => {
+        sidebarResizingRef.current = false;
+      }, 500); // Wait for sidebar animation and map resize to complete
+
+      prevSidebarCollapsed.current = sidebarCollapsed;
+      return () => clearTimeout(timer);
+    }
+  }, [sidebarCollapsed]);
+
+  // Mark map as initialized after initial load to distinguish user moves from initial moves
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      mapInitializedRef.current = true;
+    }, 2000); // Wait for map to finish initial load and any automatic adjustments
+    return () => clearTimeout(timer);
+  }, []);
+
   // Fit bounds when user waypoints are loaded from search
   useEffect(() => {
     
@@ -920,7 +972,7 @@ export const MapExploreView: React.FC<Props> = () => {
     <div className="relative w-full h-full overflow-hidden flex flex-row justify-between bg-gray-50">
       {/* Search-first overlay - show when no interaction has occurred and no search is active */}
       {overlayVisible && (
-        <div className="absolute inset-0 z-50 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex items-center justify-center">
+        <div className="absolute inset-0 z-[60] bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm flex items-center justify-center">
           <div className="text-center max-w-md mx-auto px-6 -mt-32">
             <h2 className="text-2xl font-medium text-gray-800 dark:text-white mb-2">
               Your Journey Begins Here...
@@ -1185,6 +1237,7 @@ export const MapExploreView: React.FC<Props> = () => {
         loading={postLoading}
         post={post}
         mobile={screen.mobile}
+        sidebarCollapsed={sidebarCollapsed}
         onClose={handlePostDrawerClose}
       />
 

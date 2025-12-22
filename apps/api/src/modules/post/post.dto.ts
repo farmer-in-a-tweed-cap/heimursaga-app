@@ -89,6 +89,11 @@ export class PostCreateDto implements IPostCreatePayload {
   @IsBoolean()
   @IsOptional()
   isDraft?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  commentsEnabled?: boolean;
 }
 
 export class PostUpdateDto implements IPostUpdatePayload {
@@ -151,6 +156,11 @@ export class PostUpdateDto implements IPostUpdatePayload {
   @IsBoolean()
   @IsOptional()
   isDraft?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  commentsEnabled?: boolean;
 }
 
 class PostWaypointCreateDto implements IWaypointCreatePayload {

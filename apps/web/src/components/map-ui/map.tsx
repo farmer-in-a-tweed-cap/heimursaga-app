@@ -816,7 +816,7 @@ export const Map: React.FC<Props> = ({
           mapboxgl: mapboxgl as any,
           marker: false, // Disable default marker since we have our own
           placeholder: 'Search for places or coordinates...',
-          localGeocoder: (query: string) => {
+          localGeocoder: (query: string): any => {
             // Check if query looks like coordinates (lat,lon or lon,lat)
             const coordinatePattern = /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/;
             const coordMatch = query.trim().match(coordinatePattern);
@@ -855,8 +855,8 @@ export const Map: React.FC<Props> = ({
               }];
             }
 
-            // Return null to use default Mapbox search
-            return null;
+            // Return empty array to use default Mapbox search
+            return [];
           }
         });
 

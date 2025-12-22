@@ -149,6 +149,10 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
     sponsored: values?.sponsored || false,
   });
 
+  const [commentsEnabled, setCommentsEnabled] = useState<boolean>(
+    values?.commentsEnabled !== undefined ? values.commentsEnabled : true
+  );
+
   const form = useForm<z.infer<typeof schema>>({
     resolver: zodResolver(schema),
     values: {
@@ -284,6 +288,7 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
         date,
         public: privacy.public,
         sponsored: privacy.sponsored,
+        commentsEnabled: commentsEnabled,
         isDraft: false, // Publishing the entry
         waypoint: {
           lat: marker?.lat,
@@ -714,6 +719,16 @@ export const PostEditForm: React.FC<Props> = ({ postId, values }) => {
                       </FormItem>
                     </FormControl>
                   )}
+                  <FormControl>
+                    <FormItem>
+                      <FormLabel>Comments Enabled</FormLabel>
+                      <Switch
+                        checked={commentsEnabled}
+                        disabled={loading.post || loading.delete}
+                        onCheckedChange={setCommentsEnabled}
+                      />
+                    </FormItem>
+                  </FormControl>
                 </div>
                 <div className="mt-6 flex gap-3 items-center flex-wrap">
                   <Button

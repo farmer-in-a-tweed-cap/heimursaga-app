@@ -34,6 +34,8 @@ import {
   AppTopNavbar,
   IAppContextStateConfig,
   Logo,
+  SidebarProvider,
+  SidebarToggle,
   ThemeProviderWrapper,
 } from '@/components';
 import { SessionGuard } from '@/components/session/session-guard';
@@ -212,20 +214,23 @@ const AppLayout = ({
   return (
     <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={secure}>
-        <div className="w-full min-h-dvh bg-gray-50 dark:bg-gray-900 text-black dark:text-white flex flex-row">
-          <AppSidebar collapsed={true} />
-          <AppTopNavbar />
-          <div className="relative w-full flex flex-col justify-start">
-            <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] flex flex-row items-center lg:hidden">
-              <AppBottomNavbar />
-            </div>
-            <div className="z-10 w-full h-auto flex flex-col pb-[70px] pt-16 lg:pt-16">
-              <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
-                {children}
+        <SidebarProvider>
+          <div className="w-full min-h-dvh bg-gray-50 dark:bg-gray-900 text-black dark:text-white flex flex-row">
+            <AppSidebar />
+            <SidebarToggle />
+            <AppTopNavbar />
+            <div className="relative w-full flex flex-col justify-start">
+              <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] flex flex-row items-center lg:hidden">
+                <AppBottomNavbar />
+              </div>
+              <div className="z-10 w-full h-auto flex flex-col pb-[70px] pt-16 lg:pt-16">
+                <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+                  {children}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </SidebarProvider>
       </SessionGuard>
     </SessionLayout>
   );
@@ -243,18 +248,21 @@ const MapLayout = ({
   return (
     <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={secure}>
-        <div className="w-full h-dvh bg-gray-50 dark:bg-gray-900 text-black dark:text-white flex flex-row overflow-hidden">
-          <AppSidebar collapsed={true} />
-          <AppTopNavbar />
-          <div className="relative w-full h-dvh flex flex-col justify-start">
-            <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] flex flex-row items-center lg:hidden">
-              <AppBottomNavbar />
-            </div>
-            <div className="z-10 w-full h-dvh relative pb-[70px] pt-16 lg:pb-0 lg:pt-16">
-              {children}
+        <SidebarProvider>
+          <div className="w-full h-dvh bg-gray-50 dark:bg-gray-900 text-black dark:text-white flex flex-row overflow-hidden">
+            <AppSidebar />
+            <SidebarToggle />
+            <AppTopNavbar />
+            <div className="relative w-full h-dvh flex flex-col justify-start">
+              <div className="z-20 fixed left-0 right-0 bottom-0 w-full h-[70px] flex flex-row items-center lg:hidden">
+                <AppBottomNavbar />
+              </div>
+              <div className="z-[55] w-full h-dvh relative pb-[70px] pt-16 lg:pb-0 lg:pt-16">
+                {children}
+              </div>
             </div>
           </div>
-        </div>
+        </SidebarProvider>
       </SessionGuard>
     </SessionLayout>
   );
@@ -297,14 +305,17 @@ const AdminLayout = ({
   return (
     <SessionLayout initialSession={initialSession}>
       <SessionGuard secure={true} roles={[UserRole.ADMIN]}>
-        <div className="w-full min-h-dvh bg-gray-50 dark:bg-gray-900 text-black dark:text-white flex flex-row">
-          <AppSidebar collapsed={true} />
-          <div className="relative w-full flex flex-col justify-start">
-            <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
-              {children}
+        <SidebarProvider>
+          <div className="w-full min-h-dvh bg-gray-50 dark:bg-gray-900 text-black dark:text-white flex flex-row">
+            <AppSidebar />
+            <SidebarToggle />
+            <div className="relative w-full flex flex-col justify-start">
+              <div className="w-full h-auto flex flex-col py-6 px-4 items-center justify-start">
+                {children}
+              </div>
             </div>
           </div>
-        </div>
+        </SidebarProvider>
       </SessionGuard>
     </SessionLayout>
   );

@@ -331,6 +331,7 @@ export interface IPostCreatePayload {
   uploadCaptions?: { [uploadId: string]: string };
   waypointId?: number;
   tripId?: string;
+  commentsEnabled?: boolean;
 }
 
 export interface IPostCreateResponse {
@@ -349,6 +350,7 @@ export interface IPostUpdatePayload {
   uploads?: string[];
   uploadCaptions?: { [uploadId: string]: string };
   tripId?: string;
+  commentsEnabled?: boolean;
 }
 
 export interface IPostLikeResponse {

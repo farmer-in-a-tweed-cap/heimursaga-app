@@ -4,14 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { UserRole } from '@repo/types';
-import { 
-  BadgeCount, 
-  Button, 
+import {
+  BadgeCount,
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger 
+  DropdownMenuTrigger
 } from '@repo/ui/components';
 import { BellIcon, FeatherIcon, CaretDownIcon } from '@repo/ui/icons';
 import { cn } from '@repo/ui/lib/utils';
@@ -24,6 +24,7 @@ import { useSession, useNavigation } from '@/hooks';
 import { useTheme } from '@/contexts';
 
 import { Logo } from './logo';
+import { useSidebar } from './app-sidebar';
 import { UserAvatar } from '../user/user-avatar';
 import { NotificationDropdownTray } from '../notification/notification-dropdown-tray';
 import { NavigationButton, NavigationLink } from '@/components';
@@ -49,6 +50,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
   const { navigateTo, isNavigating } = useNavigation();
   const session = useSession();
   const { resolvedTheme } = useTheme();
+  const { collapsed } = useSidebar();
   const { picture, username, role } = session || {};
   const roleLabel = getRoleLabel(role || '');
   const isCreator = session?.creator;
@@ -181,11 +183,15 @@ export const AppTopNavbar: React.FC<Props> = () => {
         <div className="w-full px-6 flex items-center justify-between">
           {/* Left spacer */}
           <div className="flex-1"></div>
-          
+
           {/* Centered Logo */}
-          <div className="flex items-center justify-center -ml-[15px] lg:ml-[50px]">
+          <div className={cn(
+            "flex items-center justify-center -ml-[15px]",
+            collapsed ? "lg:ml-[50px]" : "lg:ml-[240px]",
+            "transition-all duration-300"
+          )}>
             <button onClick={handleLogoClick} className="focus:outline-none">
-              <Logo size="lg" color={logoColor} />
+              <Logo size={collapsed ? "lg" : "md"} color={logoColor} />
             </button>
           </div>
           

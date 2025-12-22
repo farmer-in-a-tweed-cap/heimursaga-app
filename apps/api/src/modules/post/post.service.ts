@@ -506,6 +506,7 @@ export class PostService {
         tripId,
         isDraft,
         uploadCaptions,
+        commentsEnabled,
       } = payload;
       const privacy = {
         public: payload.public,
@@ -584,6 +585,8 @@ export class PostService {
             sponsored: privacy.sponsored,
             is_draft: isDraft === true,
             email_sent: privacy.public && !isDraft, // Only send email for published, non-draft posts
+            comments_enabled:
+              commentsEnabled !== undefined ? commentsEnabled : true,
             author: { connect: { id: userId } },
             waypoint: waypoint ? { connect: { id: waypoint.id } } : undefined,
           },
@@ -710,6 +713,7 @@ export class PostService {
             content: true,
             place: true,
             date: true,
+            comments_enabled: true,
           },
         })
         .catch(() => {
@@ -744,6 +748,10 @@ export class PostService {
             is_draft:
               payload.isDraft !== undefined ? payload.isDraft : post.is_draft,
             email_sent: shouldTriggerEmail ? true : post.email_sent, // Mark email as sent if triggering
+            comments_enabled:
+              payload.commentsEnabled !== undefined
+                ? payload.commentsEnabled
+                : post.comments_enabled,
           },
         });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { UserRole } from '@repo/types';
 import {
   Button,
@@ -11,6 +11,8 @@ import {
 import {
   BookBookmark,
   Bookmarks,
+  CaretLeft,
+  CaretRight,
   ChartPieSliceIcon,
   ChatCircleTextIcon,
   GlobeX,
@@ -39,11 +41,83 @@ type SidebarLink = {
   >;
 };
 
-type Props = {
-  collapsed?: boolean;
+// Create context for sidebar state
+type SidebarContextType = {
+  collapsed: boolean;
+  toggle: () => void;
 };
 
-export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
+const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
+
+export const useSidebar = () => {
+  const context = useContext(SidebarContext);
+  if (!context) {
+    throw new Error('useSidebar must be used within SidebarProvider');
+  }
+  return context;
+};
+
+type Props = {
+  defaultCollapsed?: boolean;
+  children?: React.ReactNode;
+};
+
+export const SidebarProvider: React.FC<Props> = ({ defaultCollapsed = true, children }) => {
+  // Initialize state directly from localStorage to avoid layout shift on mount
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === 'undefined') return defaultCollapsed;
+    const saved = localStorage.getItem('sidebar-collapsed');
+    return saved !== null ? saved === 'true' : defaultCollapsed;
+  });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Save state to localStorage when it changes
+  const toggle = () => {
+    const newState = !collapsed;
+    setCollapsed(newState);
+    localStorage.setItem('sidebar-collapsed', String(newState));
+  };
+
+  return (
+    <SidebarContext.Provider value={{ collapsed, toggle }}>
+      {children}
+    </SidebarContext.Provider>
+  );
+};
+
+// Floating toggle button component
+export const SidebarToggle: React.FC = () => {
+  const { collapsed, toggle } = useSidebar();
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggle();
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      className={cn(
+        "hidden lg:flex fixed top-[18px] z-[60] items-center justify-center w-7 h-7 rounded opacity-30 hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300",
+        collapsed ? "left-[65px]" : "left-[240px]"
+      )}
+      aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+    >
+      {collapsed ? (
+        <CaretRight size={14} weight="regular" className="text-gray-500 dark:text-gray-400" />
+      ) : (
+        <CaretLeft size={14} weight="regular" className="text-gray-500 dark:text-gray-400" />
+      )}
+    </button>
+  );
+};
+
+export const AppSidebar: React.FC = () => {
+  const { collapsed } = useSidebar();
   const router = useRouter();
   const pathname = usePathname();
   const { navigateTo, isNavigating } = useNavigation();
@@ -197,13 +271,13 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
   return (
     <div
       className={cn(
-        'hidden lg:flex relative w-full',
+        'hidden lg:flex relative w-full transition-all duration-300 ease-in-out',
         collapsed ? 'desktop:max-w-[65px]' : 'desktop:max-w-[240px]',
       )}
     >
       <div
         className={cn(
-          'md:flex w-full h-dvh fixed top-0 bottom-0 left-0 bg-white flex-col z-50 force-light-mode',
+          'md:flex w-full h-dvh fixed top-0 bottom-0 left-0 bg-white flex-col z-50 force-light-mode transition-all duration-300 ease-in-out',
           collapsed ? 'desktop:max-w-[65px]' : 'desktop:max-w-[240px]',
         )}
       >
@@ -222,8 +296,8 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
               )}
             </button>
           </div>
-          <div className="mt-10 w-full h-full flex flex-col justify-between items-center box-border lg:px-2">
-            <div className={cn("lg:w-full flex flex-col gap-2", collapsed ? "items-center" : "")}>
+          <div className="mt-10 w-full h-full flex flex-col justify-between box-border">
+            <div className={cn("lg:w-full flex flex-col gap-3", collapsed ? "items-center px-2" : "px-6")}>
               {links.map(
                 ({ href, base, label, icon: Icon }, key) => (
                   <Tooltip key={key}>
@@ -232,18 +306,18 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                       disabled={isNavigating}
                       className={cn(
                         'w-full flex h-[40px] overflow-hidden transition-opacity border-0 bg-transparent outline-none focus:outline-none',
-                        collapsed ? 'app-sidebar-link-collapsed justify-center' : 'app-sidebar-link justify-between',
+                        collapsed ? 'app-sidebar-link-collapsed justify-center' : 'app-sidebar-link justify-start',
                         isActiveLink(base) ? 'app-sidebar-link-active' : '',
                         isNavigating && 'opacity-60 transition-opacity'
                       )}
                     >
                         <div className={cn(
-                          "relative flex flex-row items-center gap-2",
+                          "relative flex flex-row items-center gap-3",
                           collapsed ? "justify-center" : "justify-start"
                         )}>
                           <div className="relative">
                             <Icon
-                              size={20}
+                              size={22}
                               weight="regular"
                               className="app-sidebar-link-icon"
                             />
@@ -253,7 +327,7 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                           </div>
                           <span
                             className={cn(
-                              'text-base leading-none',
+                              'text-lg font-normal leading-none',
                               collapsed ? 'hidden' : 'hidden lg:flex',
                             )}
                           >
@@ -270,30 +344,60 @@ export const AppSidebar: React.FC<Props> = ({ collapsed = false }) => {
                 ),
               )}
             </div>
-          </div>
-          {session.logged ? (
-            <div
-              className={cn(
-                'w-full flex flex-col gap-6',
-                collapsed ? 'items-center justify-center' : 'px-2',
-              )}
-            >
-              <UserNavbar collapsed={collapsed} />
-            </div>
-          ) : (
-            <div className="w-full flex flex-col items-center justify-center gap-8 px-3">
-              {collapsed ? (
-                <UserNavbar collapsed={collapsed} />
-              ) : (
-                <Button 
-                  variant="secondary" 
-                  className="w-full" 
-                  onClick={() => navigateTo(ROUTER.LOGIN)}
+
+            {/* Bottom links - show as list when expanded, as dropdown when collapsed */}
+            {!collapsed && (
+              <div className="w-full flex flex-col gap-2 px-6 pb-4">
+                <button
+                  onClick={() => navigateTo(ROUTER.USER_GUIDE)}
                   disabled={isNavigating}
+                  className={cn(
+                    'w-full text-left text-sm text-gray-400 hover:text-white transition-colors py-2',
+                    isNavigating && 'opacity-60'
+                  )}
                 >
-                  Log in
-                </Button>
-              )}
+                  User guide
+                </button>
+                {session.logged && (
+                  <button
+                    onClick={() => navigateTo(ROUTER.SUPPORT)}
+                    disabled={isNavigating}
+                    className={cn(
+                      'w-full text-left text-sm text-gray-400 hover:text-white transition-colors py-2',
+                      isNavigating && 'opacity-60'
+                    )}
+                  >
+                    Support
+                  </button>
+                )}
+                <button
+                  onClick={() => window.open(ROUTER.LEGAL.PRIVACY, '_blank')}
+                  disabled={isNavigating}
+                  className={cn(
+                    'w-full text-left text-sm text-gray-400 hover:text-white transition-colors py-2',
+                    isNavigating && 'opacity-60'
+                  )}
+                >
+                  Privacy policy
+                </button>
+                <button
+                  onClick={() => window.open(ROUTER.LEGAL.TERMS, '_blank')}
+                  disabled={isNavigating}
+                  className={cn(
+                    'w-full text-left text-sm text-gray-400 hover:text-white transition-colors py-2',
+                    isNavigating && 'opacity-60'
+                  )}
+                >
+                  Terms and conditions
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Show dropdown menu when collapsed */}
+          {collapsed && (
+            <div className="w-full flex flex-col items-center justify-center px-2 pb-4">
+              <UserNavbar collapsed={collapsed} />
             </div>
           )}
         </div>
