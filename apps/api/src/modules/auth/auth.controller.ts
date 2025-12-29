@@ -149,6 +149,19 @@ export class AuthController {
   }
 
   @Public()
+  @Post('mobile/refresh')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 refresh attempts per minute
+  async mobileRefresh(@Body() body: { refreshToken: string }) {
+    const result = await this.authService.mobileRefresh(body.refreshToken);
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Public()
   @Get('tokens/:token')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 token validations per minute

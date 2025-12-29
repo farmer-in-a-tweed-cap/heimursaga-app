@@ -174,6 +174,7 @@ export class AuthService {
     session,
   }: ISessionQueryWithPayload<{}, ILoginPayload>): Promise<{
     token: string;
+    refreshToken: string;
     user: ISessionUserGetResponse;
   }> {
     try {
@@ -226,8 +227,14 @@ export class AuthService {
         userAgent,
       };
 
-      // Generate JWT token
-      const token = this.jwtService.sign(jwtPayload);
+      // Generate access token (1 hour expiration)
+      const token = this.jwtService.sign(jwtPayload, { expiresIn: '1h' });
+
+      // Generate refresh token (30 days expiration)
+      const refreshToken = this.jwtService.sign(
+        { sub: user.id, type: 'refresh' },
+        { expiresIn: '30d' },
+      );
 
       // Format user response
       const userResponse: ISessionUserGetResponse = {
@@ -243,6 +250,7 @@ export class AuthService {
 
       return {
         token,
+        refreshToken,
         user: userResponse,
       };
     } catch (e) {
@@ -250,6 +258,58 @@ export class AuthService {
       const exception = e.status
         ? new ServiceException(e.message, e.status)
         : new ServiceForbiddenException('login or password invalid');
+      throw exception;
+    }
+  }
+
+  // New method for mobile JWT token refresh
+  async mobileRefresh(refreshToken: string): Promise<{
+    token: string;
+  }> {
+    try {
+      // Verify the refresh token
+      const decoded = this.jwtService.verify(refreshToken);
+
+      // Check if it's actually a refresh token
+      if (decoded.type !== 'refresh') {
+        throw new ServiceForbiddenException('Invalid refresh token');
+      }
+
+      // Find the user
+      const user = await this.prisma.user.findUnique({
+        where: { id: decoded.sub },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          role: true,
+          blocked: true,
+        },
+      });
+
+      if (!user || user.blocked) {
+        throw new ServiceForbiddenException('User not found or blocked');
+      }
+
+      // Create new JWT payload
+      const jwtPayload = {
+        sub: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      };
+
+      // Generate new access token (1 hour expiration)
+      const token = this.jwtService.sign(jwtPayload, { expiresIn: '1h' });
+
+      return {
+        token,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      const exception = e.status
+        ? new ServiceException(e.message, e.status)
+        : new ServiceForbiddenException('Invalid or expired refresh token');
       throw exception;
     }
   }
