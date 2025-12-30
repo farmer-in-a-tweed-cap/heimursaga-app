@@ -33,8 +33,8 @@ export const useNavigation = () => {
 
   const navigateTo = useCallback(
     (href: string, replace: boolean = false) => {
-      // Prevent duplicate navigation attempts
-      if (isNavigating || lastNavigationTarget === href) {
+      // Prevent duplicate navigation attempts only while actively navigating
+      if (isNavigating) {
         return;
       }
 
@@ -74,15 +74,29 @@ export const useNavigation = () => {
         } else {
           router.push(href);
         }
+
+        // Safety timeout: reset state after 5 seconds if navigation doesn't complete
+        // This prevents the UI from getting stuck if navigation fails silently
+        setTimeout(() => {
+          setIsNavigating(false);
+          setLastNavigationTarget(null);
+
+          // Reset visual feedback
+          document.body.style.backgroundColor = '';
+          const banner = document.getElementById('navigation-loading-banner');
+          if (banner) {
+            banner.remove();
+          }
+        }, 5000);
       } catch (error) {
         console.error('Navigation failed:', error);
         setNavigationError(error instanceof Error ? error.message : 'Navigation failed');
         setIsNavigating(false);
         setLastNavigationTarget(null);
-        
+
         // Reset all visual feedback on error
         document.body.style.backgroundColor = '';
-        
+
         const banner = document.getElementById('navigation-loading-banner');
         if (banner) {
           banner.remove();
@@ -92,7 +106,7 @@ export const useNavigation = () => {
 
       // Navigation state will be reset by useEffect when pathname changes
     },
-    [router, isNavigating, lastNavigationTarget, pathname]
+    [router, isNavigating, pathname]
   );
 
   const refresh = useCallback(() => {

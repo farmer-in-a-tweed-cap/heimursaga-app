@@ -102,7 +102,7 @@ export const SidebarToggle: React.FC = () => {
     <button
       onClick={handleClick}
       className={cn(
-        "hidden lg:flex fixed top-[18px] z-[60] items-center justify-center w-7 h-7 rounded opacity-30 hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300",
+        "hidden lg:flex fixed top-[18px] z-[85] items-center justify-center w-7 h-7 rounded opacity-30 hover:opacity-100 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-300",
         collapsed ? "left-[65px]" : "left-[240px]"
       )}
       aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -277,7 +277,7 @@ export const AppSidebar: React.FC = () => {
     >
       <div
         className={cn(
-          'md:flex w-full h-dvh fixed top-0 bottom-0 left-0 bg-white flex-col z-50 force-light-mode transition-all duration-300 ease-in-out',
+          'md:flex w-full h-dvh fixed top-0 bottom-0 left-0 bg-white flex-col z-[80] force-light-mode transition-all duration-300 ease-in-out',
           collapsed ? 'desktop:max-w-[65px]' : 'desktop:max-w-[240px]',
         )}
       >

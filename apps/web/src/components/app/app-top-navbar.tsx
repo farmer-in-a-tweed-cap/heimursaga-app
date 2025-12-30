@@ -179,17 +179,17 @@ export const AppTopNavbar: React.FC<Props> = () => {
   return (
     <>
       {/* Desktop Top Navbar - Full version */}
-      <div className={cn("hidden lg:flex fixed top-0 left-0 right-0 z-40 h-16 shadow-sm", borderColor)} style={{ backgroundColor: navbarBg }}>
+      <div className={cn(
+        "hidden lg:flex fixed top-0 right-0 z-[70] h-16 shadow-sm transition-all duration-300",
+        collapsed ? "left-[65px]" : "left-[240px]",
+        borderColor
+      )} style={{ backgroundColor: navbarBg }}>
         <div className="w-full px-6 flex items-center justify-between">
           {/* Left spacer */}
           <div className="flex-1"></div>
 
           {/* Centered Logo */}
-          <div className={cn(
-            "flex items-center justify-center -ml-[15px]",
-            collapsed ? "lg:ml-[50px]" : "lg:ml-[240px]",
-            "transition-all duration-300"
-          )}>
+          <div className="flex items-center justify-center">
             <button onClick={handleLogoClick} className="focus:outline-none">
               <Logo size={collapsed ? "lg" : "md"} color={logoColor} />
             </button>
@@ -306,7 +306,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
       </div>
 
       {/* Mobile Top Navbar - Logo only (when bottom navbar is visible) */}
-      <div className={cn("flex lg:hidden fixed top-0 left-0 right-0 z-40 h-16 shadow-sm", borderColor)} style={{ backgroundColor: navbarBg }}>
+      <div className={cn("flex lg:hidden fixed top-0 left-0 right-0 z-[70] h-16 shadow-sm", borderColor)} style={{ backgroundColor: navbarBg }}>
         <div className="w-full px-6 flex items-center justify-center">
           <div className="flex items-center justify-center -ml-[15px]">
             <button onClick={handleLogoClick} className="focus:outline-none">

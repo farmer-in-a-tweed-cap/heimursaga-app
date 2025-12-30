@@ -28,7 +28,7 @@ export const NavigationLink: React.FC<NavigationLinkProps> = ({
 
   const handleClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    
+
     if (disabled || isNavigating) {
       return;
     }
