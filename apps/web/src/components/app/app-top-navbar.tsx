@@ -247,7 +247,7 @@ export const AppTopNavbar: React.FC<Props> = () => {
                     <CaretDownIcon size={16} className={cn(caretColor, "ml-1")} />
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-background min-w-[240px] mr-4 mt-2 p-0 py-2">
+                <DropdownMenuContent className="bg-background min-w-[240px] mr-4 mt-2 p-0 py-2 z-[90]">
                   {links.map(({ href, label }, key) => (
                     <DropdownMenuItem 
                       key={key} 
