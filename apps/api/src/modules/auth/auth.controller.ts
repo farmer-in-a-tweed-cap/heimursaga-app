@@ -18,6 +18,7 @@ import { SESSION_KEYS } from '@/common/constants';
 import { Public, Session } from '@/common/decorators';
 import { BotDetectionGuard } from '@/common/guards/bot-detection.guard';
 import { IRequest, IResponse, ISession } from '@/common/interfaces';
+import { SessionUserService } from '@/modules/user/user.service';
 
 import {
   LoginDto,
@@ -31,7 +32,10 @@ import { AuthService } from './auth.service';
 @Controller('auth')
 @UseGuards(ThrottlerGuard)
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private sessionUserService: SessionUserService,
+  ) {}
 
   @Get('user')
   @HttpCode(HttpStatus.OK)
@@ -158,6 +162,94 @@ export class AuthController {
     return {
       success: true,
       data: result,
+    };
+  }
+
+  @Public()
+  @Get('mobile/bookmarks')
+  @HttpCode(HttpStatus.OK)
+  @SkipThrottle()
+  async getMobileBookmarks(@Headers('authorization') authHeader?: string) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('Authorization header missing or invalid');
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const tokenData = await this.authService.verifyToken(token);
+
+    if (!tokenData) {
+      throw new Error('Invalid or expired token');
+    }
+
+    const result = await this.sessionUserService.getPosts({
+      userId: tokenData.userId,
+      context: 'bookmarks',
+    });
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Public()
+  @Get('mobile/notifications')
+  @HttpCode(HttpStatus.OK)
+  @SkipThrottle()
+  async getMobileNotifications(@Headers('authorization') authHeader?: string) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('Authorization header missing or invalid');
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const tokenData = await this.authService.verifyToken(token);
+
+    if (!tokenData) {
+      throw new Error('Invalid or expired token');
+    }
+
+    const result = await this.sessionUserService.getNotifications({
+      session: {
+        sid: 'mobile-jwt-session',
+        userId: tokenData.userId,
+        userRole: tokenData.role,
+      },
+      query: {},
+    });
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Public()
+  @Post('mobile/notifications/mark-read')
+  @HttpCode(HttpStatus.OK)
+  @SkipThrottle()
+  async markMobileNotificationsAsRead(@Headers('authorization') authHeader?: string) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('Authorization header missing or invalid');
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const tokenData = await this.authService.verifyToken(token);
+
+    if (!tokenData) {
+      throw new Error('Invalid or expired token');
+    }
+
+    await this.sessionUserService.markNotificationsAsRead({
+      session: {
+        sid: 'mobile-jwt-session',
+        userId: tokenData.userId,
+        userRole: tokenData.role,
+      },
+      query: {},
+    });
+
+    return {
+      success: true,
     };
   }
 

@@ -33,18 +33,45 @@ export class AuthGuard implements CanActivate {
         [context.getHandler(), context.getClass()],
       );
 
-      // validate session id
-      const sid = req.session.get(SESSION_KEYS.SID);
-      if (!sid) {
-        req.session.set(SESSION_KEYS.SID, generator.sessionId());
+      // Check for JWT token in Authorization header first (for mobile)
+      const authHeader = req.headers.authorization;
+      let session = null;
+
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        try {
+          const tokenData = await this.authService.verifyToken(token);
+          if (tokenData) {
+            // Create a pseudo-session from JWT token data
+            session = {
+              userId: tokenData.userId,
+              role: tokenData.role,
+            };
+            // Set session data for downstream handlers
+            req.session.set(SESSION_KEYS.USER_ID, tokenData.userId);
+            req.session.set(SESSION_KEYS.USER_ROLE, tokenData.role);
+          }
+        } catch (error) {
+          // JWT verification failed, fall through to session validation
+          this.logger.debug('JWT verification failed, trying session auth');
+        }
       }
 
-      // validate session
-      const session = await this.authService.validateSession({ sid });
+      // If no valid JWT, try session-based authentication (for web)
+      if (!session) {
+        // validate session id
+        const sid = req.session.get(SESSION_KEYS.SID);
+        if (!sid) {
+          req.session.set(SESSION_KEYS.SID, generator.sessionId());
+        }
 
-      if (session) {
-        req.session.set(SESSION_KEYS.USER_ID, session.userId);
-        req.session.set(SESSION_KEYS.USER_ROLE, session.role);
+        // validate session
+        session = await this.authService.validateSession({ sid });
+
+        if (session) {
+          req.session.set(SESSION_KEYS.USER_ID, session.userId);
+          req.session.set(SESSION_KEYS.USER_ROLE, session.role);
+        }
       }
 
       // check if route is public
