@@ -254,6 +254,37 @@ export class AuthController {
   }
 
   @Public()
+  @Get('mobile/badge-count')
+  @HttpCode(HttpStatus.OK)
+  @SkipThrottle()
+  async getMobileBadgeCount(@Headers('authorization') authHeader?: string) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('Authorization header missing or invalid');
+    }
+
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+    const tokenData = await this.authService.verifyToken(token);
+
+    if (!tokenData) {
+      throw new Error('Invalid or expired token');
+    }
+
+    const result = await this.sessionUserService.getBadgeCount({
+      session: {
+        sid: 'mobile-jwt-session',
+        userId: tokenData.userId,
+        userRole: tokenData.role,
+      },
+      query: {},
+    });
+
+    return {
+      success: true,
+      data: result,
+    };
+  }
+
+  @Public()
   @Get('tokens/:token')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 token validations per minute
