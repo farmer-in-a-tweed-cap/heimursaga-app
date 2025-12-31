@@ -32,14 +32,19 @@ const SessionGuardContent: React.FC<SessionGuardProps> = ({
 
   useEffect(() => {
     if (!isMounted) return;
-    
-    // Wait for session to be resolved (either loaded with data or failed)
-    // We need to wait if:
-    // 1. Session is explicitly loading, OR  
-    // 2. We haven't initialized yet AND there's cached data (wait for API validation)
+
+    // For non-secure pages, skip session waiting and initialize immediately
+    if (!secure) {
+      if (!hasInitialized) {
+        setHasInitialized(true);
+      }
+      return;
+    }
+
+    // For secure pages, wait for session to be resolved
     const hasCachedSession = typeof window !== 'undefined' && localStorage.getItem('session_cache');
     const shouldWaitForSession = session.isLoading || (!hasInitialized && hasCachedSession && !session.logged);
-    
+
     if (shouldWaitForSession) {
       return;
     }
@@ -50,20 +55,18 @@ const SessionGuardContent: React.FC<SessionGuardProps> = ({
     }
 
     // Handle secure pages
-    if (secure) {
-      if (!session.logged) {
-        // No session found, redirect to login
-        router.push(ROUTER.LOGIN);
-        return;
-      }
+    if (!session.logged) {
+      // No session found, redirect to login
+      router.push(ROUTER.LOGIN);
+      return;
+    }
 
-      // Check role requirements
-      if (roles.length > 0 && session.role) {
-        const hasRequiredRole = roles.includes(session.role);
-        if (!hasRequiredRole) {
-          router.push(ROUTER.HOME);
-          return;
-        }
+    // Check role requirements
+    if (roles.length > 0 && session.role) {
+      const hasRequiredRole = roles.includes(session.role);
+      if (!hasRequiredRole) {
+        router.push(ROUTER.HOME);
+        return;
       }
     }
   }, [isMounted, session.isLoading, session.logged, session.role, secure, roles, router, hasInitialized]);

@@ -12,6 +12,10 @@ import { PageHeaderTitle } from '@/components';
 
 const PATH = path.join(process.cwd(), 'src/content/legal');
 
+// Force static generation
+export const dynamic = 'force-static';
+export const dynamicParams = false;
+
 // generate static params
 export async function generateStaticParams() {
   const files = fs.readdirSync(PATH);
