@@ -10,7 +10,26 @@ import { AppLayout } from '@/layouts';
 
 import { PageHeaderTitle } from '@/components';
 
-const PATH = path.join(process.cwd(), 'src/content/legal');
+// Define the content directory path
+// In production, this resolves from the build output
+const getContentPath = () => {
+  // Try multiple potential paths for different deployment scenarios
+  const possiblePaths = [
+    path.join(process.cwd(), 'src/content/legal'),
+    path.join(process.cwd(), 'apps/web/src/content/legal'),
+  ];
+
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      console.log(`[Legal Pages] Using content path: ${p}`);
+      return p;
+    }
+  }
+
+  // Default to the standard path
+  console.warn(`[Legal Pages] No existing path found, defaulting to: ${path.join(process.cwd(), 'src/content/legal')}`);
+  return path.join(process.cwd(), 'src/content/legal');
+};
 
 // Force static generation
 export const dynamic = 'force-static';
@@ -18,12 +37,35 @@ export const dynamicParams = false;
 
 // generate static params
 export async function generateStaticParams() {
-  const files = fs.readdirSync(PATH);
-  return files
-    .filter((file) => file.endsWith('.md'))
-    .map((file) => ({
-      slug: file.replace(/\.md$/, ''),
-    }));
+  const PATH = getContentPath();
+
+  try {
+    if (!fs.existsSync(PATH)) {
+      console.error(`[Legal Pages] Content directory not found at: ${PATH}`);
+      // Return hardcoded slugs as fallback
+      return [
+        { slug: 'privacy' },
+        { slug: 'terms' },
+      ];
+    }
+
+    const files = fs.readdirSync(PATH);
+    const params = files
+      .filter((file) => file.endsWith('.md'))
+      .map((file) => ({
+        slug: file.replace(/\.md$/, ''),
+      }));
+
+    console.log(`[Legal Pages] Generated params:`, params);
+    return params;
+  } catch (error) {
+    console.error(`[Legal Pages] Error in generateStaticParams:`, error);
+    // Return hardcoded slugs as fallback
+    return [
+      { slug: 'privacy' },
+      { slug: 'terms' },
+    ];
+  }
 }
 
 // generate metadata
@@ -33,10 +75,12 @@ export async function generateMetadata({
   params: { slug: string };
 }): Promise<Metadata> {
   const { slug } = params;
+  const PATH = getContentPath();
   const filePath = path.join(PATH, `${slug}.md`);
 
   // check if file exist
   if (!fs.existsSync(filePath)) {
+    console.error(`[Legal Pages] File not found for metadata: ${filePath}`);
     notFound();
   }
 
@@ -60,10 +104,14 @@ export async function generateMetadata({
 
 export default async function Page({ params }: { params: { slug: string } }) {
   const { slug } = params;
+  const PATH = getContentPath();
   const filePath = path.join(PATH, `${slug}.md`);
 
   // check if file exist
   if (!fs.existsSync(filePath)) {
+    console.error(`[Legal Pages] File not found for page render: ${filePath}`);
+    console.error(`[Legal Pages] Checked path: ${PATH}`);
+    console.error(`[Legal Pages] Slug: ${slug}`);
     notFound();
   }
 
@@ -74,7 +122,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
 
   // convert markdown to html
   const htmlContent = await marked(content);
-  
+
   // sanitize HTML to prevent XSS attacks
   const sanitizedContent = DOMPurify.sanitize(htmlContent);
 
