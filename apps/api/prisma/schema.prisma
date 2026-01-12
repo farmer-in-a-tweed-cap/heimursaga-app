@@ -52,6 +52,8 @@ model User {
   sent_messages               Message[]          @relation("SentMessages")
   received_messages           Message[]          @relation("ReceivedMessages")
   comments                    Comment[]
+  flags_created               Flag[]             @relation("user_flags_created")
+  flags_reviewed              Flag[]             @relation("user_flags_reviewed")
 
   @@map("users")
 }
@@ -216,6 +218,7 @@ model Post {
   bookmarks_count       Int?               @default(0)
   likes_count           Int?               @default(0)
   comments_count        Int?               @default(0)
+  flags_count           Int?               @default(0)
   comments_enabled      Boolean?           @default(true)
   waypoint_id           Int?
   sponsored             Boolean?           @default(false)
@@ -225,6 +228,7 @@ model Post {
   likes                 PostLike[]         @relation("post_likes")
   comments              Comment[]
   media                 PostMedia[]
+  flags                 Flag[]             @relation("post_flags")
   author                User               @relation(fields: [author_id], references: [id], onDelete: Cascade)
   waypoint              Waypoint?          @relation(fields: [waypoint_id], references: [id], onDelete: Cascade)
   notification_mentions UserNotification[] @relation("post_notification_mentions")
@@ -233,20 +237,22 @@ model Post {
 }
 
 model Comment {
-  id         Int       @id @default(autoincrement())
-  public_id  String    @unique @db.VarChar(14)
-  content    String    @db.VarChar(5000)
-  author_id  Int
-  post_id    Int
-  parent_id  Int?
-  deleted_at DateTime?
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
+  id          Int       @id @default(autoincrement())
+  public_id   String    @unique @db.VarChar(14)
+  content     String    @db.VarChar(5000)
+  author_id   Int
+  post_id     Int
+  parent_id   Int?
+  flags_count Int?      @default(0)
+  deleted_at  DateTime?
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
 
   author  User      @relation(fields: [author_id], references: [id], onDelete: Cascade)
   post    Post      @relation(fields: [post_id], references: [id], onDelete: Cascade)
   parent  Comment?  @relation("CommentReplies", fields: [parent_id], references: [id], onDelete: Cascade)
   replies Comment[] @relation("CommentReplies")
+  flags   Flag[]    @relation("comment_flags")
 
   @@index([post_id, created_at])
   @@index([author_id])
@@ -490,6 +496,34 @@ model Message {
   @@index([recipient_id, sender_id])
   @@index([created_at])
   @@map("messages")
+}
+
+model Flag {
+  id                 Int       @id @default(autoincrement())
+  public_id          String    @unique @db.VarChar(14)
+  flagged_post_id    Int?
+  flagged_comment_id Int?
+  category           String    @db.VarChar(50)
+  description        String?   @db.VarChar(1000)
+  status             String    @default("pending") @db.VarChar(20)
+  reporter_id        Int
+  reviewed_by_id     Int?
+  reviewed_at        DateTime?
+  admin_notes        String?   @db.VarChar(1000)
+  action_taken       String?   @db.VarChar(50)
+  created_at         DateTime  @default(now())
+  updated_at         DateTime  @updatedAt
+
+  reporter        User     @relation("user_flags_created", fields: [reporter_id], references: [id], onDelete: Cascade)
+  reviewed_by     User?    @relation("user_flags_reviewed", fields: [reviewed_by_id], references: [id], onDelete: SetNull)
+  flagged_post    Post?    @relation("post_flags", fields: [flagged_post_id], references: [id], onDelete: Cascade)
+  flagged_comment Comment? @relation("comment_flags", fields: [flagged_comment_id], references: [id], onDelete: Cascade)
+
+  @@index([status, created_at])
+  @@index([reporter_id])
+  @@index([flagged_post_id])
+  @@index([flagged_comment_id])
+  @@map("flags")
 }
 
 enum CheckoutStatus {

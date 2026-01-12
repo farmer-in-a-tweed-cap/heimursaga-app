@@ -16,6 +16,9 @@ import { ROUTER } from '@/router';
 import { PostBookmarkButton } from './post-bookmark-button';
 import { PostEditButton } from './post-edit-button';
 
+// Constants
+const CONTENT_PREVIEW_LENGTH = 150;
+
 export type PostCardProps = {
   href?: string;
   classNames?: {
@@ -44,6 +47,7 @@ export type PostCardProps = {
     bookmark?: boolean;
     edit?: boolean;
     share?: boolean;
+    flag?: boolean;
   };
   bookmarked?: boolean;
   bookmarksCount?: number;
@@ -92,6 +96,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     bookmark: true,
     edit: false,
     share: false,
+    flag: false,
   },
   userbar,
   extended = false,
@@ -110,6 +115,19 @@ export const PostCard: React.FC<PostCardProps> = ({
       ? author.username === session.username
       : false;
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't trigger card click if clicking on a button or interactive element
+    const target = e.target as HTMLElement;
+    if (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('[role="button"]')
+    ) {
+      return;
+    }
+    onClick?.();
+  };
+
   return (
     <Card
       className={cn(
@@ -120,23 +138,16 @@ export const PostCard: React.FC<PostCardProps> = ({
       onMouseEnter={onHover}
       onMouseLeave={onUnhover}
     >
-      <CardContent>
-        {href ? (
+      <CardContent onClick={onClick ? handleCardClick : undefined} className={onClick ? 'cursor-pointer' : ''}>
+        {href && (
           <NavigationLink href={href} className="z-10 absolute inset-0">
             <span className="sr-only">View post</span>
           </NavigationLink>
-        ) : onClick ? (
-          <div
-            className="z-10 absolute inset-0 cursor-pointer"
-            onClick={onClick}
-          ></div>
-        ) : (
-          <></>
         )}
         {isWaypoint || isEntry ? (
           // Journey context: original layout with type indicator
           <div className="relative flex flex-row justify-between items-center">
-            <div className="w-auto flex flex-row justify-start items-center gap-3 z-20">
+            <div className="relative w-auto flex flex-row justify-start items-center gap-3 z-20">
               <div className="flex flex-row items-center gap-2">
                 <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">
                   {isWaypoint ? 'WAYPOINT' : 'ENTRY'}
@@ -198,7 +209,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             </div>
 
             {/* Right side: Edit button for owned entries, User info for others */}
-            <div className="flex flex-col items-end z-20 flex-shrink-0">
+            <div className="relative flex flex-col items-end z-20 flex-shrink-0">
               {actions.edit ? (
                 // Show edit button for entries owned by current user
                 <PostEditButton postId={id} />
@@ -375,7 +386,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         )}
 
 
-        {(actions.like || actions.bookmark || actions.share) && (
+        {(actions.like || actions.bookmark || actions.share || actions.flag) && (
           <PostButtons
             className="relative mt-6 z-20"
             postId={id}
@@ -384,6 +395,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             likesCount={likesCount}
             bookmarked={bookmarked}
             bookmarksCount={bookmarksCount}
+            contentPreview={content?.slice(0, CONTENT_PREVIEW_LENGTH)}
           />
         )}
       </CardContent>

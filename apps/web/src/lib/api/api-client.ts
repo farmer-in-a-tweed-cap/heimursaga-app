@@ -68,6 +68,12 @@ import {
   ICommentUpdatePayload,
   ICommentDeleteResponse,
   ICommentToggleResponse,
+  IFlagCreatePayload,
+  IFlagCreateResponse,
+  IFlagListResponse,
+  IFlagDetail,
+  IFlagUpdatePayload,
+  FlagStatus,
 } from '@repo/types';
 import { config } from 'process';
 
@@ -997,6 +1003,59 @@ export const apiClient = {
         ...config,
       }),
   },
+
+  // Flags
+  createFlag: async (
+    { payload }: IApiClientQueryWithPayload<{}, IFlagCreatePayload>,
+    config?: RequestConfig,
+  ) =>
+    api.request<IFlagCreateResponse>(API_ROUTER.FLAGS.CREATE, {
+      method: API_METHODS.POST,
+      body: JSON.stringify(payload),
+      contentType: API_CONTENT_TYPES.JSON,
+      ...config,
+    }),
+
+  getFlags: async (
+    { query }: IApiClientQuery<{ status?: FlagStatus; limit?: number; offset?: number }>,
+    config?: RequestConfig,
+  ) => {
+    const params = new URLSearchParams();
+    if (query.status) params.append('status', query.status);
+    if (query.limit !== undefined) params.append('limit', query.limit.toString());
+    if (query.offset !== undefined) params.append('offset', query.offset.toString());
+
+    return api.request<IFlagListResponse>(
+      `${API_ROUTER.FLAGS.GET}?${params.toString()}`,
+      {
+        method: API_METHODS.GET,
+        ...config,
+      },
+    );
+  },
+
+  getFlagById: async (
+    { query }: IApiClientQuery<{ flagId: string }>,
+    config?: RequestConfig,
+  ) =>
+    api.request<IFlagDetail>(API_ROUTER.FLAGS.GET_BY_ID(query.flagId), {
+      method: API_METHODS.GET,
+      ...config,
+    }),
+
+  updateFlag: async (
+    { query, payload }: IApiClientQueryWithPayload<
+      { flagId: string },
+      IFlagUpdatePayload
+    >,
+    config?: RequestConfig,
+  ) =>
+    api.request<void>(API_ROUTER.FLAGS.UPDATE(query.flagId), {
+      method: API_METHODS.PUT,
+      body: JSON.stringify(payload),
+      contentType: API_CONTENT_TYPES.JSON,
+      ...config,
+    }),
 };
 
 export const API_QUERY_KEYS = {
@@ -1044,4 +1103,6 @@ export const API_QUERY_KEYS = {
     CONVERSATION: 'messages_conversation',
     UNREAD_COUNT: 'messages_unread_count',
   },
+  FLAGS: 'flags',
+  FLAG_DETAIL: 'flag_detail',
 };

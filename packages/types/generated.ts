@@ -2,6 +2,9 @@
 import {
   CheckoutMode,
   CheckoutStatus,
+  FlagActionType,
+  FlagCategory,
+  FlagStatus,
   MapQueryContext,
   PlanExpiryPeriod,
   SponsorshipType,
@@ -891,4 +894,54 @@ export interface IConversationsGetResponse {
 
 export interface IMessageUnreadCountResponse {
   count: number;
+}
+
+// flags
+export interface IFlagCreatePayload {
+  category: FlagCategory;
+  description?: string;
+  flaggedPostId?: string;
+  flaggedCommentId?: string;
+}
+
+export interface IFlagUpdatePayload {
+  status: FlagStatus;
+  actionTaken?: FlagActionType;
+  adminNotes?: string;
+}
+
+export interface IFlagDetail {
+  id: string;
+  category: FlagCategory;
+  description?: string;
+  status: FlagStatus;
+  actionTaken?: FlagActionType;
+  adminNotes?: string;
+  createdAt: Date;
+  reviewedAt?: Date;
+  reporter: {
+    username: string;
+    picture?: string;
+  };
+  reviewedBy?: {
+    username: string;
+  };
+  flaggedContent: {
+    type: 'post' | 'comment';
+    id: string;
+    preview: string;
+    author: {
+      username: string;
+      picture?: string;
+    };
+  };
+}
+
+export interface IFlagListResponse {
+  flags: IFlagDetail[];
+  total: number;
+}
+
+export interface IFlagCreateResponse {
+  id: string;
 }

@@ -95,6 +95,12 @@ export const API_ROUTER = {
       TOGGLE: (postId: string) => `posts/${postId}/comments/toggle`,
     },
   },
+  FLAGS: {
+    CREATE: '/flags',
+    GET: '/flags',
+    GET_BY_ID: (id: string) => `/flags/${id}`,
+    UPDATE: (id: string) => `/flags/${id}`,
+  },
   PAYMENT_METHODS: {
     GET_ALL: 'payment-methods',
     GET_BY_ID: (id: string) => `payment-methods/${id}`,

@@ -9,10 +9,12 @@ import { ROUTER } from '@/router';
 
 import { AdminDashboardPostsView } from './admin-dashboard-posts-view';
 import { AdminDashboardUsersView } from './admin-dashboard-users-view';
+import { AdminDashboardFlagsView } from './admin-dashboard-flags-view';
 
 const TABS = {
   POSTS: 'posts',
   USERS: 'users',
+  FLAGS: 'flags',
 };
 
 type Props = {
@@ -28,6 +30,7 @@ export const AdminDashboardView: React.FC<Props> = ({ section }) => {
   const tabs: { key: string; label: string }[] = [
     { key: TABS.POSTS, label: 'Entries' },
     { key: TABS.USERS, label: 'Users' },
+    { key: TABS.FLAGS, label: 'Flagged Content' },
   ];
 
   const handleTabChange = (tab: string) => {
@@ -53,6 +56,7 @@ export const AdminDashboardView: React.FC<Props> = ({ section }) => {
       <div className="mt-2 flex flex-col w-full py-4">
         {tab === TABS.POSTS && <AdminDashboardPostsView />}
         {tab === TABS.USERS && <AdminDashboardUsersView />}
+        {tab === TABS.FLAGS && <AdminDashboardFlagsView />}
       </div>
     </div>
   );

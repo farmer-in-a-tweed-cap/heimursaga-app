@@ -5,8 +5,12 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { CommentForm } from './comment-form';
 import { formatDistanceToNow } from 'date-fns';
-import { useModal } from '@/hooks';
+import { useModal, useSession } from '@/hooks';
 import { MODALS } from '@/components/modal/modal-registry';
+import type { FlagContentModalProps } from '@/components/modal';
+
+// Constants
+const CONTENT_PREVIEW_LENGTH = 150;
 
 type Props = {
   comment: ICommentDetail;
@@ -21,6 +25,8 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const modal = useModal();
+  const session = useSession();
+  const isLoggedIn = !!session?.username;
 
   const handleUpdate = async (content: string) => {
     await onUpdate(comment.id, content);
@@ -41,6 +47,16 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
             setIsDeleting(false);
           }
         },
+      },
+    });
+  };
+
+  const handleReport = () => {
+    modal.open<FlagContentModalProps>(MODALS.FLAG_CONTENT, {
+      props: {
+        contentType: 'comment',
+        contentId: comment.id,
+        contentPreview: comment.content.slice(0, CONTENT_PREVIEW_LENGTH),
       },
     });
   };
@@ -133,6 +149,14 @@ export const CommentItem: React.FC<Props> = ({ comment, onUpdate, onDelete, onRe
                     className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                   >
                     Reply
+                  </button>
+                )}
+                {!comment.createdByMe && isLoggedIn && (
+                  <button
+                    onClick={handleReport}
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  >
+                    Report
                   </button>
                 )}
               </div>

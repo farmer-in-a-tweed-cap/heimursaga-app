@@ -7,6 +7,7 @@ import { CommentModule } from '@/modules/comment';
 import { DevModule } from '@/modules/dev';
 import { EmailModule } from '@/modules/email';
 import { EventModule } from '@/modules/event';
+import { FlagModule } from '@/modules/flag';
 import { LoggerModule } from '@/modules/logger';
 import { MapModule } from '@/modules/map';
 import { MessageModule } from '@/modules/message';
@@ -59,6 +60,7 @@ import { AppService } from './app.service';
     DevModule,
     PostModule,
     CommentModule,
+    FlagModule,
     UploadModule,
     UserModule,
     MapModule,
