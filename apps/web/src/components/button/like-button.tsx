@@ -8,7 +8,7 @@ type Props = {
   liked?: boolean;
   likesCount?: number;
   disabled?: boolean;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
 };
 
 export const LikeButton: React.FC<Props> = ({

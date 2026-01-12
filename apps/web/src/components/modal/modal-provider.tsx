@@ -114,7 +114,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <ModalContext.Provider value={{ context: state, setContext, preload }}>
-      <Dialog open={open}>
+      <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
         <DialogContent full={state.full} size={state.size} onClose={handleClose}>
           <Suspense fallback={<div>Loading...</div>}>{modalContent}</Suspense>
         </DialogContent>

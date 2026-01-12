@@ -16,7 +16,7 @@ import { LoadingSpinner, Skeleton } from '@repo/ui/components';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 
-import { useMapbox } from '@/hooks';
+import { useMapbox, useSession } from '@/hooks';
 import { dateformat } from '@/lib';
 import { ROUTER } from '@/router';
 
@@ -26,6 +26,7 @@ type Props = {
 
 export const MapTripView: React.FC<Props> = ({ trip }) => {
   const mapbox = useMapbox();
+  const session = useSession();
 
   const [sidebar, setSidebar] = useState<boolean>(true);
   const [waypoints, setWayponts] = useState<
@@ -80,7 +81,11 @@ export const MapTripView: React.FC<Props> = ({ trip }) => {
                 date={post?.date}
                 sponsored={post?.sponsored}
                 author={post?.author}
-                actions={{ like: false, bookmark: true }}
+                actions={{
+                  like: false,
+                  bookmark: true,
+                  flag: post?.author?.username !== session.username
+                }}
               />
             ))}
         </div>

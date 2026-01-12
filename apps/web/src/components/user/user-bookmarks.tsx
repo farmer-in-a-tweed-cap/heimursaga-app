@@ -53,6 +53,7 @@ export const UserBookmarks: React.FC<Props> = () => {
             bookmark: false,
             edit: false,
             share: true,
+            flag: true,
           }}
           onClick={() => handlePostClick(post.id)}
         />

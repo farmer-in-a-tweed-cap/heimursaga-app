@@ -1154,7 +1154,12 @@ export const MapExploreView: React.FC<Props> = () => {
                           place={post.place}
                           sponsored={post.sponsored}
                           media={post.media}
-                          actions={{ like: false, bookmark: false, edit: false }}
+                          actions={{
+                            like: false,
+                            bookmark: false,
+                            edit: false,
+                            flag: post.author?.username !== session.username
+                          }}
                           userbar={
                             // Only show userbar in non-journey contexts
                             !contexts.journey && post?.author

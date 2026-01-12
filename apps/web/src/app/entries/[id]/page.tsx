@@ -103,7 +103,7 @@ export default async function Page({ params }: Props) {
             actions={
               data.createdByMe
                 ? { edit: true, share: true }
-                : { like: true, bookmark: true, share: true }
+                : { like: true, bookmark: true, share: true, flag: true }
             }
             extended
           />

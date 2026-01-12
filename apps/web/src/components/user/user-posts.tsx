@@ -82,6 +82,7 @@ export const UserPosts: React.FC<Props> = ({ username }) => {
             bookmark: false,
             edit: me,
             share: true,
+            flag: !me,
           }}
         />
       ))}

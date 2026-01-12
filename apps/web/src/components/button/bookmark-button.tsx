@@ -9,7 +9,7 @@ type Props = {
   bookmarksCount?: number;
   disabled?: boolean;
   disableCount?: boolean;
-  onClick?: () => void;
+  onClick?: (e: React.MouseEvent) => void;
 };
 
 export const BookmarkButton: React.FC<Props> = ({

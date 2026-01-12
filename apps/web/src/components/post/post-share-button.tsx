@@ -15,7 +15,10 @@ type Props = {
 export const PostShareButton: React.FC<Props> = ({ postId }) => {
   const toast = useToast();
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (!postId) return;
 
     const url = new URL(

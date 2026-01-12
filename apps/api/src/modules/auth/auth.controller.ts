@@ -9,6 +9,7 @@ import {
   Post,
   Req,
   Res,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -140,7 +141,9 @@ export class AuthController {
   @SkipThrottle()
   async getMobileUser(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('Authorization header missing or invalid');
+      throw new UnauthorizedException(
+        'Authorization header missing or invalid',
+      );
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
@@ -171,14 +174,16 @@ export class AuthController {
   @SkipThrottle()
   async getMobileBookmarks(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('Authorization header missing or invalid');
+      throw new UnauthorizedException(
+        'Authorization header missing or invalid',
+      );
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const tokenData = await this.authService.verifyToken(token);
 
     if (!tokenData) {
-      throw new Error('Invalid or expired token');
+      throw new UnauthorizedException('Invalid or expired token');
     }
 
     const result = await this.sessionUserService.getPosts({
@@ -198,14 +203,16 @@ export class AuthController {
   @SkipThrottle()
   async getMobileNotifications(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('Authorization header missing or invalid');
+      throw new UnauthorizedException(
+        'Authorization header missing or invalid',
+      );
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const tokenData = await this.authService.verifyToken(token);
 
     if (!tokenData) {
-      throw new Error('Invalid or expired token');
+      throw new UnauthorizedException('Invalid or expired token');
     }
 
     const result = await this.sessionUserService.getNotifications({
@@ -227,16 +234,20 @@ export class AuthController {
   @Post('mobile/notifications/mark-read')
   @HttpCode(HttpStatus.OK)
   @SkipThrottle()
-  async markMobileNotificationsAsRead(@Headers('authorization') authHeader?: string) {
+  async markMobileNotificationsAsRead(
+    @Headers('authorization') authHeader?: string,
+  ) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('Authorization header missing or invalid');
+      throw new UnauthorizedException(
+        'Authorization header missing or invalid',
+      );
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const tokenData = await this.authService.verifyToken(token);
 
     if (!tokenData) {
-      throw new Error('Invalid or expired token');
+      throw new UnauthorizedException('Invalid or expired token');
     }
 
     await this.sessionUserService.markNotificationsAsRead({
@@ -259,14 +270,16 @@ export class AuthController {
   @SkipThrottle()
   async getMobileBadgeCount(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new Error('Authorization header missing or invalid');
+      throw new UnauthorizedException(
+        'Authorization header missing or invalid',
+      );
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
     const tokenData = await this.authService.verifyToken(token);
 
     if (!tokenData) {
-      throw new Error('Invalid or expired token');
+      throw new UnauthorizedException('Invalid or expired token');
     }
 
     const result = await this.sessionUserService.getBadgeCount({

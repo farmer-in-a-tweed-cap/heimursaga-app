@@ -48,7 +48,10 @@ export const PostLikeButton: React.FC<Props> = ({
     DEBOUNCE_TIMEOUT,
   );
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
     if (!postId) return;
 
     setState(({ liked, likesCount, ...state }) => ({
