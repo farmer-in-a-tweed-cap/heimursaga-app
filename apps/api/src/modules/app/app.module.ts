@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 
+import { AdminModule } from '@/modules/admin';
 import { AuthModule } from '@/modules/auth';
 import { CommentModule } from '@/modules/comment';
 import { DevModule } from '@/modules/dev';
@@ -53,6 +54,7 @@ import { AppService } from './app.service';
       },
     ]),
     LoggerModule,
+    AdminModule,
     EventModule,
     EmailModule,
     StripeModule,

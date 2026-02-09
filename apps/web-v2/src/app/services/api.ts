@@ -1789,4 +1789,139 @@ export const payoutApi = {
     api.post<CreatePayoutResponse>('/payouts', payload),
 };
 
+// ============================================
+// ADMIN API
+// ============================================
+
+export interface AdminStats {
+  explorers: number;
+  entries: number;
+  expeditions: number;
+  pendingFlags: number;
+  blockedExplorers: number;
+}
+
+export interface AdminEntryListItem {
+  id: string;
+  title: string;
+  author: {
+    username: string;
+    picture?: string;
+  };
+  createdAt: string;
+  deletedAt?: string;
+}
+
+export interface AdminExpeditionListItem {
+  id: string;
+  title: string;
+  status?: string;
+  author: {
+    username: string;
+    picture?: string;
+  };
+  createdAt: string;
+  deletedAt?: string;
+}
+
+export interface AdminExplorerListItem {
+  username: string;
+  email: string;
+  role: string;
+  blocked: boolean;
+  createdAt: string;
+  picture?: string;
+}
+
+export interface AdminFlag {
+  id: string;
+  category: string;
+  description?: string;
+  status: string;
+  actionTaken?: string;
+  adminNotes?: string;
+  createdAt: string;
+  reviewedAt?: string;
+  reporter: {
+    username: string;
+    picture?: string;
+  };
+  reviewedBy?: {
+    username: string;
+  };
+  flaggedContent: {
+    type: 'post' | 'comment';
+    id: string;
+    preview: string;
+    author: {
+      username: string;
+      picture?: string;
+    };
+  };
+}
+
+export const adminApi = {
+  getStats: () =>
+    api.get<AdminStats>('/admin/stats'),
+
+  getFlags: (params?: { status?: string; limit?: number; offset?: number }) => {
+    const qs = params
+      ? '?' + new URLSearchParams(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined && v !== '')
+            .map(([k, v]) => [k, String(v)])
+        ).toString()
+      : '';
+    return api.get<{ flags: AdminFlag[]; total: number }>(`/flags${qs}`);
+  },
+
+  updateFlag: (flagId: string, payload: { status: string; actionTaken?: string; adminNotes?: string }) =>
+    api.put<{ success: boolean }>(`/flags/${flagId}`, payload),
+
+  getEntries: (params?: { search?: string; limit?: number; offset?: number }) => {
+    const qs = params
+      ? '?' + new URLSearchParams(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined && v !== '')
+            .map(([k, v]) => [k, String(v)])
+        ).toString()
+      : '';
+    return api.get<{ data: AdminEntryListItem[]; total: number }>(`/admin/entries${qs}`);
+  },
+
+  deleteEntry: (id: string) =>
+    api.delete<void>(`/admin/entries/${id}`),
+
+  getExpeditions: (params?: { search?: string; limit?: number; offset?: number }) => {
+    const qs = params
+      ? '?' + new URLSearchParams(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined && v !== '')
+            .map(([k, v]) => [k, String(v)])
+        ).toString()
+      : '';
+    return api.get<{ data: AdminExpeditionListItem[]; total: number }>(`/admin/expeditions${qs}`);
+  },
+
+  deleteExpedition: (id: string) =>
+    api.delete<void>(`/admin/expeditions/${id}`),
+
+  getExplorers: (params?: { search?: string; limit?: number; offset?: number; blocked?: boolean }) => {
+    const qs = params
+      ? '?' + new URLSearchParams(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined && v !== '')
+            .map(([k, v]) => [k, String(v)])
+        ).toString()
+      : '';
+    return api.get<{ data: AdminExplorerListItem[]; total: number }>(`/admin/explorers${qs}`);
+  },
+
+  blockExplorer: (username: string) =>
+    api.post<void>(`/admin/explorers/${username}/block`),
+
+  unblockExplorer: (username: string) =>
+    api.post<void>(`/admin/explorers/${username}/unblock`),
+};
+
 export default api;

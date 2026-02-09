@@ -1139,3 +1139,62 @@ export type IExpeditionCreateResponse = { expeditionId: string };
 export type IExpeditionBookmarkResponse = { bookmarksCount: number };
 export type IExpeditionUpdatePayload = ITripUpdatePayload;
 export type IExplorerBookmarkResponse = { bookmarked: boolean };
+
+// =============================================================================
+// Admin Dashboard types
+// =============================================================================
+
+export interface IAdminStats {
+  explorers: number;
+  entries: number;
+  expeditions: number;
+  pendingFlags: number;
+  blockedExplorers: number;
+}
+
+export interface IAdminEntryListItem {
+  id: string;
+  title: string;
+  author: {
+    username: string;
+    picture?: string;
+  };
+  createdAt: Date;
+  deletedAt?: Date;
+}
+
+export interface IAdminEntryListResponse {
+  data: IAdminEntryListItem[];
+  total: number;
+}
+
+export interface IAdminExpeditionListItem {
+  id: string;
+  title: string;
+  status?: string;
+  author: {
+    username: string;
+    picture?: string;
+  };
+  createdAt: Date;
+  deletedAt?: Date;
+}
+
+export interface IAdminExpeditionListResponse {
+  data: IAdminExpeditionListItem[];
+  total: number;
+}
+
+export interface IAdminExplorerListItem {
+  username: string;
+  email: string;
+  role: string;
+  blocked: boolean;
+  createdAt: Date;
+  picture?: string;
+}
+
+export interface IAdminExplorerListResponse {
+  data: IAdminExplorerListItem[];
+  total: number;
+}

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+    "start": "if [ \"$APP\" = \"web\" ]; then cd apps/web-v2 && npx next start -p ${PORT:-3000}; elif [ \"$APP\" = \"api\" ]; then cd apps/api && node ./dist/main.js; fi",
     "build": "turbo run build --filter=api --filter=web-v2 --filter=@repo/types --filter=@repo/ui",
     "clean": "turbo run clean",
     "cleandep": "rm -rf node_modules && pnpm -r exec rm -rf node_modules",
