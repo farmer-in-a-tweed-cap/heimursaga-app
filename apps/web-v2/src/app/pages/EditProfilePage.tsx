@@ -46,7 +46,7 @@ export function EditProfilePage() {
     currentLocationSource: 'manual' as 'expedition' | 'manual',
 
     // Location Privacy
-    locationPrivacyLevel: 'REGIONAL_LEVEL' as LocationPrivacyLevel,
+    locationPrivacyLevel: 'HIDDEN' as LocationPrivacyLevel,
     autoSyncFromExpedition: false,
 
     website: '',
@@ -96,6 +96,9 @@ export function EditProfilePage() {
           instagram: settings.instagram || '',
           youtube: settings.youtube || '',
           equipment: Array.isArray(settings.equipment) ? settings.equipment.join('\n') : (settings.equipment || ''),
+          locationPrivacyLevel: settings.locationVisibility
+            ? (settings.locationVisibility.toUpperCase() as LocationPrivacyLevel)
+            : 'HIDDEN',
         }));
         // Set existing images as previews
         if (settings.picture) {
@@ -192,6 +195,7 @@ export function EditProfilePage() {
       bio: formData.bio,
       from: formData.fromLocation,
       livesIn: formData.currentLocation,
+      locationVisibility: formData.locationPrivacyLevel.toLowerCase(),
       website: formData.website,
       twitter: formData.twitter,
       instagram: formData.instagram,
@@ -384,7 +388,7 @@ export function EditProfilePage() {
 
                 {/* Current Avatar or Preview */}
                 <div className="flex items-start gap-4 mb-3">
-                  <div className="w-32 h-32 border-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a] flex items-center justify-center overflow-hidden">
+                  <div className={`w-32 h-32 border-2 ${user?.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} bg-[#f5f5f5] dark:bg-[#2a2a2a] flex items-center justify-center overflow-hidden`}>
                     {avatarPreview ? (
                       <NextImage src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" width={128} height={128} />
                     ) : (

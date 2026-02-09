@@ -43,7 +43,7 @@ export function ExplorerCardPortrait({
       {/* Avatar */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] pt-7 px-3 pb-7">
         <div className="flex flex-col items-center">
-          <div className="w-32 h-32 border-2 border-[#ac6d46] overflow-hidden bg-[#b5bcc4]">
+          <div className={`w-32 h-32 border-2 ${accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#b5bcc4]`}>
             <Image
               src={avatarUrl}
               alt={username}

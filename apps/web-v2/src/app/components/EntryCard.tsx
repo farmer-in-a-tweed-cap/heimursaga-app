@@ -143,7 +143,7 @@ export function EntryCard({
           >
             <div className="flex items-center justify-center gap-2">
               <FileText className="h-4 w-4" />
-              <span>READ ENTRY</span>
+              <span>VIEW ENTRY</span>
             </div>
           </button>
           {/* Bookmark button - Hidden when not authenticated */}

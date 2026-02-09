@@ -376,7 +376,7 @@ export function Header() {
             {/* User Avatar */}
             {isAuthenticated && user && (
               <Link href={`/journal/${user.username}`} className="flex-shrink-0 flex items-center">
-                <div className="w-[66px] h-[66px] border-2 border-[#ac6d46] overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4676ac] flex items-center justify-center">
+                <div className={`w-[66px] h-[66px] border-2 ${user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4676ac] flex items-center justify-center`}>
                   {user.picture ? (
                     <Image
                       src={user.picture}

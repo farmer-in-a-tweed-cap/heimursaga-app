@@ -548,7 +548,7 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
               isRead={false}
               actions={{
                 primary: {
-                  label: "VIEW PROFILE",
+                  label: "VIEW JOURNAL",
                   onClick: () => {}
                 }
               }}
@@ -569,7 +569,7 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
               }}
               actions={{
                 primary: {
-                  label: "VIEW PROFILE",
+                  label: "VIEW JOURNAL",
                   onClick: () => {}
                 }
               }}

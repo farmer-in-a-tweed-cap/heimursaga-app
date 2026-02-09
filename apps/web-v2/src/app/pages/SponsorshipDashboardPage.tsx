@@ -393,7 +393,7 @@ export function SponsorshipDashboardPage() {
                       className="px-4 py-2 bg-[#4676ac] text-white hover:bg-[#202020] transition-all text-sm font-bold flex items-center gap-2"
                     >
                       <ExternalLink className="w-4 h-4" />
-                      VIEW EXPLORER
+                      VIEW JOURNAL
                     </Link>
                     <button
                       onClick={() => handleToggleEmailDelivery(sub.id, sub.emailDeliveryEnabled)}

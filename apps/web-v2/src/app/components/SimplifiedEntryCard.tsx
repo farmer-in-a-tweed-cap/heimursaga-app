@@ -78,7 +78,7 @@ export function SimplifiedEntryCard({
               className="flex items-center gap-2 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] dark:focus-visible:ring-[#616161] text-xs font-bold whitespace-nowrap"
             >
               <FileText className="h-4 w-4" strokeWidth={2} />
-              <span>READ</span>
+              <span>VIEW ENTRY</span>
             </Link>
             <button
               onClick={onMapClick}

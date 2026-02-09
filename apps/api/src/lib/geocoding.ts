@@ -25,6 +25,49 @@ interface MapboxResponse {
 }
 
 /**
+ * Forward geocode a location string to coordinates using Mapbox geocoding API
+ * Returns null if coordinates cannot be determined
+ */
+export async function getCoordinatesFromLocation(
+  locationText: string,
+): Promise<{ lat: number; lon: number } | null> {
+  const token = process.env.MAPBOX_ACCESS_TOKEN;
+
+  if (!token) {
+    console.warn(
+      'MAPBOX_ACCESS_TOKEN not configured, skipping geocoding',
+    );
+    return null;
+  }
+
+  try {
+    const encoded = encodeURIComponent(locationText);
+    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encoded}.json?limit=1&access_token=${token}`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      console.error(
+        `Mapbox geocoding error: ${response.status} ${response.statusText}`,
+      );
+      return null;
+    }
+
+    const data: MapboxResponse = await response.json();
+
+    if (data.features && data.features.length > 0) {
+      const [lon, lat] = (data.features[0] as any).center as [number, number];
+      return { lat, lon };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error during forward geocoding:', error);
+    return null;
+  }
+}
+
+/**
  * Get ISO 3166-1 alpha-2 country code from coordinates using Mapbox reverse geocoding
  * Returns null if country cannot be determined
  */

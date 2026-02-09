@@ -7,6 +7,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
@@ -34,9 +35,12 @@ export class ExplorerController {
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getExplorers(@Session() session: ISession) {
+  async getExplorers(
+    @Session() session: ISession,
+    @Query('context') context?: string,
+  ) {
     return await this.explorerService.getExplorers({
-      query: {},
+      query: { context },
       session,
     });
   }

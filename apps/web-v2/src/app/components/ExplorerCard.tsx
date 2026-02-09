@@ -77,7 +77,7 @@ export function ExplorerCard({
       {/* Section: Avatar & Location */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] px-4 py-6">
         <div className="flex flex-col items-center">
-          <div className="w-32 h-32 border-4 border-[#ac6d46] overflow-hidden bg-[#b5bcc4] mb-4">
+          <div className={`w-32 h-32 border-4 ${accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#b5bcc4] mb-4`}>
             <ImageWithFallback
               src={imageUrl}
               alt={username}
@@ -145,7 +145,7 @@ export function ExplorerCard({
           >
             <div className="flex items-center justify-center gap-2">
               <BookOpen className="h-4 w-4" />
-              <span>JOURNAL</span>
+              <span>VIEW JOURNAL</span>
             </div>
           </button>
           {/* Follow button - Hidden when not authenticated */}

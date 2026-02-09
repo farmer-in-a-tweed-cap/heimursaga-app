@@ -526,7 +526,7 @@ export function NotificationsPage() {
               case 'follow':
                 if (notification.actor) {
                   actions.primary = {
-                    label: 'VIEW PROFILE',
+                    label: 'VIEW JOURNAL',
                     onClick: () => router.push(`/journal/${notification.actor}`)
                   };
                 }
@@ -535,7 +535,7 @@ export function NotificationsPage() {
               case 'sponsorship':
                 if (notification.actor) {
                   actions.primary = {
-                    label: 'VIEW PROFILE',
+                    label: 'VIEW JOURNAL',
                     onClick: () => router.push(`/journal/${notification.actor}`)
                   };
                 }

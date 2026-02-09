@@ -16,6 +16,7 @@ import {
 import { dateformat } from '@/lib/date-format';
 import { integerToDecimal, normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
+import { resolveExpeditionLocations } from '@/lib/resolve-expedition-location';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles, sortByDate } from '@/lib/utils';
 
@@ -125,9 +126,11 @@ export class ExpeditionService {
   }
 
   async getExpeditions({
+    query,
     session,
-  }: IQueryWithSession<{}>): Promise<IExpeditionGetAllResponse> {
+  }: IQueryWithSession<{ context?: string }>): Promise<IExpeditionGetAllResponse> {
     try {
+      const { context } = query;
       const { explorerId, explorerRole } = session;
 
       let where: Prisma.ExpeditionWhereInput = {
@@ -164,6 +167,18 @@ export class ExpeditionService {
               public: true,
             };
         }
+      }
+
+      // Filter to expeditions from followed explorers
+      if (context === 'following') {
+        if (!explorerId) throw new ServiceForbiddenException();
+        const follows = await this.prisma.explorerFollow.findMany({
+          where: { follower_id: explorerId },
+          select: { followee_id: true },
+        });
+        const followedIds = follows.map((f) => f.followee_id);
+        if (followedIds.length === 0) return { data: [], results: 0 };
+        where = { ...where, author_id: { in: followedIds } };
       }
 
       // get expeditions
@@ -217,7 +232,7 @@ export class ExpeditionService {
           },
         },
         take,
-        orderBy: [{ id: 'desc' }],
+        orderBy: context === 'following' ? [{ updated_at: 'desc' }] : [{ id: 'desc' }],
       });
 
       // Get unique sponsor counts per author
@@ -346,6 +361,9 @@ export class ExpeditionService {
           author_id: true,
           start_date: true,
           end_date: true,
+          current_location_type: true,
+          current_location_id: true,
+          current_location_visibility: true,
           waypoints: {
             where: {
               waypoint: {
@@ -378,6 +396,23 @@ export class ExpeditionService {
         orderBy: [{ id: 'desc' }],
       });
 
+      // Resolve current location references in batch
+      const locationRefs = data
+        .filter(
+          (d) =>
+            d.current_location_type &&
+            d.current_location_id &&
+            (d.current_location_visibility || 'public') === 'public',
+        )
+        .map((d) => ({
+          type: d.current_location_type!,
+          id: d.current_location_id!,
+        }));
+      const resolvedLocations = await resolveExpeditionLocations(
+        this.prisma,
+        locationRefs,
+      );
+
       // Get unique sponsor counts per author
       const authorIds = [...new Set(data.map((d) => d.author_id))];
       const sponsorCounts = await this.getUniqueSponsorCounts(authorIds);
@@ -401,6 +436,9 @@ export class ExpeditionService {
             author_id,
             start_date,
             end_date,
+            current_location_type,
+            current_location_id,
+            current_location_visibility,
             author,
             ...expedition
           }) => {
@@ -419,7 +457,6 @@ export class ExpeditionService {
                   new Date(a.date!).getTime() - new Date(b.date!).getTime(),
               );
 
-            // Use expedition dates if available, otherwise fall back to waypoint dates
             // Use expedition dates if available, otherwise fall back to earliest/latest waypoint dates
             const startDate =
               start_date ||
@@ -431,6 +468,17 @@ export class ExpeditionService {
               (datedWaypoints.length >= 1
                 ? datedWaypoints[datedWaypoints.length - 1]?.date
                 : undefined);
+
+            // Resolve current location if public
+            const locKey =
+              current_location_type && current_location_id
+                ? `${current_location_type}:${current_location_id}`
+                : null;
+            const resolvedLoc = locKey
+              ? resolvedLocations.get(locKey)
+              : undefined;
+            const isPublicLoc =
+              (current_location_visibility || 'public') === 'public';
 
             return {
               id: public_id,
@@ -450,6 +498,20 @@ export class ExpeditionService {
               entriesCount: entries_count,
               waypointsCount: waypoints.length,
               waypoints: [],
+              currentLocation:
+                resolvedLoc && isPublicLoc
+                  ? {
+                      lat: resolvedLoc.lat,
+                      lon: resolvedLoc.lon,
+                      name: resolvedLoc.name,
+                      source: current_location_type,
+                    }
+                  : undefined,
+              currentLocationVisibility:
+                (current_location_visibility || 'public') as
+                  | 'public'
+                  | 'sponsors'
+                  | 'private',
               author: author
                 ? {
                     username: author.username,

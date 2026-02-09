@@ -469,7 +469,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
                   }}
                   className="w-full bg-[#ac6d46] text-white py-2 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold mt-2 whitespace-nowrap"
                 >
-                  → READ FULL ENTRY
+                  VIEW ENTRY
                 </button>
               </div>
             </div>

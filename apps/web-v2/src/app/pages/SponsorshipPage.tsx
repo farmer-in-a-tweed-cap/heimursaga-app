@@ -539,7 +539,7 @@ export function SponsorshipPage() {
                                     href={`/journal/${sub.sponsoredExplorer?.username}`}
                                     className="px-4 py-2 bg-[#4676ac] text-white text-xs font-bold hover:bg-[#365a87] transition-all flex items-center gap-2"
                                   >
-                                    <ExternalLink className="w-4 h-4" /> VIEW EXPLORER
+                                    <ExternalLink className="w-4 h-4" /> VIEW JOURNAL
                                   </Link>
                                   <button
                                     onClick={() =>

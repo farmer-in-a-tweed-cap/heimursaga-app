@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -33,9 +34,12 @@ export class ExpeditionController {
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getExpeditions(@Session() session: ISession) {
+  async getExpeditions(
+    @Session() session: ISession,
+    @Query('context') context?: string,
+  ) {
     return await this.expeditionService.getExpeditions({
-      query: {},
+      query: { context },
       session,
     });
   }

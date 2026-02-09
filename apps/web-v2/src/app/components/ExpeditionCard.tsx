@@ -324,7 +324,7 @@ export function ExpeditionCard({
           >
             <div className="flex items-center justify-center gap-2">
               <FileText className="h-4 w-4" />
-              <span>JOURNAL</span>
+              <span>VIEW EXPEDITION</span>
             </div>
           </button>
           {/* Sponsor button - Visible when sponsorships available and not completed */}

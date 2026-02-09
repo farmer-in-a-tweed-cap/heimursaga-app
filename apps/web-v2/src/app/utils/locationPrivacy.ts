@@ -111,9 +111,10 @@ export function formatLocationByPrivacy(
       };
 
     case 'REGIONAL_LEVEL':
-      if (region && country) {
+      const regionName = region || city; // city may actually be a state/region for 2-part locations
+      if (regionName && country) {
         return {
-          displayText: `${region}, ${country}`,
+          displayText: `${regionName}, ${country}`,
           displayCoordinates: coordinates ? `~${Math.round(coordinates.lat)}°N, ~${Math.round(coordinates.lng)}°E` : undefined,
         };
       }

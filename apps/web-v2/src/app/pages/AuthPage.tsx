@@ -147,7 +147,7 @@ export function AuthPage() {
                   ACCOUNT LOGIN
                 </h2>
 
-                <form className="space-y-4" onSubmit={handleLogin}>
+                <form className="space-y-4" method="POST" onSubmit={handleLogin}>
                   {/* Email/Username */}
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
@@ -245,7 +245,7 @@ export function AuthPage() {
                   CREATE NEW EXPLORER ACCOUNT
                 </h2>
 
-                <form className="space-y-4" onSubmit={handleRegister}>
+                <form className="space-y-4" method="POST" onSubmit={handleRegister}>
                   {/* Username */}
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">

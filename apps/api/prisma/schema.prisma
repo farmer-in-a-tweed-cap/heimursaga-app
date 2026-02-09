@@ -100,6 +100,7 @@ model ExplorerProfile {
   location_from_lon            Float?
   location_lives_lat           Float?
   location_lives_lon           Float?
+  location_visibility          String?   @default("hidden") @db.VarChar(25)
   sponsors_fund                String?   @db.VarChar(500)
   sponsors_fund_expedition_id  String?   @map("sponsors_fund_journey_id") @db.VarChar(50)
   sponsors_fund_type           String?   @db.VarChar(20)

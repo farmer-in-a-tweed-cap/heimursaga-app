@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { entryApi, explorerApi } from '@/app/services/api';
+import { getExplorerStatus } from '@/app/components/ExplorerStatusBadge';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -24,6 +25,42 @@ mapboxgl.accessToken = MAPBOX_TOKEN;
 
 type MapMode = 'explorer' | 'entry';
 
+/**
+ * Apply privacy-based jitter to coordinates so same-location explorers don't stack.
+ * Jitter radius is proportional to the privacy level's geographic imprecision.
+ * Uses a seeded random based on username for consistency across renders.
+ */
+function applyPrivacyJitter(
+  lat: number,
+  lng: number,
+  visibility: string,
+  seed: string,
+): { lat: number; lng: number } {
+  // Jitter radius in degrees based on privacy level
+  const radiusMap: Record<string, number> = {
+    continent_level: 5.0,   // ~500km
+    country_level: 2.0,     // ~200km
+    regional_level: 0.5,    // ~50km
+    city_level: 0.05,       // ~5km
+    precise_coordinates: 0, // no jitter
+  };
+  const radius = radiusMap[visibility] ?? 0;
+  if (radius === 0) return { lat, lng };
+
+  // Simple hash from username for deterministic jitter
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  }
+  const angle = ((hash & 0xffff) / 0xffff) * Math.PI * 2;
+  const dist = (((hash >>> 16) & 0xffff) / 0xffff) * radius;
+
+  return {
+    lat: lat + dist * Math.sin(angle),
+    lng: lng + dist * Math.cos(angle),
+  };
+}
+
 interface MapExplorer {
   username: string;
   name: string;
@@ -33,6 +70,12 @@ interface MapExplorer {
   bio: string;
   entriesCount: number;
   creator: boolean;
+  locationVisibility: string;
+  status: 'EXPLORING' | 'PLANNING' | 'RESTING';
+  activeExpeditionLocation?: {
+    lat: number; lon: number; name: string;
+    expeditionId: string; expeditionTitle: string;
+  };
 }
 
 interface MapEntry {
@@ -50,7 +93,11 @@ interface MapEntry {
   wordCount: number;
 }
 
-export function ExplorerMap() {
+interface ExplorerMapProps {
+  context?: string; // 'following' or undefined for global
+}
+
+export function ExplorerMap({ context }: ExplorerMapProps = {}) {
   const [mapMode, setMapMode] = useState<MapMode>('entry');
   const [clickedExplorer, setClickedExplorer] = useState<MapExplorer | null>(null);
   const [clickedEntry, setClickedEntry] = useState<MapEntry | null>(null);
@@ -69,6 +116,7 @@ export function ExplorerMap() {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const geocoderRef = useRef<MapboxGeocoder | null>(null);
   const navControlRef = useRef<mapboxgl.NavigationControl | null>(null);
+  const highlightMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
   const router = useRouter();
@@ -134,8 +182,8 @@ export function ExplorerMap() {
       setLoading(true);
       try {
         const [entriesResponse, explorersResponse] = await Promise.all([
-          entryApi.getAll().catch(() => ({ data: [], results: 0 })),
-          explorerApi.getAll().catch(() => ({ data: [], results: 0 })),
+          entryApi.getAll(context).catch(() => ({ data: [], results: 0 })),
+          explorerApi.getAll(context).catch(() => ({ data: [], results: 0 })),
         ]);
 
         // Transform entries with coordinates
@@ -157,25 +205,50 @@ export function ExplorerMap() {
           }));
         setAllEntries(entriesWithCoords);
 
-        // Transform explorers with coordinates (prefer locationLives, fallback to locationFrom)
+        // Transform explorers with coordinates (prefer expedition location, then profile location)
+        // Include explorers who have either a non-hidden profile location OR an active expedition location
         const explorersWithCoords = (explorersResponse.data || [])
-          .filter(explorer =>
-            (explorer.locationLivesLat != null && explorer.locationLivesLon != null) ||
-            (explorer.locationFromLat != null && explorer.locationFromLon != null)
-          )
-          .map(explorer => ({
-            username: explorer.username,
-            name: explorer.name || explorer.username,
-            picture: explorer.picture || '',
-            location: explorer.locationLives || explorer.locationFrom || '',
-            coords: {
-              lat: explorer.locationLivesLat ?? explorer.locationFromLat!,
-              lng: explorer.locationLivesLon ?? explorer.locationFromLon!,
-            },
-            bio: explorer.bio || '',
-            entriesCount: explorer.entriesCount || 0,
-            creator: explorer.creator || false,
-          }));
+          .filter(explorer => {
+            // Has active expedition location — always include
+            if (explorer.activeExpeditionLocation) return true;
+            // Otherwise require non-hidden profile location
+            const visibility = (explorer.locationVisibility || 'hidden').toLowerCase();
+            if (visibility === 'hidden') return false;
+            return (explorer.locationLivesLat != null && explorer.locationLivesLon != null) ||
+              (explorer.locationFromLat != null && explorer.locationFromLon != null);
+          })
+          .map(explorer => {
+            const hasExpeditionLoc = explorer.activeExpeditionLocation;
+            const visibility = (explorer.locationVisibility || 'hidden').toLowerCase();
+
+            let coords: { lat: number; lng: number };
+            let displayLocation: string;
+
+            if (hasExpeditionLoc) {
+              // Expedition locations are precise — no privacy jitter
+              coords = { lat: hasExpeditionLoc.lat, lng: hasExpeditionLoc.lon };
+              displayLocation = hasExpeditionLoc.name;
+            } else {
+              const rawLat = explorer.locationLivesLat ?? explorer.locationFromLat!;
+              const rawLng = explorer.locationLivesLon ?? explorer.locationFromLon!;
+              coords = applyPrivacyJitter(rawLat, rawLng, visibility, explorer.username);
+              displayLocation = explorer.locationLives || explorer.locationFrom || '';
+            }
+
+            return {
+              username: explorer.username,
+              name: explorer.name || explorer.username,
+              picture: explorer.picture || '',
+              location: displayLocation,
+              coords,
+              bio: explorer.bio || '',
+              entriesCount: explorer.entriesCount || 0,
+              creator: explorer.creator || false,
+              locationVisibility: hasExpeditionLoc ? 'precise_coordinates' : visibility,
+              status: getExplorerStatus(explorer.recentExpeditions || []),
+              activeExpeditionLocation: hasExpeditionLoc,
+            };
+          });
         setAllExplorers(explorersWithCoords);
       } catch (err) {
         console.error('Error fetching map data:', err);
@@ -184,7 +257,7 @@ export function ExplorerMap() {
       }
     };
     fetchData();
-  }, []);
+  }, [context]);
 
   // Update visible items based on map bounds
   const updateVisibleItems = useCallback(() => {
@@ -262,6 +335,10 @@ export function ExplorerMap() {
       map.off('zoomend', updateVisibleItems);
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
+      if (highlightMarkerRef.current) {
+        highlightMarkerRef.current.remove();
+        highlightMarkerRef.current = null;
+      }
       map.remove();
       mapRef.current = null;
     };
@@ -284,75 +361,126 @@ export function ExplorerMap() {
     const eventListeners: Array<{ element: HTMLElement; handler: (e: MouseEvent) => void }> = [];
 
     if (mapMode === 'explorer') {
-      // Add explorer markers
-      allExplorers.forEach((explorer) => {
-        const el = document.createElement('div');
-        el.className = 'explorer-marker';
-        el.style.width = '48px';
-        el.style.height = '48px';
-        el.style.cursor = 'pointer';
+      const map = mapRef.current;
 
-        const innerCircle = document.createElement('div');
-        innerCircle.style.width = '32px';
-        innerCircle.style.height = '32px';
-        innerCircle.style.borderRadius = '50%';
-        innerCircle.style.backgroundColor = explorer.creator ? '#ac6d46' : '#4676ac';
-        innerCircle.style.border = '3px solid white';
-        innerCircle.style.position = 'absolute';
-        innerCircle.style.top = '50%';
-        innerCircle.style.left = '50%';
-        innerCircle.style.transform = 'translate(-50%, -50%)';
-        innerCircle.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-        innerCircle.style.display = 'flex';
-        innerCircle.style.alignItems = 'center';
-        innerCircle.style.justifyContent = 'center';
+      // Build GeoJSON for clustering
+      const geojson: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: allExplorers.map((explorer, i) => ({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [explorer.coords.lng, explorer.coords.lat],
+          },
+          properties: { index: i, creator: explorer.creator ? 1 : 0 },
+        })),
+      };
 
-        const dot = document.createElement('div');
-        dot.style.width = '12px';
-        dot.style.height = '12px';
-        dot.style.borderRadius = '50%';
-        dot.style.backgroundColor = 'white';
-        innerCircle.appendChild(dot);
-
-        el.appendChild(innerCircle);
-
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([explorer.coords.lng, explorer.coords.lat])
-          .addTo(mapRef.current!);
-
-        const clickHandler = (e: MouseEvent) => {
-          e.stopPropagation();
-
-          markersRef.current.forEach(m => {
-            const markerEl = m.getElement();
-            if (markerEl && (markerEl as any).removeHighlight) {
-              (markerEl as any).removeHighlight();
-            }
-          });
-
-          if (mapContainerRef.current) {
-            const mapRect = mapContainerRef.current.getBoundingClientRect();
-            const markerRect = el.getBoundingClientRect();
-            const markerCenterX = markerRect.left + markerRect.width / 2 - mapRect.left;
-            setPopupPosition(markerCenterX > mapRect.width / 2 ? 'bottom-left' : 'bottom-right');
-          }
-
-          setClickedExplorer(explorer);
-
-          innerCircle.style.border = '4px solid #ac6d46';
-          innerCircle.style.boxShadow = '0 0 20px rgba(172, 109, 70, 0.8), 0 4px 12px rgba(0,0,0,0.4)';
-        };
-
-        el.addEventListener('click', clickHandler);
-        eventListeners.push({ element: el, handler: clickHandler });
-
-        (el as any).removeHighlight = () => {
-          innerCircle.style.border = '3px solid white';
-          innerCircle.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-        };
-
-        markersRef.current.push(marker);
+      // Remove old cluster layers/source if they exist
+      ['explorer-unclustered-dot', 'explorer-cluster-count', 'explorer-clusters', 'explorer-unclustered'].forEach(id => {
+        if (map.getLayer(id)) map.removeLayer(id);
       });
+      if (map.getSource('explorer-source')) map.removeSource('explorer-source');
+
+      map.addSource('explorer-source', {
+        type: 'geojson',
+        data: geojson,
+        cluster: true,
+        clusterMaxZoom: 12,
+        clusterRadius: 50,
+      });
+
+      // Cluster circles
+      map.addLayer({
+        id: 'explorer-clusters',
+        type: 'circle',
+        source: 'explorer-source',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': '#ac6d46',
+          'circle-radius': ['step', ['get', 'point_count'], 18, 5, 24, 20, 32],
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // Cluster count labels
+      map.addLayer({
+        id: 'explorer-cluster-count',
+        type: 'symbol',
+        source: 'explorer-source',
+        filter: ['has', 'point_count'],
+        layout: {
+          'text-field': '{point_count_abbreviated}',
+          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
+          'text-size': 13,
+        },
+        paint: {
+          'text-color': '#ffffff',
+        },
+      });
+
+      // Click cluster to zoom in
+      map.on('click', 'explorer-clusters', (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ['explorer-clusters'] });
+        if (!features.length) return;
+        const clusterId = features[0].properties?.cluster_id;
+        const source = map.getSource('explorer-source') as mapboxgl.GeoJSONSource;
+        source.getClusterExpansionZoom(clusterId, ((err: any, zoom: number) => {
+          if (err) return;
+          const geometry = features[0].geometry as GeoJSON.Point;
+          map.easeTo({ center: geometry.coordinates as [number, number], zoom });
+        }) as any);
+      });
+
+      // Individual (unclustered) explorer markers — visible circle layer
+      map.addLayer({
+        id: 'explorer-unclustered',
+        type: 'circle',
+        source: 'explorer-source',
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': ['case', ['==', ['get', 'creator'], 1], '#ac6d46', '#4676ac'],
+          'circle-radius': 14,
+          'circle-stroke-width': 3,
+          'circle-stroke-color': '#ffffff',
+        },
+      });
+
+      // White dot in centre of unclustered markers
+      map.addLayer({
+        id: 'explorer-unclustered-dot',
+        type: 'circle',
+        source: 'explorer-source',
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': '#ffffff',
+          'circle-radius': 5,
+        },
+      });
+
+      // Click unclustered marker to show popup
+      map.on('click', 'explorer-unclustered', (e) => {
+        if (!e.features?.length) return;
+        const idx = e.features[0].properties?.index as number;
+        const explorer = allExplorers[idx];
+        if (!explorer) return;
+
+        // Determine popup position based on click location
+        if (mapContainerRef.current) {
+          const mapRect = mapContainerRef.current.getBoundingClientRect();
+          const clickX = e.point.x;
+          setPopupPosition(clickX > mapRect.width / 2 ? 'bottom-left' : 'bottom-right');
+        }
+
+        setClickedExplorer(explorer);
+      });
+
+      // Change cursor on hover
+      map.on('mouseenter', 'explorer-clusters', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'explorer-clusters', () => { map.getCanvas().style.cursor = ''; });
+      map.on('mouseenter', 'explorer-unclustered', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'explorer-unclustered', () => { map.getCanvas().style.cursor = ''; });
     } else {
       // Add entry markers
       allEntries.forEach((entry) => {
@@ -437,6 +565,15 @@ export function ExplorerMap() {
       });
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
+
+      // Clean up cluster layers/source
+      const map = mapRef.current;
+      if (map) {
+        ['explorer-unclustered-dot', 'explorer-cluster-count', 'explorer-clusters', 'explorer-unclustered'].forEach(id => {
+          if (map.getLayer(id)) map.removeLayer(id);
+        });
+        if (map.getSource('explorer-source')) map.removeSource('explorer-source');
+      }
     };
   }, [mapMode, allExplorers, allEntries, loading, updateVisibleItems]);
 
@@ -455,6 +592,28 @@ export function ExplorerMap() {
     }, 100);
     return () => clearTimeout(timer);
   }, [isFullscreen]);
+
+  // Highlight ring for active explorer marker (GL layers can't be styled per-feature on click)
+  useEffect(() => {
+    if (highlightMarkerRef.current) {
+      highlightMarkerRef.current.remove();
+      highlightMarkerRef.current = null;
+    }
+
+    if (clickedExplorer && mapRef.current && mapMode === 'explorer') {
+      const el = document.createElement('div');
+      el.style.width = '36px';
+      el.style.height = '36px';
+      el.style.borderRadius = '50%';
+      el.style.border = '3px solid #ac6d46';
+      el.style.boxShadow = '0 0 16px rgba(172, 109, 70, 0.7), 0 0 32px rgba(172, 109, 70, 0.3)';
+      el.style.pointerEvents = 'none';
+
+      highlightMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
+        .setLngLat([clickedExplorer.coords.lng, clickedExplorer.coords.lat])
+        .addTo(mapRef.current);
+    }
+  }, [clickedExplorer, mapMode]);
 
   const currentItems = mapMode === 'explorer' ? allExplorers : allEntries;
 
@@ -570,42 +729,75 @@ export function ExplorerMap() {
               popupPosition === 'bottom-left' ? 'bottom-20 left-4' : 'bottom-20 right-4'
             }`}
           >
+            {/* Status banner — top of card */}
+            <div className={`px-3 py-1.5 text-white text-[10px] font-bold font-mono flex items-center gap-2 ${
+              clickedExplorer.status === 'EXPLORING' ? 'bg-[#ac6d46]' :
+              clickedExplorer.status === 'PLANNING' ? 'bg-[#4676ac]' :
+              'bg-[#616161]'
+            }`}>
+              <span className="flex-shrink-0">{clickedExplorer.status}</span>
+              {clickedExplorer.activeExpeditionLocation && (
+                <>
+                  <span className="text-white/30">|</span>
+                  <button
+                    onClick={() => window.open(`/expedition/${clickedExplorer.activeExpeditionLocation!.expeditionId}`, '_blank')}
+                    className="hover:underline truncate text-white/80"
+                  >
+                    {clickedExplorer.activeExpeditionLocation.expeditionTitle}
+                  </button>
+                </>
+              )}
+            </div>
+
             <div className="p-3 text-xs font-mono">
               <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">
                 <div className="flex items-center gap-2">
                   {clickedExplorer.picture && (
-                    <Image src={clickedExplorer.picture} alt={clickedExplorer.name} className="w-8 h-8 rounded-full object-cover" width={32} height={32} />
+                    <div className={`w-8 h-8 border-2 ${clickedExplorer.creator ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden flex-shrink-0`}>
+                      <Image src={clickedExplorer.picture} alt={clickedExplorer.username} className="w-full h-full object-cover" width={32} height={32} />
+                    </div>
                   )}
                   <div>
-                    <div className="font-bold text-sm dark:text-[#e5e5e5]">{clickedExplorer.name}</div>
-                    <div className="text-[#616161] dark:text-[#b5bcc4]">@{clickedExplorer.username}</div>
+                    <div className="font-bold text-sm dark:text-[#e5e5e5]">{clickedExplorer.username}</div>
+                    <div className="text-[#616161] dark:text-[#b5bcc4]">{clickedExplorer.name}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 text-xs ${clickedExplorer.creator ? 'bg-[#ac6d46]' : 'bg-[#4676ac]'} text-white`}>
-                    {clickedExplorer.creator ? 'PRO' : 'EXPLORER'}
-                  </span>
-                  <button
-                    onClick={() => {
-                      setClickedExplorer(null);
-                      markersRef.current.forEach(m => {
-                        const el = m.getElement();
-                        if (el && (el as any).removeHighlight) {
-                          (el as any).removeHighlight();
-                        }
-                      });
-                    }}
-                    className="p-1 hover:bg-[#202020] hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded transition-all active:scale-[0.95] focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#616161]"
-                  >
-                    <X className="w-4 h-4 text-[#202020] dark:text-[#e5e5e5]" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    setClickedExplorer(null);
+                    markersRef.current.forEach(m => {
+                      const el = m.getElement();
+                      if (el && (el as any).removeHighlight) {
+                        (el as any).removeHighlight();
+                      }
+                    });
+                  }}
+                  className="p-1 hover:bg-[#202020] hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded transition-all active:scale-[0.95] focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#616161]"
+                >
+                  <X className="w-4 h-4 text-[#202020] dark:text-[#e5e5e5]" />
+                </button>
               </div>
               <div className="space-y-2 text-[#202020] dark:text-[#e5e5e5]">
-                {clickedExplorer.location && (
-                  <div><strong>LOCATION:</strong> {clickedExplorer.location}</div>
+                {clickedExplorer.activeExpeditionLocation ? (
+                  <>
+                    <div className="text-xs">
+                      <strong>LOCATION:</strong>{' '}
+                      {clickedExplorer.location}
+                      {' '}
+                      <span className="text-[#616161]/60 dark:text-[#b5bcc4]/60">
+                        ({clickedExplorer.activeExpeditionLocation.lat.toFixed(4)}, {clickedExplorer.activeExpeditionLocation.lon.toFixed(4)})
+                      </span>
+                    </div>
+                    <div><strong>ENTRIES:</strong> {clickedExplorer.entriesCount}</div>
+                  </>
+                ) : (
+                  <>
+                    {clickedExplorer.location && (
+                      <div><strong>LOCATION:</strong> {clickedExplorer.location}</div>
+                    )}
+                    <div><strong>ENTRIES:</strong> {clickedExplorer.entriesCount}</div>
+                  </>
                 )}
-                <div><strong>ENTRIES:</strong> {clickedExplorer.entriesCount}</div>
                 {clickedExplorer.bio && (
                   <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-2 border-l-2 border-[#ac6d46] text-xs leading-relaxed">
                     {clickedExplorer.bio.substring(0, 150)}{clickedExplorer.bio.length > 150 ? '...' : ''}
@@ -615,14 +807,22 @@ export function ExplorerMap() {
                 <div className="flex gap-2 pt-3 mt-3 border-t-2 border-[#202020] dark:border-[#616161]">
                   <button
                     onClick={() => window.open(`/journal/${clickedExplorer.username}`, '_blank')}
-                    className="flex-1 bg-[#ac6d46] text-white py-2 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold text-center"
+                    className="flex-1 bg-[#ac6d46] text-white py-2 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold text-center whitespace-nowrap"
                   >
                     VIEW JOURNAL
                   </button>
+                  {clickedExplorer.activeExpeditionLocation && (
+                    <button
+                      onClick={() => window.open(`/expedition/${clickedExplorer.activeExpeditionLocation!.expeditionId}`, '_blank')}
+                      className="flex-1 bg-[#4676ac] text-white py-2 px-3 hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-xs font-bold text-center whitespace-nowrap"
+                    >
+                      VIEW EXPEDITION
+                    </button>
+                  )}
                   <button
                     onClick={() => handleFollowExplorer(clickedExplorer.username)}
                     disabled={actionLoading === `follow-${clickedExplorer.username}`}
-                    className={`py-2 px-3 transition-all active:scale-[0.98] disabled:active:scale-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none flex items-center justify-center ${
+                    className={`py-2 px-3 transition-all active:scale-[0.98] disabled:active:scale-100 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none flex items-center justify-center flex-shrink-0 ${
                       followedExplorers.has(clickedExplorer.username)
                         ? 'bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
                         : 'bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a] focus-visible:ring-[#616161]'
@@ -659,7 +859,7 @@ export function ExplorerMap() {
                       onClick={() => window.open(`/journal/${clickedEntry.explorerUsername}`, '_blank')}
                       className="text-[#ac6d46] hover:underline"
                     >
-                      {clickedEntry.explorerName}
+                      {clickedEntry.explorerUsername}
                     </button>
                     {clickedEntry.expeditionName && (
                       <>
@@ -711,7 +911,7 @@ export function ExplorerMap() {
                     onClick={() => window.open(`/entry/${clickedEntry.id}`, '_blank')}
                     className="col-span-3 bg-[#ac6d46] text-white py-2 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold text-center"
                   >
-                    READ ENTRY
+                    VIEW ENTRY
                   </button>
                   <button
                     onClick={() => handleBookmarkEntry(clickedEntry.id)}

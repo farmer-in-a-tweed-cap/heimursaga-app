@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Users, UserPlus, Bookmark, Share2, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Lock } from 'lucide-react';
+import { Users, UserPlus, Bookmark, Share2, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Lock, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
@@ -54,6 +54,21 @@ type JournalEntryType = {
   visibility: 'public' | 'private' | 'sponsors-only';
 };
 
+type DebriefStop = {
+  type: 'waypoint' | 'entry';
+  id: string;
+  title: string;
+  location: string;
+  date: string;
+  coords: { lat: number; lng: number };
+  description?: string;
+  status?: 'completed' | 'current' | 'planned';
+  notes?: string;
+  waypointIndex?: number;
+  excerpt?: string;
+  mediaCount?: number;
+};
+
 export function ExpeditionDetailPage() {
   const { expeditionId } = useParams<{ expeditionId: string }>();
   const router = useRouter();
@@ -89,6 +104,15 @@ export function ExpeditionDetailPage() {
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const waypointMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const markerClickedRef = useRef(false);
+  const routeCoordsRef = useRef<number[][]>([]);       // route geometry for debrief
+
+  const prevDebriefIndexRef = useRef<number>(0);        // "from" stop for segment extraction
+  const debriefRouteIndicesRef = useRef<number[]>([]);  // pre-computed route index per debrief stop
+
+  // Debrief mode state
+  const [isDebriefMode, setIsDebriefMode] = useState(false);
+  const [debriefIndex, setDebriefIndex] = useState(0);
+  const mapCardRef = useRef<HTMLDivElement>(null);
 
   // Expedition notes state
   const [expeditionNotes, setExpeditionNotes] = useState<ExpeditionNote[]>([]);
@@ -249,6 +273,7 @@ export function ExpeditionDetailPage() {
       explorerId: api.author?.username || api.explorer?.username || '',
       explorerName: api.author?.username || api.explorer?.username || 'Unknown',
       explorerPicture: api.author?.picture || api.explorer?.picture,
+      explorerIsPro: api.author?.creator === true,
       status: (api.status || 'active') as 'active' | 'planned' | 'completed',
       category: api.category || '',
       region: api.region || '',
@@ -387,6 +412,79 @@ export function ExpeditionDetailPage() {
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [apiExpedition?.entries]);
+
+  // Build chronologically sorted debrief route merging waypoints + entries
+  const debriefRoute: DebriefStop[] = useMemo(() => {
+    const stops: DebriefStop[] = [];
+
+    // Add waypoints with valid coords
+    waypoints.forEach((wp, idx) => {
+      if (wp.coords.lat === 0 && wp.coords.lng === 0) return;
+      stops.push({
+        type: 'waypoint',
+        id: wp.id,
+        title: wp.title,
+        location: wp.location,
+        date: wp.date,
+        coords: wp.coords,
+        description: wp.description,
+        status: wp.status,
+        notes: wp.notes,
+        waypointIndex: idx,
+      });
+    });
+
+    // Add entries with valid coords
+    journalEntries.forEach((entry) => {
+      if (entry.coords.lat === 0 && entry.coords.lng === 0) return;
+      stops.push({
+        type: 'entry',
+        id: entry.id,
+        title: entry.title,
+        location: entry.location,
+        date: entry.date,
+        coords: entry.coords,
+        excerpt: entry.excerpt,
+        mediaCount: entry.mediaCount,
+      });
+    });
+
+    // Sort by date oldest-first; dateless waypoints sort by sequence index
+    stops.sort((a, b) => {
+      const dateA = a.date ? new Date(a.date).getTime() : 0;
+      const dateB = b.date ? new Date(b.date).getTime() : 0;
+
+      // Both have dates — sort chronologically
+      if (dateA && dateB) return dateA - dateB;
+
+      // If only one has a date, the one without goes first (it's a dateless waypoint)
+      if (dateA && !dateB) return 1;
+      if (!dateA && dateB) return -1;
+
+      // Neither has a date — sort waypoints by index, entries after waypoints
+      if (a.type === 'waypoint' && b.type === 'waypoint') {
+        return (a.waypointIndex ?? 0) - (b.waypointIndex ?? 0);
+      }
+      if (a.type === 'waypoint') return -1;
+      if (b.type === 'waypoint') return 1;
+      return 0;
+    });
+
+    // For round-trip expeditions, add a "return to start" stop so the debrief
+    // animation follows the return leg back to the starting point
+    if (apiExpedition?.isRoundTrip && stops.length >= 2) {
+      const first = stops[0];
+      stops.push({
+        ...first,
+        id: `${first.id}-return`,
+        title: `Return: ${first.title}`,
+      });
+    }
+
+    return stops;
+  }, [waypoints, journalEntries, apiExpedition?.isRoundTrip]);
+
+  const canDebrief = debriefRoute.length >= 2;
 
   // Helper function to get current location data from waypoints or entries
   const getCurrentLocationData = () => {
@@ -602,10 +700,348 @@ export function ExpeditionDetailPage() {
     });
   };
 
+  // Debrief mode helpers
+  const removeAllHighlights = useCallback(() => {
+    // Remove highlights from entry markers
+    markersRef.current.forEach(m => {
+      const el = m.getElement();
+      if (el && (el as any).removeHighlight) {
+        (el as any).removeHighlight();
+      }
+    });
+    // Reset waypoint marker styles
+    waypointMarkersRef.current.forEach(m => {
+      const el = m.getElement();
+      if (el) {
+        el.style.outline = 'none';
+        el.style.boxShadow = el.style.boxShadow?.includes('wp-pulse')
+          ? el.style.boxShadow
+          : (el.dataset.originalBoxShadow || '');
+      }
+    });
+  }, []);
+
+  const highlightDebriefStop = useCallback((stop: DebriefStop) => {
+    removeAllHighlights();
+    const COORD_THRESHOLD = 0.0001;
+
+    if (stop.type === 'entry') {
+      // Find entry marker by coordinate proximity
+      markersRef.current.forEach(m => {
+        const lngLat = m.getLngLat();
+        if (
+          Math.abs(lngLat.lat - stop.coords.lat) < COORD_THRESHOLD &&
+          Math.abs(lngLat.lng - stop.coords.lng) < COORD_THRESHOLD
+        ) {
+          const el = m.getElement();
+          const pin = el?.querySelector('div') as HTMLElement | null;
+          if (pin) {
+            pin.style.border = '4px solid #ac6d46';
+            pin.style.boxShadow = '0 0 20px rgba(172, 109, 70, 0.8), 0 4px 12px rgba(0,0,0,0.4)';
+            pin.style.transform = 'translate(-50%, -70%) rotate(-45deg) scale(1.1)';
+          }
+        }
+      });
+    } else {
+      // Find waypoint marker by coordinate proximity
+      waypointMarkersRef.current.forEach(m => {
+        const lngLat = m.getLngLat();
+        if (
+          Math.abs(lngLat.lat - stop.coords.lat) < COORD_THRESHOLD &&
+          Math.abs(lngLat.lng - stop.coords.lng) < COORD_THRESHOLD
+        ) {
+          const el = m.getElement();
+          if (el) {
+            el.style.outline = '3px solid #ac6d46';
+            el.style.outlineOffset = '3px';
+            el.style.boxShadow = '0 0 20px rgba(172, 109, 70, 0.8), 0 4px 12px rgba(0,0,0,0.4)';
+          }
+        }
+      });
+    }
+  }, [removeAllHighlights]);
+
+  // Find the closest route coordinate index for a given lat/lng, searching from a start index
+  const findClosestRouteIndex = (
+    coords: { lat: number; lng: number },
+    route: number[][],
+    searchFrom = 0,
+  ): number => {
+    let closest = searchFrom;
+    let closestDist = Infinity;
+    for (let i = searchFrom; i < route.length; i++) {
+      const [lng, lat] = route[i];
+      const d = (lng - coords.lng) ** 2 + (lat - coords.lat) ** 2;
+      if (d < closestDist) {
+        closestDist = d;
+        closest = i;
+      }
+    }
+    return closest;
+  };
+
+  // Pre-compute monotonically increasing route indices for each debrief stop
+  // This ensures round-trip routes follow the return leg correctly
+  const computeDebriefRouteIndices = useCallback(() => {
+    const route = routeCoordsRef.current;
+    if (route.length < 2 || debriefRoute.length === 0) {
+      debriefRouteIndicesRef.current = [];
+      return;
+    }
+    const indices: number[] = [];
+    let searchFrom = 0;
+    for (const stop of debriefRoute) {
+      const idx = findClosestRouteIndex(stop.coords, route, searchFrom);
+      indices.push(idx);
+      searchFrom = idx;
+    }
+    debriefRouteIndicesRef.current = indices;
+  }, [debriefRoute]);
+
+  // Build cumulative distance array for a polyline segment
+  const buildCumulativeDistances = (segment: number[][]): number[] => {
+    const distances = [0];
+    for (let i = 1; i < segment.length; i++) {
+      const dx = segment[i][0] - segment[i - 1][0];
+      const dy = segment[i][1] - segment[i - 1][1];
+      distances.push(distances[i - 1] + Math.sqrt(dx * dx + dy * dy));
+    }
+    return distances;
+  };
+
+  // Continuously interpolate a position along a polyline at a given fraction (0-1)
+  const interpolateAlongRoute = (
+    segment: number[][],
+    cumDist: number[],
+    t: number, // 0..1
+  ): [number, number] => {
+    const totalLen = cumDist[cumDist.length - 1];
+    if (totalLen === 0) return segment[0] as [number, number];
+
+    const targetDist = t * totalLen;
+
+    // Binary search for the segment containing targetDist
+    let lo = 0;
+    let hi = cumDist.length - 1;
+    while (lo < hi - 1) {
+      const mid = (lo + hi) >> 1;
+      if (cumDist[mid] <= targetDist) lo = mid;
+      else hi = mid;
+    }
+
+    const segStart = cumDist[lo];
+    const segEnd = cumDist[hi];
+    const segLen = segEnd - segStart;
+    const frac = segLen > 0 ? (targetDist - segStart) / segLen : 0;
+
+    return [
+      segment[lo][0] + frac * (segment[hi][0] - segment[lo][0]),
+      segment[lo][1] + frac * (segment[hi][1] - segment[lo][1]),
+    ];
+  };
+
+  // Cancel any in-progress debrief animation
+  const cancelDebriefAnimation = useCallback(() => {
+    if ((mapRef.current as any)?._debriefCleanup) {
+      (mapRef.current as any)._debriefCleanup();
+      (mapRef.current as any)._debriefCleanup = null;
+    }
+  }, []);
+
+  const flyToDebriefStop = useCallback((index: number) => {
+    if (!mapRef.current || index < 0 || index >= debriefRoute.length) return;
+
+    cancelDebriefAnimation();
+
+    const stop = debriefRoute[index];
+    setDebriefIndex(index);
+    highlightDebriefStop(stop);
+
+    const route = routeCoordsRef.current;
+    const fromStop = debriefRoute[prevDebriefIndexRef.current];
+
+    // Determine if we have route data and a valid "from" stop to animate along
+    const hasFrom = fromStop && prevDebriefIndexRef.current !== index && route.length >= 2;
+
+    if (!hasFrom) {
+      // First stop or no route — simple flyTo
+      mapRef.current.flyTo({
+        center: [stop.coords.lng, stop.coords.lat],
+        zoom: 13,
+        duration: 1500,
+      });
+      prevDebriefIndexRef.current = index;
+      return;
+    }
+
+    // Use pre-computed route indices (monotonically increasing, round-trip aware)
+    const indices = debriefRouteIndicesRef.current;
+    const fromIdx = indices[prevDebriefIndexRef.current] ?? 0;
+    const toIdx = indices[index] ?? 0;
+
+    // Extract sub-segment; reverse if navigating backward
+    const lo = Math.min(fromIdx, toIdx);
+    const hi = Math.max(fromIdx, toIdx);
+    let segment = route.slice(lo, hi + 1);
+    if (fromIdx > toIdx) {
+      segment = [...segment].reverse();
+    }
+
+    if (segment.length < 2) {
+      // Segment too short — fallback to flyTo
+      mapRef.current.flyTo({
+        center: [stop.coords.lng, stop.coords.lat],
+        zoom: 13,
+        duration: 1500,
+      });
+      prevDebriefIndexRef.current = index;
+      return;
+    }
+
+    // Pre-compute cumulative distances for interpolation
+    const cumDist = buildCumulativeDistances(segment);
+    const totalSegLen = cumDist[cumDist.length - 1];
+    const map = mapRef.current;
+    const startZoom = map.getZoom();
+    const endZoom = 13;
+
+    // Gentle zoom dip proportional to distance
+    const zoomOutAmount = Math.min(2.5, Math.max(0, totalSegLen * 1.2));
+
+    // Chain native easeTo calls for buttery-smooth Mapbox-rendered animation.
+    // More steps for longer segments, fewer for short hops.
+    const numSteps = Math.min(20, Math.max(6, Math.round(totalSegLen * 8)));
+    // Total time: 8s–18s scaled to distance
+    const totalDuration = Math.min(18000, Math.max(8000, totalSegLen * 6000));
+    const stepDuration = totalDuration / numSteps;
+
+    // Pre-compute waypoints along the route
+    const waypoints: { center: [number, number]; zoom: number }[] = [];
+    for (let i = 0; i <= numSteps; i++) {
+      const t = i / numSteps;
+      const center = interpolateAlongRoute(segment, cumDist, t);
+      const zoomDip = Math.sin(t * Math.PI);
+      const linearZoom = startZoom + t * (endZoom - startZoom);
+      const zoom = linearZoom - zoomDip * zoomOutAmount;
+      waypoints.push({ center, zoom });
+    }
+
+    let currentStep = 0;
+    let cancelled = false;
+
+    const advanceStep = () => {
+      if (cancelled || !mapRef.current) return;
+      if (currentStep >= waypoints.length) {
+        // Final settle at exact destination
+        mapRef.current.easeTo({
+          center: [stop.coords.lng, stop.coords.lat],
+          zoom: endZoom,
+          duration: 400,
+        });
+        return;
+      }
+      const wp = waypoints[currentStep];
+      mapRef.current.easeTo({
+        center: wp.center,
+        zoom: wp.zoom,
+        duration: stepDuration,
+        easing: (t) => t, // linear per-step; overall pacing comes from the step sequence
+      });
+      currentStep++;
+    };
+
+    const onMoveEnd = () => {
+      if (!cancelled) advanceStep();
+    };
+
+    // Store cancel function on the ref for cleanup
+    map.on('moveend', onMoveEnd);
+    // Attach cleanup to a property we can call later
+    (mapRef.current as any)._debriefCleanup = () => {
+      cancelled = true;
+      map.off('moveend', onMoveEnd);
+      map.stop();
+    };
+
+    // Kick off first step
+    advanceStep();
+    prevDebriefIndexRef.current = index;
+  }, [debriefRoute, highlightDebriefStop, cancelDebriefAnimation]);
+
+  const enterDebriefMode = useCallback(() => {
+    setIsDebriefMode(true);
+    setClickedEntry(null);
+    prevDebriefIndexRef.current = 0;
+    computeDebriefRouteIndices();
+    document.body.style.overflow = 'hidden';
+    // Resize map after fullscreen transition
+    setTimeout(() => {
+      mapRef.current?.resize();
+      // Fly to first stop after resize
+      setTimeout(() => {
+        flyToDebriefStop(0);
+      }, 100);
+    }, 150);
+  }, [flyToDebriefStop, computeDebriefRouteIndices]);
+
+  const exitDebriefMode = useCallback(() => {
+    cancelDebriefAnimation();
+    setIsDebriefMode(false);
+    setDebriefIndex(0);
+    removeAllHighlights();
+    document.body.style.overflow = '';
+    setTimeout(() => {
+      mapRef.current?.resize();
+      setTimeout(() => {
+        handleFitBounds();
+      }, 100);
+    }, 150);
+  }, [removeAllHighlights, handleFitBounds, cancelDebriefAnimation]);
+
+  // Debrief mode keyboard navigation
+  useEffect(() => {
+    if (!isDebriefMode) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        exitDebriefMode();
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setDebriefIndex(prev => {
+          const next = Math.min(prev + 1, debriefRoute.length - 1);
+          if (next !== prev) {
+            // Use setTimeout so flyTo runs after state update
+            setTimeout(() => flyToDebriefStop(next), 0);
+          }
+          return next;
+        });
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setDebriefIndex(prev => {
+          const next = Math.max(prev - 1, 0);
+          if (next !== prev) {
+            setTimeout(() => flyToDebriefStop(next), 0);
+          }
+          return next;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isDebriefMode, debriefRoute.length, exitDebriefMode, flyToDebriefStop]);
+
+  // Resize map when debrief mode changes
+  useEffect(() => {
+    if (mapRef.current) {
+      setTimeout(() => {
+        mapRef.current?.resize();
+      }, 200);
+    }
+  }, [isDebriefMode]);
+
   // Initialize map
   useEffect(() => {
     if (!mapContainerRef.current) return;
-    
+
     // Initialize map
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
@@ -666,6 +1102,8 @@ export function ExpeditionDetailPage() {
         routeCoordinates = [...routeCoordinates, routeCoordinates[0]];
       }
 
+      routeCoordsRef.current = routeCoordinates;
+
       if (routeCoordinates.length >= 2) {
         map.addSource('route-line', {
           type: 'geojson',
@@ -684,7 +1122,7 @@ export function ExpeditionDetailPage() {
           type: 'line',
           source: 'route-line',
           paint: {
-            'line-color': '#202020',
+            'line-color': theme === 'dark' ? '#4676ac' : '#202020',
             'line-width': hasDirectionsRoute ? 4 : 3,
             'line-opacity': 0.8,
             ...(hasDirectionsRoute ? {} : { 'line-dasharray': [2, 2] }),
@@ -1050,7 +1488,7 @@ export function ExpeditionDetailPage() {
                 
                 <div className="flex items-center gap-3 mb-4">
                   <Link href={`/journal/${expedition.explorerId}`} className="flex-shrink-0">
-                    <div className="w-16 h-16 border-2 border-[#ac6d46] overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all">
+                    <div className={`w-16 h-16 border-2 ${expedition.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all`}>
                       <Image
                         src={expedition.explorerPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${expedition.explorerId}`}
                         alt={expedition.explorerName}
@@ -1264,16 +1702,49 @@ export function ExpeditionDetailPage() {
         {/* Map & Route - Left Column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Interactive Map */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-            <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161]">
-              <h2 className="text-sm font-bold">EXPEDITION ROUTE MAP</h2>
+          <div ref={mapCardRef} className={isDebriefMode ? 'fixed inset-0 z-50 border-0 flex flex-col bg-white dark:bg-[#202020]' : 'bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]'}>
+            <div className={`bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 ${isDebriefMode ? 'border-b border-[#4a4a4a]' : 'border-b-2 border-[#202020] dark:border-[#616161]'}`}>
+              {isDebriefMode ? (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <h2 className="text-sm font-bold">{expedition.title}</h2>
+                      <div className="text-xs text-white/70 font-mono">by {expedition.explorerName}</div>
+                    </div>
+                    <div className="text-xs font-mono bg-white/10 px-3 py-1">
+                      {debriefIndex + 1} / {debriefRoute.length}
+                    </div>
+                  </div>
+                  <button
+                    onClick={exitDebriefMode}
+                    className="px-4 py-2 bg-[#202020] hover:bg-[#333] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
+                  >
+                    <X size={14} />
+                    EXIT
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold">EXPEDITION ROUTE MAP</h2>
+                  {canDebrief && (
+                    <button
+                      onClick={enterDebriefMode}
+                      className="px-3 py-1.5 bg-[#ac6d46] hover:bg-[#8a5738] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
+                    >
+                      <Play size={12} fill="currentColor" />
+                      DEBRIEF MODE
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Map Container */}
-            <div className="relative bg-[#e8e8e8] h-[500px] overflow-hidden">
+            <div className={`relative bg-[#e8e8e8] overflow-hidden ${isDebriefMode ? 'flex-1' : 'h-[500px]'}`}>
               <div ref={mapContainerRef} className="absolute top-0 left-0 w-full h-full" />
               
               {/* Map Legend */}
+              {!isDebriefMode && (
               <div className="absolute bottom-4 left-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 text-xs z-10">
                 <div className="flex items-center justify-between mb-2">
                   <div className="font-bold dark:text-[#e5e5e5]">MAP LEGEND:</div>
@@ -1305,8 +1776,10 @@ export function ExpeditionDetailPage() {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* Map Info */}
+              {!isDebriefMode && (
               <div className="absolute top-4 right-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 text-xs font-mono z-10">
                 <div className="text-[#616161] dark:text-[#b5bcc4]">Current Position:</div>
                 <div className="font-bold dark:text-[#e5e5e5]">
@@ -1317,9 +1790,10 @@ export function ExpeditionDetailPage() {
                 <div className="text-[#616161] dark:text-[#b5bcc4] mt-2">Total Distance:</div>
                 <div className="font-bold dark:text-[#e5e5e5]">~3,247 km</div>
               </div>
+              )}
 
               {/* Entry Popup */}
-              {clickedEntry && (
+              {!isDebriefMode && clickedEntry && (
                 <div
                   className={`absolute w-72 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20 bottom-4 ${
                     popupPosition === 'bottom-left' ? 'left-4' : 'right-4'
@@ -1365,7 +1839,7 @@ export function ExpeditionDetailPage() {
                         onClick={() => window.open(`/entry/${clickedEntry.id}`, '_blank')}
                         className="flex-1 bg-[#ac6d46] text-white py-1.5 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold text-center"
                       >
-                        READ ENTRY
+                        VIEW ENTRY
                       </button>
                       <button
                         onClick={() => handleBookmarkEntry(clickedEntry.id)}
@@ -1387,6 +1861,116 @@ export function ExpeditionDetailPage() {
                       </button>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Debrief Info Popup */}
+              {isDebriefMode && debriefRoute[debriefIndex] && (() => {
+                const stop = debriefRoute[debriefIndex];
+                return (
+                  <div className="absolute top-4 right-4 w-80 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20">
+                    {/* Header */}
+                    <div className={`px-3 py-2 text-xs font-bold font-mono flex items-center justify-between ${
+                      stop.type === 'waypoint' ? 'bg-[#616161] text-white' : 'bg-[#ac6d46] text-white'
+                    }`}>
+                      <span>{stop.type === 'waypoint' ? 'WAYPOINT' : 'JOURNAL ENTRY'}</span>
+                      <span className="text-white/70">STOP {debriefIndex + 1} OF {debriefRoute.length}</span>
+                    </div>
+
+                    <div className="p-3 text-xs font-mono">
+                      {/* Title */}
+                      <div className="font-bold text-sm dark:text-[#e5e5e5] mb-1">{stop.title}</div>
+
+                      {/* Location & Date */}
+                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-3">
+                        {stop.location && <span>{stop.location}</span>}
+                        {stop.location && stop.date && <span> &bull; </span>}
+                        {stop.date && <span>{new Date(stop.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
+                      </div>
+
+                      {/* Waypoint-specific fields */}
+                      {stop.type === 'waypoint' && (
+                        <>
+                          {stop.description && (
+                            <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-2 line-clamp-3">
+                              {stop.description}
+                            </div>
+                          )}
+                          {stop.status && (
+                            <div className="mb-2">
+                              <span className={`inline-block px-2 py-0.5 text-[10px] font-bold ${
+                                stop.status === 'completed' ? 'bg-[#ac6d46] text-white' :
+                                stop.status === 'current' ? 'bg-[#4676ac] text-white' :
+                                'bg-[#b5bcc4] text-[#202020]'
+                              }`}>
+                                {stop.status.toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          {stop.notes && (
+                            <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-2 italic line-clamp-2">
+                              {stop.notes}
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Entry-specific fields */}
+                      {stop.type === 'entry' && (
+                        <>
+                          {stop.excerpt && (
+                            <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3 line-clamp-3">
+                              {stop.excerpt}
+                            </div>
+                          )}
+                          <button
+                            onClick={() => window.open(`/entry/${stop.id}`, '_blank')}
+                            className="w-full bg-[#ac6d46] text-white py-1.5 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] text-xs font-bold text-center mb-2"
+                          >
+                            VIEW FULL ENTRY
+                          </button>
+                        </>
+                      )}
+
+                      {/* Coordinates */}
+                      <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2 text-[10px] text-[#b5bcc4] dark:text-[#616161]">
+                        {stop.coords.lat.toFixed(4)}&deg;N, {stop.coords.lng.toFixed(4)}&deg;E
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Debrief Navigation Controls */}
+              {isDebriefMode && (
+                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
+                  <button
+                    onClick={() => debriefIndex > 0 && flyToDebriefStop(debriefIndex - 1)}
+                    disabled={debriefIndex === 0}
+                    className={`w-12 h-12 flex items-center justify-center border-2 transition-all active:scale-[0.95] ${
+                      debriefIndex === 0
+                        ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#b5bcc4] dark:border-[#3a3a3a] text-white/50 cursor-not-allowed'
+                        : 'bg-white dark:bg-[#202020] border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#4a4a4a]'
+                    }`}
+                    aria-label="Previous stop"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] px-4 h-12 flex items-center text-sm font-bold font-mono dark:text-[#e5e5e5]">
+                    {debriefIndex + 1} / {debriefRoute.length}
+                  </div>
+                  <button
+                    onClick={() => debriefIndex < debriefRoute.length - 1 && flyToDebriefStop(debriefIndex + 1)}
+                    disabled={debriefIndex === debriefRoute.length - 1}
+                    className={`w-12 h-12 flex items-center justify-center border-2 transition-all active:scale-[0.95] ${
+                      debriefIndex === debriefRoute.length - 1
+                        ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#b5bcc4] dark:border-[#3a3a3a] text-white/50 cursor-not-allowed'
+                        : 'bg-white dark:bg-[#202020] border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#4a4a4a]'
+                    }`}
+                    aria-label="Next stop"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
                 </div>
               )}
             </div>

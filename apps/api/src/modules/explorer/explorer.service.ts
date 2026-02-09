@@ -27,6 +27,8 @@ import {
 import { dateformat } from '@/lib/date-format';
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { toGeoJson } from '@/lib/geojson';
+import { getCoordinatesFromLocation } from '@/lib/geocoding';
+import { resolveExpeditionLocations } from '@/lib/resolve-expedition-location';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles } from '@/lib/utils';
 
@@ -82,17 +84,32 @@ export class ExplorerService {
   async getExplorers({
     query,
     session,
-  }: ISessionQuery): Promise<IUserGetAllResponse> {
+  }: ISessionQuery<{ context?: string }>): Promise<IUserGetAllResponse> {
     try {
+      const { context } = query;
       const { explorerId, explorerRole } = session;
 
       // Admin gets all explorers, public/users get only non-blocked explorers
       const isAdmin =
         !!explorerId && matchRoles(explorerRole, [UserRole.ADMIN]);
 
-      const where: Prisma.ExplorerWhereInput = isAdmin
+      let where: Prisma.ExplorerWhereInput = isAdmin
         ? {}
         : { blocked: false };
+
+      // Filter to followed explorers
+      if (context === 'following') {
+        if (!explorerId) throw new ServiceForbiddenException();
+        const follows = await this.prisma.explorerFollow.findMany({
+          where: { follower_id: explorerId },
+          select: { followee_id: true },
+        });
+        const followedIds = follows.map((f) => f.followee_id);
+        if (followedIds.length === 0) return { data: [], results: 0 };
+        where = { ...where, id: { in: followedIds } };
+      }
+
+      const isFollowingContext = context === 'following';
 
       const select = {
         id: true,
@@ -110,6 +127,7 @@ export class ExplorerService {
             location_from_lon: true,
             location_lives_lat: true,
             location_lives_lon: true,
+            location_visibility: true,
           },
         },
         // Check if current user follows this explorer
@@ -119,7 +137,7 @@ export class ExplorerService {
               select: { follower_id: true },
             }
           : undefined,
-        // Get expeditions for status calculation
+        // Get expeditions for status calculation + active expedition location
         expeditions: {
           where: { deleted_at: null },
           select: {
@@ -127,10 +145,24 @@ export class ExplorerService {
             title: true,
             status: true,
             start_date: true,
+            current_location_type: true,
+            current_location_id: true,
+            current_location_visibility: true,
           },
           orderBy: { id: 'desc' as const },
           take: 5, // Only need recent expeditions for status
         },
+        // Include latest entry updated_at for following context (for sorting by activity)
+        ...(isFollowingContext
+          ? {
+              entries: {
+                where: { deleted_at: null, is_draft: false },
+                select: { updated_at: true },
+                orderBy: { updated_at: 'desc' as const },
+                take: 1,
+              },
+            }
+          : {}),
         entries_count: true,
         created_at: true,
       } satisfies Prisma.ExplorerSelect;
@@ -144,19 +176,66 @@ export class ExplorerService {
         take: 100, // Limit for public access
       });
 
-      const response: IUserGetAllResponse = {
-        data: data.map(
-          ({
-            id,
-            username,
-            role,
-            profile,
-            blocked,
-            entries_count,
-            created_at,
-            followers,
-            expeditions,
-          }) => ({
+      // Resolve active expedition locations in batch
+      const locationRefs: Array<{ type: string; id: string }> = [];
+      const explorerActiveExpMap = new Map<
+        string,
+        { publicId: string; title: string; type: string; id: string }
+      >();
+
+      for (const explorer of data) {
+        const activeExp = explorer.expeditions?.find(
+          (exp) =>
+            (exp.status === 'active' || exp.status === 'planned') &&
+            exp.current_location_type &&
+            exp.current_location_id &&
+            (exp.current_location_visibility || 'public') === 'public',
+        );
+        if (activeExp) {
+          locationRefs.push({
+            type: activeExp.current_location_type!,
+            id: activeExp.current_location_id!,
+          });
+          explorerActiveExpMap.set(explorer.username, {
+            publicId: activeExp.public_id,
+            title: activeExp.title,
+            type: activeExp.current_location_type!,
+            id: activeExp.current_location_id!,
+          });
+        }
+      }
+      const resolvedLocations = await resolveExpeditionLocations(
+        this.prisma,
+        locationRefs,
+      );
+
+      const mappedData = data.map(
+        ({
+          id,
+          username,
+          role,
+          profile,
+          blocked,
+          entries_count,
+          created_at,
+          followers,
+          expeditions,
+          ...rest
+        }) => {
+          const entries = (rest as any).entries as
+            | Array<{ updated_at: Date | null }>
+            | undefined;
+          const lastEntryDate = entries?.[0]?.updated_at || undefined;
+
+          // Check for active expedition location
+          const activeExpInfo = explorerActiveExpMap.get(username);
+          const resolvedLoc = activeExpInfo
+            ? resolvedLocations.get(
+                `${activeExpInfo.type}:${activeExpInfo.id}`,
+              )
+            : undefined;
+
+          return {
             username,
             role,
             blocked,
@@ -169,6 +248,7 @@ export class ExplorerService {
             locationFromLon: profile?.location_from_lon,
             locationLivesLat: profile?.location_lives_lat,
             locationLivesLon: profile?.location_lives_lon,
+            locationVisibility: profile?.location_visibility || 'hidden',
             entriesCount: entries_count,
             postsCount: entries_count,
             memberDate: created_at,
@@ -191,8 +271,38 @@ export class ExplorerService {
                     )
                   : undefined,
             })),
-          }),
-        ),
+            // Active expedition location (if public)
+            activeExpeditionLocation:
+              resolvedLoc && activeExpInfo
+                ? {
+                    lat: resolvedLoc.lat,
+                    lon: resolvedLoc.lon,
+                    name: resolvedLoc.name,
+                    expeditionId: activeExpInfo.publicId,
+                    expeditionTitle: activeExpInfo.title,
+                  }
+                : undefined,
+            // Include last entry date for following context
+            ...(isFollowingContext ? { lastEntryDate } : {}),
+          };
+        },
+      );
+
+      // Sort by most recently active for following context
+      if (isFollowingContext) {
+        mappedData.sort((a, b) => {
+          const dateA = (a as any).lastEntryDate
+            ? new Date((a as any).lastEntryDate).getTime()
+            : 0;
+          const dateB = (b as any).lastEntryDate
+            ? new Date((b as any).lastEntryDate).getTime()
+            : 0;
+          return dateB - dateA;
+        });
+      }
+
+      const response: IUserGetAllResponse = {
+        data: mappedData,
         results,
       };
 
@@ -257,6 +367,7 @@ export class ExplorerService {
               bio: true,
               location_from: true,
               location_lives: true,
+              location_visibility: true,
               sponsors_fund: true,
               sponsors_fund_type: true,
               sponsors_fund_expedition_id: true,
@@ -280,9 +391,62 @@ export class ExplorerService {
                 select: { explorer_id: true },
               }
             : undefined,
+          expeditions: {
+            where: {
+              deleted_at: null,
+              status: { in: ['active', 'planned'] },
+              current_location_id: { not: null },
+              current_location_visibility: 'public',
+            },
+            select: {
+              public_id: true,
+              title: true,
+              status: true,
+              current_location_type: true,
+              current_location_id: true,
+            },
+            take: 1,
+            orderBy: { id: 'desc' },
+          },
           created_at: true,
         },
       });
+
+      // Resolve active expedition location if available
+      const activeExp = explorer.expeditions?.[0];
+      let activeExpeditionLocation:
+        | {
+            lat: number;
+            lon: number;
+            name: string;
+            expeditionId: string;
+            expeditionTitle: string;
+          }
+        | undefined;
+
+      if (
+        activeExp?.current_location_type &&
+        activeExp?.current_location_id
+      ) {
+        const resolved = await resolveExpeditionLocations(this.prisma, [
+          {
+            type: activeExp.current_location_type,
+            id: activeExp.current_location_id,
+          },
+        ]);
+        const loc = resolved.get(
+          `${activeExp.current_location_type}:${activeExp.current_location_id}`,
+        );
+        if (loc) {
+          activeExpeditionLocation = {
+            lat: loc.lat,
+            lon: loc.lon,
+            name: loc.name,
+            expeditionId: activeExp.public_id,
+            expeditionTitle: activeExp.title,
+          };
+        }
+      }
 
       const response = {
         username: explorer.username,
@@ -304,6 +468,7 @@ export class ExplorerService {
         stripeAccountConnected: explorer.is_stripe_account_connected,
         locationFrom: explorer.profile?.location_from,
         locationLives: explorer.profile?.location_lives,
+        locationVisibility: explorer.profile?.location_visibility || 'hidden',
         sponsorsFund: explorer.profile?.sponsors_fund,
         sponsorsFundType: explorer.profile?.sponsors_fund_type,
         sponsorsFundExpeditionId: explorer.profile?.sponsors_fund_expedition_id,
@@ -313,6 +478,7 @@ export class ExplorerService {
         instagram: explorer.profile?.instagram,
         youtube: explorer.profile?.youtube,
         equipment: (explorer.profile?.equipment as string[]) || [],
+        activeExpeditionLocation,
       } as IUserGetByUsernameResponse;
 
       return response;
@@ -1522,6 +1688,7 @@ export class SessionExplorerService {
                     cover_photo: true,
                     location_from: true,
                     location_lives: true,
+                    location_visibility: true,
                     sponsors_fund: true,
                     sponsors_fund_type: true,
                     sponsors_fund_expedition_id: true,
@@ -1552,6 +1719,7 @@ export class SessionExplorerService {
                 livesIn: profile?.location_lives,
                 locationFrom: profile?.location_from,
                 locationLives: profile?.location_lives,
+                locationVisibility: profile?.location_visibility || 'hidden',
                 sponsorsFund: profile?.sponsors_fund,
                 sponsorsFundType: profile?.sponsors_fund_type,
                 sponsorsFundExpeditionId: profile?.sponsors_fund_expedition_id,
@@ -1602,6 +1770,7 @@ export class SessionExplorerService {
         bio,
         livesIn,
         from,
+        locationVisibility,
         sponsorsFund,
         sponsorsFundType,
         sponsorsFundJourneyId,
@@ -1623,11 +1792,32 @@ export class SessionExplorerService {
       // update settings based on context
       switch (context) {
         case 'profile':
+          // Geocode location strings to coordinates
+          let fromCoords: { lat: number; lon: number } | null = null;
+          let livesInCoords: { lat: number; lon: number } | null = null;
+          if (from) {
+            fromCoords = await getCoordinatesFromLocation(from);
+          }
+          if (livesIn) {
+            livesInCoords = await getCoordinatesFromLocation(livesIn);
+          }
+
           const updateData = {
             ...(name !== undefined && { name }),
             ...(bio !== undefined && { bio }),
             ...(from !== undefined && { location_from: from }),
+            ...(fromCoords && {
+              location_from_lat: fromCoords.lat,
+              location_from_lon: fromCoords.lon,
+            }),
             ...(livesIn !== undefined && { location_lives: livesIn }),
+            ...(livesInCoords && {
+              location_lives_lat: livesInCoords.lat,
+              location_lives_lon: livesInCoords.lon,
+            }),
+            ...(locationVisibility !== undefined && {
+              location_visibility: locationVisibility,
+            }),
             ...(sponsorsFund !== undefined && { sponsors_fund: sponsorsFund }),
             ...(sponsorsFundType !== undefined && {
               sponsors_fund_type: sponsorsFundType,

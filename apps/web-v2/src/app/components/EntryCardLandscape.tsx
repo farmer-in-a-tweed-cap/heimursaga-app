@@ -79,7 +79,7 @@ export function EntryCardLandscape({
                   className="flex-shrink-0 px-3 py-1.5 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center gap-1.5"
                 >
                   <Eye className="w-3 h-3" />
-                  READ
+                  VIEW ENTRY
                 </button>
                 {onUnbookmark && (
                   <button

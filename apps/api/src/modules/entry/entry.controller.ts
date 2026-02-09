@@ -9,6 +9,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
@@ -33,8 +34,11 @@ export class EntryController {
   @Public()
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getEntries(@Session() session: ISession) {
-    return await this.entryService.getEntries({ query: {}, session });
+  async getEntries(
+    @Session() session: ISession,
+    @Query('context') context?: string,
+  ) {
+    return await this.entryService.getEntries({ query: { context }, session });
   }
 
   @Public()

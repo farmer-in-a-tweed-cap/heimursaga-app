@@ -25,9 +25,10 @@ interface JournalEntry {
 interface JournalGridProps {
   entries: JournalEntry[];
   onViewAll?: () => void;
+  title?: string;
 }
 
-export function JournalGrid({ entries, onViewAll }: JournalGridProps) {
+export function JournalGrid({ entries, onViewAll, title }: JournalGridProps) {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const [bookmarkedEntries, setBookmarkedEntries] = useState<Set<string>>(new Set());
@@ -77,7 +78,7 @@ export function JournalGrid({ entries, onViewAll }: JournalGridProps) {
   return (
     <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 gap-2">
-        <h3 className="text-sm font-bold dark:text-[#e5e5e5]">RECENT JOURNAL ENTRIES</h3>
+        <h3 className="text-sm font-bold dark:text-[#e5e5e5]">{title || 'RECENT JOURNAL ENTRIES'}</h3>
         {onViewAll && (
           <button
             onClick={onViewAll}

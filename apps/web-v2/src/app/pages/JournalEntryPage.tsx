@@ -229,6 +229,7 @@ export function JournalEntryPage() {
       explorerId: author?.username || '',
       explorerName: author?.username || 'Unknown', // Use username for display
       explorerPicture: author?.picture,
+      explorerIsPro: api.author?.creator === true,
       journalId: '', // Not in API yet
       journalName: author?.name || author?.username || 'Unknown',
 
@@ -384,7 +385,7 @@ export function JournalEntryPage() {
                 <div className="flex gap-4 items-center">
                   {/* Explorer Avatar */}
                   <Link href={`/journal/${entry.explorerId}`} className="flex-shrink-0">
-                    <div className="w-16 h-16 border-2 border-[#ac6d46] overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all shadow-lg">
+                    <div className={`w-16 h-16 border-2 ${entry.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all shadow-lg`}>
                       <Image
                         src={entry.explorerPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.explorerId}`}
                         alt={entry.explorerName}
@@ -715,7 +716,7 @@ export function JournalEntryPage() {
                       <div className="px-3 py-3">
                         <div className="flex items-start gap-3">
                           <Link href={`/journal/${comment.author.username}`} className="flex-shrink-0">
-                            <div className="w-10 h-10 border-2 border-[#4676ac] overflow-hidden bg-[#616161] hover:border-[#ac6d46] transition-colors">
+                            <div className={`w-10 h-10 border-2 ${comment.author.creator ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
                               <Image
                                 src={comment.author.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.author.username}`}
                                 alt={comment.author.username}
@@ -798,7 +799,7 @@ export function JournalEntryPage() {
                               {comment.replies.map((reply) => (
                                 <div key={reply.id} className="flex items-start gap-2">
                                   <Link href={`/journal/${reply.author.username}`} className="flex-shrink-0">
-                                    <div className="w-6 h-6 border border-[#4676ac] overflow-hidden bg-[#616161] hover:border-[#ac6d46] transition-colors">
+                                    <div className={`w-6 h-6 border ${reply.author.creator ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
                                       <Image
                                         src={reply.author.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.author.username}`}
                                         alt={reply.author.username}
@@ -860,7 +861,7 @@ export function JournalEntryPage() {
                   href={`/journal/${entry.explorerId}`}
                   className="px-6 py-3 bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm whitespace-nowrap"
                 >
-                  VIEW EXPLORER
+                  VIEW JOURNAL
                 </Link>
               )}
             </div>
@@ -928,7 +929,7 @@ export function JournalEntryPage() {
             <div>
               <div className="flex items-center gap-3 mb-3">
                 <Link href={`/journal/${entry.explorerId}`} className="flex-shrink-0">
-                  <div className="w-16 h-16 border-2 border-[#ac6d46] overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-all">
+                  <div className={`w-16 h-16 border-2 ${entry.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-all`}>
                     <Image
                       src={entry.explorerPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.explorerId}`}
                       alt={entry.explorerName}

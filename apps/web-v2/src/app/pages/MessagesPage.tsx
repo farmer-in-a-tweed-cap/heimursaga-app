@@ -193,16 +193,20 @@ function ComposeModal({
                           onClick={() => handleSelectUser(user)}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-colors text-left border-b border-[#b5bcc4] dark:border-[#616161] last:border-b-0"
                         >
-                          {user.picture ? (
-                            <Image src={user.picture} alt="" className="w-8 h-8 object-cover" width={32} height={32} />
-                          ) : (
-                            <div className="w-8 h-8 bg-[#ac6d46] text-white flex items-center justify-center font-bold text-sm uppercase">
-                              {user.username[0]}
-                            </div>
-                          )}
+                          <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border-2 ${user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'}`}>
+                            {user.picture ? (
+                              <Image src={user.picture} alt="" className="w-full h-full object-cover" width={32} height={32} />
+                            ) : (
+                              <div className="w-full h-full bg-[#b5bcc4] text-white flex items-center justify-center font-bold text-sm uppercase">
+                                {user.username[0]}
+                              </div>
+                            )}
+                          </div>
                           <div>
                             <div className="font-bold text-sm dark:text-[#e5e5e5]">{user.username}</div>
-                            <div className="text-xs text-[#ac6d46]">EXPLORER PRO</div>
+                            {user.role === 'creator' && (
+                              <div className="text-xs text-[#ac6d46]">EXPLORER PRO</div>
+                            )}
                           </div>
                         </button>
                       ))

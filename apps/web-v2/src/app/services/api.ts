@@ -283,6 +283,7 @@ export interface ExplorerProfile {
   memberDate?: string;
   locationFrom?: string;
   locationLives?: string;
+  locationVisibility?: string;
   sponsorsFund?: string;
   sponsorsFundType?: string;
   sponsorsFundExpeditionId?: string;
@@ -297,6 +298,10 @@ export interface ExplorerProfile {
   you?: boolean;
   creator?: boolean;
   stripeAccountConnected?: boolean;
+  activeExpeditionLocation?: {
+    lat: number; lon: number; name: string;
+    expeditionId: string; expeditionTitle: string;
+  };
 }
 
 export interface ExplorerListItem {
@@ -311,6 +316,7 @@ export interface ExplorerListItem {
   locationFromLon?: number;
   locationLivesLat?: number;
   locationLivesLon?: number;
+  locationVisibility?: string;
   entriesCount?: number;
   postsCount?: number;
   memberDate?: string;
@@ -324,6 +330,13 @@ export interface ExplorerListItem {
     status: string;
     daysActive?: number;
   }>;
+  // Active expedition location (derived from expedition's current_location)
+  activeExpeditionLocation?: {
+    lat: number; lon: number; name: string;
+    expeditionId: string; expeditionTitle: string;
+  };
+  // Last entry date (returned when context=following)
+  lastEntryDate?: string;
 }
 
 export interface ExplorerEntry {
@@ -379,6 +392,8 @@ export interface ExplorerExpedition {
   goal?: number;
   raised?: number;
   sponsorsCount?: number;
+  currentLocation?: { lat: number; lon: number; name: string; source: string };
+  currentLocationVisibility?: 'public' | 'sponsors' | 'private';
 }
 
 export interface ExplorerFollower {
@@ -394,8 +409,8 @@ export const explorerApi = {
   /**
    * Get all explorers
    */
-  getAll: () =>
-    api.get<{ data: ExplorerListItem[]; results: number }>('/users'),
+  getAll: (context?: string) =>
+    api.get<{ data: ExplorerListItem[]; results: number }>(`/users${context ? `?context=${context}` : ''}`),
 
   /**
    * Get explorer profile by username
@@ -461,7 +476,7 @@ export const explorerApi = {
    * Get current user's profile settings (requires auth)
    */
   getProfileSettings: () =>
-    api.get<{ username?: string; email?: string; name?: string; bio?: string; from?: string; livesIn?: string; website?: string; twitter?: string; instagram?: string; youtube?: string; picture?: string; coverPhoto?: string; equipment?: string[] }>('/user/settings/profile'),
+    api.get<{ username?: string; email?: string; name?: string; bio?: string; from?: string; livesIn?: string; locationVisibility?: string; website?: string; twitter?: string; instagram?: string; youtube?: string; picture?: string; coverPhoto?: string; equipment?: string[] }>('/user/settings/profile'),
 
   /**
    * Update current user's profile settings (requires auth)
@@ -739,8 +754,8 @@ export const expeditionApi = {
   /**
    * Get all expeditions
    */
-  getAll: () =>
-    api.get<{ data: Expedition[]; results: number }>('/trips'),
+  getAll: (context?: string) =>
+    api.get<{ data: Expedition[]; results: number }>(`/trips${context ? `?context=${context}` : ''}`),
 
   /**
    * Get expedition by ID
@@ -928,8 +943,8 @@ export const entryApi = {
   /**
    * Get all entries
    */
-  getAll: () =>
-    api.get<{ data: Entry[]; results: number }>('/posts'),
+  getAll: (context?: string) =>
+    api.get<{ data: Entry[]; results: number }>(`/posts${context ? `?context=${context}` : ''}`),
 
   /**
    * Get entry by ID

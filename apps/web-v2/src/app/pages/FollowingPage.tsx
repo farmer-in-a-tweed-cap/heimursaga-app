@@ -211,7 +211,7 @@ export function FollowingPage() {
               <div className="flex items-start gap-3 mb-3">
                 <button
                   onClick={() => router.push(`/journal/${follow.username}`)}
-                  className="w-16 h-16 flex-shrink-0 overflow-hidden border-2 border-[#b5bcc4] dark:border-[#616161] hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all bg-[#616161]"
+                  className={`w-16 h-16 flex-shrink-0 overflow-hidden border-2 ${follow.creator ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'} hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all bg-[#616161]`}
                 >
                   {follow.picture ? (
                     <Image
@@ -261,7 +261,7 @@ export function FollowingPage() {
                   onClick={() => router.push(`/journal/${follow.username}`)}
                   className="flex-1 px-3 py-2 border border-[#202020] dark:border-[#616161] text-xs font-bold text-[#202020] dark:text-[#e5e5e5] hover:bg-[#4676ac] hover:border-[#4676ac] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
                 >
-                  VIEW PROFILE
+                  VIEW JOURNAL
                 </button>
                 {isOwnProfile && (
                   <button

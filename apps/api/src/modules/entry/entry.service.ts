@@ -125,8 +125,12 @@ export class EntryService {
     }
   }
 
-  async getEntries({ session }: ISessionQuery): Promise<IEntryGetAllResponse> {
+  async getEntries({
+    query,
+    session,
+  }: ISessionQuery<{ context?: string }>): Promise<IEntryGetAllResponse> {
     try {
+      const { context } = query;
       const { explorerId, explorerRole } = session;
 
       let where = {
@@ -165,6 +169,18 @@ export class EntryService {
             deleted_at: null,
           };
           break;
+      }
+
+      // Filter to entries from followed explorers
+      if (context === 'following') {
+        if (!explorerId) throw new ServiceForbiddenException();
+        const follows = await this.prisma.explorerFollow.findMany({
+          where: { follower_id: explorerId },
+          select: { followee_id: true },
+        });
+        const followedIds = follows.map((f) => f.followee_id);
+        if (followedIds.length === 0) return { data: [], results: 0 };
+        where = { ...where, author_id: { in: followedIds } };
       }
 
       // get entries
@@ -247,7 +263,7 @@ export class EntryService {
           created_at: true,
         },
         take,
-        orderBy: [{ date: 'desc' }],
+        orderBy: context === 'following' ? [{ updated_at: 'desc' }] : [{ date: 'desc' }],
       });
 
       // Filter out sponsored entries that the explorer doesn't have access to

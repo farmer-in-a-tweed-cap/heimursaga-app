@@ -17,6 +17,7 @@ import { explorerApi, entryApi, expeditionApi, type ExplorerProfile, type Explor
 import { CountryFlag } from '@/app/components/CountryFlag';
 import { ContinentIcon } from '@/app/components/ContinentIcon';
 import { calculatePassport } from '@/app/utils/passportCalculator';
+import { formatLocationByPrivacy, parseLocationString, type LocationPrivacyLevel } from '@/app/utils/locationPrivacy';
 
 /**
  * Format social link handles/usernames into full URLs
@@ -275,16 +276,38 @@ export function ExplorerProfilePage() {
     journalName: profile.name || profile.username,
     tagline: '', // Not in API
     bio: profile.bio || '',
-    fromLocation: profile.locationFrom || '',
+    fromLocation: profile.locationFrom
+      ? formatLocationByPrivacy({
+          ...parseLocationString(profile.locationFrom),
+          privacyLevel: (profile.locationVisibility?.toUpperCase() || 'HIDDEN') as LocationPrivacyLevel,
+        }).displayText
+      : '',
     fromCoordinates: '',
-    currentLocation: profile.locationLives || '',
-    currentCoordinates: '',
-    location: profile.locationLives || profile.locationFrom || 'Location not set',
+    currentLocation: profile.activeExpeditionLocation
+      ? profile.activeExpeditionLocation.name
+      : profile.locationLives
+        ? formatLocationByPrivacy({
+            ...parseLocationString(profile.locationLives),
+            privacyLevel: (profile.locationVisibility?.toUpperCase() || 'HIDDEN') as LocationPrivacyLevel,
+          }).displayText
+        : '',
+    onExpedition: !!profile.activeExpeditionLocation,
+    activeExpeditionId: profile.activeExpeditionLocation?.expeditionId,
+    activeExpeditionTitle: profile.activeExpeditionLocation?.expeditionTitle,
+    currentCoordinates: profile.activeExpeditionLocation
+      ? `${profile.activeExpeditionLocation.lat.toFixed(4)}°, ${profile.activeExpeditionLocation.lon.toFixed(4)}°`
+      : '',
+    location: profile.locationLives || profile.locationFrom
+      ? formatLocationByPrivacy({
+          ...parseLocationString(profile.locationLives || profile.locationFrom || ''),
+          privacyLevel: (profile.locationVisibility?.toUpperCase() || 'HIDDEN') as LocationPrivacyLevel,
+        }).displayText
+      : 'Location not set',
     coordinates: '',
     joined: profile.memberDate ? new Date(profile.memberDate).toISOString().split('T')[0] : '',
     lastActive: '',
     accountStatus: 'verified',
-    privacyLevel: 'Regional Location Only' as import('@/app/utils/locationPrivacy').LocationPrivacyLevel,
+    privacyLevel: (profile.locationVisibility?.toUpperCase() || 'HIDDEN') as LocationPrivacyLevel,
     avatarUrl: profile.picture || 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=200',
     coverImageUrl: profile.coverPhoto || 'https://images.unsplash.com/photo-1542224566-6e85f2e6772f?w=1200',
 
@@ -521,7 +544,7 @@ export function ExplorerProfilePage() {
             <div className="flex items-start gap-3 md:gap-6 w-full">
               {/* Large Avatar */}
               <div className="flex-shrink-0 mt-2">
-                <div className="w-20 h-20 md:w-40 md:h-40 border-2 md:border-4 border-[#ac6d46] overflow-hidden bg-[#202020]">
+                <div className={`w-20 h-20 md:w-40 md:h-40 border-2 md:border-4 ${explorer.accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020]`}>
                   <Image
                     src={explorer.avatarUrl}
                     alt={explorer.name}
@@ -547,7 +570,18 @@ export function ExplorerProfilePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-white/60 text-xs md:text-xs uppercase">Currently:</span>
+                    {explorer.onExpedition && (
+                      <Link
+                        href={`/expedition/${explorer.activeExpeditionId}`}
+                        className="bg-[#ac6d46] text-white text-[10px] font-bold px-2 py-0.5 hover:bg-[#8a5738] transition-colors flex-shrink-0"
+                      >
+                        ON EXPEDITION
+                      </Link>
+                    )}
                     <span className="font-bold truncate">{explorer.currentLocation || 'Not set'}</span>
+                    {explorer.currentCoordinates && (
+                      <span className="text-white/40 text-xs flex-shrink-0">({explorer.currentCoordinates})</span>
+                    )}
                   </div>
                   <div className="hidden md:flex items-center gap-2">
                     <span className="text-white/60 text-xs uppercase">Joined:</span>

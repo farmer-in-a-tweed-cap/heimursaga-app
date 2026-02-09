@@ -44,7 +44,7 @@ export function ExplorerCardLandscape({
 
       <div className="flex">
         {/* Avatar */}
-        <div className="w-32 h-32 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] bg-[#b5bcc4]">
+        <div className={`w-32 h-32 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] ${accountType === 'explorer-pro' ? 'border-l-4 border-l-[#ac6d46]' : ''} bg-[#b5bcc4]`}>
           <Image
             src={avatarUrl}
             alt={username}
