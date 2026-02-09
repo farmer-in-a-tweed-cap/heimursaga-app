@@ -3,17 +3,17 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
+    "build": "turbo run build --filter=api --filter=web-v2 --filter=@repo/types --filter=@repo/ui",
     "clean": "turbo run clean",
     "cleandep": "rm -rf node_modules && pnpm -r exec rm -rf node_modules",
-    "dev": "turbo run dev",
+    "dev": "turbo run dev --filter=api --filter=web-v2",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "lint": "turbo run lint",
     "test": "turbo run test",
     "heroku-postbuild": "if [ \"$APP\" = \"web\" ]; then pnpm run build:web && rm -rf node_modules && pnpm install --prod --frozen-lockfile; elif [ \"$APP\" = \"api\" ]; then pnpm run build:api && rm -rf node_modules && pnpm install --prod --frozen-lockfile; else echo 'no valid APP environment variable detected, please set APP to \"web\" or \"api\"'; exit 1; fi",
-    "build:web": "turbo run build --filter=web",
+    "build:web": "turbo run build --filter=web-v2",
     "build:api": "turbo run build --filter=api",
-    "start:web": "turbo run start --filter=web",
+    "start:web": "turbo run start --filter=web-v2",
     "start:api": "turbo run start --filter=api"
   },
   "devDependencies": {

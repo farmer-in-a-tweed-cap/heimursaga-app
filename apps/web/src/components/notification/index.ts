@@ -1,1 +1,0 @@
-export * from './notification-dropdown-tray';
