@@ -10,6 +10,7 @@ export const EMAIL_TEMPLATES = {
   PAYMENT_RECEIPT: 'payment_receipt',
   EXPEDITION_MILESTONE: 'expedition_milestone',
   MONTHLY_DIGEST: 'monthly_digest',
+  SPONSORSHIP_AUTO_CANCELED: 'sponsorship_auto_canceled',
 };
 
 const APP_BASE_URL =
@@ -1228,6 +1229,59 @@ const templates: {
         content,
         `Your ${v.month} activity summary on heimursaga.com`,
         `${APP_BASE_URL}/settings/notifications`,
+      );
+    },
+  },
+  {
+    key: EMAIL_TEMPLATES.SPONSORSHIP_AUTO_CANCELED,
+    subject: (v: { explorerName: string }) =>
+      `Your sponsorship of ${v.explorerName} has been canceled`,
+    html: (v: {
+      sponsorUsername: string;
+      explorerName: string;
+      explorerUsername: string;
+    }) => {
+      const content = `
+        ${emailSection(
+          `
+          <div style="font-size: 12px; font-weight: bold; color: #ac6d46; margin-bottom: 8px; letter-spacing: 0.5px;">
+            SPONSORSHIP CANCELED
+          </div>
+          ${emailHeading('AUTOMATIC CANCELLATION NOTICE', 1)}
+        `,
+          '#fff7f0',
+        )}
+
+        ${emailSection(`
+          <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            Hello <strong>${v.sponsorUsername}</strong>,
+          </p>
+
+          <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            Your recurring sponsorship of <strong>${v.explorerName}</strong> has been automatically canceled because the explorer has had no active or planned expeditions for 90 consecutive days.
+          </p>
+
+          ${emailInfoBox(
+            `
+            <strong style="display: block; margin-bottom: 8px;">WHY WAS THIS CANCELED?</strong>
+            <div style="line-height: 1.6;">
+              Heimursaga automatically pauses sponsorship billing when an explorer is not on an active expedition, and cancels it after 90 days of inactivity. This ensures you are only charged while explorers are actively exploring.
+            </div>
+          `,
+            'info',
+          )}
+
+          <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            If <strong>${v.explorerName}</strong> starts a new expedition in the future, you can choose to sponsor them again from their profile.
+          </p>
+
+          ${emailButton(`${APP_BASE_URL}/explorer/${v.explorerUsername}`, 'VIEW EXPLORER PROFILE', 'primary')}
+          ${emailButton(`${APP_BASE_URL}/expeditions`, 'BROWSE EXPEDITIONS', 'secondary')}
+        `)}
+      `;
+      return emailWrapper(
+        content,
+        `Your sponsorship of ${v.explorerName} has been automatically canceled`,
       );
     },
   },

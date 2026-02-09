@@ -344,7 +344,7 @@ export function NotificationsPage() {
   };
 
   return (
-    <div className="max-w-[800px] mx-auto px-6 py-8">
+    <div className="max-w-[800px] mx-auto px-6 py-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="bg-[#616161] text-white px-6 py-4 flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161]">

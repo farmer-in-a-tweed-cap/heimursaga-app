@@ -43,7 +43,7 @@ export function PasswordResetRequestPage() {
 
   if (submitted) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2">
@@ -237,7 +237,7 @@ export function PasswordResetRequestPage() {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-8">
+    <div className="max-w-[1600px] mx-auto px-6 py-12">
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}

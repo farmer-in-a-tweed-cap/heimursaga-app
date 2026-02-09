@@ -67,7 +67,10 @@ export enum SponsorshipStatus {
   PENDING = 'pending',
   ACTIVE = 'active',
   CONFIRMED = 'confirmed',
+  PAUSED = 'paused',
   CANCELED = 'canceled',
+  PAST_DUE = 'past_due',
+  UNPAID = 'unpaid',
 }
 
 export enum SponsorshipType {

@@ -432,7 +432,7 @@ export function SponsorshipPaymentPage() {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-8">
+    <div className="max-w-[1400px] mx-auto px-4 lg:px-6 py-12">
       {/* Breadcrumb */}
       <div className="mb-6 text-xs font-mono text-[#b5bcc4] dark:text-[#b5bcc4]">
         <Link href="/explorers" className="hover:text-[#ac6d46]">EXPLORERS</Link>

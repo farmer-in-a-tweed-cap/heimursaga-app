@@ -954,7 +954,7 @@ export function ExpeditionDetailPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-[#ac6d46]" />
           <span className="ml-3 text-[#616161]">Loading expedition...</span>
@@ -966,7 +966,7 @@ export function ExpeditionDetailPage() {
   // Not found state
   if (!expedition) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-12 text-center">
           <Compass className="w-16 h-16 text-[#b5bcc4] dark:text-[#616161] mx-auto mb-4" aria-hidden="true" />
           <h3 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
@@ -987,7 +987,7 @@ export function ExpeditionDetailPage() {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-8">
+    <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Hero Banner with Overlay Content */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="relative h-[600px] overflow-hidden">

@@ -628,7 +628,7 @@ export class StripeService {
       // Update sponsorship status to canceled
       await this.prisma.sponsorship.updateMany({
         where: { stripe_subscription_id: stripeSubscriptionId },
-        data: { status: 'CANCELED' },
+        data: { status: 'canceled' },
       });
 
       // Handle Explorer Pro subscription deletion - downgrade user
@@ -664,39 +664,53 @@ export class StripeService {
   }
 
   /**
-   * Handle subscription updates - sync status changes
+   * Handle subscription updates - sync status changes.
+   * When pause_collection is set (managed by SponsorBillingService), we skip
+   * sponsorship status sync to avoid overwriting the local 'paused' status.
    */
   async onSubscriptionUpdated(event: Stripe.Subscription) {
     try {
       const { id: stripeSubscriptionId, status } = event;
 
-      // Map Stripe status to our status
-      let sponsorshipStatus: string;
-      switch (status) {
-        case 'active':
-          sponsorshipStatus = 'ACTIVE';
-          break;
-        case 'past_due':
-          sponsorshipStatus = 'PAST_DUE';
-          break;
-        case 'canceled':
-          sponsorshipStatus = 'CANCELED';
-          break;
-        case 'unpaid':
-          sponsorshipStatus = 'UNPAID';
-          break;
-        case 'paused':
-          sponsorshipStatus = 'PAUSED';
-          break;
-        default:
-          sponsorshipStatus = 'ACTIVE';
-      }
+      // If pause_collection is set, the SponsorBillingService is managing this
+      // subscription's local status — do not overwrite it.
+      if (event.pause_collection) {
+        this.logger.log(
+          `Subscription ${stripeSubscriptionId} has pause_collection set, skipping sponsorship status sync`,
+        );
+      } else {
+        // Map Stripe status to our status (lowercase, matching SponsorshipStatus enum)
+        let sponsorshipStatus: string;
+        switch (status) {
+          case 'active':
+            sponsorshipStatus = 'active';
+            break;
+          case 'past_due':
+            sponsorshipStatus = 'past_due';
+            break;
+          case 'canceled':
+            sponsorshipStatus = 'canceled';
+            break;
+          case 'unpaid':
+            sponsorshipStatus = 'unpaid';
+            break;
+          case 'paused':
+            sponsorshipStatus = 'paused';
+            break;
+          default:
+            sponsorshipStatus = 'active';
+        }
 
-      // Update sponsorship status
-      await this.prisma.sponsorship.updateMany({
-        where: { stripe_subscription_id: stripeSubscriptionId },
-        data: { status: sponsorshipStatus },
-      });
+        // Update sponsorship status
+        await this.prisma.sponsorship.updateMany({
+          where: { stripe_subscription_id: stripeSubscriptionId },
+          data: { status: sponsorshipStatus },
+        });
+
+        this.logger.log(
+          `Subscription ${stripeSubscriptionId} updated to ${sponsorshipStatus}`,
+        );
+      }
 
       // Also handle Explorer Pro subscription status changes
       const explorerSubscription =
@@ -730,10 +744,6 @@ export class StripeService {
           );
         }
       }
-
-      this.logger.log(
-        `Subscription ${stripeSubscriptionId} updated to ${sponsorshipStatus}`,
-      );
     } catch (e) {
       this.logger.error('Error handling subscription updated:', e);
     }
@@ -756,10 +766,22 @@ export class StripeService {
         `Invoice payment failed for subscription ${stripeSubscriptionId}, attempt ${attempt_count}`,
       );
 
+      // If the subscription is paused (managed by SponsorBillingService), skip
+      // status update — this may be a retry for a pre-pause invoice.
+      const stripeSubscription = await this.stripe.subscriptions.retrieve(
+        stripeSubscriptionId,
+      );
+      if (stripeSubscription.pause_collection) {
+        this.logger.log(
+          `Subscription ${stripeSubscriptionId} has pause_collection set, skipping past_due status update`,
+        );
+        return;
+      }
+
       // Update sponsorship to past_due status
       await this.prisma.sponsorship.updateMany({
         where: { stripe_subscription_id: stripeSubscriptionId },
-        data: { status: 'PAST_DUE' },
+        data: { status: 'past_due' },
       });
 
       // If no more retry attempts, the subscription will be canceled via webhook

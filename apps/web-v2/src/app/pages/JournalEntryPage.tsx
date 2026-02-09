@@ -291,7 +291,7 @@ export function JournalEntryPage() {
   // Loading state
   if (loading) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin text-[#ac6d46]" />
           <span className="ml-3 text-[#616161]">Loading entry...</span>
@@ -303,7 +303,7 @@ export function JournalEntryPage() {
   // Not found state
   if (notFound || !entry) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="flex flex-col items-center justify-center py-20">
           <AlertTriangle className="h-12 w-12 text-[#ac6d46] mb-4" />
           <h1 className="text-2xl font-bold mb-2 dark:text-[#e5e5e5]">Entry Not Found</h1>
@@ -320,7 +320,7 @@ export function JournalEntryPage() {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-8">
+    <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Breadcrumb Navigation */}
       <div className="mb-6 text-xs font-mono text-[#b5bcc4] dark:text-[#b5bcc4]">
         <Link href="/explorers" className="hover:text-[#ac6d46]">EXPLORERS</Link>

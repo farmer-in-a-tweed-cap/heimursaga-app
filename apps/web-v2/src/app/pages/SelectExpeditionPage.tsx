@@ -92,7 +92,7 @@ export function SelectExpeditionPage() {
   // Show loading state
   if (isAuthenticated && loading) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-[#ac6d46]" />
           <span className="ml-3 text-[#616161]">Loading your expeditions...</span>
@@ -104,7 +104,7 @@ export function SelectExpeditionPage() {
   // Show error state
   if (isAuthenticated && error) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46] p-8 text-center">
           <AlertTriangle className="w-12 h-12 text-[#ac6d46] mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2 dark:text-white">{error}</h2>
@@ -121,7 +121,7 @@ export function SelectExpeditionPage() {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-8">
+    <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
         <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">

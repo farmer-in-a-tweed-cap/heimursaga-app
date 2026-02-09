@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '@/modules/prisma';
 import { StripeModule } from '@/modules/stripe';
 
+import { SponsorBillingService } from './sponsor-billing.service';
+import { SponsorCronService } from './sponsor-cron.service';
 import {
   SponsorController,
   SponsorshipController,
@@ -18,7 +20,7 @@ import { SponsorService } from './sponsor.service';
     SponsorshipController,
     SponsorshipTierController,
   ],
-  providers: [SponsorService],
-  exports: [SponsorService],
+  providers: [SponsorService, SponsorBillingService, SponsorCronService],
+  exports: [SponsorService, SponsorBillingService],
 })
 export class SponsorModule {}

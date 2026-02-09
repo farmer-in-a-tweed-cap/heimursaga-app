@@ -27,6 +27,7 @@ model Explorer {
   is_stripe_account_connected Boolean?              @default(false)
   stripe_account_id           String?               @db.VarChar(40)
   blocked                     Boolean?              @default(false)
+  resting_since               DateTime?
   sponsored_checkouts         Checkout[]            @relation("sponsored_checkouts")
   explorer_checkouts          Checkout[]            @relation("explorer_checkouts")
   payment_methods             PaymentMethod[]
@@ -63,6 +64,7 @@ model Explorer {
 
   @@index([stripe_customer_id])
   @@index([stripe_account_id])
+  @@index([resting_since])
   @@map("users")
 }
 
@@ -353,7 +355,7 @@ model Expedition {
   created_at     DateTime?            @default(now())
   updated_at     DateTime?            @updatedAt
   deleted_at     DateTime?
-  status         String?              @default("planned") @db.VarChar(20) // planned, active, completed, paused
+  status         String?              @default("planned") @db.VarChar(20) // draft, planned, active, completed
   start_date     DateTime?
   end_date       DateTime?
   cover_image    String?              @db.VarChar(250)

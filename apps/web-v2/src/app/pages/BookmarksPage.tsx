@@ -175,7 +175,7 @@ export function BookmarksPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-[1000px] mx-auto px-6 py-8">
+      <div className="max-w-[1000px] mx-auto px-6 py-12">
         <div className="flex items-center justify-center py-20">
           <Loader2 className="w-8 h-8 animate-spin text-[#ac6d46]" />
           <span className="ml-3 text-[#616161] dark:text-[#b5bcc4]">Loading bookmarks...</span>
@@ -186,7 +186,7 @@ export function BookmarksPage() {
 
   if (error) {
     return (
-      <div className="max-w-[1000px] mx-auto px-6 py-8">
+      <div className="max-w-[1000px] mx-auto px-6 py-12">
         <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 p-6 text-center">
           <p className="text-red-600 dark:text-red-400">{error}</p>
           <button
@@ -201,7 +201,7 @@ export function BookmarksPage() {
   }
 
   return (
-    <div className="max-w-[1000px] mx-auto px-6 py-8">
+    <div className="max-w-[1000px] mx-auto px-6 py-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
         <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">

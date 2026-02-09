@@ -19,3 +19,7 @@ export interface IEventAdminNewUserSignup {
   signupDate: string;
   userProfileUrl?: string;
 }
+
+export interface IExplorerExitedRestingEvent {
+  explorerId: number;
+}

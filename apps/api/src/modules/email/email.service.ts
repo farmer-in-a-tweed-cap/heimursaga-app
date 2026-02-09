@@ -42,7 +42,8 @@ export class EmailService {
     try {
       const { to, subject, text, html } = options;
 
-      const from = process.env.SMTP_EMAIL_FROM;
+      const emailAddress = process.env.SMTP_EMAIL_FROM;
+      const from = `"Heimursaga" <${emailAddress}>`;
 
       this.logger.log(
         JSON.stringify({ to, from, subject, text, html }, null, 2),

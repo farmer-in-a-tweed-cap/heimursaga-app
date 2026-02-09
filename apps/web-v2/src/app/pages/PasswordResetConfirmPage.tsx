@@ -112,7 +112,7 @@ export function PasswordResetConfirmPage() {
   // Loading state while validating token
   if (validating) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="max-w-2xl mx-auto">
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-8">
             <div className="flex items-center justify-center gap-3">
@@ -131,7 +131,7 @@ export function PasswordResetConfirmPage() {
   // Success state
   if (success) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46]">
@@ -211,7 +211,7 @@ export function PasswordResetConfirmPage() {
   // Invalid token state
   if (!tokenValid) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="max-w-2xl mx-auto">
           <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46]">
             <div className="bg-[#ac6d46] text-white p-4 flex items-center gap-3">
@@ -257,7 +257,7 @@ export function PasswordResetConfirmPage() {
 
   // Reset form
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-8">
+    <div className="max-w-[1600px] mx-auto px-6 py-12">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2">

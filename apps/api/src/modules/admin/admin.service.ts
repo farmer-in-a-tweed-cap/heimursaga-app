@@ -61,7 +61,13 @@ export class AdminService {
           this.prisma.explorer.count({ where: { blocked: true } }),
         ]);
 
-      return { explorers, entries, expeditions, pendingFlags, blockedExplorers };
+      return {
+        explorers,
+        entries,
+        expeditions,
+        pendingFlags,
+        blockedExplorers,
+      };
     } catch (e) {
       this.logger.error(e);
       if (e instanceof ServiceException) throw e;

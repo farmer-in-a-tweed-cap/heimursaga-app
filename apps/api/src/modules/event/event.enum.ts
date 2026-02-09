@@ -24,4 +24,5 @@ export const EVENTS = {
   ENTRY_CREATED: 'entry_created',
   ADMIN_NEW_USER_SIGNUP: 'admin_new_user_signup',
   ADMIN_DISPUTE_CREATED: 'admin_dispute_created',
+  EXPLORER_EXITED_RESTING: 'explorer_exited_resting',
 };

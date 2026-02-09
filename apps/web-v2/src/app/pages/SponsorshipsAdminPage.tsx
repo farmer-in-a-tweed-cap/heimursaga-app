@@ -476,7 +476,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
   }
 
   return (
-    <div className={embedded ? '' : 'max-w-[1600px] mx-auto px-6 py-8'}>
+    <div className={embedded ? '' : 'max-w-[1600px] mx-auto px-6 py-12'}>
       {/* Country Selector Modal */}
       {showCountryModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

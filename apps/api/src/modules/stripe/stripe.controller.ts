@@ -15,9 +15,7 @@ import { Public, Roles, Session } from '@/common/decorators';
 import { IRequest, ISession } from '@/common/interfaces';
 import { PrismaService } from '@/modules/prisma';
 
-import {
-  StripeAccountLinkDto,
-} from './stripe.dto';
+import { StripeAccountLinkDto } from './stripe.dto';
 import { StripeService } from './stripe.service';
 
 @ApiTags('stripe')

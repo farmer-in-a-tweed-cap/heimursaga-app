@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 import { AdminModule } from '@/modules/admin';
@@ -31,6 +32,7 @@ import { AppService } from './app.service';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     EventEmitterModule.forRoot({
       wildcard: false,
       delimiter: '.',

@@ -270,7 +270,7 @@ export function AdminDashboardPage() {
           <button
             onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
             disabled={offset === 0 || loading}
-            className="p-2 border-2 border-[#202020] dark:border-[#616161] disabled:opacity-30 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-colors"
+            className="p-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] disabled:opacity-30 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-colors"
           >
             <ChevronLeft size={16} strokeWidth={2.5} />
           </button>
@@ -280,7 +280,7 @@ export function AdminDashboardPage() {
           <button
             onClick={() => setOffset(offset + PAGE_SIZE)}
             disabled={offset + PAGE_SIZE >= total || loading}
-            className="p-2 border-2 border-[#202020] dark:border-[#616161] disabled:opacity-30 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-colors"
+            className="p-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] disabled:opacity-30 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-colors"
           >
             <ChevronRight size={16} strokeWidth={2.5} />
           </button>
@@ -303,7 +303,7 @@ export function AdminDashboardPage() {
     <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#1a1a1a]">
       {/* Header */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-[#202020] text-white">
-        <div className="max-w-[1600px] mx-auto px-6 py-6">
+        <div className="max-w-[1600px] mx-auto px-6 py-12">
           <div className="flex items-center gap-3 mb-4">
             <Shield size={32} strokeWidth={2.5} className="text-[#ac6d46]" />
             <h1 className="text-2xl font-bold">ADMIN DASHBOARD</h1>
@@ -337,7 +337,7 @@ export function AdminDashboardPage() {
                 className={`px-6 py-3 text-sm font-bold transition-colors relative ${
                   viewMode === key
                     ? 'bg-white dark:bg-[#202020] text-[#ac6d46] border-t-4 border-[#ac6d46]'
-                    : 'bg-transparent text-[#616161] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a]'
+                    : 'bg-transparent text-[#616161] dark:text-[#b5bcc4] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a]'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -430,7 +430,7 @@ export function AdminDashboardPage() {
               </div>
               <div className="border-2 border-[#202020] dark:border-[#616161] p-4 bg-white dark:bg-[#2a2a2a]">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1 font-bold">BLOCKED EXPLORERS</div>
-                <div className="text-3xl font-bold text-[#616161]">{stats?.blockedExplorers ?? 0}</div>
+                <div className="text-3xl font-bold text-[#616161] dark:text-[#b5bcc4]">{stats?.blockedExplorers ?? 0}</div>
               </div>
             </div>
 
@@ -687,7 +687,7 @@ export function AdminDashboardPage() {
                               ? 'bg-[#4676ac] text-white'
                               : expedition.status === 'completed'
                               ? 'bg-[#616161] text-white'
-                              : 'bg-[#b5bcc4] text-[#202020]'
+                              : 'bg-[#b5bcc4] text-[#202020] dark:bg-[#616161] dark:text-[#e5e5e5]'
                           }`}>
                             {(expedition.status || 'PLANNING').toUpperCase()}
                           </span>
@@ -779,7 +779,7 @@ export function AdminDashboardPage() {
                               ? 'bg-[#ac6d46] text-white'
                               : explorer.role === 'creator'
                               ? 'bg-[#4676ac] text-white'
-                              : 'bg-[#b5bcc4] text-[#202020]'
+                              : 'bg-[#b5bcc4] text-[#202020] dark:bg-[#616161] dark:text-[#e5e5e5]'
                           }`}>
                             {explorer.role === 'creator' ? 'EXPLORER PRO' : explorer.role.toUpperCase()}
                           </span>

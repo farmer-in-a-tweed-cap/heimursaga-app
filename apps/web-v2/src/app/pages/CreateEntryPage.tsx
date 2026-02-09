@@ -480,7 +480,7 @@ export function CreateEntryPage() {
   // Show loading state when fetching expedition
   if (!isStandalone && expeditionLoading) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-[#ac6d46]" />
           <span className="ml-3 text-[#616161]">Loading expedition...</span>
@@ -492,7 +492,7 @@ export function CreateEntryPage() {
   // Show error state when expedition not found
   if (!isStandalone && expeditionError) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46] p-8 text-center">
           <X className="w-12 h-12 text-[#ac6d46] mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2 dark:text-white">Expedition Not Found</h2>
@@ -509,7 +509,7 @@ export function CreateEntryPage() {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-8">
+    <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
         <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">

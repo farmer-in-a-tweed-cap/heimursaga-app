@@ -191,7 +191,7 @@ export function ExpeditionQuickEntryPage() {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto px-6 py-8">
+    <div className="max-w-[1400px] mx-auto px-6 py-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
         <div className="flex items-center gap-4 mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">

@@ -547,7 +547,7 @@ export function MessagesPage() {
       pageName="Messages & Conversations"
       pageDescription="Communicate directly with other Explorer Pro members through the platform's built-in messaging system."
     >
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         {/* Page Header */}
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
           <div className="p-6">

@@ -30,6 +30,7 @@ import {
   ISessionQuery,
   ISessionQueryWithPayload,
 } from '@/common/interfaces';
+import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
@@ -38,7 +39,56 @@ export class ExpeditionService {
   constructor(
     private logger: Logger,
     private prisma: PrismaService,
+    private eventService: EventService,
   ) {}
+
+  /**
+   * Check if an explorer's resting status needs to change after an expedition mutation.
+   * If they have no active/planned expeditions, mark them as resting.
+   * If they just got one, clear resting and emit event to resume paused sponsorships.
+   */
+  private async checkAndUpdateRestingStatus(explorerId: number): Promise<void> {
+    try {
+      const activeCount = await this.prisma.expedition.count({
+        where: {
+          author_id: explorerId,
+          deleted_at: null,
+          status: { in: ['planned', 'active'] },
+        },
+      });
+
+      const explorer = await this.prisma.explorer.findUnique({
+        where: { id: explorerId },
+        select: { resting_since: true },
+      });
+
+      if (!explorer) return;
+
+      const isResting = explorer.resting_since !== null;
+
+      if (activeCount === 0 && !isResting) {
+        // Enter resting — no event needed, pause is cron-driven
+        await this.prisma.explorer.update({
+          where: { id: explorerId },
+          data: { resting_since: new Date() },
+        });
+      } else if (activeCount > 0 && isResting) {
+        // Exit resting — clear and emit event for immediate resume
+        await this.prisma.explorer.update({
+          where: { id: explorerId },
+          data: { resting_since: null },
+        });
+        await this.eventService.trigger({
+          event: EVENTS.EXPLORER_EXITED_RESTING,
+          data: { explorerId },
+        });
+      }
+    } catch (e) {
+      this.logger.error(
+        `Failed to update resting status for explorer ${explorerId}: ${e.message}`,
+      );
+    }
+  }
 
   /**
    * Get unique sponsor counts for a list of explorer IDs.
@@ -891,6 +941,8 @@ export class ExpeditionService {
         },
       });
 
+      await this.checkAndUpdateRestingStatus(explorerId);
+
       const response: IExpeditionCreateResponse = {
         expeditionId: expedition.public_id,
       };
@@ -988,6 +1040,8 @@ export class ExpeditionService {
         where: { id: expedition.id },
         data: updateData,
       });
+
+      await this.checkAndUpdateRestingStatus(explorerId);
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;
@@ -1018,6 +1072,8 @@ export class ExpeditionService {
         where: { id: expedition.id },
         data: { deleted_at: dateformat().toDate() },
       });
+
+      await this.checkAndUpdateRestingStatus(explorerId);
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;
@@ -1142,6 +1198,8 @@ export class ExpeditionService {
         where: { id: expedition.id },
         data: updateData,
       });
+
+      await this.checkAndUpdateRestingStatus(explorerId);
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

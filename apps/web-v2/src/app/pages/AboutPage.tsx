@@ -21,10 +21,10 @@ export function AboutPage() {
 
         <div className="p-6">
           <p className="text-sm leading-relaxed mb-3">
-            Heimursaga (HAY-mur-sah-gah) is a platform built for explorers who document their journeys and earn sustainable income from their work. The platform is structured around expeditions—distinct chapters of travel with planning phases, active exploration, and rest periods. Explorers write geo-tagged journal entries, organize them by expedition, and receive support through one-time donations toward specific trips or monthly subscriptions across their entire career.
+            Heimursaga (HAY-mur-sah-gah) — from Old Norse, roughly: "world-story." Humans have always explored. Before satellites and social feeds, before pitch decks and content calendars, there were journals. Scratched by lantern light on ships crossing oceans nobody had named. Pressed into leather-bound pages on the backs of camels tracing the Silk Road. Scrawled in moleskins on overnight trains rattling through countries that don't exist anymore. Those journal entries, those world-stories, some documenting monumental discoveries, some a mundane log of meals eaten for the day, some recounting wonders or horrors that were previously only legend, and some simple pleas for financial sponsorship, those stories shaped the world and inspired the human race for millenia.
           </p>
           <p className="text-sm leading-relaxed text-[#b5bcc4]">
-            The interface is dense by design. Expedition status, billing cycles, subscription states, sponsor counts, and refund tracking are all visible because exploration generates data, and that data belongs in front of you. We prioritize transparency over simplicity, function over aesthetics, and long-term sustainability over viral growth.
+            That impulse — to go, to see, to write it down — hasn't changed. But the means of sharing those stories has. The digitial age enabled the platforms and potential to inspire nearly every person on the planet almost simultaneously, but now the social media giants and algorithmic feeds bury authentic travel documentation under AI-generated slop and fleeting trends. Crowdfunding sites treat expeditions like marketing campaigns. No social media or fundraising platform has ever been built, from the ground up, for explorers only. Until now. Heimursaga is a journaling and fundraising platform — the first designed specifically for the world's explorers and the people who support them.
           </p>
         </div>
       </div>
@@ -38,19 +38,19 @@ export function AboutPage() {
         <div className="p-6">
           <div className="space-y-4 text-sm leading-relaxed">
             <p className="dark:text-[#e5e5e5]">
-              Most travel platforms optimize for engagement. They reward constant output, algorithmic appeal, and content that performs well rather than content that documents honestly. Heimursaga exists because genuine exploration deserves infrastructure that serves the work itself, not the metrics around it.
-            </p>
-            
-            <p className="text-[#616161] dark:text-[#b5bcc4]">
-              This platform connects explorers directly with people who value their documentation. No intermediary metrics. No performance requirements. No brand partnerships or affiliate compromises. Sponsors support the exploration they care about, and explorers maintain complete editorial control.
+              Explorers and travelers have always had to split themselves across platforms that weren't built for them. Social media for the audience. Crowdfunding sites for the money. Blogs for the long-form writing nobody sees. None of them understand what an expedition actually is — the planning, the movement, the documentation, the rest between journeys. None of them let you do all of it in one place.
             </p>
 
             <p className="text-[#616161] dark:text-[#b5bcc4]">
-              The subscription billing pauses during rest periods because sustainable exploration requires time away from work. The expedition hierarchy exists because journeys have natural structure. The map is central because geography matters. Every design decision reflects how exploration actually functions, not how social platforms think it should.
+              Heimursaga does. Write geo-tagged journal entries. Organize them by expedition. Earn sustainable income through one-time donations toward specific trips or monthly subscriptions across your entire career. This isn't a generic crowdfunding platform with a travel category bolted on. It's built by explorers, for explorers — every feature, every constraint, every design decision shaped by how exploration actually works.
+            </p>
+
+            <p className="text-[#616161] dark:text-[#b5bcc4]">
+              And in an era where social feeds are increasingly swamped with AI-generated content and algorithmic noise, Heimursaga is meant to be the antidote. We strictly screen out bots and all forms of AI-generated content which ensures that Heimursaga remains a dedicated space where real people document real journeys, and supporters connect directly with the explorers whose work they value. No intermediary algorithms. No filtering out the noise. This is about the explorers, the ones <i>out there</i> seeing and experiencing the world.
             </p>
 
             <p className="dark:text-[#e5e5e5]">
-              This is infrastructure for people who travel, not people who perform travel. If that distinction matters to you, this platform will make sense.
+              Explore. Discover. Share. Sponsor. Inspire. That's it. That's the whole idea.
             </p>
           </div>
         </div>
@@ -552,11 +552,11 @@ export function AboutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Encryption:</span>
-                  <span className="dark:text-[#e5e5e5]">AES-256</span>
+                  <span className="dark:text-[#e5e5e5]">TLS in Transit</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Auth:</span>
-                  <span className="dark:text-[#e5e5e5]">JWT + 2FA</span>
+                  <span className="dark:text-[#e5e5e5]">JWT Sessions</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">GDPR:</span>
@@ -564,7 +564,7 @@ export function AboutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">PCI DSS:</span>
-                  <span className="text-green-500">Level 1</span>
+                  <span className="text-green-500">Via Stripe</span>
                 </div>
               </div>
             </div>
@@ -588,8 +588,8 @@ export function AboutPage() {
                   <span className="dark:text-[#e5e5e5]">Hourly Inc.</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#616161] dark:text-[#b5bcc4]">Uptime:</span>
-                  <span className="text-green-500">99.97%</span>
+                  <span className="text-[#616161] dark:text-[#b5bcc4]">Hosting:</span>
+                  <span className="dark:text-[#e5e5e5]">Heroku</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Avg Load:</span>
@@ -606,7 +606,7 @@ export function AboutPage() {
               <div className="space-y-2 text-xs font-mono">
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Payments:</span>
-                  <span className="dark:text-[#e5e5e5]">Stripe API v2</span>
+                  <span className="dark:text-[#e5e5e5]">Stripe Connect</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Maps:</span>
@@ -614,7 +614,7 @@ export function AboutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Email:</span>
-                  <span className="dark:text-[#e5e5e5]">SendGrid</span>
+                  <span className="dark:text-[#e5e5e5]">SMTP</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Analytics:</span>
@@ -622,7 +622,7 @@ export function AboutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">CDN:</span>
-                  <span className="dark:text-[#e5e5e5]">CloudFlare</span>
+                  <span className="dark:text-[#e5e5e5]">AWS S3</span>
                 </div>
               </div>
             </div>

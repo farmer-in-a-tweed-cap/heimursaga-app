@@ -142,7 +142,7 @@ export function SponsorshipDashboardPage() {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto px-4 lg:px-6 py-8">
+    <div className="max-w-[1600px] mx-auto px-4 lg:px-6 py-12">
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">SPONSORSHIP DASHBOARD</h1>

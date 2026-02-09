@@ -392,7 +392,7 @@ export function InsightsPage() {
     >
 
       <SettingsLayout>
-        <div className="max-w-[1600px] mx-auto">
+        <div className="max-w-[1600px] mx-auto py-12">
           {/* Page Header */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
             <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">

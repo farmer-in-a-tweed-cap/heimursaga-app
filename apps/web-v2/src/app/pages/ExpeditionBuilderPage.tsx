@@ -1162,7 +1162,7 @@ export function ExpeditionBuilderPage() {
   // Show loading state in edit mode
   if (isLoading) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-8 text-center">
           <div className="text-[#616161] dark:text-[#b5bcc4] font-mono">
             Loading expedition data...
@@ -1173,7 +1173,7 @@ export function ExpeditionBuilderPage() {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-8">
+    <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Breadcrumb Navigation */}
       <div className="mb-4 text-xs text-[#b5bcc4] font-mono">
         <Link href="/" className="hover:text-[#ac6d46]">HOME</Link>

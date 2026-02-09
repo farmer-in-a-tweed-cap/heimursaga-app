@@ -375,7 +375,7 @@ export function EditEntryPage() {
   // Loading state
   if (isLoading) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6">
           <div className="text-center py-12">
             <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#616161] dark:text-[#b5bcc4] mb-4" />
@@ -391,7 +391,7 @@ export function EditEntryPage() {
   // Error state
   if (loadError) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
           <div className="p-6 border-b-2 border-[#202020] dark:border-[#616161] bg-red-600 text-white">
             <div className="flex items-center gap-3">
@@ -424,7 +424,7 @@ export function EditEntryPage() {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-8">
+    <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
         <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">

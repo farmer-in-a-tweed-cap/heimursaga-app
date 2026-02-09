@@ -4,6 +4,7 @@ import { ExplorerMap } from "@/app/components/ExplorerMap";
 import { JournalGrid } from "@/app/components/JournalGrid";
 import { ExpeditionCard } from "@/app/components/ExpeditionCard";
 import { ExplorerCard } from "@/app/components/ExplorerCard";
+import { PlatformStats } from "@/app/components/PlatformStats";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/app/context/AuthContext";
@@ -240,46 +241,20 @@ export function HomePage() {
     <>
       {/* Heimursaga Tagline - Full Width Spread */}
       <div className="bg-[#404040] dark:bg-[#2a2a2a]">
-        <div className="max-w-[1600px] mx-auto px-6 pt-9 pb-0">
+        <div className="max-w-[1600px] mx-auto px-6 pt-12 pb-0">
           <div className="tagline-spread text-[#e5e5e5] dark:text-[#e5e5e5] font-bold text-sm sm:text-base md:text-lg">
             EXPLORE · DISCOVER · SHARE · SPONSOR · INSPIRE
           </div>
         </div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
-        {/* Early Access Phase Messaging */}
-        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
-          <div className="p-6 border-b-2 border-[#202020] dark:border-[#616161]">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold dark:text-[#e5e5e5]">EARLY ACCESS PHASE</h2>
-              <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-bold rounded-full">BETA</span>
-            </div>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] mb-2">PLATFORM LAUNCHED</div>
-                <div className="text-lg font-bold text-[#4676ac]">January 2026</div>
-              </div>
-              <div>
-                <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] mb-2">FOUNDING EXPLORERS</div>
-                <div className="text-lg font-bold text-[#ac6d46]">Join Now</div>
-                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">Be part of the first cohort</div>
-              </div>
-              <div>
-                <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] mb-2">PLATFORM STATUS</div>
-                <div className="text-lg font-bold dark:text-[#e5e5e5]">Active Development</div>
-                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">New features weekly</div>
-              </div>
-            </div>
-            <div className="mt-6 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
-              <p className="text-sm text-[#202020] dark:text-[#e5e5e5]">
-                <strong>Heimursaga</strong> is in early access. Join our founding community of explorers and help shape the future of expedition journaling and sponsorship. Your feedback directly influences platform development.
-              </p>
-            </div>
-          </div>
-        </div>
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
+        {/* Platform Statistics */}
+        <PlatformStats
+          explorerCount={explorerCount}
+          expeditionCount={expeditions.length}
+          entryCount={entries.length}
+        />
 
         {/* View Mode Toggle */}
         <div className="mt-6 grid grid-cols-2 gap-0 border-2 border-[#202020] dark:border-[#616161] overflow-hidden">

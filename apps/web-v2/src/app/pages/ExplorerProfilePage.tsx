@@ -233,7 +233,7 @@ export function ExplorerProfilePage() {
   // Show loading state
   if (loading) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="flex items-center justify-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-[#ac6d46]" />
           <span className="ml-3 text-[#616161]">Loading explorer journal...</span>
@@ -245,7 +245,7 @@ export function ExplorerProfilePage() {
   // Show error state
   if (error || !profile) {
     return (
-      <div className="max-w-[1600px] mx-auto px-6 py-8">
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46] p-8 text-center">
           <AlertTriangle className="w-12 h-12 text-[#ac6d46] mx-auto mb-4" />
           <h2 className="text-xl font-bold mb-2 dark:text-white">{error || 'Explorer not found'}</h2>
@@ -445,7 +445,7 @@ export function ExplorerProfilePage() {
   }> = [];
 
   return (
-    <div className="max-w-[1600px] mx-auto px-3 py-4 md:px-6 md:py-8">
+    <div className="max-w-[1600px] mx-auto px-3 py-4 md:px-6 md:py-12">
       {/* Profile Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-4 md:mb-6">
         {/* Banner Section with Custom Cover Image */}
