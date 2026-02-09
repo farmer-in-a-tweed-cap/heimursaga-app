@@ -41,6 +41,7 @@ export interface ISitemapGetResponse {
 
 // session
 export interface ISessionUser {
+  id: number;
   role: string;
   username: string;
   email: string;
@@ -49,6 +50,7 @@ export interface ISessionUser {
   isEmailVerified: boolean;
   isPremium: boolean;
   stripeAccountConnected?: boolean;
+  createdAt?: Date;
 }
 
 export interface ISessionUserGetResponse extends ISessionUser {}
@@ -57,6 +59,7 @@ export interface ISessionUserGetResponse extends ISessionUser {}
 export interface ILoginPayload {
   login: string;
   password: string;
+  remember?: boolean;
 }
 
 export interface ILoginResponse {
@@ -115,6 +118,7 @@ export interface IUserGetAllResponse {
 
 export interface IUserGetByUsernameResponse extends IUserDetail {
   sponsorsFund?: string;
+  equipment?: string[];
 }
 
 export interface IUserSettingsResponse {
@@ -142,12 +146,19 @@ export interface IUserSettingsProfileGetResponse {
   // name: string;
   bio: string;
   picture: string;
+  from?: string;
+  livesIn?: string;
   locationFrom?: string;
   locationLives?: string;
   sponsorsFund?: string;
   sponsorsFundType?: string;
   sponsorsFundJourneyId?: string;
   portfolio?: string;
+  website?: string;
+  twitter?: string;
+  instagram?: string;
+  youtube?: string;
+  equipment?: string[];
 }
 
 export interface IUserSettingsProfileUpdatePayload {
@@ -160,6 +171,11 @@ export interface IUserSettingsProfileUpdatePayload {
   sponsorsFundType?: string;
   sponsorsFundJourneyId?: string;
   portfolio?: string;
+  website?: string;
+  twitter?: string;
+  instagram?: string;
+  youtube?: string;
+  equipment?: string[];
 }
 
 export interface IUserPostsQueryResponse {
@@ -191,6 +207,7 @@ export interface IPaymentMethodDetail {
   label: string;
   stripePaymentMethodId?: string;
   last4?: string;
+  isDefault?: boolean;
 }
 
 export interface IPaymentMethodGetAllResponse {
@@ -272,17 +289,16 @@ export interface IPlanDegradePayload {}
 
 export interface IPlanDegradeResponse {}
 
-// post
+// post (entry) - entries are distinct from waypoints
 export interface IPostDetail {
   id: string;
   title: string;
   content?: string;
-  waypoint?: {
-    id: number;
-    lat: number;
-    lon: number;
-  };
-  media?: { id: string; thumbnail: string; original?: string; caption?: string }[];
+  // Coordinates stored directly on entry
+  lat?: number;
+  lon?: number;
+  countryCode?: string; // ISO 3166-1 alpha-2 country code from reverse geocoding
+  media?: { id: string; thumbnail: string; original?: string; caption?: string; altText?: string; credit?: string }[];
   public?: boolean;
   sponsored?: boolean;
   isDraft?: boolean;
@@ -295,17 +311,29 @@ export interface IPostDetail {
   place?: string;
   date?: Date;
   createdByMe?: boolean;
+  followingAuthor?: boolean;
   createdAt?: Date;
-  trip?: {
-    id: string;
-    title: string;
-  };
+  // New fields
+  entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  coverImage?: string;
+  isMilestone?: boolean;
+  visibility?: 'public' | 'sponsors-only' | 'private';
   author?: {
     username: string;
-    // name: string;
+    name?: string;
     picture: string;
     creator?: boolean;
   };
+  // Expedition relationship (direct foreign key on entry)
+  trip?: {
+    id: string;
+    title: string;
+    entriesCount?: number;
+  };
+  // Entry number within expedition (calculated on the fly)
+  entryNumber?: number;
+  // Day of the expedition when this entry was written (calculated from entry date - expedition start date)
+  expeditionDay?: number;
 }
 
 export interface IPostGetAllResponse {
@@ -332,9 +360,17 @@ export interface IPostCreatePayload {
   date?: Date;
   uploads?: string[];
   uploadCaptions?: { [uploadId: string]: string };
+  uploadAltTexts?: { [uploadId: string]: string };
+  uploadCredits?: { [uploadId: string]: string };
   waypointId?: number;
   tripId?: string;
+  expeditionId?: string;
   commentsEnabled?: boolean;
+  // New fields
+  entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  coverUploadId?: string;
+  isMilestone?: boolean;
+  visibility?: 'public' | 'sponsors-only' | 'private';
 }
 
 export interface IPostCreateResponse {
@@ -352,8 +388,16 @@ export interface IPostUpdatePayload {
   date?: Date;
   uploads?: string[];
   uploadCaptions?: { [uploadId: string]: string };
+  uploadAltTexts?: { [uploadId: string]: string };
+  uploadCredits?: { [uploadId: string]: string };
   tripId?: string;
+  expeditionId?: string;
   commentsEnabled?: boolean;
+  // New fields
+  entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  coverUploadId?: string;
+  isMilestone?: boolean;
+  visibility?: 'public' | 'sponsors-only' | 'private';
 }
 
 export interface IPostLikeResponse {
@@ -487,6 +531,7 @@ export interface IWaypoint {
 }
 
 export interface IWaypointDetail extends IWaypoint {
+  sequence?: number;
   post?: {
     id: string;
     title: string;
@@ -506,7 +551,9 @@ export interface IWaypointCreatePayload {
   lat: number;
   lon: number;
   title?: string;
+  description?: string;
   date?: Date;
+  sequence?: number;
   postId?: string;
   tripId?: string;
 }
@@ -528,6 +575,7 @@ export interface IWaypointUpdatePayload {
   date?: Date;
   title?: string;
   description?: string;
+  sequence?: number;
 }
 
 // upload
@@ -563,16 +611,23 @@ export interface IUserNotification {
   context: string;
   date: Date;
   read?: boolean;
-  mentionUser: {
+  mentionUser?: {
     username: string;
-    // name: string;
-    picture: string;
+    name?: string;
+    picture?: string;
   };
   body?: string;
   postId?: string;
   sponsorshipType?: string;
   sponsorshipAmount?: number;
   sponsorshipCurrency?: string;
+  // Passport fields
+  passportCountryCode?: string;
+  passportCountryName?: string;
+  passportContinentCode?: string;
+  passportContinentName?: string;
+  passportStampId?: string;
+  passportStampName?: string;
 }
 
 export interface IUserNotificationGetResponse {
@@ -596,6 +651,7 @@ export interface IUserMapGetResponse {
 // sponsorship
 export interface ISponsorshipTier {
   id: string;
+  type: 'ONE_TIME' | 'MONTHLY';
   price: number;
   description: string;
   isAvailable?: boolean;
@@ -628,6 +684,7 @@ export interface ISponsorshipTierUpdatePayload {
 }
 
 export interface ISponsorshipTierCreatePayload {
+  type: 'ONE_TIME' | 'MONTHLY';
   price: number;
   description: string;
   isAvailable?: boolean;
@@ -751,8 +808,11 @@ export interface ISponsorCheckoutPayload {
   sponsorshipTierId?: string;
   billingPeriod?: SponsorshipBillingPeriod;
   oneTimePaymentAmount?: number;
+  customAmount?: number;
   message?: string;
   emailDelivery?: boolean;
+  isPublic?: boolean; // whether sponsor name is shown publicly
+  isMessagePublic?: boolean; // whether message is shown publicly
 }
 
 export interface ISponsorCheckoutResponse {
@@ -768,20 +828,23 @@ export interface ISponsorshipDetail {
   currency: string;
   message?: string;
   email_delivery_enabled?: boolean;
+  isPublic?: boolean;
+  isMessagePublic?: boolean;
   user?: {
     username: string;
-    // name: string;
-    picture: string;
+    name?: string;
+    picture?: string;
   };
   creator?: {
     username: string;
-    // name: string;
-    picture: string;
+    name?: string;
+    picture?: string;
   };
   tier?: {
     id: string;
     description: string;
     title: string;
+    price?: number;
   };
   createdAt?: Date;
 }
@@ -796,9 +859,10 @@ export interface IPostInsightsGetResponse {
   posts: {
     id: string;
     title: string;
-    impressionsCount: number;
-    likesCount: number;
     bookmarksCount: number;
+    commentsCount: number;
+    viewsCount: number;
+    uniqueViewersCount: number;
     createdAt: Date;
   }[];
 }
@@ -807,18 +871,77 @@ export interface IPostInsightsGetResponse {
 export interface ITripDetail {
   id: string;
   title: string;
-  startDate: Date;
-  endDate: Date;
+  createdAt?: Date;
+  startDate?: Date;
+  endDate?: Date;
   description?: string;
   public?: boolean;
+  status?: string;
+  coverImage?: string;
+  category?: string;
+  region?: string;
+  tags?: string[];
+  isRoundTrip?: boolean;
+  routeMode?: string;
+  routeGeometry?: number[][];
+  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationId?: string;
+  currentLocationVisibility?: 'public' | 'sponsors' | 'private';
+  goal?: number;
+  raised?: number;
+  sponsorsCount?: number;
+  recurringStats?: {
+    activeSponsors: number;
+    monthlyRevenue: number;
+    totalCommitted: number;
+  };
+  entriesCount?: number;
   waypoints: IWaypointDetail[];
   waypointsCount?: number;
+  // Entries directly linked to this expedition via expedition_id
+  entries?: {
+    id: string;
+    title: string;
+    content?: string;
+    date?: Date;
+    place?: string;
+    lat?: number;
+    lon?: number;
+    mediaCount?: number;
+    author?: {
+      username: string;
+      name?: string;
+      picture?: string;
+    };
+  }[];
   author?: {
     username: string;
-    // name: string;
-    picture: string;
+    name?: string;
+    picture?: string;
     creator?: boolean;
   };
+  bookmarked?: boolean;
+  followingAuthor?: boolean;
+  sponsors?: {
+    id: string;
+    type: string;
+    amount: number;
+    status: string;
+    message?: string;
+    isPublic: boolean;
+    isMessagePublic: boolean;
+    createdAt?: Date;
+    user?: {
+      username: string;
+      name?: string;
+      picture?: string;
+    };
+    tier?: {
+      id: string;
+      description?: string;
+      price: number;
+    };
+  }[];
 }
 
 export interface ITripGetAllResponse {
@@ -830,7 +953,19 @@ export interface ITripGetByIdResponse extends ITripDetail {}
 
 export interface ITripCreatePayload {
   title: string;
+  description?: string;
   public?: boolean;
+  status?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  coverImage?: string;
+  goal?: number;
+  category?: string;
+  region?: string;
+  tags?: string[];
+  isRoundTrip?: boolean;
+  routeMode?: string;
+  routeGeometry?: number[][];
 }
 
 export interface ITripCreateResponse {
@@ -839,7 +974,22 @@ export interface ITripCreateResponse {
 
 export interface ITripUpdatePayload {
   title: string;
+  description?: string;
   public?: boolean;
+  status?: string;
+  startDate?: Date | string;
+  endDate?: Date | string;
+  coverImage?: string;
+  goal?: number;
+  category?: string;
+  region?: string;
+  tags?: string[];
+  isRoundTrip?: boolean;
+  routeMode?: string;
+  routeGeometry?: number[][];
+  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationId?: string;
+  currentLocationVisibility?: 'public' | 'sponsors' | 'private';
 }
 
 // search
@@ -945,3 +1095,47 @@ export interface IFlagListResponse {
 export interface IFlagCreateResponse {
   id: string;
 }
+
+// =============================================================================
+// New naming convention aliases (Explorer/Entry/Expedition)
+// =============================================================================
+
+// Explorer (formerly User)
+export type IExplorerDetail = IUserDetail;
+export type IExplorerGetAllResponse = IUserGetAllResponse;
+export type IExplorerGetByUsernameResponse = IUserGetByUsernameResponse;
+export type IExplorerSettingsResponse = IUserSettingsResponse;
+export type IExplorerSettingsUpdateQuery = IUserSettingsUpdateQuery;
+export type IExplorerSettingsProfileGetResponse = IUserSettingsProfileGetResponse;
+export type IExplorerSettingsProfileUpdatePayload = IUserSettingsProfileUpdatePayload;
+export type IExplorerEntriesQueryResponse = IUserPostsQueryResponse;
+export type IExplorerFollowersQueryResponse = IUserFollowersQueryResponse;
+export type IExplorerFollowingQueryResponse = IUserFollowingQueryResponse;
+export type IExplorerPictureUploadPayload = IUserPictureUploadPayload;
+export type IExplorerPictureUploadClientPayload = IUserPictureUploadClientPayload;
+export type IExplorerNotification = IUserNotification;
+export type IExplorerNotificationGetResponse = IUserNotificationGetResponse;
+export type IExplorerMapGetResponse = IUserMapGetResponse;
+
+// Entry (formerly Post)
+export type IEntryDetail = IPostDetail;
+export type IEntryGetAllResponse = IPostGetAllResponse;
+export type IEntryQueryResponse = IPostQueryResponse;
+export type IEntryGetByIdResponse = IPostGetByIdResponse;
+export type IEntryCreatePayload = IPostCreatePayload & { expeditionId?: string };
+export type IEntryCreateResponse = IPostCreateResponse;
+export type IEntryUpdatePayload = IPostUpdatePayload & { expeditionId?: string };
+export type IEntryLikeResponse = IPostLikeResponse;
+export type IEntryBookmarkResponse = IPostBookmarkResponse;
+export type IEntryQueryMapResponse = IPostQueryMapResponse;
+export type IEntryInsightsGetResponse = IPostInsightsGetResponse;
+
+// Expedition (formerly Trip)
+export type IExpeditionDetail = ITripDetail;
+export type IExpeditionGetAllResponse = ITripGetAllResponse;
+export type IExpeditionGetByIdResponse = ITripGetByIdResponse;
+export type IExpeditionCreatePayload = ITripCreatePayload;
+export type IExpeditionCreateResponse = { expeditionId: string };
+export type IExpeditionBookmarkResponse = { bookmarksCount: number };
+export type IExpeditionUpdatePayload = ITripUpdatePayload;
+export type IExplorerBookmarkResponse = { bookmarked: boolean };

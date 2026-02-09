@@ -1,0 +1,176 @@
+import { ApiProperty } from '@nestjs/swagger';
+import {
+  IEntryCreatePayload,
+  IEntryUpdatePayload,
+  IWaypointCreatePayload,
+} from '@repo/types';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsNotEmpty,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  Length,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+
+import { SanitizeContent, SanitizeText } from '@/lib/sanitizer';
+
+export class EntryCreateDto implements IEntryCreatePayload {
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(75, { message: 'Title must be less than 75 characters' })
+  title: string;
+
+  @ApiProperty({ required: false })
+  @SanitizeContent()
+  @IsString()
+  @IsOptional()
+  @MaxLength(10000, { message: 'Content must be less than 10,000 characters' })
+  content: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lat: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lon: number;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  public: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  sponsored: boolean;
+
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(250, { message: 'Place must be less than 250 characters' })
+  place: string;
+
+  @ApiProperty({ required: false })
+  @IsDateString()
+  @IsOptional()
+  date: Date;
+
+  @ApiProperty({ required: false })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  uploads?: string[];
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  waypointId: number;
+
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  expeditionId: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isDraft?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  commentsEnabled?: boolean;
+}
+
+export class EntryUpdateDto implements IEntryUpdatePayload {
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(75, { message: 'Title must be less than 75 characters' })
+  title: string;
+
+  @ApiProperty({ required: false })
+  @SanitizeContent()
+  @IsString()
+  @IsOptional()
+  @MaxLength(10000, { message: 'Content must be less than 10,000 characters' })
+  content: string;
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => EntryWaypointCreateDto)
+  waypoint?: IWaypointCreatePayload;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  public: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  sponsored: boolean;
+
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(250, { message: 'Place must be less than 250 characters' })
+  place: string;
+
+  @ApiProperty({ required: false })
+  @IsDateString()
+  @IsOptional()
+  date: Date;
+
+  @ApiProperty({ required: false })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  uploads?: string[];
+
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  expeditionId: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isDraft?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  commentsEnabled?: boolean;
+}
+
+class EntryWaypointCreateDto implements IWaypointCreatePayload {
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lat: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lon: number;
+}

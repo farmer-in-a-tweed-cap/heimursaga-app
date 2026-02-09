@@ -6,7 +6,11 @@ import { AuthModule } from '@/modules/auth';
 import { CommentModule } from '@/modules/comment';
 import { DevModule } from '@/modules/dev';
 import { EmailModule } from '@/modules/email';
+import { EntryModule } from '@/modules/entry';
 import { EventModule } from '@/modules/event';
+import { ExpeditionModule } from '@/modules/expedition';
+import { ExpeditionNoteModule } from '@/modules/expedition-note';
+import { ExplorerModule } from '@/modules/explorer';
 import { FlagModule } from '@/modules/flag';
 import { LoggerModule } from '@/modules/logger';
 import { MapModule } from '@/modules/map';
@@ -14,15 +18,12 @@ import { MessageModule } from '@/modules/message';
 import { NotificationModule } from '@/modules/notification';
 import { PaymentModule } from '@/modules/payment';
 import { PayoutModule } from '@/modules/payout';
-import { PostModule } from '@/modules/post';
 import { PrismaModule } from '@/modules/prisma';
 import { RecaptchaModule } from '@/modules/recaptcha/recaptcha.module';
 import { SearchModule } from '@/modules/search';
 import { SponsorModule } from '@/modules/sponsor';
 import { StripeModule } from '@/modules/stripe';
-import { TripModule } from '@/modules/trip';
 import { UploadModule } from '@/modules/upload';
-import { UserModule } from '@/modules/user';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -58,17 +59,18 @@ import { AppService } from './app.service';
     PrismaModule,
     AuthModule,
     DevModule,
-    PostModule,
+    EntryModule,
     CommentModule,
     FlagModule,
     UploadModule,
-    UserModule,
+    ExplorerModule,
     MapModule,
     MessageModule,
     PaymentModule,
     SponsorModule,
     PayoutModule,
-    TripModule,
+    ExpeditionModule,
+    ExpeditionNoteModule,
     NotificationModule,
     SearchModule,
     RecaptchaModule,

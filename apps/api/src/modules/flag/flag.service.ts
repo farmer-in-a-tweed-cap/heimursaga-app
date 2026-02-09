@@ -97,7 +97,7 @@ export class FlagService {
       let flaggedCommentDbId: number | null = null;
 
       if (flaggedPostId) {
-        const post = await this.prisma.post.findFirst({
+        const post = await this.prisma.entry.findFirst({
           where: {
             public_id: flaggedPostId,
             deleted_at: null,
@@ -115,7 +115,7 @@ export class FlagService {
         const existingFlag = await this.prisma.flag.findFirst({
           where: {
             reporter_id: userId,
-            flagged_post_id: flaggedPostDbId,
+            flagged_entry_id: flaggedPostDbId,
           },
         });
 
@@ -166,7 +166,7 @@ export class FlagService {
             description: description || null,
             status: FlagStatus.PENDING,
             reporter_id: userId,
-            flagged_post_id: flaggedPostDbId,
+            flagged_entry_id: flaggedPostDbId,
             flagged_comment_id: flaggedCommentDbId,
           },
           select: {
@@ -176,7 +176,7 @@ export class FlagService {
 
         // Increment flags_count on the flagged content
         if (flaggedPostDbId) {
-          await tx.post.update({
+          await tx.entry.update({
             where: { id: flaggedPostDbId },
             data: { flags_count: { increment: 1 } },
           });
@@ -253,7 +253,7 @@ export class FlagService {
                 username: true,
               },
             },
-            flagged_post: {
+            flagged_entry: {
               select: {
                 public_id: true,
                 content: true,
@@ -294,8 +294,8 @@ export class FlagService {
       ]);
 
       const flags: IFlagDetail[] = flagsData.map((flag) => {
-        const isPost = !!flag.flagged_post;
-        const content = isPost ? flag.flagged_post : flag.flagged_comment;
+        const isPost = !!flag.flagged_entry;
+        const content = isPost ? flag.flagged_entry : flag.flagged_comment;
 
         return {
           id: flag.public_id,
@@ -321,8 +321,8 @@ export class FlagService {
             type: isPost ? 'post' : 'comment',
             id: content!.public_id!,
             preview: isPost
-              ? flag.flagged_post!.title ||
-                flag.flagged_post!.content.slice(0, CONTENT_PREVIEW_LENGTH)
+              ? flag.flagged_entry!.title ||
+                flag.flagged_entry!.content.slice(0, CONTENT_PREVIEW_LENGTH)
               : flag.flagged_comment!.content.slice(0, CONTENT_PREVIEW_LENGTH),
             author: {
               username: content!.author.username,
@@ -389,7 +389,7 @@ export class FlagService {
               username: true,
             },
           },
-          flagged_post: {
+          flagged_entry: {
             select: {
               public_id: true,
               content: true,
@@ -429,8 +429,8 @@ export class FlagService {
         throw new ServiceNotFoundException('Flag not found');
       }
 
-      const isPost = !!flag.flagged_post;
-      const content = isPost ? flag.flagged_post : flag.flagged_comment;
+      const isPost = !!flag.flagged_entry;
+      const content = isPost ? flag.flagged_entry : flag.flagged_comment;
 
       return {
         id: flag.public_id,
@@ -456,8 +456,8 @@ export class FlagService {
           type: isPost ? 'post' : 'comment',
           id: content!.public_id!,
           preview: isPost
-            ? flag.flagged_post!.title ||
-              flag.flagged_post!.content.slice(0, 500)
+            ? flag.flagged_entry!.title ||
+              flag.flagged_entry!.content.slice(0, 500)
             : flag.flagged_comment!.content.slice(0, 500),
           author: {
             username: content!.author.username,
@@ -501,7 +501,7 @@ export class FlagService {
         select: {
           id: true,
           public_id: true,
-          flagged_post_id: true,
+          flagged_entry_id: true,
           flagged_comment_id: true,
           status: true,
         },
@@ -531,10 +531,10 @@ export class FlagService {
           (status === FlagStatus.DISMISSED ||
             status === FlagStatus.ACTION_TAKEN)
         ) {
-          if (flag.flagged_post_id) {
-            await tx.post.update({
+          if (flag.flagged_entry_id) {
+            await tx.entry.update({
               where: {
-                id: flag.flagged_post_id,
+                id: flag.flagged_entry_id,
                 flags_count: { gt: 0 }, // Only decrement if count > 0
               },
               data: { flags_count: { decrement: 1 } },
@@ -555,13 +555,13 @@ export class FlagService {
         // Perform admin action if specified
         if (actionTaken === FlagActionType.CONTENT_DELETED) {
           // Soft delete the content
-          if (flag.flagged_post_id) {
-            await tx.post.update({
-              where: { id: flag.flagged_post_id },
+          if (flag.flagged_entry_id) {
+            await tx.entry.update({
+              where: { id: flag.flagged_entry_id },
               data: { deleted_at: new Date() },
             });
             this.logger.log(
-              `[AUDIT] Admin ${userId} deleted post ${flag.flagged_post_id} via flag ${flag.public_id}`,
+              `[AUDIT] Admin ${userId} deleted post ${flag.flagged_entry_id} via flag ${flag.public_id}`,
             );
           }
 
@@ -578,14 +578,14 @@ export class FlagService {
 
         if (actionTaken === FlagActionType.USER_BLOCKED) {
           // Block the content author
-          if (flag.flagged_post_id) {
-            const post = await tx.post.findUnique({
-              where: { id: flag.flagged_post_id },
+          if (flag.flagged_entry_id) {
+            const post = await tx.entry.findUnique({
+              where: { id: flag.flagged_entry_id },
               select: { author_id: true },
             });
 
             if (post) {
-              await tx.user.update({
+              await tx.explorer.update({
                 where: { id: post.author_id },
                 data: { blocked: true },
               });
@@ -602,7 +602,7 @@ export class FlagService {
             });
 
             if (comment) {
-              await tx.user.update({
+              await tx.explorer.update({
                 where: { id: comment.author_id },
                 data: { blocked: true },
               });

@@ -1,4 +1,4 @@
-import { UserRole } from '@repo/types';
+import { ExplorerRole, UserRole } from '@repo/types';
 import { FastifyReply, FastifyRequest } from 'fastify';
 
 export interface IRequest extends FastifyRequest {
@@ -11,6 +11,9 @@ export interface ISession {
   sid: string;
   userId?: number;
   userRole?: UserRole;
+  // Aliases for new naming convention
+  explorerId?: number;
+  explorerRole?: ExplorerRole;
   ip?: string;
   userAgent?: string;
 }

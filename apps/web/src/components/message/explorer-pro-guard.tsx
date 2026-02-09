@@ -35,7 +35,7 @@ export function ExplorerProGuard({ children }: ExplorerProGuardProps) {
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Explorer Pro Required</h1>
             <p className="text-gray-600 mb-6">
               Private messaging is exclusively available to Explorer Pro members. 
-              Upgrade your account to connect and collaborate with other creators.
+              Upgrade your account to connect and collaborate with other explorers.
             </p>
             <div className="space-y-3">
               <Button asChild className="w-full bg-[rgb(170,108,70)] hover:bg-[rgb(170,108,70)]/90">

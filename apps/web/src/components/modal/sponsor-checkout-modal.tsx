@@ -168,7 +168,7 @@ const SponsorCheckoutModal: React.FC<SponsorCheckoutModalProps> = ({
       
       <div className="flex-1 min-h-0 overflow-y-auto max-h-[80vh]">
         <div className="w-full flex flex-col gap-6 p-4 lg:p-6 max-w-4xl mx-auto">
-          {/* Creator Summary - Top layout */}
+          {/* Explorer Summary - Top layout */}
           <div className="flex-shrink-0">
             <SponsorCheckoutSummary user={data.creator} />
           </div>

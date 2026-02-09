@@ -31,6 +31,9 @@ export const Session = createParamDecorator(
       sid,
       userId,
       userRole,
+      // Aliases for new naming convention
+      explorerId: userId,
+      explorerRole: userRole,
       ip,
       userAgent,
     };

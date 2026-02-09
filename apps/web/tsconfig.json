@@ -4,7 +4,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
-      "@/layouts": ["./src/app/layout"],
+      "@/layouts": ["./src/layouts"],
       "@/components": ["./src/components/index"],
       "@repo/ui/*": ["../../packages/ui/src/*"],
       "@repo/ui": ["./../../packages/ui/src/index"]

@@ -11,6 +11,11 @@ module.exports = {
   plugins: [require('tailwindcss-animate')],
   theme: {
     extend: {
+      fontFamily: {
+        // Redesign uses system fonts (matching Figma export)
+        redesign: ['system-ui', 'sans-serif'],
+        'redesign-mono': ['ui-monospace', 'monospace'],
+      },
       screens: {
         desktop: '760px',
         mobile: '760px',
@@ -49,6 +54,20 @@ module.exports = {
         popover: {
           DEFAULT: 'rgb(var(--color-popover))',
           foreground: 'rgb(var(--color-popover-foreground))',
+        },
+        // Heimursaga redesign colors
+        copper: {
+          DEFAULT: '#ac6d46',
+          dark: '#8a5738',
+        },
+        heimur: {
+          blue: '#4676ac',
+          dark: '#202020',
+          gray: '#616161',
+          light: '#b5bcc4',
+          surface: '#f5f5f5',
+          bg: '#404040',
+          'bg-dark': '#2a2a2a',
         },
       },
       aspectRatio: {

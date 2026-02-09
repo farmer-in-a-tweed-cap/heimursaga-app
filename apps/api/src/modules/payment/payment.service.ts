@@ -1,10 +1,12 @@
-import { EVENTS } from '../event';
+import { EVENTS, EventService, IEventSendEmail } from '../event';
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
 import {
   CheckoutMode,
   CheckoutStatus,
+  DEFAULT_MONTHLY_TIERS,
+  DEFAULT_ONE_TIME_TIERS,
   ICheckoutPayload,
   ICheckoutResponse,
   IPaymentIntentCreateResponse,
@@ -25,6 +27,7 @@ import { dateformat } from '@/lib/date-format';
 import { integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 
+import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
   CurrencyCode,
   CurrencySymbol,
@@ -35,6 +38,7 @@ import {
   ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
+  ServiceInternalException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import {
@@ -56,7 +60,33 @@ export class PaymentService {
     private logger: Logger,
     private prisma: PrismaService,
     private stripeService: StripeService,
+    private eventService: EventService,
   ) {}
+
+  /**
+   * Create a Stripe setup intent for adding a new payment method
+   */
+  async createSetupIntent({
+    session,
+  }: {
+    session: ISession;
+  }): Promise<{ clientSecret: string }> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      const result = await this.stripeService.createSetupIntent(userId);
+
+      return {
+        clientSecret: result.secret,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
 
   async getPaymentMethods({
     session,
@@ -69,10 +99,34 @@ export class PaymentService {
       const where = {
         public_id: { not: null },
         deleted_at: null,
-        user_id: userId,
+        explorer_id: userId,
       } as Prisma.PaymentMethodWhereInput;
 
       const take = 20;
+
+      // Get the user to find their Stripe customer
+      const user = await this.prisma.explorer.findFirst({
+        where: { id: userId },
+        select: { email: true, username: true },
+      });
+
+      // Get the default payment method from Stripe
+      let defaultStripePaymentMethodId: string | null = null;
+      if (user) {
+        const stripeCustomer = await this.stripeService
+          .getOrCreateCustomer({
+            email: user.email,
+            data: { email: user.email, name: user.username },
+          })
+          .catch(() => null);
+
+        if (stripeCustomer?.invoice_settings?.default_payment_method) {
+          const defaultPm =
+            stripeCustomer.invoice_settings.default_payment_method;
+          defaultStripePaymentMethodId =
+            typeof defaultPm === 'string' ? defaultPm : defaultPm.id;
+        }
+      }
 
       // search payment methods
       const results = await this.prisma.paymentMethod.count({ where });
@@ -82,6 +136,7 @@ export class PaymentService {
           public_id: true,
           label: true,
           last4: true,
+          stripe_payment_method_id: true,
         },
         take,
         orderBy: [{ id: 'desc' }],
@@ -89,18 +144,20 @@ export class PaymentService {
 
       return {
         results,
-        data: data.map(({ label, last4, public_id: id }) => ({
-          id,
-          label,
-          last4,
-        })),
+        data: data.map(
+          ({ label, last4, public_id: id, stripe_payment_method_id }) => ({
+            id,
+            label,
+            last4,
+            isDefault:
+              stripe_payment_method_id === defaultStripePaymentMethodId,
+          }),
+        ),
       };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payment methods not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -123,7 +180,7 @@ export class PaymentService {
         where: {
           public_id: publicId,
           deleted_at: null,
-          user_id: userId,
+          explorer_id: userId,
         },
         select: {
           public_id: true,
@@ -142,10 +199,8 @@ export class PaymentService {
       };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payment method not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -163,7 +218,7 @@ export class PaymentService {
 
       await this.prisma.$transaction(async (tx) => {
         // get the user
-        const user = await tx.user
+        const user = await tx.explorer
           .findFirstOrThrow({
             where: { id: userId },
             select: {
@@ -179,7 +234,7 @@ export class PaymentService {
 
         // get the stripe payment method
         const stripePaymentMethod =
-          await this.stripeService.stripe.paymentMethods.retrieve(
+          await this.stripeService.paymentMethods.retrieve(
             stripePaymentMethodId,
           );
 
@@ -194,6 +249,14 @@ export class PaymentService {
         if (!stripeCustomer)
           throw new ServiceBadRequestException('customer not found');
 
+        // Save stripe customer ID to explorer if not already saved
+        if (!user.stripe_customer_id) {
+          await tx.explorer.update({
+            where: { id: userId },
+            data: { stripe_customer_id: stripeCustomer.id },
+          });
+        }
+
         // create a payment method
         const paymentMethod = await tx.paymentMethod.create({
           data: {
@@ -202,22 +265,113 @@ export class PaymentService {
             label:
               `${stripePaymentMethod.card.brand} ${stripePaymentMethod.card.last4}`.toUpperCase(),
             last4: stripePaymentMethod.card.last4,
-            user_id: userId,
+            explorer_id: userId,
           },
         });
 
         // attach the stripe payment method to the stripe customer
-        await this.stripeService.stripe.paymentMethods.attach(
-          stripePaymentMethodId,
-          { customer: stripeCustomer.id },
-        );
+        await this.stripeService.paymentMethods.attach(stripePaymentMethodId, {
+          customer: stripeCustomer.id,
+        });
+
+        // Check if this is the user's first payment method
+        const existingPaymentMethodsCount = await tx.paymentMethod.count({
+          where: {
+            explorer_id: userId,
+            deleted_at: null,
+          },
+        });
+
+        // If this is the only payment method, set it as default
+        if (existingPaymentMethodsCount === 1) {
+          await this.stripeService.customers.update(stripeCustomer.id, {
+            invoice_settings: {
+              default_payment_method: stripePaymentMethodId,
+            },
+          });
+          this.logger.log(
+            `Auto-set first payment method ${paymentMethodId} as default for user ${userId}`,
+          );
+        }
       });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payment method not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Set a payment method as the default for the user
+   */
+  async setDefaultPaymentMethod({
+    query,
+    session,
+  }: IQueryWithSession<{ publicId: string }>): Promise<{ success: boolean }> {
+    try {
+      const { publicId } = query;
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      // Get the payment method and verify ownership
+      const paymentMethod = await this.prisma.paymentMethod
+        .findFirstOrThrow({
+          where: {
+            public_id: publicId,
+            explorer_id: userId,
+            deleted_at: null,
+          },
+          select: {
+            id: true,
+            stripe_payment_method_id: true,
+            explorer: {
+              select: {
+                email: true,
+                username: true,
+              },
+            },
+          },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('payment method not found');
+        });
+
+      // Get or create the Stripe customer (same as createPaymentMethod)
+      const stripeCustomer = await this.stripeService.getOrCreateCustomer({
+        email: paymentMethod.explorer.email,
+        data: {
+          email: paymentMethod.explorer.email,
+          name: paymentMethod.explorer.username,
+        },
+      });
+
+      if (!stripeCustomer) {
+        throw new ServiceBadRequestException('stripe customer not found');
+      }
+
+      // Save stripe customer ID to explorer if not already saved
+      await this.prisma.explorer.update({
+        where: { id: userId },
+        data: { stripe_customer_id: stripeCustomer.id },
+      });
+
+      // Update the default payment method in Stripe
+      await this.stripeService.customers.update(stripeCustomer.id, {
+        invoice_settings: {
+          default_payment_method: paymentMethod.stripe_payment_method_id,
+        },
+      });
+
+      this.logger.log(
+        `Set default payment method ${publicId} for user ${userId}`,
+      );
+
+      return { success: true };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -234,7 +388,7 @@ export class PaymentService {
       // check the payment method
       const paymentMethod = await this.prisma.paymentMethod
         .findFirstOrThrow({
-          where: { public_id: publicId, deleted_at: null },
+          where: { public_id: publicId, explorer_id: userId, deleted_at: null },
           select: { id: true, stripe_payment_method_id: true },
         })
         .catch(() => {
@@ -243,22 +397,20 @@ export class PaymentService {
 
       // delete the payment method
       await this.prisma.paymentMethod.updateMany({
-        where: { public_id: publicId },
+        where: { public_id: publicId, explorer_id: userId },
         data: { deleted_at: dateformat().toDate() },
       });
 
       // delete the stripe payment method
-      await this.stripeService.stripe.paymentMethods
+      await this.stripeService.paymentMethods
         .detach(paymentMethod.stripe_payment_method_id)
         .catch(() => {
           // ..
         });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payment method not deleted');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -274,7 +426,7 @@ export class PaymentService {
       const currency = 'usd';
 
       // get the user
-      const user = await this.prisma.user
+      const user = await this.prisma.explorer
         .findFirstOrThrow({
           where: { id: userId },
           select: { email: true, username: true },
@@ -293,23 +445,20 @@ export class PaymentService {
       });
 
       // create a payment intent
-      const paymentIntent =
-        await this.stripeService.stripe.paymentIntents.create({
-          amount,
-          currency,
-          payment_method_types: ['card'],
-          customer: customer.id,
-        });
+      const paymentIntent = await this.stripeService.paymentIntents.create({
+        amount,
+        currency,
+        payment_method_types: ['card'],
+        customer: customer.id,
+      });
 
       return {
         secret: paymentIntent.client_secret,
       };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payment method not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -333,7 +482,7 @@ export class PaymentService {
       const period: string = 'year';
 
       // get the user
-      const user = await this.prisma.user
+      const user = await this.prisma.explorer
         .findFirstOrThrow({
           where: { id: userId },
           select: { email: true, username: true },
@@ -360,7 +509,7 @@ export class PaymentService {
 
               switch (period) {
                 case 'month':
-                  await this.stripeService.stripe.prices
+                  await this.stripeService.prices
                     .retrieve(stripe_price_month_id)
                     .then((s) => {
                       price = s.unit_amount;
@@ -372,7 +521,7 @@ export class PaymentService {
                     });
                   break;
                 case 'year':
-                  await this.stripeService.stripe.prices
+                  await this.stripeService.prices
                     .retrieve(stripe_price_year_id)
                     .then((s) => {
                       price = s.unit_amount;
@@ -424,13 +573,12 @@ export class PaymentService {
       const { checkout, paymentIntent } = await this.prisma.$transaction(
         async (tx) => {
           // create a payment intent
-          const paymentIntent =
-            await this.stripeService.stripe.paymentIntents.create({
-              amount,
-              currency,
-              payment_method_types: ['card'],
-              customer: customer.id,
-            });
+          const paymentIntent = await this.stripeService.paymentIntents.create({
+            amount,
+            currency,
+            payment_method_types: ['card'],
+            customer: customer.id,
+          });
 
           // create a checkout
           const checkout = await tx.checkout.create({
@@ -439,7 +587,7 @@ export class PaymentService {
               status: CheckoutStatus.PENDING,
               // stripe_payment_intent_id: paymentIntent.id,
               total: amount,
-              user_id: userId,
+              explorer_id: userId,
             },
             select: { public_id: true, status: true },
           });
@@ -459,10 +607,8 @@ export class PaymentService {
       };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payment method not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -483,9 +629,9 @@ export class PaymentService {
           price_year: true,
           price_month: true,
           discount_year: true,
-          users: {
+          explorers: {
             select: {
-              user_id: true,
+              explorer_id: true,
               subscription: {
                 select: {
                   expiry: true,
@@ -505,10 +651,12 @@ export class PaymentService {
             price_year,
             price_month,
             discount_year,
-            users = [],
+            explorers = [],
           }) => {
-            const userPlan = users.find(({ user_id }) => userId === user_id);
-            const isActive = users.length >= 1 && userPlan !== undefined;
+            const userPlan = explorers.find(
+              ({ explorer_id }) => userId === explorer_id,
+            );
+            const isActive = explorers.length >= 1 && userPlan !== undefined;
 
             let actualExpiry = userPlan?.subscription?.expiry;
             let promoInfo = null;
@@ -517,7 +665,7 @@ export class PaymentService {
             if (isActive && userPlan?.subscription?.stripe_subscription_id) {
               try {
                 const stripeSubscription =
-                  await this.stripeService.stripe.subscriptions.retrieve(
+                  await this.stripeService.subscriptions.retrieve(
                     userPlan.subscription.stripe_subscription_id,
                     { expand: ['discount.coupon'] },
                   );
@@ -580,10 +728,8 @@ export class PaymentService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('plans not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -610,9 +756,9 @@ export class PaymentService {
             price_year: true,
             price_month: true,
             discount_year: true,
-            users: {
+            explorers: {
               select: {
-                user_id: true,
+                explorer_id: true,
                 subscription: {
                   select: {
                     expiry: true,
@@ -627,10 +773,12 @@ export class PaymentService {
           throw new ServiceNotFoundException('plan not found');
         });
 
-      const { name, price_year, price_month, discount_year, users } = data;
+      const { name, price_year, price_month, discount_year, explorers } = data;
 
-      const userPlan = users.find(({ user_id }) => userId === user_id);
-      const isActive = users.length >= 1 && userPlan !== undefined;
+      const userPlan = explorers.find(
+        ({ explorer_id }) => userId === explorer_id,
+      );
+      const isActive = explorers.length >= 1 && userPlan !== undefined;
 
       let actualExpiry = userPlan?.subscription?.expiry;
       let promoInfo = null;
@@ -639,7 +787,7 @@ export class PaymentService {
       if (isActive && userPlan?.subscription?.stripe_subscription_id) {
         try {
           const stripeSubscription =
-            await this.stripeService.stripe.subscriptions.retrieve(
+            await this.stripeService.subscriptions.retrieve(
               userPlan.subscription.stripe_subscription_id,
               { expand: ['discount.coupon'] },
             );
@@ -693,10 +841,8 @@ export class PaymentService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('plan not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -717,7 +863,7 @@ export class PaymentService {
       let amount = 0;
 
       // get the user
-      const user = await this.prisma.user
+      const user = await this.prisma.explorer
         .findFirstOrThrow({
           where: { id: userId },
           select: { email: true, username: true, id: true },
@@ -743,7 +889,7 @@ export class PaymentService {
 
           switch (period) {
             case PlanExpiryPeriod.MONTH:
-              await this.stripeService.stripe.prices
+              await this.stripeService.prices
                 .retrieve(stripe_price_month_id)
                 .then((s) => {
                   price = s.unit_amount;
@@ -755,7 +901,7 @@ export class PaymentService {
                 });
               break;
             case PlanExpiryPeriod.YEAR:
-              await this.stripeService.stripe.prices
+              await this.stripeService.prices
                 .retrieve(stripe_price_year_id)
                 .then((s) => {
                   price = s.unit_amount;
@@ -788,12 +934,11 @@ export class PaymentService {
       let validatedPromotionCode: string | undefined;
       if (promoCode) {
         try {
-          const promotionCodes =
-            await this.stripeService.stripe.promotionCodes.list({
-              code: promoCode,
-              active: true,
-              limit: 1,
-            });
+          const promotionCodes = await this.stripeService.promotionCodes.list({
+            code: promoCode,
+            active: true,
+            limit: 1,
+          });
 
           if (promotionCodes.data.length > 0) {
             validatedPromotionCode = promotionCodes.data[0].id;
@@ -834,10 +979,11 @@ export class PaymentService {
             subscriptionParams.promotion_code = validatedPromotionCode;
           }
 
+          const idempotencyKey = `sub_upgrade_${userId}_${plan.stripePriceId}`;
           const stripeSubscription =
-            await this.stripeService.stripe.subscriptions.create(
-              subscriptionParams,
-            );
+            await this.stripeService.subscriptions.create(subscriptionParams, {
+              idempotencyKey,
+            });
 
           const invoice = stripeSubscription.latest_invoice as Stripe.Invoice;
           const paymentIntent = invoice.payment_intent;
@@ -854,7 +1000,7 @@ export class PaymentService {
               public_id: generator.publicId(),
               status: CheckoutStatus.PENDING,
               total: amount,
-              user_id: userId,
+              explorer_id: userId,
               plan_id: plan.id,
               stripe_subscription_id: stripeSubscription.id,
               stripe_payment_intent_id: paymentIntentId,
@@ -878,17 +1024,15 @@ export class PaymentService {
           };
 
           // Always add metadata to subscription for free subscriptions
-          await this.stripeService.stripe.subscriptions.update(
-            stripeSubscription.id,
-            { metadata },
-          );
+          await this.stripeService.subscriptions.update(stripeSubscription.id, {
+            metadata,
+          });
 
           // Also add to payment intent if it exists (for paid subscriptions)
           if (paymentIntentId) {
-            await this.stripeService.stripe.paymentIntents.update(
-              paymentIntentId,
-              { metadata },
-            );
+            await this.stripeService.paymentIntents.update(paymentIntentId, {
+              metadata,
+            });
           }
 
           return {
@@ -914,10 +1058,8 @@ export class PaymentService {
       };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('plan is not upgraded');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -945,7 +1087,7 @@ export class PaymentService {
             id: true,
             public_id: true,
             plan_id: true,
-            user_id: true,
+            explorer_id: true,
             stripe_subscription_id: true,
             stripe_payment_intent_id: true,
           },
@@ -957,9 +1099,9 @@ export class PaymentService {
         });
 
       // get the user
-      const user = await this.prisma.user
+      const user = await this.prisma.explorer
         .findFirstOrThrow({
-          where: { id: checkout.user_id },
+          where: { id: checkout.explorer_id },
           select: { id: true, email: true, username: true },
         })
         .catch(() => {
@@ -969,25 +1111,24 @@ export class PaymentService {
         });
 
       // verify if the stripe payment intent is completed (skip for free subscriptions)
-      let stripePaymentIntentComplete = true; // Default to true for free subscriptions
-
       if (checkout.stripe_payment_intent_id) {
         const stripePaymentIntent =
-          await this.stripeService.stripe.paymentIntents.retrieve(
+          await this.stripeService.paymentIntents.retrieve(
             checkout.stripe_payment_intent_id,
           );
 
-        stripePaymentIntentComplete =
-          stripePaymentIntent.status === 'succeeded';
-
-        if (!stripePaymentIntentComplete)
+        if (stripePaymentIntent.status !== 'succeeded')
           throw new ServiceBadRequestException(
             'plan upgrade not completed, checkout not confirmed',
           );
+
+        this.logger.log(
+          `stripe payment intent ${checkout.stripe_payment_intent_id} is completed`,
+        );
       }
 
-      // retrieve a stripe subscription
-      const stripeSubscription = await this.stripeService.stripe.subscriptions
+      // retrieve and verify the stripe subscription status
+      const stripeSubscription = await this.stripeService.subscriptions
         .retrieve(checkout.stripe_subscription_id)
         .catch(() => {
           throw new ServiceBadRequestException(
@@ -995,11 +1136,15 @@ export class PaymentService {
           );
         });
 
-      if (checkout.stripe_payment_intent_id) {
-        this.logger.log(
-          `stripe payment intent ${checkout.stripe_payment_intent_id} is completed`,
+      // Verify subscription is in a valid active state (covers both paid and free)
+      const validStatuses = ['active', 'trialing'];
+      if (!validStatuses.includes(stripeSubscription.status)) {
+        throw new ServiceBadRequestException(
+          `plan upgrade not completed, subscription status: ${stripeSubscription.status}`,
         );
-      } else {
+      }
+
+      if (!checkout.stripe_payment_intent_id) {
         this.logger.log(`free subscription completed without payment intent`);
       }
 
@@ -1018,39 +1163,45 @@ export class PaymentService {
       // complete the subscription upgrade
       await this.prisma.$transaction(async (tx) => {
         // get the user plan
-        const userPlan = await tx.userPlan.findFirst({
-          where: { user_id: user.id, plan_id: plan.id },
+        const userPlan = await tx.explorerPlan.findFirst({
+          where: { explorer_id: user.id, plan_id: plan.id },
         });
 
         // create a subscription
         const expiry = new Date(stripeSubscription.current_period_end * 1000);
 
-        const subscription = await tx.userSubscription.create({
+        // Determine billing period from Stripe subscription interval
+        const interval =
+          stripeSubscription.items.data[0]?.plan?.interval || 'month';
+        const period =
+          interval === 'year' ? PlanExpiryPeriod.YEAR : PlanExpiryPeriod.MONTH;
+
+        const subscription = await tx.explorerSubscription.create({
           data: {
             public_id: generator.publicId(),
             stripe_subscription_id: checkout.stripe_subscription_id,
-            period: PlanExpiryPeriod.MONTH,
+            period,
             expiry,
-            user: { connect: { id: user.id } },
+            explorer: { connect: { id: user.id } },
           },
         });
 
         if (userPlan) {
           // update the user plan
-          await tx.userPlan.updateMany({
-            where: { plan_id: plan.id, user_id: user.id },
+          await tx.explorerPlan.updateMany({
+            where: { plan_id: plan.id, explorer_id: user.id },
             data: {
               plan_id: plan.id,
-              user_id: user.id,
+              explorer_id: user.id,
               subscription_id: subscription.id,
             },
           });
         } else {
           // create a plan and attach to the user
-          await tx.userPlan.create({
+          await tx.explorerPlan.create({
             data: {
               plan_id: plan.id,
-              user_id: user.id,
+              explorer_id: user.id,
               subscription_id: subscription.id,
             },
           });
@@ -1059,24 +1210,53 @@ export class PaymentService {
         this.logger.log(`plan ${plan.id} attached to user ${user.id}`);
 
         // update the user
-        await tx.user.update({
+        await tx.explorer.update({
           where: { id: user.id },
           data: { role: UserRole.CREATOR },
         });
 
         this.logger.log(`user ${user.id} role changed to ${UserRole.CREATOR}`);
 
-        // create a basic sponsorship tier for the user
-        await tx.sponsorshipTier.create({
-          data: {
-            public_id: generator.publicId(),
-            price: 0,
-            is_available: false,
-            user: {
-              connect: { id: user.id },
+        // Create default platform sponsorship tiers for the user
+        // Uses pre-defined tier slots with fixed labels and price ranges
+
+        // Create default one-time tiers (first 3 slots)
+        for (const tierConfig of DEFAULT_ONE_TIME_TIERS) {
+          await tx.sponsorshipTier.create({
+            data: {
+              public_id: generator.publicId(),
+              type: 'ONE_TIME',
+              price: tierConfig.defaultPrice * 100, // convert to cents
+              description: tierConfig.label,
+              priority: tierConfig.slot,
+              is_available: true,
+              explorer: {
+                connect: { id: user.id },
+              },
             },
-          },
-        });
+          });
+        }
+
+        // Create default monthly tiers (first 2 slots)
+        for (const tierConfig of DEFAULT_MONTHLY_TIERS) {
+          await tx.sponsorshipTier.create({
+            data: {
+              public_id: generator.publicId(),
+              type: 'MONTHLY',
+              price: tierConfig.defaultPrice * 100, // convert to cents
+              description: tierConfig.label,
+              priority: tierConfig.slot,
+              is_available: true,
+              explorer: {
+                connect: { id: user.id },
+              },
+            },
+          });
+        }
+
+        this.logger.log(
+          `created default sponsorship tiers for user ${user.id}`,
+        );
 
         // complete the checkout
         await tx.checkout.update({
@@ -1089,14 +1269,65 @@ export class PaymentService {
 
         this.logger.log(`checkout ${checkout.id} completed`);
       });
+
+      // Send upgrade confirmation email
+      try {
+        const planDetails = await this.prisma.plan.findUnique({
+          where: { id: checkout.plan_id },
+          select: { name: true, price_month: true, price_year: true },
+        });
+
+        // Get the subscription to determine billing period
+        const stripeSubscription =
+          await this.stripeService.subscriptions.retrieve(
+            checkout.stripe_subscription_id,
+          );
+
+        const nextBillingDate = new Date(
+          stripeSubscription.current_period_end * 1000,
+        ).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        });
+
+        // Determine billing period from the subscription interval
+        const interval =
+          stripeSubscription.items.data[0]?.plan?.interval || 'month';
+        const billingPeriod: 'monthly' | 'annual' =
+          interval === 'year' ? 'annual' : 'monthly';
+        const price =
+          interval === 'year'
+            ? (planDetails?.price_year || 0) / 100
+            : (planDetails?.price_month || 0) / 100;
+
+        this.eventService.trigger<IEventSendEmail>({
+          event: EVENTS.SEND_EMAIL,
+          data: {
+            to: user.email,
+            template: EMAIL_TEMPLATES.UPGRADE_CONFIRMATION,
+            vars: {
+              username: user.username,
+              planName: planDetails?.name || 'EXPLORER PRO',
+              price,
+              currency: '$',
+              billingPeriod,
+              nextBillingDate,
+            },
+          },
+        });
+
+        this.logger.log(`Sent upgrade confirmation email to ${user.email}`);
+      } catch (emailError) {
+        this.logger.error(
+          'Failed to send upgrade confirmation email:',
+          emailError,
+        );
+      }
     } catch (e) {
       this.logger.error('Error completing subscription plan upgrade:', e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceBadRequestException(
-            `plan upgrade not completed: ${e.message || e}`,
-          );
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -1107,87 +1338,72 @@ export class PaymentService {
       if (!userId) throw new ServiceForbiddenException();
 
       // check access
-      await this.prisma.user
+      await this.prisma.explorer
         .findFirstOrThrow({ where: { id: userId } })
         .catch(() => {
           throw new ServiceForbiddenException();
         });
 
-      // downgrade the subscription plan
-      await this.prisma.$transaction(async (tx) => {
-        // get the user plan
-        const userPlan = await tx.userPlan
-          .findFirstOrThrow({
-            where: {
-              user_id: userId,
-            },
-            select: {
-              plan_id: true,
-              subscription: {
-                select: {
-                  stripe_subscription_id: true,
-                },
+      // get the user plan
+      const userPlan = await this.prisma.explorerPlan
+        .findFirstOrThrow({
+          where: {
+            explorer_id: userId,
+          },
+          select: {
+            plan_id: true,
+            subscription: {
+              select: {
+                stripe_subscription_id: true,
               },
             },
+          },
+        })
+        .catch(() => {
+          throw new ServiceBadRequestException(
+            'user does not have any subscription plans',
+          );
+        });
+
+      // Schedule cancellation at end of billing period (user keeps access until then)
+      const stripeSubscriptionId =
+        userPlan?.subscription?.stripe_subscription_id;
+
+      if (stripeSubscriptionId) {
+        await this.stripeService.subscriptions
+          .update(stripeSubscriptionId, {
+            cancel_at_period_end: true,
           })
           .catch(() => {
             throw new ServiceBadRequestException(
-              'user does not have any subscription plans',
+              'subscription plan downgrade not completed',
             );
           });
 
-        // delete the subscription plan
-        await tx.userPlan.deleteMany({
-          where: { user_id: userId, plan_id: userPlan.plan_id },
+        this.logger.log(
+          `stripe subscription ${stripeSubscriptionId} scheduled for cancellation at period end`,
+        );
+      } else {
+        // No Stripe subscription - do immediate local downgrade
+        await this.prisma.$transaction(async (tx) => {
+          await tx.explorerPlan.deleteMany({
+            where: { explorer_id: userId, plan_id: userPlan.plan_id },
+          });
+          await tx.explorer.update({
+            where: { id: userId },
+            data: { role: UserRole.USER },
+          });
         });
-        this.logger.log(`delete user ${userId} subscription plan`);
-
-        // update the user
-        await tx.user.update({
-          where: { id: userId },
-          data: {
-            role: UserRole.USER,
-          },
-        });
-        this.logger.log(`update user ${userId} role to ${UserRole.USER}`);
-
-        // cancel the stripe subscription
-        const stripeSubscriptionId =
-          userPlan?.subscription?.stripe_subscription_id;
-
-        if (stripeSubscriptionId) {
-          // retrieve the stripe subscription
-          const stripeSubscription =
-            await this.stripeService.stripe.subscriptions
-              .retrieve(stripeSubscriptionId)
-              .catch(() => {
-                throw new ServiceBadRequestException(
-                  'user does not have any active subscriptions',
-                );
-              });
-
-          // cancel the stripe subscription
-          await this.stripeService.stripe.subscriptions
-            .cancel(stripeSubscription.id)
-            .catch(() => {
-              throw new ServiceBadRequestException(
-                'subscription plan downgrade not completed, subscription not canceled',
-              );
-            });
-
-          this.logger.log(
-            `stripe subscription ${stripeSubscription.id} canceled`,
-          );
-        }
-      });
+        this.logger.log(
+          `user ${userId} immediately downgraded (no stripe subscription)`,
+        );
+      }
+      // Note: Actual role downgrade happens via customer.subscription.deleted webhook
+      // when Stripe cancels the subscription at period end
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException(
-            'subscription plan downgrade not completed',
-          );
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -1197,11 +1413,10 @@ export class PaymentService {
   ) {
     const { checkoutId } = event;
 
-    this.completeSubscriptionPlanUpgrade({ checkoutId });
-
     try {
+      await this.completeSubscriptionPlanUpgrade({ checkoutId });
     } catch (e) {
-      this.logger.error(e);
+      this.logger.error('Failed to complete subscription upgrade:', e);
     }
   }
 
@@ -1249,7 +1464,7 @@ export class PaymentService {
           try {
             this.logger.log('Fetching price from Stripe...');
             const price =
-              await this.stripeService.stripe.prices.retrieve(stripePriceId);
+              await this.stripeService.prices.retrieve(stripePriceId);
             this.logger.log(
               `Price retrieved: ${price.unit_amount} ${price.currency}`,
             );
@@ -1270,12 +1485,11 @@ export class PaymentService {
 
       // validate the promotion code
       this.logger.log(`Validating promo code`);
-      const promotionCodes =
-        await this.stripeService.stripe.promotionCodes.list({
-          code: promoCode,
-          active: true,
-          limit: 1,
-        });
+      const promotionCodes = await this.stripeService.promotionCodes.list({
+        code: promoCode,
+        active: true,
+        limit: 1,
+      });
 
       if (promotionCodes.data.length === 0) {
         this.logger.warn(`Promotion code not found`);
@@ -1346,8 +1560,58 @@ export class PaymentService {
       });
       return {
         success: false,
-        error: error.message || 'Invalid promo code',
+        error: 'Invalid promo code',
       };
+    }
+  }
+
+  /**
+   * Manually complete a pending checkout (admin/dev use)
+   * Verifies the user owns the checkout before completing
+   */
+  async manuallyCompleteCheckout({
+    session,
+    checkoutId,
+  }: {
+    session: ISession;
+    checkoutId: number;
+  }): Promise<{ success: boolean; message: string }> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      // Verify the checkout belongs to this user
+      const checkout = await this.prisma.checkout.findFirst({
+        where: {
+          id: checkoutId,
+          explorer_id: userId,
+        },
+        select: {
+          id: true,
+          status: true,
+          explorer_id: true,
+        },
+      });
+
+      if (!checkout) {
+        throw new ServiceNotFoundException(
+          'Checkout not found or not owned by user',
+        );
+      }
+
+      if (checkout.status === 'confirmed') {
+        return { success: true, message: 'Checkout already completed' };
+      }
+
+      // Complete the subscription upgrade
+      await this.completeSubscriptionPlanUpgrade({ checkoutId });
+
+      return { success: true, message: 'Checkout completed successfully' };
+    } catch (e) {
+      this.logger.error('Error manually completing checkout:', e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 }

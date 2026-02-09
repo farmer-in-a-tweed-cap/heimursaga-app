@@ -4,6 +4,7 @@ import { ISearchQueryPayload } from '@repo/types';
 import {
   ServiceException,
   ServiceForbiddenException,
+  ServiceInternalException,
 } from '@/common/exceptions';
 import { ISessionQueryWithPayload } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
@@ -36,7 +37,7 @@ export class SearchService {
       const searchTerm = search.trim().toLowerCase();
 
       // Search for users by username only (name is private)
-      const users = await this.prisma.user.findMany({
+      const users = await this.prisma.explorer.findMany({
         where: {
           username: {
             contains: searchTerm,
@@ -62,7 +63,7 @@ export class SearchService {
       });
 
       // Search for public entries by title
-      const entries = await this.prisma.post.findMany({
+      const entries = await this.prisma.entry.findMany({
         where: {
           AND: [
             {
@@ -126,10 +127,8 @@ export class SearchService {
       };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('search not available');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 }

@@ -5,7 +5,14 @@ import {
   IPasswordUpdatePayload,
   ISignupPayload,
 } from '@repo/types';
-import { IsEmail, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MinLength,
+} from 'class-validator';
 
 export class LoginDto implements ILoginPayload {
   @ApiProperty({ required: true })
@@ -17,6 +24,10 @@ export class LoginDto implements ILoginPayload {
   @IsString()
   @IsNotEmpty()
   password: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  remember?: boolean;
 }
 
 export class SignupDto implements ISignupPayload {
@@ -33,6 +44,11 @@ export class SignupDto implements ISignupPayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+  })
   password: string;
 
   @ApiProperty({
@@ -66,5 +82,10 @@ export class PasswordUpdateDto implements IPasswordUpdatePayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
+    message:
+      'Password must contain at least one uppercase letter, one lowercase letter, and one number',
+  })
   password: string;
 }

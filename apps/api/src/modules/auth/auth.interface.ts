@@ -3,4 +3,5 @@ export interface ISessionCreateOptions {
   sid?: string;
   ip?: string;
   userAgent?: string;
+  remember?: boolean;
 }

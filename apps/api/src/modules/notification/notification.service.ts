@@ -7,6 +7,7 @@ import { generator } from '@/lib/generator';
 import {
   ServiceException,
   ServiceForbiddenException,
+  ServiceInternalException,
 } from '@/common/exceptions';
 import {
   IQueryWithSession,
@@ -34,10 +35,8 @@ export class NotificationService {
       // get the notifications
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('notifications not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -57,30 +56,42 @@ export class NotificationService {
         sponsorshipType,
         sponsorshipAmount,
         sponsorshipCurrency,
+        passportCountryCode,
+        passportCountryName,
+        passportContinentCode,
+        passportContinentName,
+        passportStampId,
+        passportStampName,
       } = payload;
 
       // create a notification
-      await this.prisma.userNotification.create({
+      await this.prisma.explorerNotification.create({
         data: {
           public_id: generator.publicId(),
           context,
           body,
-          user: { connect: { id: userId } },
-          mention_user: { connect: { id: mentionUserId } },
-          mention_post: mentionPostId
+          explorer: { connect: { id: userId } },
+          mention_explorer: mentionUserId
+            ? { connect: { id: mentionUserId } }
+            : undefined,
+          mention_entry: mentionPostId
             ? { connect: { id: mentionPostId } }
             : undefined,
           sponsorship_type: sponsorshipType,
           sponsorship_amount: sponsorshipAmount,
           sponsorship_currency: sponsorshipCurrency,
+          passport_country_code: passportCountryCode,
+          passport_country_name: passportCountryName,
+          passport_continent_code: passportContinentCode,
+          passport_continent_name: passportContinentName,
+          passport_stamp_id: passportStampId,
+          passport_stamp_name: passportStampName,
         },
       });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('notification not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 

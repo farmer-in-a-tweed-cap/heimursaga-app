@@ -4,6 +4,11 @@ const merge = require('lodash.merge');
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   presets: [config],
+  content: [
+    './src/**/*.{ts,tsx}',
+    './app/**/*.{ts,tsx}',
+    '../../packages/ui/src/**/*.{ts,tsx}',
+  ],
   safelist: [
     'dark:bg-gray-300',
     'dark:bg-gray-700',

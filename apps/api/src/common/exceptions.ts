@@ -97,3 +97,12 @@ export class ServiceUnauthorizedException extends ServiceException {
     this.message = message || 'unauthorized';
   }
 }
+
+export class ServiceInternalException extends ServiceException {
+  constructor(message?: string) {
+    super(message as string);
+
+    this.status = ServiceExceptionStatus.INTERNAL_SERVER_ERROR;
+    this.message = message || 'an unexpected error occurred';
+  }
+}

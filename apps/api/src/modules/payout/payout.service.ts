@@ -26,6 +26,7 @@ import {
   ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
+  ServiceInternalException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import {
@@ -57,7 +58,7 @@ export class PayoutService {
 
       const where = {
         deleted_at: null,
-        user_id: userId,
+        explorer_id: userId,
       } as Prisma.PayoutMethodWhereInput;
 
       const take = 20;
@@ -77,8 +78,8 @@ export class PayoutService {
       const results = payoutMethod ? 1 : 0;
 
       // get stripe account
-      const stripeAccount = payoutMethod.stripe_account_id
-        ? await this.stripeService.stripe.accounts.retrieve(
+      const stripeAccount = payoutMethod?.stripe_account_id
+        ? await this.stripeService.accounts.retrieve(
             payoutMethod.stripe_account_id,
           )
         : null;
@@ -95,9 +96,11 @@ export class PayoutService {
       const country = stripeAccount?.country;
       const currency = stripeAccount?.default_currency;
       const businessName = stripeAccount?.business_profile?.name;
+      // Account is verified only if it can accept charges and make payouts
       const isVerified =
-        (stripeAccount?.requirements?.pending_verification?.length || 0) <= 0 ||
-        false;
+        stripeAccount?.charges_enabled === true &&
+        stripeAccount?.payouts_enabled === true &&
+        (stripeAccount?.requirements?.currently_due?.length || 0) === 0;
 
       // get automatic payout settings
       const stripeInterval =
@@ -121,31 +124,27 @@ export class PayoutService {
       const response: IPayoutMethodGetResponse = {
         results,
         data: payoutMethod
-          ? [payoutMethod].map(
-              ({ public_id, stripe_account_id, platform }) => ({
-                id: public_id,
-                businessName,
-                businessType,
-                email,
-                phoneNumber,
-                platform,
-                isVerified,
-                stripeAccountId: stripe_account_id,
-                currency,
-                country,
-                automaticPayouts,
-              }),
-            )
+          ? [payoutMethod].map(({ public_id, platform }) => ({
+              id: public_id,
+              businessName,
+              businessType,
+              email,
+              phoneNumber,
+              platform,
+              isVerified,
+              // Note: stripeAccountId intentionally omitted for security
+              currency,
+              country,
+              automaticPayouts,
+            }))
           : [],
       };
 
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payout methods not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -172,7 +171,7 @@ export class PayoutService {
         .findFirstOrThrow({
           where: {
             public_id: payoutMethodId,
-            user_id: userId,
+            explorer_id: userId,
           },
           select: {
             id: true,
@@ -200,7 +199,7 @@ export class PayoutService {
         }
 
         // get a stripe platform account link
-        url = await this.stripeService.stripe.accountLinks
+        url = await this.stripeService.accountLinks
           .create({
             account: payoutMethod.stripe_account_id,
             return_url: backUrl,
@@ -219,10 +218,8 @@ export class PayoutService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payout method not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -243,7 +240,7 @@ export class PayoutService {
 
       // check if the user already has a payout method
       const payoutMethod = await this.prisma.payoutMethod.findFirst({
-        where: { user_id: userId },
+        where: { explorer_id: userId },
         select: {
           id: true,
           public_id: true,
@@ -256,9 +253,9 @@ export class PayoutService {
           'user already has a payout method',
         );
       } else {
-        // create a stripe account
+        // create a stripe account with idempotency
         const stripeAccount = await this.stripeService
-          .createAccount({ country })
+          .createAccount({ country, userId })
           .catch(() => {
             throw new ServiceForbiddenException('payout method not created');
           });
@@ -270,7 +267,7 @@ export class PayoutService {
             is_verified: false,
             platform: PayoutMethodPlatform.STRIPE,
             stripe_account_id: stripeAccount.accountId,
-            user_id: userId,
+            explorer_id: userId,
           },
           select: {
             public_id: true,
@@ -285,10 +282,8 @@ export class PayoutService {
       }
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payout method not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -303,7 +298,7 @@ export class PayoutService {
       // get a payout method
       const payoutMethod = await this.prisma.payoutMethod.findFirst({
         where: {
-          user_id: userId,
+          explorer_id: userId,
           deleted_at: null,
         },
         select: {
@@ -312,24 +307,33 @@ export class PayoutService {
         },
       });
 
+      // Return zero balance if no payout method is set up
+      if (!payoutMethod || !payoutMethod.stripe_account_id) {
+        return {
+          available: { amount: 0, currency: 'USD', symbol: '$' },
+          pending: { amount: 0, currency: 'USD', symbol: '$' },
+        };
+      }
+
       // get a stripe available balance
-      const stripeBalance = await this.stripeService.stripe.balance.retrieve({
+      const stripeBalance = await this.stripeService.balance.retrieve({
         stripeAccount: payoutMethod.stripe_account_id,
       });
 
       const currencyCode =
-        stripeBalance.available[0].currency ||
-        stripeBalance.pending[0].currency;
-      const currency = CURRENCIES[currencyCode];
+        stripeBalance.available[0]?.currency ||
+        stripeBalance.pending[0]?.currency ||
+        'usd';
+      const currency = CURRENCIES[currencyCode] || { code: 'USD', symbol: '$' };
 
       const response: IPayoutBalanceGetResponse = {
         available: {
-          amount: integerToDecimal(stripeBalance.available[0].amount),
+          amount: integerToDecimal(stripeBalance.available[0]?.amount || 0),
           currency: currency.code,
           symbol: currency.symbol,
         },
         pending: {
-          amount: integerToDecimal(stripeBalance.pending[0].amount),
+          amount: integerToDecimal(stripeBalance.pending[0]?.amount || 0),
           currency: currency.code,
           symbol: currency.symbol,
         },
@@ -338,10 +342,8 @@ export class PayoutService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('balance not available');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -355,7 +357,7 @@ export class PayoutService {
       if (!access) throw new ServiceForbiddenException();
 
       const where = {
-        user_id: userId,
+        explorer_id: userId,
         deleted_at: null,
       } as Prisma.PayoutWhereInput;
 
@@ -400,10 +402,8 @@ export class PayoutService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('payouts not available');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -422,7 +422,7 @@ export class PayoutService {
       if (!access) throw new ServiceForbiddenException();
 
       // get a user
-      const user = await this.prisma.user.findFirstOrThrow({
+      const user = await this.prisma.explorer.findFirstOrThrow({
         where: {
           id: userId,
         },
@@ -435,7 +435,7 @@ export class PayoutService {
       const payoutMethod = await this.prisma.payoutMethod
         .findFirstOrThrow({
           where: {
-            user_id: userId,
+            explorer_id: userId,
             is_verified: true,
             stripe_account_id: { not: null },
             deleted_at: null,
@@ -451,41 +451,81 @@ export class PayoutService {
           throw new ServiceBadRequestException('payout method not available');
         });
 
+      // Verify account is still capable of payouts (fresh check with Stripe)
+      const stripeAccount = await this.stripeService.accounts.retrieve(
+        payoutMethod.stripe_account_id,
+      );
+
+      if (!stripeAccount.payouts_enabled) {
+        // Update local status if stale
+        await this.prisma.payoutMethod.update({
+          where: { id: payoutMethod.id },
+          data: { is_verified: false },
+        });
+        throw new ServiceBadRequestException(
+          'Account is not enabled for payouts. Please complete verification in Stripe.',
+        );
+      }
+
       const { amount } = payload;
       const { currency } = payoutMethod;
+      const requestedAmountInCents = decimalToInteger(amount);
 
       // get available balance
-      const stripeBalance = await this.stripeService.stripe.balance.retrieve({
+      const stripeBalance = await this.stripeService.balance.retrieve({
         stripeAccount: payoutMethod.stripe_account_id,
       });
-      const balance = stripeBalance.available[0].amount;
-      if (balance <= 0) {
+      const availableBalance = stripeBalance.available[0]?.amount || 0;
+
+      // Validate balance is sufficient
+      if (availableBalance <= 0) {
         throw new ServiceBadRequestException(
           'payout not available, insufficient funds',
         );
       }
 
-      // request a payout on stripe
-      const stripePayout = await this.stripeService.stripe.payouts.create(
+      // Validate requested amount doesn't exceed available balance
+      if (requestedAmountInCents > availableBalance) {
+        const availableFormatted = integerToDecimal(availableBalance);
+        throw new ServiceBadRequestException(
+          `payout amount exceeds available balance. Maximum available: ${availableFormatted}`,
+        );
+      }
+
+      // Validate minimum payout amount (Stripe minimum is typically $1)
+      const minimumPayoutAmount = 100; // $1.00 in cents
+      if (requestedAmountInCents < minimumPayoutAmount) {
+        throw new ServiceBadRequestException(
+          'payout amount must be at least $1.00',
+        );
+      }
+
+      // request a payout on stripe with idempotency key
+      const payoutPublicId = generator.publicId();
+      const idempotencyKey = `payout_${userId}_${payoutPublicId}`;
+      const stripePayout = await this.stripeService.payouts.create(
         {
           amount: decimalToInteger(amount),
           currency,
         },
-        { stripeAccount: payoutMethod.stripe_account_id },
+        {
+          stripeAccount: payoutMethod.stripe_account_id,
+          idempotencyKey,
+        },
       );
 
-      // create a payout
+      // create a payout with PENDING status (webhook updates to COMPLETED when Stripe confirms)
       const payout = await this.prisma.payout.create({
         data: {
-          public_id: generator.publicId(),
-          status: PayoutStatus.CONFIRMED,
+          public_id: payoutPublicId,
+          status: PayoutStatus.PENDING,
           amount: stripePayout.amount,
           currency: stripePayout.currency,
           stripe_payout_id: stripePayout.id,
           payout_method: {
             connect: { id: payoutMethod.id },
           },
-          user: {
+          explorer: {
             connect: { id: user.id },
           },
           arrival_date: new Date(stripePayout.arrival_date * 1000),
@@ -502,10 +542,8 @@ export class PayoutService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('payout not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 }

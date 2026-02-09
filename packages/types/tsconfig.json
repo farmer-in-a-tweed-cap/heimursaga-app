@@ -3,7 +3,9 @@
   "compilerOptions": {
     "outDir": "./dist",
     "declaration": true,
-    "rootDir": "."
+    "rootDir": ".",
+    "module": "CommonJS",
+    "moduleResolution": "node"
   },
   "include": ["./*.ts"],
   "exclude": ["node_modules", "dist"]

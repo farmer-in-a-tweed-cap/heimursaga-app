@@ -1,4 +1,4 @@
-import { EVENTS, EventService } from '../event';
+import { EVENTS, EventService, IEventSendEmail } from '../event';
 import { IUserNotificationCreatePayload } from '../notification';
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
@@ -11,12 +11,17 @@ import {
   ISponsorshipTierCreatePayload,
   ISponsorshipTierGetAllResponse,
   ISponsorshipTierUpdatePayload,
+  MONTHLY_TIER_SLOTS,
+  ONE_TIME_TIER_SLOTS,
   PayoutMethodPlatform,
   SponsorshipBillingPeriod,
   SponsorshipStatus,
   SponsorshipType,
   UserNotificationContext,
   UserRole,
+  getTierLabel,
+  getTierSlotConfig,
+  isValidTierPrice,
 } from '@repo/types';
 import Stripe from 'stripe';
 
@@ -26,6 +31,7 @@ import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { matchRoles } from '@/lib/utils';
 
+import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
   CurrencyCode,
   PaymentTransactionType,
@@ -35,6 +41,7 @@ import {
   ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
+  ServiceInternalException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import { ISessionQuery, ISessionQueryWithPayload } from '@/common/interfaces';
@@ -76,11 +83,14 @@ export class SponsorService {
       const {
         sponsorshipTierId,
         oneTimePaymentAmount,
+        customAmount,
         creatorId,
         paymentMethodId,
         billingPeriod = SponsorshipBillingPeriod.MONTHLY,
         message = '',
         emailDelivery = true,
+        isPublic = true,
+        isMessagePublic = true,
       } = payload;
 
       if (!userId) throw new ServiceForbiddenException();
@@ -90,6 +100,26 @@ export class SponsorService {
           ? SponsorshipType.SUBSCRIPTION
           : SponsorshipType.ONE_TIME_PAYMENT;
       const currency = CurrencyCode.USD;
+
+      // Server-side amount validation for one-time payments
+      if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
+        const MIN_ONE_TIME_AMOUNT = 1; // $1 minimum
+        const MAX_ONE_TIME_AMOUNT = 10000; // $10,000 maximum
+
+        if (
+          !oneTimePaymentAmount ||
+          oneTimePaymentAmount < MIN_ONE_TIME_AMOUNT
+        ) {
+          throw new ServiceBadRequestException(
+            `One-time payment must be at least $${MIN_ONE_TIME_AMOUNT}`,
+          );
+        }
+        if (oneTimePaymentAmount > MAX_ONE_TIME_AMOUNT) {
+          throw new ServiceBadRequestException(
+            `One-time payment cannot exceed $${MAX_ONE_TIME_AMOUNT}`,
+          );
+        }
+      }
 
       // get a sponsorship tier
       const sponsorshipTier =
@@ -103,7 +133,7 @@ export class SponsorService {
         });
 
       // get a user
-      const user = await this.prisma.user.findFirstOrThrow({
+      const user = await this.prisma.explorer.findFirstOrThrow({
         where: { id: userId },
         select: {
           id: true,
@@ -114,7 +144,7 @@ export class SponsorService {
       });
 
       // get a creator
-      const creator = await this.prisma.user.findFirstOrThrow({
+      const creator = await this.prisma.explorer.findFirstOrThrow({
         where: { username: creatorId },
         select: {
           id: true,
@@ -123,6 +153,11 @@ export class SponsorService {
         },
       });
 
+      // Block self-sponsorship
+      if (user.id === creator.id) {
+        throw new ServiceBadRequestException('You cannot sponsor yourself');
+      }
+
       // check if the user already sponsors the creator
       if (sponsorshipType === SponsorshipType.SUBSCRIPTION) {
         const subscribed = await this.prisma.sponsorship
@@ -130,8 +165,8 @@ export class SponsorService {
             where: {
               type: SponsorshipType.SUBSCRIPTION,
               status: SponsorshipStatus.ACTIVE,
-              user_id: user.id,
-              creator_id: creator.id,
+              sponsor_id: user.id,
+              sponsored_explorer_id: creator.id,
             },
           })
           .then((count) => count >= 1);
@@ -144,10 +179,39 @@ export class SponsorService {
 
       // get a creator payout method
       const payoutMethod = await this.prisma.payoutMethod.findFirstOrThrow({
-        where: { user_id: creator.id, platform: PayoutMethodPlatform.STRIPE },
-        select: { stripe_account_id: true },
+        where: {
+          explorer_id: creator.id,
+          platform: PayoutMethodPlatform.STRIPE,
+        },
+        select: { stripe_account_id: true, is_verified: true },
       });
       const creatorStripeAccountId = payoutMethod.stripe_account_id;
+
+      if (!creatorStripeAccountId) {
+        throw new ServiceBadRequestException(
+          'Creator has not set up payment receiving',
+        );
+      }
+
+      // Verify the connected account is fully onboarded before accepting payments
+      const stripeAccount = await this.stripeService.accounts.retrieve(
+        creatorStripeAccountId,
+      );
+
+      const hasPaymentsEnabled = stripeAccount.charges_enabled;
+      const hasTransfersEnabled = stripeAccount.payouts_enabled;
+      const hasPendingRequirements =
+        stripeAccount.requirements?.currently_due?.length > 0;
+
+      if (
+        !hasPaymentsEnabled ||
+        !hasTransfersEnabled ||
+        hasPendingRequirements
+      ) {
+        throw new ServiceBadRequestException(
+          'Creator account is not fully verified to receive payments',
+        );
+      }
 
       // get a payment method
       const paymentMethod = await this.prisma.paymentMethod.findFirstOrThrow({
@@ -163,7 +227,7 @@ export class SponsorService {
         async (tx) => {
           let amount = 0;
           let stripePaymentIntentId: string | undefined;
-          let stripeSubscriptionId: string | undefined;
+          let stripeSubscriptionId: string | undefined = undefined;
           let clientSecret = '';
 
           // get a stripe customer
@@ -186,114 +250,153 @@ export class SponsorService {
               }),
             );
 
-            const stripePaymentIntent =
-              await this.stripeService.stripe.paymentIntents.create({
-                amount: decimalToInteger(oneTimePaymentAmount),
-                currency,
-                customer: stripeCustomer.id,
-                payment_method: stripePaymentMethodId,
-                transfer_data: { destination: creatorStripeAccountId },
-                payment_method_types: ['card'],
-                application_fee_amount: applicationFeeAmount,
-                description: '****',
-              });
             amount = decimalToInteger(oneTimePaymentAmount);
+
+            // Create checkout first to get ID for metadata
+            const checkout = await tx.checkout.create({
+              data: {
+                public_id: generator.publicId(),
+                status: CheckoutStatus.PENDING,
+                transaction_type: PaymentTransactionType.SPONSORSHIP,
+                sponsorship_type: sponsorshipType,
+                sponsorship_tier_id: sponsorshipTier.id,
+                message,
+                total: amount,
+                explorer_id: user.id,
+                sponsored_explorer_id: creator.id,
+                email_delivery_enabled: emailDelivery,
+                is_public: isPublic,
+                is_message_public: isMessagePublic,
+              },
+              select: {
+                id: true,
+                public_id: true,
+              },
+            });
+
+            // Use deterministic idempotency key based on checkout ID
+            const idempotencyKey = `sponsor_otp_checkout_${checkout.id}`;
+
+            // Include metadata in initial create to avoid race condition
+            const stripePaymentIntent =
+              await this.stripeService.paymentIntents.create(
+                {
+                  amount,
+                  currency,
+                  customer: stripeCustomer.id,
+                  payment_method: stripePaymentMethodId,
+                  transfer_data: { destination: creatorStripeAccountId },
+                  payment_method_types: ['card'],
+                  application_fee_amount: applicationFeeAmount,
+                  description: `Sponsorship from ${user.username} to ${creator.username}`,
+                  metadata: {
+                    [StripeMetadataKey.TRANSACTION]:
+                      PaymentTransactionType.SPONSORSHIP,
+                    [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
+                    [StripeMetadataKey.USER_ID]: user.id.toString(),
+                    [StripeMetadataKey.CREATOR_ID]: creator.id.toString(),
+                  },
+                },
+                { idempotencyKey },
+              );
+
             stripePaymentIntentId = stripePaymentIntent.id;
             clientSecret = stripePaymentIntent.client_secret;
+
+            // Update checkout with payment intent ID
+            await tx.checkout.update({
+              where: { id: checkout.id },
+              data: { stripe_payment_intent_id: stripePaymentIntentId },
+            });
+
+            // Return early for one-time payments since checkout is already created
+            return { checkout, clientSecret };
           }
 
           // create a subscription stripe payment intent
-          if (sponsorshipType === SponsorshipType.SUBSCRIPTION) {
-            // get a sponsorship tier
-            if (!sponsorshipTierId)
+          // get a sponsorship tier
+          if (!sponsorshipTierId)
+            throw new ServiceBadRequestException(
+              'sponsorship tier not available',
+            );
+          const subscriptionTier = await tx.sponsorshipTier
+            .findFirstOrThrow({
+              where: { public_id: sponsorshipTierId },
+              select: {
+                id: true,
+                price: true,
+                stripe_price_month_id: true,
+                stripe_price_year_id: true,
+              },
+            })
+            .catch(() => {
               throw new ServiceBadRequestException(
                 'sponsorship tier not available',
               );
-            const sponsorshipTier = await tx.sponsorshipTier
-              .findFirstOrThrow({
-                where: { public_id: sponsorshipTierId },
-                select: {
-                  id: true,
-                  price: true,
-                  stripe_price_month_id: true,
-                  stripe_price_year_id: true,
-                },
-              })
-              .catch(() => {
-                throw new ServiceBadRequestException(
-                  'sponsorship tier not available',
-                );
-              });
+            });
 
-            // determine stripe price ID and amount based on billing period
-            const isYearly = billingPeriod === SponsorshipBillingPeriod.YEARLY;
-            const stripePriceId = isYearly
-              ? sponsorshipTier.stripe_price_year_id
-              : sponsorshipTier.stripe_price_month_id;
+          // determine stripe price ID and amount based on billing period
+          const isYearly = billingPeriod === SponsorshipBillingPeriod.YEARLY;
+          const hasCustomAmount = customAmount && customAmount > 0;
 
-            // calculate subscription amount (yearly = monthly * 12 * 0.9)
-            const monthlyAmount = sponsorshipTier.price;
-            const subscriptionAmount = isYearly
+          let stripePriceId: string | null;
+          let subscriptionAmount: number;
+          const applicationFeePercent = APPLICATION_FEE;
+
+          if (hasCustomAmount) {
+            // Custom amount: create a dynamic Stripe price
+            const customAmountCents = decimalToInteger(customAmount);
+            subscriptionAmount = customAmountCents;
+
+            // Validate custom amount bounds
+            const MIN_SUBSCRIPTION = 100; // $1 minimum in cents
+            const MAX_SUBSCRIPTION = 1000000; // $10,000 maximum in cents
+            if (customAmountCents < MIN_SUBSCRIPTION) {
+              throw new ServiceBadRequestException(
+                'Subscription amount must be at least $1',
+              );
+            }
+            if (customAmountCents > MAX_SUBSCRIPTION) {
+              throw new ServiceBadRequestException(
+                'Subscription amount cannot exceed $10,000',
+              );
+            }
+
+            // Create a dynamic recurring price in Stripe
+            const dynamicPrice = await this.stripeService.prices.create({
+              unit_amount: customAmountCents,
+              currency: CurrencyCode.USD,
+              recurring: { interval: isYearly ? 'year' : 'month' },
+              product_data: {
+                name: `Sponsorship - $${customAmount}/mo`,
+              },
+            });
+            stripePriceId = dynamicPrice.id;
+          } else {
+            // Tier-based amount: use pre-set Stripe price
+            stripePriceId = isYearly
+              ? subscriptionTier.stripe_price_year_id
+              : subscriptionTier.stripe_price_month_id;
+
+            const monthlyAmount = subscriptionTier.price;
+            subscriptionAmount = isYearly
               ? this.calculateYearlyAmount(monthlyAmount)
               : monthlyAmount;
 
-            const applicationFeePercent = APPLICATION_FEE;
-
-            // validate that the required stripe price exists
             if (!stripePriceId) {
               throw new ServiceBadRequestException(
                 `${isYearly ? 'Yearly' : 'Monthly'} pricing not available for this tier`,
               );
             }
-
-            this.logger.log(
-              `sponsorship tier ${sponsorshipTier.id} is available to use`,
-            );
-
-            // create a subscription
-            const subscription =
-              await this.stripeService.stripe.subscriptions.create({
-                customer: stripeCustomer.id,
-                items: [{ price: stripePriceId }],
-                default_payment_method: stripePaymentMethodId,
-                transfer_data: { destination: creatorStripeAccountId },
-                application_fee_percent: applicationFeePercent,
-                collection_method: 'charge_automatically',
-                payment_behavior: 'allow_incomplete',
-                metadata: {
-                  description: `${user.username} sponsors ${creator.username}`,
-                },
-                payment_settings: {
-                  payment_method_types: ['card'],
-                  payment_method_options: {
-                    card: {
-                      request_three_d_secure: 'challenge',
-                    },
-                  },
-                },
-              });
-
-            stripeSubscriptionId = subscription.id;
-
-            this.logger.log(`stripe subscription created`);
-
-            //retrieve an invoice
-            const invoiceId = subscription.latest_invoice as string;
-            const invoice = await this.stripeService.stripe.invoices.retrieve(
-              invoiceId,
-              { expand: ['payment_intent'] },
-            );
-            const paymentIntent = invoice.payment_intent as {
-              id: string;
-              client_secret: string;
-            };
-
-            amount = subscriptionAmount;
-            (stripePaymentIntentId = paymentIntent.id),
-              (clientSecret = paymentIntent.client_secret);
           }
 
-          // create a checkout
+          this.logger.log(
+            `sponsorship tier ${subscriptionTier.id} is available to use${hasCustomAmount ? ` (custom amount: $${customAmount})` : ''}`,
+          );
+
+          amount = subscriptionAmount;
+
+          // Create checkout first to get ID for metadata
           const checkout = await tx.checkout.create({
             data: {
               public_id: generator.publicId(),
@@ -303,39 +406,96 @@ export class SponsorService {
               sponsorship_tier_id: sponsorshipTier.id,
               message,
               total: amount,
-              user_id: user.id,
-              creator_id: creator.id,
-              stripe_payment_intent_id: stripePaymentIntentId,
-              stripe_subscription_id: stripeSubscriptionId,
+              explorer_id: user.id,
+              sponsored_explorer_id: creator.id,
               email_delivery_enabled: emailDelivery,
+              is_public: isPublic,
+              is_message_public: isMessagePublic,
             },
             select: {
               id: true,
               public_id: true,
-              status: true,
-              total: true,
-              currency: true,
             },
           });
 
-          // add metadata to the payment intent
-          const metadata = {
-            [StripeMetadataKey.TRANSACTION]: PaymentTransactionType.SPONSORSHIP,
-            [StripeMetadataKey.CHECKOUT_ID]: checkout.id,
-            [StripeMetadataKey.USER_ID]: user.id,
-            [StripeMetadataKey.CREATOR_ID]: creator.id,
+          // Use deterministic idempotency key based on checkout ID
+          const subscriptionIdempotencyKey = `sponsor_sub_checkout_${checkout.id}`;
+
+          // create a subscription with metadata
+          const subscription = await this.stripeService.subscriptions.create(
+            {
+              customer: stripeCustomer.id,
+              items: [{ price: stripePriceId }],
+              default_payment_method: stripePaymentMethodId,
+              transfer_data: { destination: creatorStripeAccountId },
+              application_fee_percent: applicationFeePercent,
+              collection_method: 'charge_automatically',
+              payment_behavior: 'allow_incomplete',
+              metadata: {
+                [StripeMetadataKey.TRANSACTION]:
+                  PaymentTransactionType.SPONSORSHIP,
+                [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
+                [StripeMetadataKey.USER_ID]: user.id.toString(),
+                [StripeMetadataKey.CREATOR_ID]: creator.id.toString(),
+                description: `${user.username} sponsors ${creator.username}`,
+              },
+              payment_settings: {
+                payment_method_types: ['card'],
+                payment_method_options: {
+                  card: {
+                    // Use 'automatic' to let Stripe decide when 3DS is needed
+                    request_three_d_secure: 'automatic',
+                  },
+                },
+              },
+            },
+            { idempotencyKey: subscriptionIdempotencyKey },
+          );
+
+          stripeSubscriptionId = subscription.id;
+
+          this.logger.log(`stripe subscription created`);
+
+          // retrieve an invoice
+          const invoiceId = subscription.latest_invoice as string;
+          const invoice = await this.stripeService.invoices.retrieve(
+            invoiceId,
+            { expand: ['payment_intent'] },
+          );
+          const paymentIntent = invoice.payment_intent as {
+            id: string;
+            client_secret: string;
           };
 
-          if (stripePaymentIntentId) {
-            await this.stripeService.stripe.paymentIntents.update(
-              stripePaymentIntentId,
-              { metadata },
-            );
-          }
+          stripePaymentIntentId = paymentIntent.id;
+          clientSecret = paymentIntent.client_secret;
+
+          // Update checkout with stripe IDs
+          await tx.checkout.update({
+            where: { id: checkout.id },
+            data: {
+              stripe_payment_intent_id: stripePaymentIntentId,
+              stripe_subscription_id: stripeSubscriptionId,
+            },
+          });
+
+          // Add metadata to the payment intent as well
+          await this.stripeService.paymentIntents.update(
+            stripePaymentIntentId,
+            {
+              metadata: {
+                [StripeMetadataKey.TRANSACTION]:
+                  PaymentTransactionType.SPONSORSHIP,
+                [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
+                [StripeMetadataKey.USER_ID]: user.id.toString(),
+                [StripeMetadataKey.CREATOR_ID]: creator.id.toString(),
+              },
+            },
+          );
 
           return { checkout, clientSecret };
         },
-        { timeout: 10000 },
+        { timeout: 30000 },
       );
 
       const response: ISponsorCheckoutResponse = {
@@ -346,10 +506,8 @@ export class SponsorService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('sponsor checkout failed');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -384,6 +542,8 @@ export class SponsorService {
             stripe_subscription_id: true,
             message: true,
             email_delivery_enabled: true,
+            is_public: true,
+            is_message_public: true,
           },
         });
 
@@ -425,21 +585,23 @@ export class SponsorService {
               checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
                 ? checkout.email_delivery_enabled
                 : false,
+            is_public: checkout.is_public ?? true,
+            is_message_public: checkout.is_message_public ?? true,
             expiry:
               checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
                 ? expiry
                 : undefined,
             tier: { connect: { id: checkout.sponsorship_tier_id } },
-            user: {
+            sponsor: {
               connect: { id: userId },
             },
-            creator: {
+            sponsored_explorer: {
               connect: { id: creatorId },
             },
           },
           select: {
-            user_id: true,
-            creator_id: true,
+            sponsor_id: true,
+            sponsored_explorer_id: true,
           },
         });
 
@@ -448,8 +610,32 @@ export class SponsorService {
           where: { id: checkout.id },
           data: {
             status: CheckoutStatus.CONFIRMED,
+            confirmed_at: new Date(),
           },
         });
+
+        // Update the creator's active expedition raised amount and sponsor count
+        // Goal and raised are stored in dollars, checkout.total is in cents
+        const raisedDollars = integerToDecimal(checkout.total);
+        const activeExpedition = await tx.expedition.findFirst({
+          where: {
+            author_id: creatorId,
+            deleted_at: null,
+            status: { in: ['active', 'planned'] },
+          },
+          select: { id: true },
+          orderBy: { id: 'desc' },
+        });
+
+        if (activeExpedition) {
+          await tx.expedition.update({
+            where: { id: activeExpedition.id },
+            data: {
+              raised: { increment: raisedDollars },
+              sponsors_count: { increment: 1 },
+            },
+          });
+        }
       });
 
       // create a notification
@@ -466,13 +652,147 @@ export class SponsorService {
             sponsorshipCurrency: checkoutData.currency,
           },
         });
+
+        // Send sponsorship received email to the creator
+        try {
+          const sponsor = await this.prisma.explorer.findUnique({
+            where: { id: userId },
+            select: { username: true },
+          });
+
+          const creator = await this.prisma.explorer.findUnique({
+            where: { id: creatorId },
+            select: {
+              email: true,
+              username: true,
+              is_email_verified: true,
+              expeditions: {
+                where: { deleted_at: null },
+                orderBy: { id: 'desc' },
+                take: 1,
+                select: { public_id: true, title: true },
+              },
+            },
+          });
+
+          if (creator && creator.is_email_verified && sponsor) {
+            const amount = integerToDecimal(checkoutData.total);
+            const processingFee = calculateFee({
+              amount,
+              percent: APPLICATION_FEE,
+            });
+            const netAmount = amount - processingFee;
+            const expedition = creator.expeditions[0];
+
+            this.eventService.trigger<IEventSendEmail>({
+              event: EVENTS.SEND_EMAIL,
+              data: {
+                to: creator.email,
+                template: EMAIL_TEMPLATES.SPONSORSHIP_RECEIVED,
+                vars: {
+                  recipientUsername: creator.username,
+                  sponsorUsername: sponsor.username,
+                  amount,
+                  currency: '$',
+                  expeditionName: expedition?.title || 'Your Expedition',
+                  expeditionId: expedition?.public_id || '',
+                  message: checkoutData.message || undefined,
+                  processingFee,
+                  netAmount,
+                },
+              },
+            });
+
+            this.logger.log(
+              `Sent sponsorship received email to ${creator.email}`,
+            );
+          }
+        } catch (emailError) {
+          this.logger.error(
+            'Failed to send sponsorship received email:',
+            emailError,
+          );
+        }
       }
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('sponsor checkout not completed');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Complete checkout from a payment intent ID (called from frontend after successful payment)
+   * This is a fallback for when webhooks are delayed or not configured
+   */
+  async completeCheckoutFromPaymentIntent({
+    paymentIntentId,
+    session,
+  }: {
+    paymentIntentId: string;
+    session: { userId?: number };
+  }): Promise<{ success: boolean }> {
+    try {
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      // Retrieve the payment intent from Stripe
+      const paymentIntent =
+        await this.stripeService.paymentIntents.retrieve(paymentIntentId);
+
+      // Check if payment succeeded
+      if (paymentIntent.status !== 'succeeded') {
+        throw new ServiceBadRequestException('Payment has not succeeded');
+      }
+
+      // Extract checkout info from metadata
+      const metadata = paymentIntent.metadata || {};
+      const checkoutId = metadata[StripeMetadataKey.CHECKOUT_ID]
+        ? parseInt(metadata[StripeMetadataKey.CHECKOUT_ID])
+        : undefined;
+      const creatorId = metadata[StripeMetadataKey.CREATOR_ID]
+        ? parseInt(metadata[StripeMetadataKey.CREATOR_ID])
+        : undefined;
+
+      if (!checkoutId) {
+        throw new ServiceBadRequestException(
+          'Checkout ID not found in payment',
+        );
+      }
+
+      // Check if checkout is still pending (not already completed)
+      const checkout = await this.prisma.checkout.findFirst({
+        where: { id: checkoutId },
+        select: { status: true, explorer_id: true },
+      });
+
+      if (!checkout) {
+        throw new ServiceNotFoundException('Checkout not found');
+      }
+
+      // Verify the calling user owns this checkout
+      if (checkout.explorer_id !== userId) {
+        throw new ServiceForbiddenException();
+      }
+
+      // If already confirmed, return success
+      if (checkout.status === CheckoutStatus.CONFIRMED) {
+        return { success: true };
+      }
+
+      // Complete the checkout
+      await this.completeCheckout({
+        checkoutId,
+        userId,
+        creatorId,
+      });
+
+      return { success: true };
+    } catch (e) {
+      this.logger.error('Error completing checkout from payment intent:', e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -485,7 +805,7 @@ export class SponsorService {
       if (!userId) throw new ServiceForbiddenException();
 
       const where: Prisma.SponsorshipTierWhereInput = {
-        user_id: userId,
+        explorer_id: userId,
         deleted_at: null,
       };
 
@@ -496,10 +816,12 @@ export class SponsorService {
           where,
           select: {
             public_id: true,
+            type: true,
             price: true,
             description: true,
             is_available: true,
-            user: {
+            priority: true,
+            explorer: {
               select: {
                 username: true,
                 profile: {
@@ -521,6 +843,7 @@ export class SponsorService {
               },
             },
           },
+          orderBy: [{ type: 'asc' }, { priority: 'asc' }, { price: 'asc' }],
         })
         .catch(() => {
           throw new ServiceNotFoundException('sponsorship tiers not found');
@@ -532,20 +855,24 @@ export class SponsorService {
             price,
             description,
             public_id: id,
+            type,
             is_available,
-            user,
+            priority,
+            explorer,
             _count,
           }) => ({
             price: integerToDecimal(price),
             description,
             id,
+            type: type as 'ONE_TIME' | 'MONTHLY',
+            priority,
             isAvailable: is_available,
             membersCount: _count.sponsorships,
-            creator: user
+            creator: explorer
               ? {
-                  username: user.username,
-                  name: user.profile.name,
-                  picture: user.profile.picture,
+                  username: explorer.username,
+                  name: explorer.profile.name,
+                  picture: explorer.profile.picture,
                   bio: '',
                 }
               : undefined,
@@ -557,10 +884,8 @@ export class SponsorService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorship tiers not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -575,7 +900,7 @@ export class SponsorService {
       if (!access) throw new ServiceForbiddenException();
 
       const where: Prisma.SponsorshipTierWhereInput = {
-        user_id: userId,
+        explorer_id: userId,
         deleted_at: null,
       };
 
@@ -590,7 +915,7 @@ export class SponsorService {
             price: config.sponsorship.default_amount,
             is_available: false,
             priority: 1,
-            user_id: userId,
+            explorer_id: userId,
           },
         });
       }
@@ -600,6 +925,7 @@ export class SponsorService {
         select: {
           id: true,
           public_id: true,
+          type: true,
           price: true,
           stripe_price_month_id: true,
           description: true,
@@ -617,8 +943,7 @@ export class SponsorService {
             },
           },
         },
-        orderBy: [{ price: 'asc' }, { id: 'asc' }],
-        take: 3, // Support up to 3 tiers
+        orderBy: [{ type: 'asc' }, { priority: 'asc' }, { price: 'asc' }],
       });
 
       const response: ISponsorshipTierGetAllResponse = {
@@ -627,6 +952,7 @@ export class SponsorService {
             price,
             description,
             public_id: id,
+            type,
             is_available,
             priority,
             _count,
@@ -635,6 +961,7 @@ export class SponsorService {
             description,
             priority,
             id,
+            type: type as 'ONE_TIME' | 'MONTHLY',
             membersCount: _count.sponsorships,
             isAvailable: is_available,
           }),
@@ -645,10 +972,8 @@ export class SponsorService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorship tiers not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -660,37 +985,64 @@ export class SponsorService {
   }> {
     try {
       const { userId, userRole } = session;
-      const { price, description, isAvailable = false, priority } = payload;
+      const { type, price, isAvailable = false, priority } = payload;
 
       // check access
       const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
       if (!access) throw new ServiceForbiddenException();
 
-      // check tier count limit (max 3 tiers)
-      const existingCount = await this.prisma.sponsorshipTier.count({
+      // Get tier slot config - slots are pre-defined with fixed labels and price ranges
+      const maxSlots =
+        type === 'ONE_TIME'
+          ? ONE_TIME_TIER_SLOTS.length
+          : MONTHLY_TIER_SLOTS.length;
+      const slot = priority || 1;
+
+      if (slot < 1 || slot > maxSlots) {
+        throw new ServiceBadRequestException(
+          `Invalid tier slot. ${type === 'ONE_TIME' ? 'One-time' : 'Monthly'} tiers have slots 1-${maxSlots}`,
+        );
+      }
+
+      // Validate price is within allowed range for this slot
+      if (!isValidTierPrice(type, slot, price)) {
+        const slotConfig = getTierSlotConfig(type, slot);
+        const maxPriceText = slotConfig?.maxPrice
+          ? `$${slotConfig.maxPrice}`
+          : 'unlimited';
+        throw new ServiceBadRequestException(
+          `Price must be between $${slotConfig?.minPrice} and ${maxPriceText} for the ${slotConfig?.label} tier`,
+        );
+      }
+
+      // Check if this slot already exists for this user
+      const existingSlot = await this.prisma.sponsorshipTier.findFirst({
         where: {
-          user_id: userId,
+          explorer_id: userId,
+          type: type,
+          priority: slot,
           deleted_at: null,
         },
       });
 
-      if (existingCount >= 3) {
+      if (existingSlot) {
         throw new ServiceBadRequestException(
-          'Maximum 3 sponsorship tiers allowed',
+          `Tier slot ${slot} already exists. Use update instead.`,
         );
       }
 
-      // determine priority if not provided
-      const finalPriority = priority || existingCount + 1;
+      // Get the fixed label for this slot
+      const label = getTierLabel(type, slot);
 
       const tier = await this.prisma.sponsorshipTier.create({
         data: {
           public_id: generator.publicId(),
+          type: type,
           price: decimalToInteger(price),
-          description,
+          description: label, // Use fixed label from slot config
           is_available: isAvailable,
-          priority: finalPriority,
-          user_id: userId,
+          priority: slot,
+          explorer_id: userId,
         },
         select: {
           public_id: true,
@@ -700,10 +1052,8 @@ export class SponsorService {
       return { id: tier.public_id };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceBadRequestException('sponsorship tier not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -732,7 +1082,7 @@ export class SponsorService {
       if (!access) throw new ServiceForbiddenException();
 
       // get a user
-      const user = await this.prisma.user
+      const user = await this.prisma.explorer
         .findFirstOrThrow({ where: { id: userId }, select: { id: true } })
         .catch(() => {
           throw new ServiceForbiddenException();
@@ -741,7 +1091,7 @@ export class SponsorService {
       // get a payout method
       const payoutMethod = await this.prisma.payoutMethod
         .findFirstOrThrow({
-          where: { user_id: userId },
+          where: { explorer_id: userId },
           select: { stripe_account_id: true },
         })
         .catch(() => {
@@ -753,9 +1103,11 @@ export class SponsorService {
       // get a tier
       const tier = await this.prisma.sponsorshipTier
         .findFirstOrThrow({
-          where: { public_id: id, user_id: userId, deleted_at: null },
+          where: { public_id: id, explorer_id: userId, deleted_at: null },
           select: {
             id: true,
+            type: true,
+            priority: true,
             price: true,
             stripe_product_id: true,
             stripe_price_month_id: true,
@@ -766,12 +1118,26 @@ export class SponsorService {
           throw new ServiceNotFoundException('sponsorship tier not found');
         });
 
+      // Validate price is within allowed range for this slot
+      if (price !== undefined && price !== null) {
+        const tierType = tier.type as 'ONE_TIME' | 'MONTHLY';
+        if (!isValidTierPrice(tierType, tier.priority, price)) {
+          const slotConfig = getTierSlotConfig(tierType, tier.priority);
+          const maxPriceText = slotConfig?.maxPrice
+            ? `$${slotConfig.maxPrice}`
+            : 'unlimited';
+          throw new ServiceBadRequestException(
+            `Price must be between $${slotConfig?.minPrice} and ${maxPriceText} for this tier slot`,
+          );
+        }
+      }
+
       let stripeProductId = tier.stripe_product_id;
       let stripePriceMonthId = tier.stripe_price_month_id;
       let stripePriceYearId = tier.stripe_price_year_id;
 
       // get a stripe account
-      const stripeAccount = await this.stripeService.stripe.accounts
+      const stripeAccount = await this.stripeService.accounts
         .retrieve(stripeAccountId)
         .catch(() => {
           throw new ServiceForbiddenException(
@@ -791,7 +1157,7 @@ export class SponsorService {
         this.logger.log(`stripe product is not found, creating [..]`);
 
         // create a stripe product
-        const stripeProduct = await this.stripeService.stripe.products.create({
+        const stripeProduct = await this.stripeService.products.create({
           name: `creator_${user.id}__sponsorship`,
           active: true,
           default_price_data: {
@@ -831,7 +1197,7 @@ export class SponsorService {
 
           // create monthly price if needed
           if (needsMonthlyPrice) {
-            const monthlyPrice = await this.stripeService.stripe.prices.create({
+            const monthlyPrice = await this.stripeService.prices.create({
               currency,
               unit_amount: monthlyAmount,
               recurring: { interval: 'month' },
@@ -846,7 +1212,7 @@ export class SponsorService {
 
           // create yearly price if needed
           if (needsYearlyPrice) {
-            const yearlyPrice = await this.stripeService.stripe.prices.create({
+            const yearlyPrice = await this.stripeService.prices.create({
               currency,
               unit_amount: yearlyAmount,
               recurring: { interval: 'year' },
@@ -861,7 +1227,7 @@ export class SponsorService {
 
           // set new monthly price as default in the stripe product
           if (needsMonthlyPrice) {
-            await this.stripeService.stripe.products.update(stripeProductId, {
+            await this.stripeService.products.update(stripeProductId, {
               default_price: stripePriceMonthId,
             });
             this.logger.log(
@@ -875,7 +1241,7 @@ export class SponsorService {
             oldMonthlyPriceId &&
             oldMonthlyPriceId !== stripePriceMonthId
           ) {
-            await this.stripeService.stripe.prices.update(oldMonthlyPriceId, {
+            await this.stripeService.prices.update(oldMonthlyPriceId, {
               active: false,
             });
             this.logger.log(
@@ -888,7 +1254,7 @@ export class SponsorService {
             oldYearlyPriceId &&
             oldYearlyPriceId !== stripePriceYearId
           ) {
-            await this.stripeService.stripe.prices.update(oldYearlyPriceId, {
+            await this.stripeService.prices.update(oldYearlyPriceId, {
               active: false,
             });
             this.logger.log(`archived old yearly price (${oldYearlyPriceId})`);
@@ -901,16 +1267,15 @@ export class SponsorService {
             );
 
             // create a stripe product with monthly default price
-            const stripeProduct =
-              await this.stripeService.stripe.products.create({
-                name: `creator_${user.id}__sponsorship`,
-                active: true,
-                default_price_data: {
-                  currency,
-                  unit_amount: monthlyAmount,
-                  recurring: { interval: 'month' },
-                },
-              });
+            const stripeProduct = await this.stripeService.products.create({
+              name: `creator_${user.id}__sponsorship`,
+              active: true,
+              default_price_data: {
+                currency,
+                unit_amount: monthlyAmount,
+                recurring: { interval: 'month' },
+              },
+            });
 
             this.logger.log(`stripe product created (${stripeProduct.id})`);
 
@@ -918,7 +1283,7 @@ export class SponsorService {
             stripePriceMonthId = stripeProduct.default_price as string;
 
             // create yearly price for the new product
-            const yearlyPrice = await this.stripeService.stripe.prices.create({
+            const yearlyPrice = await this.stripeService.prices.create({
               currency,
               unit_amount: yearlyAmount,
               recurring: { interval: 'year' },
@@ -952,10 +1317,8 @@ export class SponsorService {
       this.logger.log(`sponsorship tier ${tier.id} updated`);
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorship tier not updated');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -976,7 +1339,7 @@ export class SponsorService {
       // get the sponsorship tier
       const sponsorshipTier = await this.prisma.sponsorshipTier
         .findFirstOrThrow({
-          where: { public_id: id, user_id: userId, deleted_at: null },
+          where: { public_id: id, explorer_id: userId, deleted_at: null },
           select: { id: true },
         })
         .catch(() => {
@@ -990,10 +1353,8 @@ export class SponsorService {
       });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorship tier not deleted');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -1009,7 +1370,7 @@ export class SponsorService {
       if (!access) throw new ServiceForbiddenException();
 
       const where: Prisma.SponsorshipWhereInput = {
-        user_id: userId,
+        sponsor_id: userId,
         deleted_at: null,
       };
 
@@ -1026,7 +1387,8 @@ export class SponsorService {
           currency: true,
           message: true,
           email_delivery_enabled: true,
-          creator: {
+          expiry: true,
+          sponsored_explorer: {
             select: {
               username: true,
               profile: {
@@ -1048,10 +1410,11 @@ export class SponsorService {
             amount,
             currency,
             status,
-            creator,
+            sponsored_explorer,
             type,
             message = '',
             email_delivery_enabled,
+            expiry,
             created_at,
           }) => ({
             id,
@@ -1061,11 +1424,12 @@ export class SponsorService {
             currency,
             message,
             email_delivery_enabled,
-            creator: creator
+            expiry,
+            creator: sponsored_explorer
               ? {
-                  username: creator.username,
-                  name: creator.profile.name,
-                  picture: creator.profile.picture,
+                  username: sponsored_explorer.username,
+                  name: sponsored_explorer.profile.name,
+                  picture: sponsored_explorer.profile.picture,
                 }
               : undefined,
             createdAt: created_at,
@@ -1076,10 +1440,8 @@ export class SponsorService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorships not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -1094,7 +1456,7 @@ export class SponsorService {
       if (!access) throw new ServiceForbiddenException();
 
       const where: Prisma.SponsorshipWhereInput = {
-        creator_id: userId,
+        sponsored_explorer_id: userId,
         deleted_at: null,
       };
 
@@ -1110,7 +1472,9 @@ export class SponsorService {
           status: true,
           currency: true,
           message: true,
-          user: {
+          is_public: true,
+          is_message_public: true,
+          sponsor: {
             select: {
               username: true,
               profile: {
@@ -1123,6 +1487,7 @@ export class SponsorService {
               public_id: true,
               description: true,
               priority: true,
+              price: true,
             },
           },
           created_at: true,
@@ -1139,11 +1504,13 @@ export class SponsorService {
             amount,
             currency,
             status,
-            user,
+            sponsor,
             type,
             tier,
             created_at,
             message,
+            is_public,
+            is_message_public,
           }) => ({
             id,
             type: type as SponsorshipType,
@@ -1151,11 +1518,13 @@ export class SponsorService {
             amount: integerToDecimal(amount),
             currency,
             message,
-            user: user
+            isPublic: is_public ?? true,
+            isMessagePublic: is_message_public ?? true,
+            user: sponsor
               ? {
-                  username: user.username,
-                  name: user.profile.name,
-                  picture: user.profile.picture,
+                  username: sponsor.username,
+                  name: sponsor.profile.name,
+                  picture: sponsor.profile.picture,
                 }
               : undefined,
             tier: tier
@@ -1163,6 +1532,7 @@ export class SponsorService {
                   id: tier.public_id,
                   description: tier.description,
                   title: `Tier ${tier.priority}`,
+                  price: integerToDecimal(tier.price),
                 }
               : undefined,
             createdAt: created_at,
@@ -1173,10 +1543,232 @@ export class SponsorService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('sponsorships not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Get payments directly from Stripe for the creator's connected account
+   * This is the source of truth - shows payments even if webhooks didn't process
+   *
+   * Uses platform payment intents (which have metadata) instead of connected account charges
+   * to reliably match sponsor information via checkout_id in metadata
+   */
+  async getStripePayments({ session }: ISessionQuery): Promise<{
+    results: number;
+    data: Array<{
+      id: string;
+      amount: number;
+      currency: string;
+      status: string;
+      refunded: boolean;
+      created: Date;
+      sponsorEmail?: string;
+      sponsorName?: string;
+      sponsorUsername?: string;
+      description?: string;
+    }>;
+  }> {
+    try {
+      const { userId, userRole } = session;
+
+      // check access - must be a creator
+      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      if (!access) throw new ServiceForbiddenException();
+
+      // Query confirmed checkouts from our database (fast, no Stripe API call)
+      const checkouts = await this.prisma.checkout.findMany({
+        where: {
+          sponsored_explorer_id: userId,
+          confirmed_at: { not: null },
+          deleted_at: null,
+          stripe_payment_intent_id: { not: null },
+        },
+        select: {
+          stripe_payment_intent_id: true,
+          total: true,
+          currency: true,
+          confirmed_at: true,
+          message: true,
+          explorer: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+              profile: { select: { name: true } },
+            },
+          },
+        },
+        orderBy: { confirmed_at: 'desc' },
+        take: 100,
+      });
+
+      if (checkouts.length === 0) {
+        return { results: 0, data: [] };
+      }
+
+      // Check refund status via Stripe in a single batch
+      // Only fetch payment intents that exist (parallel, but scoped to our records)
+      const refundStatusMap = new Map<string, boolean>();
+      const piIds = checkouts
+        .map((c) => c.stripe_payment_intent_id)
+        .filter((id): id is string => !!id);
+
+      // Batch retrieve payment intents in parallel (max 10 concurrent)
+      const batchSize = 10;
+      for (let i = 0; i < piIds.length; i += batchSize) {
+        const batch = piIds.slice(i, i + batchSize);
+        const results = await Promise.all(
+          batch.map((piId) =>
+            this.stripeService.paymentIntents
+              .retrieve(piId, { expand: ['latest_charge'] })
+              .catch(() => null),
+          ),
+        );
+        for (const pi of results) {
+          if (pi) {
+            const charge = pi.latest_charge as Stripe.Charge | null;
+            refundStatusMap.set(pi.id, charge?.refunded || false);
+          }
+        }
+      }
+
+      const data = checkouts.map((checkout) => {
+        const piId = checkout.stripe_payment_intent_id!;
+        return {
+          id: piId,
+          amount: integerToDecimal(checkout.total),
+          currency: (checkout.currency || 'usd').toUpperCase(),
+          status: 'succeeded',
+          refunded: refundStatusMap.get(piId) || false,
+          created: checkout.confirmed_at!,
+          sponsorEmail: checkout.explorer?.email || undefined,
+          sponsorName: checkout.explorer?.profile?.name || undefined,
+          sponsorUsername: checkout.explorer?.username || undefined,
+          description: checkout.message || undefined,
+        };
+      });
+
+      return {
+        results: data.length,
+        data,
+      };
+    } catch (e) {
+      this.logger.error('Error fetching Stripe payments:', e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Issue a refund for a payment (creator only)
+   * For destination charges, refunds are issued from the platform account
+   * with reverse_transfer to pull back funds from the connected account
+   */
+  async issueRefund({
+    session,
+    payload,
+  }: ISessionQueryWithPayload<
+    {},
+    { chargeId: string; reason?: string }
+  >): Promise<{ success: boolean; refundId: string }> {
+    try {
+      const { userId, userRole } = session;
+      const { chargeId, reason } = payload;
+
+      // check access - must be a creator
+      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      if (!access) throw new ServiceForbiddenException();
+
+      // get the user's payout method (connected account)
+      const payoutMethod = await this.prisma.payoutMethod.findFirst({
+        where: {
+          explorer_id: userId,
+          platform: PayoutMethodPlatform.STRIPE,
+          deleted_at: null,
+        },
+        select: { stripe_account_id: true },
+      });
+
+      if (!payoutMethod?.stripe_account_id) {
+        throw new ServiceBadRequestException('No payout method configured');
+      }
+
+      // For destination charges, the charge ID from the connected account
+      // maps to a payment intent on the platform. We need to find it.
+      // First, retrieve the charge from the connected account to get the payment intent
+      const connectedCharge = await this.stripeService.charges.retrieve(
+        chargeId,
+        { stripeAccount: payoutMethod.stripe_account_id },
+      );
+
+      if (!connectedCharge || connectedCharge.refunded) {
+        throw new ServiceBadRequestException(
+          'Charge not found or already refunded',
+        );
+      }
+
+      // Get the source transfer to find the platform payment intent
+      const sourceTransfer = connectedCharge.source_transfer;
+      if (!sourceTransfer) {
+        throw new ServiceBadRequestException(
+          'Cannot find source transfer for this charge',
+        );
+      }
+
+      // Retrieve the transfer to get the payment intent
+      const transferId =
+        typeof sourceTransfer === 'string' ? sourceTransfer : sourceTransfer.id;
+      const transfer = await this.stripeService.transfers.retrieve(transferId);
+
+      if (!transfer.source_transaction) {
+        throw new ServiceBadRequestException(
+          'Cannot find platform charge for this transfer',
+        );
+      }
+
+      // Get the platform charge ID
+      const platformChargeId =
+        typeof transfer.source_transaction === 'string'
+          ? transfer.source_transaction
+          : transfer.source_transaction.id;
+
+      // Issue the refund from the PLATFORM account (not connected account)
+      // with reverse_transfer to pull back funds from connected account
+      const refund = await this.stripeService.refunds.create({
+        charge: platformChargeId,
+        reason: 'requested_by_customer',
+        reverse_transfer: true, // Reverse the transfer to connected account
+        refund_application_fee: true, // Also refund the application fee
+        metadata: {
+          issued_by: 'creator',
+          creator_id: userId.toString(),
+          creator_reason: reason || 'Refund requested by creator',
+          connected_account: payoutMethod.stripe_account_id,
+        },
+      });
+
+      // Update checkout status in our database
+      if (transfer.metadata?.checkout_id) {
+        await this.prisma.checkout.updateMany({
+          where: { id: parseInt(transfer.metadata.checkout_id) },
+          data: { status: 'REFUNDED' },
+        });
+      }
+
+      this.logger.log(
+        `Refund ${refund.id} issued for platform charge ${platformChargeId} (connected charge: ${chargeId}) by user ${userId}`,
+      );
+
+      return {
+        success: true,
+        refundId: refund.id,
+      };
+    } catch (e) {
+      this.logger.error('Error issuing refund:', e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -1196,28 +1788,36 @@ export class SponsorService {
         !!userId && matchRoles(userRole, [UserRole.USER, UserRole.CREATOR]);
       if (!access) throw new ServiceForbiddenException();
 
-      // get a sponsorship
+      // get a sponsorship and verify ownership
       const sponsorship = await this.prisma.sponsorship
         .findFirst({
           where: {
             public_id: sponsorshipId,
+            sponsor_id: userId, // SECURITY: Only allow sponsor to cancel their own sponsorship
             type: SponsorshipType.SUBSCRIPTION,
             status: SponsorshipStatus.ACTIVE,
             stripe_subscription_id: { not: null },
             deleted_at: null,
           },
-          select: { id: true, stripe_subscription_id: true },
+          select: { id: true, stripe_subscription_id: true, sponsor_id: true },
         })
         .catch(() => {
           throw new ServiceForbiddenException(`sponsorship can't be canceled`);
         });
+
+      // Verify user owns this sponsorship
+      if (!sponsorship || sponsorship.sponsor_id !== userId) {
+        throw new ServiceForbiddenException(
+          'not authorized to cancel this sponsorship',
+        );
+      }
 
       if (!sponsorship.stripe_subscription_id)
         throw new ServiceForbiddenException(`sponsorship can't be canceled`);
 
       // retrieve a stripe subscription
       const stripeSubscription =
-        await this.stripeService.stripe.subscriptions.retrieve(
+        await this.stripeService.subscriptions.retrieve(
           sponsorship.stripe_subscription_id,
         );
       if (stripeSubscription.status !== 'active')
@@ -1225,9 +1825,7 @@ export class SponsorService {
           throw new ServiceForbiddenException(`sponsorship can't be canceled`);
 
       // cancel the subscription on stripe
-      await this.stripeService.stripe.subscriptions.cancel(
-        stripeSubscription.id,
-      );
+      await this.stripeService.subscriptions.cancel(stripeSubscription.id);
 
       // update the sponsorship
       await this.prisma.sponsorship.update({
@@ -1236,10 +1834,8 @@ export class SponsorService {
       });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceBadRequestException('sponsorship not canceled');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -1263,7 +1859,7 @@ export class SponsorService {
         .findFirstOrThrow({
           where: {
             public_id: sponsorshipId,
-            user_id: userId,
+            sponsor_id: userId,
             type: SponsorshipType.SUBSCRIPTION,
             deleted_at: null,
           },
@@ -1284,12 +1880,8 @@ export class SponsorService {
       );
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceBadRequestException(
-            'Failed to update email delivery preference',
-          );
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -1298,13 +1890,13 @@ export class SponsorService {
     try {
       const { checkoutId, creatorId, userId } = event;
 
-      this.completeCheckout({
+      await this.completeCheckout({
         checkoutId,
         creatorId,
         userId,
       });
     } catch (e) {
-      this.logger.error(e);
+      this.logger.error('Error completing sponsor checkout:', e);
     }
   }
 }

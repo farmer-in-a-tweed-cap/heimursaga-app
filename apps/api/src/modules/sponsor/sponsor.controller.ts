@@ -40,6 +40,18 @@ export class SponsorController {
       session,
     });
   }
+
+  @Post('checkout/complete')
+  @HttpCode(HttpStatus.OK)
+  async completeCheckout(
+    @Session() session: ISession,
+    @Body() body: { paymentIntentId: string },
+  ) {
+    return await this.sponsorService.completeCheckoutFromPaymentIntent({
+      paymentIntentId: body.paymentIntentId,
+      session,
+    });
+  }
 }
 
 @ApiTags('sponsorships')
@@ -52,6 +64,37 @@ export class SponsorshipController {
   async getSponsorships(@Session() session: ISession) {
     return await this.sponsorService.getCreatorSponsorships({
       query: {},
+      session,
+    });
+  }
+
+  @Get('given')
+  @HttpCode(HttpStatus.OK)
+  async getGivenSponsorships(@Session() session: ISession) {
+    return await this.sponsorService.getSponsorships({
+      query: {},
+      session,
+    });
+  }
+
+  @Get('stripe-payments')
+  @HttpCode(HttpStatus.OK)
+  async getStripePayments(@Session() session: ISession) {
+    return await this.sponsorService.getStripePayments({
+      query: {},
+      session,
+    });
+  }
+
+  @Post('refund')
+  @HttpCode(HttpStatus.OK)
+  async issueRefund(
+    @Session() session: ISession,
+    @Body() body: { chargeId: string; reason?: string },
+  ) {
+    return await this.sponsorService.issueRefund({
+      query: {},
+      payload: body,
       session,
     });
   }
