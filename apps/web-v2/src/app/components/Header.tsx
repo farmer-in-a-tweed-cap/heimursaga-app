@@ -126,6 +126,8 @@ export function Header() {
       return pathname === `/journal/${user.username}`;
     }
 
+    if (path === '/admin') return pathname === '/admin';
+
     return pathname === path;
   };
 
@@ -169,7 +171,7 @@ export function Header() {
           <div className="flex-shrink-0">
             <Link href="/" className="flex-shrink-0">
               <Image
-                src="https://heimursaga.com/logo-lg-light.svg"
+                src="/logo-lg-light.svg"
                 alt="Heimursaga"
                 className="h-16 lg:h-20 xl:h-24 w-auto"
                 width={300}
@@ -272,16 +274,28 @@ export function Header() {
                 >
                   BOOKMARKS
                 </Link>
-                <Link 
-                  href="/select-expedition" 
+                <Link
+                  href="/select-expedition"
                   className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold ${
-                    isActive('/select-expedition') 
-                      ? 'bg-[#4676ac] text-white' 
+                    isActive('/select-expedition')
+                      ? 'bg-[#4676ac] text-white'
                       : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
                   }`}
                 >
                   LOG ENTRY
                 </Link>
+                {user.username === 'explorer1' && (
+                  <Link
+                    href="/admin"
+                    className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold relative ${
+                      isActive('/admin')
+                        ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-12 after:h-0.5 after:bg-[#4676ac]'
+                        : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
+                    }`}
+                  >
+                    ADMIN
+                  </Link>
+                )}
               </>
             )}
           </nav>
@@ -404,7 +418,7 @@ export function Header() {
           <div className="relative">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[28px] h-[28px] bg-[#202020]"></div>
             <Image
-              src="https://heimursaga.com/logo-sm-light.svg"
+              src="/logo-sm-light.svg"
               alt="Heimursaga Badge"
               className="h-20 w-auto px-6 relative z-10"
               width={80}
@@ -611,16 +625,28 @@ export function Header() {
                     >
                       SETTINGS
                     </Link>
-                    <Link 
-                      href="/select-expedition" 
+                    <Link
+                      href="/select-expedition"
                       className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
-                        isActive('/select-expedition') 
-                          ? 'bg-[#4676ac] text-white' 
+                        isActive('/select-expedition')
+                          ? 'bg-[#4676ac] text-white'
                           : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
                       }`}
                     >
                       LOG ENTRY
                     </Link>
+                    {user.username === 'explorer1' && (
+                      <Link
+                        href="/admin"
+                        className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                          isActive('/admin')
+                            ? 'bg-[#4676ac] text-white'
+                            : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
+                        }`}
+                      >
+                        ADMIN
+                      </Link>
+                    )}
                   </>
                 )}
               </div>

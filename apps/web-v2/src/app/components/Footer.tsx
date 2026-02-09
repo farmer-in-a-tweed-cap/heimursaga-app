@@ -56,7 +56,7 @@ export function Footer() {
         <div className="border-t border-[#616161] pt-6">
           <div className="flex flex-col items-center gap-4">
             <Image
-              src="https://heimursaga.com/logo-lg-light.svg"
+              src="/logo-lg-light.svg"
               alt="Heimursaga"
               className="h-8 w-auto"
               width={200}
