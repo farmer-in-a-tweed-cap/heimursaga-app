@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CreditCard, Check, AlertCircle, ArrowUpRight, Lock, DollarSign, Loader2, Plus, Trash2 } from 'lucide-react';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { useAuth } from '@/app/context/AuthContext';
@@ -30,14 +30,7 @@ export function BillingSettingsPage() {
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
 
-  // Fetch data on mount
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchBillingData();
-    }
-  }, [isAuthenticated]);
-
-  const fetchBillingData = async () => {
+  const fetchBillingData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [methodsRes, subscriptionRes] = await Promise.all([
@@ -56,12 +49,19 @@ export function BillingSettingsPage() {
         }));
         setBalance(balanceRes);
       }
-    } catch (_error) {
+    } catch {
       toast.error('Failed to load billing information');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isPro]);
+
+  // Fetch data on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchBillingData();
+    }
+  }, [isAuthenticated, fetchBillingData]);
 
   const handleAddCard = async () => {
     if (!stripe || !elements) {
@@ -111,7 +111,7 @@ export function BillingSettingsPage() {
       await paymentMethodApi.setDefault(paymentMethodId);
       toast.success('Default payment method updated');
       fetchBillingData();
-    } catch (_error) {
+    } catch {
       toast.error('Failed to update default payment method');
     } finally {
       setSettingDefaultId(null);
@@ -124,7 +124,7 @@ export function BillingSettingsPage() {
       await paymentMethodApi.delete(paymentMethodId);
       toast.success('Payment method removed');
       fetchBillingData();
-    } catch (_error) {
+    } catch {
       toast.error('Failed to remove payment method');
     } finally {
       setDeletingCardId(null);
@@ -141,7 +141,7 @@ export function BillingSettingsPage() {
       await planApi.cancelSubscription();
       toast.success('Subscription canceled. You will retain access until the end of your billing period.');
       fetchBillingData();
-    } catch (_error) {
+    } catch {
       toast.error('Failed to cancel subscription');
     } finally {
       setIsCanceling(false);

@@ -121,7 +121,7 @@ export function LocationAutocompleteInput({
         setSuggestions(results);
         setIsOpen(results.length > 0);
         setIsLoading(false);
-      } catch (_err) {
+      } catch {
         setError('Failed to search locations');
         setIsLoading(false);
       }

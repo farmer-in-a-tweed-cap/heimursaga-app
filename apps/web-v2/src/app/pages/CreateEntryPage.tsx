@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
@@ -40,6 +41,8 @@ export function CreateEntryPage() {
   const [visibility, setVisibility] = useState<'public' | 'sponsors-only' | 'private'>('public');
   const [isMilestone, setIsMilestone] = useState(false);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [draftCheckComplete, setDraftCheckComplete] = useState(false);
 
   // Notification state for entry type restrictions
   const [entryTypeNotification, setEntryTypeNotification] = useState<{ type: 'pro' | 'waypoint-standalone'; message: string } | null>(null);
@@ -55,7 +58,6 @@ export function CreateEntryPage() {
   const [expeditionLoading, setExpeditionLoading] = useState(!isStandalone);
   const [expeditionError, setExpeditionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Auto-save state
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -75,7 +77,6 @@ export function CreateEntryPage() {
   // Draft recovery state
   const [existingDraft, setExistingDraft] = useState<Entry | null>(null);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
-  const [draftCheckComplete, setDraftCheckComplete] = useState(false);
 
   // Fetch expedition data from API
   useEffect(() => {
@@ -91,7 +92,7 @@ export function CreateEntryPage() {
       try {
         const data = await expeditionApi.getById(expeditionId);
         setExpedition(data);
-      } catch (err) {
+      } catch {
         setExpeditionError('Failed to load expedition details');
       } finally {
         setExpeditionLoading(false);
@@ -1076,10 +1077,12 @@ Remember: Your sponsors and followers are reading this to understand your journe
                             <div className="flex items-center gap-3">
                               {/* Thumbnail */}
                               {media.thumbnail ? (
-                                <img
+                                <Image
                                   src={media.thumbnail}
                                   alt={media.name}
                                   className="w-16 h-16 object-cover border border-[#b5bcc4] dark:border-[#3a3a3a] flex-shrink-0"
+                                  width={64}
+                                  height={64}
                                 />
                               ) : (
                                 <div className="w-16 h-16 bg-[#e5e5e5] dark:bg-[#3a3a3a] flex items-center justify-center flex-shrink-0">

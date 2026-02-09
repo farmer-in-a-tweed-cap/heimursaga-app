@@ -25,8 +25,8 @@ export function UpgradePage() {
   const { user } = useAuth();
   const { isPro } = useProFeatures();
   const router = useRouter();
-  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
 
   // ============================================================
   // 🔴 BACKEND API CALL NEEDED

@@ -79,7 +79,7 @@ export function BookmarksPage() {
           setBookmarkedExpeditions(expeditionsRes.data || []);
           setBookmarkedExplorers(explorersRes.data || []);
         }
-      } catch (_err) {
+      } catch {
         if (!cancelled) {
           setError('Failed to load bookmarks. Please try again.');
         }

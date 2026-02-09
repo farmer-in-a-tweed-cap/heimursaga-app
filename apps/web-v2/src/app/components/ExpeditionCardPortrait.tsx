@@ -1,4 +1,4 @@
-import { MapPin, FileText, Clock, User } from "lucide-react";
+import { MapPin, User } from "lucide-react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 
 interface Waypoint {

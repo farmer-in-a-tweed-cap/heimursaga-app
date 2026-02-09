@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const userData = await authApi.getUser();
       setUser(userData);
-    } catch (_error) {
+    } catch {
       // User is not authenticated or session expired
       setUser(null);
     }
@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!cancelled) {
           setUser(userData);
         }
-      } catch (_error) {
+      } catch {
         if (!cancelled) {
           setUser(null);
         }

@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { MapPin, Calendar, TrendingUp, Users, DollarSign, Eye, FileText, UserPlus, Bookmark, Share2, ChevronDown, Edit, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Globe, Lock } from 'lucide-react';
+import Image from 'next/image';
+import { Users, UserPlus, Bookmark, Share2, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Lock } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
@@ -14,7 +15,7 @@ import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { ExpeditionNotes } from '@/app/components/ExpeditionNotes';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
-import { expeditionApi, explorerApi, entryApi, type Expedition, type ExpeditionWaypoint, type ExpeditionEntry, type ExpeditionNote } from '@/app/services/api';
+import { expeditionApi, explorerApi, entryApi, type Expedition, type ExpeditionNote } from '@/app/services/api';
 import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
 
 // Mapbox configuration - token loaded from environment variable
@@ -92,9 +93,9 @@ export function ExpeditionDetailPage() {
   // Expedition notes state
   const [expeditionNotes, setExpeditionNotes] = useState<ExpeditionNote[]>([]);
   const [noteCount, setNoteCount] = useState(0);
-  const [notesLoading, setNotesLoading] = useState(false);
   const [isSponsoring, setIsSponsoring] = useState(false);
-  const [dailyNoteLimit, setDailyNoteLimit] = useState<{ used: number; max: number }>({ used: 0, max: 1 });
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [, setDailyNoteLimit] = useState<{ used: number; max: number }>({ used: 0, max: 1 });
 
   // Sponsors leaderboard state
   const [sponsors, setSponsors] = useState<any[]>([]);
@@ -486,7 +487,7 @@ export function ExpeditionDetailPage() {
   const handlePostNote = async (text: string) => {
     if (!expeditionId) return;
     try {
-      const result = await expeditionApi.createNote(expeditionId, text);
+      await expeditionApi.createNote(expeditionId, text);
       // Refetch notes to get the new note with all data
       const notesData = await expeditionApi.getNotes(expeditionId);
       setExpeditionNotes(notesData.notes);
@@ -560,7 +561,7 @@ export function ExpeditionDetailPage() {
   };
 
   // Handler for changing expedition status
-  const handleStatusChange = async (newStatus: 'active' | 'completed') => {
+  const handleStatusChange = async (_newStatus: 'active' | 'completed') => {
     // ============================================================
     // 🔴 BACKEND API CALL NEEDED
     // ============================================================
@@ -947,6 +948,7 @@ export function ExpeditionDetailPage() {
       map.remove();
       mapRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, waypoints, journalEntries, apiExpedition]);
 
   // Loading state
@@ -983,9 +985,6 @@ export function ExpeditionDetailPage() {
       </div>
     );
   }
-
-  // TypeScript now knows expedition is non-null after the above check
-  const exp = expedition;
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-8">
@@ -1052,10 +1051,12 @@ export function ExpeditionDetailPage() {
                 <div className="flex items-center gap-3 mb-4">
                   <Link href={`/journal/${expedition.explorerId}`} className="flex-shrink-0">
                     <div className="w-16 h-16 border-2 border-[#ac6d46] overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all">
-                      <img
+                      <Image
                         src={expedition.explorerPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${expedition.explorerId}`}
                         alt={expedition.explorerName}
                         className="w-full h-full object-cover"
+                        width={64}
+                        height={64}
                       />
                     </div>
                   </Link>

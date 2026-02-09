@@ -44,7 +44,6 @@ export function InteractionButtons({
   const router = useRouter();
 
   const [bookmarked, setBookmarked] = useState(isBookmarked);
-  const [bookmarkCount, setBookmarkCount] = useState(initialBookmarks);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
 
   // Size configurations
@@ -69,9 +68,7 @@ export function InteractionButtons({
   const config = sizeConfig[size];
 
   const handleBookmark = () => {
-    const newState = !bookmarked;
-    setBookmarked(newState);
-    setBookmarkCount(prev => newState ? prev + 1 : prev - 1);
+    setBookmarked(!bookmarked);
     onBookmark?.();
   };
   

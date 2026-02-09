@@ -169,132 +169,6 @@ function mapApiNotification(apiNotif: ApiNotification, index: number): Notificat
   };
 }
 
-// Mock notifications for all types (for review)
-const MOCK_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'mock-1',
-    type: 'follow',
-    title: 'adventure_seeker_42 - New Follower',
-    message: 'adventure_seeker_42 started following your exploration journey. They are currently planning an expedition to Nepal.',
-    timestamp: '5 minutes ago',
-    timestampDate: new Date(Date.now() - 5 * 60 * 1000),
-    isRead: false,
-    actor: 'adventure_seeker_42',
-  },
-  {
-    id: 'mock-2',
-    type: 'sponsorship',
-    title: 'Sponsorship - $250.00',
-    message: 'mountain_explorer sponsored your "Patagonia Trek" expedition for $250.00.',
-    timestamp: '12 minutes ago',
-    timestampDate: new Date(Date.now() - 12 * 60 * 1000),
-    isRead: false,
-    actor: 'mountain_explorer',
-    metadata: { amount: 25000, expeditionName: 'Patagonia Trek' },
-  },
-  {
-    id: 'mock-3',
-    type: 'comment',
-    title: 'seasoned_traveler left a note on "Summit Day on Mount Everest"',
-    message: '"Amazing photos! What camera and lens did you use for the summit shots? The detail is incredible."',
-    timestamp: '1 hour ago',
-    timestampDate: new Date(Date.now() - 60 * 60 * 1000),
-    isRead: false,
-    actor: 'seasoned_traveler',
-    metadata: { entryTitle: 'Summit Day on Mount Everest' },
-  },
-  {
-    id: 'mock-4',
-    type: 'comment_reply',
-    title: 'photo_enthusiast replied on "Glacier Photography Session"',
-    message: '"I had the same question about the lens! Would love to know the settings too."',
-    timestamp: '2 hours ago',
-    timestampDate: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    isRead: false,
-    actor: 'photo_enthusiast',
-    metadata: { entryTitle: 'Glacier Photography Session' },
-  },
-  {
-    id: 'mock-5',
-    type: 'entry_milestone',
-    title: 'Entry Milestone - 1,000 Views',
-    message: 'Your entry "Summit Day on Mount Everest" has surpassed 1,000 views! It\'s trending in Mountain Expeditions with 34 comments.',
-    timestamp: '3 hours ago',
-    timestampDate: new Date(Date.now() - 3 * 60 * 60 * 1000),
-    isRead: true,
-    metadata: { entryTitle: 'Summit Day on Mount Everest' },
-  },
-  {
-    id: 'mock-6',
-    type: 'expedition_started',
-    title: 'Expedition Started - Patagonia Trek',
-    message: 'Your "Patagonia Trek" expedition has officially begun in Torres del Paine, Chile. Good luck on your journey!',
-    timestamp: '1 day ago',
-    timestampDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    isRead: true,
-    metadata: { expeditionName: 'Patagonia Trek' },
-  },
-  {
-    id: 'mock-7',
-    type: 'expedition_completed',
-    title: 'Expedition Completed - Amazon River Traverse',
-    message: 'Congratulations! Your "Amazon River Traverse" is complete. 28 entries, 34 days, 3,890km traveled, $38,000 raised.',
-    timestamp: '2 days ago',
-    timestampDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    isRead: true,
-    metadata: { expeditionName: 'Amazon River Traverse' },
-  },
-  {
-    id: 'mock-8',
-    type: 'sponsorship_milestone',
-    title: 'Sponsorship Milestone - 75% Funded',
-    message: 'Your "Antarctic Research" expedition reached 75% of its funding goal! $63,750 of $85,000 raised from 243 sponsors.',
-    timestamp: '3 days ago',
-    timestampDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    isRead: true,
-    metadata: { expeditionName: 'Antarctic Research', amount: 6375000 },
-  },
-  {
-    id: 'mock-9',
-    type: 'passport_country',
-    title: 'New Country Visited - Iceland',
-    message: "You've added Iceland to your passport! This is your 47th country visited. Keep exploring!",
-    timestamp: '4 days ago',
-    timestampDate: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
-    isRead: false,
-    metadata: { countryCode: 'IS', countryName: 'Iceland', firstEntryDate: 'Jan 15, 2025' },
-  },
-  {
-    id: 'mock-10',
-    type: 'passport_continent',
-    title: 'New Continent Explored - Antarctica',
-    message: "You've explored Antarctica! You've now visited all 7 continents. Welcome to the exclusive Seven Continent Club!",
-    timestamp: '5 days ago',
-    timestampDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    isRead: false,
-    metadata: { continentCode: 'AN', continentName: 'Antarctica', firstEntryDate: 'Dec 28, 2024' },
-  },
-  {
-    id: 'mock-11',
-    type: 'passport_stamp',
-    title: 'Achievement Stamp Earned - World Traveler',
-    message: 'You\'ve earned the "World Traveler" achievement stamp for visiting 50+ countries! This rare achievement is held by less than 1% of explorers.',
-    timestamp: '1 week ago',
-    timestampDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    isRead: true,
-    metadata: { stampName: 'Pioneer', stampDescription: 'Awarded to the first 100 Heimursaga explorers.', stampImage: '/assets/badges/Pioneer.svg', firstEntryDate: 'Jan 20, 2025' },
-  },
-  {
-    id: 'mock-12',
-    type: 'system',
-    title: 'System Notification',
-    message: 'Your account has been successfully upgraded to Explorer Pro. You can now receive sponsorships and access advanced analytics.',
-    timestamp: '2 weeks ago',
-    timestampDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
-    isRead: true,
-  },
-];
-
 export function NotificationsPage() {
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
@@ -335,7 +209,7 @@ export function NotificationsPage() {
           const mapped = response.data.map((n, i) => mapApiNotification(n, i));
           setNotifications(mapped);
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setError('Failed to load notifications');
         }
@@ -431,11 +305,6 @@ export function NotificationsPage() {
   const deleteNotification = (id: string) => {
     setNotifications(notifications.filter(n => n.id !== id));
     setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
-  };
-
-  const deleteSelected = () => {
-    setNotifications(notifications.filter(n => !selectedIds.includes(n.id)));
-    setSelectedIds([]);
   };
 
   const markSelectedAsRead = () => {

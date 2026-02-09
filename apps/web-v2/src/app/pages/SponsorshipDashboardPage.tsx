@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { CreditCard, RefreshCw, DollarSign, TrendingUp, Users, Search, ChevronDown, ChevronUp, ExternalLink, Pause, Play, X, Loader2 } from 'lucide-react';
@@ -25,14 +25,7 @@ export function SponsorshipDashboardPage() {
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [togglingEmailId, setTogglingEmailId] = useState<string | null>(null);
 
-  // Fetch data on mount
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchData();
-    }
-  }, [isAuthenticated]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [sponsorshipsRes] = await Promise.all([
@@ -53,12 +46,19 @@ export function SponsorshipDashboardPage() {
         setReceivedSponsorships(receivedRes.data || []);
         setBalance(balanceRes);
       }
-    } catch (_error) {
+    } catch {
       toast.error('Failed to load sponsorship data');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isPro]);
+
+  // Fetch data on mount
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [isAuthenticated, fetchData]);
 
   const handleCancelSponsorship = async (sponsorshipId: string) => {
     if (!confirm('Are you sure you want to cancel this sponsorship? This action cannot be undone.')) {
@@ -70,7 +70,7 @@ export function SponsorshipDashboardPage() {
       await sponsorshipApi.cancelSponsorship(sponsorshipId);
       toast.success('Sponsorship canceled successfully');
       fetchData();
-    } catch (_error) {
+    } catch {
       toast.error('Failed to cancel sponsorship');
     } finally {
       setCancelingId(null);
@@ -83,7 +83,7 @@ export function SponsorshipDashboardPage() {
       await sponsorshipApi.toggleEmailDelivery(sponsorshipId, !currentEnabled);
       toast.success(`Email updates ${!currentEnabled ? 'enabled' : 'disabled'}`);
       fetchData();
-    } catch (_error) {
+    } catch {
       toast.error('Failed to update email settings');
     } finally {
       setTogglingEmailId(null);
@@ -94,7 +94,6 @@ export function SponsorshipDashboardPage() {
   const activeSubscriptions = mySponsorships.filter(
     (s) => s.type === 'SUBSCRIPTION' && s.status === 'ACTIVE'
   );
-  const oneTimeSponsorships = mySponsorships.filter((s) => s.type === 'ONE_TIME_PAYMENT');
   const allPaymentHistory = mySponsorships; // All sponsorships serve as payment history
 
   // Calculate totals

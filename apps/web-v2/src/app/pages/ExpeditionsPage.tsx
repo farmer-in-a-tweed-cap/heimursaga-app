@@ -65,7 +65,7 @@ export function ExpeditionsPage() {
     try {
       const data = await expeditionApi.getAll();
       setApiExpeditions(data.data || []);
-    } catch (err) {
+    } catch {
       setError('Failed to load expeditions. Please check your connection and try again.');
     } finally {
       setLoading(false);
@@ -83,7 +83,7 @@ export function ExpeditionsPage() {
         if (!cancelled) {
           setApiExpeditions(data.data || []);
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setError('Failed to load expeditions. Please check your connection and try again.');
         }

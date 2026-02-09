@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Image from 'next/image';
 import { Send, Trash2, Search, MessageSquare, User, Clock, MoreVertical, ArrowLeft, X, Lock, Loader2, BellOff, EyeOff, AlertCircle, Ban, CheckCircle } from 'lucide-react';
 import { ProRoute } from '@/app/components/ProRoute';
 import { useAuth } from '@/app/context/AuthContext';
@@ -81,8 +82,8 @@ function ComposeModal({
         // Filter to only show Explorer Pro users (role === 'creator')
         const proUsers = response.data.users.filter(u => u.role === 'creator');
         setSearchResults(proUsers);
-      } catch (err) {
-        console.error('Search failed:', err);
+      } catch {
+        console.error('Search failed');
         setSearchResults([]);
       } finally {
         setIsSearching(false);
@@ -112,8 +113,8 @@ function ComposeModal({
       setIsSending(true);
       setError(null);
       await onSend(username, content.trim());
-    } catch (err: any) {
-      setError(err?.message || 'Failed to send message. Make sure the user is an Explorer Pro member.');
+    } catch {
+      setError('Failed to send message. Make sure the user is an Explorer Pro member.');
     } finally {
       setIsSending(false);
     }
@@ -139,7 +140,7 @@ function ComposeModal({
             {selectedUser ? (
               <div className="flex items-center gap-3 px-4 py-2 border-2 border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                 {selectedUser.picture ? (
-                  <img src={selectedUser.picture} alt="" className="w-8 h-8 object-cover" />
+                  <Image src={selectedUser.picture} alt="" className="w-8 h-8 object-cover" width={32} height={32} />
                 ) : (
                   <div className="w-8 h-8 bg-[#ac6d46] text-white flex items-center justify-center font-bold text-sm uppercase">
                     {selectedUser.username[0]}
@@ -193,7 +194,7 @@ function ComposeModal({
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-colors text-left border-b border-[#b5bcc4] dark:border-[#616161] last:border-b-0"
                         >
                           {user.picture ? (
-                            <img src={user.picture} alt="" className="w-8 h-8 object-cover" />
+                            <Image src={user.picture} alt="" className="w-8 h-8 object-cover" width={32} height={32} />
                           ) : (
                             <div className="w-8 h-8 bg-[#ac6d46] text-white flex items-center justify-center font-bold text-sm uppercase">
                               {user.username[0]}
@@ -285,7 +286,7 @@ export function MessagesPage() {
       setError(null);
       const data = await messageApi.getConversations();
       setConversations(data);
-    } catch (err) {
+    } catch {
       setError('Failed to load conversations');
     } finally {
       setIsLoadingConversations(false);
@@ -307,7 +308,7 @@ export function MessagesPage() {
       for (const msg of unreadMessages) {
         try {
           await messageApi.markAsRead(msg.id);
-        } catch (e) {
+        } catch {
           // Silently fail on mark as read
         }
       }
@@ -324,7 +325,7 @@ export function MessagesPage() {
         // Dispatch event to update Header badge
         window.dispatchEvent(new CustomEvent('messages-read'));
       }
-    } catch (err) {
+    } catch {
       setError('Failed to load messages');
     } finally {
       setIsLoadingMessages(false);
@@ -345,7 +346,7 @@ export function MessagesPage() {
         if (!cancelled) {
           setConversations(data);
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setError('Failed to load conversations');
         }
@@ -388,7 +389,7 @@ export function MessagesPage() {
           for (const msg of unreadMessages) {
             try {
               await messageApi.markAsRead(msg.id);
-            } catch (e) {
+            } catch {
               // Silently fail on mark as read
             }
           }
@@ -406,7 +407,7 @@ export function MessagesPage() {
             window.dispatchEvent(new CustomEvent('messages-read'));
           }
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setError('Failed to load messages');
         }
@@ -499,40 +500,11 @@ export function MessagesPage() {
 
       // Refresh to get the real message ID
       await fetchMessages(selectedConversation);
-    } catch (err) {
+    } catch {
       setError('Failed to send message');
     } finally {
       setIsSending(false);
     }
-  };
-
-  const handleViewProfile = () => {
-    if (selectedConvData) {
-      router.push(`/journal/${selectedConvData.recipientUsername}`);
-    }
-    setShowOptions(false);
-  };
-
-  // Note: These features are not yet implemented in the backend
-  const handleMarkAsUnread = () => {
-    setShowOptions(false);
-  };
-
-  const handleMuteNotifications = () => {
-    setShowOptions(false);
-  };
-
-  const handleBlockUser = () => {
-    setShowOptions(false);
-  };
-
-  const handleReportConversation = () => {
-    setShowOptions(false);
-  };
-
-  const handleDeleteConversation = () => {
-    setShowOptions(false);
-    setSelectedConversation(null);
   };
 
   // Authentication gate
@@ -677,10 +649,12 @@ export function MessagesPage() {
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex items-center gap-2">
                           {conv.recipientPicture ? (
-                            <img
+                            <Image
                               src={conv.recipientPicture}
                               alt={conv.recipientUsername}
                               className="w-10 h-10 object-cover"
+                              width={40}
+                              height={40}
                             />
                           ) : (
                             <div className="w-10 h-10 bg-[#ac6d46] text-white flex items-center justify-center font-bold uppercase">
@@ -734,10 +708,12 @@ export function MessagesPage() {
                         <ArrowLeft className="w-5 h-5" />
                       </button>
                       {selectedConvData.recipientPicture ? (
-                        <img
+                        <Image
                           src={selectedConvData.recipientPicture}
                           alt={selectedConvData.recipientUsername}
                           className="w-10 h-10 object-cover"
+                          width={40}
+                          height={40}
                         />
                       ) : (
                         <div className="w-10 h-10 bg-[#ac6d46] text-white flex items-center justify-center font-bold uppercase">

@@ -166,7 +166,7 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
         const response = await notificationApi.getAll();
         const mapped = response.data.map((n, i) => mapApiNotification(n, i));
         setNotifications(mapped);
-      } catch (_err) {
+      } catch {
         setError('Failed to load notifications');
       } finally {
         setIsLoading(false);

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function Footer() {
   return (
@@ -54,10 +55,12 @@ export function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-[#616161] pt-6">
           <div className="flex flex-col items-center gap-4">
-            <img 
-              src="https://heimursaga.com/logo-lg-light.svg" 
-              alt="Heimursaga" 
-              className="h-8"
+            <Image
+              src="https://heimursaga.com/logo-lg-light.svg"
+              alt="Heimursaga"
+              className="h-8 w-auto"
+              width={200}
+              height={32}
             />
             <div className="text-xs text-[#b5bcc4] font-mono">
               © 2026 Heimursaga · All Rights Reserved · Engineered in Maine by <a href="https://theperipetycompany.com/" target="_blank" rel="noopener noreferrer" className="text-[#b5bcc4] hover:text-[#ac6d46] transition-all focus-visible:outline-none focus-visible:text-[#ac6d46]">The Peripety Company</a>

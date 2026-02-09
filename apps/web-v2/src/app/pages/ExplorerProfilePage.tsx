@@ -8,10 +8,10 @@ import { ExpeditionCard } from '@/app/components/ExpeditionCard';
 import { EntryCard } from '@/app/components/EntryCard';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
-import { ExplorerStatusBadge, getExplorerStatus, getCurrentExpeditionInfo } from '@/app/components/ExplorerStatusBadge';
+import { getExplorerStatus, getCurrentExpeditionInfo } from '@/app/components/ExplorerStatusBadge';
 import { useAuth } from '@/app/context/AuthContext';
-import { formatLocationByPrivacy, type LocationData, type LocationPrivacyLevel } from '@/app/utils/locationPrivacy';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
 import { explorerApi, entryApi, expeditionApi, type ExplorerProfile, type ExplorerEntry, type ExplorerExpedition, type ExplorerFollower } from '@/app/services/api';
 import { CountryFlag } from '@/app/components/CountryFlag';
@@ -212,7 +212,7 @@ export function ExplorerProfilePage() {
         setEntries(entriesData.data || []);
         setExpeditions(expeditionsData.data || []);
         setFollowers(followersData.data || []);
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setError('Failed to load profile');
         }
@@ -284,7 +284,7 @@ export function ExplorerProfilePage() {
     joined: profile.memberDate ? new Date(profile.memberDate).toISOString().split('T')[0] : '',
     lastActive: '',
     accountStatus: 'verified',
-    privacyLevel: 'Regional Location Only' as LocationPrivacyLevel,
+    privacyLevel: 'Regional Location Only' as import('@/app/utils/locationPrivacy').LocationPrivacyLevel,
     avatarUrl: profile.picture || 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=200',
     coverImageUrl: profile.coverPhoto || 'https://images.unsplash.com/photo-1542224566-6e85f2e6772f?w=1200',
 
@@ -429,9 +429,6 @@ export function ExplorerProfilePage() {
       expeditionStatus: 'completed' as const,
     }));
 
-  // Check if there's an actual active expedition from the API
-  const hasRealActiveExpedition = expeditions.some(e => e.status === 'active');
-
   // Find the best expedition to link sponsor button to (prefer active, then planned)
   const sponsorableExpedition = expeditions.find(e => e.status === 'active' && (e.goal || 0) > 0)
     || expeditions.find(e => e.status === 'planned' && (e.goal || 0) > 0);
@@ -525,10 +522,12 @@ export function ExplorerProfilePage() {
               {/* Large Avatar */}
               <div className="flex-shrink-0 mt-2">
                 <div className="w-20 h-20 md:w-40 md:h-40 border-2 md:border-4 border-[#ac6d46] overflow-hidden bg-[#202020]">
-                  <img
+                  <Image
                     src={explorer.avatarUrl}
                     alt={explorer.name}
                     className="w-full h-full object-cover"
+                    width={160}
+                    height={160}
                   />
                 </div>
               </div>
@@ -565,7 +564,7 @@ export function ExplorerProfilePage() {
                 {explorer.passport.stamps.map((stamp) => (
                   <div key={stamp.id} title={stamp.name}>
                     {stamp.image ? (
-                      <img src={stamp.image} alt={stamp.name} className="w-12 h-12 object-contain flex-shrink-0" />
+                      <Image src={stamp.image} alt={stamp.name} className="w-12 h-12 object-contain flex-shrink-0" width={48} height={48} />
                     ) : (
                       <div className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-bold uppercase whitespace-nowrap rounded-full">
                         {stamp.name}
@@ -601,10 +600,12 @@ export function ExplorerProfilePage() {
                       title={`${stamp.name}: ${stamp.description}`}
                     >
                       {stamp.image ? (
-                        <img
+                        <Image
                           src={stamp.image}
                           alt={stamp.name}
                           className="w-32 h-32 object-contain drop-shadow-md"
+                          width={128}
+                          height={128}
                         />
                       ) : (
                         <div className="px-3 py-1 bg-[#ac6d46] text-white text-xs font-bold uppercase tracking-wide border border-[#8a5738] shadow-md rounded-full">
@@ -1097,10 +1098,12 @@ export function ExplorerProfilePage() {
                     className="w-full flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] group"
                   >
                     <div className="w-8 h-8 flex-shrink-0 overflow-hidden border border-[#b5bcc4] dark:border-[#616161]">
-                      <img 
-                        src={follower.avatarUrl} 
+                      <Image
+                        src={follower.avatarUrl}
                         alt={follower.name}
                         className="w-full h-full object-cover"
+                        width={32}
+                        height={32}
                       />
                     </div>
                     <div className="flex-1 text-left min-w-0">

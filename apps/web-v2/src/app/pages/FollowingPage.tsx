@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Search, UserPlus, UserCheck, Loader2, AlertTriangle } from 'lucide-react';
 import { explorerApi, type ExplorerFollower, type ExplorerProfile } from '@/app/services/api';
@@ -44,7 +45,7 @@ export function FollowingPage() {
 
         setProfile(profileData);
         setFollowing(followingData.data || []);
-      } catch (err) {
+      } catch {
         setError('Failed to load following');
       } finally {
         setLoading(false);
@@ -213,10 +214,12 @@ export function FollowingPage() {
                   className="w-16 h-16 flex-shrink-0 overflow-hidden border-2 border-[#b5bcc4] dark:border-[#616161] hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all bg-[#616161]"
                 >
                   {follow.picture ? (
-                    <img
+                    <Image
                       src={follow.picture}
                       alt={follow.username}
                       className="w-full h-full object-cover"
+                      width={64}
+                      height={64}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">

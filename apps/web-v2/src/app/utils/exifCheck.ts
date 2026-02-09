@@ -145,7 +145,7 @@ export async function checkImageExif(file: File): Promise<ExifResult> {
       result.suspiciousReasons.push('Missing camera and timestamp information');
     }
 
-  } catch (_err) {
+  } catch {
     // On error, don't flag as suspicious - could be parsing issue
   }
 

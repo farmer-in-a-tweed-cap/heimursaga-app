@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Lock } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useState } from 'react';
@@ -303,10 +304,12 @@ export function ExpeditionNotes({
                         <div key={reply.id} className="flex items-start gap-2">
                           <Link href={`/journal/${reply.authorId}`} className="flex-shrink-0">
                             <div className={`w-6 h-6 border ${reply.isExplorer ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
-                              <img
+                              <Image
                                 src={reply.authorPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.authorId}`}
                                 alt={reply.authorName}
                                 className="w-full h-full object-cover"
+                                width={24}
+                                height={24}
                               />
                             </div>
                           </Link>

@@ -36,7 +36,6 @@ import {
   MONTHLY_TIER_SLOTS,
   getTierSlotConfig,
   isValidTierPrice,
-  type TierSlotConfig,
 } from '@repo/types';
 
 type ViewType = 'overview' | 'tiers' | 'sponsors' | 'refunds' | 'payouts' | 'stripe';
@@ -208,7 +207,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
       setBalance(balanceRes);
       setPayoutMethods(payoutMethodsRes.data || []);
       setPayouts(payoutsRes.data || []);
-    } catch (_error) {
+    } catch {
       toast.error('Failed to load sponsorship data');
     } finally {
       setIsLoading(false);
@@ -300,7 +299,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
       await sponsorshipApi.deleteTier(deleteTierTarget);
       toast.success('Tier deleted');
       fetchData();
-    } catch (_error) {
+    } catch {
       toast.error('Failed to delete tier');
     } finally {
       setIsDeletingTier(false);

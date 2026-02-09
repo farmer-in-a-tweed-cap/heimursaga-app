@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
@@ -384,14 +385,16 @@ export function JournalEntryPage() {
                   {/* Explorer Avatar */}
                   <Link href={`/journal/${entry.explorerId}`} className="flex-shrink-0">
                     <div className="w-16 h-16 border-2 border-[#ac6d46] overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all shadow-lg">
-                      <img
+                      <Image
                         src={entry.explorerPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.explorerId}`}
                         alt={entry.explorerName}
                         className="w-full h-full object-cover"
+                        width={64}
+                        height={64}
                       />
                     </div>
                   </Link>
-                  
+
                   {/* Metadata Lines */}
                   <div className="flex flex-col justify-center">
                     <div className="text-sm text-[#e5e5e5] drop-shadow">
@@ -484,10 +487,14 @@ export function JournalEntryPage() {
               <div className="relative bg-[#202020] aspect-video">
                 <div className="w-full h-full flex items-center justify-center">
                   {entry.media[activeMediaIndex]?.url ? (
-                    <img
+                    <Image
                       src={entry.media[activeMediaIndex].url}
                       alt={entry.media[activeMediaIndex].altText || entry.media[activeMediaIndex].caption || `Image ${activeMediaIndex + 1}`}
                       className="w-full h-full object-contain"
+                      width={0}
+                      height={0}
+                      sizes="100vw"
+                      style={{ width: '100%', height: '100%' }}
                     />
                   ) : (
                     <div className="w-full h-full bg-[#616161] flex items-center justify-center text-white text-sm">
@@ -546,10 +553,12 @@ export function JournalEntryPage() {
                       } hover:border-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] overflow-hidden`}
                     >
                       {item.thumbnail || item.url ? (
-                        <img
+                        <Image
                           src={item.thumbnail || item.url}
                           alt={item.altText || item.caption || `Thumbnail ${idx + 1}`}
                           className="w-full h-full object-cover"
+                          width={80}
+                          height={80}
                         />
                       ) : (
                         <div className="w-full h-full bg-[#616161] flex items-center justify-center text-white text-xs">
@@ -707,10 +716,12 @@ export function JournalEntryPage() {
                         <div className="flex items-start gap-3">
                           <Link href={`/journal/${comment.author.username}`} className="flex-shrink-0">
                             <div className="w-10 h-10 border-2 border-[#4676ac] overflow-hidden bg-[#616161] hover:border-[#ac6d46] transition-colors">
-                              <img
+                              <Image
                                 src={comment.author.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${comment.author.username}`}
                                 alt={comment.author.username}
                                 className="w-full h-full object-cover"
+                                width={40}
+                                height={40}
                               />
                             </div>
                           </Link>
@@ -788,10 +799,12 @@ export function JournalEntryPage() {
                                 <div key={reply.id} className="flex items-start gap-2">
                                   <Link href={`/journal/${reply.author.username}`} className="flex-shrink-0">
                                     <div className="w-6 h-6 border border-[#4676ac] overflow-hidden bg-[#616161] hover:border-[#ac6d46] transition-colors">
-                                      <img
+                                      <Image
                                         src={reply.author.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.author.username}`}
                                         alt={reply.author.username}
                                         className="w-full h-full object-cover"
+                                        width={24}
+                                        height={24}
                                       />
                                     </div>
                                   </Link>
@@ -916,10 +929,12 @@ export function JournalEntryPage() {
               <div className="flex items-center gap-3 mb-3">
                 <Link href={`/journal/${entry.explorerId}`} className="flex-shrink-0">
                   <div className="w-16 h-16 border-2 border-[#ac6d46] overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-all">
-                    <img
+                    <Image
                       src={entry.explorerPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${entry.explorerId}`}
                       alt={entry.explorerName}
                       className="w-full h-full object-cover"
+                      width={64}
+                      height={64}
                     />
                   </div>
                 </Link>

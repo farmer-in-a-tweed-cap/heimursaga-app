@@ -153,7 +153,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose 
           setCurrentLocation({ lat, lng });
           onLocationSelect(lat, lng);
         });
-      } catch (_error) {
+      } catch {
         // Silently handle case where GeolocateControl cannot be initialized
       }
     }
@@ -225,6 +225,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose 
       map.remove();
       mapRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady, theme]);
 
   const getCurrentLocation = () => {

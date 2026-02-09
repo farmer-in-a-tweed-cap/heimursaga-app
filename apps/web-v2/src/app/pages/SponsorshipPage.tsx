@@ -56,7 +56,7 @@ export function SponsorshipPage() {
     try {
       const res = await sponsorshipApi.getMySponsorships().catch(() => ({ results: 0, data: [] }));
       setMySponsorships(res.data || []);
-    } catch (_error) {
+    } catch {
       toast.error('Failed to load sponsorship data');
     } finally {
       setIsLoadingOutgoing(false);
@@ -76,7 +76,7 @@ export function SponsorshipPage() {
       await sponsorshipApi.cancelSponsorship(cancelTarget);
       toast.success('Sponsorship canceled successfully');
       fetchOutgoingData();
-    } catch (_error) {
+    } catch {
       toast.error('Failed to cancel sponsorship');
     } finally {
       setCancelingId(null);
@@ -90,7 +90,7 @@ export function SponsorshipPage() {
       await sponsorshipApi.toggleEmailDelivery(sponsorshipId, !currentEnabled);
       toast.success(`Email updates ${!currentEnabled ? 'enabled' : 'disabled'}`);
       fetchOutgoingData();
-    } catch (_error) {
+    } catch {
       toast.error('Failed to update email settings');
     } finally {
       setTogglingEmailId(null);

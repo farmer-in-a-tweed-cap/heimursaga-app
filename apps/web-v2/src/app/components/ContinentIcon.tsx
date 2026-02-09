@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 // Continent code to SVG file mapping
 const continentFiles: Record<string, string> = {
   AF: '/assets/continents/Africa.svg',
@@ -42,11 +44,15 @@ export function ContinentIcon({ code, className = '', title }: ContinentIconProp
   }
 
   return (
-    <img
+    <Image
       src={svgPath}
       alt={name}
       title={name}
       className={className}
+      width={0}
+      height={0}
+      sizes="100vw"
+      style={{ width: '100%', height: 'auto' }}
     />
   );
 }

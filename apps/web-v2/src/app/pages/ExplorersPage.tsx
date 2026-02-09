@@ -111,7 +111,7 @@ export function ExplorersPage() {
         }
       });
       setFollowedExplorers(followedSet);
-    } catch (err) {
+    } catch {
       setError('Failed to load explorers. Please check your connection and try again.');
     } finally {
       setLoading(false);
@@ -138,7 +138,7 @@ export function ExplorersPage() {
           });
           setFollowedExplorers(followedSet);
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setError('Failed to load explorers. Please check your connection and try again.');
         }

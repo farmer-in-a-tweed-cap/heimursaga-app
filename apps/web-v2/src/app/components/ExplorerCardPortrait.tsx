@@ -1,4 +1,5 @@
-import { MapPin, FileText } from "lucide-react";
+import Image from 'next/image';
+import { MapPin } from "lucide-react";
 
 interface ExplorerCardPortraitProps {
   id: string;
@@ -43,10 +44,12 @@ export function ExplorerCardPortrait({
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] pt-7 px-3 pb-7">
         <div className="flex flex-col items-center">
           <div className="w-32 h-32 border-2 border-[#ac6d46] overflow-hidden bg-[#b5bcc4]">
-            <img 
+            <Image
               src={avatarUrl}
               alt={username}
               className="h-full w-full object-cover"
+              width={128}
+              height={128}
             />
           </div>
         </div>

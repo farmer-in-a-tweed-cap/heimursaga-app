@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Image from 'next/image';
 import mapboxgl from 'mapbox-gl';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
@@ -186,7 +187,7 @@ export function ExplorerMap() {
   }, []);
 
   // Update visible items based on map bounds
-  const updateVisibleItems = () => {
+  const updateVisibleItems = useCallback(() => {
     if (!mapRef.current) return;
 
     const bounds = mapRef.current.getBounds();
@@ -203,7 +204,7 @@ export function ExplorerMap() {
       );
       setVisibleEntries(visible);
     }
-  };
+  }, [mapMode, allExplorers, allEntries]);
 
   // Initialize map
   useEffect(() => {
@@ -238,7 +239,7 @@ export function ExplorerMap() {
       flyTo: {
         speed: 1.2,
         curve: 1.42,
-        easing: (t) => t * (2 - t),
+        easing: (t: number) => t * (2 - t),
         maxDuration: 2000,
       },
     });
@@ -264,6 +265,7 @@ export function ExplorerMap() {
       map.remove();
       mapRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Update markers when mode or data changes
@@ -436,7 +438,7 @@ export function ExplorerMap() {
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
     };
-  }, [mapMode, allExplorers, allEntries, loading]);
+  }, [mapMode, allExplorers, allEntries, loading, updateVisibleItems]);
 
   // Update map style when theme changes
   useEffect(() => {
@@ -455,7 +457,6 @@ export function ExplorerMap() {
   }, [isFullscreen]);
 
   const currentItems = mapMode === 'explorer' ? allExplorers : allEntries;
-  const visibleItems = mapMode === 'explorer' ? visibleExplorers : visibleEntries;
 
   return (
     <div className={`bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] ${
@@ -573,7 +574,7 @@ export function ExplorerMap() {
               <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">
                 <div className="flex items-center gap-2">
                   {clickedExplorer.picture && (
-                    <img src={clickedExplorer.picture} alt={clickedExplorer.name} className="w-8 h-8 rounded-full object-cover" />
+                    <Image src={clickedExplorer.picture} alt={clickedExplorer.name} className="w-8 h-8 rounded-full object-cover" width={32} height={32} />
                   )}
                   <div>
                     <div className="font-bold text-sm dark:text-[#e5e5e5]">{clickedExplorer.name}</div>

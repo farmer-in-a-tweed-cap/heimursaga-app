@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
@@ -27,7 +28,7 @@ export function ExpeditionQuickEntryPage() {
   const [endDate, setEndDate] = useState('');
   const [expectedDuration, setExpectedDuration] = useState('');
   const [currentLocation, setCurrentLocation] = useState('');
-  const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
+  const [, setCoverPhotoFile] = useState<File | null>(null);
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
 
   // Submission state
@@ -408,7 +409,7 @@ export function ExpeditionQuickEntryPage() {
                   />
                   {coverPhotoPreview ? (
                     <div className="relative">
-                      <img src={coverPhotoPreview} alt="Cover preview" className="max-h-32 mx-auto object-cover" />
+                      <Image src={coverPhotoPreview} alt="Cover preview" className="max-h-32 mx-auto object-cover" width={0} height={0} sizes="100vw" style={{ width: 'auto', height: 'auto', maxHeight: '8rem' }} />
                       <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-2">Click to change</div>
                     </div>
                   ) : (

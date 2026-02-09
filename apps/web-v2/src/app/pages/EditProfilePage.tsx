@@ -3,24 +3,22 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import Link from 'next/link';
+import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
-import { User, Camera, Save, X, Upload, Lock, Shield, AlertTriangle, Home, Navigation, Info, Loader2, Image, Calendar } from 'lucide-react';
+import { User, Camera, Save, X, Upload, Shield, Home, Navigation, Info, Loader2, Image } from 'lucide-react';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
-import { ExplorerCard } from '@/app/components/ExplorerCard';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationAutocompleteInput } from '@/app/components/LocationAutocompleteInput';
 import {
-  LOCATION_PRIVACY_OPTIONS,
   formatLocationByPrivacy,
+  LOCATION_PRIVACY_OPTIONS,
   parseLocationString,
-  type LocationPrivacyLevel,
-  type LocationData
+  type LocationPrivacyLevel
 } from '@/app/utils/locationPrivacy';
 import { explorerApi } from '@/app/services/api';
 
 export function EditProfilePage() {
   const { user } = useAuth();
-  const { isPro } = useProFeatures();
   const router = useRouter();
 
   // Form state - initialize with empty values, will be populated from API
@@ -58,10 +56,10 @@ export function EditProfilePage() {
     equipment: '',
   });
 
+  const [isLoading, setIsLoading] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [showPrivacyWarning, setShowPrivacyWarning] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
   // Avatar and Cover Photo state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -220,7 +218,7 @@ export function EditProfilePage() {
       setSaveStatus('saved');
       setIsDirty(false);
       // Status stays 'saved' until user makes a new change (which resets to 'idle')
-    } catch (err) {
+    } catch {
       setSaveStatus('error');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
@@ -388,7 +386,7 @@ export function EditProfilePage() {
                 <div className="flex items-start gap-4 mb-3">
                   <div className="w-32 h-32 border-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a] flex items-center justify-center overflow-hidden">
                     {avatarPreview ? (
-                      <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                      <NextImage src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" width={128} height={128} />
                     ) : (
                       <User size={48} className="text-[#b5bcc4]" />
                     )}
@@ -433,9 +431,9 @@ export function EditProfilePage() {
 
                 {/* Current Cover Photo or Preview */}
                 <div className="mb-3">
-                  <div className="w-full h-48 border-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a] flex items-center justify-center overflow-hidden">
+                  <div className="w-full h-48 border-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a] flex items-center justify-center overflow-hidden relative">
                     {coverPhotoPreview ? (
-                      <img src={coverPhotoPreview} alt="Cover photo preview" className="w-full h-full object-cover" />
+                      <NextImage src={coverPhotoPreview} alt="Cover photo preview" className="object-cover" fill />
                     ) : (
                       <div className="text-center">
                         <Image size={48} className="text-[#b5bcc4] mx-auto mb-2" />

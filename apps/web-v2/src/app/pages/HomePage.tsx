@@ -27,7 +27,6 @@ export function HomePage() {
   const [followedExplorers, setFollowedExplorers] = useState<Set<string>>(new Set());
   const [bookmarkedExplorers, setBookmarkedExplorers] = useState<Set<string>>(new Set());
   const [bookmarkedExpeditions, setBookmarkedExpeditions] = useState<Set<string>>(new Set());
-  const [bookmarkedEntries, setBookmarkedEntries] = useState<Set<string>>(new Set());
 
   // Loading states
   const [explorerBookmarkingInProgress, setExplorerBookmarkingInProgress] = useState<Set<string>>(new Set());
@@ -98,27 +97,6 @@ export function HomePage() {
     }
   };
 
-  // Handle bookmark entry
-  const handleBookmarkEntry = async (entryId: string) => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-    try {
-      await entryApi.bookmark(entryId);
-      setBookmarkedEntries(prev => {
-        const next = new Set(prev);
-        if (next.has(entryId)) {
-          next.delete(entryId);
-        } else {
-          next.add(entryId);
-        }
-        return next;
-      });
-    } catch (err) {
-      console.error('Error bookmarking entry:', err);
-    }
-  };
 
   // Handle bookmark expedition
   const handleBookmarkExpedition = async (expeditionId: string) => {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { Bell, Settings, MapPin, CloudSun, User } from 'lucide-react';
@@ -67,7 +68,7 @@ export function Header() {
       try {
         const response = await messageApi.getUnreadCount();
         setUnreadMessagesCount(response.count);
-      } catch (err) {
+      } catch {
         // Silently fail - user might not have access
         setUnreadMessagesCount(0);
       }
@@ -167,10 +168,12 @@ export function Header() {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex-shrink-0">
-              <img 
-                src="https://heimursaga.com/logo-lg-light.svg" 
-                alt="Heimursaga" 
-                className="h-16 lg:h-20 xl:h-24"
+              <Image
+                src="https://heimursaga.com/logo-lg-light.svg"
+                alt="Heimursaga"
+                className="h-16 lg:h-20 xl:h-24 w-auto"
+                width={300}
+                height={96}
               />
             </Link>
           </div>
@@ -361,10 +364,12 @@ export function Header() {
               <Link href={`/journal/${user.username}`} className="flex-shrink-0 flex items-center">
                 <div className="w-[66px] h-[66px] border-2 border-[#ac6d46] overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4676ac] flex items-center justify-center">
                   {user.picture ? (
-                    <img
+                    <Image
                       src={user.picture}
                       alt={user.username}
                       className="w-full h-full object-cover"
+                      width={66}
+                      height={66}
                     />
                   ) : (
                     <User className="w-8 h-8 text-[#b5bcc4]" />
@@ -398,10 +403,12 @@ export function Header() {
           </div>
           <div className="relative">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[28px] h-[28px] bg-[#202020]"></div>
-            <img 
-              src="https://heimursaga.com/logo-sm-light.svg" 
-              alt="Heimursaga Badge" 
+            <Image
+              src="https://heimursaga.com/logo-sm-light.svg"
+              alt="Heimursaga Badge"
               className="h-20 w-auto px-6 relative z-10"
+              width={80}
+              height={80}
             />
           </div>
           <div className="flex-1 relative h-[2px]">

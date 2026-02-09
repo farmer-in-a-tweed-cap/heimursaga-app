@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { MapPin, FileText, Map, Eye, Bookmark } from "lucide-react";
 
 interface ExplorerCardLandscapeProps {
@@ -44,10 +45,12 @@ export function ExplorerCardLandscape({
       <div className="flex">
         {/* Avatar */}
         <div className="w-32 h-32 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] bg-[#b5bcc4]">
-          <img 
+          <Image
             src={avatarUrl}
             alt={username}
             className="w-full h-full object-cover"
+            width={128}
+            height={128}
           />
         </div>
 

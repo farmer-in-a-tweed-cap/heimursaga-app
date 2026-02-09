@@ -64,7 +64,7 @@ export function EntriesPage() {
     try {
       const data = await entryApi.getAll();
       setApiEntries(data.data || []);
-    } catch (err) {
+    } catch {
       setError('Failed to load entries. Please check your connection and try again.');
     } finally {
       setLoading(false);
@@ -82,7 +82,7 @@ export function EntriesPage() {
         if (!cancelled) {
           setApiEntries(data.data || []);
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setError('Failed to load entries. Please check your connection and try again.');
         }

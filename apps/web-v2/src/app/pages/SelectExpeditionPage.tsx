@@ -30,7 +30,7 @@ export function SelectExpeditionPage() {
         // Use the new endpoint that returns all user's expeditions without filters
         const result = await explorerApi.getMyExpeditions();
         setExpeditions(result.data || []);
-      } catch (_err) {
+      } catch {
         setError('Failed to load your expeditions');
       } finally {
         setLoading(false);

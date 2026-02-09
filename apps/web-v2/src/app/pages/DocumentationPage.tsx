@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpen, Compass, Users, DollarSign, Edit3, MapPin, Settings, Shield, MessageSquare, Award, Bell, Lock, Eye } from 'lucide-react';
+import Image from 'next/image';
+import { BookOpen, Compass, Users, DollarSign, Edit3, MapPin, Settings, Shield, MessageSquare, Award } from 'lucide-react';
 
 export function DocumentationPage() {
   return (
@@ -468,7 +469,7 @@ export function DocumentationPage() {
 
                 {/* Pioneer */}
                 <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] px-4 py-3 grid grid-cols-[80px_1fr_1fr_1fr] gap-4 text-sm bg-[#f5f5f5] dark:bg-[#2a2a2a] items-center">
-                  <img src="/assets/badges/Pioneer.svg" alt="Pioneer" className="w-12 h-12 object-contain" />
+                  <Image src="/assets/badges/Pioneer.svg" alt="Pioneer" className="w-12 h-12 object-contain" width={48} height={48} />
                   <span className="font-bold text-[#ac6d46]">Pioneer</span>
                   <span className="text-[#202020] dark:text-[#e5e5e5]">First 100 explorers</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Join as one of the first 100 Heimursaga explorers (exclusive, no longer available)</span>
@@ -476,7 +477,7 @@ export function DocumentationPage() {
 
                 {/* Journey's End */}
                 <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] px-4 py-3 grid grid-cols-[80px_1fr_1fr_1fr] gap-4 text-sm items-center">
-                  <img src="/assets/badges/JourneysEnd.svg" alt="Journey's End" className="w-12 h-12 object-contain" />
+                  <Image src="/assets/badges/JourneysEnd.svg" alt="Journey's End" className="w-12 h-12 object-contain" width={48} height={48} />
                   <span className="font-bold text-[#ac6d46]">Journey's End</span>
                   <span className="text-[#202020] dark:text-[#e5e5e5]">Completed a major expedition</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Complete an expedition lasting 30+ days with 15+ entries</span>
@@ -484,7 +485,7 @@ export function DocumentationPage() {
 
                 {/* Globetrotter */}
                 <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] px-4 py-3 grid grid-cols-[80px_1fr_1fr_1fr] gap-4 text-sm bg-[#f5f5f5] dark:bg-[#2a2a2a] items-center">
-                  <img src="/assets/badges/Globetrotter.svg" alt="Globetrotter" className="w-12 h-12 object-contain" />
+                  <Image src="/assets/badges/Globetrotter.svg" alt="Globetrotter" className="w-12 h-12 object-contain" width={48} height={48} />
                   <span className="font-bold text-[#ac6d46]">Globetrotter</span>
                   <span className="text-[#202020] dark:text-[#e5e5e5]">World traveler</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Log entries from 5 or more different countries</span>
@@ -492,7 +493,7 @@ export function DocumentationPage() {
 
                 {/* Benefactor */}
                 <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] px-4 py-3 grid grid-cols-[80px_1fr_1fr_1fr] gap-4 text-sm items-center">
-                  <img src="/assets/badges/Benefactor.svg" alt="Benefactor" className="w-12 h-12 object-contain" />
+                  <Image src="/assets/badges/Benefactor.svg" alt="Benefactor" className="w-12 h-12 object-contain" width={48} height={48} />
                   <span className="font-bold text-[#ac6d46]">Benefactor</span>
                   <span className="text-[#202020] dark:text-[#e5e5e5]">Generous supporter</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Give $1,000 or more in combined sponsorships to other explorers</span>
@@ -500,7 +501,7 @@ export function DocumentationPage() {
 
                 {/* Expeditionist */}
                 <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] px-4 py-3 grid grid-cols-[80px_1fr_1fr_1fr] gap-4 text-sm bg-[#f5f5f5] dark:bg-[#2a2a2a] items-center">
-                  <img src="/assets/badges/Expeditionist.svg" alt="Expeditionist" className="w-12 h-12 object-contain" />
+                  <Image src="/assets/badges/Expeditionist.svg" alt="Expeditionist" className="w-12 h-12 object-contain" width={48} height={48} />
                   <span className="font-bold text-[#ac6d46]">Expeditionist</span>
                   <span className="text-[#202020] dark:text-[#e5e5e5]">Multi-country expedition</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Complete an expedition with entries logged in 3+ countries</span>
@@ -508,7 +509,7 @@ export function DocumentationPage() {
 
                 {/* Seven Summits */}
                 <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] px-4 py-3 grid grid-cols-[80px_1fr_1fr_1fr] gap-4 text-sm items-center">
-                  <img src="/assets/badges/SevenSummits.svg" alt="Seven Summits" className="w-12 h-12 object-contain" />
+                  <Image src="/assets/badges/SevenSummits.svg" alt="Seven Summits" className="w-12 h-12 object-contain" width={48} height={48} />
                   <span className="font-bold text-[#ac6d46]">Seven Summits</span>
                   <span className="text-[#202020] dark:text-[#e5e5e5]">All seven continents</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Log at least one entry from each of the 7 continents</span>
@@ -516,7 +517,7 @@ export function DocumentationPage() {
 
                 {/* Polar Explorer */}
                 <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] px-4 py-3 grid grid-cols-[80px_1fr_1fr_1fr] gap-4 text-sm bg-[#f5f5f5] dark:bg-[#2a2a2a] items-center">
-                  <img src="/assets/badges/PolarExplorer.svg" alt="Polar Explorer" className="w-12 h-12 object-contain" />
+                  <Image src="/assets/badges/PolarExplorer.svg" alt="Polar Explorer" className="w-12 h-12 object-contain" width={48} height={48} />
                   <span className="font-bold text-[#ac6d46]">Polar Explorer</span>
                   <span className="text-[#202020] dark:text-[#e5e5e5]">Polar explorer</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Log entries from Arctic (above 66.5°N) or Antarctic (below 66.5°S) regions</span>
@@ -524,7 +525,7 @@ export function DocumentationPage() {
 
                 {/* Seafarer */}
                 <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] px-4 py-3 grid grid-cols-[80px_1fr_1fr_1fr] gap-4 text-sm items-center">
-                  <img src="/assets/badges/Seafarer.svg" alt="Seafarer" className="w-12 h-12 object-contain" />
+                  <Image src="/assets/badges/Seafarer.svg" alt="Seafarer" className="w-12 h-12 object-contain" width={48} height={48} />
                   <span className="font-bold text-[#ac6d46]">Seafarer</span>
                   <span className="text-[#202020] dark:text-[#e5e5e5]">Ocean explorer</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Log 3 or more entries at ocean coordinates (international waters)</span>
@@ -532,7 +533,7 @@ export function DocumentationPage() {
 
                 {/* Circumnavigator */}
                 <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] px-4 py-3 grid grid-cols-[80px_1fr_1fr_1fr] gap-4 text-sm bg-[#f5f5f5] dark:bg-[#2a2a2a] items-center">
-                  <img src="/assets/badges/Circumnavigator.svg" alt="Circumnavigator" className="w-12 h-12 object-contain" />
+                  <Image src="/assets/badges/Circumnavigator.svg" alt="Circumnavigator" className="w-12 h-12 object-contain" width={48} height={48} />
                   <span className="font-bold text-[#ac6d46]">Circumnavigator</span>
                   <span className="text-[#202020] dark:text-[#e5e5e5]">Round-the-world journey</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Complete an expedition spanning all major longitude zones (Americas, Europe/Africa, Asia/Pacific, Pacific/Americas)</span>

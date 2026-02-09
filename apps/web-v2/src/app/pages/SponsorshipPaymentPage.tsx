@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
-import { CreditCard, RefreshCw, Check, Lock, DollarSign, Loader2, AlertCircle } from 'lucide-react';
+import { CreditCard, RefreshCw, Lock, DollarSign, Loader2, AlertCircle } from 'lucide-react';
 import { formatDate } from '@/app/utils/dateFormat';
 import { explorerApi, expeditionApi, sponsorshipApi, paymentMethodApi, type SponsorshipTierFull, type PaymentMethodFull, type Expedition } from '@/app/services/api';
 import { useStripe, useElements, CardElement } from '@/app/context/StripeContext';
@@ -50,32 +51,13 @@ export function SponsorshipPaymentPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
 
-  // Fetch data on mount
-  useEffect(() => {
-    if (expeditionId) {
-      fetchExpeditionData();
-    }
-  }, [expeditionId]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchPaymentMethods();
-    }
-  }, [isAuthenticated]);
-
-  // If active subscription detected, force back to one-time
-  useEffect(() => {
-    if (hasActiveSubscription && paymentType === 'recurring') {
-      setPaymentType('one-time');
-    }
-  }, [hasActiveSubscription]);
-
-  const fetchExpeditionData = async () => {
+  const fetchExpeditionData = useCallback(async () => {
+    if (!expeditionId) return;
     setIsLoading(true);
     setError(null);
     try {
       // Fetch expedition details
-      const expeditionData = await expeditionApi.getById(expeditionId!);
+      const expeditionData = await expeditionApi.getById(expeditionId);
       setExpedition(expeditionData);
 
       // Fetch explorer profile and tiers
@@ -116,7 +98,27 @@ export function SponsorshipPaymentPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [expeditionId, isAuthenticated]);
+
+  // Fetch data on mount
+  useEffect(() => {
+    if (expeditionId) {
+      fetchExpeditionData();
+    }
+  }, [expeditionId, fetchExpeditionData]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchPaymentMethods();
+    }
+  }, [isAuthenticated]);
+
+  // If active subscription detected, force back to one-time
+  useEffect(() => {
+    if (hasActiveSubscription && paymentType === 'recurring') {
+      setPaymentType('one-time');
+    }
+  }, [hasActiveSubscription, paymentType]);
 
   const fetchPaymentMethods = async () => {
     try {
@@ -454,10 +456,12 @@ export function SponsorshipPaymentPage() {
           <div className="flex items-start gap-6">
             <Link href={`/journal/${explorer?.username}`} className="flex-shrink-0">
               <div className="w-24 h-24 border-4 border-[#ac6d46] overflow-hidden bg-[#616161]">
-                <img
+                <Image
                   src={explorer?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${explorer?.username}`}
-                  alt={explorer?.username}
+                  alt={explorer?.username || ''}
                   className="w-full h-full object-cover"
+                  width={96}
+                  height={96}
                 />
               </div>
             </Link>

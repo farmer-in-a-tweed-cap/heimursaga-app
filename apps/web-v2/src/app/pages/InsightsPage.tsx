@@ -37,7 +37,6 @@ import { useAuth } from '@/app/context/AuthContext';
 import {
   insightsApi,
   explorerApi,
-  expeditionApi,
   PostInsight,
   BalanceResponse,
   Expedition,
@@ -119,7 +118,6 @@ function EntryRow({
   entry: PostInsight;
   rank: number;
 }) {
-  const totalEngagement = entry.bookmarksCount + entry.commentsCount;
   const createdDate = new Date(entry.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -267,7 +265,7 @@ export function InsightsPage() {
       try {
         // Fetch all data in parallel
         const [
-          explorerData,
+          ,
           insightsResponse,
           balanceResponse,
           expeditionsResponse,
@@ -307,7 +305,7 @@ export function InsightsPage() {
           expeditions,
           sponsorships,
         });
-      } catch (_err) {
+      } catch {
         if (!cancelled) {
           setError('Failed to load insights data. Please try again.');
         }
@@ -323,6 +321,7 @@ export function InsightsPage() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.username]);
 
   // Prepare chart data

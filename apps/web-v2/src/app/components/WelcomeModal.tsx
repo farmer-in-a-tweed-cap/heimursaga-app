@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef } from 'react';
+import Image from 'next/image';
 import {
   Dialog,
   DialogContent,
@@ -76,7 +77,7 @@ export function WelcomeModal({ open, onClose, onSaveComplete, username }: Welcom
       }
 
       onClose();
-    } catch (_err) {
+    } catch {
       setError('Failed to save profile. Please try again.');
     } finally {
       setIsSaving(false);
@@ -111,10 +112,12 @@ export function WelcomeModal({ open, onClose, onSaveComplete, username }: Welcom
               onClick={() => fileInputRef.current?.click()}
             >
               {avatarPreview ? (
-                <img
+                <Image
                   src={avatarPreview}
                   alt="Avatar preview"
                   className="w-full h-full object-cover"
+                  width={80}
+                  height={80}
                 />
               ) : (
                 <User className="w-8 h-8 text-[#616161]" />

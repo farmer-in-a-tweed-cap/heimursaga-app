@@ -66,6 +66,7 @@ export function ShareAchievementModal({
         );
       case 'passport_stamp':
         return stampImage ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
           <img src={stampImage} alt={achievementName} className="w-20 h-20 object-contain" />
         ) : (
           <Award className="w-16 h-16 text-[#ac6d46]" />
@@ -271,6 +272,7 @@ export function ShareAchievementModal({
 
               {/* Branding */}
               <div className="mt-4 pt-3 border-t border-[#3a3a3a] flex flex-col items-center gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src="/logo-lg-light.svg"
                   alt="Heimursaga"

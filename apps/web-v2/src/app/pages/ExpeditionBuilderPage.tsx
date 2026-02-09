@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { MapPin, Plus, Trash2, Save, FileText, Calendar, Upload, Info, X, Locate, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
@@ -76,7 +77,6 @@ export function ExpeditionBuilderPage() {
   const [selectedWaypoint, setSelectedWaypoint] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [confirmingClearAll, setConfirmingClearAll] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isRoundTrip, setIsRoundTrip] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
 
@@ -102,7 +102,6 @@ export function ExpeditionBuilderPage() {
   const [sponsorshipsEnabled, setSponsorshipsEnabled] = useState(false);
   const [sponsorshipGoal, setSponsorshipGoal] = useState<number | ''>('');
   const [expectedDuration, setExpectedDuration] = useState('');
-  const [currentLocation, setCurrentLocation] = useState('');
   const [currentLocationSource, setCurrentLocationSource] = useState<'waypoint' | 'entry'>('waypoint');
   const [currentLocationId, setCurrentLocationId] = useState('');
   const [tags, setTags] = useState('');
@@ -110,7 +109,9 @@ export function ExpeditionBuilderPage() {
   const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null); // Uploaded URL for API
   const [uploadingCover, setUploadingCover] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
-  const [mockEntries, setMockEntries] = useState<Array<{id: string, title: string, location: string, date: string, coords: {lat: number, lng: number}, type: 'standard' | 'photo-essay' | 'data-log' | 'waypoint'}>>([]);
+
+  // Mock entries for current location selector
+  const [mockEntries] = useState<any[]>([]);
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -152,7 +153,7 @@ export function ExpeditionBuilderPage() {
     try {
       const response = await uploadApi.upload(file);
       setCoverPhotoUrl(response.original); // Store the server URL
-    } catch (_err) {
+    } catch {
       setSubmitError('Failed to upload cover photo');
       setCoverPhotoPreview(null);
     } finally {
@@ -670,13 +671,14 @@ export function ExpeditionBuilderPage() {
         }
 
         setIsLoading(false);
-      } catch (_err) {
+      } catch {
         setIsLoading(false);
         setSubmitError('Failed to load expedition data');
       }
     };
 
     loadExpedition();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expeditionId, isEditMode]);
 
   // Initialize map
@@ -762,7 +764,7 @@ export function ExpeditionBuilderPage() {
         });
       });
 
-    } catch (_error) {
+    } catch {
       setMapError('Failed to initialize map. Please check your Mapbox token.');
     }
 
@@ -774,6 +776,7 @@ export function ExpeditionBuilderPage() {
         map.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, theme]);
 
   // Update map style when theme changes
@@ -788,6 +791,7 @@ export function ExpeditionBuilderPage() {
     map.current.once('styledata', () => {
       setMapLoaded(true);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme]);
 
   // Hide instructions overlay when map moves
@@ -857,6 +861,7 @@ export function ExpeditionBuilderPage() {
         controller.abort();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waypoints, routeMode, isRoundTrip, mapLoaded]);
 
   // Apply directions distances when they arrive from the API.
@@ -1019,6 +1024,7 @@ export function ExpeditionBuilderPage() {
       markers.current.forEach(marker => marker.remove());
       markers.current = [];
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [waypoints, mapLoaded, isRoundTrip, routeMode, directionsGeometry, directionsLoading]);
 
   // Delete waypoint
@@ -1915,11 +1921,12 @@ export function ExpeditionBuilderPage() {
               className="hidden"
             />
             {coverPhotoPreview ? (
-              <div className="relative border-2 border-[#ac6d46]">
-                <img
+              <div className="relative border-2 border-[#ac6d46] h-48">
+                <Image
                   src={coverPhotoPreview}
                   alt="Cover preview"
-                  className="w-full h-48 object-cover"
+                  className="object-cover"
+                  fill
                 />
                 {uploadingCover && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">

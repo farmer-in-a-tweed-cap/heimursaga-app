@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
@@ -46,8 +47,8 @@ export function EditEntryPage() {
   
   // Content state for word count validation
   const [standardContent, setStandardContent] = useState('');
-  const [photoEssayContent, setPhotoEssayContent] = useState('');
-  const [dataLogContent, setDataLogContent] = useState('');
+  const [photoEssayContent] = useState('');
+  const [dataLogContent] = useState('');
   const [entryTitle, setEntryTitle] = useState('');
   const [locationName, setLocationName] = useState('');
   const [entryDate, setEntryDate] = useState('');
@@ -124,7 +125,7 @@ export function EditEntryPage() {
           exifResult,
         };
         setUploadedMedia(prev => [...prev, newMedia]);
-      } catch (err) {
+      } catch {
         setSubmitError(`Failed to upload ${file.name}`);
       }
     }
@@ -215,7 +216,7 @@ export function EditEntryPage() {
         setCommentsEnabled(entry.commentsEnabled !== false);
 
         setIsLoading(false);
-      } catch (err) {
+      } catch {
         setLoadError('Failed to load entry. It may not exist or you may not have access.');
         setIsLoading(false);
       }
@@ -328,7 +329,7 @@ export function EditEntryPage() {
       const payload = buildSavePayload();
       await entryApi.update(entryId, payload);
       router.push(`/entry/${entryId}`);
-    } catch (err) {
+    } catch {
       setSubmitError('Failed to update entry. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -755,10 +756,12 @@ Remember: Your sponsors and followers are reading this to understand your journe
                             <div className="flex items-center gap-3">
                               {/* Thumbnail */}
                               {media.thumbnail ? (
-                                <img
+                                <Image
                                   src={media.thumbnail}
                                   alt={media.name}
                                   className="w-16 h-16 object-cover border border-[#b5bcc4] dark:border-[#3a3a3a] flex-shrink-0"
+                                  width={64}
+                                  height={64}
                                 />
                               ) : (
                                 <div className="w-16 h-16 bg-[#e5e5e5] dark:bg-[#3a3a3a] flex items-center justify-center flex-shrink-0">
