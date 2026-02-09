@@ -17,6 +17,7 @@ import {
   ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
+  ServiceInternalException,
 } from '@/common/exceptions';
 import { ISessionQueryWithPayload } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
@@ -128,7 +129,7 @@ export class UploadService {
       if (userRequired) {
         if (!access) throw new ServiceForbiddenException();
 
-        await this.prisma.user
+        await this.prisma.explorer
           .findFirstOrThrow({
             where: { id: userId },
             select: { id: true, username: true },
@@ -437,6 +438,7 @@ export class UploadService {
             file_type: 'image',
             original: paths.original,
             thumbnail: paths.thumbnail,
+            explorer_id: userId,
           },
           select: { public_id: true },
         })
@@ -463,7 +465,7 @@ export class UploadService {
       }
 
       if (e.status) {
-        throw new ServiceException(e.message, e.status);
+        throw e;
       }
 
       // Generic fallback for unexpected errors

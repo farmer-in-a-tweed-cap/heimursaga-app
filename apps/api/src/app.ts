@@ -13,6 +13,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { execSync } from 'child_process';
 
 import { getEnv, sleep } from '@/lib/utils';
 
@@ -23,6 +24,13 @@ import { AppModule } from '@/modules/app';
 import { Logger } from '@/modules/logger';
 
 import { IRequest, IResponse } from './common/interfaces';
+
+// Store app reference for graceful shutdown
+let appInstance: NestFastifyApplication | null = null;
+
+export function getAppInstance(): NestFastifyApplication | null {
+  return appInstance;
+}
 
 // build the app
 export async function app() {
@@ -43,7 +51,7 @@ export async function app() {
     const PORT = parseInt(process.env.PORT) || 5000;
     const API_VERSION = 1;
     const API_PREFIX = `v${API_VERSION}`;
-    const { SESSION_SECRET, SESSION_MAX_AGE = 168, CORS_ORIGIN } = process.env;
+    const { SESSION_SECRET, SESSION_MAX_AGE = 720, CORS_ORIGIN } = process.env;
     const DISABLE_ERROR_MESSAGES = IS_PRODUCTION;
 
     // create a fastify adapter
@@ -138,6 +146,10 @@ export async function app() {
           path: 'stripe',
           method: RequestMethod.POST,
         },
+        {
+          path: 'sitemap.xml',
+          method: RequestMethod.GET,
+        },
       ],
     });
 
@@ -159,11 +171,55 @@ export async function app() {
       next();
     });
 
-    // CSRF token endpoint - temporarily disabled
-    // fastify.get('/csrf-token', async (request, reply) => {
-    //   // The CSRF token is automatically set as a cookie by the plugin
-    //   return { message: 'CSRF token available in _csrf cookie' };
-    // });
+    // CSRF token endpoint — frontend fetches this once to get a token for mutations
+    fastify.get('/csrf-token', async (request, reply) => {
+      const token = (reply as any).generateCsrf();
+      return { csrfToken: token };
+    });
+
+    // CSRF validation hook — validates token on state-changing requests
+    fastify.addHook('onRequest', async (request, reply) => {
+      // Only validate non-safe methods (POST, PUT, PATCH, DELETE)
+      if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return;
+
+      // Skip CSRF for JWT-authenticated mobile requests (they don't use cookies)
+      if (request.headers.authorization?.startsWith('Bearer ')) return;
+
+      // Skip CSRF for Stripe webhooks (they use signature verification)
+      if (request.url.startsWith('/stripe')) return;
+
+      // Skip CSRF for auth endpoints — no authenticated session to protect.
+      // Login/signup establish sessions, password reset uses tokens.
+      const authPaths = [
+        '/v1/auth/login',
+        '/v1/auth/signup',
+        '/v1/auth/reset-password',
+        '/v1/auth/change-password',
+        '/v1/auth/verify-email',
+      ];
+      if (authPaths.some((p) => request.url.startsWith(p))) return;
+
+      // Skip CSRF if no session secret exists (e.g. after logout destroys session).
+      // The csrf plugin calls reply.send(error) instead of throwing, so we must
+      // check before calling it to avoid an unhandled Fastify error response.
+      if (!(request as any).session?.get('_csrf')) {
+        return reply
+          .status(403)
+          .send({ statusCode: 403, message: 'Invalid CSRF token' });
+      }
+
+      // Validate CSRF token from x-csrf-token header
+      await new Promise<void>((resolve, reject) => {
+        (fastify as any).csrfProtection(request, reply, (err: Error) => {
+          if (err) reject(err);
+          else resolve();
+        });
+      }).catch(() => {
+        return reply
+          .status(403)
+          .send({ statusCode: 403, message: 'Invalid CSRF token' });
+      });
+    });
 
     // swagger
     const config = new DocumentBuilder()
@@ -172,12 +228,32 @@ export async function app() {
       .build();
     SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
 
+    // Enable graceful shutdown hooks (releases port on SIGTERM/SIGINT)
+    app.enableShutdownHooks();
+
+    // Store reference for signal handlers
+    appInstance = app;
+
+    // In dev mode, kill any stale process on the port before listening
+    if (IS_DEVELOPMENT) {
+      try {
+        const pids = execSync(`lsof -ti:${PORT}`, { encoding: 'utf-8' }).trim();
+        if (pids) {
+          console.log(
+            `Killing stale process(es) on port ${PORT}: ${pids.replace(/\n/g, ', ')}`,
+          );
+          execSync(`kill -9 ${pids.replace(/\n/g, ' ')}`);
+          await sleep(500);
+        }
+      } catch {
+        // No process on the port — good
+      }
+    }
+
     // run the app
     await app
       .listen(PORT, HOST, () => {
-        console.log('api running', {
-          env: ENV,
-        });
+        console.log('api running', { env: ENV });
       })
       .catch((e) => {
         console.log('api failed', e);

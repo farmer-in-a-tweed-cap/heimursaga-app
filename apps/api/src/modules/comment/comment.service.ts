@@ -64,7 +64,7 @@ export class CommentService {
       const { userId } = session;
 
       // Find the post by public_id
-      const post = await this.prisma.post.findFirst({
+      const post = await this.prisma.entry.findFirst({
         where: {
           public_id: postId,
           deleted_at: null,
@@ -81,7 +81,7 @@ export class CommentService {
 
       const limit = Math.min(query.limit || 20, 100);
       const where: Prisma.CommentWhereInput = {
-        post_id: post.id,
+        entry_id: post.id,
         deleted_at: null,
         parent_id: null, // Only fetch top-level comments
       };
@@ -208,7 +208,7 @@ export class CommentService {
       }
 
       // Find the post and check if comments are enabled
-      const post = await this.prisma.post.findFirst({
+      const post = await this.prisma.entry.findFirst({
         where: {
           public_id: postId,
           deleted_at: null,
@@ -238,7 +238,7 @@ export class CommentService {
         const parentComment = await this.prisma.comment.findFirst({
           where: {
             public_id: payload.parentId,
-            post_id: post.id,
+            entry_id: post.id,
             deleted_at: null,
           },
           select: {
@@ -267,7 +267,7 @@ export class CommentService {
           public_id: generator.publicId({ prefix: 'cm' }),
           content: payload.content,
           author_id: userId,
-          post_id: post.id,
+          entry_id: post.id,
           parent_id: parentCommentId,
         },
         select: {
@@ -292,7 +292,7 @@ export class CommentService {
       });
 
       // Increment the comment count on the post
-      await this.prisma.post.update({
+      await this.prisma.entry.update({
         where: { id: post.id },
         data: {
           comments_count: { increment: 1 },
@@ -315,15 +315,13 @@ export class CommentService {
               userId: parentCommentAuthor.author_id,
               mentionUserId: userId,
               mentionPostId: post.id,
-              body: post.title,
+              body: comment.content,
             },
           });
         }
       } else {
         // This is a top-level comment - notify the post author
         if (userId !== post.author_id) {
-          const notificationBody = post.title;
-
           await this.eventService.trigger<IUserNotificationCreatePayload>({
             event: EVENTS.NOTIFICATION_CREATE,
             data: {
@@ -331,7 +329,7 @@ export class CommentService {
               userId: post.author_id,
               mentionUserId: userId,
               mentionPostId: post.id,
-              body: notificationBody,
+              body: comment.content,
             },
           });
         }
@@ -463,7 +461,7 @@ export class CommentService {
         select: {
           id: true,
           author_id: true,
-          post_id: true,
+          entry_id: true,
           replies: {
             where: {
               deleted_at: null,
@@ -515,8 +513,8 @@ export class CommentService {
       }
 
       // Decrement the comment count on the post by total deleted
-      await this.prisma.post.update({
-        where: { id: existingComment.post_id },
+      await this.prisma.entry.update({
+        where: { id: existingComment.entry_id },
         data: {
           comments_count: { decrement: totalDeleted },
         },
@@ -544,7 +542,7 @@ export class CommentService {
       }
 
       // Find the post
-      const post = await this.prisma.post.findFirst({
+      const post = await this.prisma.entry.findFirst({
         where: {
           public_id: postId,
           deleted_at: null,
@@ -568,7 +566,7 @@ export class CommentService {
       }
 
       // Toggle comments
-      const updatedPost = await this.prisma.post.update({
+      const updatedPost = await this.prisma.entry.update({
         where: { id: post.id },
         data: {
           comments_enabled: !post.comments_enabled,

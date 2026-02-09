@@ -4,6 +4,7 @@ import {
   ISponsorshipTierCreatePayload,
   ISponsorshipTierUpdatePayload,
   SponsorshipBillingPeriod,
+  SponsorshipTierType,
   SponsorshipType,
 } from '@repo/types';
 import {
@@ -49,6 +50,11 @@ export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
   oneTimePaymentAmount?: number;
 
   @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  customAmount?: number;
+
+  @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
   message?: string;
@@ -57,6 +63,11 @@ export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
   @IsBoolean()
   @IsOptional()
   emailDelivery?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isPublic?: boolean;
 }
 
 export class SponsorshipTierUpdateDto implements ISponsorshipTierUpdatePayload {
@@ -82,6 +93,12 @@ export class SponsorshipTierUpdateDto implements ISponsorshipTierUpdatePayload {
 }
 
 export class SponsorshipTierCreateDto implements ISponsorshipTierCreatePayload {
+  @ApiProperty({ required: true, enum: SponsorshipTierType })
+  @IsString()
+  @IsEnum(SponsorshipTierType)
+  @IsNotEmpty()
+  type: SponsorshipTierType;
+
   @ApiProperty({ required: true })
   @IsNumber()
   @IsNotEmpty()

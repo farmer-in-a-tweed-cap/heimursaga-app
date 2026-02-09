@@ -4,12 +4,14 @@ import { IStripeCreateSetupIntentResponse } from '@repo/types';
 import Stripe from 'stripe';
 
 import { dateformat } from '@/lib/date-format';
-import { sleep } from '@/lib/utils';
+import { generator } from '@/lib/generator';
 
 import { PaymentTransactionType, StripeMetadataKey } from '@/common/enums';
 import {
+  ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
+  ServiceInternalException,
 } from '@/common/exceptions';
 import { IRequest } from '@/common/interfaces';
 import { config } from '@/config';
@@ -27,7 +29,7 @@ import {
 
 @Injectable()
 export class StripeService {
-  public stripe: Stripe;
+  private stripe: Stripe;
 
   constructor(
     private logger: Logger,
@@ -41,7 +43,9 @@ export class StripeService {
     });
   }
 
-  async webhook(request: RawBodyRequest<IRequest>) {
+  async webhook(
+    request: RawBodyRequest<IRequest>,
+  ): Promise<{ received: boolean }> {
     try {
       const secret = process.env.STRIPE_WEBHOOK_SECRET;
       const payload = request.rawBody;
@@ -54,22 +58,92 @@ export class StripeService {
       );
       const data = event.data.object;
 
-      await sleep(2000);
+      // Log the event type for monitoring
+      this.logger.log(`stripe webhook: ${event.type} (${event.id})`);
 
-      // handle stripe webhook events
-      switch (event.type) {
-        case 'payment_intent.succeeded':
-          this.onPaymentIntentSucceeded(data as Stripe.PaymentIntent);
-          break;
-        case 'invoice.payment_succeeded':
-          this.onInvoicePaymentSucceeded(data as Stripe.Invoice);
-          break;
+      // Atomically claim this event to prevent duplicate processing (race-safe)
+      try {
+        await this.prisma.processedWebhookEvent.create({
+          data: {
+            stripe_event_id: event.id,
+            event_type: event.type,
+          },
+        });
+      } catch (dedupeError) {
+        // Unique constraint violation (P2002) means another process already claimed this event
+        if (dedupeError?.code === 'P2002') {
+          this.logger.log(`Duplicate webhook event ${event.id}, skipping`);
+          return { received: true };
+        }
+        throw dedupeError;
       }
 
-      // save logs
-      this.logger.log(`stripe: ${event.type}`); // \n${JSON.stringify(data, null, 2)}
+      // Process synchronously - if this fails, Stripe will retry
+      try {
+        await this.handleWebhookEvent(event.type, data);
+      } catch (processingError) {
+        // Processing failed — remove the dedup record so Stripe retries are processed
+        await this.prisma.processedWebhookEvent
+          .deleteMany({ where: { stripe_event_id: event.id } })
+          .catch(() => {}); // Best-effort cleanup
+        throw processingError;
+      }
+
+      return { received: true };
     } catch (e) {
-      this.logger.error(e);
+      this.logger.error('Webhook processing failed:', e);
+      // Return error to tell Stripe to retry (for non-signature errors)
+      if (e.message?.includes('signature')) {
+        throw new ServiceBadRequestException(
+          'Webhook signature verification failed',
+        );
+      }
+      // For processing errors, still throw to trigger Stripe retry
+      throw new ServiceBadRequestException('Webhook processing failed');
+    }
+  }
+
+  /**
+   * Handle webhook events synchronously
+   */
+  private async handleWebhookEvent(
+    eventType: string,
+    data: Stripe.Event.Data.Object,
+  ): Promise<void> {
+    switch (eventType) {
+      case 'payment_intent.succeeded':
+        await this.onPaymentIntentSucceeded(data as Stripe.PaymentIntent);
+        break;
+      case 'invoice.payment_succeeded':
+        await this.onInvoicePaymentSucceeded(data as Stripe.Invoice);
+        break;
+      case 'invoice.payment_failed':
+        await this.onInvoicePaymentFailed(data as Stripe.Invoice);
+        break;
+      case 'payment_intent.payment_failed':
+        await this.onPaymentIntentFailed(data as Stripe.PaymentIntent);
+        break;
+      case 'account.updated':
+        await this.onAccountUpdated(data as Stripe.Account);
+        break;
+      case 'payout.failed':
+        await this.onPayoutFailed(data as Stripe.Payout);
+        break;
+      case 'payout.paid':
+        await this.onPayoutPaid(data as Stripe.Payout);
+        break;
+      case 'customer.subscription.deleted':
+        await this.onSubscriptionDeleted(data as Stripe.Subscription);
+        break;
+      case 'customer.subscription.updated':
+        await this.onSubscriptionUpdated(data as Stripe.Subscription);
+        break;
+      case 'charge.refunded':
+        await this.onChargeRefunded(data as Stripe.Charge);
+        break;
+      case 'charge.dispute.created':
+        await this.onDisputeCreated(data as Stripe.Dispute);
+        break;
     }
   }
 
@@ -96,10 +170,8 @@ export class StripeService {
       return customer;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('stripe customer not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -114,7 +186,7 @@ export class StripeService {
       const currency = config.stripe.default.currency;
 
       // get the user
-      const user = await this.prisma.user.findFirst({
+      const user = await this.prisma.explorer.findFirst({
         where: { id: userId },
         select: {
           email: true,
@@ -138,37 +210,43 @@ export class StripeService {
       if (!customer) throw new ServiceForbiddenException('customer not found');
 
       // create a payment intent with the order amount and currency
-      const paymentIntent = await this.stripe.paymentIntents.create({
-        amount,
-        currency,
-        automatic_payment_methods: { enabled: false },
-        payment_method_types: ['card'],
-        customer: customer.id,
-      });
+      // Use idempotency key to prevent duplicate charges
+      const idempotencyKey = this.generateIdempotencyKey('pi', userId, amount);
+
+      const paymentIntent = await this.stripe.paymentIntents.create(
+        {
+          amount,
+          currency,
+          automatic_payment_methods: { enabled: false },
+          payment_method_types: ['card'],
+          customer: customer.id,
+        },
+        { idempotencyKey },
+      );
 
       return paymentIntent;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('stripe payment intent not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
-  async createSetupIntent(): Promise<IStripeCreateSetupIntentResponse> {
+  async createSetupIntent(
+    userId?: number,
+  ): Promise<IStripeCreateSetupIntentResponse> {
     try {
-      const intent = await this.stripe.setupIntents.create();
+      // No idempotency key — setup intents are safe to create multiple times
+      // (users need to add multiple cards)
+      const intent = await this.stripe.setupIntents.create({});
 
       return {
         secret: intent.client_secret,
       };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('stripe setup intent not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -181,7 +259,7 @@ export class StripeService {
         company: account.company,
         requirements: account.requirements,
         businessType: account.business_type,
-        verified: !!account.requirements.currently_due.length,
+        verified: !account.requirements.currently_due.length,
         capabilities: account.capabilities,
         email: account.email,
         phoneNumber:
@@ -193,39 +271,49 @@ export class StripeService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('stripe account not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
   async createAccount({
     country,
+    userId,
   }: {
     country: string;
+    userId?: number;
   }): Promise<IStripeAccountCreateResponse> {
     try {
-      // create a stripe account
-      const account = await this.stripe.accounts.create({
-        controller: {
-          stripe_dashboard: {
-            type: 'none',
-          },
-          fees: {
-            payer: 'application',
-          },
-          losses: {
-            payments: 'application',
-          },
-          requirement_collection: 'application',
-        },
-        capabilities: {
-          transfers: { requested: true },
-          card_payments: { requested: true },
-        },
+      // Use idempotency key to prevent duplicate account creation
+      const idempotencyKey = this.generateIdempotencyKey(
+        'acct',
+        userId || 'anon',
         country,
-      });
+      );
+
+      // create a stripe account
+      const account = await this.stripe.accounts.create(
+        {
+          controller: {
+            stripe_dashboard: {
+              type: 'none',
+            },
+            fees: {
+              payer: 'application',
+            },
+            losses: {
+              payments: 'application',
+            },
+            requirement_collection: 'application',
+          },
+          capabilities: {
+            transfers: { requested: true },
+            card_payments: { requested: true },
+          },
+          country,
+        },
+        { idempotencyKey },
+      );
 
       const response: IStripeAccountCreateResponse = {
         accountId: account.id,
@@ -234,10 +322,8 @@ export class StripeService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('stripe account not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -264,10 +350,8 @@ export class StripeService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('stripe account not linked');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -276,8 +360,6 @@ export class StripeService {
       const { subscription } = event;
 
       if (!subscription) return;
-
-      await sleep(1000);
 
       // Retrieve the subscription to get metadata
       const stripeSubscription = await this.stripe.subscriptions.retrieve(
@@ -300,12 +382,16 @@ export class StripeService {
         userId: metadata?.[StripeMetadataKey.USER_ID]
           ? parseInt(metadata?.[StripeMetadataKey.USER_ID])
           : undefined,
+        creatorId: metadata?.[StripeMetadataKey.CREATOR_ID]
+          ? parseInt(metadata?.[StripeMetadataKey.CREATOR_ID])
+          : undefined,
         subscriptionPlanId: metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID]
           ? parseInt(metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID])
           : undefined,
       };
 
-      const { transaction, userId, checkoutId, subscriptionPlanId } = params;
+      const { transaction, userId, checkoutId, creatorId, subscriptionPlanId } =
+        params;
 
       switch (transaction) {
         case PaymentTransactionType.SUBSCRIPTION:
@@ -318,6 +404,39 @@ export class StripeService {
             },
           });
           break;
+        case PaymentTransactionType.SPONSORSHIP:
+          // Recurring sponsorship payment - update expedition raised amount
+          // Skip the first invoice (billing_reason === 'subscription_create')
+          // since completeCheckout already handles that via payment_intent.succeeded
+          if (
+            creatorId &&
+            event.amount_paid &&
+            event.billing_reason !== 'subscription_create'
+          ) {
+            const amountDollars = event.amount_paid / 100;
+            // Find the creator's active expedition and increment raised
+            const activeExpedition = await this.prisma.expedition.findFirst({
+              where: {
+                author_id: creatorId,
+                deleted_at: null,
+                status: { in: ['active', 'planned'] },
+              },
+              select: { id: true },
+              orderBy: { id: 'desc' },
+            });
+            if (activeExpedition) {
+              await this.prisma.expedition.update({
+                where: { id: activeExpedition.id },
+                data: {
+                  raised: { increment: amountDollars },
+                },
+              });
+              this.logger.log(
+                `Recurring sponsorship renewal: added $${amountDollars} to expedition ${activeExpedition.id} for creator ${creatorId}`,
+              );
+            }
+          }
+          break;
       }
     } catch (e) {
       this.logger.error('Error handling invoice payment succeeded:', e);
@@ -326,14 +445,8 @@ export class StripeService {
 
   async onPaymentIntentSucceeded(event: Stripe.PaymentIntent) {
     try {
-      const { id: paymentIntentId } = event;
-
-      await sleep(1000);
-
-      // retrieve a payment intent
-      const paymentIntent =
-        await this.stripe.paymentIntents.retrieve(paymentIntentId);
-      const metadata = paymentIntent.metadata || {};
+      // Use metadata directly from the event (already retrieved)
+      const metadata = event.metadata || {};
 
       const params = {
         transaction: metadata?.[
@@ -379,7 +492,421 @@ export class StripeService {
           break;
       }
     } catch (e) {
-      this.logger.error(e);
+      this.logger.error('Error handling payment intent succeeded:', e);
     }
+  }
+
+  /**
+   * Handle failed payment intents - notify user and update checkout status
+   */
+  async onPaymentIntentFailed(event: Stripe.PaymentIntent) {
+    try {
+      const metadata = event.metadata || {};
+      const checkoutId = metadata?.[StripeMetadataKey.CHECKOUT_ID]
+        ? parseInt(metadata?.[StripeMetadataKey.CHECKOUT_ID])
+        : undefined;
+
+      if (checkoutId) {
+        // Update checkout status to failed
+        await this.prisma.checkout.update({
+          where: { id: checkoutId },
+          data: { status: 'FAILED' },
+        });
+
+        this.logger.log(
+          `Payment intent failed for checkout ${checkoutId}: ${event.last_payment_error?.message || 'Unknown error'}`,
+        );
+      }
+    } catch (e) {
+      this.logger.error('Error handling payment intent failed:', e);
+    }
+  }
+
+  /**
+   * Handle Stripe Connect account updates - sync verification status
+   */
+  async onAccountUpdated(event: Stripe.Account) {
+    try {
+      const {
+        id: stripeAccountId,
+        requirements,
+        charges_enabled,
+        payouts_enabled,
+      } = event;
+
+      // Check if account is fully verified (no pending requirements and can accept payments)
+      const isVerified =
+        !requirements?.currently_due?.length &&
+        !requirements?.pending_verification?.length &&
+        charges_enabled &&
+        payouts_enabled;
+
+      // Find the payout method to get the explorer ID
+      const payoutMethod = await this.prisma.payoutMethod.findFirst({
+        where: { stripe_account_id: stripeAccountId },
+        select: { explorer_id: true },
+      });
+
+      // Update local payout method verification status
+      await this.prisma.payoutMethod.updateMany({
+        where: { stripe_account_id: stripeAccountId },
+        data: { is_verified: isVerified },
+      });
+
+      // Also update the explorer's stripe account connected status
+      if (payoutMethod?.explorer_id) {
+        await this.prisma.explorer.update({
+          where: { id: payoutMethod.explorer_id },
+          data: { is_stripe_account_connected: isVerified },
+        });
+
+        this.logger.log(
+          `Updated explorer ${payoutMethod.explorer_id} stripe account connected: ${isVerified}`,
+        );
+      }
+
+      this.logger.log(
+        `Stripe account ${stripeAccountId} verification status: ${isVerified} (charges: ${charges_enabled}, payouts: ${payouts_enabled})`,
+      );
+    } catch (e) {
+      this.logger.error('Error handling account updated:', e);
+    }
+  }
+
+  /**
+   * Handle failed payouts - update payout status and notify
+   */
+  async onPayoutFailed(event: Stripe.Payout) {
+    try {
+      const { id: stripePayoutId, failure_message } = event;
+
+      // Update payout status in database
+      await this.prisma.payout.updateMany({
+        where: { stripe_payout_id: stripePayoutId },
+        data: { status: 'FAILED' },
+      });
+
+      this.logger.log(
+        `Payout ${stripePayoutId} failed: ${failure_message || 'Unknown error'}`,
+      );
+    } catch (e) {
+      this.logger.error('Error handling payout failed:', e);
+    }
+  }
+
+  /**
+   * Handle successful payouts - update payout status
+   */
+  async onPayoutPaid(event: Stripe.Payout) {
+    try {
+      const { id: stripePayoutId, arrival_date } = event;
+
+      // Update payout status in database
+      await this.prisma.payout.updateMany({
+        where: { stripe_payout_id: stripePayoutId },
+        data: {
+          status: 'COMPLETED',
+          arrival_date: arrival_date
+            ? new Date(arrival_date * 1000)
+            : undefined,
+        },
+      });
+
+      this.logger.log(`Payout ${stripePayoutId} completed successfully`);
+    } catch (e) {
+      this.logger.error('Error handling payout paid:', e);
+    }
+  }
+
+  /**
+   * Handle subscription deletion - update sponsorship status
+   */
+  async onSubscriptionDeleted(event: Stripe.Subscription) {
+    try {
+      const { id: stripeSubscriptionId } = event;
+
+      // Update sponsorship status to canceled
+      await this.prisma.sponsorship.updateMany({
+        where: { stripe_subscription_id: stripeSubscriptionId },
+        data: { status: 'CANCELED' },
+      });
+
+      // Handle Explorer Pro subscription deletion - downgrade user
+      const explorerSubscription =
+        await this.prisma.explorerSubscription.findFirst({
+          where: { stripe_subscription_id: stripeSubscriptionId },
+          select: { id: true, explorer_id: true },
+        });
+
+      if (explorerSubscription?.explorer_id) {
+        await this.prisma.$transaction(async (tx) => {
+          // Delete the explorer plan
+          await tx.explorerPlan.deleteMany({
+            where: { explorer_id: explorerSubscription.explorer_id },
+          });
+          // Downgrade to USER role
+          await tx.explorer.update({
+            where: { id: explorerSubscription.explorer_id },
+            data: { role: 'USER' },
+          });
+        });
+        this.logger.log(
+          `Explorer Pro subscription ${stripeSubscriptionId} deleted: downgraded explorer ${explorerSubscription.explorer_id} to USER`,
+        );
+      }
+
+      this.logger.log(
+        `Subscription ${stripeSubscriptionId} deleted, sponsorship canceled`,
+      );
+    } catch (e) {
+      this.logger.error('Error handling subscription deleted:', e);
+    }
+  }
+
+  /**
+   * Handle subscription updates - sync status changes
+   */
+  async onSubscriptionUpdated(event: Stripe.Subscription) {
+    try {
+      const { id: stripeSubscriptionId, status } = event;
+
+      // Map Stripe status to our status
+      let sponsorshipStatus: string;
+      switch (status) {
+        case 'active':
+          sponsorshipStatus = 'ACTIVE';
+          break;
+        case 'past_due':
+          sponsorshipStatus = 'PAST_DUE';
+          break;
+        case 'canceled':
+          sponsorshipStatus = 'CANCELED';
+          break;
+        case 'unpaid':
+          sponsorshipStatus = 'UNPAID';
+          break;
+        case 'paused':
+          sponsorshipStatus = 'PAUSED';
+          break;
+        default:
+          sponsorshipStatus = 'ACTIVE';
+      }
+
+      // Update sponsorship status
+      await this.prisma.sponsorship.updateMany({
+        where: { stripe_subscription_id: stripeSubscriptionId },
+        data: { status: sponsorshipStatus },
+      });
+
+      // Also handle Explorer Pro subscription status changes
+      const explorerSubscription =
+        await this.prisma.explorerSubscription.findFirst({
+          where: { stripe_subscription_id: stripeSubscriptionId },
+          select: { id: true, explorer_id: true },
+        });
+
+      if (explorerSubscription?.explorer_id) {
+        if (
+          status === 'past_due' ||
+          status === 'unpaid' ||
+          status === 'canceled'
+        ) {
+          // Downgrade user role when Explorer Pro subscription lapses
+          await this.prisma.explorer.update({
+            where: { id: explorerSubscription.explorer_id },
+            data: { role: 'USER' },
+          });
+          this.logger.log(
+            `Explorer Pro subscription ${stripeSubscriptionId} status ${status}: downgraded explorer ${explorerSubscription.explorer_id} to USER`,
+          );
+        } else if (status === 'active') {
+          // Restore CREATOR role when subscription becomes active again
+          await this.prisma.explorer.update({
+            where: { id: explorerSubscription.explorer_id },
+            data: { role: 'CREATOR' },
+          });
+          this.logger.log(
+            `Explorer Pro subscription ${stripeSubscriptionId} reactivated: restored explorer ${explorerSubscription.explorer_id} to CREATOR`,
+          );
+        }
+      }
+
+      this.logger.log(
+        `Subscription ${stripeSubscriptionId} updated to ${sponsorshipStatus}`,
+      );
+    } catch (e) {
+      this.logger.error('Error handling subscription updated:', e);
+    }
+  }
+
+  /**
+   * Handle failed invoice payments - notify and update status
+   */
+  async onInvoicePaymentFailed(event: Stripe.Invoice) {
+    try {
+      const { subscription, attempt_count, next_payment_attempt } = event;
+
+      if (!subscription) return;
+
+      const stripeSubscriptionId =
+        typeof subscription === 'string' ? subscription : subscription.id;
+
+      // Log the failure
+      this.logger.log(
+        `Invoice payment failed for subscription ${stripeSubscriptionId}, attempt ${attempt_count}`,
+      );
+
+      // Update sponsorship to past_due status
+      await this.prisma.sponsorship.updateMany({
+        where: { stripe_subscription_id: stripeSubscriptionId },
+        data: { status: 'PAST_DUE' },
+      });
+
+      // If no more retry attempts, the subscription will be canceled via webhook
+      if (!next_payment_attempt) {
+        this.logger.log(
+          `No more payment attempts for subscription ${stripeSubscriptionId}`,
+        );
+      }
+    } catch (e) {
+      this.logger.error('Error handling invoice payment failed:', e);
+    }
+  }
+
+  /**
+   * Handle charge refunds - update checkout and sponsorship status
+   */
+  async onChargeRefunded(event: Stripe.Charge) {
+    try {
+      const { id: chargeId, payment_intent, refunded, amount_refunded } = event;
+
+      const paymentIntentId =
+        typeof payment_intent === 'string'
+          ? payment_intent
+          : payment_intent?.id;
+
+      this.logger.log(
+        `Charge ${chargeId} refunded: ${amount_refunded} cents (full refund: ${refunded})`,
+      );
+
+      if (paymentIntentId) {
+        // Update checkout status to refunded
+        await this.prisma.checkout.updateMany({
+          where: { stripe_payment_intent_id: paymentIntentId },
+          data: { status: 'REFUNDED' },
+        });
+      }
+    } catch (e) {
+      this.logger.error('Error handling charge refunded:', e);
+    }
+  }
+
+  /**
+   * Handle disputes/chargebacks - critical for financial tracking
+   */
+  async onDisputeCreated(event: Stripe.Dispute) {
+    try {
+      const { id: disputeId, charge, amount, reason, status } = event;
+
+      const chargeId = typeof charge === 'string' ? charge : charge?.id;
+
+      this.logger.error(
+        `DISPUTE CREATED: ${disputeId} for charge ${chargeId}, amount: ${amount}, reason: ${reason}, status: ${status}`,
+      );
+
+      // Alert admin via email — disputes have strict response deadlines (7-21 days)
+      await this.eventService.trigger({
+        event: EVENTS.ADMIN_DISPUTE_CREATED,
+        data: { disputeId, chargeId, amount, reason, status },
+      });
+    } catch (e) {
+      this.logger.error('Error handling dispute created:', e);
+    }
+  }
+
+  /**
+   * Generate a deterministic idempotency key for Stripe operations.
+   * Keys should be stable for the same logical operation to prevent duplicate charges.
+   */
+  generateIdempotencyKey(
+    prefix: string,
+    ...parts: (string | number)[]
+  ): string {
+    // Don't include random values or timestamps - key should be deterministic
+    // for the same logical operation
+    return `${prefix}_${parts.join('_')}`;
+  }
+
+  // ============================================
+  // Controlled accessor methods for Stripe SDK
+  // These replace direct access to the private `stripe` property
+  // ============================================
+
+  get customers() {
+    return this.stripe.customers;
+  }
+
+  get paymentIntents() {
+    return this.stripe.paymentIntents;
+  }
+
+  get subscriptions() {
+    return this.stripe.subscriptions;
+  }
+
+  get invoices() {
+    return this.stripe.invoices;
+  }
+
+  get prices() {
+    return this.stripe.prices;
+  }
+
+  get products() {
+    return this.stripe.products;
+  }
+
+  get promotionCodes() {
+    return this.stripe.promotionCodes;
+  }
+
+  get setupIntents() {
+    return this.stripe.setupIntents;
+  }
+
+  get accounts() {
+    return this.stripe.accounts;
+  }
+
+  get accountLinks() {
+    return this.stripe.accountLinks;
+  }
+
+  get payouts() {
+    return this.stripe.payouts;
+  }
+
+  get paymentMethods() {
+    return this.stripe.paymentMethods;
+  }
+
+  get refunds() {
+    return this.stripe.refunds;
+  }
+
+  get transfers() {
+    return this.stripe.transfers;
+  }
+
+  get balance() {
+    return this.stripe.balance;
+  }
+
+  get charges() {
+    return this.stripe.charges;
+  }
+
+  get webhooks() {
+    return this.stripe.webhooks;
   }
 }

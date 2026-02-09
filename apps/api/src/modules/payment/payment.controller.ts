@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -44,6 +45,12 @@ export class PaymentMethodController {
     });
   }
 
+  @Post('setup-intent')
+  @HttpCode(HttpStatus.CREATED)
+  async createSetupIntent(@Session() session: ISession) {
+    return await this.paymentService.createSetupIntent({ session });
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createPaymentMethod(
@@ -53,6 +60,18 @@ export class PaymentMethodController {
     return await this.paymentService.createPaymentMethod({
       query: {},
       payload: body,
+      session,
+    });
+  }
+
+  @Post(':id/default')
+  @HttpCode(HttpStatus.OK)
+  async setDefaultPaymentMethod(
+    @Param() param: ParamPublicIdDto,
+    @Session() session: ISession,
+  ) {
+    return await this.paymentService.setDefaultPaymentMethod({
+      query: { publicId: param.id },
       session,
     });
   }
@@ -148,6 +167,22 @@ export class PlanController {
     return await this.paymentService.validatePromoCode({
       session,
       payload: body,
+    });
+  }
+
+  @Post('complete-checkout/:checkoutId')
+  @HttpCode(HttpStatus.OK)
+  async completeCheckout(
+    @Session() session: ISession,
+    @Param('checkoutId') checkoutId: string,
+  ) {
+    const id = parseInt(checkoutId, 10);
+    if (isNaN(id) || id <= 0) {
+      throw new BadRequestException('Invalid checkout ID');
+    }
+    return await this.paymentService.manuallyCompleteCheckout({
+      session,
+      checkoutId: id,
     });
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { ISessionUser } from '@repo/types';
-import { ReactNode, createContext, useEffect, useState, useCallback } from 'react';
+import { ReactNode, createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { API_QUERY_KEYS, apiClient } from '@/lib/api';
@@ -13,6 +13,9 @@ interface SessionContextType {
   error: Error | null;
   refreshSession: () => Promise<void>;
   clearSession: () => void;
+  isAuthenticated: boolean;
+  /** @deprecated Use session instead */
+  user?: ISessionUser;
 }
 
 export const SessionContext = createContext<SessionContextType | undefined>(
@@ -168,14 +171,24 @@ export function SessionProvider({
   const finalSession = clientSession || state;
 
   return (
-    <SessionContext.Provider value={{ 
-      session: finalSession, 
+    <SessionContext.Provider value={{
+      session: finalSession,
       isLoading: !isMounted || sessionQuery.isLoading,
       error,
       refreshSession,
-      clearSession
+      clearSession,
+      isAuthenticated: !!finalSession,
+      user: finalSession,
     }}>
       {children}
     </SessionContext.Provider>
   );
+}
+
+export function useSession() {
+  const context = useContext(SessionContext);
+  if (context === undefined) {
+    throw new Error('useSession must be used within a SessionProvider');
+  }
+  return context;
 }

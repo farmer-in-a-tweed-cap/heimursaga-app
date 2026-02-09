@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
+import { EventModule } from '@/modules/event';
 import { PrismaModule } from '@/modules/prisma';
 import { StripeModule } from '@/modules/stripe';
 
@@ -13,7 +14,7 @@ import {
 import { PaymentService } from './payment.service';
 
 @Module({
-  imports: [ConfigModule, PrismaModule, StripeModule],
+  imports: [ConfigModule, PrismaModule, StripeModule, EventModule],
   controllers: [
     PaymentMethodController,
     PaymentIntentController,

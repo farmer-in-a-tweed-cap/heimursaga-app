@@ -19,7 +19,7 @@ import { SESSION_KEYS } from '@/common/constants';
 import { Public, Session } from '@/common/decorators';
 import { BotDetectionGuard } from '@/common/guards/bot-detection.guard';
 import { IRequest, IResponse, ISession } from '@/common/interfaces';
-import { SessionUserService } from '@/modules/user/user.service';
+import { SessionExplorerService } from '@/modules/explorer/explorer.service';
 
 import {
   LoginDto,
@@ -35,7 +35,7 @@ import { AuthService } from './auth.service';
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private sessionUserService: SessionUserService,
+    private sessionExplorerService: SessionExplorerService,
   ) {}
 
   @Get('user')
@@ -138,7 +138,7 @@ export class AuthController {
   @Public()
   @Get('mobile/user')
   @HttpCode(HttpStatus.OK)
-  @SkipThrottle()
+  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 requests per minute
   async getMobileUser(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -171,7 +171,7 @@ export class AuthController {
   @Public()
   @Get('mobile/bookmarks')
   @HttpCode(HttpStatus.OK)
-  @SkipThrottle()
+  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 requests per minute
   async getMobileBookmarks(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -186,8 +186,8 @@ export class AuthController {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    const result = await this.sessionUserService.getPosts({
-      userId: tokenData.userId,
+    const result = await this.sessionExplorerService.getEntries({
+      explorerId: tokenData.userId,
       context: 'bookmarks',
     });
 
@@ -200,7 +200,7 @@ export class AuthController {
   @Public()
   @Get('mobile/notifications')
   @HttpCode(HttpStatus.OK)
-  @SkipThrottle()
+  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 requests per minute
   async getMobileNotifications(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -215,7 +215,7 @@ export class AuthController {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    const result = await this.sessionUserService.getNotifications({
+    const result = await this.sessionExplorerService.getNotifications({
       session: {
         sid: 'mobile-jwt-session',
         userId: tokenData.userId,
@@ -233,7 +233,7 @@ export class AuthController {
   @Public()
   @Post('mobile/notifications/mark-read')
   @HttpCode(HttpStatus.OK)
-  @SkipThrottle()
+  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
   async markMobileNotificationsAsRead(
     @Headers('authorization') authHeader?: string,
   ) {
@@ -250,7 +250,7 @@ export class AuthController {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    await this.sessionUserService.markNotificationsAsRead({
+    await this.sessionExplorerService.markNotificationsAsRead({
       session: {
         sid: 'mobile-jwt-session',
         userId: tokenData.userId,
@@ -267,7 +267,7 @@ export class AuthController {
   @Public()
   @Get('mobile/badge-count')
   @HttpCode(HttpStatus.OK)
-  @SkipThrottle()
+  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 requests per minute
   async getMobileBadgeCount(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -282,7 +282,7 @@ export class AuthController {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    const result = await this.sessionUserService.getBadgeCount({
+    const result = await this.sessionExplorerService.getBadgeCount({
       session: {
         sid: 'mobile-jwt-session',
         userId: tokenData.userId,

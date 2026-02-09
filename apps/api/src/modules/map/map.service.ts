@@ -20,6 +20,7 @@ import {
   ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
+  ServiceInternalException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import {
@@ -48,8 +49,8 @@ export class MapService {
 
     const sponsorship = await this.prisma.sponsorship.findFirst({
       where: {
-        user_id: userId,
-        creator_id: creatorId,
+        sponsor_id: userId,
+        sponsored_explorer_id: creatorId,
         status: SponsorshipStatus.ACTIVE,
         expiry: {
           gt: new Date(), // expiry is in the future
@@ -91,7 +92,7 @@ export class MapService {
         lat: true,
         lon: true,
         date: true,
-        posts: {
+        entries: {
           where: {
             is_draft: false,
             public: true,
@@ -109,8 +110,8 @@ export class MapService {
             author_id: true,
             bookmarks: userId
               ? {
-                  where: { user_id: userId },
-                  select: { post_id: true },
+                  where: { explorer_id: userId },
+                  select: { entry_id: true },
                 }
               : undefined,
             author: {
@@ -138,16 +139,16 @@ export class MapService {
             },
             waypoint: {
               select: {
-                trips: {
+                expeditions: {
                   select: {
-                    trip: {
+                    expedition: {
                       select: {
                         public_id: true,
                         title: true,
                       },
                     },
                   },
-                  take: 1, // Only get the first trip if multiple exist
+                  take: 1, // Only get the first expedition if multiple exist
                 },
               },
             },
@@ -164,7 +165,7 @@ export class MapService {
         case MapQueryContext.GLOBAL:
           where = {
             ...where,
-            posts: {
+            entries: {
               some: {
                 title: search ? { contains: search } : undefined,
                 public: true,
@@ -180,7 +181,7 @@ export class MapService {
           if (userId) {
             where = {
               ...where,
-              posts: {
+              entries: {
                 some: {
                   title: search ? { contains: search } : undefined,
                   public: true,
@@ -201,7 +202,7 @@ export class MapService {
         case MapQueryContext.USER:
           where = {
             ...where,
-            posts: {
+            entries: {
               some: {
                 public_id: { not: null },
                 public: true,
@@ -219,10 +220,10 @@ export class MapService {
           // This includes both waypoints with posts (journal entries) and waypoints without posts (pure waypoints)
           where = {
             deleted_at: null,
-            trips: tripId
+            expeditions: tripId
               ? {
                   some: {
-                    trip: {
+                    expedition: {
                       public_id: tripId,
                       public: true, // Only show waypoints for public journeys
                     },
@@ -265,8 +266,8 @@ export class MapService {
 
       // Filter out sponsored posts for users without active sponsorships
       const filteredWaypoints = await Promise.all(
-        waypoints.map(async ({ id, title, lat, lon, date, posts }) => {
-          const post = posts[0];
+        waypoints.map(async ({ id, title, lat, lon, date, entries }) => {
+          const post = entries[0];
 
           // If post is sponsored, check if user has access
           if (post?.sponsored) {
@@ -320,10 +321,10 @@ export class MapService {
                     creator: post.author.role === UserRole.CREATOR,
                   },
                   bookmarked: userId ? post.bookmarks.length > 0 : false,
-                  trip: post.waypoint?.trips?.[0]?.trip
+                  trip: post.waypoint?.expeditions?.[0]?.expedition
                     ? {
-                        id: post.waypoint.trips[0].trip.public_id,
-                        title: post.waypoint.trips[0].trip.title,
+                        id: post.waypoint.expeditions[0].expedition.public_id,
+                        title: post.waypoint.expeditions[0].expedition.title,
                       }
                     : undefined,
                   media: post.media
@@ -367,10 +368,8 @@ export class MapService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('no posts found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -406,10 +405,8 @@ export class MapService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('waypoint not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -428,11 +425,11 @@ export class MapService {
       if (!access) throw new ServiceForbiddenException();
 
       const { lat, lon, title, date, tripId } = payload;
-      let trip: { id: number } | null = null;
+      let expedition: { id: number } | null = null;
 
-      // get a trip
+      // get an expedition
       if (tripId) {
-        trip = await this.prisma.trip
+        expedition = await this.prisma.expedition
           .findFirstOrThrow({
             where: { public_id: tripId },
             select: { id: true },
@@ -452,7 +449,9 @@ export class MapService {
               author: {
                 connect: { id: userId },
               },
-              trips: trip ? { create: { trip_id: trip.id } } : undefined,
+              expeditions: expedition
+                ? { create: { expedition_id: expedition.id } }
+                : undefined,
             },
             select: { id: true },
           })
@@ -466,10 +465,8 @@ export class MapService {
       return { id: waypoint.id };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceBadRequestException('waypoint not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -518,10 +515,8 @@ export class MapService {
         });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceBadRequestException('waypoint not updated');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -560,10 +555,8 @@ export class MapService {
         });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceBadRequestException('waypoint not deleted');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 }

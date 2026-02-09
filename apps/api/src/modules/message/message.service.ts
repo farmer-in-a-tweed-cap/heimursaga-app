@@ -9,6 +9,7 @@ import {
   ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
+  ServiceInternalException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import { ISession, ISessionQueryWithPayload } from '@/common/interfaces';
@@ -46,7 +47,7 @@ export class MessageService {
       }
 
       // Get recipient and verify they're also Explorer Pro
-      const recipient = await this.prisma.user.findFirst({
+      const recipient = await this.prisma.explorer.findFirst({
         where: {
           username: recipientUsername,
           role: UserRole.CREATOR, // Backend role check
@@ -83,10 +84,8 @@ export class MessageService {
       );
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('Failed to send message');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -106,7 +105,7 @@ export class MessageService {
       }
 
       // Get recipient
-      const recipient = await this.prisma.user.findFirst({
+      const recipient = await this.prisma.explorer.findFirst({
         where: {
           username: recipientUsername,
           role: UserRole.CREATOR,
@@ -187,10 +186,8 @@ export class MessageService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('Messages not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -298,10 +295,8 @@ export class MessageService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('Conversations not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -343,10 +338,8 @@ export class MessageService {
       );
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('Failed to mark message as read');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -376,10 +369,8 @@ export class MessageService {
       return { count };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceNotFoundException('Failed to get unread count');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 }

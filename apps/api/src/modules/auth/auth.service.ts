@@ -22,6 +22,7 @@ import {
   ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
+  ServiceInternalException,
   ServiceNotFoundException,
   ServiceUnauthorizedException,
 } from '@/common/exceptions';
@@ -57,7 +58,7 @@ export class AuthService {
       if (!userId) throw new ServiceNotFoundException('user not found');
 
       // get the user
-      const user = await this.prisma.user.findFirstOrThrow({
+      const user = await this.prisma.explorer.findFirstOrThrow({
         where: {
           id: userId,
           blocked: false,
@@ -70,6 +71,7 @@ export class AuthService {
           is_email_verified: true,
           is_premium: true,
           is_stripe_account_connected: true,
+          created_at: true,
           profile: {
             select: {
               // name: true,
@@ -81,16 +83,19 @@ export class AuthService {
       if (!user) throw new ServiceForbiddenException('user not found');
 
       const {
+        id,
         email,
         role,
         username,
         is_email_verified: isEmailVerified,
         is_premium: isPremium,
         is_stripe_account_connected: isStripeAccountConnected,
+        created_at: createdAt,
       } = user;
       const { picture } = user?.profile || {};
 
       return {
+        id,
         email,
         username,
         role,
@@ -99,13 +104,12 @@ export class AuthService {
         isEmailVerified,
         isPremium,
         stripeAccountConnected: isStripeAccountConnected,
+        createdAt,
       };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('user not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -114,11 +118,11 @@ export class AuthService {
     session,
   }: ISessionQueryWithPayload<{}, ILoginPayload>): Promise<ILoginResponse> {
     try {
-      const { login, password: plainPassword } = payload;
+      const { login, password: plainPassword, remember } = payload;
       const { sid, ip, userAgent } = session || {};
 
       // First find the user by login (email or username)
-      const user = await this.prisma.user.findFirst({
+      const user = await this.prisma.explorer.findFirst({
         where: {
           OR: [{ email: login }, { username: login }],
           blocked: false,
@@ -134,7 +138,7 @@ export class AuthService {
       // Migrate old password format to new secure format
       if (!user.password.includes(':')) {
         const newHashedPassword = hashPassword(plainPassword);
-        await this.prisma.user.update({
+        await this.prisma.explorer.update({
           where: { id: user.id },
           data: { password: newHashedPassword },
         });
@@ -147,6 +151,7 @@ export class AuthService {
         userId: user.id,
         ip,
         userAgent,
+        remember,
       }).catch(() => {
         throw new ServiceForbiddenException('login or password invalid');
       });
@@ -161,10 +166,8 @@ export class AuthService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('login or password invalid');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -182,7 +185,7 @@ export class AuthService {
       const { ip, userAgent } = session || {};
 
       // Find the user by login (email or username)
-      const user = await this.prisma.user.findFirst({
+      const user = await this.prisma.explorer.findFirst({
         where: {
           OR: [{ email: login }, { username: login }],
           blocked: false,
@@ -211,7 +214,7 @@ export class AuthService {
       // Migrate old password format to new secure format
       if (!user.password.includes(':')) {
         const newHashedPassword = hashPassword(plainPassword);
-        await this.prisma.user.update({
+        await this.prisma.explorer.update({
           where: { id: user.id },
           data: { password: newHashedPassword },
         });
@@ -238,6 +241,7 @@ export class AuthService {
 
       // Format user response
       const userResponse: ISessionUserGetResponse = {
+        id: user.id,
         role: user.role as UserRole,
         username: user.username,
         email: user.email,
@@ -255,10 +259,8 @@ export class AuthService {
       };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('login or password invalid');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -276,7 +278,7 @@ export class AuthService {
       }
 
       // Find the user
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prisma.explorer.findUnique({
         where: { id: decoded.sub },
         select: {
           id: true,
@@ -307,10 +309,8 @@ export class AuthService {
       };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('Invalid or expired refresh token');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -323,6 +323,14 @@ export class AuthService {
   } | null> {
     try {
       const payload = this.jwtService.verify(token);
+
+      // Check if user is blocked since token was issued
+      const user = await this.prisma.explorer.findUnique({
+        where: { id: payload.sub },
+        select: { blocked: true },
+      });
+      if (!user || user.blocked) return null;
+
       return {
         userId: payload.sub,
         role: payload.role,
@@ -330,7 +338,6 @@ export class AuthService {
         username: payload.username,
       };
     } catch (error) {
-      this.logger.error('JWT verification failed:', error);
       return null;
     }
   }
@@ -343,9 +350,10 @@ export class AuthService {
         throw new ServiceUnauthorizedException('Invalid token');
       }
 
-      const user = await this.prisma.user.findUnique({
+      const user = await this.prisma.explorer.findUnique({
         where: { id: tokenData.userId },
         select: {
+          id: true,
           role: true,
           username: true,
           email: true,
@@ -365,6 +373,7 @@ export class AuthService {
       }
 
       return {
+        id: user.id,
         role: user.role as UserRole,
         username: user.username,
         email: user.email,
@@ -395,8 +404,9 @@ export class AuthService {
       // Check for suspicious registration patterns
       await this.detectSuspiciousRegistration(email, username);
 
-      // Verify reCAPTCHA token when configured
-      if (this.recaptchaService.isConfigured()) {
+      // Verify reCAPTCHA token when configured (skip in development)
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      if (this.recaptchaService.isConfigured() && !isDevelopment) {
         if (!payload.recaptchaToken) {
           throw new ServiceForbiddenException(
             'reCAPTCHA verification required',
@@ -415,14 +425,14 @@ export class AuthService {
       const password = hashPassword(payload.password);
 
       // check if the email is available
-      const isEmailAvailable = await this.prisma.user
+      const isEmailAvailable = await this.prisma.explorer
         .count({ where: { email } })
         .then((count) => count <= 0);
       if (!isEmailAvailable)
         throw new ServiceForbiddenException(AppErrorCode.EMAIL_ALREADY_IN_USE);
 
       // check if the username is available
-      const isUsernameAvailable = await this.prisma.user
+      const isUsernameAvailable = await this.prisma.explorer
         .count({ where: { username } })
         .then((count) => count <= 0);
       if (!isUsernameAvailable)
@@ -431,7 +441,7 @@ export class AuthService {
         );
 
       // create a user
-      await this.prisma.user.create({
+      await this.prisma.explorer.create({
         data: {
           email,
           username,
@@ -472,10 +482,8 @@ export class AuthService {
       }
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('sign up failed');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -501,10 +509,8 @@ export class AuthService {
       }
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('sign up failed');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -513,7 +519,7 @@ export class AuthService {
       const { sid } = payload;
 
       // invalidate the session
-      await this.prisma.userSession
+      await this.prisma.explorerSession
         .updateMany({
           where: { sid },
           data: { expired: true, expires_at: dateformat().toDate() },
@@ -523,33 +529,37 @@ export class AuthService {
         });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('session not found');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
   async createSession(options: ISessionCreateOptions) {
     try {
-      const { ip, userAgent, userId, sid } = options || {};
+      const { ip, userAgent, userId, sid, remember } = options || {};
 
-      // validate the session
-      const session = await this.validateSession({ sid });
-      if (session)
-        throw new ServiceBadRequestException('session already exists');
+      // Check if session already exists - if so, delete it and create a new one
+      const existingSession = await this.validateSession({ sid });
+      if (existingSession) {
+        // Delete the existing session record to allow creating a new one
+        await this.prisma.explorerSession.deleteMany({
+          where: { sid },
+        });
+      }
 
-      const sessionId = sid ? sid : generator.sessionId();
-      const expiredAt = dateformat().add(168, 'h').toDate();
+      // Always generate a new session ID to avoid unique constraint issues
+      const sessionId = generator.sessionId();
+      const sessionDurationHours = remember ? 720 : 168; // 30 days or 7 days
+      const expiredAt = dateformat().add(sessionDurationHours, 'h').toDate();
 
       // create a session
-      await this.prisma.userSession.create({
+      await this.prisma.explorerSession.create({
         data: {
           sid: sessionId,
           expires_at: expiredAt,
           ip_address: ip,
           user_agent: userAgent,
-          user_id: userId,
+          explorer_id: userId,
         },
       });
 
@@ -561,10 +571,8 @@ export class AuthService {
       return response;
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('session not created');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -578,26 +586,34 @@ export class AuthService {
 
       if (!sid) throw new ServiceUnauthorizedException();
 
-      // check the session
-      const session = await this.prisma.userSession.findFirstOrThrow({
-        where: { sid },
+      // check the session (must exist, not expired, and not past expiration date)
+      const session = await this.prisma.explorerSession.findFirstOrThrow({
+        where: {
+          sid,
+          expired: { not: true },
+          expires_at: { gt: new Date() },
+        },
         select: {
           id: true,
           sid: true,
-          user: {
+          explorer: {
             select: {
               id: true,
               email: true,
               role: true,
+              blocked: true,
             },
           },
         },
       });
 
+      // reject blocked users
+      if (session.explorer.blocked) return null;
+
       const response = {
         sid: session.sid,
-        role: session.user.role as UserRole,
-        userId: session.user.id,
+        role: session.explorer.role as UserRole,
+        userId: session.explorer.id,
       };
 
       return response;
@@ -613,12 +629,14 @@ export class AuthService {
       const { email } = payload || {};
       const maxRequests = config.verification_request_limit || 0;
 
-      // check if the user exists
-      const user = await this.prisma.user
+      // check if the user exists — return silently if not found to prevent enumeration
+      const user = await this.prisma.explorer
         .findFirstOrThrow({ where: { email } })
         .catch(() => null);
-      if (!user)
-        throw new ServiceBadRequestException('user with this email not found');
+      if (!user) {
+        this.logger.warn('Password reset requested for non-existent email');
+        return;
+      }
 
       // generate a token
       const token = generator.verificationToken();
@@ -670,10 +688,8 @@ export class AuthService {
       });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('password can not be reset');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -697,7 +713,7 @@ export class AuthService {
         const hashedPassword = hashPassword(password);
 
         // update the user
-        await tx.user.update({
+        await tx.explorer.update({
           where: { email: verification.email },
           data: { password: hashedPassword },
         });
@@ -713,10 +729,8 @@ export class AuthService {
       });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('token is expired or invalid');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -731,10 +745,8 @@ export class AuthService {
       });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('token is expired or invalid');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -744,7 +756,7 @@ export class AuthService {
       const maxRequests = config.verification_request_limit || 0;
 
       // check if the user exists
-      const user = await this.prisma.user
+      const user = await this.prisma.explorer
         .findFirstOrThrow({ where: { email } })
         .catch(() => null);
       if (!user)
@@ -790,6 +802,10 @@ export class AuthService {
       ).toString();
 
       // send the email
+      this.logger.log(
+        `[EMAIL_VERIFICATION] Triggering email to: ${email}, link: ${link}`,
+      );
+
       this.eventService.trigger<IEventSendEmail>({
         event: EVENTS.SEND_EMAIL,
         data: {
@@ -798,12 +814,12 @@ export class AuthService {
           vars: { verification_link: link },
         },
       });
+
+      this.logger.log(`[EMAIL_VERIFICATION] Event triggered for: ${email}`);
     } catch (e) {
-      this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('email verification can not be sent');
-      throw exception;
+      this.logger.error(`[EMAIL_VERIFICATION] Error:`, e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -823,7 +839,7 @@ export class AuthService {
       // update the user and expire the token
       await this.prisma.$transaction(async (tx) => {
         // update the user
-        await tx.user.update({
+        await tx.explorer.update({
           where: { email: verification.email },
           data: { is_email_verified: true },
         });
@@ -848,10 +864,8 @@ export class AuthService {
       });
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceForbiddenException('token is expired or invalid');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 
@@ -860,10 +874,14 @@ export class AuthService {
     try {
       const { email } = payload;
 
+      this.logger.log(`[SIGNUP_COMPLETE] Event received for email: ${email}`);
+
       // send email verification
       await this.sendEmailVerification(email);
+
+      this.logger.log(`[SIGNUP_COMPLETE] Email verification sent to: ${email}`);
     } catch (e) {
-      this.logger.error(e);
+      this.logger.error(`[SIGNUP_COMPLETE] Error:`, e);
     }
   }
 
@@ -955,7 +973,7 @@ export class AuthService {
     }
 
     // Check for too many similar registrations (basic pattern)
-    const similarEmailCount = await this.prisma.user.count({
+    const similarEmailCount = await this.prisma.explorer.count({
       where: {
         email: {
           contains: email.split('@')[0].slice(0, -3), // Check similar email prefixes
@@ -975,7 +993,7 @@ export class AuthService {
     // Check for sequential username registrations
     const baseUsername = username.replace(/\d+$/, ''); // Remove trailing numbers
     if (baseUsername.length >= 3) {
-      const similarUsernameCount = await this.prisma.user.count({
+      const similarUsernameCount = await this.prisma.explorer.count({
         where: {
           username: {
             startsWith: baseUsername,
@@ -1003,7 +1021,7 @@ export class AuthService {
       if (!access) throw new ServiceForbiddenException();
 
       // Get user details
-      const user = await this.prisma.user.findFirst({
+      const user = await this.prisma.explorer.findFirst({
         where: { id: userId },
         select: {
           email: true,
@@ -1025,10 +1043,8 @@ export class AuthService {
       return { success: true, message: 'Verification email sent' };
     } catch (e) {
       this.logger.error(e);
-      const exception = e.status
-        ? new ServiceException(e.message, e.status)
-        : new ServiceBadRequestException('Failed to send verification email');
-      throw exception;
+      if (e.status) throw e;
+      throw new ServiceInternalException();
     }
   }
 }

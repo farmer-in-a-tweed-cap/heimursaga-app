@@ -9,7 +9,7 @@
     "build": "nest build --tsc",
     "postinstall": "npx prisma generate",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "dev": "nest start --watch",
+    "dev": "cross-env NODE_ENV=development nest start --watch",
     "start": "node ./dist/main.js",
     "start:dev": "cross-env NODE_ENV=development nest start --watch",
     "start:debug": "nest start --debug --watch",

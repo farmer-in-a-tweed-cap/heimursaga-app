@@ -50,11 +50,6 @@ export class AppService {
         return url;
       };
 
-      const router = {
-        entries: 'entries',
-        legal: 'legal',
-      };
-
       type SitemapSource = {
         path: string;
         priority: number;
@@ -64,29 +59,33 @@ export class AppService {
 
       const sources: SitemapSource[] = [];
 
-      // @todo: add static pages
+      // static pages
       sources.push(
         ...[
-          { path: '/' },
-          { path: '/explore' },
-          { path: '/login' },
-          { path: '/signup' },
-          { path: '/user-guide' },
-          { path: [router.legal, 'terms'].join('/') },
-          { path: [router.legal, 'privacy'].join('/') },
+          { path: '/', changefreq: 'daily' as const },
+          { path: '/explorers', changefreq: 'daily' as const },
+          { path: '/expeditions', changefreq: 'daily' as const },
+          { path: '/entries', changefreq: 'daily' as const },
+          { path: '/about', changefreq: 'monthly' as const },
+          { path: '/documentation', changefreq: 'monthly' as const },
+          { path: '/explorer-guidelines', changefreq: 'monthly' as const },
+          { path: '/sponsorship-guide', changefreq: 'monthly' as const },
+          { path: '/upgrade', changefreq: 'monthly' as const },
+          { path: '/legal/terms', changefreq: 'monthly' as const },
+          { path: '/legal/privacy', changefreq: 'monthly' as const },
         ].map(
-          ({ path }) =>
+          ({ path, changefreq }) =>
             ({
               path,
               date: new Date(),
               priority: 1,
-              changefreq: 'daily',
+              changefreq,
             }) as SitemapSource,
         ),
       );
 
-      // add entries (posts)
-      const posts = await this.prisma.post.findMany({
+      // entries
+      const posts = await this.prisma.entry.findMany({
         where: {
           public: true,
           public_id: { not: null },
@@ -104,16 +103,42 @@ export class AppService {
           .map(
             ({ public_id, updated_at }) =>
               ({
-                path: [router.entries, public_id].join('/'),
+                path: `entry/${public_id}`,
                 date: updated_at,
-                priority: 1,
+                priority: 0.8,
                 changefreq: 'daily',
               }) as SitemapSource,
           ),
       );
 
-      // add users (exclude blocked users)
-      const users = await this.prisma.user.findMany({
+      // expeditions (public, not deleted)
+      const expeditions = await this.prisma.expedition.findMany({
+        where: {
+          public: true,
+          deleted_at: null,
+        },
+        select: {
+          public_id: true,
+          updated_at: true,
+        },
+      });
+
+      sources.push(
+        ...expeditions
+          .filter(({ public_id }) => public_id && public_id !== '')
+          .map(
+            ({ public_id, updated_at }) =>
+              ({
+                path: `expedition/${public_id}`,
+                date: updated_at,
+                priority: 0.9,
+                changefreq: 'daily',
+              }) as SitemapSource,
+          ),
+      );
+
+      // explorer journals (exclude blocked users)
+      const users = await this.prisma.explorer.findMany({
         where: {
           NOT: {
             blocked: true,
@@ -129,9 +154,9 @@ export class AppService {
         ...users.map(
           ({ username, updated_at }) =>
             ({
-              path: `user/${username}`,
+              path: `journal/${username}`,
               date: updated_at,
-              priority: 1,
+              priority: 0.8,
               changefreq: 'daily',
             }) as SitemapSource,
         ),

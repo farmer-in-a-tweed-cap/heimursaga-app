@@ -57,13 +57,18 @@ export class EmailService {
       });
     } catch (e) {
       this.logger.error(e);
-      if (e.status) throw new ServiceException(e.message, e.status);
+      if (e.status) throw e;
     }
   }
 
   @OnEvent(EVENTS.SEND_EMAIL)
   async onSend(event: IEventSendEmail): Promise<void> {
     try {
+      this.logger.log(`[SEND_EMAIL] Event received:`, {
+        to: event.to,
+        template: event.template,
+      });
+
       const { to, vars } = event;
 
       // get the template
@@ -73,23 +78,31 @@ export class EmailService {
       // send the email
       if (template) {
         const { subject, html } = template;
+        this.logger.log(
+          `[SEND_EMAIL] Sending templated email to: ${to}, subject: ${subject}`,
+        );
         await this.send({
           to,
           subject,
           html,
         });
+        this.logger.log(`[SEND_EMAIL] Email sent successfully to: ${to}`);
       } else {
         const { subject, text, html } = event;
 
+        this.logger.log(
+          `[SEND_EMAIL] Sending custom email to: ${to}, subject: ${subject}`,
+        );
         await this.send({
           to,
           subject,
           text: html ? undefined : text,
           html: html ? html : undefined,
         });
+        this.logger.log(`[SEND_EMAIL] Email sent successfully to: ${to}`);
       }
     } catch (e) {
-      this.logger.error(e);
+      this.logger.error(`[SEND_EMAIL] Error sending email:`, e);
     }
   }
 
@@ -117,7 +130,7 @@ export class EmailService {
       );
 
       // Get creator info
-      const creator = await this.prisma.user.findUnique({
+      const creator = await this.prisma.explorer.findUnique({
         where: { id: creatorId },
         select: {
           username: true,
@@ -131,7 +144,7 @@ export class EmailService {
       }
 
       // Get entry details with media and waypoint
-      const entry = await this.prisma.post.findFirst({
+      const entry = await this.prisma.entry.findFirst({
         where: { public_id: entryId },
         select: {
           id: true,
@@ -169,7 +182,7 @@ export class EmailService {
       // Get active monthly sponsors with email delivery enabled
       const sponsors = await this.prisma.sponsorship.findMany({
         where: {
-          creator_id: creatorId,
+          sponsored_explorer_id: creatorId,
           type: SponsorshipType.SUBSCRIPTION,
           status: SponsorshipStatus.ACTIVE,
           email_delivery_enabled: true,
@@ -177,7 +190,7 @@ export class EmailService {
           deleted_at: null,
         },
         include: {
-          user: {
+          sponsor: {
             select: {
               email: true,
               username: true,
@@ -199,9 +212,9 @@ export class EmailService {
 
       // Send emails to each sponsor
       for (const sponsorship of sponsors) {
-        if (!sponsorship.user.is_email_verified) {
+        if (!sponsorship.sponsor.is_email_verified) {
           this.logger.log(
-            `Skipping unverified email: ${sponsorship.user.email}`,
+            `Skipping unverified email: ${sponsorship.sponsor.email}`,
           );
           continue;
         }
@@ -252,13 +265,13 @@ export class EmailService {
 
         if (template) {
           await this.send({
-            to: sponsorship.user.email,
+            to: sponsorship.sponsor.email,
             subject: template.subject,
             html: template.html,
           });
 
           this.logger.log(
-            `Sent entry delivery to ${sponsorship.user.email} for entry ${entryId}`,
+            `Sent entry delivery to ${sponsorship.sponsor.email} for entry ${entryId}`,
           );
         }
       }

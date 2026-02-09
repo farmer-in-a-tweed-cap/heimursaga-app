@@ -28,4 +28,4 @@ export const config = {
 
 export const APPLICATION_FEE = process.env?.APPLICATION_FEE
   ? parseInt(process.env.APPLICATION_FEE)
-  : 0;
+  : 5;

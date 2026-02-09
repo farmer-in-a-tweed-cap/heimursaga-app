@@ -5,9 +5,13 @@ export enum AppErrorCode {
 
 export enum UserRole {
   ADMIN = 'admin',
-  CREATOR = 'creator',
+  CREATOR = 'creator', // Displayed to users as "Explorer Pro"
   USER = 'user',
 }
+
+// Alias for new naming convention
+export const ExplorerRole = UserRole;
+export type ExplorerRole = UserRole;
 
 export enum CheckoutMode {
   UPGRADE = 'upgrade',
@@ -39,7 +43,20 @@ export enum UserNotificationContext {
   SPONSORSHIP = 'sponsorship',
   COMMENT = 'comment',
   COMMENT_REPLY = 'comment_reply',
+  ENTRY_MILESTONE = 'entry_milestone',
+  EXPEDITION_STARTED = 'expedition_started',
+  EXPEDITION_COMPLETED = 'expedition_completed',
+  SPONSORSHIP_MILESTONE = 'sponsorship_milestone',
+  SYSTEM = 'system',
+  // Passport notifications
+  PASSPORT_COUNTRY = 'passport_country',
+  PASSPORT_CONTINENT = 'passport_continent',
+  PASSPORT_STAMP = 'passport_stamp',
 }
+
+// Alias for new naming convention
+export const ExplorerNotificationContext = UserNotificationContext;
+export type ExplorerNotificationContext = UserNotificationContext;
 
 export enum PayoutMethodPlatform {
   STRIPE = 'stripe',
@@ -61,6 +78,11 @@ export enum SponsorshipType {
 export enum SponsorshipBillingPeriod {
   MONTHLY = 'monthly',
   YEARLY = 'yearly',
+}
+
+export enum SponsorshipTierType {
+  ONE_TIME = 'ONE_TIME',
+  MONTHLY = 'MONTHLY',
 }
 export enum CurrencyCode {
   USD = 'usd',
