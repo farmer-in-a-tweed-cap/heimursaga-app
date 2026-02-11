@@ -302,6 +302,7 @@ export interface ExplorerProfile {
     lat: number; lon: number; name: string;
     expeditionId: string; expeditionTitle: string;
   };
+  activeExpeditionOffGrid?: boolean;
 }
 
 export interface ExplorerListItem {
@@ -335,6 +336,7 @@ export interface ExplorerListItem {
     lat: number; lon: number; name: string;
     expeditionId: string; expeditionTitle: string;
   };
+  activeExpeditionOffGrid?: boolean;
   // Last entry date (returned when context=following)
   lastEntryDate?: string;
 }
@@ -385,6 +387,7 @@ export interface ExplorerExpedition {
   title: string;
   description?: string;
   status?: string;
+  visibility?: 'public' | 'off-grid' | 'private';
   startDate?: string;
   endDate?: string;
   coverImage?: string;
@@ -680,6 +683,7 @@ export interface Expedition {
     };
   }>;
   public?: boolean;
+  visibility?: 'public' | 'off-grid' | 'private';
   category?: string;
   region?: string;
   tags?: string[];
@@ -709,6 +713,7 @@ export interface Expedition {
 export interface ExpeditionCreatePayload {
   title: string;
   description?: string;
+  visibility?: 'public' | 'off-grid' | 'private';
   startDate?: string;
   endDate?: string;
   goal?: number;

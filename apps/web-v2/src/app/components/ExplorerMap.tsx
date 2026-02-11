@@ -245,7 +245,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
               entriesCount: explorer.entriesCount || 0,
               creator: explorer.creator || false,
               locationVisibility: hasExpeditionLoc ? 'precise_coordinates' : visibility,
-              status: getExplorerStatus(explorer.recentExpeditions || []),
+              status: getExplorerStatus(explorer.recentExpeditions || [], explorer.activeExpeditionOffGrid),
               activeExpeditionLocation: hasExpeditionLoc,
             };
           });

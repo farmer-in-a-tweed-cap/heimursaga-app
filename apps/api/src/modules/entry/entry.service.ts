@@ -171,6 +171,15 @@ export class EntryService {
           break;
       }
 
+      // Only show entries from public expeditions (or standalone entries not off-grid)
+      const publicExpeditionFilter = {
+        OR: [
+          { expedition_id: null, NOT: { visibility: 'off-grid' } },
+          { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+        ],
+      } as Prisma.EntryWhereInput;
+      where = { ...where, ...publicExpeditionFilter };
+
       // Filter to entries from followed explorers
       if (context === 'following') {
         if (!explorerId) throw new ServiceForbiddenException();
@@ -459,6 +468,7 @@ export class EntryService {
             select: {
               public_id: true,
               title: true,
+              visibility: true,
               start_date: true, // Need for expeditionDay calculation
             },
           },
@@ -589,6 +599,7 @@ export class EntryService {
         visibility: entry.visibility as
           | 'public'
           | 'sponsors-only'
+          | 'off-grid'
           | 'private'
           | undefined,
         // Include expedition (trip) if entry belongs to one
@@ -596,6 +607,7 @@ export class EntryService {
           ? {
               id: entry.expedition.public_id,
               title: entry.expedition.title,
+              visibility: entry.expedition.visibility as 'public' | 'off-grid' | 'private' | undefined,
               entriesCount: expeditionEntriesCount || 0,
             }
           : undefined,
@@ -800,7 +812,7 @@ export class EntryService {
       }
 
       // Validate visibility if provided
-      const validVisibilities = ['public', 'sponsors-only', 'private'];
+      const validVisibilities = ['public', 'sponsors-only', 'off-grid', 'private'];
       if (visibility && !validVisibilities.includes(visibility)) {
         throw new ServiceBadRequestException(
           `Invalid visibility: ${visibility}. Must be one of: ${validVisibilities.join(', ')}`,
@@ -1011,7 +1023,7 @@ export class EntryService {
       }
 
       // Validate visibility if provided
-      const validVisibilities = ['public', 'sponsors-only', 'private'];
+      const validVisibilities = ['public', 'sponsors-only', 'off-grid', 'private'];
       if (visibility && !validVisibilities.includes(visibility)) {
         throw new ServiceBadRequestException(
           `Invalid visibility: ${visibility}. Must be one of: ${validVisibilities.join(', ')}`,

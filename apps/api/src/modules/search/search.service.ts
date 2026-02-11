@@ -62,7 +62,7 @@ export class SearchService {
         ],
       });
 
-      // Search for public entries by title
+      // Search for public entries by title (exclude off-grid/private expedition entries)
       const entries = await this.prisma.entry.findMany({
         where: {
           AND: [
@@ -74,6 +74,12 @@ export class SearchService {
             },
             {
               public: true,
+            },
+            {
+              OR: [
+                { expedition_id: null, NOT: { visibility: 'off-grid' } },
+                { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+              ],
             },
           ],
         },

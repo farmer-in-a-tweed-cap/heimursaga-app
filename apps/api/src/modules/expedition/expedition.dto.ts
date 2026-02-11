@@ -38,6 +38,11 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
+  visibility?: 'public' | 'off-grid' | 'private';
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
   status?: string;
 
   @ApiProperty({ required: false })
@@ -99,6 +104,11 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @IsBoolean()
   @IsOptional()
   public?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  visibility?: 'public' | 'off-grid' | 'private';
 
   @ApiProperty({ required: false })
   @IsString()
@@ -187,7 +197,7 @@ export class ExpeditionUpdateLocationDto {
 
   @IsString()
   @IsOptional()
-  visibility?: string; // 'public' | 'sponsors' | 'private'
+  visibility?: 'public' | 'off-grid' | 'private'; // 'public' | 'sponsors' | 'private'
 }
 
 export class WaypointCreateDto implements IWaypointCreatePayload {

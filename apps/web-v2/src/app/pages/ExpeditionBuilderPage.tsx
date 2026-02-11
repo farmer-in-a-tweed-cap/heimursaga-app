@@ -40,7 +40,7 @@ interface ExpeditionData {
   category: string;
   startDate: string;
   endDate: string;
-  isPublic: boolean;
+  visibility: 'public' | 'off-grid' | 'private';
 }
 
 // Mapbox configuration - token loaded from environment variable
@@ -96,7 +96,7 @@ export function ExpeditionBuilderPage() {
     category: '',
     startDate: '',
     endDate: '',
-    isPublic: true
+    visibility: 'public'
   });
 
   const [sponsorshipsEnabled, setSponsorshipsEnabled] = useState(false);
@@ -175,7 +175,7 @@ export function ExpeditionBuilderPage() {
       const payload = {
         title: expeditionData.title,
         description: expeditionData.description,
-        public: expeditionData.isPublic,
+        visibility: expeditionData.visibility,
         status: computeStatus(),
         startDate: expeditionData.startDate || undefined,
         endDate: expeditionData.endDate || undefined,
@@ -620,7 +620,7 @@ export function ExpeditionBuilderPage() {
           category: expedition.category || '',
           startDate: expedition.startDate ? new Date(expedition.startDate).toISOString().split('T')[0] : '',
           endDate: expedition.endDate ? new Date(expedition.endDate).toISOString().split('T')[0] : '',
-          isPublic: expedition.public !== false
+          visibility: expedition.visibility || (expedition.public !== false ? 'public' : 'private')
         });
 
         // Set cover photo from API (already full URL)
@@ -1995,8 +1995,8 @@ export function ExpeditionBuilderPage() {
                 checked={sponsorshipsEnabled}
                 onChange={(e) => {
                   setSponsorshipsEnabled(e.target.checked);
-                  if (e.target.checked) {
-                    setExpeditionData({ ...expeditionData, isPublic: true });
+                  if (e.target.checked && expeditionData.visibility === 'private') {
+                    setExpeditionData({ ...expeditionData, visibility: 'public' });
                   }
                 }}
                 disabled={!isPro}
@@ -2037,9 +2037,9 @@ export function ExpeditionBuilderPage() {
           <div className="mt-6 border-2 border-[#4676ac] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
             <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">
               VISIBILITY:
-              {isEditMode && <span className="ml-2 text-xs text-[#616161] dark:text-[#b5bcc4]">(LOCKED)</span>}
+              {isEditMode && expeditionData.visibility === 'private' && <span className="ml-2 text-xs text-[#616161] dark:text-[#b5bcc4]">(LOCKED)</span>}
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex items-start gap-2">
                 <input
@@ -2047,14 +2047,31 @@ export function ExpeditionBuilderPage() {
                   id="visibility-public"
                   name="visibility"
                   className="mt-1"
-                  checked={expeditionData.isPublic}
-                  onChange={() => setExpeditionData({ ...expeditionData, isPublic: true })}
-                  disabled={isEditMode}
+                  checked={expeditionData.visibility === 'public'}
+                  onChange={() => setExpeditionData({ ...expeditionData, visibility: 'public' })}
+                  disabled={isEditMode && expeditionData.visibility === 'private'}
                 />
-                <label htmlFor="visibility-public" className={`text-xs ${isEditMode ? 'opacity-50' : ''}`}>
+                <label htmlFor="visibility-public" className={`text-xs ${isEditMode && expeditionData.visibility === 'private' ? 'opacity-50' : ''}`}>
                   <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">PUBLIC EXPEDITION</div>
                   <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
-                    Expedition and all journal entries are visible to everyone. Individual entries can still be set to private.
+                    Listed in feeds, search, and your explorer profile. Anyone can discover your expedition.
+                  </div>
+                </label>
+              </div>
+              <div className="flex items-start gap-2">
+                <input
+                  type="radio"
+                  id="visibility-offgrid"
+                  name="visibility"
+                  className="mt-1"
+                  checked={expeditionData.visibility === 'off-grid'}
+                  onChange={() => setExpeditionData({ ...expeditionData, visibility: 'off-grid' })}
+                  disabled={isEditMode && expeditionData.visibility === 'private'}
+                />
+                <label htmlFor="visibility-offgrid" className={`text-xs ${isEditMode && expeditionData.visibility === 'private' ? 'opacity-50' : ''}`}>
+                  <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">OFF-GRID</div>
+                  <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
+                    Hidden from all feeds and search. Only accessible via direct link. Sponsorships still work — share the link directly with potential sponsors.
                   </div>
                 </label>
               </div>
@@ -2064,14 +2081,14 @@ export function ExpeditionBuilderPage() {
                   id="visibility-private"
                   name="visibility"
                   className="mt-1"
-                  checked={!expeditionData.isPublic}
-                  onChange={() => setExpeditionData({ ...expeditionData, isPublic: false })}
-                  disabled={sponsorshipsEnabled || isEditMode}
+                  checked={expeditionData.visibility === 'private'}
+                  onChange={() => setExpeditionData({ ...expeditionData, visibility: 'private' })}
+                  disabled={sponsorshipsEnabled || (isEditMode && expeditionData.visibility !== 'private')}
                 />
-                <label htmlFor="visibility-private" className={`text-xs ${sponsorshipsEnabled || isEditMode ? 'opacity-50' : ''}`}>
+                <label htmlFor="visibility-private" className={`text-xs ${sponsorshipsEnabled || (isEditMode && expeditionData.visibility !== 'private') ? 'opacity-50' : ''}`}>
                   <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">PRIVATE EXPEDITION</div>
                   <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
-                    Expedition is hidden. <span className="font-bold text-[#ac6d46]">ALL journal entries in this expedition will be automatically locked to private.</span>
+                    Only you can access this expedition. <span className="font-bold text-[#ac6d46]">ALL journal entries automatically locked to private.</span>
                   </div>
                 </label>
               </div>
@@ -2079,7 +2096,7 @@ export function ExpeditionBuilderPage() {
 
             {sponsorshipsEnabled && (
               <div className="mt-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                <strong className="text-[#ac6d46]">SPONSORSHIPS ENABLED:</strong> Expeditions with sponsorships enabled must remain public so sponsors can view the expedition they're supporting.
+                <strong className="text-[#ac6d46]">SPONSORSHIPS ENABLED:</strong> Expeditions with sponsorships cannot be set to Private. Public and Off-Grid expeditions both support sponsorships.
               </div>
             )}
 
@@ -2087,16 +2104,25 @@ export function ExpeditionBuilderPage() {
               <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-l-2 border-yellow-600 text-xs">
                 <strong className="text-yellow-700 dark:text-yellow-500">⚠️ PERMANENT SETTING:</strong>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
-                  Visibility, category, region, and start date <span className="font-bold">cannot be edited after creation.</span> These fundamental expedition properties are locked to maintain expedition integrity and consistency for sponsors and readers.
+                  Private visibility <span className="font-bold">cannot be changed after creation.</span> Public and Off-Grid can be toggled freely. Category, region, and start date are also locked after creation.
                 </div>
               </div>
             )}
-            
-            {isEditMode && (
+
+            {isEditMode && expeditionData.visibility === 'private' && (
               <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-2 border-[#4676ac] text-xs">
                 <strong className="text-[#4676ac]">LOCKED FIELDS:</strong>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
-                  Visibility, category, region, and start date are locked for existing expeditions. Other fields including description, tags, and waypoints can be modified.
+                  Private visibility, category, region, and start date are locked for existing expeditions. Other fields including description, tags, and waypoints can be modified.
+                </div>
+              </div>
+            )}
+
+            {isEditMode && expeditionData.visibility !== 'private' && (
+              <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border-l-2 border-[#4676ac] text-xs">
+                <strong className="text-[#4676ac]">LOCKED FIELDS:</strong>
+                <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
+                  Category, region, and start date are locked for existing expeditions. Visibility can be toggled between Public and Off-Grid.
                 </div>
               </div>
             )}

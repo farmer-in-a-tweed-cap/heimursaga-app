@@ -287,7 +287,7 @@ export function ExplorersPage() {
           {explorers.map((explorer) => {
             // Compute explorer status from their expeditions
             const expeditions = explorer.recentExpeditions || [];
-            const explorerStatus = getExplorerStatus(expeditions);
+            const explorerStatus = getExplorerStatus(expeditions, explorer.activeExpeditionOffGrid);
             const currentExpedition = getCurrentExpeditionInfo(expeditions);
 
             return (

@@ -144,6 +144,7 @@ export class ExplorerService {
             public_id: true,
             title: true,
             status: true,
+            visibility: true,
             start_date: true,
             current_location_type: true,
             current_location_id: true,
@@ -187,6 +188,7 @@ export class ExplorerService {
         const activeExp = explorer.expeditions?.find(
           (exp) =>
             (exp.status === 'active' || exp.status === 'planned') &&
+            exp.visibility !== 'off-grid' &&
             exp.current_location_type &&
             exp.current_location_id &&
             (exp.current_location_visibility || 'public') === 'public',
@@ -235,6 +237,15 @@ export class ExplorerService {
               )
             : undefined;
 
+          // Check if explorer has active off-grid expedition (but no public one)
+          const hasPublicActiveExp = expeditions?.some(
+            (exp) => (exp.status === 'active' || exp.status === 'planned') && exp.visibility === 'public',
+          );
+          const hasOffGridActiveExp = expeditions?.some(
+            (exp) => (exp.status === 'active' || exp.status === 'planned') && exp.visibility === 'off-grid',
+          );
+          const activeExpeditionOffGrid = !hasPublicActiveExp && !!hasOffGridActiveExp;
+
           return {
             username,
             role,
@@ -253,6 +264,7 @@ export class ExplorerService {
             postsCount: entries_count,
             memberDate: created_at,
             creator: role === UserRole.CREATOR,
+            activeExpeditionOffGrid,
             // Include followed status for authenticated users (exclude self)
             followed:
               explorerId && id !== explorerId
@@ -412,6 +424,19 @@ export class ExplorerService {
         },
       });
 
+      // Check if explorer has an active off-grid expedition (but no public one)
+      const allActiveExps = await this.prisma.expedition.findMany({
+        where: {
+          author_id: explorer.id,
+          deleted_at: null,
+          status: { in: ['active', 'planned'] },
+        },
+        select: { visibility: true },
+      });
+      const hasPublicActiveExp = allActiveExps.some((e) => e.visibility === 'public');
+      const hasOffGridActiveExp = allActiveExps.some((e) => e.visibility === 'off-grid');
+      const activeExpeditionOffGrid = !hasPublicActiveExp && !!hasOffGridActiveExp;
+
       // Resolve active expedition location if available
       const activeExp = explorer.expeditions?.[0];
       let activeExpeditionLocation:
@@ -479,6 +504,7 @@ export class ExplorerService {
         youtube: explorer.profile?.youtube,
         equipment: (explorer.profile?.equipment as string[]) || [],
         activeExpeditionLocation,
+        activeExpeditionOffGrid,
       } as IUserGetByUsernameResponse;
 
       return response;
@@ -557,6 +583,11 @@ export class ExplorerService {
         // Entries store coordinates directly
         lat: { not: null },
         lon: { not: null },
+        // Only show entries from public expeditions (or standalone entries not off-grid)
+        OR: [
+          { expedition_id: null, NOT: { visibility: 'off-grid' } },
+          { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+        ],
       } as Prisma.EntryWhereInput;
 
       const select = {
@@ -787,7 +818,7 @@ export class ExplorerService {
     try {
       if (!username) throw new ServiceNotFoundException('explorer not found');
 
-      // get explorer entries
+      // get explorer entries (exclude off-grid)
       const entries = await this.prisma.entry.findMany({
         where: {
           public: true,
@@ -795,6 +826,10 @@ export class ExplorerService {
             username,
           },
           deleted_at: null,
+          OR: [
+            { expedition_id: null, NOT: { visibility: 'off-grid' } },
+            { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+          ],
         },
         select: {
           public_id: true,
@@ -2272,6 +2307,7 @@ export class SessionExplorerService {
         end_date: true,
         cover_image: true,
         public: true,
+        visibility: true,
         goal: true,
         raised: true,
         entries_count: true,
@@ -2306,6 +2342,7 @@ export class SessionExplorerService {
             start_date,
             end_date,
             cover_image,
+            visibility,
             goal,
             raised,
             entries_count,
@@ -2316,6 +2353,7 @@ export class SessionExplorerService {
             title,
             description,
             status,
+            visibility: visibility || 'public',
             startDate: start_date,
             endDate: end_date,
             coverImage: cover_image

@@ -90,6 +90,11 @@ export class AppService {
           public: true,
           public_id: { not: null },
           deleted_at: null,
+          NOT: { visibility: 'off-grid' },
+          OR: [
+            { expedition_id: null },
+            { expedition: { visibility: 'public' } },
+          ],
         },
         select: {
           public_id: true,
@@ -114,7 +119,7 @@ export class AppService {
       // expeditions (public, not deleted)
       const expeditions = await this.prisma.expedition.findMany({
         where: {
-          public: true,
+          visibility: 'public',
           deleted_at: null,
         },
         select: {

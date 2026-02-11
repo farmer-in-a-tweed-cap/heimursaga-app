@@ -1,6 +1,6 @@
-import { Compass, Calendar, Coffee } from 'lucide-react';
+import { Compass, Calendar, Coffee, EyeOff } from 'lucide-react';
 
-export type ExplorerStatus = 'EXPLORING' | 'PLANNING' | 'RESTING';
+export type ExplorerStatus = 'EXPLORING' | 'EXPLORING_OFF_GRID' | 'PLANNING' | 'RESTING';
 
 interface ExplorerStatusBadgeProps {
   status: ExplorerStatus;
@@ -26,6 +26,14 @@ export function ExplorerStatusBadge({
           textColor: 'text-white',
           icon: Compass,
           description: currentExpeditionTitle ? `Currently on: ${currentExpeditionTitle}` : 'Active expedition',
+        };
+      case 'EXPLORING_OFF_GRID':
+        return {
+          label: 'EXPLORING \u2022 OFF-GRID',
+          color: 'bg-[#6b5c4e]',
+          textColor: 'text-white',
+          icon: EyeOff,
+          description: 'Currently on an off-grid expedition',
         };
       case 'PLANNING':
         return {
@@ -78,10 +86,11 @@ export function ExplorerStatusBadge({
 }
 
 // Helper function to determine explorer status from expeditions
-export function getExplorerStatus(expeditions: Array<{ status: string }>): ExplorerStatus {
+export function getExplorerStatus(expeditions: Array<{ status: string }>, activeExpeditionOffGrid?: boolean): ExplorerStatus {
   const hasActive = expeditions.some(e => e.status === 'active');
   const hasPlanned = expeditions.some(e => e.status === 'planned');
-  
+
+  if (hasActive && activeExpeditionOffGrid) return 'EXPLORING_OFF_GRID';
   if (hasActive) return 'EXPLORING';
   if (hasPlanned) return 'PLANNING';
   return 'RESTING';

@@ -172,6 +172,10 @@ export class MapService {
                 is_draft: false,
                 deleted_at: null,
                 waypoint_id: { not: null },
+                OR: [
+                  { expedition_id: null, NOT: { visibility: 'off-grid' } },
+                  { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+                ],
               },
             },
           };
@@ -187,6 +191,10 @@ export class MapService {
                   public: true,
                   is_draft: false,
                   deleted_at: null,
+                  OR: [
+                    { expedition_id: null, NOT: { visibility: 'off-grid' } },
+                    { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+                  ],
                   author: {
                     followers: {
                       some: {
@@ -208,6 +216,10 @@ export class MapService {
                 public: true,
                 is_draft: false,
                 deleted_at: null,
+                OR: [
+                  { expedition_id: null, NOT: { visibility: 'off-grid' } },
+                  { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+                ],
                 author: {
                   username,
                 },
@@ -216,8 +228,8 @@ export class MapService {
           };
           break;
         case MapQueryContext.TRIP:
-          // For TRIP context, show all waypoints attached to public journeys
-          // This includes both waypoints with posts (journal entries) and waypoints without posts (pure waypoints)
+          // For TRIP context, show all waypoints attached to non-private journeys
+          // Unauthenticated: public only. Authenticated: public + off-grid.
           where = {
             deleted_at: null,
             expeditions: tripId
@@ -225,12 +237,11 @@ export class MapService {
                   some: {
                     expedition: {
                       public_id: tripId,
-                      public: true, // Only show waypoints for public journeys
+                      visibility: userId ? { not: 'private' } : 'public',
                     },
                   },
                 }
               : undefined,
-            // No longer require waypoints to have posts - show both entries and pure waypoints
           };
           break;
         default:

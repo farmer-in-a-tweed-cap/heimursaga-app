@@ -119,6 +119,7 @@ export interface IUserGetAllResponse {
 export interface IUserGetByUsernameResponse extends IUserDetail {
   sponsorsFund?: string;
   equipment?: string[];
+  activeExpeditionOffGrid?: boolean;
 }
 
 export interface IUserSettingsResponse {
@@ -317,7 +318,7 @@ export interface IPostDetail {
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverImage?: string;
   isMilestone?: boolean;
-  visibility?: 'public' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
   author?: {
     username: string;
     name?: string;
@@ -329,6 +330,7 @@ export interface IPostDetail {
     id: string;
     title: string;
     entriesCount?: number;
+    visibility?: 'public' | 'off-grid' | 'private';
   };
   // Entry number within expedition (calculated on the fly)
   entryNumber?: number;
@@ -370,7 +372,7 @@ export interface IPostCreatePayload {
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverUploadId?: string;
   isMilestone?: boolean;
-  visibility?: 'public' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
 }
 
 export interface IPostCreateResponse {
@@ -397,7 +399,7 @@ export interface IPostUpdatePayload {
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverUploadId?: string;
   isMilestone?: boolean;
-  visibility?: 'public' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
 }
 
 export interface IPostLikeResponse {
@@ -876,6 +878,7 @@ export interface ITripDetail {
   endDate?: Date;
   description?: string;
   public?: boolean;
+  visibility?: 'public' | 'off-grid' | 'private';
   status?: string;
   coverImage?: string;
   category?: string;
@@ -955,6 +958,7 @@ export interface ITripCreatePayload {
   title: string;
   description?: string;
   public?: boolean;
+  visibility?: 'public' | 'off-grid' | 'private';
   status?: string;
   startDate?: Date | string;
   endDate?: Date | string;
@@ -976,6 +980,7 @@ export interface ITripUpdatePayload {
   title: string;
   description?: string;
   public?: boolean;
+  visibility?: 'public' | 'off-grid' | 'private';
   status?: string;
   startDate?: Date | string;
   endDate?: Date | string;

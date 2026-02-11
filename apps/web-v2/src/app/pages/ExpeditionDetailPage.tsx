@@ -292,7 +292,7 @@ export function ExpeditionDetailPage() {
       totalEntries: api.entriesCount || 0,
       totalWaypoints: api.waypointsCount || api.waypoints?.length || 0,
       tags: api.tags || [],
-      privacy: api.public !== false ? 'public' : 'private',
+      privacy: api.visibility || (api.public !== false ? 'public' : 'private'),
       commentsEnabled: true, // Not in API yet
       imageUrl: api.coverImage || 'https://images.unsplash.com/photo-1503806837798-ea0ce2e6402e?w=800',
     };
@@ -2297,7 +2297,7 @@ export function ExpeditionDetailPage() {
               <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Started:</span> {formatDate(expedition.startDate)}</div>
               <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Est. End:</span> {formatDate(expedition.estimatedEndDate)}</div>
               <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Duration:</span> {expedition.daysActive} / {totalDuration || '?'} days</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Privacy:</span> {expedition.privacy}</div>
+              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Privacy:</span> {expedition.privacy === 'off-grid' ? 'Off-Grid' : expedition.privacy === 'private' ? 'Private' : 'Public'}</div>
               <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Comments:</span> {expedition.commentsEnabled ? 'Enabled' : 'Disabled'}</div>
             </div>
           </div>

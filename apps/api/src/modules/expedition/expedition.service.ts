@@ -144,27 +144,27 @@ export class ExpeditionService {
         // Unauthenticated: show only public expeditions
         where = {
           ...where,
-          public: true,
+          visibility: 'public',
         };
       } else {
         switch (explorerRole) {
           case ExplorerRole.CREATOR:
             where = {
               ...where,
-              OR: [{ public: true }, { author_id: explorerId }],
+              OR: [{ visibility: 'public' }, { author_id: explorerId }],
             };
             break;
           case ExplorerRole.USER:
             where = {
               ...where,
-              public: true,
+              visibility: 'public',
             };
             break;
           default:
             // Default to public expeditions
             where = {
               ...where,
-              public: true,
+              visibility: 'public',
             };
         }
       }
@@ -191,6 +191,7 @@ export class ExpeditionService {
           title: true,
           description: true,
           public: true,
+          visibility: true,
           status: true,
           start_date: true,
           end_date: true,
@@ -248,6 +249,7 @@ export class ExpeditionService {
             title,
             description,
             public: isPublic,
+            visibility,
             author,
             author_id,
             status,
@@ -292,6 +294,7 @@ export class ExpeditionService {
               title,
               description,
               public: isPublic,
+              visibility: (visibility || (isPublic !== false ? 'public' : 'private')) as 'public' | 'off-grid' | 'private',
               status,
               startDate,
               endDate,
@@ -336,7 +339,7 @@ export class ExpeditionService {
       // get expeditions
       const where = {
         author: { username },
-        public: true,
+        visibility: 'public',
         deleted_at: null,
       } satisfies Prisma.ExpeditionWhereInput;
 
@@ -549,7 +552,7 @@ export class ExpeditionService {
         public_id: id,
         deleted_at: null,
         // If not authenticated, only show public expeditions
-        ...(isAuthenticated ? {} : { public: true }),
+        ...(isAuthenticated ? {} : { visibility: 'public' }),
       };
 
       // get an expedition
@@ -560,6 +563,7 @@ export class ExpeditionService {
             id: true,
             public_id: true,
             public: true,
+            visibility: true,
             title: true,
             description: true,
             status: true,
@@ -685,11 +689,16 @@ export class ExpeditionService {
         author,
       } = expedition;
 
-      // access control - ensure private expeditions are only accessible by their authors
+      // access control - private expeditions are only accessible by their authors
       if (
-        !expedition.public &&
+        expedition.visibility === 'private' &&
         (!isAuthenticated || explorerId !== expedition.author_id)
       ) {
+        throw new ServiceForbiddenException();
+      }
+
+      // off-grid expeditions require authentication
+      if (expedition.visibility === 'off-grid' && !isAuthenticated) {
         throw new ServiceForbiddenException();
       }
 
@@ -843,6 +852,7 @@ export class ExpeditionService {
           totalCommitted: totalRecurringCommitted,
         },
         public: isPublic,
+        visibility: (expedition.visibility || (isPublic !== false ? 'public' : 'private')) as 'public' | 'off-grid' | 'private',
         startDate,
         endDate,
         bookmarked: isBookmarked,
@@ -975,7 +985,8 @@ export class ExpeditionService {
           public_id: generator.publicId(),
           title: payload.title,
           description: payload.description,
-          public: payload.public ?? true, // Default to true if not specified
+          public: payload.visibility === 'private' ? false : (payload.public ?? true),
+          visibility: payload.visibility || (payload.public === false ? 'private' : 'public'),
           status: payload.status ?? 'planned',
           start_date: payload.startDate ? new Date(payload.startDate) : null,
           end_date: payload.endDate ? new Date(payload.endDate) : null,
@@ -1057,8 +1068,15 @@ export class ExpeditionService {
         routeGeometry,
       } = payload as any;
       const updateData: any = { title };
-      if (isPublic !== undefined) {
+      if ((payload as any).visibility !== undefined) {
+        const vis = (payload as any).visibility;
+        if (['public', 'off-grid', 'private'].includes(vis)) {
+          updateData.visibility = vis;
+          updateData.public = vis !== 'private';
+        }
+      } else if (isPublic !== undefined) {
         updateData.public = isPublic;
+        updateData.visibility = isPublic ? 'public' : 'private';
       }
       if (description !== undefined) {
         updateData.description = description;

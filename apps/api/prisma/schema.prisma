@@ -352,6 +352,7 @@ model Expedition {
   title          String               @db.VarChar(200)
   description    String?
   public         Boolean?             @default(true)
+  visibility     String?              @default("public") @db.VarChar(10) // 'public', 'off-grid', 'private'
   author_id      Int
   created_at     DateTime?            @default(now())
   updated_at     DateTime?            @updatedAt
@@ -384,6 +385,7 @@ model Expedition {
   @@index([author_id])
   @@index([status, deleted_at])
   @@index([public, deleted_at])
+  @@index([visibility, deleted_at])
   @@map("trips")
 }
 

@@ -485,19 +485,20 @@ export function ExplorerProfilePage() {
           {/* Explorer Status Banner - Top Border */}
           {(() => {
             // Use all expeditions (not just active) so PLANNING status can be detected
-            const status = getExplorerStatus(explorer.recentExpeditions);
+            const status = getExplorerStatus(explorer.recentExpeditions, profile?.activeExpeditionOffGrid);
             const currentExpedition = getCurrentExpeditionInfo(explorer.recentExpeditions);
             
             return (
               <div className={`absolute top-0 left-0 right-0 py-1.5 px-3 md:py-2 md:px-6 z-10 ${
                 status === 'EXPLORING' ? 'bg-[#ac6d46]' :
+                status === 'EXPLORING_OFF_GRID' ? 'bg-[#6b5c4e]' :
                 status === 'PLANNING' ? 'bg-[#4676ac]' :
                 'bg-[#616161]'
               }`}>
                 <div className="flex items-center justify-start gap-2 md:gap-6 text-white text-xs md:text-sm font-mono">
                   <div className="flex items-center gap-1 md:gap-2">
                     <span className="hidden md:inline text-xs text-white/80">EXPLORER STATUS:</span>
-                    <span className="font-bold">{status}</span>
+                    <span className="font-bold">{status === 'EXPLORING_OFF_GRID' ? 'EXPLORING \u2022 OFF-GRID' : status}</span>
                   </div>
 
                   {status === 'EXPLORING' && currentExpedition && (

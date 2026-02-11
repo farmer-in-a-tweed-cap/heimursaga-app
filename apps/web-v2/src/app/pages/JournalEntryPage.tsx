@@ -260,7 +260,7 @@ export function JournalEntryPage() {
 
       tags: [] as string[], // Not in API yet
       category: 'standard',
-      visibility: api.public ? 'public' : 'private',
+      visibility: api.visibility || (api.public ? 'public' : 'private'),
       commentsEnabled: api.commentsEnabled ?? true,
 
       views: 0, // Not in API yet

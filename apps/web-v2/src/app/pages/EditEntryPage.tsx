@@ -912,10 +912,10 @@ Remember: Your sponsors and followers are reading this to understand your journe
                     </label>
                   </div>
                   <div className="flex items-start gap-2">
-                    <input 
-                      type="radio" 
-                      name="visibility" 
-                      id="vis-sponsors" 
+                    <input
+                      type="radio"
+                      name="visibility"
+                      id="vis-sponsors"
                       className="mt-1"
                       defaultChecked={apiEntry?.visibility === 'sponsors-only'}
                     />
@@ -925,10 +925,23 @@ Remember: Your sponsors and followers are reading this to understand your journe
                     </label>
                   </div>
                   <div className="flex items-start gap-2">
-                    <input 
-                      type="radio" 
-                      name="visibility" 
-                      id="vis-private" 
+                    <input
+                      type="radio"
+                      name="visibility"
+                      id="vis-offgrid"
+                      className="mt-1"
+                      defaultChecked={apiEntry?.visibility === 'off-grid'}
+                    />
+                    <label htmlFor="vis-offgrid" className="text-xs">
+                      <strong className="text-[#202020] dark:text-[#e5e5e5]">Off-Grid:</strong>{' '}
+                      <span className="text-[#616161] dark:text-[#b5bcc4]">Hidden from feeds and search, accessible via direct link</span>
+                    </label>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      id="vis-private"
                       className="mt-1"
                       defaultChecked={apiEntry?.visibility === 'private'}
                     />

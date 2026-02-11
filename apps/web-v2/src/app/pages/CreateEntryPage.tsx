@@ -38,7 +38,7 @@ export function CreateEntryPage() {
   const [selectedMediaForEdit, setSelectedMediaForEdit] = useState<string | null>(null);
   const [mediaMetadata, setMediaMetadata] = useState<Record<string, { caption: string; altText: string; credit: string }>>({});
   const [coverPhotoId, setCoverPhotoId] = useState<string | null>(null);
-  const [visibility, setVisibility] = useState<'public' | 'sponsors-only' | 'private'>('public');
+  const [visibility, setVisibility] = useState<'public' | 'sponsors-only' | 'off-grid' | 'private'>('public');
   const [isMilestone, setIsMilestone] = useState(false);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -1578,6 +1578,20 @@ Examples:
                     <label htmlFor="vis-sponsors" className="text-xs">
                       <strong className="text-[#202020] dark:text-[#e5e5e5]">Sponsors Only:</strong>{' '}
                       <span className="text-[#616161] dark:text-[#b5bcc4]">Only visible to expedition sponsors</span>
+                    </label>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      id="vis-offgrid"
+                      className="mt-1"
+                      checked={visibility === 'off-grid'}
+                      onChange={() => setVisibility('off-grid')}
+                    />
+                    <label htmlFor="vis-offgrid" className="text-xs">
+                      <strong className="text-[#202020] dark:text-[#e5e5e5]">Off-Grid:</strong>{' '}
+                      <span className="text-[#616161] dark:text-[#b5bcc4]">Hidden from feeds and search, accessible via direct link</span>
                     </label>
                   </div>
                   <div className="flex items-start gap-2">
