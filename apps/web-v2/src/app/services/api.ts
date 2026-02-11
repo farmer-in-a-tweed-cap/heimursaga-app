@@ -912,7 +912,7 @@ export interface Entry {
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverImage?: string;
   isMilestone?: boolean;
-  visibility?: 'public' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
   // Entry number within expedition (calculated on the fly)
   entryNumber?: number;
   // Day of the expedition when this entry was written
@@ -940,7 +940,7 @@ export interface EntryCreatePayload {
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverUploadId?: string;
   isMilestone?: boolean;
-  visibility?: 'public' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
 }
 
 // Entry API endpoints

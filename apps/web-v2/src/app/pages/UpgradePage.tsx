@@ -25,6 +25,7 @@ export function UpgradePage() {
   const { user } = useAuth();
   const { isPro } = useProFeatures();
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isProcessing, setIsProcessing] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
 

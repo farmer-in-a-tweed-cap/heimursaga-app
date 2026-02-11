@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -99,7 +99,7 @@ export function AdminDashboardPage() {
   useEffect(() => {
     if (!isAdmin) return;
     adminApi.getStats().then(setStats).catch(console.error);
-  }, [user]);
+  }, [user, isAdmin]);
 
   // Load flags
   const loadFlags = useCallback(async () => {
@@ -121,7 +121,7 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     if (viewMode === 'flags' && isAdmin) loadFlags();
-  }, [viewMode, user, loadFlags]);
+  }, [viewMode, user, loadFlags, isAdmin]);
 
   // Load entries
   const loadEntries = useCallback(async () => {
@@ -143,7 +143,7 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     if (viewMode === 'entries' && isAdmin) loadEntries();
-  }, [viewMode, user, loadEntries]);
+  }, [viewMode, user, loadEntries, isAdmin]);
 
   // Load expeditions
   const loadExpeditions = useCallback(async () => {
@@ -165,7 +165,7 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     if (viewMode === 'expeditions' && isAdmin) loadExpeditions();
-  }, [viewMode, user, loadExpeditions]);
+  }, [viewMode, user, loadExpeditions, isAdmin]);
 
   // Load explorers
   const loadExplorers = useCallback(async () => {
@@ -187,7 +187,7 @@ export function AdminDashboardPage() {
 
   useEffect(() => {
     if (viewMode === 'explorers' && isAdmin) loadExplorers();
-  }, [viewMode, user, loadExplorers]);
+  }, [viewMode, user, loadExplorers, isAdmin]);
 
   // Reset offset when search changes
   useEffect(() => {

@@ -310,6 +310,7 @@ export function HomePage() {
 
   // Transform following data
   const followingExpeditionCards = followingExpeditions.map(transformExpedition);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const followingExplorerCards = followingExplorers.map(transformExplorer);
   const followingEntryCards = followingEntries.slice(0, 12).map(transformEntry);
 

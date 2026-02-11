@@ -30,7 +30,7 @@ export function InteractionButtons({
   expeditionStatus,
   sponsorshipsEnabled = true,
   explorerIsPro = false,
-  initialBookmarks = 0,
+  initialBookmarks: _initialBookmarks = 0,
   isBookmarked = false,
   isBookmarkLoading = false,
   onBookmark,

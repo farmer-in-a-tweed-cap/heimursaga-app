@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Users, UserPlus, Bookmark, Share2, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Lock, ChevronLeft, ChevronRight, Play, Globe, EyeOff } from 'lucide-react';
+import { Users, UserPlus, Bookmark, Share2, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Lock, ChevronLeft, ChevronRight, Play, EyeOff } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
@@ -118,7 +118,7 @@ export function ExpeditionDetailPage() {
   const [expeditionNotes, setExpeditionNotes] = useState<ExpeditionNote[]>([]);
   const [noteCount, setNoteCount] = useState(0);
   const [isSponsoring, setIsSponsoring] = useState(false);
-  const [notesLoading, setNotesLoading] = useState(false);
+  const [, setNotesLoading] = useState(false);
   const [, setDailyNoteLimit] = useState<{ used: number; max: number }>({ used: 0, max: 1 });
 
   // Sponsors leaderboard state
@@ -676,7 +676,7 @@ export function ExpeditionDetailPage() {
   };
 
   // Handler to fit map to all expedition markers
-  const handleFitBounds = () => {
+  const handleFitBounds = useCallback(() => {
     if (!mapRef.current) return;
 
     // Collect all coordinates from waypoints and entries
@@ -698,7 +698,7 @@ export function ExpeditionDetailPage() {
       maxZoom: 10,
       duration: 1000,
     });
-  };
+  }, [waypoints, journalEntries]);
 
   // Debrief mode helpers
   const removeAllHighlights = useCallback(() => {

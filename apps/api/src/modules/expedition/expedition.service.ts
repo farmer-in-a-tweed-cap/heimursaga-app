@@ -1047,7 +1047,7 @@ export class ExpeditionService {
       if (!id) throw new ServiceNotFoundException('expedition not found');
       const expedition = await this.prisma.expedition.findFirstOrThrow({
         where: { public_id: id, author_id: explorerId, deleted_at: null },
-        select: { id: true },
+        select: { id: true, visibility: true },
       });
 
       // update the expedition
@@ -1071,8 +1071,13 @@ export class ExpeditionService {
       if ((payload as any).visibility !== undefined) {
         const vis = (payload as any).visibility;
         if (['public', 'off-grid', 'private'].includes(vis)) {
-          updateData.visibility = vis;
-          updateData.public = vis !== 'private';
+          // Private is locked: cannot change to or from private after creation
+          const currentVis = expedition.visibility || 'public';
+          const isPrivateTransition = (currentVis === 'private') !== (vis === 'private');
+          if (!isPrivateTransition) {
+            updateData.visibility = vis;
+            updateData.public = vis !== 'private';
+          }
         }
       } else if (isPublic !== undefined) {
         updateData.public = isPublic;

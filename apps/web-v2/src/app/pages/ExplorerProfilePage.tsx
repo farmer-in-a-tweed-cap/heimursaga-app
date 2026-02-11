@@ -283,20 +283,24 @@ export function ExplorerProfilePage() {
         }).displayText
       : '',
     fromCoordinates: '',
-    currentLocation: profile.activeExpeditionLocation
-      ? profile.activeExpeditionLocation.name
-      : profile.locationLives
-        ? formatLocationByPrivacy({
-            ...parseLocationString(profile.locationLives),
-            privacyLevel: (profile.locationVisibility?.toUpperCase() || 'HIDDEN') as LocationPrivacyLevel,
-          }).displayText
+    currentLocation: profile.activeExpeditionOffGrid
+      ? 'OFF-GRID'
+      : profile.activeExpeditionLocation
+        ? profile.activeExpeditionLocation.name
+        : profile.locationLives
+          ? formatLocationByPrivacy({
+              ...parseLocationString(profile.locationLives),
+              privacyLevel: (profile.locationVisibility?.toUpperCase() || 'HIDDEN') as LocationPrivacyLevel,
+            }).displayText
+          : '',
+    onExpedition: !!profile.activeExpeditionLocation || !!profile.activeExpeditionOffGrid,
+    activeExpeditionId: profile.activeExpeditionOffGrid ? undefined : profile.activeExpeditionLocation?.expeditionId,
+    activeExpeditionTitle: profile.activeExpeditionOffGrid ? undefined : profile.activeExpeditionLocation?.expeditionTitle,
+    currentCoordinates: profile.activeExpeditionOffGrid
+      ? ''
+      : profile.activeExpeditionLocation
+        ? `${profile.activeExpeditionLocation.lat.toFixed(4)}°, ${profile.activeExpeditionLocation.lon.toFixed(4)}°`
         : '',
-    onExpedition: !!profile.activeExpeditionLocation,
-    activeExpeditionId: profile.activeExpeditionLocation?.expeditionId,
-    activeExpeditionTitle: profile.activeExpeditionLocation?.expeditionTitle,
-    currentCoordinates: profile.activeExpeditionLocation
-      ? `${profile.activeExpeditionLocation.lat.toFixed(4)}°, ${profile.activeExpeditionLocation.lon.toFixed(4)}°`
-      : '',
     location: profile.locationLives || profile.locationFrom
       ? formatLocationByPrivacy({
           ...parseLocationString(profile.locationLives || profile.locationFrom || ''),
@@ -571,13 +575,18 @@ export function ExplorerProfilePage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-white/60 text-xs md:text-xs uppercase">Currently:</span>
-                    {explorer.onExpedition && (
+                    {explorer.onExpedition && explorer.activeExpeditionId && (
                       <Link
                         href={`/expedition/${explorer.activeExpeditionId}`}
                         className="bg-[#ac6d46] text-white text-[10px] font-bold px-2 py-0.5 hover:bg-[#8a5738] transition-colors flex-shrink-0"
                       >
                         ON EXPEDITION
                       </Link>
+                    )}
+                    {explorer.onExpedition && !explorer.activeExpeditionId && (
+                      <span className="bg-[#6b5c4e] text-white text-[10px] font-bold px-2 py-0.5 flex-shrink-0">
+                        ON EXPEDITION
+                      </span>
                     )}
                     <span className="font-bold truncate">{explorer.currentLocation || 'Not set'}</span>
                     {explorer.currentCoordinates && (

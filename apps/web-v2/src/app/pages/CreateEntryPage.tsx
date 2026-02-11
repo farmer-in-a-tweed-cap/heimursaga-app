@@ -41,8 +41,8 @@ export function CreateEntryPage() {
   const [visibility, setVisibility] = useState<'public' | 'sponsors-only' | 'off-grid' | 'private'>('public');
   const [isMilestone, setIsMilestone] = useState(false);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [draftCheckComplete, setDraftCheckComplete] = useState(false);
+  const [, setSubmitError] = useState<string | null>(null);
+  const [, setDraftCheckComplete] = useState(false);
 
   // Notification state for entry type restrictions
   const [entryTypeNotification, setEntryTypeNotification] = useState<{ type: 'pro' | 'waypoint-standalone'; message: string } | null>(null);

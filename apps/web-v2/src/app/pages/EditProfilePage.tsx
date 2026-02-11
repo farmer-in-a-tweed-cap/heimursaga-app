@@ -5,9 +5,9 @@ import { useAuth } from '@/app/context/AuthContext';
 import Link from 'next/link';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
-import { User, Camera, Save, X, Upload, Shield, Home, Navigation, Info, Loader2, Image } from 'lucide-react';
+import { User, Camera, Save, X, Upload, Shield, Home, Navigation, Info, Loader2, Image as ImageIcon } from 'lucide-react';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
-import { useProFeatures } from '@/app/hooks/useProFeatures';
+// import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationAutocompleteInput } from '@/app/components/LocationAutocompleteInput';
 import {
   formatLocationByPrivacy,
@@ -56,7 +56,7 @@ export function EditProfilePage() {
     equipment: '',
   });
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [showPrivacyWarning, setShowPrivacyWarning] = useState(false);
@@ -440,7 +440,7 @@ export function EditProfilePage() {
                       <NextImage src={coverPhotoPreview} alt="Cover photo preview" className="object-cover" fill />
                     ) : (
                       <div className="text-center">
-                        <Image size={48} className="text-[#b5bcc4] mx-auto mb-2" />
+                        <ImageIcon size={48} className="text-[#b5bcc4] mx-auto mb-2" />
                         <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">NO COVER PHOTO</div>
                       </div>
                     )}
