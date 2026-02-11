@@ -182,6 +182,7 @@ export function ExplorersPage() {
     tagline: exp.bio || '',
     tags: [] as string[],
     recentExpeditions: exp.recentExpeditions || [],
+    activeExpeditionOffGrid: exp.activeExpeditionOffGrid,
   }));
 
   const explorers = transformedExplorers;

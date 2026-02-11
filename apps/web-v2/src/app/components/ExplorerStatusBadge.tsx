@@ -90,7 +90,7 @@ export function getExplorerStatus(expeditions: Array<{ status: string }>, active
   const hasActive = expeditions.some(e => e.status === 'active');
   const hasPlanned = expeditions.some(e => e.status === 'planned');
 
-  if (hasActive && activeExpeditionOffGrid) return 'EXPLORING_OFF_GRID';
+  if (activeExpeditionOffGrid) return 'EXPLORING_OFF_GRID';
   if (hasActive) return 'EXPLORING';
   if (hasPlanned) return 'PLANNING';
   return 'RESTING';

@@ -271,7 +271,7 @@ export class ExplorerService {
                 ? (followers?.length || 0) > 0
                 : undefined,
             // Include expedition data for status calculation
-            recentExpeditions: expeditions?.map((exp) => ({
+            recentExpeditions: expeditions?.filter((exp) => exp.visibility !== 'off-grid').map((exp) => ({
               id: exp.public_id,
               title: exp.title,
               status: exp.status,

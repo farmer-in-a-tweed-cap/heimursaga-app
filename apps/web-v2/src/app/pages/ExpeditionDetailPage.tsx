@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Users, UserPlus, Bookmark, Share2, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Lock, ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { Users, UserPlus, Bookmark, Share2, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Lock, ChevronLeft, ChevronRight, Play, Globe, EyeOff } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
@@ -1440,15 +1440,23 @@ export function ExpeditionDetailPage() {
           
           {/* Expedition Status Banner - Top Border */}
           <div className={`absolute top-0 left-0 right-0 py-2 px-6 ${
-            expedition.status === 'active' 
-              ? 'bg-[#ac6d46]' 
+            expedition.status === 'active'
+              ? 'bg-[#ac6d46]'
               : expedition.status === 'planned'
               ? 'bg-[#4676ac]'
               : 'bg-[#616161]'
-          } z-10`}>
+          } z-10 flex items-center justify-between`}>
             <div className="text-white font-bold text-sm tracking-wide">
               {expedition.status === 'active' ? 'ACTIVE EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'COMPLETED EXPEDITION'}
             </div>
+            {expedition.privacy !== 'public' && (
+              <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold tracking-wide ${
+                expedition.privacy === 'off-grid' ? 'bg-[#6b5c4e] text-white' : 'bg-[#202020] text-white'
+              }`}>
+                {expedition.privacy === 'off-grid' ? <EyeOff className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                {expedition.privacy === 'off-grid' ? 'OFF-GRID' : 'PRIVATE'}
+              </div>
+            )}
           </div>
           
           {/* Content Overlay */}
@@ -1583,6 +1591,14 @@ export function ExpeditionDetailPage() {
                   <div className="font-mono text-sm text-[#b5bcc4]">
                     {expedition.status === 'completed' ? 'COMPLETED EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'ACTIVE EXPEDITION'}
                   </div>
+                  {expedition.privacy !== 'public' && (
+                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
+                      expedition.privacy === 'off-grid' ? 'bg-[#6b5c4e] text-white' : 'bg-[#202020] text-white border border-[#616161]'
+                    }`}>
+                      {expedition.privacy === 'off-grid' ? <EyeOff className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                      {expedition.privacy === 'off-grid' ? 'OFF-GRID' : 'PRIVATE'}
+                    </div>
+                  )}
                 </div>
 
                 {/* Action Buttons */}

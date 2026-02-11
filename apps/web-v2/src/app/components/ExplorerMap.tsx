@@ -71,7 +71,7 @@ interface MapExplorer {
   entriesCount: number;
   creator: boolean;
   locationVisibility: string;
-  status: 'EXPLORING' | 'PLANNING' | 'RESTING';
+  status: 'EXPLORING' | 'EXPLORING_OFF_GRID' | 'PLANNING' | 'RESTING';
   activeExpeditionLocation?: {
     lat: number; lon: number; name: string;
     expeditionId: string; expeditionTitle: string;
@@ -732,10 +732,11 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
             {/* Status banner — top of card */}
             <div className={`px-3 py-1.5 text-white text-[10px] font-bold font-mono flex items-center gap-2 ${
               clickedExplorer.status === 'EXPLORING' ? 'bg-[#ac6d46]' :
+              clickedExplorer.status === 'EXPLORING_OFF_GRID' ? 'bg-[#6b5c4e]' :
               clickedExplorer.status === 'PLANNING' ? 'bg-[#4676ac]' :
               'bg-[#616161]'
             }`}>
-              <span className="flex-shrink-0">{clickedExplorer.status}</span>
+              <span className="flex-shrink-0">{clickedExplorer.status === 'EXPLORING_OFF_GRID' ? 'EXPLORING \u2022 OFF-GRID' : clickedExplorer.status}</span>
               {clickedExplorer.activeExpeditionLocation && (
                 <>
                   <span className="text-white/30">|</span>
