@@ -172,8 +172,10 @@ export class EntryService {
       }
 
       // Only show entries from public expeditions (or standalone entries not off-grid)
+      // Owner bypass: always show the explorer's own entries regardless of visibility
       const publicExpeditionFilter = {
         OR: [
+          ...(explorerId ? [{ author_id: explorerId }] : []),
           { expedition_id: null, NOT: { visibility: 'off-grid' } },
           { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
         ],

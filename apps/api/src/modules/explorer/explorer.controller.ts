@@ -103,9 +103,10 @@ export class ExplorerController {
   @Public()
   @Get(':username/map')
   @HttpCode(HttpStatus.OK)
-  async getMap(@Param() param: ParamUsernameDto) {
+  async getMap(@Param() param: ParamUsernameDto, @Session() session: ISession) {
     return await this.explorerService.getMap({
       username: param.username,
+      explorerId: session.explorerId,
     });
   }
 

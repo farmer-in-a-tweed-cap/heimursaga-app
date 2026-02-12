@@ -7,6 +7,7 @@ import { useRouter, usePathname, useParams } from 'next/navigation';
 import { MapPin, Plus, Trash2, Save, FileText, Calendar, Upload, Info, X, Locate, Lock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
+import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelector';
 import { expeditionApi, uploadApi } from '@/app/services/api';
@@ -55,6 +56,7 @@ if (!MAPBOX_TOKEN) {
 export function ExpeditionBuilderPage() {
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
+  const { formatDistance } = useDistanceUnit();
   const { isPro } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
@@ -535,8 +537,8 @@ export function ExpeditionBuilderPage() {
         for (let i = 0; i < waypointCount && i < points.length; i++) {
           if (snapDistances[i] > SNAP_THRESHOLD_M) {
             const name = points[i].name || `Waypoint ${i + 1}`;
-            const km = (snapDistances[i] / 1000).toFixed(1);
-            warnings.push(`${name} is ${km} km from the nearest ${profile} route`);
+            const distKm = snapDistances[i] / 1000;
+            warnings.push(`${name} is ${formatDistance(distKm, 1)} from the nearest ${profile} route`);
           }
         }
         setDirectionsWarnings(warnings);
@@ -1208,7 +1210,7 @@ export function ExpeditionBuilderPage() {
               <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Waypoints</div>
             </div>
             <div className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{totalDistance.toFixed(1)} km</div>
+              <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{formatDistance(totalDistance, 1)}</div>
               <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Total Distance</div>
             </div>
             {totalTravelTime > 0 && routeMode !== 'straight' && (
@@ -1619,7 +1621,7 @@ export function ExpeditionBuilderPage() {
                           {selectedWaypointData.distanceFromPrevious !== undefined && selectedWaypointData.distanceFromPrevious > 0 && (
                             <div className="flex justify-between">
                               <span>Distance from Previous:</span>
-                              <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{selectedWaypointData.distanceFromPrevious.toFixed(1)} km</span>
+                              <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatDistance(selectedWaypointData.distanceFromPrevious, 1)}</span>
                             </div>
                           )}
                           {selectedWaypointData.travelTimeFromPrevious !== undefined && selectedWaypointData.travelTimeFromPrevious > 0 && (
@@ -1631,7 +1633,7 @@ export function ExpeditionBuilderPage() {
                           {selectedWaypointData.cumulativeDistance !== undefined && (
                             <div className="flex justify-between">
                               <span>Cumulative Distance:</span>
-                              <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{selectedWaypointData.cumulativeDistance.toFixed(1)} km</span>
+                              <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatDistance(selectedWaypointData.cumulativeDistance, 1)}</span>
                             </div>
                           )}
                           {selectedWaypointData.cumulativeTravelTime !== undefined && selectedWaypointData.cumulativeTravelTime > 0 && (
@@ -1717,7 +1719,7 @@ export function ExpeditionBuilderPage() {
                         </button>
                       )}
                       <div className="text-xs text-[#4676ac] font-mono">
-                        {totalDistance.toFixed(1)} km total
+                        {formatDistance(totalDistance, 1)} total
                         {totalTravelTime > 0 && routeMode !== 'straight' && (
                           <> • {formatTravelTime(totalTravelTime)}</>
                         )}
@@ -1776,10 +1778,10 @@ export function ExpeditionBuilderPage() {
                               <div className="truncate">{waypoint.coordinates.lat.toFixed(4)}°N, {waypoint.coordinates.lng.toFixed(4)}°E</div>
                               {index > 0 && waypoint.distanceFromPrevious !== undefined && (
                                 <div className="text-[#4676ac]">
-                                  +{waypoint.distanceFromPrevious.toFixed(1)} km
+                                  +{formatDistance(waypoint.distanceFromPrevious, 1)}
                                   {waypoint.travelTimeFromPrevious ? ` (${formatTravelTime(waypoint.travelTimeFromPrevious)})` : ''}
                                   {waypoint.cumulativeDistance !== undefined && (
-                                    <> • {waypoint.cumulativeDistance.toFixed(1)} km total</>
+                                    <> • {formatDistance(waypoint.cumulativeDistance, 1)} total</>
                                   )}
                                 </div>
                               )}

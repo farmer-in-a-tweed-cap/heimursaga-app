@@ -1,4 +1,4 @@
-import { MapPin, FileText, Eye, User, Calendar, Bookmark } from "lucide-react";
+import { MapPin, FileText, Eye, User, Calendar, Bookmark, EyeOff, Lock, Users } from "lucide-react";
 import { formatDateWithOptionalTime } from "@/app/utils/dateFormat";
 
 interface EntryCardLandscapeProps {
@@ -10,6 +10,7 @@ interface EntryCardLandscapeProps {
   date: string;
   excerpt: string;
   type: string;
+  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
   isCurrent?: boolean;
   onClick?: () => void;
   onUnbookmark?: () => void;
@@ -23,6 +24,7 @@ export function EntryCardLandscape({
   date,
   excerpt,
   type,
+  visibility,
   isCurrent = false,
   onClick,
   onUnbookmark,
@@ -43,6 +45,20 @@ export function EntryCardLandscape({
             <span className={`text-xs font-mono ${isCurrent ? 'text-white/70' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
               {type}
             </span>
+            {visibility && visibility !== 'public' && (
+              <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
+                visibility === 'off-grid' ? 'bg-[#6b5c4e] text-white'
+                  : visibility === 'sponsors-only' ? 'bg-[#4676ac] text-white'
+                  : 'bg-[#202020] text-white'
+              }`}>
+                {visibility === 'off-grid' ? <EyeOff className="h-3 w-3" />
+                  : visibility === 'sponsors-only' ? <Users className="h-3 w-3" />
+                  : <Lock className="h-3 w-3" />}
+                {visibility === 'off-grid' ? 'OFF-GRID'
+                  : visibility === 'sponsors-only' ? 'SPONSORS'
+                  : 'PRIVATE'}
+              </div>
+            )}
           </div>
         </div>
         <div className={`flex items-center gap-1.5 text-xs font-mono ${isCurrent ? 'text-white/80' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>

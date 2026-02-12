@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
+import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationMap } from '@/app/components/LocationMap';
 import { X, Image as ImageIcon, Lock, Camera, Loader2, Clock, AlertTriangle } from 'lucide-react';
@@ -15,6 +16,7 @@ import { checkImageExif, type ExifResult } from '@/app/utils/exifCheck';
 
 export function CreateEntryPage() {
   const { isAuthenticated } = useAuth();
+  const { distanceLabel, speedLabel } = useDistanceUnit();
   const { isPro } = useProFeatures();
   const { expeditionId } = useParams<{ expeditionId: string }>();
   const router = useRouter();
@@ -1300,7 +1302,7 @@ Individual photo captions can be added after upload.`}
                         />
                       </div>
                       <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Wind Speed (km/h)</label>
+                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Wind Speed ({speedLabel})</label>
                         <input
                           type="number"
                           step="0.1"
@@ -1323,7 +1325,7 @@ Individual photo captions can be added after upload.`}
                     <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">ACTIVITY METRICS:</div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Distance Covered (km)</label>
+                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Distance Covered ({distanceLabel})</label>
                         <input
                           type="number"
                           step="0.1"
@@ -1349,7 +1351,7 @@ Individual photo captions can be added after upload.`}
                         />
                       </div>
                       <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Average Speed (km/h)</label>
+                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Average Speed ({speedLabel})</label>
                         <input
                           type="number"
                           step="0.1"
@@ -1491,7 +1493,7 @@ Examples:
                       />
                     </div>
                     <div>
-                      <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Distance Traveled (km)</label>
+                      <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Distance Traveled ({distanceLabel})</label>
                       <input
                         type="number"
                         className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"

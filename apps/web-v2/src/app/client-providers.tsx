@@ -1,6 +1,7 @@
 'use client';
 
 import { ThemeProvider } from '@/app/context/ThemeContext';
+import { DistanceUnitProvider } from '@/app/context/DistanceUnitContext';
 import { AuthProvider, useAuth } from '@/app/context/AuthContext';
 import { StripeProvider } from '@/app/context/StripeContext';
 import { ErrorBoundary } from '@/app/components/ErrorBoundary';
@@ -41,11 +42,13 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <AuthProvider>
-          <StripeProvider>
-            <AppContent>{children}</AppContent>
-          </StripeProvider>
-        </AuthProvider>
+        <DistanceUnitProvider>
+          <AuthProvider>
+            <StripeProvider>
+              <AppContent>{children}</AppContent>
+            </StripeProvider>
+          </AuthProvider>
+        </DistanceUnitProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

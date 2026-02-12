@@ -1,11 +1,12 @@
 'use client';
 
-import { MapPin, FileText, DollarSign, Bookmark, Clock, Users, Loader2 } from "lucide-react";
+import { MapPin, FileText, DollarSign, Bookmark, Clock, Users, Loader2, EyeOff, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { RadialProgress } from "@/app/components/ui/radial-progress";
 import { Progress } from "@/app/components/ui/progress";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { useAuth } from "@/app/context/AuthContext";
+import { useDistanceUnit } from "@/app/context/DistanceUnitContext";
 import { formatDate } from "@/app/utils/dateFormat";
 
 interface Waypoint {
@@ -53,6 +54,7 @@ interface ExpeditionCardProps {
   status: "active" | "completed" | "planned";
   terrain: string;
   averageSpeed: number;
+  visibility?: 'public' | 'off-grid' | 'private';
   sponsorshipsEnabled?: boolean;
   /** Whether the expedition creator has an Explorer Pro account (required for sponsorships) */
   explorerIsPro?: boolean;
@@ -87,6 +89,7 @@ export function ExpeditionCard({
   backers,
   distance,
   status,
+  visibility,
   sponsorshipsEnabled = true,
   explorerIsPro = false,
   isBookmarked = false,
@@ -97,6 +100,7 @@ export function ExpeditionCard({
   onViewExplorer,
 }: ExpeditionCardProps) {
   const { isAuthenticated } = useAuth();
+  const { unit: distanceUnit, distanceLabel } = useDistanceUnit();
   const router = useRouter();
 
   // Sponsorship UI only shows if explorer is Pro AND sponsorships are enabled for this expedition
@@ -159,6 +163,14 @@ export function ExpeditionCard({
           <span className="text-xs font-mono font-semibold tracking-wide text-[#202020] dark:text-[#e5e5e5]">
             {statusLabels[status]}
           </span>
+          {visibility && visibility !== 'public' && (
+            <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
+              visibility === 'off-grid' ? 'bg-[#6b5c4e] text-white' : 'bg-[#202020] text-white'
+            }`}>
+              {visibility === 'off-grid' ? <EyeOff className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+              {visibility === 'off-grid' ? 'OFF-GRID' : 'PRIVATE'}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-1.5 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
           <Clock className="h-3.5 w-3.5" />
@@ -212,8 +224,8 @@ export function ExpeditionCard({
             <div className="font-bold text-sm dark:text-[#e5e5e5]">{daysElapsed || 0}</div>
           </div>
           <div>
-            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Distance (km):</div>
-            <div className="font-bold text-sm dark:text-[#e5e5e5]">{(distance || 0).toLocaleString()}</div>
+            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Distance ({distanceLabel}):</div>
+            <div className="font-bold text-sm dark:text-[#e5e5e5]">{Math.round(distanceUnit === 'mi' ? (distance || 0) * 0.621371 : (distance || 0)).toLocaleString()}</div>
           </div>
           <div>
             <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Journal Entries:</div>

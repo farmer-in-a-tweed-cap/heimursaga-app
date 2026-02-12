@@ -38,6 +38,7 @@ function transformExpedition(exp: Expedition) {
     status: (exp.status === 'active' ? 'active' : exp.status === 'completed' ? 'completed' : 'planned') as 'active' | 'completed' | 'planned',
     terrain: '',
     averageSpeed: 0,
+    visibility: (exp.visibility || 'public') as 'public' | 'off-grid' | 'private',
     sponsorshipsEnabled: (exp.goal || 0) > 0,
     explorerIsPro: (exp.goal || 0) > 0,
   };

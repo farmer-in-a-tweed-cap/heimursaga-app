@@ -112,8 +112,8 @@ export function ExpeditionsPage() {
   const transformedExpeditions = apiExpeditions.map(exp => ({
     id: exp.publicId || exp.id || '',
     title: exp.title,
-    explorer: exp.explorer?.username || 'Unknown',
-    journal: exp.explorer?.name || exp.explorer?.username || 'Unknown',
+    explorer: exp.author?.username || exp.explorer?.username || 'Unknown',
+    journal: exp.author?.name || exp.author?.username || exp.explorer?.name || exp.explorer?.username || 'Unknown',
     description: exp.description || '',
     category: '',
     startDate: exp.startDate || '',
@@ -132,6 +132,7 @@ export function ExpeditionsPage() {
     terrain: '',
     averageSpeed: 0,
     daysRemaining: exp.endDate ? Math.max(0, Math.floor((new Date(exp.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null,
+    visibility: (exp.visibility || 'public') as 'public' | 'off-grid' | 'private',
     // Sponsorship visibility: only show if goal is set (implies Pro account and sponsorships enabled)
     sponsorshipsEnabled: (exp.goal || 0) > 0,
     explorerIsPro: (exp.goal || 0) > 0,
@@ -262,6 +263,7 @@ export function ExpeditionsPage() {
                 backers={expedition.sponsors}
                 distance={expedition.distance}
                 status={expedition.status}
+                visibility={expedition.visibility}
                 terrain={expedition.terrain}
                 averageSpeed={expedition.averageSpeed}
                 sponsorshipsEnabled={expedition.sponsorshipsEnabled}

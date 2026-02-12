@@ -393,6 +393,7 @@ export function ExplorerProfilePage() {
         description: e.description || '',
         coverImage: e.coverImage || '',
         status: (e.status || 'planned') as 'active' | 'completed' | 'planned',
+        visibility: e.visibility || 'public',
         startDate: e.startDate || '',
         endDate: e.endDate || '',
         daysActive: calculateDaysElapsed(e.startDate, e.endDate, e.status),
@@ -905,6 +906,7 @@ export function ExplorerProfilePage() {
                     backers={expedition.sponsorsCount}
                     distance={0}
                     status={expedition.status}
+                    visibility={expedition.visibility as 'public' | 'off-grid' | 'private'}
                     terrain=""
                     averageSpeed={0}
                     onViewJournal={() => router.push(`/expedition/${expedition.id}`)}

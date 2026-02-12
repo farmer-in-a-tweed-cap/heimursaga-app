@@ -86,7 +86,7 @@ export function FollowedExplorerStrip({ explorers, onViewExplorer }: FollowedExp
             {/* Info */}
             <div className="min-w-0 flex-1">
               <div className="font-bold text-xs text-[#202020] dark:text-[#e5e5e5] truncate">
-                @{explorer.username}
+                {explorer.username}
               </div>
               {explorer.name && (
                 <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] truncate">

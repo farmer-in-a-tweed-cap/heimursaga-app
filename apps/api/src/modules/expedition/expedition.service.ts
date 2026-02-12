@@ -328,18 +328,24 @@ export class ExpeditionService {
 
   async getExpeditionsByUsername({
     query,
+    session,
   }: IQueryWithSession<{
     username: string;
   }>): Promise<IExpeditionGetAllResponse> {
     try {
       const { username } = query;
+      const { explorerId } = session;
 
       if (!username) throw new ServiceNotFoundException('explorer not found');
 
-      // get expeditions
+      // Check if the viewing explorer is the profile owner
+      const owner = await this.prisma.explorer.findFirst({ where: { username }, select: { id: true } });
+      const isOwner = owner && owner.id === explorerId;
+
+      // get expeditions (owner sees all their own, others see only public)
       const where = {
         author: { username },
-        visibility: 'public',
+        ...(isOwner ? {} : { visibility: 'public' }),
         deleted_at: null,
       } satisfies Prisma.ExpeditionWhereInput;
 
@@ -354,6 +360,7 @@ export class ExpeditionService {
           description: true,
           cover_image: true,
           status: true,
+          visibility: true,
           category: true,
           region: true,
           tags: true,
@@ -429,6 +436,7 @@ export class ExpeditionService {
             description,
             cover_image,
             status,
+            visibility,
             category,
             region,
             tags,
@@ -489,6 +497,7 @@ export class ExpeditionService {
               description,
               coverImage: getStaticMediaUrl(cover_image),
               status,
+              visibility: (visibility || 'public') as 'public' | 'off-grid' | 'private',
               category,
               region,
               tags: tags ? JSON.parse(tags) : [],
@@ -606,6 +615,7 @@ export class ExpeditionService {
                 public_id: true,
                 title: true,
                 content: true,
+                visibility: true,
                 date: true,
                 place: true,
                 lat: true,
@@ -870,6 +880,7 @@ export class ExpeditionService {
             id: entry.public_id,
             title: entry.title,
             content: normalizeText(entry.content),
+            visibility: (entry.visibility || 'public') as 'public' | 'off-grid' | 'sponsors-only' | 'private',
             date: entry.date,
             place: entry.place,
             lat: entry.lat,

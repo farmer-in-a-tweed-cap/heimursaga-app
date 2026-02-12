@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { Palette, Globe, Lock, AlertCircle, Filter } from 'lucide-react';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { useTheme } from '@/app/context/ThemeContext';
+import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 
 export function PreferencesSettingsPage() {
-  const { theme, setTheme } = useTheme();
+  const { theme, themeSetting, setTheme } = useTheme();
+  const { unit: distanceUnit, setUnit: setDistanceUnit } = useDistanceUnit();
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -223,6 +225,47 @@ export function PreferencesSettingsPage() {
                   </div>
                 </div>
               </div>
+
+              {/* Distance Units */}
+              <div className="border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a] pt-4">
+                <label className="block text-xs font-medium mb-3 text-[#202020] dark:text-[#e5e5e5]">
+                  DISTANCE UNITS
+                </label>
+                <div className="space-y-2">
+                  <label className="flex items-start gap-3 p-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98]">
+                    <input
+                      type="radio"
+                      name="distanceUnit"
+                      value="km"
+                      checked={distanceUnit === 'km'}
+                      onChange={() => setDistanceUnit('km')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">Metric (km, km/h)</div>
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                        Kilometers and kilometers per hour
+                      </div>
+                    </div>
+                  </label>
+                  <label className="flex items-start gap-3 p-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98]">
+                    <input
+                      type="radio"
+                      name="distanceUnit"
+                      value="mi"
+                      checked={distanceUnit === 'mi'}
+                      onChange={() => setDistanceUnit('mi')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">Imperial (mi, mph)</div>
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                        Miles and miles per hour
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -244,8 +287,8 @@ export function PreferencesSettingsPage() {
                       type="radio"
                       name="theme"
                       value="light"
-                      checked={theme === 'light'}
-                      onChange={(e) => setTheme(e.target.value as 'light' | 'dark')}
+                      checked={themeSetting === 'light'}
+                      onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
                       className="mt-1"
                     />
                     <div className="flex-1">
@@ -260,8 +303,8 @@ export function PreferencesSettingsPage() {
                       type="radio"
                       name="theme"
                       value="dark"
-                      checked={theme === 'dark'}
-                      onChange={(e) => setTheme(e.target.value as 'light' | 'dark')}
+                      checked={themeSetting === 'dark'}
+                      onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
                       className="mt-1"
                     />
                     <div className="flex-1">
@@ -271,9 +314,25 @@ export function PreferencesSettingsPage() {
                       </div>
                     </div>
                   </label>
+                  <label className="flex items-start gap-3 p-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98]">
+                    <input
+                      type="radio"
+                      name="theme"
+                      value="system"
+                      checked={themeSetting === 'system'}
+                      onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">System</div>
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                        Automatically match your device's light or dark mode setting.
+                      </div>
+                    </div>
+                  </label>
                 </div>
                 <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                  Current: {theme === 'light' ? 'LIGHT MODE' : 'DARK MODE'} • System uses same colors (copper #ac6d46, blue #4676ac) in both themes
+                  Current: {themeSetting === 'system' ? `SYSTEM (${theme.toUpperCase()})` : theme === 'light' ? 'LIGHT MODE' : 'DARK MODE'}
                 </div>
               </div>
 

@@ -62,7 +62,10 @@ export class SearchService {
         ],
       });
 
+      const { explorerId } = session;
+
       // Search for public entries by title (exclude off-grid/private expedition entries)
+      // Owner bypass: always show the explorer's own entries regardless of visibility
       const entries = await this.prisma.entry.findMany({
         where: {
           AND: [
@@ -77,6 +80,7 @@ export class SearchService {
             },
             {
               OR: [
+                ...(explorerId ? [{ author_id: explorerId }] : []),
                 { expedition_id: null, NOT: { visibility: 'off-grid' } },
                 { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
               ],

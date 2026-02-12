@@ -271,18 +271,21 @@ export class ExplorerService {
                 ? (followers?.length || 0) > 0
                 : undefined,
             // Include expedition data for status calculation
-            recentExpeditions: expeditions?.filter((exp) => exp.visibility !== 'off-grid').map((exp) => ({
-              id: exp.public_id,
-              title: exp.title,
-              status: exp.status,
-              daysActive:
-                exp.status === 'active' && exp.start_date
-                  ? Math.floor(
-                      (Date.now() - new Date(exp.start_date).getTime()) /
-                        (1000 * 60 * 60 * 24),
-                    )
-                  : undefined,
-            })),
+            recentExpeditions: expeditions
+              ?.filter((exp) => exp.visibility !== 'off-grid' || id === explorerId)
+              .map((exp) => ({
+                id: exp.public_id,
+                title: exp.title,
+                status: exp.status,
+                visibility: exp.visibility || 'public',
+                daysActive:
+                  exp.status === 'active' && exp.start_date
+                    ? Math.floor(
+                        (Date.now() - new Date(exp.start_date).getTime()) /
+                          (1000 * 60 * 60 * 24),
+                      )
+                    : undefined,
+              })),
             // Active expedition location (if public)
             activeExpeditionLocation:
               resolvedLoc && activeExpInfo
@@ -363,6 +366,11 @@ export class ExplorerService {
           break;
       }
 
+      // Check if the viewing explorer is the profile owner (for bypassing visibility filters)
+      const isOwnerProfile = explorerId
+        ? await this.prisma.explorer.findFirst({ where: { username, id: explorerId }, select: { id: true } })
+        : null;
+
       // get the explorer
       const explorer = await this.prisma.explorer.findFirstOrThrow({
         where,
@@ -408,7 +416,8 @@ export class ExplorerService {
               deleted_at: null,
               status: { in: ['active', 'planned'] },
               current_location_id: { not: null },
-              current_location_visibility: 'public',
+              // Owner can see their own location regardless of visibility setting
+              ...(isOwnerProfile ? {} : { current_location_visibility: 'public' }),
             },
             select: {
               public_id: true,
@@ -575,8 +584,12 @@ export class ExplorerService {
     try {
       if (!username) throw new ServiceNotFoundException('explorer not found');
 
+      // Check if the viewing explorer is the profile owner
+      const owner = await this.prisma.explorer.findFirst({ where: { username }, select: { id: true } });
+      const isOwner = owner && owner.id === explorerId;
+
       const where = {
-        public: true,
+        ...(isOwner ? {} : { public: true }),
         deleted_at: null,
         is_draft: false,
         author: { username },
@@ -584,10 +597,13 @@ export class ExplorerService {
         lat: { not: null },
         lon: { not: null },
         // Only show entries from public expeditions (or standalone entries not off-grid)
-        OR: [
-          { expedition_id: null, NOT: { visibility: 'off-grid' } },
-          { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
-        ],
+        // Owner bypass: always show the explorer's own entries regardless of visibility
+        ...(isOwner ? {} : {
+          OR: [
+            { expedition_id: null, NOT: { visibility: 'off-grid' } },
+            { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+          ],
+        }),
       } as Prisma.EntryWhereInput;
 
       const select = {
@@ -812,24 +828,32 @@ export class ExplorerService {
 
   async getMap({
     username,
+    explorerId,
   }: {
     username: string;
+    explorerId?: number;
   }): Promise<IUserMapGetResponse> {
     try {
       if (!username) throw new ServiceNotFoundException('explorer not found');
 
-      // get explorer entries (exclude off-grid)
+      // Check if the viewing explorer is the profile owner
+      const owner = await this.prisma.explorer.findFirst({ where: { username }, select: { id: true } });
+      const isOwner = owner && owner.id === explorerId;
+
+      // get explorer entries (exclude off-grid unless owner)
       const entries = await this.prisma.entry.findMany({
         where: {
-          public: true,
+          ...(isOwner ? {} : { public: true }),
           author: {
             username,
           },
           deleted_at: null,
-          OR: [
-            { expedition_id: null, NOT: { visibility: 'off-grid' } },
-            { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
-          ],
+          ...(isOwner ? {} : {
+            OR: [
+              { expedition_id: null, NOT: { visibility: 'off-grid' } },
+              { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+            ],
+          }),
         },
         select: {
           public_id: true,

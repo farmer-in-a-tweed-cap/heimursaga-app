@@ -11,6 +11,7 @@ import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
 import { WaypointCardLandscape } from '@/app/components/WaypointCardLandscape';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
+import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { ExpeditionNotes } from '@/app/components/ExpeditionNotes';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
@@ -51,7 +52,7 @@ type JournalEntryType = {
   type: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   mediaCount: number;
   views: number;
-  visibility: 'public' | 'private' | 'sponsors-only';
+  visibility: 'public' | 'off-grid' | 'sponsors-only' | 'private';
 };
 
 type DebriefStop = {
@@ -74,6 +75,7 @@ export function ExpeditionDetailPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
+  const { formatDistance } = useDistanceUnit();
   const [selectedView, setSelectedView] = useState<'notes' | 'entries' | 'waypoints' | 'sponsors'>('entries');
   const [showUpdateLocationModal, setShowUpdateLocationModal] = useState(false);
   const [showManagementModal, setShowManagementModal] = useState(false);
@@ -408,7 +410,7 @@ export function ExpeditionDetailPage() {
         type: 'standard' as const,
         mediaCount: entry.mediaCount || 0,
         views: 0,
-        visibility: 'public' as const,
+        visibility: (entry.visibility || 'public') as 'public' | 'off-grid' | 'sponsors-only' | 'private',
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [apiExpedition?.entries]);
@@ -1804,7 +1806,7 @@ export function ExpeditionDetailPage() {
                     : 'No location set'}
                 </div>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mt-2">Total Distance:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">~3,247 km</div>
+                <div className="font-bold dark:text-[#e5e5e5]">~{formatDistance(3247, 0)}</div>
               </div>
               )}
 
@@ -2088,6 +2090,7 @@ export function ExpeditionDetailPage() {
                           date={entry.date}
                           excerpt={entry.excerpt}
                           type={entry.type}
+                          visibility={entry.visibility}
                           isCurrent={expedition.currentLocationSource === 'entry' && expedition.currentLocationId === entry.id}
                           onClick={() => router.push(`/entry/${entry.id}`)}
                         />
@@ -2448,11 +2451,11 @@ export function ExpeditionDetailPage() {
               </div>
               <div className="flex justify-between border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Estimated Distance</span>
-                <span className="font-bold dark:text-[#e5e5e5]">~3,247 km</span>
+                <span className="font-bold dark:text-[#e5e5e5]">~{formatDistance(3247, 0)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Avg. Daily Distance</span>
-                <span className="font-bold dark:text-[#e5e5e5]">~22.1 km</span>
+                <span className="font-bold dark:text-[#e5e5e5]">~{formatDistance(22.1, 1)}</span>
               </div>
             </div>
           </div>

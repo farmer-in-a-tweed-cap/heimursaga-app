@@ -17,6 +17,8 @@ import {
   Minus,
   Heart,
   Eye,
+  EyeOff,
+  Lock,
 } from 'lucide-react';
 import {
   LineChart,
@@ -178,9 +180,19 @@ function ExpeditionCard({ expedition }: { expedition: Expedition }) {
         >
           {expedition.title}
         </Link>
-        <span className={`${statusColor} text-white text-xs px-2 py-0.5 font-bold uppercase`}>
-          {expedition.status || 'Planning'}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {expedition.visibility && expedition.visibility !== 'public' && (
+            <span className={`text-white text-xs px-2 py-0.5 font-bold inline-flex items-center gap-1 ${
+              expedition.visibility === 'off-grid' ? 'bg-[#6b5c4e]' : 'bg-[#202020]'
+            }`}>
+              {expedition.visibility === 'off-grid' ? <EyeOff className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+              {expedition.visibility === 'off-grid' ? 'OFF-GRID' : 'PRIVATE'}
+            </span>
+          )}
+          <span className={`${statusColor} text-white text-xs px-2 py-0.5 font-bold uppercase`}>
+            {expedition.status || 'Planning'}
+          </span>
+        </div>
       </div>
       <div className="grid grid-cols-3 gap-2 text-xs mb-3">
         <div>

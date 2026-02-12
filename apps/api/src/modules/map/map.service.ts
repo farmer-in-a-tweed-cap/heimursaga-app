@@ -173,6 +173,7 @@ export class MapService {
                 deleted_at: null,
                 waypoint_id: { not: null },
                 OR: [
+                  ...(userId ? [{ author_id: userId }] : []),
                   { expedition_id: null, NOT: { visibility: 'off-grid' } },
                   { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
                 ],
@@ -192,6 +193,7 @@ export class MapService {
                   is_draft: false,
                   deleted_at: null,
                   OR: [
+                    { author_id: userId },
                     { expedition_id: null, NOT: { visibility: 'off-grid' } },
                     { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
                   ],
@@ -217,6 +219,7 @@ export class MapService {
                 is_draft: false,
                 deleted_at: null,
                 OR: [
+                  ...(userId ? [{ author_id: userId }] : []),
                   { expedition_id: null, NOT: { visibility: 'off-grid' } },
                   { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
                 ],

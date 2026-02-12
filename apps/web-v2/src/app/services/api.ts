@@ -329,6 +329,7 @@ export interface ExplorerListItem {
     id: string;
     title: string;
     status: string;
+    visibility?: string;
     daysActive?: number;
   }>;
   // Active expedition location (derived from expedition's current_location)
@@ -630,6 +631,7 @@ export interface ExpeditionEntry {
   id: string;
   title: string;
   content?: string;
+  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
   date?: string;
   place?: string;
   lat?: number;
