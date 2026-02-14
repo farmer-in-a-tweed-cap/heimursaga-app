@@ -631,7 +631,7 @@ export interface ExpeditionEntry {
   id: string;
   title: string;
   content?: string;
-  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'private';
   date?: string;
   place?: string;
   lat?: number;
@@ -914,7 +914,7 @@ export interface Entry {
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverImage?: string;
   isMilestone?: boolean;
-  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'private';
   // Entry number within expedition (calculated on the fly)
   entryNumber?: number;
   // Day of the expedition when this entry was written
@@ -942,7 +942,7 @@ export interface EntryCreatePayload {
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverUploadId?: string;
   isMilestone?: boolean;
-  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'private';
 }
 
 // Entry API endpoints
@@ -1163,8 +1163,8 @@ export interface MessageUser {
 export interface Message {
   id: string;
   content: string;
-  senderId: number;
-  recipientId: number;
+  senderUsername: string;
+  recipientUsername: string;
   isRead: boolean;
   createdAt: string;
   sender: MessageUser;
@@ -1557,6 +1557,7 @@ export interface SponsorshipCheckoutPayload {
   emailDelivery?: boolean;
   isPublic?: boolean; // whether sponsor name is shown publicly
   isMessagePublic?: boolean; // whether message is shown publicly
+  expeditionId?: string; // public_id of the expedition being sponsored through
 }
 
 export interface SponsorshipCheckoutResponse {
@@ -1590,6 +1591,13 @@ export interface SponsorshipFull {
     id: string;
     description: string;
     price: number;
+  };
+  expedition?: {
+    id: string;
+    title: string;
+    status: string;
+    visibility: string;
+    coverPhoto?: string;
   };
 }
 

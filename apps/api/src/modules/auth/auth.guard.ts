@@ -98,7 +98,6 @@ export class RolesGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     try {
       const req: IRequest = context.switchToHttp().getRequest();
-      const user = req.user;
 
       // Check if the route is public
       const isPublic = !!this.reflector.getAllAndOverride<boolean>(
@@ -116,7 +115,9 @@ export class RolesGuard implements CanActivate {
         return true;
       }
 
-      const isAccess = requiredRoles.some((role) => user?.role === role);
+      // Read role from session (set by AuthGuard)
+      const userRole = req.session.get(SESSION_KEYS.USER_ROLE);
+      const isAccess = requiredRoles.some((role) => userRole === role);
       if (!isAccess) throw new UnauthorizedException();
 
       return true;

@@ -114,6 +114,11 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
         title: 'Expedition Completed',
         message: apiNotif.body || ''
       };
+    case 'expedition_off_grid':
+      return {
+        title: 'Expedition Off-Grid',
+        message: apiNotif.body || ''
+      };
     case 'sponsorship_milestone':
       return {
         title: 'Funding Milestone',
@@ -446,14 +451,15 @@ export function NotificationsPage() {
                   className="w-full px-3 py-2 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] text-xs font-bold"
                 >
                   <option value="all">ALL TYPES</option>
-                  <option value="sponsorship">SPONSORSHIPS</option>
-                  <option value="comment">NOTES</option>
-                  <option value="comment_reply">NOTE REPLIES</option>
-                  <option value="follow">FOLLOWS</option>
-                  <option value="entry_milestone">ENTRY MILESTONES</option>
-                  <option value="expedition_started">EXPEDITION STARTS</option>
-                  <option value="expedition_completed">EXPEDITION COMPLETES</option>
-                  <option value="sponsorship_milestone">SPONSORSHIP MILESTONES</option>
+                  <option value="sponsorship">SPONSORSHIP</option>
+                  <option value="comment">NEW NOTE</option>
+                  <option value="comment_reply">NOTE REPLY</option>
+                  <option value="follow">NEW FOLLOWER</option>
+                  <option value="entry_milestone">ENTRY MILESTONE</option>
+                  <option value="expedition_started">EXPEDITION STARTED</option>
+                  <option value="expedition_completed">EXPEDITION COMPLETE</option>
+                  <option value="expedition_off_grid">EXPEDITION STATUS</option>
+                  <option value="sponsorship_milestone">FUNDING MILESTONE</option>
                   <option value="passport">PASSPORT</option>
                 </select>
               </div>
@@ -585,6 +591,13 @@ export function NotificationsPage() {
                 actions.primary = {
                   label: 'VIEW EXPEDITION',
                   onClick: () => router.push(`/expedition/${notification.metadata?.expeditionName?.toLowerCase().replace(/\s+/g, '-') || 'current'}`)
+                };
+                break;
+
+              case 'expedition_off_grid':
+                actions.primary = {
+                  label: 'VIEW SPONSORSHIPS',
+                  onClick: () => router.push('/sponsorship')
                 };
                 break;
 

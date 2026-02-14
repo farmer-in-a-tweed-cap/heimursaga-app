@@ -18,6 +18,8 @@ import {
   Play,
   X,
   Loader2,
+  EyeOff,
+  Map,
 } from 'lucide-react';
 import { sponsorshipApi, type SponsorshipFull } from '@/app/services/api';
 import { toast } from 'sonner';
@@ -385,44 +387,60 @@ export function SponsorshipPage() {
                               {mySponsorships.slice(0, 5).map((sp) => (
                                 <div
                                   key={sp.id}
-                                  className="flex items-center justify-between p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46]"
+                                  className="p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46]"
                                 >
-                                  <div>
-                                    <div className="font-bold text-sm dark:text-[#e5e5e5]">
-                                      {sp.sponsoredExplorer?.username ? (
-                                        <Link
-                                          href={`/journal/${sp.sponsoredExplorer.username}`}
-                                          className="text-[#4676ac] hover:underline"
-                                        >
-                                          {sp.sponsoredExplorer.username}
-                                        </Link>
-                                      ) : (
-                                        sp.sponsoredExplorer?.name || 'Unknown Explorer'
-                                      )}
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <div className="font-bold text-sm dark:text-[#e5e5e5]">
+                                        {sp.sponsoredExplorer?.username ? (
+                                          <Link
+                                            href={`/journal/${sp.sponsoredExplorer.username}`}
+                                            className="text-[#4676ac] hover:underline"
+                                          >
+                                            {sp.sponsoredExplorer.username}
+                                          </Link>
+                                        ) : (
+                                          sp.sponsoredExplorer?.name || 'Unknown Explorer'
+                                        )}
+                                      </div>
+                                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                                        {sp.createdAt
+                                          ? new Date(sp.createdAt).toLocaleDateString()
+                                          : 'N/A'}
+                                        {' · '}
+                                        {sp.type?.toUpperCase() === 'SUBSCRIPTION' ? 'Monthly' : 'One-time'}
+                                      </div>
                                     </div>
-                                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                                      {sp.createdAt
-                                        ? new Date(sp.createdAt).toLocaleDateString()
-                                        : 'N/A'}
-                                      {' · '}
-                                      {sp.type?.toUpperCase() === 'SUBSCRIPTION' ? 'Monthly' : 'One-time'}
+                                    <div className="text-right">
+                                      <div className="font-bold text-[#4676ac]">
+                                        ${sp.amount.toFixed(2)}
+                                        {sp.type?.toUpperCase() === 'SUBSCRIPTION' && (
+                                          <span className="text-xs">/mo</span>
+                                        )}
+                                      </div>
+                                      <span
+                                        className={`px-2 py-0.5 text-xs font-bold ${
+                                          sp.status?.toUpperCase() === 'ACTIVE' ? 'bg-green-600' : 'bg-[#616161]'
+                                        } text-white`}
+                                      >
+                                        {sp.status}
+                                      </span>
                                     </div>
                                   </div>
-                                  <div className="text-right">
-                                    <div className="font-bold text-[#4676ac]">
-                                      ${sp.amount.toFixed(2)}
-                                      {sp.type?.toUpperCase() === 'SUBSCRIPTION' && (
-                                        <span className="text-xs">/mo</span>
-                                      )}
-                                    </div>
-                                    <span
-                                      className={`px-2 py-0.5 text-xs font-bold ${
-                                        sp.status?.toUpperCase() === 'ACTIVE' ? 'bg-green-600' : 'bg-[#616161]'
-                                      } text-white`}
+                                  {sp.expedition && (
+                                    <Link
+                                      href={`/expedition/${sp.expedition.id}`}
+                                      className="flex items-center gap-2 mt-2 text-xs hover:text-[#4676ac] transition-all dark:text-[#b5bcc4]"
                                     >
-                                      {sp.status}
-                                    </span>
-                                  </div>
+                                      <Map className="w-3 h-3 text-[#4676ac] flex-shrink-0" />
+                                      <span className="truncate">{sp.expedition.title}</span>
+                                      {sp.expedition.visibility === 'off-grid' && (
+                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold bg-[#6b5c4e] text-white flex-shrink-0">
+                                          <EyeOff className="h-2.5 w-2.5" /> OFF-GRID
+                                        </span>
+                                      )}
+                                    </Link>
+                                  )}
                                 </div>
                               ))}
                             </div>
@@ -534,6 +552,26 @@ export function SponsorshipPage() {
                                     </div>
                                   )}
                                 </div>
+                                {/* Expedition Link */}
+                                {sub.expedition && (
+                                  <div className="mb-4">
+                                    <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">EXPEDITION:</div>
+                                    <Link
+                                      href={`/expedition/${sub.expedition.id}`}
+                                      className="flex items-center gap-2 p-2 border border-[#b5bcc4] dark:border-[#616161] hover:bg-white dark:hover:bg-[#202020] transition-all text-sm"
+                                    >
+                                      <Map className="w-4 h-4 text-[#4676ac] flex-shrink-0" />
+                                      <span className="font-bold dark:text-[#e5e5e5] truncate">{sub.expedition.title}</span>
+                                      <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] uppercase">{sub.expedition.status}</span>
+                                      {sub.expedition.visibility === 'off-grid' && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold bg-[#6b5c4e] text-white ml-auto flex-shrink-0">
+                                          <EyeOff className="h-3 w-3" /> OFF-GRID
+                                        </span>
+                                      )}
+                                    </Link>
+                                  </div>
+                                )}
+
                                 <div className="flex flex-wrap gap-3 pt-4 border-t border-[#b5bcc4] dark:border-[#616161]">
                                   <Link
                                     href={`/journal/${sub.sponsoredExplorer?.username}`}

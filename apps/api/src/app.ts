@@ -162,6 +162,8 @@ export async function app() {
     app.useGlobalPipes(
       new ValidationPipe({
         transform: true,
+        whitelist: true,
+        forbidNonWhitelisted: true,
         disableErrorMessages: DISABLE_ERROR_MESSAGES,
       }),
     );
@@ -197,7 +199,7 @@ export async function app() {
         '/v1/auth/change-password',
         '/v1/auth/verify-email',
       ];
-      if (authPaths.some((p) => request.url.startsWith(p))) return;
+      if (authPaths.includes(request.url.split('?')[0])) return;
 
       // Skip CSRF if no session secret exists (e.g. after logout destroys session).
       // The csrf plugin calls reply.send(error) instead of throwing, so we must
@@ -221,12 +223,14 @@ export async function app() {
       });
     });
 
-    // swagger
-    const config = new DocumentBuilder()
-      .setTitle('saga api')
-      .setVersion(`${API_VERSION}`)
-      .build();
-    SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
+    // swagger (development only)
+    if (IS_DEVELOPMENT) {
+      const config = new DocumentBuilder()
+        .setTitle('saga api')
+        .setVersion(`${API_VERSION}`)
+        .build();
+      SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
+    }
 
     // Enable graceful shutdown hooks (releases port on SIGTERM/SIGINT)
     app.enableShutdownHooks();

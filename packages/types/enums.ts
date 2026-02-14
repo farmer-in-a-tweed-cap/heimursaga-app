@@ -47,6 +47,7 @@ export enum UserNotificationContext {
   EXPEDITION_STARTED = 'expedition_started',
   EXPEDITION_COMPLETED = 'expedition_completed',
   SPONSORSHIP_MILESTONE = 'sponsorship_milestone',
+  EXPEDITION_OFF_GRID = 'expedition_off_grid',
   SYSTEM = 'system',
   // Passport notifications
   PASSPORT_COUNTRY = 'passport_country',

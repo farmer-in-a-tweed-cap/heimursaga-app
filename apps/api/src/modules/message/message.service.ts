@@ -163,8 +163,8 @@ export class MessageService {
       const response: IMessage[] = messages.map((message) => ({
         id: message.public_id,
         content: message.content,
-        senderId: message.sender_id,
-        recipientId: message.recipient_id,
+        senderUsername: message.sender.username,
+        recipientUsername: message.recipient.username,
         isRead: message.is_read,
         createdAt: message.created_at,
         sender: {

@@ -11,6 +11,7 @@ import {
   Put,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 import { Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
@@ -30,6 +31,7 @@ export class SponsorController {
 
   @Post('checkout')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 checkout attempts per minute
   async checkout(
     @Session() session: ISession,
     @Body() body: SponsorCheckoutDto,
@@ -88,6 +90,7 @@ export class SponsorshipController {
 
   @Post('refund')
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 refunds per minute
   async issueRefund(
     @Session() session: ISession,
     @Body() body: { chargeId: string; reason?: string },

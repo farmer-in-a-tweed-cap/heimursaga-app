@@ -14,8 +14,8 @@ export interface IMessageReadPayload {
 export interface IMessage {
   id: string;
   content: string;
-  senderId: number;
-  recipientId: number;
+  senderUsername: string;
+  recipientUsername: string;
   isRead: boolean;
   createdAt: Date;
   sender: {

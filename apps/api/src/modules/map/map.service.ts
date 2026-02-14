@@ -8,7 +8,6 @@ import {
   IWaypointGetByIdResponse,
   IWaypointUpdatePayload,
   MapQueryContext,
-  SponsorshipStatus,
   UserRole,
 } from '@repo/types';
 
@@ -38,29 +37,6 @@ export class MapService {
     private prisma: PrismaService,
   ) {}
 
-  /**
-   * Check if a user has an active sponsorship with a creator
-   */
-  private async hasActiveSponsorship(
-    userId: number,
-    creatorId: number,
-  ): Promise<boolean> {
-    if (!userId) return false;
-
-    const sponsorship = await this.prisma.sponsorship.findFirst({
-      where: {
-        sponsor_id: userId,
-        sponsored_explorer_id: creatorId,
-        status: SponsorshipStatus.ACTIVE,
-        expiry: {
-          gt: new Date(), // expiry is in the future
-        },
-        deleted_at: null,
-      },
-    });
-
-    return !!sponsorship;
-  }
 
   async query({
     query,
@@ -278,33 +254,8 @@ export class MapService {
         take,
       });
 
-      // Filter out sponsored posts for users without active sponsorships
-      const filteredWaypoints = await Promise.all(
-        waypoints.map(async ({ id, title, lat, lon, date, entries }) => {
+      const filteredWaypoints = waypoints.map(({ id, title, lat, lon, date, entries }) => {
           const post = entries[0];
-
-          // If post is sponsored, check if user has access
-          if (post?.sponsored) {
-            // If user is not logged in, filter out sponsored posts
-            if (!userId) {
-              return null;
-            }
-
-            // Allow the post author to see their own sponsored posts
-            if (userId === post.author_id) {
-              // Author can see their own sponsored posts
-            }
-            // For other users, check if they have an active sponsorship
-            else {
-              const hasSponsorship = await this.hasActiveSponsorship(
-                userId,
-                post.author_id,
-              );
-              if (!hasSponsorship) {
-                return null; // Filter out this post
-              }
-            }
-          }
 
           return {
             lat,
@@ -351,10 +302,9 @@ export class MapService {
                 }
               : undefined,
           };
-        }),
-      );
+        });
 
-      const finalWaypoints = filteredWaypoints.filter(Boolean);
+      const finalWaypoints = filteredWaypoints;
 
       const sortedWaypoints = sortByDate({
         elements: finalWaypoints,

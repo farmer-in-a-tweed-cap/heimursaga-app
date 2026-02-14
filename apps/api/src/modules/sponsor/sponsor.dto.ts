@@ -68,6 +68,11 @@ export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
   @IsBoolean()
   @IsOptional()
   isPublic?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  expeditionId?: string;
 }
 
 export class SponsorshipTierUpdateDto implements ISponsorshipTierUpdatePayload {

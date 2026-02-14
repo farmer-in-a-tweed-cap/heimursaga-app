@@ -1,4 +1,4 @@
-import { MapPin, FileText, Eye, User, Calendar, Bookmark, EyeOff, Lock, Users } from "lucide-react";
+import { MapPin, FileText, Eye, User, Calendar, Bookmark, EyeOff, Lock } from "lucide-react";
 import { formatDateWithOptionalTime } from "@/app/utils/dateFormat";
 
 interface EntryCardLandscapeProps {
@@ -10,7 +10,7 @@ interface EntryCardLandscapeProps {
   date: string;
   excerpt: string;
   type: string;
-  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'private';
   isCurrent?: boolean;
   onClick?: () => void;
   onUnbookmark?: () => void;
@@ -48,15 +48,10 @@ export function EntryCardLandscape({
             {visibility && visibility !== 'public' && (
               <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
                 visibility === 'off-grid' ? 'bg-[#6b5c4e] text-white'
-                  : visibility === 'sponsors-only' ? 'bg-[#4676ac] text-white'
                   : 'bg-[#202020] text-white'
               }`}>
-                {visibility === 'off-grid' ? <EyeOff className="h-3 w-3" />
-                  : visibility === 'sponsors-only' ? <Users className="h-3 w-3" />
-                  : <Lock className="h-3 w-3" />}
-                {visibility === 'off-grid' ? 'OFF-GRID'
-                  : visibility === 'sponsors-only' ? 'SPONSORS'
-                  : 'PRIVATE'}
+                {visibility === 'off-grid' ? <EyeOff className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+                {visibility === 'off-grid' ? 'OFF-GRID' : 'PRIVATE'}
               </div>
             )}
           </div>
@@ -92,7 +87,7 @@ export function EntryCardLandscape({
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  className="flex-shrink-0 px-3 py-1.5 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center gap-1.5"
+                  className="flex-shrink-0 px-3 py-1.5 text-white text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none flex items-center gap-1.5 bg-[#ac6d46] hover:bg-[#8a5738] focus-visible:ring-[#ac6d46]"
                 >
                   <Eye className="w-3 h-3" />
                   VIEW ENTRY

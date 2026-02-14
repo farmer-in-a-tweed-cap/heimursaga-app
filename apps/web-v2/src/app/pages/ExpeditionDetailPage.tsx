@@ -52,7 +52,7 @@ type JournalEntryType = {
   type: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   mediaCount: number;
   views: number;
-  visibility: 'public' | 'off-grid' | 'sponsors-only' | 'private';
+  visibility: 'public' | 'off-grid' | 'private';
 };
 
 type DebriefStop = {
@@ -410,7 +410,7 @@ export function ExpeditionDetailPage() {
         type: 'standard' as const,
         mediaCount: entry.mediaCount || 0,
         views: 0,
-        visibility: (entry.visibility || 'public') as 'public' | 'off-grid' | 'sponsors-only' | 'private',
+        visibility: (entry.visibility || 'public') as 'public' | 'off-grid' | 'private',
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [apiExpedition?.entries]);

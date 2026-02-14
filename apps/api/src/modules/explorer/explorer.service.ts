@@ -19,7 +19,6 @@ import {
   IUserSettingsProfileGetResponse,
   IUserSettingsProfileUpdatePayload,
   MediaUploadContext,
-  SponsorshipStatus,
   UserNotificationContext,
   UserRole,
 } from '@repo/types';
@@ -56,30 +55,6 @@ export class ExplorerService {
     private prisma: PrismaService,
     private eventService: EventService,
   ) {}
-
-  /**
-   * Check if an explorer has an active sponsorship with a creator
-   */
-  private async hasActiveSponsorship(
-    explorerId: number,
-    creatorId: number,
-  ): Promise<boolean> {
-    if (!explorerId) return false;
-
-    const sponsorship = await this.prisma.sponsorship.findFirst({
-      where: {
-        sponsor_id: explorerId,
-        sponsored_explorer_id: creatorId,
-        status: SponsorshipStatus.ACTIVE,
-        expiry: {
-          gt: new Date(), // expiry is in the future
-        },
-        deleted_at: null,
-      },
-    });
-
-    return !!sponsorship;
-  }
 
   async getExplorers({
     query,
@@ -596,12 +571,12 @@ export class ExplorerService {
         // Entries store coordinates directly
         lat: { not: null },
         lon: { not: null },
-        // Only show entries from public expeditions (or standalone entries not off-grid)
+        // Entry visibility derived from expedition
         // Owner bypass: always show the explorer's own entries regardless of visibility
         ...(isOwner ? {} : {
           OR: [
-            { expedition_id: null, NOT: { visibility: 'off-grid' } },
-            { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+            { expedition_id: null, visibility: 'public' },
+            { expedition: { visibility: 'public' }, NOT: { visibility: 'private' } },
           ],
         }),
       } as Prisma.EntryWhereInput;
@@ -620,6 +595,8 @@ export class ExplorerService {
           select: {
             public_id: true,
             title: true,
+            status: true,
+            end_date: true,
           },
         },
         // Waypoint-based expedition link (legacy)
@@ -705,31 +682,8 @@ export class ExplorerService {
         orderBy: [{ id: 'desc' }],
       });
 
-      // Filter out sponsored entries that the explorer doesn't have access to
-      const filteredEntries = [];
-      for (const entry of data) {
-        // If entry is sponsored, check if explorer has access
-        if (entry.sponsored) {
-          // Allow the entry author to see their own sponsored entries
-          if (explorerId && entry.author_id === explorerId) {
-            filteredEntries.push(entry);
-          }
-          // For other explorers, check if they have an active sponsorship
-          else if (
-            explorerId &&
-            (await this.hasActiveSponsorship(explorerId, entry.author_id))
-          ) {
-            filteredEntries.push(entry);
-          }
-          // Otherwise, skip this sponsored entry
-        } else {
-          // Non-sponsored entries are visible to everyone (subject to public visibility rules)
-          filteredEntries.push(entry);
-        }
-      }
-
       const response: IUserPostsQueryResponse = {
-        data: filteredEntries.map(
+        data: data.map(
           ({
             public_id: id,
             title,
@@ -815,7 +769,7 @@ export class ExplorerService {
             };
           },
         ),
-        results: filteredEntries.length,
+        results: data.length,
       };
 
       return response;
@@ -850,8 +804,8 @@ export class ExplorerService {
           deleted_at: null,
           ...(isOwner ? {} : {
             OR: [
-              { expedition_id: null, NOT: { visibility: 'off-grid' } },
-              { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+              { expedition_id: null, visibility: 'public' },
+              { expedition: { visibility: 'public' }, NOT: { visibility: 'private' } },
             ],
           }),
         },
@@ -1358,30 +1312,6 @@ export class SessionExplorerService {
     private uploadService: UploadService,
   ) {}
 
-  /**
-   * Check if an explorer has an active sponsorship with a creator
-   */
-  private async hasActiveSponsorship(
-    explorerId: number,
-    creatorId: number,
-  ): Promise<boolean> {
-    if (!explorerId) return false;
-
-    const sponsorship = await this.prisma.sponsorship.findFirst({
-      where: {
-        sponsor_id: explorerId,
-        sponsored_explorer_id: creatorId,
-        status: SponsorshipStatus.ACTIVE,
-        expiry: {
-          gt: new Date(), // expiry is in the future
-        },
-        deleted_at: null,
-      },
-    });
-
-    return !!sponsorship;
-  }
-
   async getEntries({
     explorerId,
     context,
@@ -1422,6 +1352,14 @@ export class SessionExplorerService {
               },
               take: 1,
             },
+          },
+        },
+        expedition: {
+          select: {
+            public_id: true,
+            title: true,
+            status: true,
+            end_date: true,
           },
         },
         date: true,
@@ -1469,7 +1407,11 @@ export class SessionExplorerService {
                 explorer_id: explorerId,
               },
             },
-            OR: [{ public: true }, { author: { id: explorerId } }],
+            OR: [
+              { author: { id: explorerId } },
+              { expedition_id: null, visibility: 'public' },
+              { expedition: { visibility: 'public' }, NOT: { visibility: 'private' } },
+            ],
           };
           break;
         case 'drafts':
@@ -1491,31 +1433,8 @@ export class SessionExplorerService {
         orderBy: [{ id: 'desc' }],
       });
 
-      // Filter out sponsored entries that the explorer doesn't have access to
-      const filteredEntries = [];
-      for (const entry of data) {
-        // If entry is sponsored, check if explorer has access
-        if (entry.sponsored) {
-          // Allow the entry author to see their own sponsored entries
-          if (explorerId && entry.author_id === explorerId) {
-            filteredEntries.push(entry);
-          }
-          // For other explorers, check if they have an active sponsorship
-          else if (
-            explorerId &&
-            (await this.hasActiveSponsorship(explorerId, entry.author_id))
-          ) {
-            filteredEntries.push(entry);
-          }
-          // Otherwise, skip this sponsored entry
-        } else {
-          // Non-sponsored entries are visible to everyone (subject to public visibility rules)
-          filteredEntries.push(entry);
-        }
-      }
-
       const response: IUserPostsQueryResponse = {
-        data: filteredEntries.map(
+        data: data.map(
           ({
             public_id: id,
             title,
@@ -1530,6 +1449,7 @@ export class SessionExplorerService {
             lon,
             author,
             waypoint,
+            expedition: directExpedition,
             likes,
             likes_count,
             bookmarks,
@@ -1552,12 +1472,17 @@ export class SessionExplorerService {
                   lon: waypoint.lon,
                 }
               : undefined,
-            expedition: waypoint?.expeditions?.[0]?.expedition
+            expedition: directExpedition
               ? {
-                  id: waypoint.expeditions[0].expedition.public_id,
-                  title: waypoint.expeditions[0].expedition.title,
+                  id: directExpedition.public_id,
+                  title: directExpedition.title,
                 }
-              : undefined,
+              : waypoint?.expeditions?.[0]?.expedition
+                ? {
+                    id: waypoint.expeditions[0].expedition.public_id,
+                    title: waypoint.expeditions[0].expedition.title,
+                  }
+                : undefined,
             author: {
               name: author.profile?.name,
               username: author?.username,
@@ -1571,7 +1496,7 @@ export class SessionExplorerService {
             bookmarksCount: bookmarks_count,
           }),
         ),
-        results: filteredEntries.length,
+        results: data.length,
       };
 
       return response;
@@ -1587,7 +1512,10 @@ export class SessionExplorerService {
       if (!explorerId) throw new ServiceForbiddenException();
 
       const bookmarks = await this.prisma.expeditionBookmark.findMany({
-        where: { explorer_id: explorerId },
+        where: {
+          explorer_id: explorerId,
+          expedition: { visibility: 'public', deleted_at: null },
+        },
         include: {
           expedition: {
             select: {

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
-import { CreditCard, RefreshCw, DollarSign, TrendingUp, Users, Search, ChevronDown, ChevronUp, ExternalLink, Pause, Play, X, Loader2 } from 'lucide-react';
+import { CreditCard, RefreshCw, DollarSign, TrendingUp, Users, Search, ChevronDown, ChevronUp, ExternalLink, Pause, Play, X, Loader2, EyeOff, Map } from 'lucide-react';
 import { sponsorshipApi, payoutApi, type SponsorshipFull, type PayoutBalance } from '@/app/services/api';
 import { toast } from 'sonner';
 
@@ -276,6 +276,52 @@ export function SponsorshipDashboardPage() {
             </div>
           </div>
 
+          {/* Sponsored Explorers & Their Expeditions */}
+          {activeSubscriptions.length > 0 && (
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+              <div className="bg-[#4676ac] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161]">
+                <h3 className="text-xs font-bold">SPONSORED EXPLORERS & EXPEDITIONS</h3>
+              </div>
+              <div className="divide-y-2 divide-[#202020] dark:divide-[#616161]">
+                {activeSubscriptions.map((sub) => (
+                  <div key={sub.id} className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Link
+                        href={`/journal/${sub.sponsoredExplorer?.username}`}
+                        className="font-bold text-sm hover:text-[#ac6d46] transition-all dark:text-[#e5e5e5]"
+                      >
+                        {sub.sponsoredExplorer?.name || sub.sponsoredExplorer?.username || 'Unknown Explorer'}
+                      </Link>
+                      <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
+                        @{sub.sponsoredExplorer?.username}
+                      </span>
+                      <span className="text-xs font-bold text-[#ac6d46] ml-auto">
+                        ${sub.amount.toFixed(2)}/mo
+                      </span>
+                    </div>
+                    {sub.expedition ? (
+                      <Link
+                        href={`/expedition/${sub.expedition.id}`}
+                        className="flex items-center gap-2 p-2 ml-1 border border-[#202020] dark:border-[#616161] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-sm"
+                      >
+                        <Map className="w-4 h-4 text-[#4676ac] flex-shrink-0" />
+                        <span className="font-bold dark:text-[#e5e5e5] truncate">{sub.expedition.title}</span>
+                        <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] uppercase">{sub.expedition.status}</span>
+                        {sub.expedition.visibility === 'off-grid' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold bg-[#6b5c4e] text-white ml-auto flex-shrink-0">
+                            <EyeOff className="h-3 w-3" /> OFF-GRID
+                          </span>
+                        )}
+                      </Link>
+                    ) : (
+                      <p className="text-xs text-[#616161] dark:text-[#b5bcc4] ml-1">No active expeditions</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Empty state */}
           {mySponsorships.length === 0 && (
             <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-12 text-center">
@@ -422,6 +468,26 @@ export function SponsorshipDashboardPage() {
                       CANCEL SUBSCRIPTION
                     </button>
                   </div>
+
+                  {/* Expedition Link */}
+                  {sub.expedition && (
+                    <div className="mt-6 pt-4 border-t-2 border-[#202020] dark:border-[#616161]">
+                      <h4 className="font-bold text-sm mb-3 dark:text-[#e5e5e5]">EXPEDITION:</h4>
+                      <Link
+                        href={`/expedition/${sub.expedition.id}`}
+                        className="flex items-center gap-2 p-2 border border-[#202020] dark:border-[#616161] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-sm"
+                      >
+                        <Map className="w-4 h-4 text-[#4676ac] flex-shrink-0" />
+                        <span className="font-bold dark:text-[#e5e5e5] truncate">{sub.expedition.title}</span>
+                        <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] uppercase">{sub.expedition.status}</span>
+                        {sub.expedition.visibility === 'off-grid' && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold bg-[#6b5c4e] text-white ml-auto flex-shrink-0">
+                            <EyeOff className="h-3 w-3" /> OFF-GRID
+                          </span>
+                        )}
+                      </Link>
+                    </div>
+                  )}
 
                   <div className="mt-4 p-3 bg-[#fff8e5] dark:bg-[#2a2a20] border-l-4 border-[#ac6d46] text-xs dark:text-[#b5bcc4]">
                     <strong>Note:</strong> Canceling will end your subscription at the end of the current billing period. No refunds for partial months.

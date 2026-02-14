@@ -318,7 +318,7 @@ export interface IPostDetail {
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverImage?: string;
   isMilestone?: boolean;
-  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'private';
   author?: {
     username: string;
     name?: string;
@@ -372,7 +372,7 @@ export interface IPostCreatePayload {
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverUploadId?: string;
   isMilestone?: boolean;
-  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'private';
 }
 
 export interface IPostCreateResponse {
@@ -399,7 +399,7 @@ export interface IPostUpdatePayload {
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverUploadId?: string;
   isMilestone?: boolean;
-  visibility?: 'public' | 'off-grid' | 'sponsors-only' | 'private';
+  visibility?: 'public' | 'off-grid' | 'private';
 }
 
 export interface IPostLikeResponse {
@@ -815,6 +815,7 @@ export interface ISponsorCheckoutPayload {
   emailDelivery?: boolean;
   isPublic?: boolean; // whether sponsor name is shown publicly
   isMessagePublic?: boolean; // whether message is shown publicly
+  expeditionId?: string; // public_id of the expedition being sponsored through
 }
 
 export interface ISponsorCheckoutResponse {

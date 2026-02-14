@@ -897,60 +897,56 @@ Remember: Your sponsors and followers are reading this to understand your journe
               {/* Privacy Settings - ALL TYPES */}
               <div className="border-2 border-[#202020] dark:border-[#616161] p-4 dark:bg-[#2a2a2a]">
                 <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">ENTRY VISIBILITY:</div>
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <input 
-                      type="radio" 
-                      name="visibility" 
-                      id="vis-public" 
-                      className="mt-1" 
-                      defaultChecked={apiEntry?.visibility === 'public'}
-                    />
-                    <label htmlFor="vis-public" className="text-xs">
-                      <strong className="text-[#202020] dark:text-[#e5e5e5]">Public:</strong>{' '}
-                      <span className="text-[#616161] dark:text-[#b5bcc4]">Visible to everyone (recommended)</span>
-                    </label>
+                {expedition ? (
+                  <div className="p-3 bg-[#f5f5f5] dark:bg-[#1a1a1a] border-l-4 border-[#4676ac] text-xs">
+                    <strong className="text-[#202020] dark:text-[#e5e5e5]">
+                      {(apiEntry?.visibility || 'public').toUpperCase()}
+                    </strong>
+                    <span className="text-[#616161] dark:text-[#b5bcc4]"> — derived from expedition</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      id="vis-sponsors"
-                      className="mt-1"
-                      defaultChecked={apiEntry?.visibility === 'sponsors-only'}
-                    />
-                    <label htmlFor="vis-sponsors" className="text-xs">
-                      <strong className="text-[#202020] dark:text-[#e5e5e5]">Sponsors Only:</strong>{' '}
-                      <span className="text-[#616161] dark:text-[#b5bcc4]">Only visible to expedition sponsors</span>
-                    </label>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="radio"
+                        name="visibility"
+                        id="vis-public"
+                        className="mt-1"
+                        defaultChecked={apiEntry?.visibility === 'public'}
+                      />
+                      <label htmlFor="vis-public" className="text-xs">
+                        <strong className="text-[#202020] dark:text-[#e5e5e5]">Public:</strong>{' '}
+                        <span className="text-[#616161] dark:text-[#b5bcc4]">Visible to everyone (recommended)</span>
+                      </label>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="radio"
+                        name="visibility"
+                        id="vis-offgrid"
+                        className="mt-1"
+                        defaultChecked={apiEntry?.visibility === 'off-grid'}
+                      />
+                      <label htmlFor="vis-offgrid" className="text-xs">
+                        <strong className="text-[#202020] dark:text-[#e5e5e5]">Off-Grid:</strong>{' '}
+                        <span className="text-[#616161] dark:text-[#b5bcc4]">Hidden from feeds and search, accessible via direct link</span>
+                      </label>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="radio"
+                        name="visibility"
+                        id="vis-private"
+                        className="mt-1"
+                        defaultChecked={apiEntry?.visibility === 'private'}
+                      />
+                      <label htmlFor="vis-private" className="text-xs">
+                        <strong className="text-[#202020] dark:text-[#e5e5e5]">Private:</strong>{' '}
+                        <span className="text-[#616161] dark:text-[#b5bcc4]">Only visible to you (draft mode)</span>
+                      </label>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      id="vis-offgrid"
-                      className="mt-1"
-                      defaultChecked={apiEntry?.visibility === 'off-grid'}
-                    />
-                    <label htmlFor="vis-offgrid" className="text-xs">
-                      <strong className="text-[#202020] dark:text-[#e5e5e5]">Off-Grid:</strong>{' '}
-                      <span className="text-[#616161] dark:text-[#b5bcc4]">Hidden from feeds and search, accessible via direct link</span>
-                    </label>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      id="vis-private"
-                      className="mt-1"
-                      defaultChecked={apiEntry?.visibility === 'private'}
-                    />
-                    <label htmlFor="vis-private" className="text-xs">
-                      <strong className="text-[#202020] dark:text-[#e5e5e5]">Private:</strong>{' '}
-                      <span className="text-[#616161] dark:text-[#b5bcc4]">Only visible to you (draft mode)</span>
-                    </label>
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Entry Notes Settings */}

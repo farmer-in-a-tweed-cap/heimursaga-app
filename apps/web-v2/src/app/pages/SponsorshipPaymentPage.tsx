@@ -305,6 +305,7 @@ export function SponsorshipPaymentPage() {
         emailDelivery: emailUpdates,
         isPublic: namePublic,
         isMessagePublic: messagePublic,
+        expeditionId: expedition?.publicId || expedition?.id || expeditionId,
       });
 
       // Confirm payment with Stripe

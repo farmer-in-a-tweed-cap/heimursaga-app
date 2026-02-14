@@ -11,6 +11,7 @@ import {
   IsOptional,
   IsString,
   Matches,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 
@@ -37,8 +38,14 @@ export class SignupDto implements ISignupPayload {
   @IsNotEmpty()
   email: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: true })
+  @IsString()
   @IsNotEmpty()
+  @MinLength(3, { message: 'Username must be at least 3 characters' })
+  @MaxLength(30, { message: 'Username must not exceed 30 characters' })
+  @Matches(/^[a-zA-Z0-9_]+$/, {
+    message: 'Username may only contain letters, numbers, and underscores',
+  })
   username: string;
 
   @ApiProperty({ required: true })
@@ -88,4 +95,26 @@ export class PasswordUpdateDto implements IPasswordUpdatePayload {
       'Password must contain at least one uppercase letter, one lowercase letter, and one number',
   })
   password: string;
+}
+
+export class MobileRefreshDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  refreshToken: string;
+}
+
+export class SendEmailVerificationDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+}
+
+export class VerifyEmailDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  token: string;
 }

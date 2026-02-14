@@ -86,8 +86,8 @@ export function AdminDashboardPage() {
   const [explorersOffset, setExplorersOffset] = useState(0);
   const [explorersLoading, setExplorersLoading] = useState(false);
 
-  // Auth guard — only explorer1 can access
-  const isAdmin = !!user && user.username === 'explorer1';
+  // Auth guard — only admin role can access
+  const isAdmin = !!user && user.role === 'admin';
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {

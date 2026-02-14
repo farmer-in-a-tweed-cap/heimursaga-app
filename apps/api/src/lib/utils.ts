@@ -82,7 +82,11 @@ export const verifyPassword = (
         .pbkdf2Sync(password, '', 1000, 64, 'sha512')
         .toString('hex');
 
-      return oldHash === hashedPassword;
+      // Use constant-time comparison to prevent timing attacks
+      return crypto.timingSafeEqual(
+        Buffer.from(oldHash, 'hex'),
+        Buffer.from(hashedPassword, 'hex'),
+      );
     }
   } catch (error) {
     return false;

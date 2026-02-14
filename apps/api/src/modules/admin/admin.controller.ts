@@ -10,7 +10,9 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { Session } from '@/common/decorators';
+import { UserRole } from '@repo/types';
+
+import { Roles, Session } from '@/common/decorators';
 import { ParamPublicIdDto, ParamUsernameDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
@@ -18,6 +20,7 @@ import { AdminExplorerQueryDto, AdminPaginationDto } from './admin.dto';
 import { AdminService } from './admin.service';
 
 @ApiTags('admin')
+@Roles(UserRole.ADMIN)
 @Controller('admin')
 export class AdminController {
   constructor(private adminService: AdminService) {}

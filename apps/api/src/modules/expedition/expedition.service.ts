@@ -11,6 +11,7 @@ import {
   IWaypointCreatePayload,
   IWaypointDetail,
   IWaypointUpdatePayload,
+  UserNotificationContext,
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
@@ -26,6 +27,7 @@ import {
   ServiceInternalException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
+import { IUserNotificationCreatePayload } from '@/modules/notification';
 import {
   IQueryWithSession,
   ISessionQuery,
@@ -616,6 +618,8 @@ export class ExpeditionService {
                 title: true,
                 content: true,
                 visibility: true,
+                sponsored: true,
+                author_id: true,
                 date: true,
                 place: true,
                 lat: true,
@@ -876,24 +880,41 @@ export class ExpeditionService {
           : undefined,
         // Entries directly linked to this expedition
         entries: sortByDate({
-          elements: entries.map((entry) => ({
-            id: entry.public_id,
-            title: entry.title,
-            content: normalizeText(entry.content),
-            visibility: (entry.visibility || 'public') as 'public' | 'off-grid' | 'sponsors-only' | 'private',
-            date: entry.date,
-            place: entry.place,
-            lat: entry.lat,
-            lon: entry.lon,
-            mediaCount: entry.media?.length || 0,
-            author: entry.author
-              ? {
-                  username: entry.author.username,
-                  name: entry.author.profile?.name,
-                  picture: getStaticMediaUrl(entry.author.profile?.picture),
-                }
-              : undefined,
-          })),
+          elements: entries
+            .filter((entry) => {
+              // Hide private/draft entries from non-owners
+              if (entry.visibility === 'private') {
+                const isAuthor = explorerId && entry.author_id === explorerId;
+                const isAdmin = explorerRole === ExplorerRole.ADMIN;
+                return isAuthor || isAdmin;
+              }
+              return true;
+            })
+            .map((entry) => {
+              const fullContent = normalizeText(entry.content);
+              // Derive visibility from expedition (except private entries stay private)
+              const effectiveVisibility = entry.visibility === 'private'
+                ? 'private'
+                : (expedition.visibility || 'public') as 'public' | 'off-grid' | 'private';
+              return {
+                id: entry.public_id,
+                title: entry.title,
+                content: fullContent,
+                visibility: effectiveVisibility,
+                date: entry.date,
+                place: entry.place,
+                lat: entry.lat,
+                lon: entry.lon,
+                mediaCount: entry.media?.length || 0,
+                author: entry.author
+                  ? {
+                      username: entry.author.username,
+                      name: entry.author.profile?.name,
+                      picture: getStaticMediaUrl(entry.author.profile?.picture),
+                    }
+                  : undefined,
+              };
+            }),
           key: 'date',
           order: 'desc',
         }),
@@ -1136,6 +1157,36 @@ export class ExpeditionService {
         where: { id: expedition.id },
         data: updateData,
       });
+
+      // Notify sponsors when expedition goes off-grid
+      const oldVisibility = expedition.visibility || 'public';
+      const newVisibility = updateData.visibility;
+      if (newVisibility === 'off-grid' && oldVisibility !== 'off-grid') {
+        try {
+          const sponsors = await this.prisma.sponsorship.findMany({
+            where: {
+              sponsored_explorer_id: explorerId,
+              status: 'active',
+              deleted_at: null,
+            },
+            select: { sponsor_id: true },
+          });
+
+          for (const sponsor of sponsors) {
+            this.eventService.trigger<IUserNotificationCreatePayload>({
+              event: EVENTS.NOTIFICATION_CREATE,
+              data: {
+                context: UserNotificationContext.EXPEDITION_OFF_GRID,
+                userId: sponsor.sponsor_id,
+                mentionUserId: explorerId,
+                body: `An expedition you sponsor has gone off-grid. Access it from your Sponsorships dashboard.`,
+              },
+            });
+          }
+        } catch (notifErr) {
+          this.logger.error('Failed to send off-grid notifications:', notifErr);
+        }
+      }
 
       await this.checkAndUpdateRestingStatus(explorerId);
     } catch (e) {

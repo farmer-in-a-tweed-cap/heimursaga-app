@@ -467,8 +467,8 @@ export function MessagesPage() {
       const newMessage: ApiMessage = {
         id: `temp-${Date.now()}`,
         content: messageContent.trim(),
-        senderId: user?.id || 0,
-        recipientId: 0,
+        senderUsername: user?.username || '',
+        recipientUsername: selectedConversation,
         isRead: false,
         createdAt: new Date().toISOString(),
         sender: {

@@ -10,7 +10,6 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { MediaUploadContext } from '@repo/types';
 
-import { Public } from '@/common/decorators';
 import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
 
@@ -24,7 +23,6 @@ const UPLOAD_MAX_FILE_SIZE = 15; // mb - increased for higher quality uploads
 export class UploadController {
   constructor(private uploadService: UploadService) {}
 
-  @Public()
   @Post()
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(

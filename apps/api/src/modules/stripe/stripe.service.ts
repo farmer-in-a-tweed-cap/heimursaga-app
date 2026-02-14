@@ -847,15 +847,14 @@ export class StripeService {
   }
 
   /**
-   * Generate a deterministic idempotency key for Stripe operations.
-   * Keys should be stable for the same logical operation to prevent duplicate charges.
+   * Generate an idempotency key for Stripe operations.
+   * Include enough context to distinguish different logical operations.
+   * For checkout-based flows, pass the checkout ID for true idempotency.
    */
   generateIdempotencyKey(
     prefix: string,
     ...parts: (string | number)[]
   ): string {
-    // Don't include random values or timestamps - key should be deterministic
-    // for the same logical operation
     return `${prefix}_${parts.join('_')}`;
   }
 

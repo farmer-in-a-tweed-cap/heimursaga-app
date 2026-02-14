@@ -23,9 +23,12 @@ import { SessionExplorerService } from '@/modules/explorer/explorer.service';
 
 import {
   LoginDto,
+  MobileRefreshDto,
   PasswordResetDto,
   PasswordUpdateDto,
+  SendEmailVerificationDto,
   SignupDto,
+  VerifyEmailDto,
 } from './auth.dto';
 import { AuthService } from './auth.service';
 
@@ -159,7 +162,7 @@ export class AuthController {
   @Post('mobile/refresh')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 refresh attempts per minute
-  async mobileRefresh(@Body() body: { refreshToken: string }) {
+  async mobileRefresh(@Body() body: MobileRefreshDto) {
     const result = await this.authService.mobileRefresh(body.refreshToken);
 
     return {
@@ -309,7 +312,7 @@ export class AuthController {
   @Post('send-email-verification')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 verification emails per 5 minutes
-  async sendEmailVerification(@Body() body: { email: string }) {
+  async sendEmailVerification(@Body() body: SendEmailVerificationDto) {
     return this.authService.sendEmailVerification(body.email);
   }
 
@@ -317,7 +320,7 @@ export class AuthController {
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 verification attempts per minute
-  async verifyEmail(@Body() body: { token: string }) {
+  async verifyEmail(@Body() body: VerifyEmailDto) {
     return this.authService.verifyEmail(body.token);
   }
 

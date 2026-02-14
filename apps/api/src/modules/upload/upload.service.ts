@@ -33,6 +33,29 @@ const SUPPORTED_FORMATS = [
   'image/heif',
 ];
 
+// Magic byte signatures for image format validation
+const MAGIC_BYTES: { mime: string; bytes: number[]; offset?: number }[] = [
+  { mime: 'image/jpeg', bytes: [0xff, 0xd8, 0xff] },
+  { mime: 'image/png', bytes: [0x89, 0x50, 0x4e, 0x47] },
+  { mime: 'image/webp', bytes: [0x52, 0x49, 0x46, 0x46], offset: 0 }, // RIFF header; WEBP at offset 8
+  { mime: 'image/heic', bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }, // ftyp box
+  { mime: 'image/heif', bytes: [0x66, 0x74, 0x79, 0x70], offset: 4 }, // ftyp box
+];
+
+function validateMagicBytes(buffer: Buffer, claimedMime: string): boolean {
+  if (!buffer || buffer.length < 12) return false;
+
+  for (const sig of MAGIC_BYTES) {
+    if (sig.mime !== claimedMime) continue;
+    const offset = sig.offset ?? 0;
+    const matches = sig.bytes.every(
+      (byte, i) => buffer[offset + i] === byte,
+    );
+    if (matches) return true;
+  }
+  return false;
+}
+
 @Injectable()
 export class UploadService {
   private s3: S3;
@@ -98,10 +121,17 @@ export class UploadService {
         );
       }
 
-      // Validate file type
+      // Validate file type (Content-Type header)
       if (!SUPPORTED_FORMATS.includes(file.mimetype)) {
         throw new ServiceBadRequestException(
           `Unsupported file format. Please use JPEG, PNG, WebP, HEIC, or HEIF files.`,
+        );
+      }
+
+      // Validate magic bytes to prevent Content-Type spoofing
+      if (!validateMagicBytes(file.buffer, file.mimetype)) {
+        throw new ServiceBadRequestException(
+          `File content does not match declared format. Please upload a valid image file.`,
         );
       }
 

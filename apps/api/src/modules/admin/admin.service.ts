@@ -36,16 +36,6 @@ export class AdminService {
     if (!session?.userId || session.userRole !== UserRole.ADMIN) {
       throw new ServiceForbiddenException('Admin access required');
     }
-
-    // Additional check: only allow specific admin user
-    const explorer = await this.prisma.explorer.findUnique({
-      where: { id: session.userId },
-      select: { username: true },
-    });
-
-    if (explorer?.username !== 'explorer1') {
-      throw new ServiceForbiddenException('Admin access required');
-    }
   }
 
   async getStats(session: ISession): Promise<IAdminStats> {

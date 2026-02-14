@@ -50,11 +50,9 @@ export function EntryCard({
       <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] bg-[#b5bcc4] dark:bg-[#3a3a3a] px-4 py-2.5">
         <div className="flex items-center gap-2">
           <div className="h-2.5 w-2.5 bg-[#4676ac]" />
-          <div className="flex items-baseline gap-2">
-            <span className="text-xs font-mono font-semibold tracking-wide text-[#202020] dark:text-[#e5e5e5]">
-              JOURNAL ENTRY
-            </span>
-          </div>
+          <span className="text-xs font-mono font-semibold tracking-wide text-[#202020] dark:text-[#e5e5e5]">
+            JOURNAL ENTRY
+          </span>
         </div>
         <div className="flex items-center gap-1.5 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
           <Calendar className="h-3.5 w-3.5" />

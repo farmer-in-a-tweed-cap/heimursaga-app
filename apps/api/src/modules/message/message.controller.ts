@@ -8,6 +8,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 import { Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
@@ -30,6 +31,7 @@ export class MessageController {
   }
 
   @Post('send')
+  @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 messages per minute
   @ApiOperation({
     summary: 'Send message to another Explorer Pro member',
     description: 'Send a private message to another Explorer Pro member',

@@ -392,8 +392,17 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
         backUrl: window.location.href,
       });
 
-      // Redirect to Stripe
-      window.location.href = url;
+      // Validate Stripe redirect URL before navigating
+      try {
+        const parsed = new URL(url);
+        if (!parsed.hostname.endsWith('stripe.com')) {
+          throw new Error('Invalid onboarding URL');
+        }
+        window.location.href = url;
+      } catch {
+        toast.error('Received an invalid onboarding URL. Please try again.');
+        return;
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to start Stripe onboarding');
     } finally {

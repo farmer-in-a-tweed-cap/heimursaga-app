@@ -29,6 +29,7 @@ import { calculateFee } from '@/lib/calculator';
 import { dateformat } from '@/lib/date-format';
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
+import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles } from '@/lib/utils';
 
 import { EMAIL_TEMPLATES } from '@/common/email-templates';
@@ -91,6 +92,7 @@ export class SponsorService {
         emailDelivery = true,
         isPublic = true,
         isMessagePublic = true,
+        expeditionId,
       } = payload;
 
       if (!userId) throw new ServiceForbiddenException();
@@ -213,9 +215,9 @@ export class SponsorService {
         );
       }
 
-      // get a payment method
+      // get a payment method (scoped to authenticated user)
       const paymentMethod = await this.prisma.paymentMethod.findFirstOrThrow({
-        where: { public_id: paymentMethodId },
+        where: { public_id: paymentMethodId, explorer_id: userId },
         select: {
           id: true,
           stripe_payment_method_id: true,
@@ -267,6 +269,7 @@ export class SponsorService {
                 email_delivery_enabled: emailDelivery,
                 is_public: isPublic,
                 is_message_public: isMessagePublic,
+                expedition_public_id: expeditionId || null,
               },
               select: {
                 id: true,
@@ -411,6 +414,7 @@ export class SponsorService {
               email_delivery_enabled: emailDelivery,
               is_public: isPublic,
               is_message_public: isMessagePublic,
+              expedition_public_id: expeditionId || null,
             },
             select: {
               id: true,
@@ -529,9 +533,9 @@ export class SponsorService {
       };
 
       await this.prisma.$transaction(async (tx) => {
-        // get a checkout
+        // get a checkout (only if still pending — prevents double-completion race)
         const checkout = await tx.checkout.findFirstOrThrow({
-          where: { id: checkoutId },
+          where: { id: checkoutId, status: CheckoutStatus.PENDING },
           select: {
             id: true,
             transaction_type: true,
@@ -544,6 +548,7 @@ export class SponsorService {
             email_delivery_enabled: true,
             is_public: true,
             is_message_public: true,
+            expedition_public_id: true,
           },
         });
 
@@ -587,6 +592,7 @@ export class SponsorService {
                 : false,
             is_public: checkout.is_public ?? true,
             is_message_public: checkout.is_message_public ?? true,
+            expedition_public_id: checkout.expedition_public_id || null,
             expiry:
               checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
                 ? expiry
@@ -1388,8 +1394,10 @@ export class SponsorService {
           message: true,
           email_delivery_enabled: true,
           expiry: true,
+          expedition_public_id: true,
           sponsored_explorer: {
             select: {
+              id: true,
               username: true,
               profile: {
                 select: { name: true, picture: true },
@@ -1402,6 +1410,28 @@ export class SponsorService {
         orderBy: [{ id: 'desc' }],
       });
 
+      // Batch-query expeditions by their public_ids stored on each sponsorship
+      const expeditionPublicIds = [...new Set(
+        data.map((s) => s.expedition_public_id).filter(Boolean),
+      )] as string[];
+      const expeditions = expeditionPublicIds.length > 0
+        ? await this.prisma.expedition.findMany({
+            where: {
+              public_id: { in: expeditionPublicIds },
+              deleted_at: null,
+            },
+            select: {
+              public_id: true,
+              title: true,
+              status: true,
+              visibility: true,
+              cover_image: true,
+            },
+          })
+        : [];
+
+      const expeditionByPublicId = new Map(expeditions.map((exp) => [exp.public_id, exp]));
+
       const response: ISponsorshipGetAllResponse = {
         results,
         data: data.map(
@@ -1411,6 +1441,7 @@ export class SponsorService {
             currency,
             status,
             sponsored_explorer,
+            expedition_public_id,
             type,
             message = '',
             email_delivery_enabled,
@@ -1432,6 +1463,16 @@ export class SponsorService {
                   picture: sponsored_explorer.profile.picture,
                 }
               : undefined,
+            expedition: (() => {
+              const exp = expedition_public_id ? expeditionByPublicId.get(expedition_public_id) : undefined;
+              return exp ? {
+                id: exp.public_id,
+                title: exp.title,
+                status: exp.status,
+                visibility: exp.visibility || 'public',
+                coverPhoto: exp.cover_image ? getStaticMediaUrl(exp.cover_image) : undefined,
+              } : undefined;
+            })(),
             createdAt: created_at,
           }),
         ),

@@ -96,7 +96,7 @@ export function JournalEntryPage() {
         }
       } catch (err: any) {
         if (!cancelled) {
-          if (err?.status === 404) {
+          if (err?.status === 404 || err?.status === 403) {
             setNotFound(true);
           }
         }

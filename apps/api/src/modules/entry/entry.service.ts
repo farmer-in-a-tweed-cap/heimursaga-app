@@ -7,7 +7,6 @@ import {
   IEntryGetAllResponse,
   IEntryGetByIdResponse,
   IEntryUpdatePayload,
-  SponsorshipStatus,
   UserNotificationContext,
 } from '@repo/types';
 import { IEntryBookmarkResponse, IEntryLikeResponse } from '@repo/types';
@@ -38,30 +37,6 @@ export class EntryService {
     private prisma: PrismaService,
     private eventService: EventService,
   ) {}
-
-  /**
-   * Check if an explorer has an active sponsorship with a creator
-   */
-  private async hasActiveSponsorship(
-    explorerId: number,
-    creatorId: number,
-  ): Promise<boolean> {
-    if (!explorerId) return false;
-
-    const sponsorship = await this.prisma.sponsorship.findFirst({
-      where: {
-        sponsor_id: explorerId,
-        sponsored_explorer_id: creatorId,
-        status: SponsorshipStatus.ACTIVE,
-        expiry: {
-          gt: new Date(), // expiry is in the future
-        },
-        deleted_at: null,
-      },
-    });
-
-    return !!sponsorship;
-  }
 
   async getDrafts({ session }: ISessionQuery): Promise<IEntryGetAllResponse> {
     try {
@@ -171,13 +146,13 @@ export class EntryService {
           break;
       }
 
-      // Only show entries from public expeditions (or standalone entries not off-grid)
+      // Entry visibility derived from expedition. Standalone entries use their own visibility.
       // Owner bypass: always show the explorer's own entries regardless of visibility
       const publicExpeditionFilter = {
         OR: [
           ...(explorerId ? [{ author_id: explorerId }] : []),
-          { expedition_id: null, NOT: { visibility: 'off-grid' } },
-          { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+          { expedition_id: null, visibility: 'public' },
+          { expedition: { visibility: 'public' }, NOT: { visibility: 'private' } },
         ],
       } as Prisma.EntryWhereInput;
       where = { ...where, ...publicExpeditionFilter };
@@ -246,6 +221,8 @@ export class EntryService {
             select: {
               public_id: true,
               title: true,
+              status: true,
+              end_date: true,
             },
           },
           // check if the session explorer has liked this entry
@@ -277,34 +254,7 @@ export class EntryService {
         orderBy: context === 'following' ? [{ updated_at: 'desc' }] : [{ date: 'desc' }],
       });
 
-      // Filter out sponsored entries that the explorer doesn't have access to
-      const filteredEntries = [];
-      for (const entry of data) {
-        // If entry is sponsored, check if explorer has access
-        if (entry.sponsored) {
-          // Allow the entry author to see their own sponsored entries
-          if (explorerId && entry.author_id === explorerId) {
-            filteredEntries.push(entry);
-          }
-          // Allow admins to see all sponsored entries
-          else if (explorerRole === ExplorerRole.ADMIN) {
-            filteredEntries.push(entry);
-          }
-          // For other explorers, check if they have an active sponsorship
-          else if (
-            explorerId &&
-            (await this.hasActiveSponsorship(explorerId, entry.author_id))
-          ) {
-            filteredEntries.push(entry);
-          }
-          // Otherwise, skip this sponsored entry
-        } else {
-          // Non-sponsored entries are visible to everyone (subject to public visibility rules)
-          filteredEntries.push(entry);
-        }
-      }
-
-      const processedData = filteredEntries.map((entry) => {
+      const responseData = data.map((entry) => {
         // Calculate word count from content
         const wordCount = entry.content
           ? entry.content
@@ -335,7 +285,7 @@ export class EntryService {
           mediaCount: entry._count?.media || 0,
           wordCount,
           coverImage,
-          entryType: entry.entry_type || 'standard',
+          entryType: (entry.entry_type || 'standard') as 'standard' | 'photo-essay' | 'data-log' | 'waypoint',
           expedition: entry.expedition
             ? {
                 id: entry.expedition.public_id,
@@ -363,8 +313,8 @@ export class EntryService {
       });
 
       const response: IEntryGetAllResponse = {
-        data: processedData,
-        results: filteredEntries.length,
+        data: responseData,
+        results: data.length,
       };
 
       return response;
@@ -472,6 +422,8 @@ export class EntryService {
               title: true,
               visibility: true,
               start_date: true, // Need for expeditionDay calculation
+              status: true,
+              end_date: true,
             },
           },
           // check if the session explorer has liked this entry
@@ -514,18 +466,41 @@ export class EntryService {
         throw new ServiceNotFoundException('Entry not found');
       }
 
-      // Check access for sponsored entries
-      if (entry.sponsored) {
-        const isAuthor = explorerId && entry.author_id === explorerId;
-        const isAdmin = explorerRole === ExplorerRole.ADMIN;
-        const hasSponsorship =
-          explorerId &&
-          (await this.hasActiveSponsorship(explorerId, entry.author_id));
-
-        if (!isAuthor && !isAdmin && !hasSponsorship) {
-          throw new ServiceForbiddenException(
-            'Access denied to sponsored content',
-          );
+      // Access control: derive entry visibility from expedition
+      if (entry.expedition) {
+        // Expedition entries: use expedition visibility
+        if (entry.visibility === 'private') {
+          // Private entries (drafts) are only accessible by the owner
+          const isAuthor = explorerId && entry.author_id === explorerId;
+          const isAdmin = explorerRole === ExplorerRole.ADMIN;
+          if (!isAuthor && !isAdmin) {
+            throw new ServiceNotFoundException('Entry not found');
+          }
+        } else if (entry.expedition.visibility === 'off-grid') {
+          // Off-grid expedition entries require authentication
+          if (!explorerId) {
+            throw new ServiceNotFoundException('Entry not found');
+          }
+        } else if (entry.expedition.visibility === 'private') {
+          // Private expedition entries are only accessible by the owner
+          const isAuthor = explorerId && entry.author_id === explorerId;
+          const isAdmin = explorerRole === ExplorerRole.ADMIN;
+          if (!isAuthor && !isAdmin) {
+            throw new ServiceNotFoundException('Entry not found');
+          }
+        }
+      } else {
+        // Standalone entries: use entry's own visibility
+        if (entry.visibility === 'off-grid') {
+          if (!explorerId) {
+            throw new ServiceNotFoundException('Entry not found');
+          }
+        } else if (entry.visibility === 'private') {
+          const isAuthor = explorerId && entry.author_id === explorerId;
+          const isAdmin = explorerRole === ExplorerRole.ADMIN;
+          if (!isAuthor && !isAdmin) {
+            throw new ServiceNotFoundException('Entry not found');
+          }
         }
       }
 
@@ -600,7 +575,6 @@ export class EntryService {
         isMilestone: entry.is_milestone,
         visibility: entry.visibility as
           | 'public'
-          | 'sponsors-only'
           | 'off-grid'
           | 'private'
           | undefined,
@@ -814,7 +788,7 @@ export class EntryService {
       }
 
       // Validate visibility if provided
-      const validVisibilities = ['public', 'sponsors-only', 'off-grid', 'private'];
+      const validVisibilities = ['public', 'off-grid', 'private'];
       if (visibility && !validVisibilities.includes(visibility)) {
         throw new ServiceBadRequestException(
           `Invalid visibility: ${visibility}. Must be one of: ${validVisibilities.join(', ')}`,
@@ -1025,7 +999,7 @@ export class EntryService {
       }
 
       // Validate visibility if provided
-      const validVisibilities = ['public', 'sponsors-only', 'off-grid', 'private'];
+      const validVisibilities = ['public', 'off-grid', 'private'];
       if (visibility && !validVisibilities.includes(visibility)) {
         throw new ServiceBadRequestException(
           `Invalid visibility: ${visibility}. Must be one of: ${validVisibilities.join(', ')}`,
