@@ -223,6 +223,12 @@
     line-height: 1.5;
   }
 
+  /* Hide native date picker icon (custom Calendar icon is used instead) */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    display: none;
+    -webkit-appearance: none;
+  }
+
   /* Tagline spread effect - centered with expanded letter spacing */
   .tagline-spread {
     text-align: center;

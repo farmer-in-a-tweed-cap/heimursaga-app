@@ -24,9 +24,14 @@ interface LocationMapProps {
   initialLng?: number;
   onLocationSelect: (lat: number, lng: number) => void;
   onClose: () => void;
+  // Optional expedition context
+  expeditionWaypoints?: Array<{ lat: number; lng: number; title: string; type?: 'start' | 'end' | 'standard' }>;
+  expeditionEntries?: Array<{ lat: number; lng: number; title: string }>;
+  expeditionRouteGeometry?: number[][];
+  isRoundTrip?: boolean;
 }
 
-export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose }: LocationMapProps) {
+export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose, expeditionWaypoints, expeditionEntries, expeditionRouteGeometry, isRoundTrip }: LocationMapProps) {
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(
     initialLat && initialLng ? { lat: initialLat, lng: initialLng } : null
   );
@@ -38,6 +43,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const expeditionMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const { theme } = useTheme();
 
   // Delay map initialization to ensure container is rendered
@@ -59,9 +65,103 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose 
       zoom: zoom,
     });
 
-    // Resize map after it loads to ensure proper dimensions
+    // Resize map after it loads and render expedition context
     map.on('load', () => {
       map.resize();
+
+      // Render expedition context if provided
+      const hasExpeditionContext = (expeditionWaypoints && expeditionWaypoints.length > 0) ||
+        (expeditionEntries && expeditionEntries.length > 0);
+
+      if (hasExpeditionContext) {
+        // Build route coordinates: use provided geometry, or build from waypoints+entries
+        let routeCoords: number[][] = [];
+        if (expeditionRouteGeometry && expeditionRouteGeometry.length > 0) {
+          routeCoords = expeditionRouteGeometry;
+        } else {
+          // Merge waypoints and entries chronologically (waypoints first, then entries)
+          const allPoints: number[][] = [];
+          expeditionWaypoints?.forEach(wp => {
+            if (wp.lat !== 0 || wp.lng !== 0) allPoints.push([wp.lng, wp.lat]);
+          });
+          expeditionEntries?.forEach(e => {
+            if (e.lat !== 0 || e.lng !== 0) allPoints.push([e.lng, e.lat]);
+          });
+          routeCoords = allPoints;
+        }
+
+        // Close route for round trips (directions geometry already includes return)
+        if (!expeditionRouteGeometry?.length && isRoundTrip && routeCoords.length > 0) {
+          routeCoords = [...routeCoords, routeCoords[0]];
+        }
+
+        // Draw route line
+        if (routeCoords.length >= 2) {
+          const hasDirections = expeditionRouteGeometry && expeditionRouteGeometry.length > 0;
+          map.addSource('expedition-route', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: { type: 'LineString', coordinates: routeCoords },
+            },
+          });
+          map.addLayer({
+            id: 'expedition-route',
+            type: 'line',
+            source: 'expedition-route',
+            paint: {
+              'line-color': theme === 'dark' ? '#4676ac' : '#202020',
+              'line-width': hasDirections ? 3 : 2,
+              'line-opacity': 0.5,
+              ...(hasDirections ? {} : { 'line-dasharray': [2, 2] }),
+            },
+          });
+        }
+
+        // Add waypoint markers
+        expeditionWaypoints?.forEach((wp, idx) => {
+          if (wp.lat === 0 && wp.lng === 0) return;
+          const el = document.createElement('div');
+          const isStart = wp.type === 'start';
+          const isEnd = wp.type === 'end';
+          const bgColor = isStart ? '#ac6d46' : isEnd ? '#4676ac' : '#616161';
+          el.style.cssText = `width:20px;height:20px;border-radius:50%;background:${bgColor};color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.3);`;
+          el.textContent = String(idx + 1);
+          el.title = wp.title;
+          const marker = new mapboxgl.Marker({ element: el })
+            .setLngLat([wp.lng, wp.lat])
+            .addTo(map);
+          expeditionMarkersRef.current.push(marker);
+        });
+
+        // Add entry markers
+        expeditionEntries?.forEach(e => {
+          if (e.lat === 0 && e.lng === 0) return;
+          const el = document.createElement('div');
+          el.style.cssText = 'width:12px;height:12px;border-radius:50%;background:#ac6d46;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.3);';
+          el.title = e.title;
+          const marker = new mapboxgl.Marker({ element: el })
+            .setLngLat([e.lng, e.lat])
+            .addTo(map);
+          expeditionMarkersRef.current.push(marker);
+        });
+
+        // Fit bounds to include all expedition points + selected location
+        const bounds = new mapboxgl.LngLatBounds();
+        expeditionWaypoints?.forEach(wp => {
+          if (wp.lat !== 0 || wp.lng !== 0) bounds.extend([wp.lng, wp.lat]);
+        });
+        expeditionEntries?.forEach(e => {
+          if (e.lat !== 0 || e.lng !== 0) bounds.extend([e.lng, e.lat]);
+        });
+        if (initialLat && initialLng) {
+          bounds.extend([initialLng, initialLat]);
+        }
+        if (!bounds.isEmpty()) {
+          map.fitBounds(bounds, { padding: 60, maxZoom: 14 });
+        }
+      }
     });
 
     // Add error handler - suppress style evaluation warnings
@@ -222,6 +322,8 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose 
         markerRef.current.remove();
         markerRef.current = null;
       }
+      expeditionMarkersRef.current.forEach(m => m.remove());
+      expeditionMarkersRef.current = [];
       map.remove();
       mapRef.current = null;
     };

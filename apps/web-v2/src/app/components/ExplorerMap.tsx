@@ -11,6 +11,7 @@ import { useTheme } from '@/app/context/ThemeContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { entryApi, explorerApi } from '@/app/services/api';
 import { getExplorerStatus } from '@/app/components/ExplorerStatusBadge';
+import { formatDate } from '@/app/utils/dateFormat';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -895,7 +896,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
                   <div><strong>LOCATION:</strong> {clickedEntry.location}</div>
                 )}
                 {clickedEntry.date && (
-                  <div><strong>POSTED:</strong> {new Date(clickedEntry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                  <div><strong>POSTED:</strong> {formatDate(clickedEntry.date)}</div>
                 )}
                 {clickedEntry.excerpt && (
                   <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-2 border-l-2 border-[#ac6d46] italic text-xs leading-relaxed">

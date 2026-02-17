@@ -17,7 +17,7 @@ import { ExpeditionNotes } from '@/app/components/ExpeditionNotes';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
 import { expeditionApi, explorerApi, entryApi, type Expedition, type ExpeditionNote } from '@/app/services/api';
-import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
+import { formatDate, formatDateTime, formatShortDate } from '@/app/utils/dateFormat';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -29,6 +29,16 @@ if (!MAPBOX_TOKEN) {
 }
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
+
+function haversineKm(coord1: number[], coord2: number[]): number {
+  const R = 6371;
+  const toRad = Math.PI / 180;
+  const dLat = (coord2[1] - coord1[1]) * toRad;
+  const dLon = (coord2[0] - coord1[0]) * toRad;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(coord1[1] * toRad) * Math.cos(coord2[1] * toRad) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 // Type definitions for map data
 type WaypointType = {
@@ -114,7 +124,13 @@ export function ExpeditionDetailPage() {
   // Debrief mode state
   const [isDebriefMode, setIsDebriefMode] = useState(false);
   const [debriefIndex, setDebriefIndex] = useState(0);
-  const mapCardRef = useRef<HTMLDivElement>(null);
+  const debriefCumulativeDistRef = useRef<number[]>([]);
+  const [debriefDistance, setDebriefDistance] = useState(0);
+  const bannerMapContainerRef = useRef<HTMLDivElement | null>(null);
+  const bannerMapRef = useRef<mapboxgl.Map | null>(null);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [modalMapReady, setModalMapReady] = useState(false);
+  const [pendingFlyTo, setPendingFlyTo] = useState<{ lat: number; lng: number } | null>(null);
 
   // Expedition notes state
   const [expeditionNotes, setExpeditionNotes] = useState<ExpeditionNote[]>([]);
@@ -348,6 +364,9 @@ export function ExpeditionDetailPage() {
 
     // Determine the "current waypoint index" based on source
     let currentWpIdx = -1;
+    // When current location is an entry, no waypoint should be "current" —
+    // the nearest waypoint (and those before it) are "completed" instead.
+    let wpStatusAtIdx: 'current' | 'completed' = 'current';
 
     if (currentSource === 'waypoint') {
       // Find the waypoint in the list
@@ -369,6 +388,8 @@ export function ExpeditionDetailPage() {
           }
         }
       }
+      // The entry is the current location, not the waypoint
+      wpStatusAtIdx = 'completed';
     }
 
     return apiExpedition.waypoints.map((wp, idx) => {
@@ -378,7 +399,7 @@ export function ExpeditionDetailPage() {
       } else if (idx < currentWpIdx) {
         status = 'completed';
       } else if (idx === currentWpIdx) {
-        status = 'current';
+        status = wpStatusAtIdx;
       } else {
         status = 'planned';
       }
@@ -415,14 +436,17 @@ export function ExpeditionDetailPage() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [apiExpedition?.entries]);
 
-  // Build chronologically sorted debrief route merging waypoints + entries
+  // Build debrief route using the same timeline interleaving as the expedition builder:
+  // waypoints form the backbone in their sequence order, entries interleave between
+  // waypoints based on their dates relative to the surrounding dated waypoints.
   const debriefRoute: DebriefStop[] = useMemo(() => {
     const stops: DebriefStop[] = [];
 
-    // Add waypoints with valid coords
+    // Build waypoint stops (preserving sequence order)
+    const wpStops: DebriefStop[] = [];
     waypoints.forEach((wp, idx) => {
       if (wp.coords.lat === 0 && wp.coords.lng === 0) return;
-      stops.push({
+      wpStops.push({
         type: 'waypoint',
         id: wp.id,
         title: wp.title,
@@ -436,10 +460,11 @@ export function ExpeditionDetailPage() {
       });
     });
 
-    // Add entries with valid coords
+    // Build entry stops sorted by date for interleaving
+    const entryStops: DebriefStop[] = [];
     journalEntries.forEach((entry) => {
       if (entry.coords.lat === 0 && entry.coords.lng === 0) return;
-      stops.push({
+      entryStops.push({
         type: 'entry',
         id: entry.id,
         title: entry.title,
@@ -451,26 +476,40 @@ export function ExpeditionDetailPage() {
       });
     });
 
-    // Sort by date oldest-first; dateless waypoints sort by sequence index
-    stops.sort((a, b) => {
-      const dateA = a.date ? new Date(a.date).getTime() : 0;
-      const dateB = b.date ? new Date(b.date).getTime() : 0;
-
-      // Both have dates — sort chronologically
-      if (dateA && dateB) return dateA - dateB;
-
-      // If only one has a date, the one without goes first (it's a dateless waypoint)
-      if (dateA && !dateB) return 1;
-      if (!dateA && dateB) return -1;
-
-      // Neither has a date — sort waypoints by index, entries after waypoints
-      if (a.type === 'waypoint' && b.type === 'waypoint') {
-        return (a.waypointIndex ?? 0) - (b.waypointIndex ?? 0);
-      }
-      if (a.type === 'waypoint') return -1;
-      if (b.type === 'waypoint') return 1;
+    // Sort entries by date for ordered insertion
+    const sortedEntries = [...entryStops].sort((a, b) => {
+      if (a.date && b.date) return a.date.localeCompare(b.date);
+      if (a.date && !b.date) return -1;
+      if (!a.date && b.date) return 1;
       return 0;
     });
+
+    // Interleave: waypoints form backbone, entries placed between waypoints by date
+    let entryIdx = 0;
+    for (let i = 0; i < wpStops.length; i++) {
+      stops.push(wpStops[i]);
+
+      // Find next dated waypoint to bound entry placement
+      let nextWpDate: string | undefined;
+      for (let j = i + 1; j < wpStops.length; j++) {
+        if (wpStops[j].date) { nextWpDate = wpStops[j].date; break; }
+      }
+
+      // Insert entries that belong between this waypoint and the next dated waypoint
+      while (entryIdx < sortedEntries.length) {
+        const entry = sortedEntries[entryIdx];
+        if (!entry.date) break;
+        if (nextWpDate && entry.date >= nextWpDate) break;
+        stops.push(entry);
+        entryIdx++;
+      }
+    }
+
+    // Remaining entries (dateless or after all waypoints) at the end
+    while (entryIdx < sortedEntries.length) {
+      stops.push(sortedEntries[entryIdx]);
+      entryIdx++;
+    }
 
     // For round-trip expeditions, add a "return to start" stop so the debrief
     // animation follows the return leg back to the starting point
@@ -487,6 +526,27 @@ export function ExpeditionDetailPage() {
   }, [waypoints, journalEntries, apiExpedition?.isRoundTrip]);
 
   const canDebrief = debriefRoute.length >= 2;
+
+  // Compute total route distance (km) from route geometry or waypoints
+  const totalRouteDistance = useMemo(() => {
+    const coords = apiExpedition?.routeGeometry;
+    if (coords && coords.length >= 2) {
+      let total = 0;
+      for (let i = 1; i < coords.length; i++) {
+        total += haversineKm(coords[i - 1], coords[i]);
+      }
+      return total;
+    }
+    // Fallback: haversine between consecutive waypoints (matches builder behavior)
+    if (waypoints.length < 2) return 0;
+    let total = 0;
+    for (let i = 1; i < waypoints.length; i++) {
+      const prev = waypoints[i - 1].coords;
+      const curr = waypoints[i].coords;
+      total += haversineKm([prev.lng, prev.lat], [curr.lng, curr.lat]);
+    }
+    return total;
+  }, [apiExpedition?.routeGeometry, waypoints]);
 
   // Helper function to get current location data from waypoints or entries
   const getCurrentLocationData = () => {
@@ -615,20 +675,17 @@ export function ExpeditionDetailPage() {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
 
-  // Handler for waypoint click - fly to waypoint on map
+  // Handler for waypoint click - open modal and fly to waypoint
   const handleWaypointClick = (coords: { lat: number; lng: number }) => {
-    if (mapRef.current && mapContainerRef.current) {
-      // Scroll to map
-      mapContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Fly to waypoint
-      setTimeout(() => {
-        mapRef.current?.flyTo({
-          center: [coords.lng, coords.lat],
-          zoom: 12,
-          duration: 1500,
-        });
-      }, 300);
-    }
+    setPendingFlyTo(coords);
+    setIsMapModalOpen(true);
+  };
+
+  // Handler for closing the map modal
+  const handleCloseModal = () => {
+    if (isDebriefMode) exitDebriefMode();
+    setIsMapModalOpen(false);
+    setPendingFlyTo(null);
   };
 
   // Handler for sponsor update button - scrolls to notes and focuses input
@@ -800,6 +857,15 @@ export function ExpeditionDetailPage() {
     debriefRouteIndicesRef.current = indices;
   }, [debriefRoute]);
 
+  // Build cumulative haversine distances for the full route (real-world km)
+  const buildCumulativeHaversineDist = (route: number[][]): number[] => {
+    const d = [0];
+    for (let i = 1; i < route.length; i++) {
+      d.push(d[i - 1] + haversineKm(route[i - 1], route[i]));
+    }
+    return d;
+  };
+
   // Build cumulative distance array for a polyline segment
   const buildCumulativeDistances = (segment: number[][]): number[] => {
     const distances = [0];
@@ -872,6 +938,8 @@ export function ExpeditionDetailPage() {
         zoom: 13,
         duration: 1500,
       });
+      const targetIdx = debriefRouteIndicesRef.current[index] ?? 0;
+      setDebriefDistance(debriefCumulativeDistRef.current[targetIdx] ?? 0);
       prevDebriefIndexRef.current = index;
       return;
     }
@@ -896,6 +964,8 @@ export function ExpeditionDetailPage() {
         zoom: 13,
         duration: 1500,
       });
+      const targetIdx = debriefRouteIndicesRef.current[index] ?? 0;
+      setDebriefDistance(debriefCumulativeDistRef.current[targetIdx] ?? 0);
       prevDebriefIndexRef.current = index;
       return;
     }
@@ -906,6 +976,12 @@ export function ExpeditionDetailPage() {
     const map = mapRef.current;
     const startZoom = map.getZoom();
     const endZoom = 13;
+
+    // Compute real-world distance range for this segment
+    const cumHav = debriefCumulativeDistRef.current;
+    const isBackward = fromIdx > toIdx;
+    const distStart = cumHav[isBackward ? hi : lo] ?? 0;
+    const distEnd = cumHav[isBackward ? lo : hi] ?? 0;
 
     // Gentle zoom dip proportional to distance
     const zoomOutAmount = Math.min(2.5, Math.max(0, totalSegLen * 1.2));
@@ -918,18 +994,34 @@ export function ExpeditionDetailPage() {
     const stepDuration = totalDuration / numSteps;
 
     // Pre-compute waypoints along the route
-    const waypoints: { center: [number, number]; zoom: number }[] = [];
+    const waypoints: { center: [number, number]; zoom: number; t: number }[] = [];
     for (let i = 0; i <= numSteps; i++) {
       const t = i / numSteps;
       const center = interpolateAlongRoute(segment, cumDist, t);
       const zoomDip = Math.sin(t * Math.PI);
       const linearZoom = startZoom + t * (endZoom - startZoom);
       const zoom = linearZoom - zoomDip * zoomOutAmount;
-      waypoints.push({ center, zoom });
+      waypoints.push({ center, zoom, t });
     }
 
     let currentStep = 0;
     let cancelled = false;
+    let distRaf: number | null = null;
+
+    const tickDistance = (stepIdx: number) => {
+      const tFrom = stepIdx > 0 ? waypoints[stepIdx - 1].t : 0;
+      const tTo = waypoints[stepIdx].t;
+      const startMs = performance.now();
+
+      const tick = () => {
+        if (cancelled) return;
+        const progress = Math.min(1, (performance.now() - startMs) / stepDuration);
+        const t = tFrom + progress * (tTo - tFrom);
+        setDebriefDistance(distStart + t * (distEnd - distStart));
+        if (progress < 1) distRaf = requestAnimationFrame(tick);
+      };
+      distRaf = requestAnimationFrame(tick);
+    };
 
     const advanceStep = () => {
       if (cancelled || !mapRef.current) return;
@@ -940,6 +1032,7 @@ export function ExpeditionDetailPage() {
           zoom: endZoom,
           duration: 400,
         });
+        setDebriefDistance(distEnd);
         return;
       }
       const wp = waypoints[currentStep];
@@ -949,6 +1042,7 @@ export function ExpeditionDetailPage() {
         duration: stepDuration,
         easing: (t) => t, // linear per-step; overall pacing comes from the step sequence
       });
+      tickDistance(currentStep);
       currentStep++;
     };
 
@@ -961,6 +1055,7 @@ export function ExpeditionDetailPage() {
     // Attach cleanup to a property we can call later
     (mapRef.current as any)._debriefCleanup = () => {
       cancelled = true;
+      if (distRaf) cancelAnimationFrame(distRaf);
       map.off('moveend', onMoveEnd);
       map.stop();
     };
@@ -975,8 +1070,9 @@ export function ExpeditionDetailPage() {
     setClickedEntry(null);
     prevDebriefIndexRef.current = 0;
     computeDebriefRouteIndices();
-    document.body.style.overflow = 'hidden';
-    // Resize map after fullscreen transition
+    debriefCumulativeDistRef.current = buildCumulativeHaversineDist(routeCoordsRef.current);
+    setDebriefDistance(0);
+    // Resize map after transition
     setTimeout(() => {
       mapRef.current?.resize();
       // Fly to first stop after resize
@@ -990,8 +1086,9 @@ export function ExpeditionDetailPage() {
     cancelDebriefAnimation();
     setIsDebriefMode(false);
     setDebriefIndex(0);
+    debriefCumulativeDistRef.current = [];
+    setDebriefDistance(0);
     removeAllHighlights();
-    document.body.style.overflow = '';
     setTimeout(() => {
       mapRef.current?.resize();
       setTimeout(() => {
@@ -1040,11 +1137,229 @@ export function ExpeditionDetailPage() {
     }
   }, [isDebriefMode]);
 
-  // Initialize map
+  // Modal Escape handler (when not in debrief mode)
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    if (!isMapModalOpen || isDebriefMode) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMapModalOpen(false);
+        setPendingFlyTo(null);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isMapModalOpen, isDebriefMode]);
 
-    // Initialize map
+  // Helper: check if any coordinate data exists for maps
+  const hasMapData = waypoints.length > 0 || journalEntries.some(e => e.coords.lat !== 0 || e.coords.lng !== 0);
+
+  // Initialize non-interactive banner map
+  useEffect(() => {
+    if (!bannerMapContainerRef.current) return;
+
+    // Guard: skip if no coordinate data exists
+    const hasCoords = waypoints.length > 0 || journalEntries.some(e => e.coords.lat !== 0 || e.coords.lng !== 0);
+    if (!hasCoords) return;
+
+    const map = new mapboxgl.Map({
+      container: bannerMapContainerRef.current,
+      style: theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT,
+      center: [0, 0],
+      zoom: 2,
+      interactive: false,
+      attributionControl: false,
+    });
+
+    bannerMapRef.current = map;
+
+    // Suppress style evaluation warnings
+    map.on('error', (e) => {
+      if (e.error?.message?.includes('evaluated to null but was expected to be of type')) return;
+    });
+
+    map.on('load', () => {
+      // Route lines
+      const hasDirectionsRoute = apiExpedition?.routeGeometry && apiExpedition.routeGeometry.length > 0;
+      const routeCoordinates = hasDirectionsRoute
+        ? apiExpedition.routeGeometry!
+        : debriefRoute
+            .filter(stop => stop.coords.lat !== 0 || stop.coords.lng !== 0)
+            .map(stop => [stop.coords.lng, stop.coords.lat]);
+
+      if (routeCoordinates.length >= 2) {
+        map.addSource('route-line', {
+          type: 'geojson',
+          data: {
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'LineString', coordinates: routeCoordinates },
+          },
+        });
+        map.addLayer({
+          id: 'route-line',
+          type: 'line',
+          source: 'route-line',
+          paint: {
+            'line-color': theme === 'dark' ? '#4676ac' : '#202020',
+            'line-width': hasDirectionsRoute ? 4 : 3,
+            'line-opacity': 0.8,
+            ...(hasDirectionsRoute ? {} : { 'line-dasharray': [2, 2] }),
+          },
+        });
+      }
+
+      // Completed route overlay
+      let currentLocCoords: { lng: number; lat: number } | null = null;
+      const curSrc = apiExpedition?.currentLocationSource;
+      const curId = apiExpedition?.currentLocationId;
+      if (curSrc === 'waypoint' && curId) {
+        const wp = waypoints.find(w => w.id === curId);
+        if (wp) currentLocCoords = { lng: wp.coords.lng, lat: wp.coords.lat };
+      } else if (curSrc === 'entry' && curId) {
+        const entry = journalEntries.find(e => e.id === curId);
+        if (entry && (entry.coords.lat !== 0 || entry.coords.lng !== 0)) {
+          currentLocCoords = { lng: entry.coords.lng, lat: entry.coords.lat };
+        }
+      }
+
+      if (currentLocCoords && routeCoordinates.length >= 2) {
+        let closestIdx = 0;
+        let closestDist = Infinity;
+        for (let i = 0; i < routeCoordinates.length; i++) {
+          const [lng, lat] = routeCoordinates[i];
+          const d = Math.pow(lng - currentLocCoords.lng, 2) + Math.pow(lat - currentLocCoords.lat, 2);
+          if (d < closestDist) { closestDist = d; closestIdx = i; }
+        }
+        const completedCoords = routeCoordinates.slice(0, closestIdx + 1);
+        if (completedCoords.length >= 2) {
+          map.addSource('completed-route', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: { type: 'LineString', coordinates: completedCoords },
+            },
+          });
+          map.addLayer({
+            id: 'completed-route',
+            type: 'line',
+            source: 'completed-route',
+            paint: { 'line-color': '#ac6d46', 'line-width': 4, 'line-opacity': 0.9 },
+          });
+        }
+      }
+
+      // Pulse animation style
+      if (!document.getElementById('wp-pulse-style')) {
+        const style = document.createElement('style');
+        style.id = 'wp-pulse-style';
+        style.textContent = `@keyframes wp-pulse { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); } 100% { box-shadow: 0 0 0 16px rgba(255,255,255,0); } }`;
+        document.head.appendChild(style);
+      }
+
+      const isRoundTrip = apiExpedition?.isRoundTrip;
+
+      // Waypoint markers (non-interactive)
+      waypoints.forEach((wp, idx) => {
+        const isStart = idx === 0;
+        const isEnd = !isRoundTrip && idx === waypoints.length - 1 && waypoints.length > 1;
+        const isCurrent = wp.status === 'current';
+
+        const el = document.createElement('div');
+        el.className = 'banner-waypoint-marker';
+
+        if (isStart && isRoundTrip) {
+          Object.assign(el.style, { width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#ac6d46', border: '3px solid #4676ac', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
+          el.textContent = 'S';
+        } else if (isStart || isEnd) {
+          Object.assign(el.style, { width: '36px', height: '36px', borderRadius: '50%', backgroundColor: isStart ? '#ac6d46' : '#4676ac', border: '3px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
+          el.textContent = isStart ? 'S' : 'E';
+        } else {
+          Object.assign(el.style, { width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#616161', border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' });
+          el.textContent = String(idx + 1);
+        }
+
+        if (isCurrent) el.style.animation = 'wp-pulse 2s ease-out infinite';
+
+        new mapboxgl.Marker(el).setLngLat([wp.coords.lng, wp.coords.lat]).addTo(map);
+      });
+
+      // Entry markers (non-interactive)
+      journalEntries
+        .filter(entry => entry.coords.lat !== 0 || entry.coords.lng !== 0)
+        .forEach((entry) => {
+          const el = document.createElement('div');
+          el.className = 'banner-entry-marker';
+          el.style.width = '40px';
+          el.style.height = '40px';
+
+          const pin = document.createElement('div');
+          Object.assign(pin.style, {
+            width: '28px', height: '28px', borderRadius: '50% 50% 50% 0',
+            backgroundColor: '#ac6d46', border: '3px solid white',
+            position: 'absolute', top: '50%', left: '50%',
+            transform: 'translate(-50%, -70%) rotate(-45deg)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          });
+
+          const dot = document.createElement('div');
+          Object.assign(dot.style, { width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'white', transform: 'rotate(45deg)' });
+          pin.appendChild(dot);
+          el.appendChild(pin);
+
+          if (curSrc === 'entry' && curId === entry.id) {
+            pin.style.animation = 'wp-pulse 2s ease-out infinite';
+          }
+
+          new mapboxgl.Marker(el).setLngLat([entry.coords.lng, entry.coords.lat]).addTo(map);
+        });
+
+      // Fit bounds (instant, no animation)
+      const allCoords: [number, number][] = [
+        ...waypoints.map(wp => [wp.coords.lng, wp.coords.lat] as [number, number]),
+        ...journalEntries
+          .filter(entry => entry.coords.lat !== 0 || entry.coords.lng !== 0)
+          .map(entry => [entry.coords.lng, entry.coords.lat] as [number, number]),
+      ];
+
+      if (allCoords.length > 0) {
+        const bounds = allCoords.reduce((b, coord) => b.extend(coord), new mapboxgl.LngLatBounds(allCoords[0], allCoords[0]));
+        map.fitBounds(bounds, { padding: 80, maxZoom: 10, duration: 0 });
+      }
+    });
+
+    return () => {
+      map.remove();
+      bannerMapRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme, waypoints, journalEntries, apiExpedition, debriefRoute]);
+
+  // Phase 1: When modal opens, wait for browser paint then signal ready
+  useEffect(() => {
+    if (!isMapModalOpen) {
+      setModalMapReady(false);
+      return;
+    }
+    document.body.style.overflow = 'hidden';
+    let cancelled = false;
+    // Double requestAnimationFrame guarantees the modal DOM has been painted
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (!cancelled) setModalMapReady(true);
+      });
+    });
+    return () => {
+      cancelled = true;
+      document.body.style.overflow = '';
+    };
+  }, [isMapModalOpen]);
+
+  // Phase 2: Create interactive map only after modal is confirmed painted
+  useEffect(() => {
+    if (!modalMapReady || !mapContainerRef.current) return;
+
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT,
@@ -1056,10 +1371,7 @@ export function ExpeditionDetailPage() {
 
     // Add error handler - suppress style evaluation warnings
     map.on('error', (e) => {
-      // Suppress Mapbox style expression evaluation warnings (non-critical)
-      if (e.error?.message?.includes('evaluated to null but was expected to be of type')) {
-        return; // These are harmless warnings from Mapbox's internal style
-      }
+      if (e.error?.message?.includes('evaluated to null but was expected to be of type')) return;
       console.error('Mapbox error:', e);
     });
 
@@ -1068,7 +1380,6 @@ export function ExpeditionDetailPage() {
 
     // Close popup when clicking on the map background (not on a marker)
     map.on('click', () => {
-      // Skip if a marker was just clicked (the marker handler sets this flag)
       if (markerClickedRef.current) {
         markerClickedRef.current = false;
         return;
@@ -1084,25 +1395,15 @@ export function ExpeditionDetailPage() {
 
     // Wait for map to load
     map.on('load', () => {
-      // Get valid entry coordinates (non-zero, sorted by date oldest first for route)
-      const validEntries = journalEntries
-        .filter(entry => entry.coords.lat !== 0 || entry.coords.lng !== 0)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      map.resize();
 
-      // Use saved directions geometry if available, otherwise straight lines
       const hasDirectionsRoute = apiExpedition?.routeGeometry && apiExpedition.routeGeometry.length > 0;
-      let routeCoordinates = hasDirectionsRoute
-        ? apiExpedition.routeGeometry!
-        : waypoints.length > 0
-          ? waypoints.map(wp => [wp.coords.lng, wp.coords.lat])
-          : validEntries.map(entry => [entry.coords.lng, entry.coords.lat]);
-
-      // If round trip and using straight lines, close the route by adding the first point to the end
-      // (directions geometry already includes the return leg)
       const isRoundTrip = apiExpedition?.isRoundTrip;
-      if (!hasDirectionsRoute && isRoundTrip && routeCoordinates.length > 0) {
-        routeCoordinates = [...routeCoordinates, routeCoordinates[0]];
-      }
+      const routeCoordinates = hasDirectionsRoute
+        ? apiExpedition.routeGeometry!
+        : debriefRoute
+            .filter(stop => stop.coords.lat !== 0 || stop.coords.lng !== 0)
+            .map(stop => [stop.coords.lng, stop.coords.lat]);
 
       routeCoordsRef.current = routeCoordinates;
 
@@ -1112,13 +1413,9 @@ export function ExpeditionDetailPage() {
           data: {
             type: 'Feature',
             properties: {},
-            geometry: {
-              type: 'LineString',
-              coordinates: routeCoordinates,
-            },
+            geometry: { type: 'LineString', coordinates: routeCoordinates },
           },
         });
-
         map.addLayer({
           id: 'route-line',
           type: 'line',
@@ -1133,7 +1430,6 @@ export function ExpeditionDetailPage() {
       }
 
       // Add completed route line based on current location
-      // Find the current location's coordinates (works for both waypoint and entry)
       let currentLocCoords: { lng: number; lat: number } | null = null;
       const curSrc = apiExpedition?.currentLocationSource;
       const curId = apiExpedition?.currentLocationId;
@@ -1149,16 +1445,12 @@ export function ExpeditionDetailPage() {
       }
 
       if (currentLocCoords && routeCoordinates.length >= 2) {
-        // Find the closest point in the route geometry to the current location
         let closestIdx = 0;
         let closestDist = Infinity;
         for (let i = 0; i < routeCoordinates.length; i++) {
           const [lng, lat] = routeCoordinates[i];
           const d = Math.pow(lng - currentLocCoords.lng, 2) + Math.pow(lat - currentLocCoords.lat, 2);
-          if (d < closestDist) {
-            closestDist = d;
-            closestIdx = i;
-          }
+          if (d < closestDist) { closestDist = d; closestIdx = i; }
         }
         const completedCoords = routeCoordinates.slice(0, closestIdx + 1);
 
@@ -1168,22 +1460,14 @@ export function ExpeditionDetailPage() {
             data: {
               type: 'Feature',
               properties: {},
-              geometry: {
-                type: 'LineString',
-                coordinates: completedCoords,
-              },
+              geometry: { type: 'LineString', coordinates: completedCoords },
             },
           });
-
           map.addLayer({
             id: 'completed-route',
             type: 'line',
             source: 'completed-route',
-            paint: {
-              'line-color': '#ac6d46',
-              'line-width': 4,
-              'line-opacity': 0.9,
-            },
+            paint: { 'line-color': '#ac6d46', 'line-width': 4, 'line-opacity': 0.9 },
           });
         }
       }
@@ -1211,56 +1495,26 @@ export function ExpeditionDetailPage() {
         el.className = 'waypoint-marker';
 
         if (isStart && isRoundTrip) {
-          // Round trip: start is also the end — copper fill with blue border
-          el.style.width = '36px';
-          el.style.height = '36px';
-          el.style.borderRadius = '50%';
-          el.style.backgroundColor = '#ac6d46';
-          el.style.border = '3px solid #4676ac';
-          el.style.display = 'flex';
-          el.style.alignItems = 'center';
-          el.style.justifyContent = 'center';
-          el.style.color = 'white';
-          el.style.fontWeight = 'bold';
-          el.style.fontSize = '15px';
-          el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-          el.textContent = 'S';
+          el.style.width = '36px'; el.style.height = '36px'; el.style.borderRadius = '50%';
+          el.style.backgroundColor = '#ac6d46'; el.style.border = '3px solid #4676ac';
+          el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center';
+          el.style.color = 'white'; el.style.fontWeight = 'bold'; el.style.fontSize = '15px';
+          el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'; el.textContent = 'S';
         } else if (isStart || isEnd) {
-          // Start (copper) / End (blue) markers
-          el.style.width = '36px';
-          el.style.height = '36px';
-          el.style.borderRadius = '50%';
-          el.style.backgroundColor = isStart ? '#ac6d46' : '#4676ac';
-          el.style.border = '3px solid white';
-          el.style.display = 'flex';
-          el.style.alignItems = 'center';
-          el.style.justifyContent = 'center';
-          el.style.color = 'white';
-          el.style.fontWeight = 'bold';
-          el.style.fontSize = '15px';
-          el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-          el.textContent = isStart ? 'S' : 'E';
+          el.style.width = '36px'; el.style.height = '36px'; el.style.borderRadius = '50%';
+          el.style.backgroundColor = isStart ? '#ac6d46' : '#4676ac'; el.style.border = '3px solid white';
+          el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center';
+          el.style.color = 'white'; el.style.fontWeight = 'bold'; el.style.fontSize = '15px';
+          el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'; el.textContent = isStart ? 'S' : 'E';
         } else {
-          // Standard waypoint markers — gray
-          el.style.width = '28px';
-          el.style.height = '28px';
-          el.style.borderRadius = '50%';
-          el.style.backgroundColor = '#616161';
-          el.style.border = '2px solid white';
-          el.style.display = 'flex';
-          el.style.alignItems = 'center';
-          el.style.justifyContent = 'center';
-          el.style.color = 'white';
-          el.style.fontWeight = 'bold';
-          el.style.fontSize = '12px';
-          el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
-          el.textContent = String(idx + 1);
+          el.style.width = '28px'; el.style.height = '28px'; el.style.borderRadius = '50%';
+          el.style.backgroundColor = '#616161'; el.style.border = '2px solid white';
+          el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center';
+          el.style.color = 'white'; el.style.fontWeight = 'bold'; el.style.fontSize = '12px';
+          el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)'; el.textContent = String(idx + 1);
         }
 
-        // Add pulsing white glow for the current location marker
-        if (isCurrent) {
-          el.style.animation = 'wp-pulse 2s ease-out infinite';
-        }
+        if (isCurrent) el.style.animation = 'wp-pulse 2s ease-out infinite';
 
         const wpMarker = new mapboxgl.Marker(el)
           .setLngLat([wp.coords.lng, wp.coords.lat])
@@ -1278,36 +1532,24 @@ export function ExpeditionDetailPage() {
         .forEach((entry) => {
           const el = document.createElement('div');
           el.className = 'entry-marker';
-          el.style.width = '40px';
-          el.style.height = '40px';
-          el.style.cursor = 'pointer';
+          el.style.width = '40px'; el.style.height = '40px'; el.style.cursor = 'pointer';
 
           const pin = document.createElement('div');
-          pin.style.width = '28px';
-          pin.style.height = '28px';
-          pin.style.borderRadius = '50% 50% 50% 0';
-          pin.style.backgroundColor = '#ac6d46';
-          pin.style.border = '3px solid white';
-          pin.style.position = 'absolute';
-          pin.style.top = '50%';
-          pin.style.left = '50%';
+          pin.style.width = '28px'; pin.style.height = '28px';
+          pin.style.borderRadius = '50% 50% 50% 0'; pin.style.backgroundColor = '#ac6d46';
+          pin.style.border = '3px solid white'; pin.style.position = 'absolute';
+          pin.style.top = '50%'; pin.style.left = '50%';
           pin.style.transform = 'translate(-50%, -70%) rotate(-45deg)';
           pin.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-          pin.style.display = 'flex';
-          pin.style.alignItems = 'center';
-          pin.style.justifyContent = 'center';
+          pin.style.display = 'flex'; pin.style.alignItems = 'center'; pin.style.justifyContent = 'center';
 
           const dot = document.createElement('div');
-          dot.style.width = '10px';
-          dot.style.height = '10px';
-          dot.style.borderRadius = '50%';
-          dot.style.backgroundColor = 'white';
+          dot.style.width = '10px'; dot.style.height = '10px';
+          dot.style.borderRadius = '50%'; dot.style.backgroundColor = 'white';
           dot.style.transform = 'rotate(45deg)';
           pin.appendChild(dot);
-
           el.appendChild(pin);
 
-          // Add pulsing white glow if this entry is the current location
           if (curSrc === 'entry' && curId === entry.id) {
             pin.style.animation = 'wp-pulse 2s ease-out infinite';
           }
@@ -1316,38 +1558,27 @@ export function ExpeditionDetailPage() {
             .setLngLat([entry.coords.lng, entry.coords.lat])
             .addTo(map);
 
-          // Click handler for popup
           el.addEventListener('click', (e) => {
             e.stopPropagation();
-
-            // Set flag to prevent map click from closing the popup
             markerClickedRef.current = true;
-
-            // Remove highlights from all markers
             markersRef.current.forEach(m => {
               const markerEl = m.getElement();
               if (markerEl && (markerEl as any).removeHighlight) {
                 (markerEl as any).removeHighlight();
               }
             });
-
-            // Calculate popup position based on marker location
             if (mapContainerRef.current) {
               const mapRect = mapContainerRef.current.getBoundingClientRect();
               const markerRect = el.getBoundingClientRect();
               const markerCenterX = markerRect.left + markerRect.width / 2 - mapRect.left;
               setPopupPosition(markerCenterX > mapRect.width / 2 ? 'bottom-left' : 'bottom-right');
             }
-
             setClickedEntry(entry);
-
-            // Highlight the clicked marker
             pin.style.border = '4px solid #ac6d46';
             pin.style.boxShadow = '0 0 20px rgba(172, 109, 70, 0.8), 0 4px 12px rgba(0,0,0,0.4)';
             pin.style.transform = 'translate(-50%, -70%) rotate(-45deg) scale(1.1)';
           });
 
-          // Store function to remove highlight
           (el as any).removeHighlight = () => {
             pin.style.border = '3px solid white';
             pin.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
@@ -1370,11 +1601,15 @@ export function ExpeditionDetailPage() {
           return bounds.extend(coord);
         }, new mapboxgl.LngLatBounds(allCoords[0], allCoords[0]));
 
-        map.fitBounds(bounds, {
-          padding: 50,
-          maxZoom: 10,
-          duration: 500,
-        });
+        map.fitBounds(bounds, { padding: 50, maxZoom: 10, duration: 500 });
+      }
+
+      // If a pending flyTo was requested, fly there after initial bounds
+      if (pendingFlyTo) {
+        setTimeout(() => {
+          map.flyTo({ center: [pendingFlyTo.lng, pendingFlyTo.lat], zoom: 12, duration: 1500 });
+          setPendingFlyTo(null);
+        }, 600);
       }
     });
 
@@ -1385,11 +1620,23 @@ export function ExpeditionDetailPage() {
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
       setClickedEntry(null);
-      map.remove();
+      try { map.remove(); } catch { /* container may already be unmounted */ }
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme, waypoints, journalEntries, apiExpedition]);
+  }, [modalMapReady, theme, waypoints, journalEntries, apiExpedition]);
+
+  // Handle pendingFlyTo when modal is already open (clicking different waypoints)
+  useEffect(() => {
+    if (isMapModalOpen && pendingFlyTo && mapRef.current) {
+      const map = mapRef.current;
+      const timer = setTimeout(() => {
+        map.flyTo({ center: [pendingFlyTo.lng, pendingFlyTo.lat], zoom: 12, duration: 1500 });
+        setPendingFlyTo(null);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isMapModalOpen, pendingFlyTo]);
 
   // Loading state
   if (loading) {
@@ -1430,15 +1677,27 @@ export function ExpeditionDetailPage() {
     <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Hero Banner with Overlay Content */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
-        <div className="relative h-[600px] overflow-hidden">
-          <ImageWithFallback
-            src={expedition.imageUrl}
-            alt={expedition.title}
-            className="h-full w-full object-cover"
-          />
-          
+        <div
+          className={`relative h-[600px] overflow-hidden${hasMapData ? ' cursor-pointer' : ''}`}
+          onClick={() => hasMapData && setIsMapModalOpen(true)}
+          role={hasMapData ? 'button' : undefined}
+          tabIndex={hasMapData ? 0 : undefined}
+          onKeyDown={hasMapData ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsMapModalOpen(true); } } : undefined}
+        >
+          {/* Banner Map */}
+          <div ref={bannerMapContainerRef} className="absolute inset-0 w-full h-full" />
+
+          {/* Fallback cover image when no map data */}
+          {!hasMapData && (
+            <ImageWithFallback
+              src={expedition.imageUrl}
+              alt={expedition.title}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          )}
+
           {/* Dark gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90 pointer-events-none" />
           
           {/* Expedition Status Banner - Top Border */}
           <div className={`absolute top-0 left-0 right-0 py-2 px-6 ${
@@ -1447,7 +1706,7 @@ export function ExpeditionDetailPage() {
               : expedition.status === 'planned'
               ? 'bg-[#4676ac]'
               : 'bg-[#616161]'
-          } z-10 flex items-center justify-between`}>
+          } z-10 flex items-center justify-between pointer-events-auto`} onClick={(e) => e.stopPropagation()}>
             <div className="text-white font-bold text-sm tracking-wide">
               {expedition.status === 'active' ? 'ACTIVE EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'COMPLETED EXPEDITION'}
             </div>
@@ -1462,7 +1721,7 @@ export function ExpeditionDetailPage() {
           </div>
           
           {/* Content Overlay */}
-          <div className="absolute inset-0 flex flex-col justify-between p-6 text-white pt-16">
+          <div className="absolute inset-0 flex flex-col justify-between p-6 text-white pt-16 pointer-events-none">
             {/* Top Section: Title, Explorer, Description */}
             <div className="flex items-start justify-between gap-6">
               <div className="flex-1">
@@ -1493,7 +1752,7 @@ export function ExpeditionDetailPage() {
               </div>
               
               {/* Explorer Info Card */}
-              <div className="text-xs font-mono bg-[#202020]/80 border-2 border-[#ac6d46] p-4 min-w-[280px]">
+              <div className="text-xs font-mono bg-[#202020]/80 border-2 border-[#ac6d46] p-4 min-w-[280px] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="text-[#b5bcc4] mb-3 font-bold border-b-2 border-[#616161] pb-2">EXPLORER INFORMATION</div>
                 
                 <div className="flex items-center gap-3 mb-4">
@@ -1546,11 +1805,26 @@ export function ExpeditionDetailPage() {
             
             {/* Bottom Section: Current Location + Action Bar */}
             <div className="-mx-6 -mb-6">
+              {/* "CLICK MAP TO EXPLORE" hint */}
+              {hasMapData && (
+                <div className="flex justify-center pb-3 pointer-events-none">
+                  <div className="bg-[#202020]/60 text-white/80 text-xs font-mono px-3 py-1.5 flex items-center gap-2">
+                    <Maximize2 size={12} />
+                    CLICK MAP TO EXPLORE
+                  </div>
+                </div>
+              )}
               {/* Current Location Bar - showing for all statuses temporarily */}
               {currentLocationData?.location && (
                 <button
-                  onClick={() => currentLocationData.coords && handleWaypointClick(currentLocationData.coords)}
-                  className="w-full bg-[#ac6d46] px-6 py-3 flex items-center justify-center gap-4 hover:bg-[#8a5738] transition-all cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (currentLocationData.coords) {
+                      setPendingFlyTo(currentLocationData.coords);
+                      setIsMapModalOpen(true);
+                    }
+                  }}
+                  className="w-full bg-[#ac6d46] px-6 py-3 flex items-center justify-center gap-4 hover:bg-[#8a5738] transition-all cursor-pointer pointer-events-auto"
                 >
                   <div className="relative flex items-center justify-center">
                     <div className="absolute w-3 h-3 bg-white rounded-full animate-ping opacity-75" />
@@ -1586,7 +1860,7 @@ export function ExpeditionDetailPage() {
               )}
 
               {/* Action Bar - Always visible */}
-              <div className="bg-[#202020]/90 px-6 py-3 border-t-2 border-[#616161]">
+              <div className="bg-[#202020]/90 px-6 py-3 border-t-2 border-[#616161] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between gap-6">
                 {/* Expedition Status */}
                 <div className="flex items-center gap-3">
@@ -1668,7 +1942,7 @@ export function ExpeditionDetailPage() {
         </div>
 
         {/* Stats Bar */}
-        <div className={`grid grid-cols-2 ${showSponsorshipSection ? 'md:grid-cols-5' : 'md:grid-cols-3'} border-t-2 border-[#202020] dark:border-[#616161]`}>
+        <div className={`grid grid-cols-2 ${showSponsorshipSection ? 'md:grid-cols-6' : 'md:grid-cols-4'} border-t-2 border-[#202020] dark:border-[#616161]`}>
           {/* Days to Start (planned) or Days Active (active/completed) */}
           <div className="p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
             {expedition.status === 'planned' && expedition.startDate ? (() => {
@@ -1708,9 +1982,20 @@ export function ExpeditionDetailPage() {
             <div className="text-2xl font-bold text-[#4676ac]">{expedition.totalWaypoints}</div>
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Waypoints</div>
           </div>
-          <div className="p-4 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
+          <div className="p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
             <div className="text-2xl font-bold text-[#ac6d46]">{expedition.totalEntries}</div>
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Entries</div>
+          </div>
+          <div className="p-4 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
+            <div className="text-2xl font-bold text-[#4676ac]">{formatDistance(totalRouteDistance, 1)}</div>
+            <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+              {(() => {
+                const mode = apiExpedition?.routeMode;
+                const modeLabel = mode === 'driving' ? 'Driving' : mode === 'walking' ? 'Walking' : mode === 'cycling' ? 'Cycling' : 'Haversine';
+                const tripLabel = apiExpedition?.isRoundTrip ? 'Round Trip' : 'One Way';
+                return `${modeLabel} • ${tripLabel}`;
+              })()}
+            </div>
           </div>
         </div>
       </div>
@@ -1719,281 +2004,6 @@ export function ExpeditionDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Map & Route - Left Column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Interactive Map */}
-          <div ref={mapCardRef} className={isDebriefMode ? 'fixed inset-0 z-50 border-0 flex flex-col bg-white dark:bg-[#202020]' : 'bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]'}>
-            <div className={`bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 ${isDebriefMode ? 'border-b border-[#4a4a4a]' : 'border-b-2 border-[#202020] dark:border-[#616161]'}`}>
-              {isDebriefMode ? (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <h2 className="text-sm font-bold">{expedition.title}</h2>
-                      <div className="text-xs text-white/70 font-mono">by {expedition.explorerName}</div>
-                    </div>
-                    <div className="text-xs font-mono bg-white/10 px-3 py-1">
-                      {debriefIndex + 1} / {debriefRoute.length}
-                    </div>
-                  </div>
-                  <button
-                    onClick={exitDebriefMode}
-                    className="px-4 py-2 bg-[#202020] hover:bg-[#333] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
-                  >
-                    <X size={14} />
-                    EXIT
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm font-bold">EXPEDITION ROUTE MAP</h2>
-                  {canDebrief && (
-                    <button
-                      onClick={enterDebriefMode}
-                      className="px-3 py-1.5 bg-[#ac6d46] hover:bg-[#8a5738] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
-                    >
-                      <Play size={12} fill="currentColor" />
-                      DEBRIEF MODE
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Map Container */}
-            <div className={`relative bg-[#e8e8e8] overflow-hidden ${isDebriefMode ? 'flex-1' : 'h-[500px]'}`}>
-              <div ref={mapContainerRef} className="absolute top-0 left-0 w-full h-full" />
-              
-              {/* Map Legend */}
-              {!isDebriefMode && (
-              <div className="absolute bottom-4 left-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 text-xs z-10">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-bold dark:text-[#e5e5e5]">MAP LEGEND:</div>
-                  <button
-                    onClick={handleFitBounds}
-                    className="px-2 py-1 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center gap-1"
-                    title="Fit all markers in view"
-                  >
-                    <Maximize2 size={12} />
-                    <span className="text-xs font-bold">FIT</span>
-                  </button>
-                </div>
-                <div className="space-y-1 dark:text-[#e5e5e5]">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-[#ac6d46] border-2 border-[#202020] rounded-full"></div>
-                    <span>Completed Waypoint</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-[#4676ac] border-2 border-[#202020] rounded-full"></div>
-                    <span>Current Location</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-[#b5bcc4] border-2 border-[#202020] rounded-full"></div>
-                    <span>Planned Waypoint</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-[#ac6d46] border-2 border-[#202020]"></div>
-                    <span>Journal Entry</span>
-                  </div>
-                </div>
-              </div>
-              )}
-
-              {/* Map Info */}
-              {!isDebriefMode && (
-              <div className="absolute top-4 right-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 text-xs font-mono z-10">
-                <div className="text-[#616161] dark:text-[#b5bcc4]">Current Position:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">
-                  {currentLocationData?.coords
-                    ? `${currentLocationData.coords.lat.toFixed(4)}°N, ${currentLocationData.coords.lng.toFixed(4)}°E`
-                    : 'No location set'}
-                </div>
-                <div className="text-[#616161] dark:text-[#b5bcc4] mt-2">Total Distance:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">~{formatDistance(3247, 0)}</div>
-              </div>
-              )}
-
-              {/* Entry Popup */}
-              {!isDebriefMode && clickedEntry && (
-                <div
-                  className={`absolute w-72 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20 bottom-4 ${
-                    popupPosition === 'bottom-left' ? 'left-4' : 'right-4'
-                  }`}
-                >
-                  <div className="p-3 text-xs font-mono">
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="font-bold text-sm dark:text-[#e5e5e5] truncate">{clickedEntry.title}</div>
-                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-0.5">
-                          {clickedEntry.location && <span>{clickedEntry.location}</span>}
-                          {clickedEntry.location && clickedEntry.date && <span> • </span>}
-                          {clickedEntry.date && <span>{new Date(clickedEntry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setClickedEntry(null);
-                          markersRef.current.forEach(m => {
-                            const el = m.getElement();
-                            if (el && (el as any).removeHighlight) {
-                              (el as any).removeHighlight();
-                            }
-                          });
-                        }}
-                        className="p-0.5 hover:bg-[#202020] hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded transition-all active:scale-[0.95] focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#616161] flex-shrink-0"
-                      >
-                        <X className="w-3.5 h-3.5 text-[#616161] dark:text-[#b5bcc4]" />
-                      </button>
-                    </div>
-
-                    {/* Excerpt */}
-                    {clickedEntry.excerpt && (
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3 line-clamp-2">
-                        {clickedEntry.excerpt}
-                      </div>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => window.open(`/entry/${clickedEntry.id}`, '_blank')}
-                        className="flex-1 bg-[#ac6d46] text-white py-1.5 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold text-center"
-                      >
-                        VIEW ENTRY
-                      </button>
-                      <button
-                        onClick={() => handleBookmarkEntry(clickedEntry.id)}
-                        disabled={entryBookmarkLoading === clickedEntry.id}
-                        className={`py-1.5 px-2 transition-all active:scale-95 flex items-center justify-center ${
-                          entryBookmarked.has(clickedEntry.id)
-                            ? 'bg-[#4676ac] text-white hover:bg-[#365a87]'
-                            : 'bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a]'
-                        }`}
-                        title={entryBookmarked.has(clickedEntry.id) ? 'Bookmarked' : 'Bookmark'}
-                      >
-                        {entryBookmarkLoading === clickedEntry.id ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : entryBookmarked.has(clickedEntry.id) ? (
-                          <BookmarkCheck className="w-3.5 h-3.5" />
-                        ) : (
-                          <Bookmark className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Debrief Info Popup */}
-              {isDebriefMode && debriefRoute[debriefIndex] && (() => {
-                const stop = debriefRoute[debriefIndex];
-                return (
-                  <div className="absolute top-4 right-4 w-80 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20">
-                    {/* Header */}
-                    <div className={`px-3 py-2 text-xs font-bold font-mono flex items-center justify-between ${
-                      stop.type === 'waypoint' ? 'bg-[#616161] text-white' : 'bg-[#ac6d46] text-white'
-                    }`}>
-                      <span>{stop.type === 'waypoint' ? 'WAYPOINT' : 'JOURNAL ENTRY'}</span>
-                      <span className="text-white/70">STOP {debriefIndex + 1} OF {debriefRoute.length}</span>
-                    </div>
-
-                    <div className="p-3 text-xs font-mono">
-                      {/* Title */}
-                      <div className="font-bold text-sm dark:text-[#e5e5e5] mb-1">{stop.title}</div>
-
-                      {/* Location & Date */}
-                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-3">
-                        {stop.location && <span>{stop.location}</span>}
-                        {stop.location && stop.date && <span> &bull; </span>}
-                        {stop.date && <span>{new Date(stop.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>}
-                      </div>
-
-                      {/* Waypoint-specific fields */}
-                      {stop.type === 'waypoint' && (
-                        <>
-                          {stop.description && (
-                            <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-2 line-clamp-3">
-                              {stop.description}
-                            </div>
-                          )}
-                          {stop.status && (
-                            <div className="mb-2">
-                              <span className={`inline-block px-2 py-0.5 text-[10px] font-bold ${
-                                stop.status === 'completed' ? 'bg-[#ac6d46] text-white' :
-                                stop.status === 'current' ? 'bg-[#4676ac] text-white' :
-                                'bg-[#b5bcc4] text-[#202020]'
-                              }`}>
-                                {stop.status.toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                          {stop.notes && (
-                            <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-2 italic line-clamp-2">
-                              {stop.notes}
-                            </div>
-                          )}
-                        </>
-                      )}
-
-                      {/* Entry-specific fields */}
-                      {stop.type === 'entry' && (
-                        <>
-                          {stop.excerpt && (
-                            <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3 line-clamp-3">
-                              {stop.excerpt}
-                            </div>
-                          )}
-                          <button
-                            onClick={() => window.open(`/entry/${stop.id}`, '_blank')}
-                            className="w-full bg-[#ac6d46] text-white py-1.5 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] text-xs font-bold text-center mb-2"
-                          >
-                            VIEW FULL ENTRY
-                          </button>
-                        </>
-                      )}
-
-                      {/* Coordinates */}
-                      <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2 text-[10px] text-[#b5bcc4] dark:text-[#616161]">
-                        {stop.coords.lat.toFixed(4)}&deg;N, {stop.coords.lng.toFixed(4)}&deg;E
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Debrief Navigation Controls */}
-              {isDebriefMode && (
-                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
-                  <button
-                    onClick={() => debriefIndex > 0 && flyToDebriefStop(debriefIndex - 1)}
-                    disabled={debriefIndex === 0}
-                    className={`w-12 h-12 flex items-center justify-center border-2 transition-all active:scale-[0.95] ${
-                      debriefIndex === 0
-                        ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#b5bcc4] dark:border-[#3a3a3a] text-white/50 cursor-not-allowed'
-                        : 'bg-white dark:bg-[#202020] border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#4a4a4a]'
-                    }`}
-                    aria-label="Previous stop"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] px-4 h-12 flex items-center text-sm font-bold font-mono dark:text-[#e5e5e5]">
-                    {debriefIndex + 1} / {debriefRoute.length}
-                  </div>
-                  <button
-                    onClick={() => debriefIndex < debriefRoute.length - 1 && flyToDebriefStop(debriefIndex + 1)}
-                    disabled={debriefIndex === debriefRoute.length - 1}
-                    className={`w-12 h-12 flex items-center justify-center border-2 transition-all active:scale-[0.95] ${
-                      debriefIndex === debriefRoute.length - 1
-                        ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#b5bcc4] dark:border-[#3a3a3a] text-white/50 cursor-not-allowed'
-                        : 'bg-white dark:bg-[#202020] border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#4a4a4a]'
-                    }`}
-                    aria-label="Next stop"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Content Tabs */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
             {/* Tab Navigation */}
@@ -2509,6 +2519,306 @@ export function ExpeditionDetailPage() {
         }}
         onStatusChange={handleStatusChange}
       />
+
+      {/* Fullscreen Map Modal */}
+      {isMapModalOpen && (
+        <div className="fixed inset-0 z-50 bg-white dark:bg-[#202020]">
+          {/* Header - explicit height */}
+          <div className="absolute top-0 left-0 right-0 h-14 z-10 bg-[#616161] dark:bg-[#3a3a3a] text-white px-4 flex items-center border-b-2 border-[#202020] dark:border-[#616161]">
+            {/* Title - centered */}
+            <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
+              <h2 className="text-sm font-bold truncate max-w-[60%] text-center">{expedition.title}</h2>
+            </div>
+            {/* Debrief stop counter - left side (debrief only) */}
+            {isDebriefMode && (
+              <div className="text-xs font-mono bg-white/10 px-3 py-1 z-10">
+                {debriefIndex + 1} / {debriefRoute.length}
+              </div>
+            )}
+            {/* Buttons - right side */}
+            <div className="ml-auto flex items-center gap-2 z-10">
+              {isDebriefMode ? (
+                <button
+                  onClick={exitDebriefMode}
+                  className="px-4 py-2 bg-[#202020] hover:bg-[#333] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
+                >
+                  <X size={14} />
+                  EXIT DEBRIEF
+                </button>
+              ) : (
+                <>
+                  {canDebrief && (
+                    <button
+                      onClick={enterDebriefMode}
+                      className="px-3 py-1.5 bg-[#ac6d46] hover:bg-[#8a5738] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
+                    >
+                      <Play size={12} fill="currentColor" />
+                      DEBRIEF MODE
+                    </button>
+                  )}
+                  <button
+                    onClick={handleCloseModal}
+                    className="px-4 py-2 bg-[#202020] hover:bg-[#333] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
+                  >
+                    <X size={14} />
+                    CLOSE
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Map + all overlays - explicit positioning below h-14 header */}
+          <div className="absolute top-14 left-0 right-0 bottom-0 bg-[#e8e8e8] overflow-hidden">
+            <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
+
+            {/* Map Legend (bottom-left) */}
+            {!isDebriefMode && (
+              <div className="absolute bottom-4 left-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 text-xs z-10">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="font-bold dark:text-[#e5e5e5]">MAP LEGEND:</div>
+                  <button
+                    onClick={handleFitBounds}
+                    className="px-2 py-1 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center gap-1"
+                    title="Fit all markers in view"
+                  >
+                    <Maximize2 size={12} />
+                    <span className="text-xs font-bold">FIT</span>
+                  </button>
+                </div>
+                <div className="space-y-1 dark:text-[#e5e5e5]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-[#ac6d46] border-2 border-[#202020] rounded-full"></div>
+                    <span>Completed Waypoint</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-[#4676ac] border-2 border-[#202020] rounded-full"></div>
+                    <span>Current Location</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-[#b5bcc4] border-2 border-[#202020] rounded-full"></div>
+                    <span>Planned Waypoint</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-[#ac6d46] border-2 border-[#202020]"></div>
+                    <span>Journal Entry</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Map Info (top-right) */}
+            {!isDebriefMode && (
+              <div className="absolute top-4 right-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 text-xs font-mono z-10">
+                <div className="text-[#616161] dark:text-[#b5bcc4]">Current Position:</div>
+                <div className="font-bold dark:text-[#e5e5e5]">
+                  {currentLocationData?.coords
+                    ? `${currentLocationData.coords.lat.toFixed(4)}°N, ${currentLocationData.coords.lng.toFixed(4)}°E`
+                    : 'No location set'}
+                </div>
+                <div className="text-[#616161] dark:text-[#b5bcc4] mt-2">Total Distance:</div>
+                <div className="font-bold dark:text-[#e5e5e5]">~{formatDistance(3247, 0)}</div>
+              </div>
+            )}
+
+            {/* Entry Popup */}
+            {!isDebriefMode && clickedEntry && (
+              <div
+                className={`absolute w-72 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20 bottom-4 ${
+                  popupPosition === 'bottom-left' ? 'left-4' : 'right-4'
+                }`}
+              >
+                <div className="p-3 text-xs font-mono">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-sm dark:text-[#e5e5e5] truncate">{clickedEntry.title}</div>
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-0.5">
+                        {clickedEntry.location && <span>{clickedEntry.location}</span>}
+                        {clickedEntry.location && clickedEntry.date && <span> • </span>}
+                        {clickedEntry.date && <span>{formatShortDate(clickedEntry.date)}</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setClickedEntry(null);
+                        markersRef.current.forEach(m => {
+                          const el = m.getElement();
+                          if (el && (el as any).removeHighlight) {
+                            (el as any).removeHighlight();
+                          }
+                        });
+                      }}
+                      className="p-0.5 hover:bg-[#202020] hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded transition-all active:scale-[0.95] focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#616161] flex-shrink-0"
+                    >
+                      <X className="w-3.5 h-3.5 text-[#616161] dark:text-[#b5bcc4]" />
+                    </button>
+                  </div>
+
+                  {/* Excerpt */}
+                  {clickedEntry.excerpt && (
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3 line-clamp-2">
+                      {clickedEntry.excerpt}
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => window.open(`/entry/${clickedEntry.id}`, '_blank')}
+                      className="flex-1 bg-[#ac6d46] text-white py-1.5 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold text-center"
+                    >
+                      VIEW ENTRY
+                    </button>
+                    <button
+                      onClick={() => handleBookmarkEntry(clickedEntry.id)}
+                      disabled={entryBookmarkLoading === clickedEntry.id}
+                      className={`py-1.5 px-2 transition-all active:scale-95 flex items-center justify-center ${
+                        entryBookmarked.has(clickedEntry.id)
+                          ? 'bg-[#4676ac] text-white hover:bg-[#365a87]'
+                          : 'bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a]'
+                      }`}
+                      title={entryBookmarked.has(clickedEntry.id) ? 'Bookmarked' : 'Bookmark'}
+                    >
+                      {entryBookmarkLoading === clickedEntry.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : entryBookmarked.has(clickedEntry.id) ? (
+                        <BookmarkCheck className="w-3.5 h-3.5" />
+                      ) : (
+                        <Bookmark className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Debrief Info Popup */}
+            {isDebriefMode && debriefRoute[debriefIndex] && (() => {
+              const stop = debriefRoute[debriefIndex];
+              return (
+                <div className="absolute top-4 right-4 w-80 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20">
+                  {/* Header */}
+                  <div className={`px-3 py-2 text-xs font-bold font-mono flex items-center justify-between ${
+                    stop.type === 'waypoint' ? 'bg-[#616161] text-white' : 'bg-[#ac6d46] text-white'
+                  }`}>
+                    <span>{stop.type === 'waypoint' ? 'WAYPOINT' : 'JOURNAL ENTRY'}</span>
+                    <span className="text-white/70">STOP {debriefIndex + 1} OF {debriefRoute.length}</span>
+                  </div>
+
+                  <div className="p-3 text-xs font-mono">
+                    {/* Title */}
+                    <div className="font-bold text-sm dark:text-[#e5e5e5] mb-1">{stop.title}</div>
+
+                    {/* Location & Date */}
+                    <div className="text-[#616161] dark:text-[#b5bcc4] mb-3">
+                      {stop.location && <span>{stop.location}</span>}
+                      {stop.location && stop.date && <span> &bull; </span>}
+                      {stop.date && <span>{formatDate(stop.date)}</span>}
+                    </div>
+
+                    {/* Waypoint-specific fields */}
+                    {stop.type === 'waypoint' && (
+                      <>
+                        {stop.description && (
+                          <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-2 line-clamp-3">
+                            {stop.description}
+                          </div>
+                        )}
+                        {stop.status && (
+                          <div className="mb-2">
+                            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold ${
+                              stop.status === 'completed' ? 'bg-[#ac6d46] text-white' :
+                              stop.status === 'current' ? 'bg-[#4676ac] text-white' :
+                              'bg-[#b5bcc4] text-[#202020]'
+                            }`}>
+                              {stop.status.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        {stop.notes && (
+                          <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-2 italic line-clamp-2">
+                            {stop.notes}
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Entry-specific fields */}
+                    {stop.type === 'entry' && (
+                      <>
+                        {stop.excerpt && (
+                          <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3 line-clamp-3">
+                            {stop.excerpt}
+                          </div>
+                        )}
+                        <button
+                          onClick={() => window.open(`/entry/${stop.id}`, '_blank')}
+                          className="w-full bg-[#ac6d46] text-white py-1.5 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] text-xs font-bold text-center mb-2"
+                        >
+                          VIEW FULL ENTRY
+                        </button>
+                      </>
+                    )}
+
+                    {/* Coordinates */}
+                    <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2 text-[10px] text-[#b5bcc4] dark:text-[#616161]">
+                      {stop.coords.lat.toFixed(4)}&deg;N, {stop.coords.lng.toFixed(4)}&deg;E
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Debrief Navigation Controls */}
+            {isDebriefMode && (
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
+                <button
+                  onClick={() => debriefIndex > 0 && flyToDebriefStop(debriefIndex - 1)}
+                  disabled={debriefIndex === 0}
+                  className={`w-12 h-12 flex items-center justify-center border-2 transition-all active:scale-[0.95] ${
+                    debriefIndex === 0
+                      ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#b5bcc4] dark:border-[#3a3a3a] text-white/50 cursor-not-allowed'
+                      : 'bg-white dark:bg-[#202020] border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#4a4a4a]'
+                  }`}
+                  aria-label="Previous stop"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] px-4 h-12 flex items-center text-sm font-bold font-mono dark:text-[#e5e5e5]">
+                  {debriefIndex + 1} / {debriefRoute.length}
+                </div>
+                <button
+                  onClick={() => debriefIndex < debriefRoute.length - 1 && flyToDebriefStop(debriefIndex + 1)}
+                  disabled={debriefIndex === debriefRoute.length - 1}
+                  className={`w-12 h-12 flex items-center justify-center border-2 transition-all active:scale-[0.95] ${
+                    debriefIndex === debriefRoute.length - 1
+                      ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#b5bcc4] dark:border-[#3a3a3a] text-white/50 cursor-not-allowed'
+                      : 'bg-white dark:bg-[#202020] border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#4a4a4a]'
+                  }`}
+                  aria-label="Next stop"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            )}
+
+            {/* Debrief Distance Counter */}
+            {isDebriefMode && (
+              <div className="absolute bottom-6 right-4 z-20">
+                <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] px-4 py-2">
+                  <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] font-mono uppercase tracking-wider mb-0.5">
+                    Distance Traveled
+                  </div>
+                  <div className="text-lg font-bold font-mono dark:text-[#e5e5e5] tabular-nums">
+                    {formatDistance(debriefDistance, 1)}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

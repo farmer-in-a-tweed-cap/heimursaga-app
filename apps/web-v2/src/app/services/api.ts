@@ -725,8 +725,8 @@ export interface ExpeditionCreatePayload {
   region?: string;
   tags?: string[];
   isRoundTrip?: boolean;
-  routeMode?: string;
-  routeGeometry?: number[][];
+  routeMode?: string | null;
+  routeGeometry?: number[][] | null;
 }
 
 // Expedition Note types
@@ -792,13 +792,13 @@ export const expeditionApi = {
   /**
    * Create a waypoint for an expedition
    */
-  createWaypoint: (expeditionId: string, payload: { title: string; lat: number; lon: number; date?: string; description?: string; sequence?: number }) =>
+  createWaypoint: (expeditionId: string, payload: { title: string; lat: number; lon: number; date?: string | null; description?: string; sequence?: number }) =>
     api.post<unknown>(`/trips/${expeditionId}/waypoints`, payload),
 
   /**
    * Update a waypoint
    */
-  updateWaypoint: (expeditionId: string, waypointId: string, payload: { title?: string; lat?: number; lon?: number; date?: string; description?: string; sequence?: number }) =>
+  updateWaypoint: (expeditionId: string, waypointId: string, payload: { title?: string; lat?: number; lon?: number; date?: string | null; description?: string; sequence?: number }) =>
     api.put<unknown>(`/trips/${expeditionId}/waypoints/${waypointId}`, payload),
 
   /**

@@ -9,7 +9,7 @@ import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationMap } from '@/app/components/LocationMap';
 import { X, Image as ImageIcon, Clock, Lock, Camera, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
-import { entryApi, uploadApi, Entry } from '@/app/services/api';
+import { entryApi, expeditionApi, uploadApi, Entry, type Expedition } from '@/app/services/api';
 import { useContentValidation } from '@/app/hooks/useContentValidation';
 import { checkImageExif, type ExifResult } from '@/app/utils/exifCheck';
 
@@ -61,6 +61,9 @@ export function EditEntryPage() {
   const lastSavedContentRef = useRef<string>('');
   const isAutoSavingRef = useRef(false);
   const isSubmittingRef = useRef(false);
+
+  // Full expedition data for LocationMap context
+  const [fullExpedition, setFullExpedition] = useState<Expedition | null>(null);
 
   // Allowed image types for upload
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -224,6 +227,24 @@ export function EditEntryPage() {
 
     fetchEntry();
   }, [entryId]);
+
+  // Fetch full expedition data for LocationMap context
+  useEffect(() => {
+    const expId = apiEntry?.trip?.id || apiEntry?.expedition?.id || apiEntry?.expedition?.publicId;
+    if (!expId) return;
+
+    let cancelled = false;
+    const fetchExpedition = async () => {
+      try {
+        const data = await expeditionApi.getById(expId);
+        if (!cancelled) setFullExpedition(data);
+      } catch {
+        // Silent fail - expedition context is optional for the map
+      }
+    };
+    fetchExpedition();
+    return () => { cancelled = true; };
+  }, [apiEntry?.trip?.id, apiEntry?.expedition?.id, apiEntry?.expedition?.publicId]);
 
   // Word count function
   const countWords = (text: string): number => {
@@ -511,7 +532,14 @@ export function EditEntryPage() {
                       className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                       value={entryDate}
                       onChange={(e) => setEntryDate(e.target.value)}
+                      min={fullExpedition?.startDate ? new Date(fullExpedition.startDate).toISOString().split('T')[0] : undefined}
+                      max={fullExpedition?.endDate ? new Date(fullExpedition.endDate).toISOString().split('T')[0] : undefined}
                     />
+                    {fullExpedition?.startDate && fullExpedition?.endDate && (
+                      <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
+                        {new Date(fullExpedition.startDate).toISOString().split('T')[0]} — {new Date(fullExpedition.endDate).toISOString().split('T')[0]}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <input
@@ -1123,11 +1151,26 @@ Remember: Your sponsors and followers are reading this to understand your journe
               </button>
             </div>
             <LocationMap
+              initialLat={coordinates?.lat}
+              initialLng={coordinates?.lng}
               onLocationSelect={(lat, lng) => {
                 setCoordinates({ lat, lng });
                 setShowMap(false);
               }}
               onClose={() => setShowMap(false)}
+              expeditionWaypoints={fullExpedition?.waypoints?.map((wp, idx) => ({
+                lat: wp.lat || 0,
+                lng: wp.lon || 0,
+                title: wp.title || `Waypoint ${idx + 1}`,
+                type: idx === 0 ? 'start' as const : (idx === (fullExpedition?.waypoints?.length || 0) - 1 ? 'end' as const : 'standard' as const),
+              }))}
+              expeditionEntries={fullExpedition?.entries?.filter(e => e.lat && e.lon).map(e => ({
+                lat: e.lat!,
+                lng: e.lon!,
+                title: e.title,
+              }))}
+              expeditionRouteGeometry={fullExpedition?.routeGeometry}
+              isRoundTrip={fullExpedition?.isRoundTrip}
             />
           </div>
         </div>

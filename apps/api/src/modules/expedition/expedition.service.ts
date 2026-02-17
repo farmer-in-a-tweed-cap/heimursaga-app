@@ -1383,8 +1383,8 @@ export class ExpeditionService {
 
       // create a waypoint
       const { title, lat, lon, date, description, sequence } = payload;
-      // Ensure date is a proper ISO-8601 DateTime (date comes in as string from DTO)
-      const dateTime = date ? new Date(date as unknown as string) : undefined;
+      // Convert date: string → Date, null → null (no date), undefined → undefined (Prisma skips)
+      const dateTime = date ? new Date(date as unknown as string) : (date === null ? null : undefined);
       await this.prisma.expeditionWaypoint.create({
         data: {
           sequence: sequence ?? 0,
@@ -1456,8 +1456,8 @@ export class ExpeditionService {
 
       // update the waypoint
       const { title, lat, lon, date, description, sequence } = payload;
-      // Ensure date is a proper ISO-8601 DateTime (date comes in as string from DTO)
-      const dateTime = date ? new Date(date as unknown as string) : undefined;
+      // Convert date: string → Date, null → null (clear date), undefined → undefined (Prisma skips)
+      const dateTime = date ? new Date(date as unknown as string) : (date === null ? null : undefined);
       await this.prisma.waypoint.update({
         where: { id: waypoint.id },
         data: {

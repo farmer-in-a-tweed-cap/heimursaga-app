@@ -4,8 +4,9 @@
  * Use formatDate() for most displays (just date, no time)
  * Use formatDateTime() only in dedicated detail/info cards where time is needed
  *
- * Note: Database stores dates in UTC. These functions display dates in the user's
- * local timezone for better UX while maintaining data consistency.
+ * Note: Database stores dates at UTC midnight. Calendar dates (waypoint dates,
+ * entry dates, expedition dates) are displayed in UTC to prevent off-by-one day
+ * shifts for users in negative UTC offsets.
  */
 
 /**
@@ -40,6 +41,7 @@ export function formatDate(date: string | Date | undefined | null): string {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   });
 }
 
@@ -59,6 +61,7 @@ export function formatShortDate(date: string | Date | undefined | null): string 
   return d.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
+    timeZone: 'UTC',
   });
 }
 
@@ -149,8 +152,8 @@ export function formatDateWithOptionalTime(date: string | Date | undefined | nul
   // Check for invalid date
   if (isNaN(d.getTime())) return '';
 
-  // Check if time is midnight (00:00:00) - indicates no specific time was logged
-  const hasSpecificTime = d.getHours() !== 0 || d.getMinutes() !== 0 || d.getSeconds() !== 0;
+  // Check if time is midnight UTC (00:00:00) - indicates no specific time was logged
+  const hasSpecificTime = d.getUTCHours() !== 0 || d.getUTCMinutes() !== 0 || d.getUTCSeconds() !== 0;
 
   if (hasSpecificTime) {
     return d.toLocaleString('en-US', {
@@ -160,6 +163,7 @@ export function formatDateWithOptionalTime(date: string | Date | undefined | nul
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
+      timeZone: 'UTC',
     });
   }
 
@@ -167,6 +171,7 @@ export function formatDateWithOptionalTime(date: string | Date | undefined | nul
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: 'UTC',
   });
 }
 

@@ -821,7 +821,14 @@ export function CreateEntryPage() {
                       className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                       value={entryDate}
                       onChange={(e) => setEntryDate(e.target.value)}
+                      min={expedition?.startDate ? new Date(expedition.startDate).toISOString().split('T')[0] : undefined}
+                      max={expedition?.endDate ? new Date(expedition.endDate).toISOString().split('T')[0] : undefined}
                     />
+                    {expedition?.startDate && expedition?.endDate && (
+                      <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
+                        {new Date(expedition.startDate).toISOString().split('T')[0]} — {new Date(expedition.endDate).toISOString().split('T')[0]}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
@@ -1766,6 +1773,19 @@ Examples:
             // Don't close modal here - user must click CONFIRM LOCATION
           }}
           onClose={() => setShowMap(false)}
+          expeditionWaypoints={expedition?.waypoints?.map((wp, idx) => ({
+            lat: wp.lat || 0,
+            lng: wp.lon || 0,
+            title: wp.title || `Waypoint ${idx + 1}`,
+            type: idx === 0 ? 'start' as const : (idx === (expedition?.waypoints?.length || 0) - 1 ? 'end' as const : 'standard' as const),
+          }))}
+          expeditionEntries={expedition?.entries?.filter(e => e.lat && e.lon).map(e => ({
+            lat: e.lat!,
+            lng: e.lon!,
+            title: e.title,
+          }))}
+          expeditionRouteGeometry={expedition?.routeGeometry}
+          isRoundTrip={expedition?.isRoundTrip}
         />
       )}
 
