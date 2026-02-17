@@ -73,7 +73,7 @@ export function TermsOfServicePage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[#ac6d46] mt-1">•</span>
-              <span><strong>Explorer Pro ($12/month):</strong> All Explorer features plus the ability to receive sponsorships for your expeditions.</span>
+              <span><strong>Explorer Pro ($7/month):</strong> All Explorer features plus the ability to receive sponsorships for your expeditions.</span>
             </li>
           </ul>
 

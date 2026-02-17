@@ -5,7 +5,7 @@ import { JournalEntryPage } from '@/app/pages/JournalEntryPage';
 export async function generateMetadata({ params }: { params: Promise<{ entryId: string }> }): Promise<Metadata> {
   const { entryId } = await params;
   const entry = await getEntry(entryId);
-  if (!entry) return { title: 'Entry Not Found' };
+  if (!entry) return { title: 'Journal Entry | Heimursaga' };
   return {
     title: entry.title,
     description: entry.body?.slice(0, 160) || 'Read this journal entry on Heimursaga.',

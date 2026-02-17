@@ -368,6 +368,7 @@ export interface ExplorerEntry {
   expedition?: {
     id: string;
     title: string;
+    status?: string;
     publicId?: string; // alias
   };
   author?: {
@@ -878,6 +879,7 @@ export interface Entry {
   trip?: {
     id: string;
     title: string;
+    status?: string;
     entriesCount?: number;
   };
   // Alias for compatibility
@@ -885,6 +887,7 @@ export interface Entry {
     id: string;
     publicId?: string;
     title: string;
+    status?: string;
     entriesCount?: number;
   };
   author?: {

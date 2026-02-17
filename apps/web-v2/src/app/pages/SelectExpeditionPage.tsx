@@ -215,7 +215,7 @@ export function SelectExpeditionPage() {
                         <span className="font-bold text-[#ac6d46]">{(((currentExpedition.raised || 0) / currentExpedition.goal) * 100).toFixed(1)}%</span>
                       </div>
                       <div className="h-2 bg-[#b5bcc4] dark:bg-[#3a3a3a] border border-[#616161]">
-                        <div className="h-full bg-[#ac6d46]" style={{ width: `${((currentExpedition.raised || 0) / currentExpedition.goal) * 100}%` }} />
+                        <div className="h-full bg-[#ac6d46]" style={{ width: `${Math.min(((currentExpedition.raised || 0) / currentExpedition.goal) * 100, 100)}%` }} />
                       </div>
                     </div>
                   )}

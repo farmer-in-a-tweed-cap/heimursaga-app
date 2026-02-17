@@ -237,6 +237,7 @@ export function JournalEntryPage() {
       expeditionTitle: expedition?.title || '',
       expeditionDay: api.expeditionDay || 1,
       expeditionTotalEntries: expedition?.entriesCount || 0,
+      expeditionStatus: expedition?.status || '',
       expeditionSponsorshipsEnabled: true, // Not in API yet
 
       location: api.place || 'Unknown location',
@@ -433,6 +434,7 @@ export function JournalEntryPage() {
                   type="entry"
                   itemId={entry.id}
                   expeditionId={entry.expeditionId}
+                  expeditionStatus={entry.expeditionStatus}
                   sponsorshipsEnabled={entry.expeditionSponsorshipsEnabled}
                   explorerIsPro={true}
                   initialBookmarks={entry.reactions.bookmark}

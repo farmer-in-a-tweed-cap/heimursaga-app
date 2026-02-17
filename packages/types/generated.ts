@@ -329,6 +329,7 @@ export interface IPostDetail {
   trip?: {
     id: string;
     title: string;
+    status?: string;
     entriesCount?: number;
     visibility?: 'public' | 'off-grid' | 'private';
   };

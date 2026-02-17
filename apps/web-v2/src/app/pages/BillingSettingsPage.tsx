@@ -234,7 +234,7 @@ export function BillingSettingsPage() {
                       href="/upgrade"
                       className="w-full px-4 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all flex items-center justify-center gap-2"
                     >
-                      UPGRADE TO PRO - $29/MONTH
+                      UPGRADE TO PRO - $7/MONTH
                       <ArrowUpRight className="w-4 h-4" />
                     </Link>
                   </div>
@@ -270,7 +270,7 @@ export function BillingSettingsPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-2xl font-bold whitespace-nowrap dark:text-[#e5e5e5]">$29/mo</div>
+                    <div className="text-2xl font-bold whitespace-nowrap dark:text-[#e5e5e5]">$7/mo</div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a] text-xs">

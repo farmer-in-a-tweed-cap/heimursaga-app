@@ -49,6 +49,9 @@ export function DocumentationPage() {
           <a href="#interactions" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Interactions
           </a>
+          <a href="#content-policy" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
+            → Content Policy
+          </a>
           <a href="#settings" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Settings & Privacy
           </a>
@@ -70,9 +73,10 @@ export function DocumentationPage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">What is Heimursaga?</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Heimursaga is a journaling and sponsorship platform designed specifically for explorers, travelers, and adventurers. 
-                The platform enables you to document your journeys through detailed entries, organize expeditions, share your experiences 
-                with followers, and receive financial sponsorships to support your explorations.
+                Heimursaga is a journaling and sponsorship platform designed specifically for explorers, travelers, and adventurers.
+                The platform enables you to document your journeys through detailed entries, organize expeditions, share your experiences
+                with followers, and receive financial sponsorships to support your explorations. Heimursaga enforces a strict no-AI policy — all
+                content must be human-created. AI-generated text, images, and media are prohibited.
               </p>
             </div>
             <div>
@@ -139,7 +143,7 @@ export function DocumentationPage() {
               {/* Explorer Pro */}
               <div className="border-2 border-[#4676ac] dark:border-[#4676ac] p-4 bg-[#f8f9fa] dark:bg-[#2a2a2a]">
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-[#202020] dark:text-white text-lg">Explorer Pro ($12/month)</h3>
+                  <h3 className="font-bold text-[#202020] dark:text-white text-lg">Explorer Pro ($7/month)</h3>
                   <span className="px-2 py-1 bg-[#4676ac] text-white text-xs font-bold">PRO</span>
                 </div>
                 <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3 italic">
@@ -268,7 +272,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">6.</span>
-                  <span><strong>Publish:</strong> Choose visibility (public/private) and publish</span>
+                  <span><strong>Publish:</strong> Choose visibility (public/off-grid/private) and publish</span>
                 </li>
               </ol>
             </div>
@@ -629,6 +633,55 @@ export function DocumentationPage() {
           </div>
         </section>
 
+        {/* Content Policy */}
+        <section id="content-policy" className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+          <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
+            <Shield className="w-5 h-5" />
+            <h2 className="text-lg font-bold">CONTENT POLICY</h2>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">No AI Content</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                Heimursaga strictly prohibits AI-generated content of any kind. All text, images, and media must be
+                human-created. Entries are screened for AI-generated patterns, and violations result in content removal.
+                Stock photos, AI-enhanced images, and promotional content disguised as journal entries are also prohibited.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Visibility Levels</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Expeditions and entries support three visibility levels:
+              </p>
+              <div className="space-y-2 text-sm font-mono">
+                <div className="flex items-center gap-3 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                  <span className="text-[#ac6d46] font-bold w-24">PUBLIC</span>
+                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible to everyone, including unauthenticated visitors</span>
+                </div>
+                <div className="flex items-center gap-3 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                  <span className="text-[#ac6d46] font-bold w-24">OFF-GRID</span>
+                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible only to authenticated, logged-in explorers</span>
+                </div>
+                <div className="flex items-center gap-3 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                  <span className="text-[#ac6d46] font-bold w-24">PRIVATE</span>
+                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible only to you</span>
+                </div>
+              </div>
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mt-2">
+                Entry visibility is inherited from the parent expedition. You can also set visibility per-entry when needed.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Sensitive Locations</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Entries become part of a permanent geographic record. Use off-grid visibility or omit precise coordinates
+                when documenting endangered species habitats, archaeological sites vulnerable to looting, sacred or culturally
+                restricted sites, and fragile ecosystems that would be harmed by increased traffic.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Settings & Privacy */}
         <section id="settings" className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
           <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
@@ -692,7 +745,7 @@ export function DocumentationPage() {
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span><strong>Dark Mode:</strong> Toggle between light and dark themes</span>
+                  <span><strong>Theme:</strong> Light, dark, or system (auto-match your OS preference)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
@@ -797,12 +850,12 @@ export function DocumentationPage() {
           Can't find what you're looking for? Contact our support team.
         </p>
         <div className="flex justify-center gap-3">
-          <a
-            href="#"
+          <Link
+            href="/contact"
             className="px-6 py-3 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-sm font-bold"
           >
             CONTACT SUPPORT
-          </a>
+          </Link>
           <Link
             href="/settings"
             className="px-6 py-3 border-2 border-white text-white hover:bg-white hover:text-[#202020] transition-all text-sm font-bold"

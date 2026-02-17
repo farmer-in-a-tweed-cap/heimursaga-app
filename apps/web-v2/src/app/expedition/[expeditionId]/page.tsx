@@ -5,7 +5,7 @@ import { ExpeditionDetailPage } from '@/app/pages/ExpeditionDetailPage';
 export async function generateMetadata({ params }: { params: Promise<{ expeditionId: string }> }): Promise<Metadata> {
   const { expeditionId } = await params;
   const expedition = await getExpedition(expeditionId);
-  if (!expedition) return { title: 'Expedition Not Found' };
+  if (!expedition) return { title: 'Expedition | Heimursaga' };
   return {
     title: expedition.title,
     description: expedition.description?.slice(0, 160) || 'Follow this expedition on Heimursaga.',

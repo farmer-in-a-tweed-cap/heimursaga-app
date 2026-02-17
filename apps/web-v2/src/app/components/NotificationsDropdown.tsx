@@ -98,6 +98,11 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
         title: 'Expedition Completed',
         message: apiNotif.body || ''
       };
+    case 'expedition_off_grid':
+      return {
+        title: 'Expedition Off-Grid',
+        message: apiNotif.body || ''
+      };
     case 'sponsorship_milestone':
       return {
         title: 'Funding Milestone',
@@ -208,6 +213,8 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
       } else {
         target = `/journal/${notification.actor}`;
       }
+    } else if (notification.type === 'expedition_off_grid') {
+      target = '/sponsorship';
     } else if (notification.metadata?.postId) {
       target = `/entry/${notification.metadata.postId}`;
     }

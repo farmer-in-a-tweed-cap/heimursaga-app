@@ -385,7 +385,7 @@ export function CreateEntryPage() {
   };
 
   const wordCount = getWordCount();
-  const isWordCountValid = entryType === 'waypoint' || (wordCount >= 100 && wordCount <= 1000);
+  const isWordCountValid = entryType === 'waypoint' || (wordCount >= 200 && wordCount <= 2000);
 
   // Calculate days active
   const calculateDaysActive = (startDate?: string): number => {
@@ -964,16 +964,16 @@ Remember: Your sponsors and followers are reading this to understand your journe
                       onBlur={() => contentValidationActions.checkAiPhrases(standardContent)}
                     />
                     <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
-                      <span className={wordCount < 100 || wordCount > 1000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
-                        Word count: {wordCount} / 10,000 {wordCount > 0 && wordCount < 100 && `(Minimum: 100)`} {wordCount > 1000 && `(Maximum: 1,000)`}
+                      <span className={wordCount < 200 || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
+                        Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < 200 && `(Minimum: 200)`} {wordCount > 2000 && `(Maximum: 2,000)`}
                       </span>
                       <span>Character count: {standardContent.length} / 50,000</span>
                     </div>
-                    {wordCount > 0 && (wordCount < 100 || wordCount > 1000) && (
+                    {wordCount > 0 && (wordCount < 200 || wordCount > 2000) && (
                       <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
                         <div className="font-bold mb-1">WORD COUNT REQUIREMENT:</div>
-                        {wordCount < 100 && <div>• Your entry must be at least 100 words. Current: {wordCount} words ({100 - wordCount} more needed)</div>}
-                        {wordCount > 1000 && <div>• Your entry must not exceed 1,000 words. Current: {wordCount} words ({wordCount - 1000} over limit)</div>}
+                        {wordCount < 200 && <div>• Your entry must be at least 200 words. Current: {wordCount} words ({200 - wordCount} more needed)</div>}
+                        {wordCount > 2000 && <div>• Your entry must not exceed 2,000 words. Current: {wordCount} words ({wordCount - 2000} over limit)</div>}
                       </div>
                     )}
 
@@ -1261,16 +1261,16 @@ Individual photo captions can be added after upload.`}
                       onChange={(e) => setPhotoEssayContent(e.target.value)}
                     />
                     <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
-                      <span className={wordCount < 100 || wordCount > 1000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
-                        Word count: {wordCount} / 3,000 {wordCount > 0 && wordCount < 100 && `(Minimum: 100)`} {wordCount > 1000 && `(Maximum: 1,000)`}
+                      <span className={wordCount < 200 || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
+                        Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < 200 && `(Minimum: 200)`} {wordCount > 2000 && `(Maximum: 2,000)`}
                       </span>
                       <span>Character count: {photoEssayContent.length} / 15,000</span>
                     </div>
-                    {wordCount > 0 && (wordCount < 100 || wordCount > 1000) && (
+                    {wordCount > 0 && (wordCount < 200 || wordCount > 2000) && (
                       <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
                         <div className="font-bold mb-1">WORD COUNT REQUIREMENT:</div>
-                        {wordCount < 100 && <div>• Your entry must be at least 100 words. Current: {wordCount} words ({100 - wordCount} more needed)</div>}
-                        {wordCount > 1000 && <div>• Your entry must not exceed 1,000 words. Current: {wordCount} words ({wordCount - 1000} over limit)</div>}
+                        {wordCount < 200 && <div>• Your entry must be at least 200 words. Current: {wordCount} words ({200 - wordCount} more needed)</div>}
+                        {wordCount > 2000 && <div>• Your entry must not exceed 2,000 words. Current: {wordCount} words ({wordCount - 2000} over limit)</div>}
                       </div>
                     )}
                   </div>
@@ -1381,16 +1381,16 @@ Include:
                       onChange={(e) => setDataLogContent(e.target.value)}
                     />
                     <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
-                      <span className={wordCount < 100 || wordCount > 1000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
-                        Word count: {wordCount} / 5,000 {wordCount > 0 && wordCount < 100 && `(Minimum: 100)`} {wordCount > 1000 && `(Maximum: 1,000)`}
+                      <span className={wordCount < 200 || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
+                        Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < 200 && `(Minimum: 200)`} {wordCount > 2000 && `(Maximum: 2,000)`}
                       </span>
                       <span>Character count: {dataLogContent.length} / 25,000</span>
                     </div>
-                    {wordCount > 0 && (wordCount < 100 || wordCount > 1000) && (
+                    {wordCount > 0 && (wordCount < 200 || wordCount > 2000) && (
                       <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
                         <div className="font-bold mb-1">WORD COUNT REQUIREMENT:</div>
-                        {wordCount < 100 && <div>• Your entry must be at least 100 words. Current: {wordCount} words ({100 - wordCount} more needed)</div>}
-                        {wordCount > 1000 && <div>• Your entry must not exceed 1,000 words. Current: {wordCount} words ({wordCount - 1000} over limit)</div>}
+                        {wordCount < 200 && <div>• Your entry must be at least 200 words. Current: {wordCount} words ({200 - wordCount} more needed)</div>}
+                        {wordCount > 2000 && <div>• Your entry must not exceed 2,000 words. Current: {wordCount} words ({wordCount - 2000} over limit)</div>}
                       </div>
                     )}
                   </div>

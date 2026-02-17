@@ -584,6 +584,7 @@ export class EntryService {
               id: entry.expedition.public_id,
               title: entry.expedition.title,
               visibility: entry.expedition.visibility as 'public' | 'off-grid' | 'private' | undefined,
+              status: entry.expedition.status,
               entriesCount: expeditionEntriesCount || 0,
             }
           : undefined,

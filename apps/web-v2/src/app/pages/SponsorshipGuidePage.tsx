@@ -104,7 +104,7 @@ export function SponsorshipGuidePage() {
                 to support other explorers.
               </p>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                <strong>Receiving Sponsorships:</strong> Only Explorer Pro accounts ($12/month) can enable sponsorships 
+                <strong>Receiving Sponsorships:</strong> Only Explorer Pro accounts ($7/month) can enable sponsorships 
                 on their expeditions and receive financial support from the community.
               </p>
             </div>
@@ -205,7 +205,7 @@ export function SponsorshipGuidePage() {
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">•</span>
-                  <span>Have an active Explorer Pro account ($12/month)</span>
+                  <span>Have an active Explorer Pro account ($7/month)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">•</span>
@@ -514,7 +514,7 @@ export function SponsorshipGuidePage() {
                 </li>
               </ul>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mt-3">
-                Individual sponsor amounts are private unless the sponsor chooses to make them public.
+                Sponsorship amounts are visible on the expedition sponsor board. Sponsors can choose to anonymize their name and/or message.
               </p>
             </div>
 
@@ -549,24 +549,24 @@ export function SponsorshipGuidePage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Platform Fee Structure</h3>
               <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac] p-4 mb-3">
                 <p className="text-sm text-[#202020] dark:text-[#e5e5e5] font-bold mb-2">
-                  Heimursaga Platform Fee: 10%
+                  Heimursaga Platform Fee: 5%
                 </p>
                 <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                  This fee covers payment processing, platform maintenance, hosting, security, and ongoing development. 
-                  90% of every sponsorship goes directly to the explorer.
+                  This fee covers platform maintenance, hosting, security, and ongoing development.
+                  95% of every sponsorship goes directly to the explorer.
                 </p>
               </div>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                <strong>Example:</strong> A $100 sponsorship sends $90 to the explorer and $10 to platform operations.
+                <strong>Example:</strong> A $100 sponsorship sends $95 to the explorer and $5 to platform operations.
               </p>
             </div>
 
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Stripe Processing Fees</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Stripe charges standard payment processing fees (typically 2.9% + $0.30 per transaction in the US, 
-                varies by region). These fees are included in the 10% platform fee—sponsors pay exactly what they 
-                intend to contribute with no hidden charges.
+                Stripe charges standard payment processing fees (typically 2.9% + $0.30 per transaction in the US,
+                varies by region). These are separate from the 5% platform fee and are deducted by Stripe during
+                payment processing.
               </p>
             </div>
 

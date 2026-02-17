@@ -329,7 +329,7 @@ export function ContactPage() {
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-4">
             You may find answers to common questions in our documentation:
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link
               href="/documentation"
               className="p-4 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#ac6d46] transition-all active:scale-[0.98]"
@@ -337,15 +337,6 @@ export function ContactPage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white text-sm">Platform Documentation</h3>
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
                 Complete guide to using Heimursaga features and functionality
-              </p>
-            </Link>
-            <Link
-              href="/explorer-guidelines"
-              className="p-4 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#ac6d46] transition-all active:scale-[0.98]"
-            >
-              <h3 className="font-bold mb-2 text-[#202020] dark:text-white text-sm">Explorer Guidelines</h3>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                Best practices for content creation and community engagement
               </p>
             </Link>
             <Link

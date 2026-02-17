@@ -1,4 +1,4 @@
-import { User, DollarSign, MessageSquare, FileText, Map, MapPin, Bell, Flag, Globe, Award } from "lucide-react";
+import { User, DollarSign, MessageSquare, FileText, Map, MapPin, Bell, Flag, Globe, Award, EyeOff } from "lucide-react";
 import { UserNotificationContext } from "@repo/types";
 
 type NotificationType = `${UserNotificationContext}`;
@@ -41,6 +41,8 @@ export function NotificationCardCompact({
         return <Map className="w-3.5 h-3.5" />;
       case "expedition_completed":
         return <MapPin className="w-3.5 h-3.5" />;
+      case "expedition_off_grid":
+        return <EyeOff className="w-3.5 h-3.5" />;
       case "passport_country":
         return <Flag className="w-3.5 h-3.5" />;
       case "passport_continent":
@@ -65,6 +67,7 @@ export function NotificationCardCompact({
         return "text-[#4676ac]";
       case "expedition_started":
       case "expedition_completed":
+      case "expedition_off_grid":
         return "text-[#616161] dark:text-[#b5bcc4]";
       case "passport_country":
       case "passport_continent":

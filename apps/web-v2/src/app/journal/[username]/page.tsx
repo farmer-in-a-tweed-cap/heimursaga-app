@@ -5,7 +5,7 @@ import { ExplorerProfilePage } from '@/app/pages/ExplorerProfilePage';
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
   const explorer = await getExplorerProfile(username);
-  if (!explorer) return { title: 'Explorer Not Found' };
+  if (!explorer) return { title: 'Explorer | Heimursaga' };
   return {
     title: explorer.displayName || explorer.username,
     description: explorer.bio?.slice(0, 160) || `Follow ${explorer.displayName || explorer.username}'s expeditions on Heimursaga.`,

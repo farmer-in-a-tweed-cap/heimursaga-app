@@ -21,38 +21,20 @@ export function AboutPage() {
 
         <div className="p-6">
           <p className="text-sm leading-relaxed mb-3">
-            Heimursaga (HAY-mur-sah-guh) — from Old Norse, roughly: "world-story." Humans have always explored. Before satellites and social feeds, before pitch decks and content calendars, there were journals. Scratched by lantern light on ships crossing oceans nobody had named. Pressed into leather-bound pages on the backs of camels tracing the Silk Road. Scrawled in moleskins on overnight trains rattling through countries that don't exist anymore. Those journal entries, those world-stories, some documenting monumental discoveries, some a mundane log of meals eaten for the day, some recounting wonders or horrors that were previously only legend, and some simple pleas for financial sponsorship, those stories shaped the world and inspired the human race for millenia.
+            Heimursaga (HAY-mur-sah-guh), from Old Norse, roughly: "world-story." We humans are explorers and we always have been. Before satellites and social feeds, before pitch decks and content calendars, there were journals. Scratched by lantern light on ships crossing nameless oceans. Pressed into leather-bound pages on the backs of camels tracing the Silk Road. Scrawled in moleskins on overnight trains rattling through countries that no longer exist. Those journal entries—those world-stories—some documenting monumental discoveries, some a mundane log of meals eaten for the day, some recounting wonders or horrors that were previously only legend, and some simple pleas for financial sponsorship: those stories shaped the world and inspired the human race for millennia.
+          </p>
+          <p className="text-sm leading-relaxed text-[#b5bcc4] mb-3">
+            The impulse to go, to see, to write it down hasn't changed. But we no longer send letters by horseback or present travel journals to kings. The digital age means we can share our stories with anyone and everyone in an instant. But social media buries authentic travel documentation under AI-generated slop and algorithmic noise. Crowdfunding sites treat expeditions like marketing campaigns. No platform has ever been built from the ground up for explorers only. Not until we built Heimursaga.
+          </p>
+          <p className="text-sm leading-relaxed text-[#b5bcc4] mb-3">
+            Write geo-tagged journal entries. Organize them by expedition. Earn sustainable income through one-time donations toward specific trips or monthly subscriptions across your entire career. Every feature, every constraint, every design decision is shaped by how exploration actually works: the planning, the movement, the documentation, the rest between journeys. All of it, in one place.
+          </p>
+          <p className="text-sm leading-relaxed text-[#b5bcc4] mb-3">
+            We enforce a strict no-AI policy and screen out bots, ensuring Heimursaga remains a space where real people document real journeys and supporters connect directly with the explorers whose work they value. No more getting lost in a sea of human and AI content creators.
           </p>
           <p className="text-sm leading-relaxed text-[#b5bcc4]">
-            That impulse — to go, to see, to write it down — hasn't changed. But the means of sharing those stories has. The digitial age enabled the platforms and potential to inspire nearly every person on the planet almost simultaneously, but now the social media giants and algorithmic feeds bury authentic travel documentation under AI-generated slop and fleeting trends. Crowdfunding sites treat expeditions like marketing campaigns. No social media or fundraising platform has ever been built, from the ground up, for explorers only. Until now. Heimursaga is a journaling and fundraising platform — the first designed specifically for the world's explorers and the people who support them.
+            Explore. Discover. Share. Sponsor. Inspire. That's it. That's the whole idea.
           </p>
-        </div>
-      </div>
-
-      {/* Vision Section */}
-      <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
-        <div className="bg-[#4676ac] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161]">
-          <h2 className="text-xl font-bold">WHY THIS EXISTS</h2>
-        </div>
-
-        <div className="p-6">
-          <div className="space-y-4 text-sm leading-relaxed">
-            <p className="dark:text-[#e5e5e5]">
-              Explorers and travelers have always had to split themselves across platforms that weren't built for them. Social media for the audience. Crowdfunding sites for the money. Blogs for the long-form writing nobody sees. None of them understand what an expedition actually is — the planning, the movement, the documentation, the rest between journeys. None of them let you do all of it in one place.
-            </p>
-
-            <p className="text-[#616161] dark:text-[#b5bcc4]">
-              Heimursaga does. Write geo-tagged journal entries. Organize them by expedition. Earn sustainable income through one-time donations toward specific trips or monthly subscriptions across your entire career. This isn't a generic crowdfunding platform with a travel category bolted on. It's built by explorers, for explorers — every feature, every constraint, every design decision shaped by how exploration actually works.
-            </p>
-
-            <p className="text-[#616161] dark:text-[#b5bcc4]">
-              And in an era where social feeds are increasingly swamped with AI-generated content and algorithmic noise, Heimursaga is meant to be the antidote. We strictly screen out bots and all forms of AI-generated content which ensures that Heimursaga remains a dedicated space where real people document real journeys, and supporters connect directly with the explorers whose work they value. No intermediary algorithms. No filtering out the noise. This is about the explorers, the ones <i>out there</i> seeing and experiencing the world.
-            </p>
-
-            <p className="dark:text-[#e5e5e5]">
-              Explore. Discover. Share. Sponsor. Inspire. That's it. That's the whole idea.
-            </p>
-          </div>
         </div>
       </div>
 
@@ -94,7 +76,7 @@ export function AboutPage() {
                                       <span className="font-bold text-black dark:text-white">JOURNAL ENTRY</span> <span className="text-[#616161]">(Many per Expedition)</span>
                                       <div className="ml-4 mt-1 space-y-1">
                                         <div>• Geo-tagged with coordinates</div>
-                                        <div>• Visibility: PUBLIC | SPONSORS_ONLY | PRIVATE</div>
+                                        <div>• Visibility: PUBLIC | OFF-GRID | PRIVATE</div>
                                         <div>• Media: Up to 10 images per entry</div>
                                         <div>• Timestamps: Created, Published, Modified (all tracked)</div>
                                       </div>
@@ -632,6 +614,10 @@ export function AboutPage() {
             <h4 className="font-bold mb-3 dark:text-[#e5e5e5]">CONTENT LIMITS & CONSTRAINTS</h4>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-mono">
               <div className="border border-[#616161] p-3">
+                <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Journal Entry Length</div>
+                <div className="text-lg font-bold dark:text-[#e5e5e5]">200-2,000 words</div>
+              </div>
+              <div className="border border-[#616161] p-3">
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Images per Entry</div>
                 <div className="text-lg font-bold dark:text-[#e5e5e5]">10 max</div>
               </div>
@@ -686,7 +672,7 @@ export function AboutPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-4xl font-bold mb-4">START YOUR JOURNEY</h2>
           <p className="text-lg leading-relaxed mb-6 max-w-2xl mx-auto">
-            Every place has a story. Every journey deserves documentation. Every explorer deserves sustainable support. Build your exploration career on a platform designed for the long haul—not just the next viral post.
+            Every place has a story. Every journey deserves documentation. Every explorer deserves sustainable support. Build your exploration career on a platform designed for the long haul, not just the next viral post.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Link
@@ -704,7 +690,7 @@ export function AboutPage() {
           </div>
           <div className="border-t-2 border-white/30 pt-6 mt-6">
             <p className="text-sm text-[#b5bcc4] italic">
-              "We shall not cease from exploration, and the end of all our exploring will be to arrive where we started and know the place for the first time." — T.S. Eliot
+              "We shall not cease from exploration, and the end of all our exploring will be to arrive where we started and know the place for the first time." - T.S. Eliot
             </p>
           </div>
         </div>

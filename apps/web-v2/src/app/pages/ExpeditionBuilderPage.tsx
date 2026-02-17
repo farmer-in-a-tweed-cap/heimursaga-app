@@ -1180,11 +1180,19 @@ export function ExpeditionBuilderPage() {
       <div className="mb-4 text-xs text-[#b5bcc4] font-mono">
         <Link href="/" className="hover:text-[#ac6d46]">HOME</Link>
         {' > '}
-        <Link href="/select-expedition" className="hover:text-[#ac6d46]">SELECT EXPEDITION</Link>
-        {' > '}
-        <span className="text-[#e5e5e5]">
-          {isEditMode ? `EDIT: ${expeditionData.title || 'EXPEDITION'}` : 'CREATE NEW EXPEDITION'}
-        </span>
+        {isEditMode ? (
+          <>
+            <Link href={`/expedition/${expeditionId}`} className="hover:text-[#ac6d46]">{expeditionData.title || 'EXPEDITION'}</Link>
+            {' > '}
+            <span className="text-[#e5e5e5]">EDIT DETAILS & WAYPOINTS</span>
+          </>
+        ) : (
+          <>
+            <Link href="/select-expedition" className="hover:text-[#ac6d46]">SELECT EXPEDITION</Link>
+            {' > '}
+            <span className="text-[#e5e5e5]">CREATE NEW EXPEDITION</span>
+          </>
+        )}
       </div>
 
       {/* Page Header */}
@@ -1452,10 +1460,10 @@ export function ExpeditionBuilderPage() {
                       USE QUICK ENTRY INSTEAD
                     </Link>
                     <Link
-                      href="/select-expedition"
+                      href={isEditMode ? `/expedition/${expeditionId}` : '/select-expedition'}
                       className="flex-1 px-4 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs md:text-sm font-bold text-center"
                     >
-                      BACK TO SELECTION
+                      {isEditMode ? 'BACK TO EXPEDITION' : 'BACK TO SELECTION'}
                     </Link>
                   </div>
                 </div>
@@ -2167,10 +2175,10 @@ export function ExpeditionBuilderPage() {
             Expedition builder v1.0 • Route: {routeMode === 'straight' ? 'Haversine (straight-line)' : `Mapbox Directions (${routeMode})`} • {waypoints.length} waypoints defined
           </div>
           <Link
-            href="/select-expedition"
+            href={isEditMode ? `/expedition/${expeditionId}` : '/select-expedition'}
             className="text-xs text-[#4676ac] hover:underline font-bold"
           >
-            ← CANCEL AND RETURN TO SELECTION
+            {isEditMode ? '← BACK TO EXPEDITION' : '← CANCEL AND RETURN TO SELECTION'}
           </Link>
         </div>
       </div>
