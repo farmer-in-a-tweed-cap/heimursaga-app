@@ -5,10 +5,11 @@ interface LocationReference {
   id: string;
 }
 
-interface ResolvedLocation {
+export interface ResolvedLocation {
   lat: number;
   lon: number;
   name: string;
+  countryCode?: string;
 }
 
 /**
@@ -58,7 +59,7 @@ export async function resolveExpeditionLocations(
   if (entryPublicIds.length > 0) {
     const entries = await prisma.entry.findMany({
       where: { public_id: { in: entryPublicIds }, deleted_at: null },
-      select: { public_id: true, lat: true, lon: true, place: true },
+      select: { public_id: true, lat: true, lon: true, place: true, country_code: true },
     });
     for (const entry of entries) {
       if (entry.lat != null && entry.lon != null) {
@@ -66,6 +67,7 @@ export async function resolveExpeditionLocations(
           lat: entry.lat,
           lon: entry.lon,
           name: entry.place || 'Entry location',
+          countryCode: entry.country_code || undefined,
         });
       }
     }

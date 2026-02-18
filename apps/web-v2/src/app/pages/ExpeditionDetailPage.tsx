@@ -16,7 +16,7 @@ import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { ExpeditionNotes } from '@/app/components/ExpeditionNotes';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
-import { expeditionApi, explorerApi, entryApi, type Expedition, type ExpeditionNote } from '@/app/services/api';
+import { expeditionApi, explorerApi, entryApi, weatherApi, type Expedition, type ExpeditionNote, type ExpeditionCondition } from '@/app/services/api';
 import { formatDate, formatDateTime, formatShortDate } from '@/app/utils/dateFormat';
 
 // Mapbox configuration - token loaded from environment variable
@@ -142,6 +142,10 @@ export function ExpeditionDetailPage() {
   // Sponsors leaderboard state
   const [sponsors, setSponsors] = useState<any[]>([]);
   // sponsorsLoading no longer needed - sponsors come from expedition API
+
+  // Weather conditions state
+  const [weatherCondition, setWeatherCondition] = useState<ExpeditionCondition | null>(null);
+  const [weatherLocalTime, setWeatherLocalTime] = useState<string>('');
 
   // Handle follow/unfollow explorer
   const handleFollowExplorer = async (username: string) => {
@@ -269,6 +273,54 @@ export function ExpeditionDetailPage() {
       .sort((a, b) => b.totalContribution - a.totalContribution);
     setSponsors(sponsorsWithTotal);
   }, [apiExpedition]);
+
+  // Fetch weather conditions for this expedition
+  useEffect(() => {
+    if (!apiExpedition || apiExpedition.status !== 'active') return;
+    if (apiExpedition.currentLocationVisibility !== 'public') return;
+
+    let cancelled = false;
+
+    const fetchWeather = async () => {
+      try {
+        const result = await weatherApi.getConditions();
+        if (!cancelled) {
+          const match = result.conditions.find(
+            (c) => c.expeditionId === expeditionId,
+          );
+          setWeatherCondition(match || null);
+        }
+      } catch {
+        // Weather is supplementary — fail silently
+      }
+    };
+
+    fetchWeather();
+    return () => { cancelled = true; };
+  }, [apiExpedition, expeditionId]);
+
+  // Update local time display every 60s
+  useEffect(() => {
+    if (!weatherCondition?.timezone) return;
+
+    const updateTime = () => {
+      try {
+        const formatted = new Intl.DateTimeFormat('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+          timeZone: weatherCondition.timezone,
+        }).format(new Date());
+        setWeatherLocalTime(formatted);
+      } catch {
+        setWeatherLocalTime('');
+      }
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 60_000);
+    return () => clearInterval(interval);
+  }, [weatherCondition?.timezone]);
 
   // Transform API expedition data to match component format
   const transformApiExpedition = (api: Expedition) => {
@@ -2331,6 +2383,15 @@ export function ExpeditionDetailPage() {
             </div>
           </div>
 
+          {/* Current Weather Conditions — active expeditions with weather data */}
+          {weatherCondition && (
+            <WeatherCard
+              condition={weatherCondition}
+              localTime={weatherLocalTime}
+              formatDistance={formatDistance}
+            />
+          )}
+
           {/* Funding Breakdown - only show if sponsorships enabled */}
           {showSponsorshipSection && (
             <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
@@ -2819,6 +2880,65 @@ export function ExpeditionDetailPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function WeatherCard({
+  condition,
+  localTime,
+  formatDistance,
+}: {
+  condition: ExpeditionCondition;
+  localTime: string;
+  formatDistance: (km: number, decimals?: number) => string;
+}) {
+  const { unit } = useDistanceUnit();
+  const useMetric = unit === 'km';
+
+  const temp = useMetric ? condition.tempC : condition.tempF;
+  const feelsLike = useMetric ? condition.feelsLikeC : condition.feelsLikeF;
+  const tempUnit = useMetric ? '°C' : '°F';
+  const wind = useMetric ? condition.windKph : condition.windMph;
+  const windUnit = useMetric ? 'km/h' : 'mph';
+  const iconUrl = condition.conditionIcon.startsWith('//')
+    ? `https:${condition.conditionIcon}`
+    : condition.conditionIcon;
+
+  return (
+    <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
+      <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
+        CURRENT CONDITIONS
+      </h3>
+      <div className="text-xs font-mono space-y-2 text-[#616161] dark:text-[#b5bcc4]">
+        {/* Condition + Temp header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src={iconUrl} alt={condition.condition} className="w-8 h-8" />
+            <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{condition.condition}</span>
+          </div>
+          <span className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5]">
+            {temp.toFixed(1)}{tempUnit}
+          </span>
+        </div>
+        <div>Feels like {feelsLike.toFixed(1)}{tempUnit}</div>
+
+        <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2 space-y-1">
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Wind:</span> {wind.toFixed(0)} {windUnit} {condition.windDir}</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Humidity:</span> {condition.humidity}%</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">UV Index:</span> {condition.uvIndex}</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Visibility:</span> {formatDistance(condition.visibilityKm, 0)}</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Pressure:</span> {condition.pressureMb} mb</div>
+        </div>
+
+        <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2 space-y-1">
+          {localTime && (
+            <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Local Time:</span> {localTime}</div>
+          )}
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Timezone:</span> {condition.timezone}</div>
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Updated:</span> {condition.lastUpdated}</div>
+        </div>
+      </div>
     </div>
   );
 }

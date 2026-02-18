@@ -1331,6 +1331,72 @@ export class PaymentService {
     }
   }
 
+  async getSubscriptionStatus({ session }: ISessionQuery) {
+    try {
+      const { userId } = session;
+      if (!userId) throw new ServiceForbiddenException();
+
+      // Find the user's plan + linked subscription
+      const userPlan = await this.prisma.explorerPlan.findFirst({
+        where: { explorer_id: userId },
+        select: {
+          plan: { select: { slug: true } },
+          subscription: {
+            select: {
+              id: true,
+              public_id: true,
+              stripe_subscription_id: true,
+              period: true,
+              expiry: true,
+            },
+          },
+        },
+      });
+
+      if (!userPlan?.subscription) {
+        return { subscription: null };
+      }
+
+      const sub = userPlan.subscription;
+      let status: string = 'active';
+      let currentPeriodEnd: string | null = sub.expiry?.toISOString() ?? null;
+      let cancelAtPeriodEnd = false;
+
+      // If there's a Stripe subscription, fetch live status
+      if (sub.stripe_subscription_id) {
+        try {
+          const stripeSub = await this.stripeService.subscriptions.retrieve(
+            sub.stripe_subscription_id,
+          );
+          status = stripeSub.status;
+          currentPeriodEnd = new Date(
+            stripeSub.current_period_end * 1000,
+          ).toISOString();
+          cancelAtPeriodEnd = stripeSub.cancel_at_period_end;
+        } catch {
+          // Stripe subscription may have been deleted — fall back to local data
+          this.logger.warn(
+            `Could not retrieve Stripe subscription ${sub.stripe_subscription_id}`,
+          );
+        }
+      }
+
+      return {
+        subscription: {
+          id: sub.public_id,
+          planSlug: userPlan.plan.slug,
+          status,
+          currentPeriodEnd,
+          cancelAtPeriodEnd,
+        },
+      };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
   async downgradeSubscriptionPlan({ session }: ISessionQuery): Promise<void> {
     try {
       const { userId } = session;

@@ -26,6 +26,7 @@ import { SearchModule } from '@/modules/search';
 import { SponsorModule } from '@/modules/sponsor';
 import { StripeModule } from '@/modules/stripe';
 import { UploadModule } from '@/modules/upload';
+import { WeatherModule } from '@/modules/weather';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -78,6 +79,7 @@ import { AppService } from './app.service';
     NotificationModule,
     SearchModule,
     RecaptchaModule,
+    WeatherModule,
   ],
   controllers: [AppController],
   providers: [AppService],

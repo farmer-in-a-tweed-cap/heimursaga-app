@@ -136,6 +136,15 @@ export class PlansController {
 export class PlanController {
   constructor(private paymentService: PaymentService) {}
 
+  @Get('subscription')
+  @HttpCode(HttpStatus.OK)
+  async getSubscriptionStatus(@Session() session: ISession) {
+    return await this.paymentService.getSubscriptionStatus({
+      session,
+      query: {},
+    });
+  }
+
   @Post('upgrade/checkout')
   @HttpCode(HttpStatus.OK)
   async checkoutUpgrade(

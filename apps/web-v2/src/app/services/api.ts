@@ -182,6 +182,7 @@ export interface SessionUser {
   isPremium: boolean;
   stripeAccountConnected?: boolean;
   createdAt?: string;
+  activeExpedition?: { id: number; publicId: string; title: string } | null;
 }
 
 export interface LoginPayload {
@@ -1485,7 +1486,7 @@ export const planApi = {
    * Get current user's subscription status
    */
   getSubscription: () =>
-    api.get<{ subscription: SubscriptionStatus | null }>('/user/subscription'),
+    api.get<{ subscription: SubscriptionStatus | null }>('/plan/subscription'),
 
   /**
    * Start upgrade checkout flow (creates Stripe subscription with pending payment)
@@ -1503,7 +1504,7 @@ export const planApi = {
    * Cancel subscription (will remain active until period end)
    */
   cancelSubscription: () =>
-    api.post<{ success: boolean }>('/subscription/cancel'),
+    api.post<void>('/plan/downgrade'),
 
   /**
    * Validate a promo/coupon code
@@ -1984,6 +1985,66 @@ export const adminApi = {
 
   unblockExplorer: (username: string) =>
     api.post<void>(`/admin/explorers/${username}/unblock`),
+};
+
+// --- Weather / Live Conditions ---
+
+export interface ExpeditionCondition {
+  expeditionId: string;
+  expeditionTitle: string;
+  explorerUsername: string;
+  explorerPicture?: string;
+  category?: string;
+  region?: string;
+  locationName: string;
+  countryCode?: string;
+  lat: number;
+  lon: number;
+  localTime: string;
+  timezone: string;
+  tempC: number;
+  tempF: number;
+  feelsLikeC: number;
+  feelsLikeF: number;
+  condition: string;
+  conditionIcon: string;
+  windKph: number;
+  windMph: number;
+  windDir: string;
+  humidity: number;
+  uvIndex: number;
+  visibilityKm: number;
+  pressureMb: number;
+  lastUpdated: string;
+}
+
+export interface ConditionsResponse {
+  conditions: ExpeditionCondition[];
+  summary: {
+    activeExpeditions: number;
+    countries: number;
+    tempRangeC: { min: number; max: number };
+    tempRangeF: { min: number; max: number };
+  };
+  cachedAt: string;
+}
+
+export interface ActivityPulseResponse {
+  activeExplorers: number;
+  activeExpeditions: number;
+  newEntriesThisWeek: number;
+  newExpeditionsThisWeek: number;
+  totalDistanceKm: number;
+  countriesReached: number;
+  countryFlags: string[];
+  cachedAt: string;
+}
+
+export const weatherApi = {
+  getConditions: () =>
+    api.get<ConditionsResponse>('/weather/conditions'),
+  getStats: () =>
+    api.get<ActivityPulseResponse>('/weather/stats'),
 };
 
 export default api;

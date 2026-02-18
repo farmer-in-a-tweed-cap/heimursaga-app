@@ -94,6 +94,20 @@ export class AuthService {
       } = user;
       const { picture } = user?.profile || {};
 
+      // Check for an active expedition owned by this user
+      const activeExpedition = await this.prisma.expedition.findFirst({
+        where: {
+          author_id: userId,
+          status: 'active',
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+          public_id: true,
+          title: true,
+        },
+      });
+
       return {
         id,
         email,
@@ -105,6 +119,9 @@ export class AuthService {
         isPremium,
         stripeAccountConnected: isStripeAccountConnected,
         createdAt,
+        activeExpedition: activeExpedition
+          ? { id: activeExpedition.id, publicId: activeExpedition.public_id, title: activeExpedition.title }
+          : null,
       };
     } catch (e) {
       this.logger.error(e);

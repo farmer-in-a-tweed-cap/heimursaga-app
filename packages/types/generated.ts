@@ -51,6 +51,7 @@ export interface ISessionUser {
   isPremium: boolean;
   stripeAccountConnected?: boolean;
   createdAt?: Date;
+  activeExpedition?: { id: number; publicId: string; title: string } | null;
 }
 
 export interface ISessionUserGetResponse extends ISessionUser {}

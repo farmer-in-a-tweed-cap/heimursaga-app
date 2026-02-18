@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from '@/app/context/AuthContext';
 import { StripeProvider } from '@/app/context/StripeContext';
 import { ErrorBoundary } from '@/app/components/ErrorBoundary';
 import { Header } from '@/app/components/Header';
+import { ActiveExpeditionBanner } from '@/app/components/ActiveExpeditionBanner';
 import { Footer } from '@/app/components/Footer';
 import { WelcomeModal } from '@/app/components/WelcomeModal';
 import { usePathname } from 'next/navigation';
@@ -28,6 +29,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
       )}
 
       <div className="min-h-screen bg-[#404040] dark:bg-[#2a2a2a]">
+        <ActiveExpeditionBanner />
         <Header />
         <div className={isHomePage ? '' : 'pt-[15px]'}>
           {children}
