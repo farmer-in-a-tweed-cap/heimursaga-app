@@ -481,7 +481,7 @@ export const explorerApi = {
    * Get current user's profile settings (requires auth)
    */
   getProfileSettings: () =>
-    api.get<{ username?: string; email?: string; name?: string; bio?: string; from?: string; livesIn?: string; locationVisibility?: string; website?: string; twitter?: string; instagram?: string; youtube?: string; picture?: string; coverPhoto?: string; equipment?: string[] }>('/user/settings/profile'),
+    api.get<{ username?: string; email?: string; name?: string; bio?: string; from?: string; livesIn?: string; locationVisibility?: string; website?: string; twitter?: string; instagram?: string; youtube?: string; picture?: string; coverPhoto?: string; equipment?: string[]; notificationPreferences?: Record<string, boolean> }>('/user/settings/profile'),
 
   /**
    * Update current user's profile settings (requires auth)
@@ -495,6 +495,7 @@ export const explorerApi = {
     twitter?: string;
     instagram?: string;
     youtube?: string;
+    notificationPreferences?: Record<string, boolean>;
   }) =>
     api.put<void>('/user/settings/profile', payload),
 
@@ -605,6 +606,32 @@ export const explorerApi = {
    */
   getMyExpeditions: () =>
     api.get<{ data: ExplorerExpedition[]; results: number }>('/user/trips'),
+
+  /**
+   * Get current user's active sessions (requires auth)
+   */
+  getSessions: () =>
+    api.get<Array<{
+      id: number;
+      ipAddress?: string;
+      userAgent?: string;
+      device?: string;
+      createdAt?: string;
+      expiresAt?: string;
+      isCurrent: boolean;
+    }>>('/user/sessions'),
+
+  /**
+   * Revoke all other sessions (requires auth)
+   */
+  revokeAllSessions: () =>
+    api.post<{ message: string }>('/user/sessions/revoke-all'),
+
+  /**
+   * Revoke a specific session (requires auth)
+   */
+  revokeSession: (id: number) =>
+    api.post<{ message: string }>(`/user/sessions/${id}/revoke`),
 };
 
 // Expedition types matching API
@@ -865,9 +892,11 @@ export interface Entry {
   // Coordinates stored directly on entry (entries are distinct from waypoints)
   lat?: number;
   lon?: number;
+  countryCode?: string;
   // Stats
   mediaCount?: number;
   wordCount?: number;
+  viewsCount?: number;
   likesCount?: number;
   bookmarksCount?: number;
   commentsCount?: number;

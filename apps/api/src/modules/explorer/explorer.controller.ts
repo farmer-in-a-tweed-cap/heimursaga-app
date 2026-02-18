@@ -362,4 +362,28 @@ export class SessionExplorerController {
       query: {},
     });
   }
+
+  @Get('sessions')
+  @HttpCode(HttpStatus.OK)
+  async getSessions(@Session() session: ISession) {
+    return await this.sessionExplorerService.getSessions({ session });
+  }
+
+  @Post('sessions/revoke-all')
+  @HttpCode(HttpStatus.OK)
+  async revokeAllSessions(@Session() session: ISession) {
+    return await this.sessionExplorerService.revokeAllSessions({ session });
+  }
+
+  @Post('sessions/:id/revoke')
+  @HttpCode(HttpStatus.OK)
+  async revokeSession(
+    @Param('id') id: string,
+    @Session() session: ISession,
+  ) {
+    return await this.sessionExplorerService.revokeSession({
+      sessionId: parseInt(id, 10),
+      session,
+    });
+  }
 }

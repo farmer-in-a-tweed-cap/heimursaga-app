@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ExpeditionCard } from '@/app/components/ExpeditionCard';
@@ -21,6 +21,10 @@ export function ExpeditionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bookmarkedExpeditions, setBookmarkedExpeditions] = useState<Set<string>>(new Set());
+
+  // Filter & search state
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Loading state for async actions
   const [bookmarkingInProgress, setBookmarkingInProgress] = useState<Set<string>>(new Set());
@@ -109,13 +113,14 @@ export function ExpeditionsPage() {
   };
 
   // Transform API expeditions to match component props
-  const transformedExpeditions = apiExpeditions.map(exp => ({
+  const transformedExpeditions = useMemo(() => apiExpeditions.map(exp => ({
     id: exp.publicId || exp.id || '',
     title: exp.title,
     explorer: exp.author?.username || exp.explorer?.username || 'Unknown',
     journal: exp.author?.name || exp.author?.username || exp.explorer?.name || exp.explorer?.username || 'Unknown',
     description: exp.description || '',
-    category: '',
+    category: exp.category || '',
+    region: exp.region || '',
     startDate: exp.startDate || '',
     endDate: exp.endDate || '',
     status: (exp.status === 'active' ? 'active' : exp.status === 'completed' ? 'completed' : 'planned') as 'active' | 'completed' | 'planned',
@@ -136,9 +141,40 @@ export function ExpeditionsPage() {
     // Sponsorship visibility: only show if goal is set (implies Pro account and sponsorships enabled)
     sponsorshipsEnabled: (exp.goal || 0) > 0,
     explorerIsPro: (exp.goal || 0) > 0,
-  }));
+  })), [apiExpeditions]);
 
-  const expeditions = transformedExpeditions;
+  // Apply filters and search
+  const filteredExpeditions = useMemo(() => {
+    let result = transformedExpeditions;
+
+    // Apply filter
+    if (activeFilter === 'active') {
+      result = result.filter(e => e.status === 'active');
+    } else if (activeFilter === 'planned') {
+      result = result.filter(e => e.status === 'planned');
+    } else if (activeFilter === 'completed') {
+      result = result.filter(e => e.status === 'completed');
+    } else if (activeFilter === 'sponsored') {
+      result = result.filter(e => e.goal > 0);
+    }
+
+    // Apply search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(e =>
+        e.title.toLowerCase().includes(q) ||
+        e.description.toLowerCase().includes(q) ||
+        e.explorer.toLowerCase().includes(q) ||
+        e.journal.toLowerCase().includes(q) ||
+        e.category.toLowerCase().includes(q) ||
+        e.region.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [transformedExpeditions, activeFilter, searchQuery]);
+
+  const expeditions = filteredExpeditions;
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-12">
@@ -184,7 +220,7 @@ export function ExpeditionsPage() {
           <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
             <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">EXPEDITION DIRECTORY</h1>
             <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-              {loading ? 'LOADING...' : error ? 'ERROR' : `${expeditions.length} EXPEDITIONS`}
+              {loading ? 'LOADING...' : error ? 'ERROR' : expeditions.length !== transformedExpeditions.length ? `${expeditions.length} / ${transformedExpeditions.length} EXPEDITIONS` : `${expeditions.length} EXPEDITIONS`}
             </span>
           </div>
 
@@ -192,19 +228,40 @@ export function ExpeditionsPage() {
             <input
               type="text"
               placeholder="Search expeditions by title, explorer, location, or category..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-3 md:px-4 py-2 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] focus:border-[#ac6d46] outline-none text-xs md:text-sm"
             />
-            <button className="px-3 md:px-4 py-2 bg-[#ac6d46] text-white text-xs md:text-sm hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] whitespace-nowrap">
-              SEARCH
-            </button>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-3 md:px-4 py-2 bg-[#616161] text-white text-xs md:text-sm hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap"
+              >
+                CLEAR
+              </button>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs mt-4">
-            <button className="px-3 py-1.5 bg-[#4676ac] text-white whitespace-nowrap hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]">ALL ACTIVE</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">NEED SPONSORSHIP</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">FULLY FUNDED</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">RECENTLY STARTED</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">BY CATEGORY</button>
+            {[
+              { key: 'all', label: 'ALL' },
+              { key: 'active', label: 'ACTIVE' },
+              { key: 'planned', label: 'PLANNED' },
+              { key: 'completed', label: 'COMPLETED' },
+              { key: 'sponsored', label: 'SPONSORED' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setActiveFilter(key)}
+                className={`px-3 py-1.5 whitespace-nowrap transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                  activeFilter === key
+                    ? 'bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
+                    : 'border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] focus-visible:ring-[#616161]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -224,6 +281,17 @@ export function ExpeditionsPage() {
           message={error}
           onRetry={fetchData}
         />
+      ) : expeditions.length === 0 && transformedExpeditions.length > 0 ? (
+        // No results after filtering
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-12 text-center">
+          <Compass className="w-16 h-16 text-[#b5bcc4] dark:text-[#616161] mx-auto mb-4" aria-hidden="true" />
+          <h3 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
+            No results match your filters
+          </h3>
+          <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+            Try adjusting your search or filter criteria.
+          </p>
+        </div>
       ) : expeditions.length === 0 ? (
         // Empty state
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-12 text-center">

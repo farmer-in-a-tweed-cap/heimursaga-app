@@ -1,7 +1,69 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { explorerApi, expeditionApi, entryApi } from '@/app/services/api';
+
+interface PlatformStats {
+  explorers: number | null;
+  expeditions: number | null;
+  activeExpeditions: number | null;
+  entries: number | null;
+  countries: number | null;
+}
 
 export function Footer() {
+  const [stats, setStats] = useState<PlatformStats>({
+    explorers: null,
+    expeditions: null,
+    activeExpeditions: null,
+    entries: null,
+    countries: null,
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchStats() {
+      try {
+        const [explorersRes, expeditionsRes, entriesRes] = await Promise.all([
+          explorerApi.getAll().catch(() => null),
+          expeditionApi.getAll().catch(() => null),
+          entryApi.getAll().catch(() => null),
+        ]);
+
+        if (!cancelled) {
+          const activeCount = expeditionsRes?.data?.filter(
+            (e) => e.status === 'active'
+          ).length ?? null;
+
+          const countryCodes = new Set(
+            (entriesRes?.data || [])
+              .map((e) => e.countryCode)
+              .filter(Boolean)
+          );
+
+          setStats({
+            explorers: explorersRes?.results ?? null,
+            expeditions: expeditionsRes?.results ?? null,
+            activeExpeditions: activeCount,
+            entries: entriesRes?.results ?? null,
+            countries: countryCodes.size > 0 ? countryCodes.size : null,
+          });
+        }
+      } catch {
+        // Silently fail — footer stats are non-critical
+      }
+    }
+
+    fetchStats();
+    return () => { cancelled = true; };
+  }, []);
+
+  const formatStat = (value: number | null) =>
+    value !== null ? value.toLocaleString() : '—';
+
   return (
     <footer className="bg-[#202020] text-white border-t-2 border-[#ac6d46] mt-12">
       <div className="max-w-[1600px] mx-auto px-6 py-8">
@@ -28,12 +90,14 @@ export function Footer() {
               PLATFORM INFORMATION
             </h4>
             <ul className="text-xs space-y-2 text-[#b5bcc4] font-mono">
-              <li>Platform Version: 2.4.1</li>
-              <li>Status: All systems operational</li>
-              <li>Active Explorers: 12,847</li>
-              <li>Total Expeditions: 3,421</li>
-              <li>Total Entries: 89,234</li>
-              <li>Avg Page Load: 1.2s</li>
+              <li>Platform Version: 3.0.0</li>
+              <li>Registered Explorers: {formatStat(stats.explorers)}</li>
+              <li>Total Expeditions: {formatStat(stats.expeditions)}</li>
+              <li>Active Expeditions: {formatStat(stats.activeExpeditions)}</li>
+              <li>Journal Entries: {formatStat(stats.entries)}</li>
+              {stats.countries !== null && stats.countries > 0 && (
+                <li>Countries Reached: {formatStat(stats.countries)}</li>
+              )}
             </ul>
           </div>
 
@@ -43,11 +107,11 @@ export function Footer() {
               TECHNICAL SPECIFICATIONS
             </h4>
             <ul className="text-xs space-y-2 text-[#b5bcc4] font-mono">
-              <li>Security: SSL/TLS (A+ Rating)</li>
-              <li>Media Storage: Encrypted CDN</li>
-              <li>Stripe Integration: Active</li>
-              <li>Backup: Hourly incremental</li>
-              <li>GDPR Compliant: Yes</li>
+              <li>Payments: Stripe Connect</li>
+              <li>Mapping: Mapbox GL</li>
+              <li>Media: Encrypted Cloud Storage</li>
+              <li>Security: TLS + Multi-Layer Protection</li>
+              <li>Privacy: GDPR Compliant</li>
             </ul>
           </div>
         </div>

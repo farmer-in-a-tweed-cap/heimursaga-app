@@ -40,6 +40,7 @@ import {
 } from '@/common/exceptions';
 import {
   IQueryWithSession,
+  ISession,
   ISessionQuery,
   ISessionQueryWithPayload,
 } from '@/common/interfaces';
@@ -1685,6 +1686,7 @@ export class SessionExplorerService {
                     instagram: true,
                     youtube: true,
                     equipment: true,
+                    notification_preferences: true,
                   },
                 },
               },
@@ -1716,6 +1718,7 @@ export class SessionExplorerService {
                 instagram: profile?.instagram,
                 youtube: profile?.youtube,
                 equipment: (profile?.equipment as string[]) || [],
+                notificationPreferences: (profile?.notification_preferences as Record<string, boolean>) || {},
               } as IUserSettingsProfileGetResponse;
             });
           this.logger.log(
@@ -1767,6 +1770,7 @@ export class SessionExplorerService {
         instagram,
         youtube,
         equipment,
+        notificationPreferences,
       } = payload as any;
 
       this.logger.log(`Updating profile for explorer ${explorerId}`);
@@ -1818,6 +1822,7 @@ export class SessionExplorerService {
             ...(instagram !== undefined && { instagram }),
             ...(youtube !== undefined && { youtube }),
             ...(equipment !== undefined && { equipment }),
+            ...(notificationPreferences !== undefined && { notification_preferences: notificationPreferences }),
           };
 
           this.logger.log(
@@ -2328,6 +2333,99 @@ export class SessionExplorerService {
       };
 
       return response;
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async getSessions({ session }: { session: ISession }) {
+    try {
+      const { explorerId, sid } = session;
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      const sessions = await this.prisma.explorerSession.findMany({
+        where: {
+          explorer_id: explorerId,
+          expired: false,
+          expires_at: { gt: new Date() },
+        },
+        select: {
+          id: true,
+          ip_address: true,
+          user_agent: true,
+          device: true,
+          created_at: true,
+          expires_at: true,
+          sid: true,
+        },
+        orderBy: { created_at: 'desc' },
+      });
+
+      return sessions.map((s) => ({
+        id: s.id,
+        ipAddress: s.ip_address,
+        userAgent: s.user_agent,
+        device: s.device,
+        createdAt: s.created_at,
+        expiresAt: s.expires_at,
+        isCurrent: s.sid === sid,
+      }));
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async revokeAllSessions({ session }: { session: ISession }) {
+    try {
+      const { explorerId, sid } = session;
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      await this.prisma.explorerSession.updateMany({
+        where: {
+          explorer_id: explorerId,
+          sid: { not: sid },
+        },
+        data: {
+          expired: true,
+          expires_at: new Date(),
+        },
+      });
+
+      return { message: 'All other sessions revoked' };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async revokeSession({
+    sessionId,
+    session,
+  }: {
+    sessionId: number;
+    session: ISession;
+  }) {
+    try {
+      const { explorerId } = session;
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      await this.prisma.explorerSession.updateMany({
+        where: {
+          id: sessionId,
+          explorer_id: explorerId,
+        },
+        data: {
+          expired: true,
+          expires_at: new Date(),
+        },
+      });
+
+      return { message: 'Session revoked' };
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

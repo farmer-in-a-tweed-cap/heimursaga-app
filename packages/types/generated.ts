@@ -160,6 +160,7 @@ export interface IUserSettingsProfileGetResponse {
   instagram?: string;
   youtube?: string;
   equipment?: string[];
+  notificationPreferences?: Record<string, boolean>;
 }
 
 export interface IUserSettingsProfileUpdatePayload {
@@ -177,6 +178,7 @@ export interface IUserSettingsProfileUpdatePayload {
   instagram?: string;
   youtube?: string;
   equipment?: string[];
+  notificationPreferences?: Record<string, boolean>;
 }
 
 export interface IUserPostsQueryResponse {

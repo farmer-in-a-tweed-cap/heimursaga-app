@@ -189,6 +189,7 @@ export class EntryService {
           bookmarks_count: true,
           comments_count: true,
           comments_enabled: true,
+          views_count: true,
           author_id: true, // Need this for sponsorship check
           entry_type: true,
           // Count media items
@@ -306,6 +307,7 @@ export class EntryService {
           bookmarked: explorerId ? entry.bookmarks.length > 0 : false,
           likesCount: entry.likes_count,
           bookmarksCount: entry.bookmarks_count,
+          viewsCount: entry.views_count,
           commentsCount: entry.comments_count,
           commentsEnabled: entry.comments_enabled,
           createdAt: entry.created_at,

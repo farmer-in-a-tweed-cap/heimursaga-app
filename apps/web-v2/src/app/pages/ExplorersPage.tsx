@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ExplorerCard } from '@/app/components/ExplorerCard';
@@ -22,6 +22,10 @@ export function ExplorersPage() {
   const [error, setError] = useState<string | null>(null);
   const [followedExplorers, setFollowedExplorers] = useState<Set<string>>(new Set());
   const [bookmarkedExplorers, setBookmarkedExplorers] = useState<Set<string>>(new Set());
+
+  // Filter & search state
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Loading states for async actions
   const [followingInProgress, setFollowingInProgress] = useState<Set<string>>(new Set());
@@ -164,7 +168,7 @@ export function ExplorersPage() {
   };
 
   // Transform API explorers to match component props
-  const transformedExplorers = apiExplorers.map(exp => ({
+  const transformedExplorers = useMemo(() => apiExplorers.map(exp => ({
     id: exp.username,
     username: exp.username,
     accountType: (exp.creator ? 'explorer-pro' : 'explorer') as 'explorer-pro' | 'explorer',
@@ -183,9 +187,38 @@ export function ExplorersPage() {
     tags: [] as string[],
     recentExpeditions: exp.recentExpeditions || [],
     activeExpeditionOffGrid: exp.activeExpeditionOffGrid,
-  }));
+    creator: exp.creator,
+    locationFrom: exp.locationFrom || '',
+    locationLives: exp.locationLives || '',
+  })), [apiExplorers]);
 
-  const explorers = transformedExplorers;
+  // Apply filters and search
+  const filteredExplorers = useMemo(() => {
+    let result = transformedExplorers;
+
+    // Apply filter
+    if (activeFilter === 'active') {
+      result = result.filter(e => e.recentExpeditions.some(exp => exp.status === 'active'));
+    } else if (activeFilter === 'pro') {
+      result = result.filter(e => e.creator === true);
+    }
+
+    // Apply search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(e =>
+        e.username.toLowerCase().includes(q) ||
+        e.journalName.toLowerCase().includes(q) ||
+        e.bio.toLowerCase().includes(q) ||
+        e.locationFrom.toLowerCase().includes(q) ||
+        e.locationLives.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [transformedExplorers, activeFilter, searchQuery]);
+
+  const explorers = filteredExplorers;
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-12">
@@ -231,27 +264,46 @@ export function ExplorersPage() {
           <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
             <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">EXPLORER DIRECTORY</h1>
             <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-              {loading ? 'LOADING...' : error ? 'ERROR' : `${explorers.length} EXPLORERS`}
+              {loading ? 'LOADING...' : error ? 'ERROR' : explorers.length !== transformedExplorers.length ? `${explorers.length} / ${transformedExplorers.length} EXPLORERS` : `${explorers.length} EXPLORERS`}
             </span>
           </div>
 
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Search explorers, journals, tags..."
+              placeholder="Search explorers, journals, locations..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-3 md:px-4 py-2 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] focus:border-[#ac6d46] outline-none text-xs md:text-sm"
             />
-            <button className="px-3 md:px-4 py-2 bg-[#ac6d46] text-white text-xs md:text-sm hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] whitespace-nowrap">
-              SEARCH
-            </button>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-3 md:px-4 py-2 bg-[#616161] text-white text-xs md:text-sm hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap"
+              >
+                CLEAR
+              </button>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs mt-4">
-            <button className="px-3 py-1.5 bg-[#4676ac] text-white whitespace-nowrap hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]">ALL</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">ACTIVE NOW</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">BY LOCATION</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">BY CATEGORY</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">MOST SPONSORED</button>
+            {[
+              { key: 'all', label: 'ALL' },
+              { key: 'active', label: 'ACTIVE NOW' },
+              { key: 'pro', label: 'EXPLORER PRO' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setActiveFilter(key)}
+                className={`px-3 py-1.5 whitespace-nowrap transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                  activeFilter === key
+                    ? 'bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
+                    : 'border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] focus-visible:ring-[#616161]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -271,6 +323,17 @@ export function ExplorersPage() {
           message={error}
           onRetry={fetchData}
         />
+      ) : explorers.length === 0 && transformedExplorers.length > 0 ? (
+        // No results after filtering
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-12 text-center">
+          <Users className="w-16 h-16 text-[#b5bcc4] dark:text-[#616161] mx-auto mb-4" aria-hidden="true" />
+          <h3 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
+            No results match your filters
+          </h3>
+          <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+            Try adjusting your search or filter criteria.
+          </p>
+        </div>
       ) : explorers.length === 0 ? (
         // Empty state
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-12 text-center">

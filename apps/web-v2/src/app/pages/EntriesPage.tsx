@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { EntryCard } from '@/app/components/EntryCard';
@@ -20,6 +20,10 @@ export function EntriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bookmarkedEntries, setBookmarkedEntries] = useState<Set<string>>(new Set());
+
+  // Filter & search state
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Loading state for async actions
   const [bookmarkingInProgress, setBookmarkingInProgress] = useState<Set<string>>(new Set());
@@ -108,7 +112,7 @@ export function EntriesPage() {
   };
 
   // Transform API entries to match component props
-  const transformedEntries = apiEntries.map(entry => ({
+  const transformedEntries = useMemo(() => apiEntries.map(entry => ({
     id: entry.id || '', // API returns id as the publicId
     title: entry.title,
     explorerName: entry.author?.username || entry.explorer?.username || 'Unknown',
@@ -118,14 +122,43 @@ export function EntriesPage() {
     location: entry.place || '',
     date: entry.date || entry.createdAt || '',
     excerpt: entry.content?.substring(0, 300) || '',
-    mediaCount: entry.media?.length || 0,
-    views: 0, // Not in API
-    wordCount: entry.content?.trim().split(/\s+/).filter(word => word.length > 0).length || 0,
+    mediaCount: entry.mediaCount || 0,
+    views: entry.viewsCount || 0,
+    wordCount: entry.wordCount || 0,
     type: entry.entryType || 'standard',
     coverImageUrl: entry.coverImage,
-  }));
+  })), [apiEntries]);
 
-  const entries = transformedEntries;
+  // Apply filters and search
+  const filteredEntries = useMemo(() => {
+    let result = transformedEntries;
+
+    // Apply filter
+    if (activeFilter === 'most-viewed') {
+      result = [...result].sort((a, b) => b.views - a.views);
+    } else if (activeFilter === 'standard') {
+      result = result.filter(e => e.type === 'standard');
+    } else if (activeFilter === 'photo-essay') {
+      result = result.filter(e => e.type === 'photo-essay');
+    } else if (activeFilter === 'data-log') {
+      result = result.filter(e => e.type === 'data-log');
+    }
+
+    // Apply search
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(e =>
+        e.title.toLowerCase().includes(q) ||
+        e.excerpt.toLowerCase().includes(q) ||
+        e.explorerName.toLowerCase().includes(q) ||
+        e.location.toLowerCase().includes(q)
+      );
+    }
+
+    return result;
+  }, [transformedEntries, activeFilter, searchQuery]);
+
+  const entries = filteredEntries;
 
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-12">
@@ -171,28 +204,48 @@ export function EntriesPage() {
           <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
             <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">JOURNAL ENTRY DIRECTORY</h1>
             <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-              {loading ? 'LOADING...' : error ? 'ERROR' : `${entries.length} ENTRIES`}
+              {loading ? 'LOADING...' : error ? 'ERROR' : entries.length !== transformedEntries.length ? `${entries.length} / ${transformedEntries.length} ENTRIES` : `${entries.length} ENTRIES`}
             </span>
           </div>
 
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Search entries by title, explorer, expedition, location, or category..."
+              placeholder="Search entries by title, explorer, location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="flex-1 px-3 md:px-4 py-2 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] focus:border-[#ac6d46] outline-none text-xs md:text-sm"
             />
-            <button className="px-3 md:px-4 py-2 bg-[#ac6d46] text-white text-xs md:text-sm hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] whitespace-nowrap">
-              SEARCH
-            </button>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="px-3 md:px-4 py-2 bg-[#616161] text-white text-xs md:text-sm hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap"
+              >
+                CLEAR
+              </button>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-2 text-xs mt-4">
-            <button className="px-3 py-1.5 bg-[#4676ac] text-white whitespace-nowrap hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]">ALL ENTRIES</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">RECENT</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">MOST VIEWED</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">PHOTO-ESSAY</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">FIELD REPORT</button>
-            <button className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap">RESEARCH</button>
+            {[
+              { key: 'all', label: 'ALL' },
+              { key: 'most-viewed', label: 'MOST VIEWED' },
+              { key: 'standard', label: 'STANDARD' },
+              { key: 'photo-essay', label: 'PHOTO ESSAY' },
+              { key: 'data-log', label: 'DATA LOG' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setActiveFilter(key)}
+                className={`px-3 py-1.5 whitespace-nowrap transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                  activeFilter === key
+                    ? 'bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
+                    : 'border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] focus-visible:ring-[#616161]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -212,6 +265,17 @@ export function EntriesPage() {
           message={error}
           onRetry={fetchData}
         />
+      ) : entries.length === 0 && transformedEntries.length > 0 ? (
+        // No results after filtering
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-12 text-center">
+          <FileText className="w-16 h-16 text-[#b5bcc4] dark:text-[#616161] mx-auto mb-4" aria-hidden="true" />
+          <h3 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
+            No results match your filters
+          </h3>
+          <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+            Try adjusting your search or filter criteria.
+          </p>
+        </div>
       ) : entries.length === 0 ? (
         // Empty state
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-12 text-center">

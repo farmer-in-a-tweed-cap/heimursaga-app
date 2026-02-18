@@ -110,6 +110,7 @@ model ExplorerProfile {
   youtube                      String?   @db.VarChar(100)
   website                      String?   @db.VarChar(200)
   equipment                    Json?     @default("[]")
+  notification_preferences     Json?     @default("{}")
   explorer                     Explorer  @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
 
   @@map("user_profiles")

@@ -3,7 +3,7 @@ import {
   IExplorerSettingsProfileUpdatePayload,
   ISponsorshipTierUpdatePayload,
 } from '@repo/types';
-import { IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 
 import { SanitizeContent, SanitizeText } from '@/lib/sanitizer';
 
@@ -103,4 +103,9 @@ export class ExplorerSettingsProfileUpdateDto
     message: 'YouTube channel must be less than 100 characters',
   })
   youtube: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsObject()
+  notificationPreferences?: Record<string, boolean>;
 }

@@ -62,6 +62,60 @@ export class EmailService {
     }
   }
 
+  // Map email template keys to notification preference keys
+  private readonly templatePreferenceMap: Record<string, string> = {
+    [EMAIL_TEMPLATES.SPONSORSHIP_RECEIVED]: 'email_sponsorship_received',
+    [EMAIL_TEMPLATES.MONTHLY_DIGEST]: 'email_monthly_digest',
+    [EMAIL_TEMPLATES.EXPEDITION_MILESTONE]: 'email_expedition_milestones',
+  };
+
+  // Templates that should always be sent regardless of preferences
+  private readonly alwaysSendTemplates = new Set([
+    EMAIL_TEMPLATES.WELCOME,
+    EMAIL_TEMPLATES.PASSWORD_RESET,
+    EMAIL_TEMPLATES.EMAIL_VERIFICATION,
+    EMAIL_TEMPLATES.PAYMENT_RECEIPT,
+    EMAIL_TEMPLATES.UPGRADE_CONFIRMATION,
+    EMAIL_TEMPLATES.SPONSORSHIP_AUTO_CANCELED,
+    EMAIL_TEMPLATES.ADMIN_NEW_USER_SIGNUP,
+  ]);
+
+  private async shouldSendEmail(
+    recipientEmail: string,
+    templateKey?: string,
+  ): Promise<boolean> {
+    if (!templateKey) return true;
+    if (this.alwaysSendTemplates.has(templateKey)) return true;
+
+    const preferenceKey = this.templatePreferenceMap[templateKey];
+    if (!preferenceKey) return true;
+
+    try {
+      const explorer = await this.prisma.explorer.findUnique({
+        where: { email: recipientEmail },
+        select: {
+          profile: {
+            select: { notification_preferences: true },
+          },
+        },
+      });
+
+      const prefs =
+        (explorer?.profile?.notification_preferences as Record<
+          string,
+          boolean
+        >) || {};
+      // Default to true if the preference hasn't been explicitly set
+      return prefs[preferenceKey] !== false;
+    } catch (e) {
+      this.logger.error(
+        `[SEND_EMAIL] Error checking notification preferences:`,
+        e,
+      );
+      return true;
+    }
+  }
+
   @OnEvent(EVENTS.SEND_EMAIL)
   async onSend(event: IEventSendEmail): Promise<void> {
     try {
@@ -72,8 +126,15 @@ export class EmailService {
 
       const { to, vars } = event;
 
-      // get the template
+      // Check notification preferences before sending
       const templateKey = event.template;
+      if (!(await this.shouldSendEmail(to, templateKey))) {
+        this.logger.log(
+          `[SEND_EMAIL] Skipped email to ${to} — disabled by notification preferences (template: ${templateKey})`,
+        );
+        return;
+      }
+
       const template = templateKey ? getEmailTemplate(templateKey, vars) : null;
 
       // send the email
@@ -181,6 +242,7 @@ export class EmailService {
       }
 
       // Get active monthly sponsors with email delivery enabled
+      // Also fetch sponsor's notification preferences to respect global opt-out
       const sponsors = await this.prisma.sponsorship.findMany({
         where: {
           sponsored_explorer_id: creatorId,
@@ -196,6 +258,9 @@ export class EmailService {
               email: true,
               username: true,
               is_email_verified: true,
+              profile: {
+                select: { notification_preferences: true },
+              },
             },
           },
         },
@@ -216,6 +281,19 @@ export class EmailService {
         if (!sponsorship.sponsor.is_email_verified) {
           this.logger.log(
             `Skipping unverified email: ${sponsorship.sponsor.email}`,
+          );
+          continue;
+        }
+
+        // Check sponsor's global notification preferences
+        const sponsorPrefs =
+          (sponsorship.sponsor.profile?.notification_preferences as Record<
+            string,
+            boolean
+          >) || {};
+        if (sponsorPrefs.email_new_entry_from_following === false) {
+          this.logger.log(
+            `Skipping entry delivery to ${sponsorship.sponsor.email} — disabled by notification preferences`,
           );
           continue;
         }
