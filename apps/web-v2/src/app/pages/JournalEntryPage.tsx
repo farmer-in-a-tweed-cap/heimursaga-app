@@ -8,7 +8,8 @@ import { useAuth } from '@/app/context/AuthContext';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { ViewLocationMap } from '@/app/components/ViewLocationMap';
 import { InlineLocationMap } from '@/app/components/InlineLocationMap';
-import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle } from 'lucide-react';
+import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { entryApi, commentApi, explorerApi, type Entry, type Comment } from '@/app/services/api';
 
 export function JournalEntryPage() {
@@ -38,6 +39,10 @@ export function JournalEntryPage() {
   const [isFollowingExplorer, setIsFollowingExplorer] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
 
+  // Delete state
+  const [confirmingDeleteEntry, setConfirmingDeleteEntry] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Bookmark state
   const [entryBookmarkLoading, setEntryBookmarkLoading] = useState(false);
 
@@ -52,6 +57,26 @@ export function JournalEntryPage() {
       console.error('Error bookmarking entry:', err);
     } finally {
       setEntryBookmarkLoading(false);
+    }
+  };
+
+  // Handle delete entry
+  const handleDeleteEntry = async () => {
+    if (!entryId) return;
+    setIsDeleting(true);
+    try {
+      await entryApi.delete(entryId);
+      toast.success('Entry deleted');
+      const expedition = apiEntry?.trip || apiEntry?.expedition;
+      if (expedition?.id) {
+        router.push(`/expedition/${expedition.id}`);
+      } else {
+        router.push('/');
+      }
+    } catch {
+      toast.error('Failed to delete entry');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -427,6 +452,13 @@ export function JournalEntryPage() {
                   </Link>
                   <button className="px-4 py-2 border-2 border-[#616161] hover:bg-[#95a2aa] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs dark:text-[#e5e5e5]">
                     CHANGE VISIBILITY
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDeleteEntry(true)}
+                    className="px-4 py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold flex items-center gap-2"
+                  >
+                    <Trash2 size={14} />
+                    DELETE
                   </button>
                 </div>
               ) : (
@@ -1130,6 +1162,46 @@ export function JournalEntryPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Entry Confirmation Modal */}
+      {confirmingDeleteEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-[#202020]/60" onClick={() => setConfirmingDeleteEntry(false)} />
+          <div className="relative w-[90%] max-w-md bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+            <div className="bg-[#994040] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
+              <Trash2 size={18} />
+              <h3 className="text-sm font-bold">DELETE ENTRY</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-1">
+                Are you sure you want to delete this entry?
+              </p>
+              <p className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-4">
+                &ldquo;{entry?.title}&rdquo;
+              </p>
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-6">
+                This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmingDeleteEntry(false)}
+                  className="flex-1 px-4 py-2.5 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-xs font-bold"
+                >
+                  CANCEL
+                </button>
+                <button
+                  onClick={handleDeleteEntry}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2.5 bg-[#994040] text-white hover:bg-[#7a3333] transition-all text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  {isDeleting ? 'DELETING...' : 'DELETE ENTRY'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Map Modal */}
       {showMapModal && (

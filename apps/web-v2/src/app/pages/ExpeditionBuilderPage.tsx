@@ -4,12 +4,13 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
-import { MapPin, Plus, Trash2, Save, FileText, Calendar, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
+import { MapPin, Plus, Trash2, Save, FileText, Calendar, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelector';
+import { toast } from 'sonner';
 import { expeditionApi, uploadApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 import mapboxgl from 'mapbox-gl';
@@ -80,6 +81,8 @@ export function ExpeditionBuilderPage() {
   const [selectedWaypoint, setSelectedWaypoint] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
   const [confirmingClearAll, setConfirmingClearAll] = useState(false);
+  const [confirmingDeleteExpedition, setConfirmingDeleteExpedition] = useState(false);
+  const [isDeletingExpedition, setIsDeletingExpedition] = useState(false);
   const [isRoundTrip, setIsRoundTrip] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
 
@@ -168,6 +171,21 @@ export function ExpeditionBuilderPage() {
       setCoverPhotoPreview(null);
     } finally {
       setUploadingCover(false);
+    }
+  };
+
+  // Handle expedition deletion
+  const handleDeleteExpedition = async () => {
+    if (!expeditionId) return;
+    setIsDeletingExpedition(true);
+    try {
+      await expeditionApi.delete(expeditionId);
+      toast.success('Expedition deleted');
+      router.push('/');
+    } catch {
+      toast.error('Failed to delete expedition');
+    } finally {
+      setIsDeletingExpedition(false);
     }
   };
 
@@ -2613,6 +2631,34 @@ export function ExpeditionBuilderPage() {
         </div>
       </div>
 
+      {/* Danger Zone - Only in Edit Mode */}
+      {isEditMode && (
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#994040] p-6">
+          <h3 className="text-[#994040] font-bold text-sm mb-3">DANGER ZONE</h3>
+          <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-4">
+            Permanently delete this expedition and all its data. This cannot be undone.
+          </p>
+          {expeditionEntries.length > 0 && (
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 text-sm mb-4">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="text-amber-800 dark:text-amber-300 text-xs">
+                  This expedition has <strong>{expeditionEntries.length} {expeditionEntries.length === 1 ? 'entry' : 'entries'}</strong>. Delete all entries before deleting the expedition.
+                </div>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={() => setConfirmingDeleteExpedition(true)}
+            disabled={expeditionEntries.length > 0}
+            className="px-6 py-2.5 bg-[#994040] text-white hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <Trash2 size={16} />
+            DELETE EXPEDITION
+          </button>
+        </div>
+      )}
+
       {/* Delete Waypoint Confirmation Modal */}
       {confirmingDelete && (() => {
         const wp = waypoints.find(w => w.id === confirmingDelete);
@@ -2691,6 +2737,46 @@ export function ExpeditionBuilderPage() {
                   className="flex-1 px-4 py-2.5 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs font-bold"
                 >
                   CLEAR ALL
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Expedition Confirmation Modal */}
+      {confirmingDeleteExpedition && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-[#202020]/60" onClick={() => setConfirmingDeleteExpedition(false)} />
+          <div className="relative w-[90%] max-w-md bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+            <div className="bg-[#994040] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
+              <Trash2 size={18} />
+              <h3 className="text-sm font-bold">DELETE EXPEDITION</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-1">
+                Are you sure you want to delete this expedition?
+              </p>
+              <p className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-4">
+                &ldquo;{expeditionData.title}&rdquo;
+              </p>
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-6">
+                This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmingDeleteExpedition(false)}
+                  className="flex-1 px-4 py-2.5 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-xs font-bold"
+                >
+                  CANCEL
+                </button>
+                <button
+                  onClick={handleDeleteExpedition}
+                  disabled={isDeletingExpedition}
+                  className="flex-1 px-4 py-2.5 bg-[#994040] text-white hover:bg-[#7a3333] transition-all text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeletingExpedition ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  {isDeletingExpedition ? 'DELETING...' : 'DELETE EXPEDITION'}
                 </button>
               </div>
             </div>

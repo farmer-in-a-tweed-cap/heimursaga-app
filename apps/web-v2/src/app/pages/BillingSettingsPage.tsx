@@ -27,6 +27,7 @@ export function BillingSettingsPage() {
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [showAddCard, setShowAddCard] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
 
@@ -132,14 +133,11 @@ export function BillingSettingsPage() {
   };
 
   const handleCancelSubscription = async () => {
-    if (!confirm('Are you sure you want to cancel your subscription? You will retain access until the end of your billing period.')) {
-      return;
-    }
-
     setIsCanceling(true);
     try {
       await planApi.cancelSubscription();
       toast.success('Subscription canceled. You will retain access until the end of your billing period.');
+      setShowCancelConfirm(false);
       fetchBillingData();
     } catch {
       toast.error('Failed to cancel subscription');
@@ -312,24 +310,53 @@ export function BillingSettingsPage() {
                     </div>
                   )}
 
-                  <div className="flex gap-2 pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a]">
-                    <Link
-                      href="/upgrade"
-                      className="flex-1 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] text-xs font-bold hover:bg-[#b5bcc4] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-center"
-                    >
-                      CHANGE PLAN
-                    </Link>
-                    {!subscription?.cancelAtPeriodEnd && (
-                      <button
-                        onClick={handleCancelSubscription}
-                        disabled={isCanceling}
-                        className="flex-1 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] text-xs font-bold hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-600 hover:text-red-600 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  {!showCancelConfirm ? (
+                    <div className="flex gap-2 pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a]">
+                      <Link
+                        href="/upgrade"
+                        className="flex-1 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] text-xs font-bold hover:bg-[#b5bcc4] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-center"
                       >
-                        {isCanceling && <Loader2 className="w-3 h-3 animate-spin" />}
-                        CANCEL SUBSCRIPTION
-                      </button>
-                    )}
-                  </div>
+                        CHANGE PLAN
+                      </Link>
+                      {!subscription?.cancelAtPeriodEnd && (
+                        <button
+                          onClick={() => setShowCancelConfirm(true)}
+                          className="flex-1 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] text-xs font-bold hover:bg-[#994040]/10 dark:hover:bg-[#994040]/20 hover:border-[#994040] hover:text-[#994040] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] flex items-center justify-center gap-2"
+                        >
+                          CANCEL SUBSCRIPTION
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a] space-y-3">
+                      <div className="flex items-start gap-2 p-3 bg-[#994040]/10 dark:bg-[#994040]/20 border-2 border-[#994040]">
+                        <AlertCircle className="w-4 h-4 text-[#994040] flex-shrink-0 mt-0.5" />
+                        <div className="text-xs text-[#7a3333] dark:text-[#c4a0a0]">
+                          Are you sure you want to cancel your Explorer Pro subscription? You will retain access to all Pro features until the end of your current billing period
+                          {subscription?.currentPeriodEnd
+                            ? ` (${new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`
+                            : ''}.
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setShowCancelConfirm(false)}
+                          disabled={isCanceling}
+                          className="flex-1 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] text-xs font-bold hover:bg-[#b5bcc4] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] disabled:opacity-50"
+                        >
+                          KEEP SUBSCRIPTION
+                        </button>
+                        <button
+                          onClick={handleCancelSubscription}
+                          disabled={isCanceling}
+                          className="flex-1 px-4 py-2 bg-[#994040] text-white text-xs font-bold hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {isCanceling && <Loader2 className="w-3 h-3 animate-spin" />}
+                          CONFIRM CANCELLATION
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -390,7 +417,7 @@ export function BillingSettingsPage() {
                         <button
                           onClick={() => handleDeleteCard(method.id)}
                           disabled={deletingCardId === method.id}
-                          className="px-3 py-1.5 text-xs font-bold border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-600 hover:text-red-600 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-red-600 disabled:opacity-50"
+                          className="px-3 py-1.5 text-xs font-bold border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#994040]/10 dark:hover:bg-[#994040]/20 hover:border-[#994040] hover:text-[#994040] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] disabled:opacity-50"
                         >
                           {deletingCardId === method.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
                         </button>

@@ -7,7 +7,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationMap } from '@/app/components/LocationMap';
-import { X, Image as ImageIcon, Clock, Lock, Camera, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
+import { X, Image as ImageIcon, Clock, Lock, Camera, Loader2, AlertCircle, AlertTriangle, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
 import { entryApi, expeditionApi, uploadApi, Entry, type Expedition } from '@/app/services/api';
 import { useContentValidation } from '@/app/hooks/useContentValidation';
@@ -61,6 +62,10 @@ export function EditEntryPage() {
   const lastSavedContentRef = useRef<string>('');
   const isAutoSavingRef = useRef(false);
   const isSubmittingRef = useRef(false);
+
+  // Delete state
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Full expedition data for LocationMap context
   const [fullExpedition, setFullExpedition] = useState<Expedition | null>(null);
@@ -355,6 +360,23 @@ export function EditEntryPage() {
     } finally {
       setIsSubmitting(false);
       isSubmittingRef.current = false;
+    }
+  };
+
+  const handleDeleteEntry = async () => {
+    setIsDeleting(true);
+    try {
+      await entryApi.delete(entryId);
+      toast.success('Entry deleted');
+      if (expedition?.id) {
+        router.push(`/expedition/${expedition.id}`);
+      } else {
+        router.push('/');
+      }
+    } catch {
+      toast.error('Failed to delete entry');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -1009,6 +1031,14 @@ Remember: Your sponsors and followers are reading this to understand your journe
               <div className="flex gap-3 pt-6 border-t-2 border-[#202020] dark:border-[#616161]">
                 <button
                   type="button"
+                  onClick={() => setConfirmingDelete(true)}
+                  className="px-4 py-3 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] font-bold flex items-center gap-2 text-sm"
+                >
+                  <Trash2 size={16} />
+                  DELETE
+                </button>
+                <button
+                  type="button"
                   onClick={() => performAutoSave()}
                   disabled={isSubmitting || isAutoSaving}
                   className="px-6 py-3 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] font-bold hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] disabled:opacity-50 flex items-center gap-2"
@@ -1044,6 +1074,46 @@ Remember: Your sponsors and followers are reading this to understand your journe
             </form>
           </div>
         </div>
+
+        {/* Delete Entry Confirmation Modal */}
+        {confirmingDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center">
+            <div className="absolute inset-0 bg-[#202020]/60" onClick={() => setConfirmingDelete(false)} />
+            <div className="relative w-[90%] max-w-md bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+              <div className="bg-[#994040] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
+                <Trash2 size={18} />
+                <h3 className="text-sm font-bold">DELETE ENTRY</h3>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-1">
+                  Are you sure you want to delete this entry?
+                </p>
+                <p className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-4">
+                  &ldquo;{entryTitle}&rdquo;
+                </p>
+                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-6">
+                  This action cannot be undone.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setConfirmingDelete(false)}
+                    className="flex-1 px-4 py-2.5 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-xs font-bold"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    onClick={handleDeleteEntry}
+                    disabled={isDeleting}
+                    className="flex-1 px-4 py-2.5 bg-[#994040] text-white hover:bg-[#7a3333] transition-all text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isDeleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    {isDeleting ? 'DELETING...' : 'DELETE ENTRY'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Sidebar */}
         <div className="space-y-6">
