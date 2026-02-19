@@ -77,12 +77,21 @@ export class PayoutService {
 
       const results = payoutMethod ? 1 : 0;
 
-      // get stripe account
-      const stripeAccount = payoutMethod?.stripe_account_id
-        ? await this.stripeService.accounts.retrieve(
+      // get stripe account (may fail if account was created in a different Stripe mode)
+      let stripeAccount: Awaited<
+        ReturnType<typeof this.stripeService.accounts.retrieve>
+      > | null = null;
+      if (payoutMethod?.stripe_account_id) {
+        try {
+          stripeAccount = await this.stripeService.accounts.retrieve(
             payoutMethod.stripe_account_id,
-          )
-        : null;
+          );
+        } catch (stripeErr) {
+          this.logger.warn(
+            `Failed to retrieve Stripe account ${payoutMethod.stripe_account_id}: ${stripeErr.message}`,
+          );
+        }
+      }
 
       const businessType = stripeAccount?.business_type;
       const email =
@@ -249,9 +258,8 @@ export class PayoutService {
       });
 
       if (payoutMethod) {
-        throw new ServiceBadRequestException(
-          'user already has a payout method',
-        );
+        // Idempotent: return the existing payout method instead of throwing
+        return { payoutMethodId: payoutMethod.public_id };
       } else {
         // create a stripe account with idempotency
         const stripeAccount = await this.stripeService

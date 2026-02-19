@@ -810,7 +810,8 @@ export interface IPayoutCreateResponse {
 export interface ISponsorCheckoutPayload {
   creatorId: string;
   sponsorshipType: string;
-  paymentMethodId: string;
+  paymentMethodId?: string;
+  stripePaymentMethodId?: string;
   sponsorshipTierId?: string;
   billingPeriod?: SponsorshipBillingPeriod;
   oneTimePaymentAmount?: number;

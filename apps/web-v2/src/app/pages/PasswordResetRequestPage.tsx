@@ -217,7 +217,7 @@ export function PasswordResetRequestPage() {
               <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-3">
                 <div>
                   <strong className="text-[#202020] dark:text-[#e5e5e5]">Can't Access Email?</strong>
-                  <div className="mt-1">Contact support at <a href="mailto:support@heimursaga.com" className="text-[#4676ac] hover:text-[#ac6d46]">support@heimursaga.com</a> with:</div>
+                  <div className="mt-1">Contact support at <a href="mailto:admin@heimursaga.com" className="text-[#4676ac] hover:text-[#ac6d46]">admin@heimursaga.com</a> with:</div>
                   <div className="mt-1 pl-3 space-y-1">
                     <div>• Your username</div>
                     <div>• Account creation date (if known)</div>
@@ -451,8 +451,8 @@ export function PasswordResetRequestPage() {
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
               <div className="mb-2">
                 <strong className="text-[#202020] dark:text-[#e5e5e5]">Email:</strong>{' '}
-                <a href="mailto:support@heimursaga.com" className="text-[#4676ac] hover:text-[#ac6d46]">
-                  support@heimursaga.com
+                <a href="mailto:admin@heimursaga.com" className="text-[#4676ac] hover:text-[#ac6d46]">
+                  admin@heimursaga.com
                 </a>
               </div>
               <div>

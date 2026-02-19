@@ -57,6 +57,7 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
   const [savedPaymentMethods, setSavedPaymentMethods] = useState<SavedPaymentMethod[]>([]);
   const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | 'new'>('new');
+  const [savePaymentMethod, setSavePaymentMethod] = useState(true);
 
   // Promo code
   const [promoCode, setPromoCode] = useState('');
@@ -153,6 +154,8 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
 
     try {
       // Step 1: Ensure we have a payment method set up
+      let newStripePmId: string | undefined;
+
       if (selectedPaymentMethod === 'new') {
         // Using a new card - need CardElement
         if (!elements) {
@@ -175,20 +178,25 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
           throw new Error(pmError.message);
         }
 
-        // Save the new payment method to the user's account
-        await api.post('/payment-methods', {
-          stripePaymentMethodId: paymentMethod.id,
-        });
+        if (savePaymentMethod) {
+          // Save the new payment method to the user's account
+          await api.post('/payment-methods', {
+            stripePaymentMethodId: paymentMethod.id,
+          });
 
-        // The backend auto-sets first card as default, but if user has other cards,
-        // we need to explicitly set this new one as default
-        if (savedPaymentMethods.length > 0) {
-          // Refetch payment methods - the new one will be first (ordered by id desc)
-          const pmResponse = await api.get<{ results: number; data: SavedPaymentMethod[] }>('/payment-methods');
-          const newMethod = pmResponse.data?.[0]; // Most recent is first
-          if (newMethod && !newMethod.isDefault) {
-            await api.post(`/payment-methods/${newMethod.id}/default`);
+          // The backend auto-sets first card as default, but if user has other cards,
+          // we need to explicitly set this new one as default
+          if (savedPaymentMethods.length > 0) {
+            // Refetch payment methods - the new one will be first (ordered by id desc)
+            const pmResponse = await api.get<{ results: number; data: SavedPaymentMethod[] }>('/payment-methods');
+            const newMethod = pmResponse.data?.[0]; // Most recent is first
+            if (newMethod && !newMethod.isDefault) {
+              await api.post(`/payment-methods/${newMethod.id}/default`);
+            }
           }
+        } else {
+          // Don't save — pass PM ID directly to confirmCardPayment later
+          newStripePmId = paymentMethod.id;
         }
       } else {
         // Using saved payment method - ensure it's set as default
@@ -212,11 +220,17 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
         planId: 'explorer-pro',
         period: billingPeriod === 'monthly' ? 'month' : 'year',
         ...(promoApplied ? { promoCode: promoApplied.code } : {}),
+        // Pass Stripe PM ID when card wasn't saved locally
+        ...(newStripePmId ? { stripePaymentMethodId: newStripePmId } : {}),
       });
 
       // Step 3: If client secret is returned, need to confirm the payment (SCA/3D Secure)
       if (checkoutResponse.clientSecret) {
-        const { error: confirmError } = await stripe.confirmCardPayment(checkoutResponse.clientSecret);
+        const { error: confirmError } = await stripe.confirmCardPayment(
+          checkoutResponse.clientSecret,
+          // Pass PM explicitly when card wasn't saved to customer
+          newStripePmId ? { payment_method: newStripePmId } : undefined
+        );
         if (confirmError) {
           throw new Error(confirmError.message);
         }
@@ -365,6 +379,19 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
               <span>Your payment information is encrypted and secure</span>
             </div>
           </div>
+
+          {/* Save payment method checkbox */}
+          <label className="flex items-center gap-3 cursor-pointer mt-4">
+            <input
+              type="checkbox"
+              checked={savePaymentMethod}
+              onChange={(e) => setSavePaymentMethod(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-sm dark:text-[#e5e5e5]">
+              Save this card for future payments
+            </span>
+          </label>
         </>
       )}
 

@@ -48,6 +48,7 @@ export function SponsorshipPaymentPage() {
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodFull[]>([]);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [useNewCard, setUseNewCard] = useState(true);
+  const [savePaymentMethod, setSavePaymentMethod] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
@@ -255,7 +256,8 @@ export function SponsorshipPaymentPage() {
     setProcessing(true);
 
     try {
-      let paymentMethodId: string;
+      let paymentMethodId: string | undefined;
+      let directStripePaymentMethodId: string | undefined;
 
       // If using a new card, create the payment method first
       if (useNewCard) {
@@ -282,9 +284,14 @@ export function SponsorshipPaymentPage() {
           throw new Error('Failed to create payment method');
         }
 
-        // Save payment method to backend
-        const savedPm = await paymentMethodApi.create(paymentMethod.id);
-        paymentMethodId = savedPm.id;
+        if (savePaymentMethod) {
+          // Save payment method to backend
+          const savedPm = await paymentMethodApi.create(paymentMethod.id);
+          paymentMethodId = savedPm.id;
+        } else {
+          // Don't save — pass Stripe PM ID directly to checkout
+          directStripePaymentMethodId = paymentMethod.id;
+        }
       } else {
         if (!selectedPaymentMethod) {
           throw new Error('Please select a payment method');
@@ -296,7 +303,8 @@ export function SponsorshipPaymentPage() {
       const checkoutResponse = await sponsorshipApi.checkout({
         sponsorshipTierId: selectedTier.id,
         creatorId: explorer!.username,
-        paymentMethodId: paymentMethodId,
+        paymentMethodId: paymentMethodId || undefined,
+        stripePaymentMethodId: directStripePaymentMethodId || undefined,
         sponsorshipType: paymentType === 'one-time' ? 'one_time_payment' : 'subscription',
         oneTimePaymentAmount: paymentType === 'one-time' ? finalAmount : undefined,
         customAmount: (customAmount && parseFloat(customAmount) > 0) ? finalAmount : undefined,
@@ -870,6 +878,19 @@ export function SponsorshipPaymentPage() {
                         }}
                       />
                     </div>
+
+                    {/* Save payment method checkbox */}
+                    <label className="flex items-center gap-3 cursor-pointer mt-3">
+                      <input
+                        type="checkbox"
+                        checked={savePaymentMethod}
+                        onChange={(e) => setSavePaymentMethod(e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm dark:text-[#e5e5e5]">
+                        Save this card for future payments
+                      </span>
+                    </label>
                   </div>
                 )}
 

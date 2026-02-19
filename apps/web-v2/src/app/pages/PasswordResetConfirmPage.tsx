@@ -487,8 +487,8 @@ export function PasswordResetConfirmPage() {
               </p>
               <p className="pt-2">
                 Contact support immediately at{' '}
-                <a href="mailto:security@heimursaga.com" className="text-[#4676ac] hover:text-[#ac6d46]">
-                  security@heimursaga.com
+                <a href="mailto:admin@heimursaga.com" className="text-[#4676ac] hover:text-[#ac6d46]">
+                  admin@heimursaga.com
                 </a>
               </p>
             </div>

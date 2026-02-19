@@ -81,6 +81,11 @@ export function AuthPage() {
       let recaptchaToken: string | undefined;
       if (recaptchaConfigured) {
         recaptchaToken = (await executeRecaptcha('signup')) || undefined;
+        if (!recaptchaToken) {
+          setError('Security verification is still loading. Please try again in a moment.');
+          setLoading(false);
+          return;
+        }
       }
       await signup(email, username, password, recaptchaToken);
       router.push('/');
@@ -430,12 +435,11 @@ export function AuthPage() {
               <div className="border-l-2 border-[#ac6d46] pl-4">
                 <div className="text-xs font-bold mb-2">FOR EXPLORERS:</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1">
-                  <div>• Create unlimited journal entries</div>
-                  <div>• Launch expedition sponsorship campaigns</div>
-                  <div>• Upload unlimited photos and videos</div>
-                  <div>• Track your journey with GPS mapping</div>
-                  <div>• Connect with global explorer community</div>
-                  <div>• Low platform fees — most goes directly to you</div>
+                  <div>• Create journal entries and expedition logs</div>
+                  <div>• Plan and track expeditions with GPS mapping</div>
+                  <div>• Upload photos with each entry</div>
+                  <div>• Connect with the global explorer community</div>
+                  <div>• Upgrade to Explorer Pro to receive sponsorships</div>
                 </div>
               </div>
 
@@ -517,8 +521,8 @@ export function AuthPage() {
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-2">
               <div>
                 <strong className="text-[#202020] dark:text-[#e5e5e5]">Email:</strong>{' '}
-                <a href="mailto:support@heimursaga.com" className="text-[#4676ac] hover:text-[#ac6d46]">
-                  support@heimursaga.com
+                <a href="mailto:admin@heimursaga.com" className="text-[#4676ac] hover:text-[#ac6d46]">
+                  admin@heimursaga.com
                 </a>
               </div>
               <div>

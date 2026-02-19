@@ -28,10 +28,15 @@ export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
   @IsNotEmpty()
   creatorId: string;
 
-  @ApiProperty({ required: true })
+  @ApiProperty({ required: false })
   @IsString()
-  @IsNotEmpty()
-  paymentMethodId: string;
+  @IsOptional()
+  paymentMethodId?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  stripePaymentMethodId?: string;
 
   @ApiProperty({ required: false })
   @IsString()

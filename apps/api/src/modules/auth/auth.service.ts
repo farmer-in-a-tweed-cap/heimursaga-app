@@ -17,6 +17,10 @@ import { generator } from '@/lib/generator';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { hashPassword, verifyPassword } from '@/lib/utils';
 
+import {
+  BANNED_USERNAMES,
+  BANNED_USERNAME_SUBSTRINGS,
+} from '@/common/constants';
 import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
   ServiceBadRequestException,
@@ -418,6 +422,17 @@ export class AuthService {
       const username = payload.username.trim().toLowerCase();
       const email = payload.email.trim().toLowerCase();
 
+      // Check for banned/reserved usernames
+      if (BANNED_USERNAMES.has(username)) {
+        throw new ServiceForbiddenException('This username is not available');
+      }
+      const hasBannedSubstring = BANNED_USERNAME_SUBSTRINGS.some((word) =>
+        username.includes(word),
+      );
+      if (hasBannedSubstring) {
+        throw new ServiceForbiddenException('This username is not available');
+      }
+
       // Check for suspicious registration patterns
       await this.detectSuspiciousRegistration(email, username);
 
@@ -658,7 +673,20 @@ export class AuthService {
       // generate a token
       const token = generator.verificationToken();
 
-      // check if there are too many verifications
+      // set expiration date (3 hours)
+      const expiresAt = dateformat().add(3, 'h').toDate();
+
+      // Expire stale verification records whose expiry has passed
+      await this.prisma.emailVerification.updateMany({
+        where: {
+          email,
+          expired: false,
+          expired_at: { lt: new Date() },
+        },
+        data: { expired: true },
+      });
+
+      // check if there are too many active (non-expired) verifications
       const limited = await this.prisma.emailVerification
         .count({
           where: {
@@ -671,9 +699,6 @@ export class AuthService {
         throw new ServiceForbiddenException(
           'you requested too many verifications, try later again',
         );
-
-      // set expiration date (3 hours)
-      const expiresAt = dateformat().add(3, 'h').toDate();
 
       // create a verification
       const verification = await this.prisma.emailVerification.create({
@@ -700,7 +725,7 @@ export class AuthService {
         data: {
           to: email,
           template: EMAIL_TEMPLATES.PASSWORD_RESET,
-          vars: { reset_link: link },
+          vars: { reset_link: link, username: user.username, expiresInMinutes: 180 },
         },
       });
     } catch (e) {
@@ -782,7 +807,20 @@ export class AuthService {
       // generate a token
       const token = generator.verificationToken();
 
-      // check if there are too many verifications
+      // set expiration date (24 hours for email verification)
+      const expiresAt = dateformat().add(24, 'h').toDate();
+
+      // Expire stale verification records whose expiry has passed
+      await this.prisma.emailVerification.updateMany({
+        where: {
+          email,
+          expired: false,
+          expired_at: { lt: new Date() },
+        },
+        data: { expired: true },
+      });
+
+      // check if there are too many active (non-expired) verifications
       const limited = await this.prisma.emailVerification
         .count({
           where: {
@@ -795,9 +833,6 @@ export class AuthService {
         throw new ServiceForbiddenException(
           'you requested too many verifications, try later again',
         );
-
-      // set expiration date (24 hours for email verification)
-      const expiresAt = dateformat().add(24, 'h').toDate();
 
       // create a verification
       const verification = await this.prisma.emailVerification.create({

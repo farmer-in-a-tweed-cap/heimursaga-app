@@ -1581,7 +1581,8 @@ export const paymentMethodApi = {
 export interface SponsorshipCheckoutPayload {
   sponsorshipTierId: string;
   creatorId: string; // username of the explorer to sponsor
-  paymentMethodId: string;
+  paymentMethodId?: string;
+  stripePaymentMethodId?: string;
   sponsorshipType: 'one_time_payment' | 'subscription';
   oneTimePaymentAmount?: number;
   customAmount?: number;

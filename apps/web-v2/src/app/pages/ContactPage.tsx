@@ -16,12 +16,12 @@ export function ContactPage() {
   });
 
   const categories = [
-    { id: 'violation', label: 'Report Content Violation', icon: AlertTriangle, email: 'violations@heimursaga.com' },
-    { id: 'technical', label: 'Technical Support', icon: Bug, email: 'support@heimursaga.com' },
-    { id: 'account', label: 'Account Issues', icon: Shield, email: 'support@heimursaga.com' },
-    { id: 'billing', label: 'Billing & Payments', icon: FileText, email: 'billing@heimursaga.com' },
+    { id: 'violation', label: 'Report Content Violation', icon: AlertTriangle, email: 'admin@heimursaga.com' },
+    { id: 'technical', label: 'Technical Support', icon: Bug, email: 'admin@heimursaga.com' },
+    { id: 'account', label: 'Account Issues', icon: Shield, email: 'admin@heimursaga.com' },
+    { id: 'billing', label: 'Billing & Payments', icon: FileText, email: 'admin@heimursaga.com' },
     { id: 'general', label: 'General Inquiry', icon: HelpCircle, email: 'admin@heimursaga.com' },
-    { id: 'feedback', label: 'Feature Request / Feedback', icon: MessageSquare, email: 'feedback@heimursaga.com' },
+    { id: 'feedback', label: 'Feature Request / Feedback', icon: MessageSquare, email: 'admin@heimursaga.com' },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {

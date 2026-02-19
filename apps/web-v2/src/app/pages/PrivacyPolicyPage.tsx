@@ -318,7 +318,7 @@ export function PrivacyPolicyPage() {
             </li>
           </ul>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-            You can exercise these rights through your account settings or by contacting us at privacy@heimursaga.com.
+            You can exercise these rights through your account settings or by contacting us at admin@heimursaga.com.
           </p>
         </section>
 
@@ -438,8 +438,8 @@ export function PrivacyPolicyPage() {
             <div className="text-[#202020] dark:text-[#e5e5e5]">The Peripety Company</div>
             <div className="text-[#202020] dark:text-[#e5e5e5]">Heimursaga Platform</div>
             <div className="text-[#202020] dark:text-[#e5e5e5]">Data Protection Officer</div>
-            <div className="text-[#202020] dark:text-[#e5e5e5] mt-2">Email: privacy@heimursaga.com</div>
-            <div className="text-[#202020] dark:text-[#e5e5e5]">Legal: legal@heimursaga.com</div>
+            <div className="text-[#202020] dark:text-[#e5e5e5] mt-2">Email: admin@heimursaga.com</div>
+            <div className="text-[#202020] dark:text-[#e5e5e5]">Legal: admin@heimursaga.com</div>
             <div className="text-[#202020] dark:text-[#e5e5e5]">Web: heimursaga.com</div>
           </div>
         </section>

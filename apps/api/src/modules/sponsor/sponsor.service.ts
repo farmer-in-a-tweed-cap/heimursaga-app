@@ -223,14 +223,40 @@ export class SponsorService {
         );
       }
 
-      // get a payment method (scoped to authenticated user)
-      const paymentMethod = await this.prisma.paymentMethod.findFirstOrThrow({
-        where: { public_id: paymentMethodId, explorer_id: userId },
-        select: {
-          id: true,
-          stripe_payment_method_id: true,
+      // get a stripe customer (needed for both PM resolution and checkout)
+      const stripeCustomer = await this.stripeService.getOrCreateCustomer({
+        email: user.email,
+        data: {
+          email: user.email,
+          name: user.username,
         },
       });
+
+      // Resolve the Stripe payment method ID
+      let stripePaymentMethodId: string;
+
+      if (paymentMethodId) {
+        // Look up from local DB (existing flow — card was saved)
+        const paymentMethod =
+          await this.prisma.paymentMethod.findFirstOrThrow({
+            where: { public_id: paymentMethodId, explorer_id: userId },
+            select: {
+              id: true,
+              stripe_payment_method_id: true,
+            },
+          });
+        stripePaymentMethodId = paymentMethod.stripe_payment_method_id;
+      } else if (payload.stripePaymentMethodId) {
+        // Direct Stripe PM ID (card not being saved locally)
+        stripePaymentMethodId = payload.stripePaymentMethodId;
+        // Attach to customer so Stripe can use it for this transaction
+        await this.stripeService.paymentMethods.attach(
+          stripePaymentMethodId,
+          { customer: stripeCustomer.id },
+        );
+      } else {
+        throw new ServiceBadRequestException('Payment method is required');
+      }
 
       // create a checkout and payment intent
       const { clientSecret } = await this.prisma.$transaction(
@@ -239,17 +265,6 @@ export class SponsorService {
           let stripePaymentIntentId: string | undefined;
           let stripeSubscriptionId: string | undefined = undefined;
           let clientSecret = '';
-
-          // get a stripe customer
-          const stripeCustomer = await this.stripeService.getOrCreateCustomer({
-            email: user.email,
-            data: {
-              email: user.email,
-              name: user.username,
-            },
-          });
-
-          const stripePaymentMethodId = paymentMethod.stripe_payment_method_id;
 
           // create an one time payment stripe payment intent
           if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
@@ -512,7 +527,7 @@ export class SponsorService {
 
       const response: ISponsorCheckoutResponse = {
         clientSecret,
-        paymentMethodId: paymentMethod.stripe_payment_method_id,
+        paymentMethodId: stripePaymentMethodId,
       };
 
       return response;

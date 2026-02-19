@@ -9,4 +9,6 @@ export interface IEmailSendPayload<T = any> {
 
 export interface IPasswordResetEmailTemplateData {
   reset_link: string;
+  username?: string;
+  expiresInMinutes?: number;
 }
