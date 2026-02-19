@@ -9,6 +9,7 @@ import { Header } from '@/app/components/Header';
 import { ActiveExpeditionBanner } from '@/app/components/ActiveExpeditionBanner';
 import { Footer } from '@/app/components/Footer';
 import { WelcomeModal } from '@/app/components/WelcomeModal';
+import { Toaster } from '@/app/components/ui/sonner';
 import { usePathname } from 'next/navigation';
 
 function AppContent({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         </div>
         <Footer />
       </div>
+      <Toaster />
     </>
   );
 }

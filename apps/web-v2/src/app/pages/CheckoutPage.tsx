@@ -34,7 +34,13 @@ interface SavedPaymentMethod {
   isDefault: boolean;
 }
 
-function CheckoutForm() {
+interface PromoData {
+  code: string;
+  coupon: { name: string | null; percentOff: number | null; amountOff: number | null; duration: string; durationInMonths: number | null };
+  pricing: { originalAmount: number; discountAmount: number; finalAmount: number };
+}
+
+function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | null) => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const router = useRouter();
@@ -52,9 +58,16 @@ function CheckoutForm() {
   const [loadingPaymentMethods, setLoadingPaymentMethods] = useState(true);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | 'new'>('new');
 
+  // Promo code
+  const [promoCode, setPromoCode] = useState('');
+  const [promoValidating, setPromoValidating] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoApplied, setPromoApplied] = useState<PromoData | null>(null);
+
   const monthlyPrice = 7;
   const annualPrice = 50;
-  const price = billingPeriod === 'monthly' ? monthlyPrice : annualPrice;
+  const basePrice = billingPeriod === 'monthly' ? monthlyPrice : annualPrice;
+  const price = promoApplied ? promoApplied.pricing.finalAmount / 100 : basePrice;
   const annualSavings = (monthlyPrice * 12) - annualPrice;
 
   // Fetch saved payment methods on mount
@@ -76,6 +89,57 @@ function CheckoutForm() {
     }
     fetchPaymentMethods();
   }, []);
+
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+
+    setPromoValidating(true);
+    setPromoError(null);
+
+    try {
+      const result = await api.post<{
+        success: boolean;
+        error?: string;
+        data?: {
+          valid: boolean;
+          coupon: { id: string; name: string | null; percentOff: number | null; amountOff: number | null; currency: string | null; duration: string; durationInMonths: number | null };
+          pricing: { originalAmount: number; discountAmount: number; finalAmount: number; currency: string };
+        };
+      }>('/plan/validate-promo-code', {
+        promoCode: promoCode.trim(),
+        planId: 'explorer-pro',
+        period: billingPeriod === 'monthly' ? 'month' : 'year',
+      });
+
+      if (result.success && result.data) {
+        const promo = {
+          code: promoCode.trim(),
+          coupon: result.data.coupon,
+          pricing: result.data.pricing,
+        };
+        setPromoApplied(promo);
+        onPromoChange(promo);
+        setPromoError(null);
+      } else {
+        setPromoError(result.error || 'Invalid promo code');
+        setPromoApplied(null);
+        onPromoChange(null);
+      }
+    } catch {
+      setPromoError('Invalid promo code');
+      setPromoApplied(null);
+      onPromoChange(null);
+    } finally {
+      setPromoValidating(false);
+    }
+  };
+
+  const handleRemovePromo = () => {
+    setPromoApplied(null);
+    setPromoCode('');
+    setPromoError(null);
+    onPromoChange(null);
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -147,6 +211,7 @@ function CheckoutForm() {
       }>('/plan/upgrade/checkout', {
         planId: 'explorer-pro',
         period: billingPeriod === 'monthly' ? 'month' : 'year',
+        ...(promoApplied ? { promoCode: promoApplied.code } : {}),
       });
 
       // Step 3: If client secret is returned, need to confirm the payment (SCA/3D Secure)
@@ -288,7 +353,7 @@ function CheckoutForm() {
                       },
                     },
                     invalid: {
-                      color: '#dc2626',
+                      color: '#994040',
                     },
                   },
                   hidePostalCode: false,
@@ -303,14 +368,77 @@ function CheckoutForm() {
         </>
       )}
 
+      {/* Promo Code */}
+      <div>
+        <label className="block text-sm font-medium mb-2 dark:text-[#e5e5e5]">
+          PROMO CODE
+        </label>
+        {promoApplied ? (
+          <div className="border-2 border-[#4676ac] bg-[#4676ac]/5 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-[#4676ac]" />
+                <span className="font-bold text-sm text-[#4676ac]">
+                  {promoApplied.code.toUpperCase()}
+                </span>
+                <span className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                  {promoApplied.coupon.percentOff
+                    ? `${promoApplied.coupon.percentOff}% off`
+                    : promoApplied.coupon.amountOff
+                      ? `$${(promoApplied.coupon.amountOff / 100).toFixed(2)} off`
+                      : 'Discount applied'}
+                  {promoApplied.coupon.duration === 'repeating' && promoApplied.coupon.durationInMonths
+                    ? ` for ${promoApplied.coupon.durationInMonths} month${promoApplied.coupon.durationInMonths > 1 ? 's' : ''}`
+                    : promoApplied.coupon.duration === 'once'
+                      ? ' (first payment)'
+                      : promoApplied.coupon.duration === 'forever'
+                        ? ' (forever)'
+                        : ''}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleRemovePromo}
+                className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4] hover:text-[#202020] dark:hover:text-[#e5e5e5] transition-all"
+              >
+                REMOVE
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(null); }}
+              placeholder="Enter promo code"
+              className="flex-1 px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#616161] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] focus:border-[#4676ac] outline-none text-sm font-mono"
+            />
+            <button
+              type="button"
+              onClick={handleApplyPromo}
+              disabled={!promoCode.trim() || promoValidating}
+              className="px-6 py-3 border-2 border-[#202020] dark:border-[#616161] text-sm font-bold dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {promoValidating ? 'CHECKING...' : 'APPLY'}
+            </button>
+          </div>
+        )}
+        {promoError && (
+          <div className="mt-2 text-xs text-[#994040] font-bold">
+            {promoError}
+          </div>
+        )}
+      </div>
+
       {/* Error message */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-600 p-4">
+        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-[#994040] p-4">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <AlertCircle className="w-5 h-5 text-[#994040] flex-shrink-0 mt-0.5" />
             <div>
-              <div className="font-bold text-sm text-red-600 mb-1">PAYMENT ERROR</div>
-              <div className="text-sm text-red-700 dark:text-red-400">{error}</div>
+              <div className="font-bold text-sm text-[#994040] mb-1">PAYMENT ERROR</div>
+              <div className="text-sm text-[#994040]/80 dark:text-red-400">{error}</div>
             </div>
           </div>
         </div>
@@ -322,17 +450,23 @@ function CheckoutForm() {
         <div className="space-y-3">
           <div className="flex justify-between text-sm dark:text-[#e5e5e5]">
             <span>Explorer Pro ({billingPeriod === 'monthly' ? 'Monthly' : 'Annual'})</span>
-            <span className="font-bold font-mono">${price}.00</span>
+            <span className={`font-bold font-mono ${promoApplied ? 'line-through text-[#616161]' : ''}`}>${basePrice}.00</span>
           </div>
-          {billingPeriod === 'annual' && (
+          {billingPeriod === 'annual' && !promoApplied && (
             <div className="flex justify-between text-sm text-[#4676ac]">
               <span>Annual savings</span>
               <span className="font-bold font-mono">-${annualSavings}.00</span>
             </div>
           )}
+          {promoApplied && (
+            <div className="flex justify-between text-sm text-[#4676ac]">
+              <span>Promo: {promoApplied.code.toUpperCase()}</span>
+              <span className="font-bold font-mono">-${(promoApplied.pricing.discountAmount / 100).toFixed(2)}</span>
+            </div>
+          )}
           <div className="border-t-2 border-[#b5bcc4] dark:border-[#616161] pt-3 flex justify-between items-center">
             <span className="font-bold dark:text-[#e5e5e5]">Total due today</span>
-            <span className="text-3xl font-bold text-[#ac6d46]">${price}.00</span>
+            <span className="text-3xl font-bold text-[#ac6d46]">${price === 0 ? '0.00' : price.toFixed(2)}</span>
           </div>
         </div>
       </div>
@@ -348,7 +482,7 @@ function CheckoutForm() {
         }`}
       >
         <Lock className="w-6 h-6" />
-        {isProcessing ? 'PROCESSING...' : `PAY $${price}.00`}
+        {isProcessing ? 'PROCESSING...' : price === 0 ? 'ACTIVATE FREE TRIAL' : `PAY $${price.toFixed(2)}`}
       </button>
 
       {/* Security notice */}
@@ -365,12 +499,46 @@ export function CheckoutPage() {
   const billingPeriod = (searchParams.get('plan') || 'monthly') as 'monthly' | 'annual';
   const monthlyPrice = 7;
   const annualPrice = 50;
-  const price = billingPeriod === 'monthly' ? monthlyPrice : annualPrice;
+  const basePrice = billingPeriod === 'monthly' ? monthlyPrice : annualPrice;
   const annualSavings = (monthlyPrice * 12) - annualPrice;
 
-  const [nextBillingDate] = useState(() => {
-    return new Date(Date.now() + (billingPeriod === 'monthly' ? 30 : 365) * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  });
+  const [promoApplied, setPromoApplied] = useState<PromoData | null>(null);
+
+  const effectivePrice = promoApplied ? promoApplied.pricing.finalAmount / 100 : basePrice;
+
+  const dateFmt = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  const nextBillingDate = (() => {
+    const now = new Date();
+    if (billingPeriod === 'monthly') {
+      const next = new Date(now);
+      next.setMonth(next.getMonth() + 1);
+      return dateFmt(next);
+    }
+    const next = new Date(now);
+    next.setFullYear(next.getFullYear() + 1);
+    return dateFmt(next);
+  })();
+
+  // What the user pays at next renewal (during promo period)
+  const nextRenewalPrice = (() => {
+    if (!promoApplied) return basePrice;
+    if (promoApplied.coupon.duration === 'once') return basePrice; // promo was first payment only
+    // "repeating" or "forever" — promo rate continues
+    return effectivePrice;
+  })();
+
+  // Full price after promo ends (null if no promo or forever promo)
+  const fullPriceDate = (() => {
+    if (!promoApplied) return null;
+    if (promoApplied.coupon.duration === 'forever') return null;
+    if (promoApplied.coupon.duration === 'once') return null; // already showing full price as renewal
+    const months = promoApplied.coupon.durationInMonths;
+    if (!months) return null;
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    return dateFmt(d);
+  })();
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-12">
@@ -406,10 +574,10 @@ export function CheckoutPage() {
                 <span className="font-bold text-xl">PAYMENT DETAILS</span>
               </div>
             </div>
-            
+
             <div className="p-6">
               <Elements stripe={stripePromise}>
-                <CheckoutForm />
+                <CheckoutForm onPromoChange={setPromoApplied} />
               </Elements>
             </div>
           </div>
@@ -434,7 +602,7 @@ export function CheckoutPage() {
                   {billingPeriod === 'monthly' ? 'Monthly Plan' : 'Annual Plan'}
                 </div>
                 <div className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-                  {billingPeriod === 'monthly' 
+                  {billingPeriod === 'monthly'
                     ? 'Billed monthly. Cancel anytime.'
                     : `Save $${annualSavings}/year vs. monthly`
                   }
@@ -442,9 +610,18 @@ export function CheckoutPage() {
               </div>
 
               <div className="flex items-baseline gap-2 mb-6 pb-6 border-b-2 border-[#b5bcc4] dark:border-[#616161]">
-                <div className="text-4xl font-bold text-[#ac6d46]">
-                  ${price}
-                </div>
+                {promoApplied ? (
+                  <>
+                    <div className="text-4xl font-bold text-[#ac6d46]">
+                      ${effectivePrice === 0 ? '0' : effectivePrice.toFixed(2)}
+                    </div>
+                    <div className="text-lg line-through text-[#b5bcc4]">${basePrice}</div>
+                  </>
+                ) : (
+                  <div className="text-4xl font-bold text-[#ac6d46]">
+                    ${basePrice}
+                  </div>
+                )}
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
                   /{billingPeriod === 'monthly' ? 'month' : 'year'}
                 </div>
@@ -503,15 +680,33 @@ export function CheckoutPage() {
             </div>
             <div className="space-y-2 text-xs text-[#616161] dark:text-[#b5bcc4]">
               <div className="flex justify-between">
+                <span>Due today:</span>
+                <span className="font-bold dark:text-[#e5e5e5]">
+                  ${effectivePrice === 0 ? '0.00' : effectivePrice.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
                 <span>Next billing date:</span>
                 <span className="font-bold dark:text-[#e5e5e5]">
                   {nextBillingDate}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>Renewal:</span>
-                <span className="font-bold dark:text-[#e5e5e5]">Auto-renews</span>
+                <span>Renewal price:</span>
+                <span className="font-bold dark:text-[#e5e5e5]">
+                  ${nextRenewalPrice === 0 ? '0.00' : nextRenewalPrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mo' : 'yr'}
+                </span>
               </div>
+              {promoApplied && promoApplied.coupon.duration === 'once' && (
+                <div className="text-xs text-[#ac6d46] pt-1">
+                  Promo applies to first payment only
+                </div>
+              )}
+              {fullPriceDate && (
+                <div className="text-xs text-[#ac6d46] pt-1">
+                  Promo rate for {promoApplied?.coupon.durationInMonths} month{(promoApplied?.coupon.durationInMonths || 0) > 1 ? 's' : ''}, then ${basePrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mo' : 'yr'} from {fullPriceDate}
+                </div>
+              )}
               <div className="flex justify-between">
                 <span>Cancellation:</span>
                 <span className="font-bold dark:text-[#e5e5e5]">Anytime</span>

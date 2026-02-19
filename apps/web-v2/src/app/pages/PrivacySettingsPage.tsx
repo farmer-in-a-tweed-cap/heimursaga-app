@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Lock, Shield, Monitor } from 'lucide-react';
+import { toast } from 'sonner';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
@@ -69,8 +70,10 @@ export function PrivacySettingsPage() {
     try {
       await authApi.requestPasswordReset({ email: user.email });
       setResetStatus('sent');
+      toast.success('Password reset link sent');
     } catch {
       setResetStatus('error');
+      toast.error('Failed to send reset link');
       setTimeout(() => setResetStatus('idle'), 3000);
     }
   };
@@ -79,8 +82,9 @@ export function PrivacySettingsPage() {
     try {
       await explorerApi.revokeSession(id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
+      toast.success('Session revoked');
     } catch {
-      // ignore
+      toast.error('Failed to revoke session');
     }
   };
 
@@ -90,9 +94,11 @@ export function PrivacySettingsPage() {
       await explorerApi.revokeAllSessions();
       setSessions((prev) => prev.filter((s) => s.isCurrent));
       setRevokeStatus('done');
+      toast.success('All other sessions revoked');
       setTimeout(() => setRevokeStatus('idle'), 3000);
     } catch {
       setRevokeStatus('idle');
+      toast.error('Failed to revoke sessions');
     }
   };
 
@@ -240,7 +246,7 @@ export function PrivacySettingsPage() {
                       {!session.isCurrent && (
                         <button
                           onClick={() => handleRevokeSession(session.id)}
-                          className="px-3 py-1.5 text-xs font-bold border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-600 hover:text-red-600 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-red-600 whitespace-nowrap"
+                          className="px-3 py-1.5 text-xs font-bold border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#994040]/10 dark:hover:bg-[#994040]/20 hover:border-[#994040] hover:text-[#994040] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] whitespace-nowrap"
                         >
                           REVOKE
                         </button>

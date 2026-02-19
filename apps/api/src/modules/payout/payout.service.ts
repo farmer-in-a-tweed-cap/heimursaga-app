@@ -157,13 +157,13 @@ export class PayoutService {
   >): Promise<IStripePlatformAccountLinkGenerateResponse> {
     try {
       // const { publicId, mode } = query;
-      const { userId } = session;
+      const { userId, userRole } = session;
       const { payoutMethodId, backUrl } = payload;
 
       const mode = StripePlayformAccountLinkMode.ONBOARDING;
 
-      // check access
-      const access = !!payoutMethodId && !!userId;
+      // check access - only Explorer Pro can set up Stripe Connect
+      const access = !!payoutMethodId && !!userId && matchRoles(userRole, [UserRole.CREATOR]);
       if (!access) throw new ServiceForbiddenException();
 
       // get a payout method
@@ -231,11 +231,11 @@ export class PayoutService {
     IPayoutMethodCreatePayload
   >): Promise<IPayoutMethodCreateResponse> {
     try {
-      const { userId } = session;
+      const { userId, userRole } = session;
       const { country } = payload;
 
-      // check access
-      const access = !!userId;
+      // check access - only Explorer Pro can create payout methods
+      const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
       if (!access) throw new ServiceForbiddenException();
 
       // check if the user already has a payout method
@@ -291,9 +291,11 @@ export class PayoutService {
     session,
   }: ISessionQuery): Promise<IPayoutBalanceGetResponse> {
     try {
-      const { userId } = session;
+      const { userId, userRole } = session;
 
-      if (!userId) throw new ServiceForbiddenException();
+      // Only Explorer Pro can view balance
+      if (!userId || !matchRoles(userRole, [UserRole.CREATOR]))
+        throw new ServiceForbiddenException();
 
       // get a payout method
       const payoutMethod = await this.prisma.payoutMethod.findFirst({

@@ -3,13 +3,15 @@
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
+import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { Map, Zap, Lock, FileText, Archive, Loader2, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { explorerApi, type ExplorerExpedition } from '@/app/services/api';
 import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
 
 export function SelectExpeditionPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const { isPro } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
   const [showCompleted, setShowCompleted] = useState(false);
@@ -352,13 +354,14 @@ export function SelectExpeditionPage() {
                 </Link>
               </div>
 
-              {/* Expedition Builder */}
-              <div className="border-2 border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#4676ac] transition-all p-5">
+              {/* Expedition Builder (Pro Only) */}
+              <div className={`border-2 p-5 ${isPro ? 'border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#4676ac]' : 'border-[#b5bcc4] dark:border-[#3a3a3a] opacity-70'} transition-all`}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 bg-[#4676ac] text-white">
+                  <div className={`p-2 text-white ${isPro ? 'bg-[#4676ac]' : 'bg-[#616161]'}`}>
                     <Map className="w-6 h-6" />
                   </div>
                   <h3 className="font-bold text-base dark:text-[#e5e5e5]">EXPEDITION BUILDER</h3>
+                  {!isPro && <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-bold">PRO</span>}
                 </div>
                 <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
                   Use the Expedition Builder for multi-waypoint expeditions with detailed route planning and interactive maps.
@@ -377,13 +380,26 @@ export function SelectExpeditionPage() {
                     <span>Visual route display</span>
                   </li>
                 </ul>
-                <Link
-                  href="/expedition-builder"
-                  className="w-full block text-center px-4 py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm"
-                >
-                  <Map className="inline w-4 h-4 mr-2" />
-                  EXPEDITION BUILDER
-                </Link>
+                {isPro ? (
+                  <Link
+                    href="/expedition-builder"
+                    className="w-full block text-center px-4 py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm"
+                  >
+                    <Map className="inline w-4 h-4 mr-2" />
+                    EXPEDITION BUILDER
+                  </Link>
+                ) : (
+                  <div>
+                    <div className="w-full text-center px-4 py-2 bg-[#616161] text-white font-bold cursor-not-allowed text-sm opacity-60">
+                      <Lock className="inline w-4 h-4 mr-2" />
+                      EXPLORER PRO REQUIRED
+                    </div>
+                    <div className="mt-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      <strong className="text-[#ac6d46]">PRO FEATURE:</strong> The Expedition Builder with waypoints, route planning, and interactive maps requires Explorer Pro.{' '}
+                      <Link href="/settings/billing" className="text-[#4676ac] hover:underline">Upgrade to Pro</Link>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -513,21 +529,6 @@ export function SelectExpeditionPage() {
             </div>
           </div>
 
-          {/* System Info */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-              SYSTEM INFORMATION
-            </h3>
-            <div className="text-xs font-mono space-y-2 text-[#616161] dark:text-[#b5bcc4]">
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">User ID:</span> {user?.id || 'Not logged in'}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Username:</span> {user?.username || 'N/A'}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Account Type:</span> {user?.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Session:</span> Active</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Login Time:</span> {new Date().toLocaleTimeString()}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Storage Used:</span> 2.4 GB / 50 GB</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">API Calls Today:</span> 47 / 10,000</div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

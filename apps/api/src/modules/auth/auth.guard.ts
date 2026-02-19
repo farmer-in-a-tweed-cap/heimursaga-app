@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -118,11 +119,12 @@ export class RolesGuard implements CanActivate {
       // Read role from session (set by AuthGuard)
       const userRole = req.session.get(SESSION_KEYS.USER_ROLE);
       const isAccess = requiredRoles.some((role) => userRole === role);
-      if (!isAccess) throw new UnauthorizedException();
+      if (!isAccess) throw new ForbiddenException();
 
       return true;
     } catch (e) {
-      throw new UnauthorizedException();
+      if (e instanceof ForbiddenException) throw e;
+      throw new ForbiddenException();
     }
   }
 }

@@ -137,7 +137,7 @@ export function useProFeatures() {
     canAccessPrioritySupport: isPro,
     canAccessAdvancedMaps: isPro,
     maxExpeditions: isPro ? Infinity : 3,
-    maxPhotosPerEntry: isPro ? Infinity : 10,
+    maxPhotosPerEntry: isPro ? 5 : 2,
   };
 }
 

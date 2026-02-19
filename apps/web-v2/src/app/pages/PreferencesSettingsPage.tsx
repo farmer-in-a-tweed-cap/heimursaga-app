@@ -1,6 +1,7 @@
 'use client';
 
 import { Palette, Lock } from 'lucide-react';
+import { toast } from 'sonner';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
@@ -67,7 +68,7 @@ export function PreferencesSettingsPage() {
                     name="theme"
                     value="light"
                     checked={themeSetting === 'light'}
-                    onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+                    onChange={(e) => { setTheme(e.target.value as 'light' | 'dark' | 'system'); toast.success('Theme updated'); }}
                     className="mt-1"
                   />
                   <div className="flex-1">
@@ -83,7 +84,7 @@ export function PreferencesSettingsPage() {
                     name="theme"
                     value="dark"
                     checked={themeSetting === 'dark'}
-                    onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+                    onChange={(e) => { setTheme(e.target.value as 'light' | 'dark' | 'system'); toast.success('Theme updated'); }}
                     className="mt-1"
                   />
                   <div className="flex-1">
@@ -99,7 +100,7 @@ export function PreferencesSettingsPage() {
                     name="theme"
                     value="system"
                     checked={themeSetting === 'system'}
-                    onChange={(e) => setTheme(e.target.value as 'light' | 'dark' | 'system')}
+                    onChange={(e) => { setTheme(e.target.value as 'light' | 'dark' | 'system'); toast.success('Theme updated'); }}
                     className="mt-1"
                   />
                   <div className="flex-1">
@@ -129,7 +130,7 @@ export function PreferencesSettingsPage() {
                     name="distanceUnit"
                     value="km"
                     checked={distanceUnit === 'km'}
-                    onChange={() => setDistanceUnit('km')}
+                    onChange={() => { setDistanceUnit('km'); toast.success('Distance units updated'); }}
                     className="mt-1"
                   />
                   <div className="flex-1">
@@ -145,7 +146,7 @@ export function PreferencesSettingsPage() {
                     name="distanceUnit"
                     value="mi"
                     checked={distanceUnit === 'mi'}
-                    onChange={() => setDistanceUnit('mi')}
+                    onChange={() => { setDistanceUnit('mi'); toast.success('Distance units updated'); }}
                     className="mt-1"
                   />
                   <div className="flex-1">

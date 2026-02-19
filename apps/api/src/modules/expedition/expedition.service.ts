@@ -12,6 +12,7 @@ import {
   IWaypointDetail,
   IWaypointUpdatePayload,
   UserNotificationContext,
+  UserRole,
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
@@ -22,6 +23,7 @@ import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles, sortByDate } from '@/lib/utils';
 
 import {
+  ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
   ServiceInternalException,
@@ -1006,10 +1008,17 @@ export class ExpeditionService {
     IExpeditionCreatePayload
   >): Promise<IExpeditionCreateResponse> {
     try {
-      const { explorerId } = session;
+      const { explorerId, userRole } = session;
 
       // check access - any authenticated user can create expeditions
       if (!explorerId) throw new ServiceForbiddenException();
+
+      // Sponsorship goal requires Explorer Pro
+      if (payload.goal && payload.goal > 0 && !matchRoles(userRole, [UserRole.CREATOR])) {
+        throw new ServiceBadRequestException(
+          'Setting a sponsorship goal requires Explorer Pro',
+        );
+      }
 
       // create an expedition
       const expedition = await this.prisma.expedition.create({
@@ -1070,7 +1079,7 @@ export class ExpeditionService {
   >): Promise<void> {
     try {
       const { id } = query;
-      const { explorerId } = session;
+      const { explorerId, userRole } = session;
 
       // check access - any authenticated user can update their own expeditions
       if (!explorerId) throw new ServiceForbiddenException();
@@ -1131,6 +1140,12 @@ export class ExpeditionService {
         updateData.cover_image = coverImage;
       }
       if (goal !== undefined) {
+        // Sponsorship goal requires Explorer Pro
+        if (goal > 0 && !matchRoles(userRole, [UserRole.CREATOR])) {
+          throw new ServiceBadRequestException(
+            'Setting a sponsorship goal requires Explorer Pro',
+          );
+        }
         updateData.goal = goal;
       }
       if (category !== undefined) {

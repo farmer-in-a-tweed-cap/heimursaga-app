@@ -11,7 +11,7 @@ import { expeditionApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 
 export function ExpeditionQuickEntryPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { isPro } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
@@ -121,14 +121,17 @@ export function ExpeditionQuickEntryPage() {
     setSubmitError(null);
 
     try {
+      const parsedTags = tags.split(',').map(t => t.trim()).filter(Boolean);
       const payload = {
         title: title.trim(),
         description: description.trim() || undefined,
         visibility: expeditionVisibility,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
+        region: region.trim() || undefined,
+        category: category || undefined,
+        tags: parsedTags.length > 0 ? parsedTags : undefined,
         goal: sponsorshipsEnabled && sponsorshipGoal ? parseInt(sponsorshipGoal) : undefined,
-        // Note: coverImage would need upload handling - for now we skip it
       };
 
       const result = await expeditionApi.create(payload);
@@ -619,7 +622,7 @@ export function ExpeditionQuickEntryPage() {
             </div>
           </div>
 
-          {/* Need More Control? */}
+          {/* Need More Control? (Pro Only) */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
             <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
               NEED MORE CONTROL?
@@ -627,25 +630,24 @@ export function ExpeditionQuickEntryPage() {
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
               For expeditions with multiple waypoints and detailed route planning, use the Expedition Builder with interactive mapping.
             </div>
-            <Link
-              href="/expedition-builder"
-              className="inline-block w-full py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-center"
-            >
-              OPEN EXPEDITION BUILDER
-            </Link>
-          </div>
-
-          {/* System Info */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-              SYSTEM INFORMATION
-            </h3>
-            <div className="text-xs font-mono space-y-2 text-[#616161] dark:text-[#b5bcc4]">
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">User ID:</span> {user?.id || 'Not logged in'}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Username:</span> {user?.username || 'N/A'}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Account Type:</span> {user?.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Session:</span> Active</div>
-            </div>
+            {isPro ? (
+              <Link
+                href="/expedition-builder"
+                className="inline-block w-full py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-center"
+              >
+                OPEN EXPEDITION BUILDER
+              </Link>
+            ) : (
+              <div>
+                <div className="w-full py-2 bg-[#616161] text-white font-bold text-center cursor-not-allowed text-sm opacity-60">
+                  <Lock className="inline w-4 h-4 mr-2" />
+                  EXPLORER PRO REQUIRED
+                </div>
+                <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4]">
+                  <Link href="/settings/billing" className="text-[#4676ac] hover:underline">Upgrade to Explorer Pro</Link> to access the Expedition Builder.
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

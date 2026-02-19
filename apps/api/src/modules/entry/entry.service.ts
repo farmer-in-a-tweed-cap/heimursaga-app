@@ -8,6 +8,7 @@ import {
   IEntryGetByIdResponse,
   IEntryUpdatePayload,
   UserNotificationContext,
+  UserRole,
 } from '@repo/types';
 import { IEntryBookmarkResponse, IEntryLikeResponse } from '@repo/types';
 
@@ -16,6 +17,7 @@ import { normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { getCountryCodeFromCoordinates } from '@/lib/geocoding';
 import { getStaticMediaUrl } from '@/lib/upload';
+import { matchRoles } from '@/lib/utils';
 
 import {
   ServiceBadRequestException,
@@ -694,7 +696,7 @@ export class EntryService {
     IEntryCreatePayload
   >): Promise<IEntryCreateResponse> {
     try {
-      const { explorerId } = session;
+      const { explorerId, userRole } = session;
 
       // check access
       const access = !!explorerId;
@@ -787,6 +789,26 @@ export class EntryService {
       if (entryType && !validEntryTypes.includes(entryType)) {
         throw new ServiceBadRequestException(
           `Invalid entry type: ${entryType}. Must be one of: ${validEntryTypes.join(', ')}`,
+        );
+      }
+
+      // Pro-only entry types require Explorer Pro
+      const proEntryTypes = ['photo-essay', 'data-log'];
+      if (
+        entryType &&
+        proEntryTypes.includes(entryType) &&
+        !matchRoles(userRole, [UserRole.CREATOR])
+      ) {
+        throw new ServiceForbiddenException(
+          `${entryType} entries require Explorer Pro`,
+        );
+      }
+
+      // Enforce photo upload limits by account type
+      const maxUploads = matchRoles(userRole, [UserRole.CREATOR]) ? 5 : 2;
+      if (payload.uploads && payload.uploads.length > maxUploads) {
+        throw new ServiceBadRequestException(
+          `Maximum ${maxUploads} photos per entry${matchRoles(userRole, [UserRole.CREATOR]) ? '' : '. Upgrade to Explorer Pro for up to 5'}`,
         );
       }
 
@@ -933,7 +955,7 @@ export class EntryService {
   >): Promise<void> {
     try {
       const { publicId } = query;
-      const { explorerId } = session;
+      const { explorerId, userRole } = session;
       const {
         uploads,
         expeditionId,
@@ -998,6 +1020,26 @@ export class EntryService {
       if (entryType && !validEntryTypes.includes(entryType)) {
         throw new ServiceBadRequestException(
           `Invalid entry type: ${entryType}. Must be one of: ${validEntryTypes.join(', ')}`,
+        );
+      }
+
+      // Pro-only entry types require Explorer Pro
+      const proEntryTypes = ['photo-essay', 'data-log'];
+      if (
+        entryType &&
+        proEntryTypes.includes(entryType) &&
+        !matchRoles(userRole, [UserRole.CREATOR])
+      ) {
+        throw new ServiceForbiddenException(
+          `${entryType} entries require Explorer Pro`,
+        );
+      }
+
+      // Enforce photo upload limits by account type
+      const maxUploads = matchRoles(userRole, [UserRole.CREATOR]) ? 5 : 2;
+      if (uploads && uploads.length > maxUploads) {
+        throw new ServiceBadRequestException(
+          `Maximum ${maxUploads} photos per entry${matchRoles(userRole, [UserRole.CREATOR]) ? '' : '. Upgrade to Explorer Pro for up to 5'}`,
         );
       }
 

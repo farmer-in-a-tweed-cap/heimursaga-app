@@ -19,9 +19,10 @@ export function useProFeatures() {
     canScheduleEntries: isPro,
     canAccessPrioritySupport: isPro,
     canUseAdvancedMapFeatures: isPro,
+    canUseExpeditionBuilder: isPro,
     canCreateUnlimitedExpeditions: isPro,
     maxExpeditions: isPro ? Infinity : 3,
-    maxPhotosPerEntry: isPro ? 50 : 10,
+    maxPhotosPerEntry: isPro ? 5 : 2,
     canUseCustomThemes: isPro,
   };
 }

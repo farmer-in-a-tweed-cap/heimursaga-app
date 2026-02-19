@@ -12,7 +12,7 @@ export interface TierSlotConfig {
 }
 
 export const ONE_TIME_TIER_SLOTS: TierSlotConfig[] = [
-  { slot: 1, label: 'Torchbearer', minPrice: 1, maxPrice: 15, defaultPrice: 5 },
+  { slot: 1, label: 'Torchbearer', minPrice: 5, maxPrice: 15, defaultPrice: 5 },
   { slot: 2, label: 'Trail Guide', minPrice: 15, maxPrice: 50, defaultPrice: 25 },
   { slot: 3, label: 'Pathfinder', minPrice: 50, maxPrice: 150, defaultPrice: 75 },
   { slot: 4, label: 'Navigator', minPrice: 150, maxPrice: 500, defaultPrice: 250 },
@@ -20,7 +20,7 @@ export const ONE_TIME_TIER_SLOTS: TierSlotConfig[] = [
 ];
 
 export const MONTHLY_TIER_SLOTS: TierSlotConfig[] = [
-  { slot: 1, label: 'Fellow Traveler', minPrice: 1, maxPrice: 15, defaultPrice: 5 },
+  { slot: 1, label: 'Fellow Traveler', minPrice: 5, maxPrice: 15, defaultPrice: 5 },
   { slot: 2, label: 'Journey Partner', minPrice: 15, maxPrice: 50, defaultPrice: 15 },
   { slot: 3, label: 'Expedition Ally', minPrice: 50, maxPrice: null, defaultPrice: 50 },
 ];

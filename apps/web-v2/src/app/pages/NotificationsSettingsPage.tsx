@@ -6,6 +6,7 @@ import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { explorerApi } from '@/app/services/api';
+import { toast } from 'sonner';
 
 const DEFAULT_PREFERENCES: Record<string, boolean> = {
   email_sponsorship_received: true,
@@ -78,9 +79,11 @@ export function NotificationsSettingsPage() {
       await explorerApi.updateProfile({ notificationPreferences: preferences });
       setSavedPreferences(preferences);
       setSaveStatus('saved');
+      toast.success('Notification preferences saved');
       setTimeout(() => setSaveStatus('idle'), 3000);
     } catch {
       setSaveStatus('error');
+      toast.error('Failed to save preferences');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };

@@ -7,6 +7,7 @@ import { MapPin, Crosshair, X } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
+import { toast } from 'sonner';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -332,7 +333,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+      toast.error('Geolocation is not supported by your browser');
       return;
     }
 
@@ -395,7 +396,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
           errorMessage = 'Location request timed out. Please click on the map to select a location.';
         }
         
-        alert(errorMessage);
+        toast.error(errorMessage);
         setGettingLocation(false);
       },
       {

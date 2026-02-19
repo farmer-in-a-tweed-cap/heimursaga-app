@@ -360,7 +360,15 @@ export function SponsorshipPaymentPage() {
         throw new Error(`Payment was not completed (status: ${paymentIntent?.status})`);
       }
     } catch (err: any) {
-      toast.error(err.message || 'Payment failed. Please try again.');
+      const msg = err.message;
+      // Provide user-friendly messages for generic API errors
+      if (!msg || msg === 'Bad Request') {
+        toast.error('Payment could not be processed. Please check your details and try again.');
+      } else if (msg === 'Internal Server Error') {
+        toast.error('Something went wrong on our end. Please try again later.');
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setProcessing(false);
     }
@@ -668,7 +676,11 @@ export function SponsorshipPaymentPage() {
                 </div>
 
                 {/* Custom Amount */}
-                <div className="border-2 border-[#202020] dark:border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                <div className={`border-2 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] ${
+                  customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5
+                    ? 'border-[#994040]'
+                    : 'border-[#202020] dark:border-[#616161]'
+                }`}>
                   <label className="block text-sm font-medium mb-2 dark:text-[#e5e5e5]">
                     CUSTOM AMOUNT {paymentType === 'recurring' && '(per month)'}
                   </label>
@@ -684,16 +696,26 @@ export function SponsorshipPaymentPage() {
                         setCustomAmount(e.target.value);
                         setSelectedAmount(null);
                       }}
-                      placeholder="Enter custom amount"
-                      className="flex-1 px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-xl font-bold bg-white dark:bg-[#202020] dark:text-[#e5e5e5]"
+                      placeholder="Enter custom amount (min $5)"
+                      className={`flex-1 px-4 py-3 border-2 outline-none text-xl font-bold bg-white dark:bg-[#202020] dark:text-[#e5e5e5] ${
+                        customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5
+                          ? 'border-[#994040] focus:border-[#994040]'
+                          : 'border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46]'
+                      }`}
                     />
                     {paymentType === 'recurring' && (
                       <span className="text-xl font-bold text-[#616161] dark:text-[#b5bcc4]">/month</span>
                     )}
                   </div>
-                  <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4]">
-                    Minimum amount: $5.00 - Maximum: $10,000.00
-                  </div>
+                  {customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5 ? (
+                    <div className="mt-2 text-xs text-[#994040] font-bold">
+                      Minimum amount is $5.00 — please increase your amount to continue.
+                    </div>
+                  ) : (
+                    <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      Minimum: $5.00 — Maximum: $10,000.00
+                    </div>
+                  )}
                 </div>
 
                 {/* Sponsor Benefits */}

@@ -26,7 +26,7 @@ export function CreateEntryPage() {
   const isStandalone = expeditionId === 'standalone';
 
   // ALL HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
-  const [entryType, setEntryType] = useState<'standard' | 'photo-essay' | 'data-log' | 'waypoint'>('standard');
+  const [entryType, setEntryType] = useState<'standard' | 'photo-essay' | 'data-log'>('standard');
   const [showMap, setShowMap] = useState(false);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedWaypointId, setSelectedWaypointId] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function CreateEntryPage() {
   const [, setDraftCheckComplete] = useState(false);
 
   // Notification state for entry type restrictions
-  const [entryTypeNotification, setEntryTypeNotification] = useState<{ type: 'pro' | 'waypoint-standalone'; message: string } | null>(null);
+  const [entryTypeNotification, setEntryTypeNotification] = useState<{ type: 'pro'; message: string } | null>(null);
 
   // Content state for word count validation
   const [standardContent, setStandardContent] = useState('');
@@ -144,7 +144,8 @@ export function CreateEntryPage() {
   const loadDraft = (draft: Entry) => {
     setDraftId(draft.id);
     setEntryTitle(draft.title || '');
-    setEntryType(draft.entryType || 'standard');
+    const draftType = draft.entryType === 'waypoint' ? 'standard' : (draft.entryType || 'standard');
+    setEntryType(draftType as 'standard' | 'photo-essay' | 'data-log');
     setStandardContent(draft.content || '');
     setEntryLocation(draft.place || '');
 
@@ -385,7 +386,7 @@ export function CreateEntryPage() {
   };
 
   const wordCount = getWordCount();
-  const isWordCountValid = entryType === 'waypoint' || (wordCount >= 200 && wordCount <= 2000);
+  const isWordCountValid = wordCount >= 200 && wordCount <= 2000;
 
   // Calculate days active
   const calculateDaysActive = (startDate?: string): number => {
@@ -654,36 +655,6 @@ export function CreateEntryPage() {
                   DATA LOG
                   {!isPro && <span className="text-xs text-[#ac6d46]">PRO</span>}
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (isStandalone) {
-                      setEntryTypeNotification({
-                        type: 'waypoint-standalone',
-                        message: 'Waypoint entries require an expedition. Waypoints are location markers tied to a specific expedition route and cannot be created as standalone entries.'
-                      });
-                      return;
-                    }
-                    if (!isPro) {
-                      setEntryTypeNotification({
-                        type: 'pro',
-                        message: 'Waypoint entries are an Explorer Pro feature. Upgrade to Explorer Pro to create quick waypoint markers with location notes.'
-                      });
-                      return;
-                    }
-                    setEntryType('waypoint');
-                  }}
-                  className={`py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-1 ${
-                    entryType === 'waypoint'
-                      ? 'bg-[#ac6d46] text-white border-2 border-[#ac6d46]'
-                      : (isStandalone || !isPro)
-                      ? 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4] opacity-60 cursor-not-allowed'
-                      : 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#e5e5e5] hover:border-[#ac6d46]'
-                  }`}
-                >
-                  WAYPOINT
-                  {!isPro && <span className="text-xs text-[#ac6d46]">PRO</span>}
-                </button>
               </div>
               
               {/* Entry Type Descriptions */}
@@ -697,35 +668,26 @@ export function CreateEntryPage() {
                 {entryType === 'data-log' && (
                   <div><strong className="text-[#202020] dark:text-[#e5e5e5]">Data Log:</strong> Structured format emphasizing metrics, coordinates, and quantifiable information. For technical documentation and research.</div>
                 )}
-                {entryType === 'waypoint' && (
-                  <div><strong className="text-[#202020] dark:text-[#e5e5e5]">Waypoint:</strong> Location marker with brief notes. Quick updates for route tracking, notable locations, and expedition milestones without full narrative.</div>
-                )}
               </div>
             </div>
 
             {/* Entry Type Restriction Notification */}
             {entryTypeNotification && (
-              <div className={`mb-6 p-4 border-2 ${
-                entryTypeNotification.type === 'pro' 
-                  ? 'bg-[#fff8e1] dark:bg-[#3a3320] border-[#ac6d46]' 
-                  : 'bg-[#e8f4f8] dark:bg-[#1a2a32] border-[#4676ac]'
-              }`}>
+              <div className="mb-6 p-4 border-2 bg-[#fff8e1] dark:bg-[#3a3320] border-[#ac6d46]">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">
-                      {entryTypeNotification.type === 'pro' ? 'EXPLORER PRO FEATURE' : 'EXPEDITION REQUIRED'}
+                      EXPLORER PRO FEATURE
                     </div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
                       {entryTypeNotification.message}
                     </div>
-                    {entryTypeNotification.type === 'pro' && (
-                      <Link
-                        href="/settings/billing"
-                        className="inline-block mt-3 px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
-                      >
-                        UPGRADE TO EXPLORER PRO
-                      </Link>
-                    )}
+                    <Link
+                      href="/settings/billing"
+                      className="inline-block mt-3 px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
+                    >
+                      UPGRADE TO EXPLORER PRO
+                    </Link>
                   </div>
                   <button
                     onClick={() => setEntryTypeNotification(null)}
@@ -794,9 +756,7 @@ export function CreateEntryPage() {
                   maxLength={75}
                   className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                   placeholder={
-                    entryType === 'waypoint'
-                      ? 'e.g., Rest Stop - Highway 87'
-                      : isStandalone
+                    isStandalone
                       ? 'e.g., Reflections on Solo Travel'
                       : 'e.g., Day 147: Samarkand at Sunrise'
                   }
@@ -1426,49 +1386,6 @@ Include:
               )}
 
               {/* WAYPOINT FIELDS */}
-              {entryType === 'waypoint' && (
-                <>
-                  <div>
-                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                      WAYPOINT NOTES
-                      <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
-                    </label>
-                    <textarea
-                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono leading-relaxed dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                      rows={4}
-                      placeholder={`Brief note about this location...
-
-Examples:
-• 'Rest stop - good water source'
-• 'Border crossing checkpoint'  
-• 'Scenic viewpoint overlooking valley'
-• 'Met local artisan - pottery workshop'`}
-                    />
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
-                      Character count: 0 / 500
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                      QUICK PHOTO
-                      <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional - single photo only)</span>
-                    </label>
-                    <div className="border-2 border-dashed border-[#b5bcc4] dark:border-[#3a3a3a] p-6 text-center hover:border-[#ac6d46] transition-all">
-                      <div className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-2">
-                        Add one photo to mark this location
-                      </div>
-                      <button
-                        type="button"
-                        className="px-4 py-2 bg-[#4676ac] text-white hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-xs"
-                      >
-                        UPLOAD PHOTO
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
-
               {/* Tags - ALL TYPES */}
               <div>
                 <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
@@ -1529,32 +1446,30 @@ Examples:
                 </div>
               )}
 
-              {/* Sponsor Update - Not for waypoints */}
-              {entryType !== 'waypoint' && (
-                <div className="border-2 border-[#ac6d46] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
-                  <div className="flex items-start gap-2 mb-3">
-                    <input type="checkbox" id="sponsor-update" className="mt-1" />
-                    <label htmlFor="sponsor-update" className="text-xs">
-                      <strong className="text-[#202020] dark:text-[#e5e5e5]">Send sponsor notification:</strong>{' '}
-                      <span className="text-[#616161] dark:text-[#b5bcc4]">
-                        Email your {expedition?.sponsorsCount || 0} sponsors about this new entry
-                      </span>
-                    </label>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      id="milestone"
-                      className="mt-1"
-                      checked={isMilestone}
-                      onChange={(e) => setIsMilestone(e.target.checked)}
-                    />
-                    <label htmlFor="milestone" className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      Mark this as a milestone entry (highlighted in timeline)
-                    </label>
-                  </div>
+              {/* Sponsor Update */}
+              <div className="border-2 border-[#ac6d46] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                <div className="flex items-start gap-2 mb-3">
+                  <input type="checkbox" id="sponsor-update" className="mt-1" />
+                  <label htmlFor="sponsor-update" className="text-xs">
+                    <strong className="text-[#202020] dark:text-[#e5e5e5]">Send sponsor notification:</strong>{' '}
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">
+                      Email your {expedition?.sponsorsCount || 0} sponsors about this new entry
+                    </span>
+                  </label>
                 </div>
-              )}
+                <div className="flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    id="milestone"
+                    className="mt-1"
+                    checked={isMilestone}
+                    onChange={(e) => setIsMilestone(e.target.checked)}
+                  />
+                  <label htmlFor="milestone" className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                    Mark this as a milestone entry (highlighted in timeline)
+                  </label>
+                </div>
+              </div>
 
               {/* Privacy Settings - ALL TYPES */}
               <div className="border-2 border-[#202020] dark:border-[#616161] p-4 dark:bg-[#2a2a2a]">
@@ -1717,17 +1632,10 @@ Examples:
                 </div>
                 <div className="text-[#616161] dark:text-[#b5bcc4]">Technical documentation with environmental and activity metrics</div>
               </div>
-              <div>
-                <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-1 flex items-center gap-1">
-                  Waypoint
-                  <span className="text-xs text-[#ac6d46]">PRO</span>
-                </div>
-                <div className="text-[#616161] dark:text-[#b5bcc4]">Quick location marker with brief notes</div>
-              </div>
             </div>
             {!isPro && (
               <div className="mt-3 pt-3 border-t border-[#202020] dark:border-[#616161] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                <span className="font-bold text-[#ac6d46]">NOTE:</span> Photo Essay, Data Log, and Waypoint entries require Explorer Pro. 
+                <span className="font-bold text-[#ac6d46]">NOTE:</span> Photo Essay and Data Log entries require Explorer Pro.
                 <Link href="/settings/billing" className="text-[#4676ac] hover:underline ml-1">Upgrade to Pro</Link>
               </div>
             )}

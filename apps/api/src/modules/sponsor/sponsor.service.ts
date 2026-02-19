@@ -80,7 +80,7 @@ export class SponsorService {
     ISponsorCheckoutPayload
   >): Promise<ISponsorCheckoutResponse> {
     try {
-      const { userId } = session;
+      const { userId, userRole } = session;
       const {
         sponsorshipTierId,
         oneTimePaymentAmount,
@@ -105,7 +105,7 @@ export class SponsorService {
 
       // Server-side amount validation for one-time payments
       if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
-        const MIN_ONE_TIME_AMOUNT = 1; // $1 minimum
+        const MIN_ONE_TIME_AMOUNT = 5; // $5 minimum
         const MAX_ONE_TIME_AMOUNT = 10000; // $10,000 maximum
 
         if (
@@ -152,8 +152,16 @@ export class SponsorService {
           id: true,
           stripe_customer_id: true,
           username: true,
+          role: true,
         },
       });
+
+      // Verify creator has Explorer Pro status (required to receive sponsorships)
+      if (creator.role !== UserRole.CREATOR) {
+        throw new ServiceBadRequestException(
+          'This explorer is not eligible to receive sponsorships',
+        );
+      }
 
       // Block self-sponsorship
       if (user.id === creator.id) {
@@ -352,11 +360,11 @@ export class SponsorService {
             subscriptionAmount = customAmountCents;
 
             // Validate custom amount bounds
-            const MIN_SUBSCRIPTION = 100; // $1 minimum in cents
+            const MIN_SUBSCRIPTION = 500; // $5 minimum in cents
             const MAX_SUBSCRIPTION = 1000000; // $10,000 maximum in cents
             if (customAmountCents < MIN_SUBSCRIPTION) {
               throw new ServiceBadRequestException(
-                'Subscription amount must be at least $1',
+                'Subscription amount must be at least $5',
               );
             }
             if (customAmountCents > MAX_SUBSCRIPTION) {

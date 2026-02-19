@@ -16,6 +16,7 @@ import {
   type LocationPrivacyLevel
 } from '@/app/utils/locationPrivacy';
 import { explorerApi } from '@/app/services/api';
+import { toast } from 'sonner';
 
 export function EditProfilePage() {
   const { user } = useAuth();
@@ -138,12 +139,12 @@ export function EditProfilePage() {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        toast.error('Please select an image file');
         return;
       }
       // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
-        alert('Avatar image must be less than 5MB');
+        toast.error('Avatar image must be less than 5MB');
         return;
       }
       setAvatarFile(file);
@@ -158,12 +159,12 @@ export function EditProfilePage() {
     if (file) {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        toast.error('Please select an image file');
         return;
       }
       // Validate file size (max 10MB)
       if (file.size > 10 * 1024 * 1024) {
-        alert('Cover photo must be less than 10MB');
+        toast.error('Cover photo must be less than 10MB');
         return;
       }
       setCoverPhotoFile(file);
@@ -221,9 +222,10 @@ export function EditProfilePage() {
 
       setSaveStatus('saved');
       setIsDirty(false);
-      // Status stays 'saved' until user makes a new change (which resets to 'idle')
+      toast.success('Profile saved');
     } catch {
       setSaveStatus('error');
+      toast.error('Failed to save profile');
       setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
@@ -284,10 +286,8 @@ export function EditProfilePage() {
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="bg-[#202020] dark:bg-[#2a2a2a] text-white px-4 lg:px-6 py-2 text-xs font-mono">
           <div className="flex flex-wrap items-center gap-4 lg:gap-6">
-            <div>USER ID: {user.id}</div>
-            <div>ACCOUNT TYPE: {user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}</div>
-            <div>EMAIL VERIFIED: {user.isEmailVerified ? '✓ YES' : '✗ NO'}</div>
-            <div>USERNAME: {user.username}</div>
+            <div>ACCOUNT: {user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}</div>
+            <div>EMAIL: {user.isEmailVerified ? '✓ VERIFIED' : '✗ UNVERIFIED'}</div>
             {isDirty && <div className="text-[#ac6d46]">● UNSAVED CHANGES</div>}
             {saveStatus === 'saving' && (
               <div className="text-[#b5bcc4]">SAVING...</div>
@@ -414,7 +414,7 @@ export function EditProfilePage() {
                         <button
                           type="button"
                           onClick={removeAvatar}
-                          className="px-4 py-2 border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-red-600 text-xs font-bold"
+                          className="px-4 py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold"
                         >
                           REMOVE
                         </button>
@@ -466,7 +466,7 @@ export function EditProfilePage() {
                     <button
                       type="button"
                       onClick={removeCoverPhoto}
-                      className="px-4 py-2 border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-red-600 text-xs font-bold"
+                      className="px-4 py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold"
                     >
                       REMOVE
                     </button>
