@@ -1,14 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Check, Crown, ArrowRight, BarChart3, Settings, DollarSign, MessageSquare, FileText, Eye, Receipt, CreditCard, Sparkles } from 'lucide-react';
+import { useAuth } from '@/app/context/AuthContext';
 
 export function UpgradeSuccessPage() {
   const searchParams = useSearchParams();
+  const { refreshUser } = useAuth();
   const plan = searchParams.get('plan') || 'monthly';
   const amount = plan === 'monthly' ? 7 : 50;
+
+  // Refresh auth context so the user's role is updated to 'creator' (Explorer Pro)
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
 
   // Transaction details will be shown from the payment
   const [timestamp] = useState(() => new Date());

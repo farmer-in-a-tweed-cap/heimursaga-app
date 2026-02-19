@@ -1844,7 +1844,7 @@ export const payoutApi = {
    * Get Stripe Connect onboarding link
    */
   getOnboardingLink: (payload: StripeOnboardingLinkPayload) =>
-    api.post<StripeOnboardingLinkResponse>('/payout-methods/link', payload),
+    api.post<StripeOnboardingLinkResponse>('/stripe-account-links', payload),
 
   /**
    * Get payout history

@@ -193,7 +193,7 @@ export function CardShowcase() {
               totalEntries={234}
               totalSponsored={47820}
               followers={1247}
-              totalViews={289340}
+
               tagline="Documentary photographer exploring traditional cultures along historic trade routes"
               onViewProfile={() => {}}
               onViewJournal={() => {}}
@@ -211,7 +211,7 @@ export function CardShowcase() {
               totalEntries={156}
               totalSponsored={89450}
               followers={2341}
-              totalViews={512890}
+
               tagline="Climate researcher studying ice core samples and environmental change in polar regions"
               onViewProfile={() => {}}
               onViewJournal={() => {}}
@@ -229,7 +229,7 @@ export function CardShowcase() {
               totalEntries={67}
               totalSponsored={0}
               followers={423}
-              totalViews={98234}
+
               tagline="Biologist and conservation advocate documenting biodiversity in tropical rainforest ecosystems"
               onViewProfile={() => {}}
               onViewJournal={() => {}}
@@ -323,7 +323,7 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
               accountType="explorer-pro"
               activeExpeditions={2}
               totalEntries={234}
-              totalViews={289340}
+
               onClick={() => {}}
             />
             <ExpeditionCardPortrait
@@ -362,7 +362,7 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
               accountType="explorer-pro"
               activeExpeditions={1}
               totalEntries={156}
-              totalViews={512890}
+
               onClick={() => {}}
             />
           </div>
@@ -386,7 +386,7 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
               accountType="explorer-pro"
               activeExpeditions={2}
               totalEntries={234}
-              totalViews={289340}
+
               onClick={() => {}}
             />
             <ExpeditionCardLandscape
@@ -422,7 +422,7 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
               accountType="explorer"
               activeExpeditions={1}
               totalEntries={67}
-              totalViews={98234}
+
               onClick={() => {}}
             />
           </div>

@@ -5,7 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
-import { Bell, Settings, MapPin, CloudSun, User } from 'lucide-react';
+import { Bell, Settings, MapPin, CloudSun } from 'lucide-react';
+import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { NotificationsDropdown } from '@/app/components/NotificationsDropdown';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { notificationApi, messageApi } from '@/app/services/api';
@@ -376,18 +377,8 @@ export function Header() {
             {/* User Avatar */}
             {isAuthenticated && user && (
               <Link href={`/journal/${user.username}`} className="flex-shrink-0 flex items-center">
-                <div className={`w-[66px] h-[66px] border-2 ${user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4676ac] flex items-center justify-center`}>
-                  {user.picture ? (
-                    <Image
-                      src={user.picture}
-                      alt={user.username}
-                      className="w-full h-full object-cover"
-                      width={66}
-                      height={66}
-                    />
-                  ) : (
-                    <User className="w-8 h-8 text-[#b5bcc4]" />
-                  )}
+                <div className={`w-[66px] h-[66px] border-2 ${user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden hover:border-[#4676ac] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4676ac]`}>
+                  <ExplorerAvatar username={user.username} src={user.picture} size={66} className="w-full h-full" />
                 </div>
               </Link>
             )}

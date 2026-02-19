@@ -1,4 +1,4 @@
-import Image from 'next/image';
+import { ExplorerAvatar } from "@/app/components/ExplorerAvatar";
 import { MapPin } from "lucide-react";
 
 interface ExplorerCardPortraitProps {
@@ -10,7 +10,6 @@ interface ExplorerCardPortraitProps {
   accountType: "explorer" | "explorer-pro";
   activeExpeditions: number;
   totalEntries: number;
-  totalViews: number;
   onClick?: () => void;
 }
 
@@ -22,11 +21,10 @@ export function ExplorerCardPortrait({
   accountType,
   activeExpeditions,
   totalEntries,
-  totalViews,
   onClick,
 }: ExplorerCardPortraitProps) {
   return (
-    <div 
+    <div
       onClick={onClick}
       className="border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.98]"
     >
@@ -44,13 +42,7 @@ export function ExplorerCardPortrait({
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] pt-7 px-3 pb-7">
         <div className="flex flex-col items-center">
           <div className={`w-32 h-32 border-2 ${accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#b5bcc4]`}>
-            <Image
-              src={avatarUrl}
-              alt={username}
-              className="h-full w-full object-cover"
-              width={128}
-              height={128}
-            />
+            <ExplorerAvatar username={username} src={avatarUrl} size={128} className="w-full h-full" />
           </div>
         </div>
       </div>
@@ -74,18 +66,14 @@ export function ExplorerCardPortrait({
 
       {/* Stats */}
       <div className="dark:bg-[#202020] px-3 py-3">
-        <div className="grid grid-cols-3 gap-2 font-mono text-xs">
+        <div className="grid grid-cols-2 gap-2 font-mono text-xs">
           <div className="text-center">
             <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Expeditions</div>
             <div className="font-bold text-xs text-[#ac6d46]">{activeExpeditions}</div>
           </div>
-          <div className="text-center border-l border-r border-[#202020] dark:border-[#616161]">
+          <div className="text-center border-l border-[#202020] dark:border-[#616161]">
             <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Entries</div>
             <div className="font-bold text-xs dark:text-[#e5e5e5]">{totalEntries}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Views</div>
-            <div className="font-bold text-xs text-[#4676ac]">{totalViews.toLocaleString()}</div>
           </div>
         </div>
       </div>

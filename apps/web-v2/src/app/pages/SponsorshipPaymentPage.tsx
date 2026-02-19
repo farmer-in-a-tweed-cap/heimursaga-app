@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
+import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { CreditCard, RefreshCw, Lock, DollarSign, Loader2, AlertCircle, Shield } from 'lucide-react';
@@ -474,14 +474,8 @@ export function SponsorshipPaymentPage() {
         <div className="p-6 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161]">
           <div className="flex items-start gap-6">
             <Link href={`/journal/${explorer?.username}`} className="flex-shrink-0">
-              <div className={`w-24 h-24 border-4 ${explorer?.isPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#616161]`}>
-                <Image
-                  src={explorer?.picture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${explorer?.username}`}
-                  alt={explorer?.username || ''}
-                  className="w-full h-full object-cover"
-                  width={96}
-                  height={96}
-                />
+              <div className={`w-24 h-24 border-4 ${explorer?.isPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden`}>
+                <ExplorerAvatar username={explorer?.username || ''} src={explorer?.picture} size={96} className="w-full h-full" />
               </div>
             </Link>
             <div className="flex-1">

@@ -5,7 +5,8 @@ import { useAuth } from '@/app/context/AuthContext';
 import Link from 'next/link';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
-import { User, Camera, Save, X, Upload, Shield, Home, Navigation, Info, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Camera, Save, X, Upload, Shield, Home, Navigation, Info, Loader2, Image as ImageIcon } from 'lucide-react';
+import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 // import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationAutocompleteInput } from '@/app/components/LocationAutocompleteInput';
@@ -388,11 +389,11 @@ export function EditProfilePage() {
 
                 {/* Current Avatar or Preview */}
                 <div className="flex items-start gap-4 mb-3">
-                  <div className={`w-32 h-32 border-2 ${user?.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} bg-[#f5f5f5] dark:bg-[#2a2a2a] flex items-center justify-center overflow-hidden`}>
+                  <div className={`w-32 h-32 border-2 ${user?.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden`}>
                     {avatarPreview ? (
                       <NextImage src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" width={128} height={128} />
                     ) : (
-                      <User size={48} className="text-[#b5bcc4]" />
+                      <ExplorerAvatar username={user?.username || ''} src={null} size={128} className="w-full h-full" />
                     )}
                   </div>
                   <div className="flex-1">

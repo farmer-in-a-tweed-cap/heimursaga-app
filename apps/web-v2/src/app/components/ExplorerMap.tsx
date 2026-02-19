@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import Image from 'next/image';
 import mapboxgl from 'mapbox-gl';
+import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { MapPin, User, X, Maximize2, Minimize2, Bookmark, UserPlus, UserCheck, BookmarkCheck, Loader2 } from 'lucide-react';
@@ -754,11 +754,9 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
             <div className="p-3 text-xs font-mono">
               <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">
                 <div className="flex items-center gap-2">
-                  {clickedExplorer.picture && (
-                    <div className={`w-8 h-8 border-2 ${clickedExplorer.creator ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden flex-shrink-0`}>
-                      <Image src={clickedExplorer.picture} alt={clickedExplorer.username} className="w-full h-full object-cover" width={32} height={32} />
-                    </div>
-                  )}
+                  <div className={`w-8 h-8 border-2 ${clickedExplorer.creator ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden flex-shrink-0`}>
+                    <ExplorerAvatar username={clickedExplorer.username} src={clickedExplorer.picture} size={32} className="w-full h-full" />
+                  </div>
                   <div>
                     <div className="font-bold text-sm dark:text-[#e5e5e5]">{clickedExplorer.username}</div>
                     <div className="text-[#616161] dark:text-[#b5bcc4]">{clickedExplorer.name}</div>

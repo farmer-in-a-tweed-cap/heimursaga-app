@@ -333,7 +333,6 @@ export function BookmarksPage() {
                 accountType={explorer.isPremium ? 'explorer-pro' : 'explorer'}
                 activeExpeditions={explorer.expeditionsCount || 0}
                 totalEntries={explorer.entriesCount || 0}
-                totalViews={explorer.followersCount || 0}
                 onClick={() => router.push(`/journal/${explorer.username}`)}
                 onUnbookmark={() => handleUnbookmarkExplorer(explorer.username)}
               />

@@ -10,6 +10,8 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
+import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
 import { getExplorerStatus, getCurrentExpeditionInfo } from '@/app/components/ExplorerStatusBadge';
 import { useAuth } from '@/app/context/AuthContext';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
@@ -312,8 +314,8 @@ export function ExplorerProfilePage() {
     lastActive: '',
     accountStatus: 'verified',
     privacyLevel: (profile.locationVisibility?.toUpperCase() || 'HIDDEN') as LocationPrivacyLevel,
-    avatarUrl: profile.picture || 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=200',
-    coverImageUrl: profile.coverPhoto || 'https://images.unsplash.com/photo-1542224566-6e85f2e6772f?w=1200',
+    avatarUrl: profile.picture || '',
+    coverImageUrl: profile.coverPhoto || '',
 
     // Stats from fetched data
     stats: {
@@ -361,7 +363,7 @@ export function ExplorerProfilePage() {
       id: f.username,
       name: f.username,
       accountType: (f.creator ? 'explorer-pro' : 'explorer') as 'explorer-pro' | 'explorer',
-      avatarUrl: f.picture || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100',
+      avatarUrl: f.picture || '',
       mutualFollow: f.followed || false,
       followedSince: '',
     })),
@@ -478,11 +480,15 @@ export function ExplorerProfilePage() {
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-4 md:mb-6">
         {/* Banner Section with Custom Cover Image */}
         <div className="relative h-[280px] md:h-[400px] overflow-hidden">
-          <ImageWithFallback
-            src={explorer.coverImageUrl}
-            alt={`${explorer.name} cover`}
-            className="h-full w-full object-cover"
-          />
+          {explorer.coverImageUrl ? (
+            <ImageWithFallback
+              src={explorer.coverImageUrl}
+              alt={`${explorer.name} cover`}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <CoverPhotoFallback className="h-full w-full" />
+          )}
           
           {/* Dark gradient overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90" />
@@ -551,13 +557,7 @@ export function ExplorerProfilePage() {
               {/* Large Avatar */}
               <div className="flex-shrink-0 mt-2">
                 <div className={`w-20 h-20 md:w-40 md:h-40 border-2 md:border-4 ${explorer.accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020]`}>
-                  <Image
-                    src={explorer.avatarUrl}
-                    alt={explorer.name}
-                    className="w-full h-full object-cover"
-                    width={160}
-                    height={160}
-                  />
+                  <ExplorerAvatar username={explorer.name} src={explorer.avatarUrl} size={160} className="w-full h-full" />
                 </div>
               </div>
 

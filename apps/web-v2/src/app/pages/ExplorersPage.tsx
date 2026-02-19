@@ -181,8 +181,7 @@ export function ExplorersPage() {
     totalEntries: exp.entriesCount || 0,
     totalSponsored: 0,
     followers: 0,
-    totalViews: 0,
-    imageUrl: exp.picture || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
+    imageUrl: exp.picture || '',
     tagline: exp.bio || '',
     tags: [] as string[],
     recentExpeditions: exp.recentExpeditions || [],
@@ -368,7 +367,6 @@ export function ExplorersPage() {
                 totalEntries={explorer.totalEntries}
                 totalSponsored={explorer.totalSponsored}
                 followers={explorer.followers}
-                totalViews={explorer.totalViews}
                 imageUrl={explorer.imageUrl}
                 explorerStatus={explorerStatus}
                 currentExpeditionTitle={currentExpedition?.title}

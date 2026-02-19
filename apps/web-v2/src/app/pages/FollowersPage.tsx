@@ -1,9 +1,9 @@
 'use client';
 
 import { useRouter, useParams } from 'next/navigation';
-import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Search, Users, UserCheck, Loader2, AlertTriangle } from 'lucide-react';
+import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { explorerApi, type ExplorerFollower, type ExplorerProfile } from '@/app/services/api';
 
 export function FollowersPage() {
@@ -190,21 +190,9 @@ export function FollowersPage() {
               <div className="flex items-start gap-3 mb-3">
                 <button
                   onClick={() => router.push(`/journal/${follower.username}`)}
-                  className={`w-16 h-16 flex-shrink-0 overflow-hidden border-2 ${follower.creator ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'} hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all bg-[#616161]`}
+                  className={`w-16 h-16 flex-shrink-0 overflow-hidden border-2 ${follower.creator ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'} hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all`}
                 >
-                  {follower.picture ? (
-                    <Image
-                      src={follower.picture}
-                      alt={follower.username}
-                      className="w-full h-full object-cover"
-                      width={64}
-                      height={64}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-white text-xl font-bold">
-                      {follower.username.charAt(0).toUpperCase()}
-                    </div>
-                  )}
+                  <ExplorerAvatar username={follower.username} src={follower.picture} size={64} className="w-full h-full" />
                 </button>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">

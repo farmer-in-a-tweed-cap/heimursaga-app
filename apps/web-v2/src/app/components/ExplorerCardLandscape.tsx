@@ -1,5 +1,5 @@
-import Image from 'next/image';
-import { MapPin, FileText, Map, Eye, Bookmark } from "lucide-react";
+import { ExplorerAvatar } from "@/app/components/ExplorerAvatar";
+import { MapPin, FileText, Map, Bookmark } from "lucide-react";
 
 interface ExplorerCardLandscapeProps {
   id: string;
@@ -10,7 +10,6 @@ interface ExplorerCardLandscapeProps {
   accountType: "explorer" | "explorer-pro";
   activeExpeditions: number;
   totalEntries: number;
-  totalViews: number;
   onClick?: () => void;
   onUnbookmark?: () => void;
 }
@@ -23,12 +22,11 @@ export function ExplorerCardLandscape({
   accountType,
   activeExpeditions,
   totalEntries,
-  totalViews,
   onClick,
   onUnbookmark,
 }: ExplorerCardLandscapeProps) {
   return (
-    <div 
+    <div
       onClick={onClick}
       className="border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.99]"
     >
@@ -44,14 +42,8 @@ export function ExplorerCardLandscape({
 
       <div className="flex">
         {/* Avatar */}
-        <div className={`w-32 h-32 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] ${accountType === 'explorer-pro' ? 'border-l-4 border-l-[#ac6d46]' : ''} bg-[#b5bcc4]`}>
-          <Image
-            src={avatarUrl}
-            alt={username}
-            className="w-full h-full object-cover"
-            width={128}
-            height={128}
-          />
+        <div className={`w-32 h-32 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] ${accountType === 'explorer-pro' ? 'border-l-4 border-l-[#ac6d46]' : ''} bg-[#b5bcc4] overflow-hidden`}>
+          <ExplorerAvatar username={username} src={avatarUrl} size={128} className="w-full h-full" />
         </div>
 
         {/* Content */}
@@ -86,10 +78,6 @@ export function ExplorerCardLandscape({
                   <FileText className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
                   <span className="dark:text-[#e5e5e5] font-bold">{totalEntries}</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">entries</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Eye className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
-                  <span className="text-[#4676ac] font-bold">{totalViews.toLocaleString()}</span>
                 </div>
               </div>
               {onUnbookmark && (

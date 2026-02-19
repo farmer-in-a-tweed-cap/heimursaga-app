@@ -12,6 +12,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { Globe, Users, Loader2 } from "lucide-react";
 import { expeditionApi, explorerApi, entryApi, type Expedition, type ExplorerListItem, type Entry } from "@/app/services/api";
 import { calculateDaysElapsed } from "@/app/utils/dateFormat";
+import { getExplorerStatus, getCurrentExpeditionInfo } from "@/app/components/ExplorerStatusBadge";
 
 // Shared transform: raw API expedition -> ExpeditionCard props
 function transformExpedition(exp: Expedition) {
@@ -46,6 +47,9 @@ function transformExpedition(exp: Expedition) {
 
 // Shared transform: raw API explorer -> ExplorerCard props
 function transformExplorer(exp: ExplorerListItem) {
+  const recentExpeditions = exp.recentExpeditions || [];
+  const explorerStatus = getExplorerStatus(recentExpeditions, exp.activeExpeditionOffGrid);
+  const currentExpedition = getCurrentExpeditionInfo(recentExpeditions);
   return {
     id: exp.username,
     username: exp.username,
@@ -54,12 +58,14 @@ function transformExplorer(exp: ExplorerListItem) {
     location: exp.locationLives || exp.locationFrom || '',
     accountType: (exp.creator ? 'explorer-pro' : 'explorer') as 'explorer-pro' | 'explorer',
     joined: exp.memberDate ? new Date(exp.memberDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '',
-    activeExpeditions: 0,
+    activeExpeditions: recentExpeditions.filter(e => e.status === 'active').length,
     totalEntries: exp.entriesCount || 0,
     totalSponsored: 0,
     followers: 0,
-    totalViews: 0,
     tagline: exp.bio || '',
+    explorerStatus,
+    currentExpeditionTitle: currentExpedition?.title,
+    daysActive: currentExpedition?.daysActive,
   };
 }
 
