@@ -389,6 +389,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
       // Get onboarding link
       const { url } = await payoutApi.getOnboardingLink({
         payoutMethodId,
+        mode: 'onboarding',
         backUrl: window.location.href,
       });
 

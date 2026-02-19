@@ -3,7 +3,7 @@ import {
   IExplorerSettingsProfileUpdatePayload,
   ISponsorshipTierUpdatePayload,
 } from '@repo/types';
-import { IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsArray, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
 
 import { SanitizeContent, SanitizeText } from '@/lib/sanitizer';
 
@@ -103,6 +103,19 @@ export class ExplorerSettingsProfileUpdateDto
     message: 'YouTube channel must be less than 100 characters',
   })
   youtube: string;
+
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(50, { message: 'Location visibility must be less than 50 characters' })
+  locationVisibility: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  equipment?: string[];
 
   @ApiProperty({ required: false })
   @IsOptional()

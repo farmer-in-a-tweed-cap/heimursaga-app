@@ -1806,6 +1806,7 @@ export interface CreatePayoutMethodResponse {
 
 export interface StripeOnboardingLinkPayload {
   payoutMethodId: string;
+  mode?: 'onboarding' | 'update';
   backUrl: string;
 }
 
