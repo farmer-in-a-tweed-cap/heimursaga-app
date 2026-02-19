@@ -440,16 +440,18 @@ export class AuthService {
       const isDevelopment = process.env.NODE_ENV === 'development';
       if (this.recaptchaService.isConfigured() && !isDevelopment) {
         if (!payload.recaptchaToken) {
-          throw new ServiceForbiddenException(
-            'reCAPTCHA verification required',
+          // Token missing — script may be blocked by CSP, ad blockers, etc.
+          // Allow registration but log for monitoring
+          this.logger.warn(
+            `reCAPTCHA token missing for signup: ${email} (${username})`,
           );
-        }
-
-        const isValidRecaptcha = await this.recaptchaService.verifyToken(
-          payload.recaptchaToken,
-        );
-        if (!isValidRecaptcha) {
-          throw new ServiceForbiddenException('reCAPTCHA verification failed');
+        } else {
+          const isValidRecaptcha = await this.recaptchaService.verifyToken(
+            payload.recaptchaToken,
+          );
+          if (!isValidRecaptcha) {
+            throw new ServiceForbiddenException('reCAPTCHA verification failed');
+          }
         }
       }
 

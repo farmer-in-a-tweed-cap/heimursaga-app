@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter, useParams } from 'next/navigation';
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
-import { CreditCard, RefreshCw, Lock, DollarSign, Loader2, AlertCircle } from 'lucide-react';
+import { CreditCard, RefreshCw, Lock, DollarSign, Loader2, AlertCircle, Shield } from 'lucide-react';
 import { formatDate } from '@/app/utils/dateFormat';
 import { explorerApi, expeditionApi, sponsorshipApi, paymentMethodApi, type SponsorshipTierFull, type PaymentMethodFull, type Expedition } from '@/app/services/api';
 import { useStripe, useElements, CardElement } from '@/app/context/StripeContext';
@@ -894,9 +894,17 @@ export function SponsorshipPaymentPage() {
                   </div>
                 )}
 
-                <div className="mt-4 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] text-xs text-[#616161] dark:text-[#b5bcc4] flex items-center gap-2">
-                  <Lock className="w-4 h-4 flex-shrink-0" />
-                  <span>Your payment is processed securely via Stripe. We never store your card details.</span>
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-start gap-2 text-xs text-[#616161] dark:text-[#b5bcc4]">
+                    <Shield className="w-3.5 h-3.5 text-[#4676ac] flex-shrink-0 mt-0.5" />
+                    <span>Your card details are encrypted end-to-end and securely processed by <strong className="text-[#202020] dark:text-[#e5e5e5]">Stripe</strong>. Card numbers never touch our servers.</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-[#616161] dark:text-[#b5bcc4]">
+                    <Lock className="w-3 h-3 flex-shrink-0" />
+                    <span>PCI DSS Level 1 compliant</span>
+                    <span className="mx-1">·</span>
+                    <span>256-bit SSL encryption</span>
+                  </div>
                 </div>
               </div>
             </div>

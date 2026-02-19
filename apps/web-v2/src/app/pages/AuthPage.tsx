@@ -5,13 +5,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth, ApiError } from '@/app/context/AuthContext';
 import { useRecaptcha } from '@/app/hooks/useRecaptcha';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 
 export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const { login, signup } = useAuth();
   const { executeRecaptcha, isConfigured: recaptchaConfigured } = useRecaptcha();
   const router = useRouter();
@@ -48,8 +50,6 @@ export function AuthPage() {
     const formData = new FormData(e.currentTarget);
     const username = (formData.get('username') as string).trim();
     const email = (formData.get('email') as string).trim();
-    const password = formData.get('password') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
     const terms = formData.get('terms') === 'on';
 
     // Client-side validation
@@ -81,11 +81,6 @@ export function AuthPage() {
       let recaptchaToken: string | undefined;
       if (recaptchaConfigured) {
         recaptchaToken = (await executeRecaptcha('signup')) || undefined;
-        if (!recaptchaToken) {
-          setError('Security verification is still loading. Please try again in a moment.');
-          setLoading(false);
-          return;
-        }
       }
       await signup(email, username, password, recaptchaToken);
       router.push('/');
@@ -306,6 +301,8 @@ export function AuthPage() {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         name="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
                         className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono bg-white dark:bg-[#1a1a1a] dark:text-[#e5e5e5]"
                         placeholder="Create a strong password"
                         required
@@ -322,11 +319,24 @@ export function AuthPage() {
                     </div>
                     <div className="mt-2 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#3a3a3a]">
                       <div className="text-xs font-bold mb-1">PASSWORD REQUIREMENTS:</div>
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1 font-mono">
-                        <div>○ Minimum 8 characters</div>
-                        <div>○ At least 1 uppercase letter (A-Z)</div>
-                        <div>○ At least 1 lowercase letter (a-z)</div>
-                        <div>○ At least 1 number (0-9)</div>
+                      <div className="text-xs space-y-1 font-mono">
+                        {[
+                          { met: password.length >= 8, label: 'Minimum 8 characters' },
+                          { met: /[A-Z]/.test(password), label: 'At least 1 uppercase letter (A-Z)' },
+                          { met: /[a-z]/.test(password), label: 'At least 1 lowercase letter (a-z)' },
+                          { met: /\d/.test(password), label: 'At least 1 number (0-9)' },
+                        ].map(({ met, label }) => (
+                          <div key={label} className={`flex items-center gap-1.5 ${password.length === 0 ? 'text-[#616161] dark:text-[#b5bcc4]' : met ? 'text-[#4676ac]' : 'text-[#994040]'}`}>
+                            {password.length === 0 ? (
+                              <span className="w-3 text-center">○</span>
+                            ) : met ? (
+                              <Check className="w-3 h-3 flex-shrink-0" />
+                            ) : (
+                              <span className="w-3 text-center">✕</span>
+                            )}
+                            <span>{label}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   </div>
@@ -340,11 +350,22 @@ export function AuthPage() {
                     <input
                       type={showPassword ? 'text' : 'password'}
                       name="confirmPassword"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono bg-white dark:bg-[#1a1a1a] dark:text-[#e5e5e5]"
                       placeholder="Re-enter your password"
                       required
                       disabled={loading}
                     />
+                    {confirmPassword.length > 0 && (
+                      <div className={`flex items-center gap-1.5 mt-1 text-xs font-mono ${password === confirmPassword ? 'text-[#4676ac]' : 'text-[#994040]'}`}>
+                        {password === confirmPassword ? (
+                          <><Check className="w-3 h-3 flex-shrink-0" /> Passwords match</>
+                        ) : (
+                          <><span className="w-3 text-center">✕</span> Passwords do not match</>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Privacy Settings */}
