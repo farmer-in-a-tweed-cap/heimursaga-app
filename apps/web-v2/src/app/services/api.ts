@@ -507,9 +507,11 @@ export const explorerApi = {
     const formData = new FormData();
     formData.append('file', file);
 
+    const token = await getCsrfToken();
     const response = await fetch(`${API_BASE_URL}/user/picture`, {
       method: 'POST',
       credentials: 'include',
+      headers: { 'x-csrf-token': token },
       body: formData,
     });
 
@@ -530,9 +532,11 @@ export const explorerApi = {
     const formData = new FormData();
     formData.append('file', file);
 
+    const token = await getCsrfToken();
     const response = await fetch(`${API_BASE_URL}/user/cover`, {
       method: 'POST',
       credentials: 'include',
+      headers: { 'x-csrf-token': token },
       body: formData,
     });
 
@@ -1265,9 +1269,11 @@ export const uploadApi = {
     const formData = new FormData();
     formData.append('file', file);
 
+    const token = await getCsrfToken();
     const response = await fetch(`${API_BASE_URL}/upload`, {
       method: 'POST',
       credentials: 'include',
+      headers: { 'x-csrf-token': token },
       body: formData,
     });
 
