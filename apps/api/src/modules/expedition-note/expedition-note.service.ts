@@ -9,8 +9,11 @@ import {
   ServiceNotFoundException,
 } from '@/common/exceptions';
 import { ISessionQuery, ISessionQueryWithPayload } from '@/common/interfaces';
+import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
+import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
+import { UserNotificationContext } from '@repo/types';
 
 export interface IExpeditionNoteDetail {
   id: number;
@@ -42,6 +45,7 @@ export class ExpeditionNoteService {
   constructor(
     private logger: Logger,
     private prisma: PrismaService,
+    private eventService: EventService,
   ) {}
 
   /**
@@ -316,6 +320,26 @@ export class ExpeditionNoteService {
           text,
         },
       });
+
+      // Notify the expedition owner (skip if replier IS the owner)
+      if (!isOwner) {
+        const replier = await this.prisma.explorer.findUnique({
+          where: { id: explorerId },
+          select: { username: true, profile: { select: { name: true } } },
+        });
+        const replierName =
+          replier?.profile?.name || replier?.username || 'Someone';
+
+        this.eventService.trigger<IUserNotificationCreatePayload>({
+          event: EVENTS.NOTIFICATION_CREATE,
+          data: {
+            context: UserNotificationContext.EXPEDITION_NOTE_REPLY,
+            userId: expedition.author_id,
+            mentionUserId: explorerId,
+            body: `${replierName} replied to your expedition note`,
+          },
+        });
+      }
 
       return { replyId: reply.id };
     } catch (e) {

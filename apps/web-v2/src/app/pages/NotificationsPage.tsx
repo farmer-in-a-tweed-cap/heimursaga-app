@@ -99,6 +99,11 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
           ? `"${apiNotif.body.slice(0, 300)}${apiNotif.body.length > 300 ? '...' : ''}"`
           : ''
       };
+    case 'expedition_note_reply':
+      return {
+        title: apiNotif.body || `${actor} replied to your expedition note`,
+        message: '',
+      };
     case 'entry_milestone':
       return {
         title: 'Entry Milestone',
