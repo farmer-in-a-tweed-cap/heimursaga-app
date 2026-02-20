@@ -95,8 +95,8 @@ export class SponsorBillingService {
     const sponsorships = await this.prisma.sponsorship.findMany({
       where: {
         sponsored_explorer_id: explorerId,
-        type: 'subscription',
-        status: 'active',
+        type: { in: ['subscription', 'SUBSCRIPTION'] },
+        status: { in: ['active', 'ACTIVE'] },
         stripe_subscription_id: { not: null },
         deleted_at: null,
       },

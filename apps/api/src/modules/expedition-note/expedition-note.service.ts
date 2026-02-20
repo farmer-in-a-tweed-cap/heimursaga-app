@@ -84,7 +84,7 @@ export class ExpeditionNoteService {
           where: {
             sponsor_id: explorerId,
             sponsored_explorer_id: expedition.author_id,
-            status: 'active',
+            status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
           },
         });
         isSponsor = !!sponsorship;
@@ -287,7 +287,7 @@ export class ExpeditionNoteService {
           where: {
             sponsor_id: explorerId,
             sponsored_explorer_id: expedition.author_id,
-            status: 'active',
+            status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
           },
         });
         isSponsor = !!sponsorship;

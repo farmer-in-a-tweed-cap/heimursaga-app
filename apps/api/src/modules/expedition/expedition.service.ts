@@ -1186,7 +1186,7 @@ export class ExpeditionService {
           const sponsors = await this.prisma.sponsorship.findMany({
             where: {
               sponsored_explorer_id: explorerId,
-              status: 'active',
+              status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
               deleted_at: null,
             },
             select: { sponsor_id: true },

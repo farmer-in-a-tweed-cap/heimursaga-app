@@ -32,8 +32,8 @@ export class SponsorCronService {
           resting_since: { not: null, lte: thirtyDaysAgo },
           received_sponsorships: {
             some: {
-              type: 'subscription',
-              status: 'active',
+              type: { in: ['subscription', 'SUBSCRIPTION'] },
+              status: { in: ['active', 'ACTIVE'] },
               stripe_subscription_id: { not: null },
               deleted_at: null,
             },
