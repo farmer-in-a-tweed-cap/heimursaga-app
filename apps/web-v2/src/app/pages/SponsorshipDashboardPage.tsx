@@ -458,7 +458,7 @@ export function SponsorshipDashboardPage() {
                     <button
                       onClick={() => handleCancelSponsorship(sub.id)}
                       disabled={cancelingId === sub.id}
-                      className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] hover:bg-[#202020] dark:hover:bg-[#616161] hover:text-white transition-all text-sm font-bold flex items-center gap-2 disabled:opacity-50 dark:text-[#e5e5e5]"
+                      className="px-4 py-2 border-2 border-[#ac6d46] text-[#ac6d46] hover:bg-[#ac6d46] hover:text-white transition-all text-sm font-bold flex items-center gap-2 disabled:opacity-50"
                     >
                       {cancelingId === sub.id ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
