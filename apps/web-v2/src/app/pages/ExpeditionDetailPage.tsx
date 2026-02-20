@@ -261,10 +261,9 @@ export function ExpeditionDetailPage() {
           const subStart = s.createdAt ? new Date(s.createdAt) : now;
           const overlapStart = subStart > expStart ? subStart : expStart;
           if (overlapStart <= expEnd) {
-            const months = Math.max(1,
-              (expEnd.getFullYear() - overlapStart.getFullYear()) * 12 +
-              (expEnd.getMonth() - overlapStart.getMonth()) + 1
-            );
+            const diffMs = expEnd.getTime() - overlapStart.getTime();
+            const msPerMonth = 30 * 24 * 60 * 60 * 1000;
+            const months = Math.max(1, Math.ceil(diffMs / msPerMonth));
             totalContribution = months * (s.amount || 0);
           }
         }

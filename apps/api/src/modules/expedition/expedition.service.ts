@@ -812,7 +812,15 @@ export class ExpeditionService {
         orderBy: { id: 'desc' },
       });
 
-      // Compute recurring sponsorship stats for funding breakdown (public data)
+      // Compute sponsorship stats from actual records (source of truth)
+      const oneTimeSponsors = allSponsorships.filter(
+        (s) => s.type?.toLowerCase() !== 'subscription',
+      );
+      const oneTimeTotal = oneTimeSponsors.reduce(
+        (sum, s) => sum + integerToDecimal(s.amount),
+        0,
+      );
+
       const recurringSponsors = allSponsorships.filter(
         (s) => s.type?.toLowerCase() === 'subscription',
       );
@@ -827,16 +835,13 @@ export class ExpeditionService {
         (sum, s) => sum + integerToDecimal(s.amount),
         0,
       );
+      const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
       const totalRecurringCommitted = recurringSponsors.reduce((sum, s) => {
         const subStart = s.created_at ?? now;
         const overlapStart = subStart > expCreated ? subStart : expCreated;
         if (overlapStart > expEndDate) return sum;
-        const months = Math.max(
-          1,
-          (expEndDate.getFullYear() - overlapStart.getFullYear()) * 12 +
-            (expEndDate.getMonth() - overlapStart.getMonth()) +
-            1,
-        );
+        const diffMs = expEndDate.getTime() - overlapStart.getTime();
+        const months = Math.max(1, Math.ceil(diffMs / MS_PER_MONTH));
         return sum + months * integerToDecimal(s.amount);
       }, 0);
 
@@ -859,7 +864,7 @@ export class ExpeditionService {
         currentLocationSource: undefined as 'waypoint' | 'entry' | undefined,
         currentLocationId: undefined as string | undefined,
         goal,
-        raised,
+        raised: oneTimeTotal,
         sponsorsCount: uniqueSponsorsCount,
         entriesCount: entries.length,
         recurringStats: {
