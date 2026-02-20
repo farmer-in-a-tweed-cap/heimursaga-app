@@ -321,15 +321,27 @@ export function SponsorshipPaymentPage() {
         throw new Error('Stripe is not loaded');
       }
 
-      const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+      // For subscriptions with auto-charge, the PI may already be confirmed.
+      // Retrieve its status first to avoid double-confirm errors.
+      const { paymentIntent: retrievedPI } = await stripe.retrievePaymentIntent(
         checkoutResponse.clientSecret,
-        {
-          payment_method: checkoutResponse.paymentMethodId,
-        }
       );
 
-      if (confirmError) {
-        throw new Error(confirmError.message);
+      let paymentIntent = retrievedPI;
+
+      // Only confirm if the PI still needs it (avoids double-confirm for auto-charged subscriptions)
+      if (paymentIntent?.status !== 'succeeded' && paymentIntent?.status !== 'processing') {
+        const { error: confirmError, paymentIntent: confirmedPI } = await stripe.confirmCardPayment(
+          checkoutResponse.clientSecret,
+          {
+            payment_method: checkoutResponse.paymentMethodId,
+          }
+        );
+
+        if (confirmError) {
+          throw new Error(confirmError.message);
+        }
+        paymentIntent = confirmedPI;
       }
 
       if (paymentIntent?.status === 'succeeded' || paymentIntent?.status === 'processing') {
@@ -343,27 +355,6 @@ export function SponsorshipPaymentPage() {
 
         toast.success('Sponsorship successful!');
         router.push(`/payment-success?expedition=${expedition?.publicId || expeditionId}&amount=${finalAmount}&type=${paymentType}&explorer=${explorer?.username}&paymentIntent=${paymentIntent.id}`);
-      } else if (paymentIntent?.status === 'requires_action') {
-        toast.info('Additional authentication required');
-      } else if (paymentIntent?.status === 'requires_confirmation') {
-        // For subscriptions, the payment may need an additional confirm step
-        const { error: reconfirmError, paymentIntent: confirmedPI } = await stripe.confirmCardPayment(
-          paymentIntent.client_secret!,
-        );
-        if (reconfirmError) {
-          throw new Error(reconfirmError.message);
-        }
-        if (confirmedPI?.status === 'succeeded' || confirmedPI?.status === 'processing') {
-          try {
-            await sponsorshipApi.completeCheckout(confirmedPI.id);
-          } catch (completeErr) {
-            console.error('Failed to complete checkout:', completeErr);
-          }
-          toast.success('Sponsorship successful!');
-          router.push(`/payment-success?expedition=${expedition?.publicId || expeditionId}&amount=${finalAmount}&type=${paymentType}&explorer=${explorer?.username}&paymentIntent=${confirmedPI.id}`);
-        } else {
-          throw new Error('Payment confirmation failed');
-        }
       } else {
         throw new Error(`Payment was not completed (status: ${paymentIntent?.status})`);
       }
