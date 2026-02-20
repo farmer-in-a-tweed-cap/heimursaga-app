@@ -705,9 +705,19 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 <div className="flex gap-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <Info className="w-5 h-5 text-[#4676ac] flex-shrink-0 mt-0.5" />
                   <div>
-                    <div className="text-sm font-bold dark:text-[#e5e5e5]">Bank account</div>
+                    <div className="text-sm font-bold dark:text-[#e5e5e5]">Business website</div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      Have your <strong className="dark:text-[#e5e5e5]">routing number</strong> and <strong className="dark:text-[#e5e5e5]">account number</strong> ready for direct deposits.
+                      Enter <strong className="dark:text-[#e5e5e5]">heimursaga.com</strong> as your business website.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                  <Info className="w-5 h-5 text-[#4676ac] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-bold dark:text-[#e5e5e5]">Payout method</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      You can use a <strong className="dark:text-[#e5e5e5]">bank account</strong> or <strong className="dark:text-[#e5e5e5]">debit card</strong> to receive payouts.
                     </div>
                   </div>
                 </div>
