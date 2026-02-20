@@ -74,7 +74,7 @@ export function ExplorerStatusBadge({
 
   return (
     <div className="inline-flex flex-col gap-1">
-      <div className={`${config.color} ${config.textColor} font-bold font-mono inline-flex items-center gap-1.5 ${sizeClasses[size].container}`}>
+      <div className={`${config.color} ${config.textColor} font-bold font-mono inline-flex items-center gap-1.5 rounded-full ${sizeClasses[size].container}`}>
         {showIcon && <Icon className={sizeClasses[size].icon} />}
         <span>{config.label}</span>
         {status === 'EXPLORING' && daysActive && (

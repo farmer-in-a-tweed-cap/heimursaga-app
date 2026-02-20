@@ -781,7 +781,7 @@ export class ExpeditionService {
         where: {
           sponsored_explorer_id: expedition.author_id,
           deleted_at: null,
-          status: { in: ['active', 'confirmed'] },
+          status: { in: ['active', 'confirmed', 'ACTIVE', 'CONFIRMED'] },
         },
         select: {
           public_id: true,
@@ -814,14 +814,14 @@ export class ExpeditionService {
 
       // Compute recurring sponsorship stats for funding breakdown (public data)
       const recurringSponsors = allSponsorships.filter(
-        (s) => s.type === 'subscription',
+        (s) => s.type?.toLowerCase() === 'subscription',
       );
 
       const now = new Date();
       const expCreated = created_at ?? now;
       const expEndDate = end_date ?? now;
       const activeRecurring = recurringSponsors.filter(
-        (s) => s.status === 'active',
+        (s) => s.status?.toLowerCase() === 'active',
       );
       const monthlyRecurring = activeRecurring.reduce(
         (sum, s) => sum + integerToDecimal(s.amount),
@@ -937,9 +937,9 @@ export class ExpeditionService {
         ),
         sponsors: allSponsorships.map((s) => ({
           id: s.public_id,
-          type: s.type,
+          type: s.type?.toLowerCase(),
           amount: integerToDecimal(s.amount),
-          status: s.status,
+          status: s.status?.toLowerCase(),
           message: s.message,
           isPublic: s.is_public ?? true,
           isMessagePublic: s.is_message_public ?? true,
@@ -980,7 +980,7 @@ export class ExpeditionService {
             sponsor_id: explorerId,
             sponsored_explorer_id: expedition.author_id,
             deleted_at: null,
-            status: { in: ['active', 'confirmed'] },
+            status: { in: ['active', 'confirmed', 'ACTIVE', 'CONFIRMED'] },
           },
         });
         canSeeLocation = sponsorshipCount > 0;

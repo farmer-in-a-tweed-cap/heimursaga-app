@@ -85,18 +85,6 @@ export function ExplorerCard({
 
       {/* Section: Name & Journal */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] px-4 py-4 bg-white dark:bg-[#202020]">
-        <div className="mb-2">
-          {explorerStatus && (
-            <div className="mb-2">
-              <ExplorerStatusBadge
-                status={explorerStatus}
-                size="sm"
-                currentExpeditionTitle={currentExpeditionTitle}
-                daysActive={daysActive}
-              />
-            </div>
-          )}
-        </div>
         <h3 className="font-bold leading-tight dark:text-[#e5e5e5] mb-1">{username}</h3>
         <p className="text-sm text-[#616161] dark:text-[#b5bcc4] font-mono mb-2">
           {journalName}
@@ -108,17 +96,17 @@ export function ExplorerCard({
 
       {/* Section: Key Stats Grid */}
       <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] px-4 py-4 flex-grow">
-        <div className="grid grid-cols-3 gap-x-4 gap-y-3 font-mono text-xs">
+        <div className="grid grid-cols-3 gap-x-4 gap-y-3 font-mono text-xs text-center">
           <div>
-            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Active Expeditions:</div>
+            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Expeditions</div>
             <div className="font-bold text-sm text-[#ac6d46]">{activeExpeditions}</div>
           </div>
           <div>
-            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Total Entries:</div>
+            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Entries</div>
             <div className="font-bold text-sm dark:text-[#e5e5e5]">{totalEntries}</div>
           </div>
           <div>
-            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Followers:</div>
+            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Followers</div>
             <div className="font-bold text-sm dark:text-[#e5e5e5]">{followers.toLocaleString()}</div>
           </div>
         </div>

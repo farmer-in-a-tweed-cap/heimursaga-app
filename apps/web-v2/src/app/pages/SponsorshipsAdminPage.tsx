@@ -20,6 +20,8 @@ import {
   ExternalLink,
   X,
   ChevronDown,
+  Shield,
+  Info,
 } from 'lucide-react';
 import {
   sponsorshipApi,
@@ -126,6 +128,10 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [refundTarget, setRefundTarget] = useState<{ chargeId: string; amount: number } | null>(null);
   const [isProcessingRefund, setIsProcessingRefund] = useState(false);
+
+  // Stripe onboarding guide modal state
+  const [showOnboardingGuide, setShowOnboardingGuide] = useState(false);
+  const [pendingOnboardingUrl, setPendingOnboardingUrl] = useState<string>('');
 
   // Delete tier confirmation modal state
   const [showDeleteTierModal, setShowDeleteTierModal] = useState(false);
@@ -399,7 +405,9 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
         if (!parsed.hostname.endsWith('stripe.com')) {
           throw new Error('Invalid onboarding URL');
         }
-        window.location.href = url;
+        // Show guide modal instead of immediately redirecting
+        setPendingOnboardingUrl(url);
+        setShowOnboardingGuide(true);
       } catch {
         toast.error('Received an invalid onboarding URL. Please try again.');
         return;
@@ -408,6 +416,12 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
       toast.error(error.message || 'Failed to start Stripe onboarding');
     } finally {
       setIsStartingOnboarding(false);
+    }
+  };
+
+  const handleContinueToStripe = () => {
+    if (pendingOnboardingUrl) {
+      window.location.href = pendingOnboardingUrl;
     }
   };
 
@@ -629,6 +643,99 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 >
                   {isDeletingTier && <Loader2 className="w-4 h-4 animate-spin" />}
                   DELETE TIER
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stripe Onboarding Guide Modal */}
+      {showOnboardingGuide && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] w-full max-w-lg">
+            <div className="flex items-center justify-between p-4 border-b-2 border-[#202020] dark:border-[#616161]">
+              <h2 className="text-lg font-bold dark:text-[#e5e5e5]">BEFORE YOU START</h2>
+              <button
+                onClick={() => {
+                  setShowOnboardingGuide(false);
+                  setPendingOnboardingUrl('');
+                }}
+                className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all"
+              >
+                <X className="w-5 h-5 dark:text-[#e5e5e5]" />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+                You're about to be redirected to Stripe to set up your payout account. Here's what to expect:
+              </p>
+
+              <div className="space-y-3">
+                <div className="flex gap-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                  <Info className="w-5 h-5 text-[#4676ac] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-bold dark:text-[#e5e5e5]">Business type</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      Select <strong className="dark:text-[#e5e5e5]">Individual</strong> unless you operate as a registered business entity.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                  <Info className="w-5 h-5 text-[#4676ac] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-bold dark:text-[#e5e5e5]">Industry</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      Choose something like <strong className="dark:text-[#e5e5e5]">Other services</strong> or <strong className="dark:text-[#e5e5e5]">Digital content / media</strong>.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                  <Info className="w-5 h-5 text-[#4676ac] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-bold dark:text-[#e5e5e5]">Personal information</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      You'll need your <strong className="dark:text-[#e5e5e5]">date of birth</strong>, <strong className="dark:text-[#e5e5e5]">address</strong>, and the last 4 digits of your <strong className="dark:text-[#e5e5e5]">SSN</strong> (US) or equivalent ID.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                  <Info className="w-5 h-5 text-[#4676ac] flex-shrink-0 mt-0.5" />
+                  <div>
+                    <div className="text-sm font-bold dark:text-[#e5e5e5]">Bank account</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      Have your <strong className="dark:text-[#e5e5e5]">routing number</strong> and <strong className="dark:text-[#e5e5e5]">account number</strong> ready for direct deposits.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 items-start p-3 bg-[#f0f4f8] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
+                <Shield className="w-5 h-5 text-[#4676ac] flex-shrink-0 mt-0.5" />
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                  <strong className="dark:text-[#e5e5e5]">Your data is secure.</strong> All sensitive information is collected and stored directly by Stripe. Heimursaga never sees your bank details, SSN, or identity documents.
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowOnboardingGuide(false);
+                    setPendingOnboardingUrl('');
+                  }}
+                  className="flex-1 py-3 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5]"
+                >
+                  CANCEL
+                </button>
+                <button
+                  onClick={handleContinueToStripe}
+                  className="flex-1 py-3 bg-[#ac6d46] text-white font-bold text-sm hover:bg-[#8a5738] transition-all flex items-center justify-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  CONTINUE TO STRIPE
                 </button>
               </div>
             </div>
