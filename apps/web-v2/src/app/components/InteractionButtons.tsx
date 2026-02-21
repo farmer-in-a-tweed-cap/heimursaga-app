@@ -12,6 +12,7 @@ interface InteractionButtonsProps {
   expeditionStatus?: string;
   sponsorshipsEnabled?: boolean;
   explorerIsPro?: boolean;
+  stripeConnected?: boolean;
   initialBookmarks?: number;
   isBookmarked?: boolean;
   isBookmarkLoading?: boolean;
@@ -30,6 +31,7 @@ export function InteractionButtons({
   expeditionStatus,
   sponsorshipsEnabled = true,
   explorerIsPro = false,
+  stripeConnected = false,
   initialBookmarks: _initialBookmarks = 0,
   isBookmarked = false,
   isBookmarkLoading = false,
@@ -80,7 +82,7 @@ export function InteractionButtons({
     onSponsor?.();
   };
 
-  const showSponsorButton = explorerIsPro && sponsorshipsEnabled && expeditionStatus !== 'completed';
+  const showSponsorButton = explorerIsPro && sponsorshipsEnabled && stripeConnected && expeditionStatus !== 'completed';
 
   const handleShare = () => {
     setShareMenuOpen(!shareMenuOpen);

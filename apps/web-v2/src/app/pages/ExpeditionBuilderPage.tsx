@@ -214,6 +214,7 @@ export function ExpeditionBuilderPage() {
         region: expeditionData.region || undefined,
         routeMode: routeMode !== 'straight' ? routeMode : null,
         routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
+        tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
       };
 
       let expeditionPublicId: string;
@@ -694,6 +695,11 @@ export function ExpeditionBuilderPage() {
           endDate: expedition.endDate ? new Date(expedition.endDate).toISOString().split('T')[0] : '',
           visibility: expedition.visibility || (expedition.public !== false ? 'public' : 'private')
         });
+
+        // Load tags
+        if (expedition.tags?.length) {
+          setTags(expedition.tags.join(', '));
+        }
 
         // Set cover photo from API (already full URL)
         if (expedition.coverImage) {
@@ -2457,9 +2463,9 @@ export function ExpeditionBuilderPage() {
                     setExpeditionData({ ...expeditionData, visibility: 'public' });
                   }
                 }}
-                disabled={!isPro}
+                disabled={!isPro || !user?.stripeAccountConnected}
               />
-              <label htmlFor="enable-sponsorships" className={`text-xs ${!isPro ? 'text-[#b5bcc4] dark:text-[#616161]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+              <label htmlFor="enable-sponsorships" className={`text-xs ${!isPro || !user?.stripeAccountConnected ? 'text-[#b5bcc4] dark:text-[#616161]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                 Allow others to financially support this expedition through the platform
               </label>
             </div>
@@ -2467,6 +2473,12 @@ export function ExpeditionBuilderPage() {
               <div className="mb-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
                 <strong className="text-[#ac6d46]">PRO FEATURE:</strong> Receiving sponsorships requires Explorer Pro.
                 <Link href="/settings/billing" className="text-[#4676ac] hover:underline ml-1">Upgrade to Pro</Link>
+              </div>
+            )}
+            {isPro && !user?.stripeAccountConnected && (
+              <div className="mb-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
+                <strong className="text-[#ac6d46]">STRIPE CONNECT REQUIRED:</strong> Complete your Stripe onboarding before enabling sponsorships.
+                <Link href="/sponsorship" className="text-[#4676ac] hover:underline ml-1">Complete setup</Link>
               </div>
             )}
             {sponsorshipsEnabled && isPro && (

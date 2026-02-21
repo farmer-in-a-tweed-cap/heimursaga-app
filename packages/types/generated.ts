@@ -121,6 +121,7 @@ export interface IUserGetByUsernameResponse extends IUserDetail {
   sponsorsFund?: string;
   equipment?: string[];
   activeExpeditionOffGrid?: boolean;
+  isPioneer?: boolean;
 }
 
 export interface IUserSettingsResponse {
@@ -327,6 +328,7 @@ export interface IPostDetail {
     name?: string;
     picture: string;
     creator?: boolean;
+    stripeAccountConnected?: boolean;
   };
   // Expedition relationship (direct foreign key on entry)
   trip?: {
@@ -928,6 +930,7 @@ export interface ITripDetail {
     name?: string;
     picture?: string;
     creator?: boolean;
+    stripeAccountConnected?: boolean;
   };
   bookmarked?: boolean;
   followingAuthor?: boolean;

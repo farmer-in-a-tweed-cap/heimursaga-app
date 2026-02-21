@@ -371,11 +371,9 @@ const ACHIEVEMENT_DEFINITIONS: AchievementDefinition[] = [
     description: 'One of the first 100 Heimursaga explorers (exclusive)',
     image: '/assets/badges/Pioneer.svg',
     check: ({ profile }) => {
-      // First 100 explorers - check if member date is before cutoff
-      // This is exclusive and no longer available after the first 100
-      const cutoffDate = '2025-06-01'; // Adjust based on when 100th user joined
-      if (profile.memberDate && profile.memberDate < cutoffDate) {
-        return { earned: true, earnedDate: profile.memberDate.split('T')[0] };
+      // First 100 explorers - determined by the API based on signup order
+      if (profile.isPioneer) {
+        return { earned: true, earnedDate: profile.memberDate?.split('T')[0] || '' };
       }
       return { earned: false };
     },

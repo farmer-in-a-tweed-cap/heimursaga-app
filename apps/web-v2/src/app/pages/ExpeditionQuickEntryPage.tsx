@@ -11,7 +11,7 @@ import { expeditionApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 
 export function ExpeditionQuickEntryPage() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { isPro } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
@@ -467,16 +467,22 @@ export function ExpeditionQuickEntryPage() {
                         setExpeditionVisibility('public');
                       }
                     }}
-                    disabled={!isPro}
+                    disabled={!isPro || !user?.stripeAccountConnected}
                   />
-                  <label htmlFor="enable-sponsorships" className={`text-xs ${!isPro ? 'text-[#b5bcc4] dark:text-[#616161]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                  <label htmlFor="enable-sponsorships" className={`text-xs ${!isPro || !user?.stripeAccountConnected ? 'text-[#b5bcc4] dark:text-[#616161]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                     Allow others to financially support this expedition through the platform
                   </label>
                 </div>
                 {!isPro && (
                   <div className="mb-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                    <strong className="text-[#ac6d46]">PRO FEATURE:</strong> Receiving sponsorships requires Explorer Pro. 
+                    <strong className="text-[#ac6d46]">PRO FEATURE:</strong> Receiving sponsorships requires Explorer Pro.
                     <Link href="/settings/billing" className="text-[#4676ac] hover:underline ml-1">Upgrade to Pro</Link>
+                  </div>
+                )}
+                {isPro && !user?.stripeAccountConnected && (
+                  <div className="mb-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
+                    <strong className="text-[#ac6d46]">STRIPE CONNECT REQUIRED:</strong> Complete your Stripe onboarding before enabling sponsorships.
+                    <Link href="/sponsorship" className="text-[#4676ac] hover:underline ml-1">Complete setup</Link>
                   </div>
                 )}
                 {sponsorshipsEnabled && isPro && (

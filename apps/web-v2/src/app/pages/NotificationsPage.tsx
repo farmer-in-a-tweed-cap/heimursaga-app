@@ -33,6 +33,7 @@ interface Notification {
   metadata?: {
     amount?: number;
     expeditionName?: string;
+    expeditionId?: string;
     entryTitle?: string;
     postId?: string;
     // Passport fields
@@ -101,8 +102,10 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
       };
     case 'expedition_note_reply':
       return {
-        title: apiNotif.body || `${actor} replied to your expedition note`,
-        message: '',
+        title: `${actor} replied to your expedition note`,
+        message: apiNotif.body
+          ? `"${apiNotif.body.slice(0, 300)}${apiNotif.body.length > 300 ? '...' : ''}"`
+          : '',
       };
     case 'entry_milestone':
       return {
@@ -144,6 +147,16 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
         title: `Earned "${apiNotif.passportStampName || 'Achievement'}" stamp`,
         message: ''
       };
+    case 'stripe_action_required':
+      return {
+        title: 'Stripe Action Required',
+        message: apiNotif.body || 'Your Stripe account requires attention'
+      };
+    case 'stripe_verified':
+      return {
+        title: 'Stripe Account Verified',
+        message: apiNotif.body || 'You can now receive sponsorships!'
+      };
     case 'system':
       return {
         title: 'System',
@@ -175,6 +188,7 @@ function mapApiNotification(apiNotif: ApiNotification, index: number): Notificat
     metadata: {
       amount: apiNotif.sponsorshipAmount,
       postId: apiNotif.postId,
+      expeditionId: apiNotif.expeditionPublicId,
     }
   };
 }
@@ -344,7 +358,9 @@ export function NotificationsPage() {
     }
 
     // Navigate based on notification type
-    if (notification.type === 'follow' && notification.actor) {
+    if (notification.type === 'stripe_action_required' || notification.type === 'stripe_verified') {
+      router.push('/sponsorships/admin');
+    } else if (notification.type === 'follow' && notification.actor) {
       router.push(`/journal/${notification.actor}`);
     } else if (notification.metadata?.postId) {
       router.push(`/entry/${notification.metadata.postId}`);
@@ -465,6 +481,8 @@ export function NotificationsPage() {
                   <option value="expedition_completed">EXPEDITION COMPLETE</option>
                   <option value="expedition_off_grid">EXPEDITION STATUS</option>
                   <option value="sponsorship_milestone">FUNDING MILESTONE</option>
+                  <option value="stripe_action_required">STRIPE ACTION REQUIRED</option>
+                  <option value="stripe_verified">STRIPE VERIFIED</option>
                   <option value="passport">PASSPORT</option>
                 </select>
               </div>
@@ -599,6 +617,23 @@ export function NotificationsPage() {
                 };
                 break;
 
+              case 'expedition_note_reply':
+                actions.primary = {
+                  label: 'VIEW EXPEDITION',
+                  onClick: () => {
+                    if (notification.metadata?.expeditionId) {
+                      router.push(`/expedition/${notification.metadata.expeditionId}`);
+                    }
+                  },
+                };
+                if (notification.actor) {
+                  actions.secondary = {
+                    label: 'VIEW JOURNAL',
+                    onClick: () => router.push(`/journal/${notification.actor}`),
+                  };
+                }
+                break;
+
               case 'expedition_off_grid':
                 actions.primary = {
                   label: 'VIEW SPONSORSHIPS',
@@ -668,6 +703,20 @@ export function NotificationsPage() {
                     });
                     setShareModalOpen(true);
                   }
+                };
+                break;
+
+              case 'stripe_action_required':
+                actions.primary = {
+                  label: 'GO TO STRIPE SETUP',
+                  onClick: () => router.push('/sponsorships/admin')
+                };
+                break;
+
+              case 'stripe_verified':
+                actions.primary = {
+                  label: 'VIEW SPONSORSHIPS',
+                  onClick: () => router.push('/sponsorships/admin')
                 };
                 break;
 

@@ -141,6 +141,7 @@ export function ExpeditionsPage() {
     // Sponsorship visibility: only show if goal is set (implies Pro account and sponsorships enabled)
     sponsorshipsEnabled: (exp.goal || 0) > 0,
     explorerIsPro: (exp.goal || 0) > 0,
+    stripeConnected: exp.author?.stripeAccountConnected === true,
   })), [apiExpeditions]);
 
   // Apply filters and search
@@ -336,6 +337,7 @@ export function ExpeditionsPage() {
                 averageSpeed={expedition.averageSpeed}
                 sponsorshipsEnabled={expedition.sponsorshipsEnabled}
                 explorerIsPro={expedition.explorerIsPro}
+                stripeConnected={expedition.stripeConnected}
                 onViewJournal={() => router.push(`/expedition/${expedition.id}`)}
                 onSupport={() => router.push(`/sponsor/${expedition.id}`)}
                 isBookmarked={bookmarkedExpeditions.has(expedition.id)}

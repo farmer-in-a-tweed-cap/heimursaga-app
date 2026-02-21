@@ -490,6 +490,11 @@ export class ExplorerService {
         equipment: (explorer.profile?.equipment as string[]) || [],
         activeExpeditionLocation,
         activeExpeditionOffGrid,
+        isPioneer:
+          explorer.created_at != null &&
+          (await this.prisma.explorer.count({
+            where: { created_at: { lte: explorer.created_at } },
+          })) <= 100,
       } as IUserGetByUsernameResponse;
 
       return response;
@@ -1536,6 +1541,7 @@ export class SessionExplorerService {
               author: {
                 select: {
                   username: true,
+                  is_stripe_account_connected: true,
                   profile: { select: { name: true, picture: true } },
                 },
               },
@@ -1561,6 +1567,7 @@ export class SessionExplorerService {
           sponsorsCount: bookmark.expedition.sponsors_count,
           entriesCount: bookmark.expedition.entries_count,
           bookmarksCount: bookmark.expedition.bookmarks_count,
+          stripeAccountConnected: bookmark.expedition.author.is_stripe_account_connected === true,
           explorer: {
             username: bookmark.expedition.author.username,
             name: bookmark.expedition.author.profile?.name,
@@ -1985,6 +1992,7 @@ export class SessionExplorerService {
           passport_continent_name: true,
           passport_stamp_id: true,
           passport_stamp_name: true,
+          expedition_public_id: true,
           created_at: true,
         },
         take,
@@ -2010,6 +2018,7 @@ export class SessionExplorerService {
             passport_continent_name,
             passport_stamp_id,
             passport_stamp_name,
+            expedition_public_id,
             created_at,
           }) => ({
             context,
@@ -2034,6 +2043,7 @@ export class SessionExplorerService {
             passportContinentName: passport_continent_name,
             passportStampId: passport_stamp_id,
             passportStampName: passport_stamp_name,
+            expeditionPublicId: expedition_public_id,
           }),
         ),
         page,

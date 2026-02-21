@@ -182,7 +182,7 @@ export class SponsorService {
           .then((count) => count >= 1);
         if (subscribed) {
           throw new ServiceBadRequestException(
-            'you already subscribed to this creator',
+            'You already have an active subscription to this explorer',
           );
         }
       }
@@ -199,7 +199,7 @@ export class SponsorService {
 
       if (!creatorStripeAccountId) {
         throw new ServiceBadRequestException(
-          'Creator has not set up payment receiving',
+          'This explorer has not completed payment setup',
         );
       }
 
@@ -219,7 +219,7 @@ export class SponsorService {
         hasPendingRequirements
       ) {
         throw new ServiceBadRequestException(
-          'Creator account is not fully verified to receive payments',
+          'This explorer has not completed Stripe onboarding to receive payments',
         );
       }
 
@@ -557,6 +557,7 @@ export class SponsorService {
 
       await this.prisma.$transaction(async (tx) => {
         // get a checkout (only if still pending — prevents double-completion race)
+        // Serializable isolation ensures concurrent transactions will fail rather than duplicate
         const checkout = await tx.checkout.findFirstOrThrow({
           where: { id: checkoutId, status: CheckoutStatus.PENDING },
           select: {
@@ -665,7 +666,7 @@ export class SponsorService {
             },
           });
         }
-      });
+      }, { isolationLevel: 'Serializable' });
 
       // create a notification
       if (creatorId && userId && checkoutData) {
@@ -1953,6 +1954,16 @@ export class SponsorService {
   async onSponsorCheckoutComplete(event: IOnSponsorCheckoutCompleteEvent) {
     try {
       const { checkoutId, creatorId, userId } = event;
+
+      // Check if already completed (race with frontend confirmation)
+      const checkout = await this.prisma.checkout.findFirst({
+        where: { id: checkoutId },
+        select: { status: true },
+      });
+      if (!checkout || checkout.status !== CheckoutStatus.PENDING) {
+        this.logger.log(`Checkout ${checkoutId} already completed, skipping webhook completion`);
+        return;
+      }
 
       await this.completeCheckout({
         checkoutId,

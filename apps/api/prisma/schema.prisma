@@ -615,7 +615,7 @@ model Payout {
 model ExplorerNotification {
   id                      Int       @id @default(autoincrement())
   public_id               String    @unique @db.VarChar(14)
-  context                 String?   @db.VarChar(20)
+  context                 String?   @db.VarChar(30)
   body                    String?
   is_read                 Boolean?  @default(false)
   explorer_id             Int?      @map("user_id")
@@ -632,6 +632,7 @@ model ExplorerNotification {
   passport_continent_name String?   @db.VarChar(50)
   passport_stamp_id       String?   @db.VarChar(50)
   passport_stamp_name     String?   @db.VarChar(100)
+  expedition_public_id    String?   @db.VarChar(14)
   mention_entry           Entry?    @relation("entry_notification_mentions", fields: [mention_entry_id], references: [id], onDelete: Cascade)
   mention_explorer        Explorer? @relation("explorer_notification_mentions", fields: [mention_explorer_id], references: [id], onDelete: Cascade)
   explorer                Explorer? @relation("explorer_notifications", fields: [explorer_id], references: [id], onDelete: Cascade)

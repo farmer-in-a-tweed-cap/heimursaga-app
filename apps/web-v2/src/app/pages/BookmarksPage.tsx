@@ -24,6 +24,7 @@ interface BookmarkedExpedition {
   sponsorsCount?: number;
   entriesCount?: number;
   bookmarksCount?: number;
+  stripeAccountConnected?: boolean;
   explorer: {
     username: string;
     name?: string;
@@ -309,6 +310,7 @@ export function BookmarksPage() {
                 backers={expedition.sponsorsCount || 0}
                 sponsorshipsEnabled={(expedition.goal || 0) > 0}
                 explorerIsPro={(expedition.goal || 0) > 0}
+                stripeConnected={expedition.stripeAccountConnected === true}
                 onClick={() => router.push(`/expedition/${expedition.id}`)}
                 onUnbookmark={() => handleUnbookmarkExpedition(expedition.id)}
               />

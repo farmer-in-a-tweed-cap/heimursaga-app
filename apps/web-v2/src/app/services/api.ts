@@ -304,6 +304,7 @@ export interface ExplorerProfile {
     expeditionId: string; expeditionTitle: string;
   };
   activeExpeditionOffGrid?: boolean;
+  isPioneer?: boolean;
 }
 
 export interface ExplorerListItem {
@@ -377,6 +378,7 @@ export interface ExplorerEntry {
     username: string;
     picture?: string;
     creator?: boolean;
+    stripeAccountConnected?: boolean;
   };
   media?: Array<{
     url: string;
@@ -400,6 +402,12 @@ export interface ExplorerExpedition {
   sponsorsCount?: number;
   currentLocation?: { lat: number; lon: number; name: string; source: string };
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
+  author?: {
+    username: string;
+    name?: string;
+    picture?: string;
+    stripeAccountConnected?: boolean;
+  };
 }
 
 export interface ExplorerFollower {
@@ -574,6 +582,7 @@ export const explorerApi = {
         sponsorsCount?: number;
         entriesCount?: number;
         bookmarksCount?: number;
+        stripeAccountConnected?: boolean;
         explorer: {
           username: string;
           name?: string;
@@ -738,6 +747,7 @@ export interface Expedition {
     name?: string;
     picture?: string;
     creator?: boolean;
+    stripeAccountConnected?: boolean;
   };
   waypoints?: ExpeditionWaypoint[];
   entries?: ExpeditionEntry[];
@@ -929,6 +939,7 @@ export interface Entry {
     name?: string;
     picture?: string;
     creator?: boolean;
+    stripeAccountConnected?: boolean;
   };
   // Alias for compatibility
   explorer?: {
@@ -1113,6 +1124,7 @@ export interface Notification {
   passportContinentName?: string;
   passportStampId?: string;
   passportStampName?: string;
+  expeditionPublicId?: string;
 }
 
 export interface NotificationListResponse {

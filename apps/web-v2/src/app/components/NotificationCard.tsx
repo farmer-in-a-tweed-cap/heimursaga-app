@@ -1,4 +1,4 @@
-import { Bell, User, DollarSign, MessageSquare, FileText, Map, MapPin, Clock, Trash2, Flag, Globe, Award, EyeOff } from "lucide-react";
+import { Bell, User, DollarSign, MessageSquare, FileText, Map, MapPin, Clock, Trash2, Flag, Globe, Award, EyeOff, AlertTriangle, CheckCircle } from "lucide-react";
 import { UserNotificationContext } from "@repo/types";
 
 type NotificationType = `${UserNotificationContext}`;
@@ -75,6 +75,10 @@ export function NotificationCard({
         return <Globe className="w-4 h-4" />;
       case "passport_stamp":
         return <Award className="w-4 h-4" />;
+      case "stripe_action_required":
+        return <AlertTriangle className="w-4 h-4" />;
+      case "stripe_verified":
+        return <CheckCircle className="w-4 h-4" />;
       case "system":
         return <Bell className="w-4 h-4" />;
       default:
@@ -97,6 +101,10 @@ export function NotificationCard({
       case "comment_reply":
       case "expedition_note_reply":
         return "bg-[#4676ac]"; // Blue
+      case "stripe_action_required":
+        return "bg-amber-500"; // Amber
+      case "stripe_verified":
+        return "bg-emerald-500"; // Green
       default:
         return "bg-[#616161]"; // Gray
     }
@@ -131,6 +139,10 @@ export function NotificationCard({
         return "CONTINENT EXPLORED";
       case "passport_stamp":
         return "STAMP EARNED";
+      case "stripe_action_required":
+        return "ACTION REQUIRED";
+      case "stripe_verified":
+        return "VERIFIED";
       case "system":
         return "SYSTEM";
       default:

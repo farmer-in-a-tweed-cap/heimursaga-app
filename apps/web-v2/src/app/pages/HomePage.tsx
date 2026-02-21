@@ -42,6 +42,7 @@ function transformExpedition(exp: Expedition) {
     visibility: (exp.visibility || 'public') as 'public' | 'off-grid' | 'private',
     sponsorshipsEnabled: (exp.goal || 0) > 0,
     explorerIsPro: (exp.goal || 0) > 0,
+    stripeConnected: exp.author?.stripeAccountConnected === true,
   };
 }
 

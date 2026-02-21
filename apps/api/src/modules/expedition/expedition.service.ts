@@ -211,6 +211,7 @@ export class ExpeditionService {
           author: {
             select: {
               username: true,
+              is_stripe_account_connected: true,
               profile: {
                 select: {
                   name: true,
@@ -261,6 +262,7 @@ export class ExpeditionService {
             end_date,
             cover_image,
             is_round_trip,
+            tags,
             goal,
             raised,
             entries_count,
@@ -313,8 +315,10 @@ export class ExpeditionService {
                     username: author.username,
                     name: author.profile?.name,
                     picture: getStaticMediaUrl(author.profile?.picture),
+                    stripeAccountConnected: author?.is_stripe_account_connected === true,
                   }
                 : undefined,
+              tags: tags ? JSON.parse(tags) : [],
               waypointsCount: waypoints.length,
               waypoints: [],
             };
@@ -402,6 +406,7 @@ export class ExpeditionService {
           author: {
             select: {
               username: true,
+              is_stripe_account_connected: true,
               profile: { select: { picture: true, name: true } },
             },
           },
@@ -533,6 +538,7 @@ export class ExpeditionService {
                     username: author.username,
                     picture: getStaticMediaUrl(author.profile.picture),
                     name: author.profile.name,
+                    stripeAccountConnected: author?.is_stripe_account_connected === true,
                   }
                 : undefined,
             };
@@ -601,6 +607,7 @@ export class ExpeditionService {
               select: {
                 username: true,
                 role: true,
+                is_stripe_account_connected: true,
                 profile: {
                   select: {
                     name: true,
@@ -883,6 +890,7 @@ export class ExpeditionService {
               username: author.username,
               picture: getStaticMediaUrl(author.profile.picture),
               creator: author.role === ExplorerRole.CREATOR,
+              stripeAccountConnected: author?.is_stripe_account_connected === true,
             }
           : undefined,
         // Entries directly linked to this expedition

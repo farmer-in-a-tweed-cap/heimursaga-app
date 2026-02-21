@@ -343,6 +343,7 @@ export function ExpeditionDetailPage() {
       explorerName: api.author?.username || api.explorer?.username || 'Unknown',
       explorerPicture: api.author?.picture || api.explorer?.picture,
       explorerIsPro: api.author?.creator === true,
+      stripeAccountConnected: api.author?.stripeAccountConnected === true,
       status: (api.status || 'active') as 'active' | 'planned' | 'completed',
       category: api.category || '',
       region: api.region || '',
@@ -385,8 +386,8 @@ export function ExpeditionDetailPage() {
   // Check if user is expedition owner (will be false if expedition is null)
   const isOwner = !!(isAuthenticated && expedition && user?.username === expedition.explorerId);
 
-  // Sponsorship UI only shows if goal > 0 (which implies explorer is Pro and sponsorships are enabled)
-  const showSponsorshipSection = !!(expedition && expedition.goal > 0);
+  // Sponsorship UI only shows if goal > 0 and explorer has completed Stripe Connect onboarding
+  const showSponsorshipSection = !!(expedition && expedition.goal > 0 && expedition.stripeAccountConnected);
 
   // Total raised = one-time sponsorships + recurring committed during expedition lifetime
   const totalRaised = (expedition?.raised || 0) + fundingStats.totalRecurringToDate;

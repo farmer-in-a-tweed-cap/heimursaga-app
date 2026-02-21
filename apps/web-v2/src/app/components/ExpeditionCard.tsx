@@ -58,6 +58,8 @@ interface ExpeditionCardProps {
   sponsorshipsEnabled?: boolean;
   /** Whether the expedition creator has an Explorer Pro account (required for sponsorships) */
   explorerIsPro?: boolean;
+  /** Whether the explorer's Stripe Connect account is verified and ready to receive payments */
+  stripeConnected?: boolean;
   isBookmarked?: boolean;
   isBookmarkLoading?: boolean;
   onViewJournal?: () => void;
@@ -92,6 +94,7 @@ export function ExpeditionCard({
   visibility,
   sponsorshipsEnabled = true,
   explorerIsPro = false,
+  stripeConnected = false,
   isBookmarked = false,
   isBookmarkLoading = false,
   onViewJournal,
@@ -103,8 +106,8 @@ export function ExpeditionCard({
   const { unit: distanceUnit, distanceLabel } = useDistanceUnit();
   const router = useRouter();
 
-  // Sponsorship UI only shows if explorer is Pro AND sponsorships are enabled for this expedition
-  const showSponsorshipSection = explorerIsPro && sponsorshipsEnabled;
+  // Sponsorship UI only shows if explorer is Pro AND sponsorships are enabled AND Stripe Connect is verified
+  const showSponsorshipSection = explorerIsPro && sponsorshipsEnabled && stripeConnected;
 
   // Helper to get current location from waypoints/entries
   const getCurrentLocation = () => {

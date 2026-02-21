@@ -21,6 +21,7 @@ interface Notification {
   metadata?: {
     amount?: number;
     expeditionName?: string;
+    expeditionId?: string;
     entryTitle?: string;
     postId?: string;
   };
@@ -83,6 +84,11 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
           ? `"${apiNotif.body.slice(0, 120)}${apiNotif.body.length > 120 ? '...' : ''}"`
           : ''
       };
+    case 'expedition_note_reply':
+      return {
+        title: `${actor} replied to your expedition note`,
+        message: '',
+      };
     case 'entry_milestone':
       return {
         title: 'Entry Milestone',
@@ -123,6 +129,16 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
         title: `Earned "${apiNotif.passportStampName || 'Achievement'}" stamp`,
         message: ''
       };
+    case 'stripe_action_required':
+      return {
+        title: 'Stripe Action Required',
+        message: apiNotif.body || 'Your Stripe account requires attention'
+      };
+    case 'stripe_verified':
+      return {
+        title: 'Stripe Account Verified',
+        message: apiNotif.body || 'You can now receive sponsorships!'
+      };
     case 'system':
       return {
         title: 'System',
@@ -152,6 +168,7 @@ function mapApiNotification(apiNotif: ApiNotification, index: number): Notificat
     metadata: {
       amount: apiNotif.sponsorshipAmount,
       postId: apiNotif.postId,
+      expeditionId: apiNotif.expeditionPublicId,
     }
   };
 }
@@ -213,8 +230,12 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
       } else {
         target = `/journal/${notification.actor}`;
       }
+    } else if (notification.type === 'expedition_note_reply' && notification.metadata?.expeditionId) {
+      target = `/expedition/${notification.metadata.expeditionId}`;
     } else if (notification.type === 'expedition_off_grid') {
       target = '/sponsorship';
+    } else if (notification.type === 'stripe_action_required' || notification.type === 'stripe_verified') {
+      target = '/sponsorships/admin';
     } else if (notification.metadata?.postId) {
       target = `/entry/${notification.metadata.postId}`;
     }

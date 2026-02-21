@@ -223,10 +223,10 @@
     line-height: 1.5;
   }
 
-  /* Hide native date picker icon (custom Calendar icon is used instead) */
+  /* Make native date picker icon invisible but still clickable (custom Calendar icon shows through) */
   input[type="date"]::-webkit-calendar-picker-indicator {
-    display: none;
-    -webkit-appearance: none;
+    opacity: 0;
+    cursor: pointer;
   }
 
   /* Tagline spread effect - centered with expanded letter spacing */

@@ -264,6 +264,7 @@ export function JournalEntryPage() {
       expeditionTotalEntries: expedition?.entriesCount || 0,
       expeditionStatus: expedition?.status || '',
       expeditionSponsorshipsEnabled: true, // Not in API yet
+      stripeAccountConnected: api.author?.stripeAccountConnected === true,
 
       location: api.place || 'Unknown location',
       coords: { lat, lng: lon },
@@ -469,6 +470,7 @@ export function JournalEntryPage() {
                   expeditionStatus={entry.expeditionStatus}
                   sponsorshipsEnabled={entry.expeditionSponsorshipsEnabled}
                   explorerIsPro={true}
+                  stripeConnected={entry.stripeAccountConnected}
                   initialBookmarks={entry.reactions.bookmark}
                   isBookmarked={entry.bookmarked || false}
                   isBookmarkLoading={entryBookmarkLoading}

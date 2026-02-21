@@ -246,6 +246,7 @@ export class EntryService {
             select: {
               username: true,
               role: true,
+              is_stripe_account_connected: true,
               profile: {
                 select: { name: true, picture: true },
               },
@@ -303,6 +304,7 @@ export class EntryService {
                   ? getStaticMediaUrl(entry.author.profile.picture)
                   : undefined,
                 creator: entry.author.role === ExplorerRole.CREATOR,
+                stripeAccountConnected: entry.author.is_stripe_account_connected === true,
               }
             : undefined,
           liked: explorerId ? entry.likes.length > 0 : false,
@@ -449,6 +451,7 @@ export class EntryService {
               id: true,
               username: true,
               role: true,
+              is_stripe_account_connected: true,
               profile: {
                 select: { name: true, picture: true },
               },
@@ -610,6 +613,7 @@ export class EntryService {
                 ? getStaticMediaUrl(entry.author.profile.picture)
                 : undefined,
               creator: entry.author.role === ExplorerRole.CREATOR,
+              stripeAccountConnected: entry.author.is_stripe_account_connected === true,
             }
           : undefined,
         createdByMe: explorerId ? explorerId === entry.author?.id : undefined,

@@ -1,6 +1,6 @@
 import { IOnSubscriptionUpgradeCompleteEvent } from '../payment';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
-import { IStripeCreateSetupIntentResponse } from '@repo/types';
+import { IStripeCreateSetupIntentResponse, UserNotificationContext } from '@repo/types';
 import Stripe from 'stripe';
 
 import { dateformat } from '@/lib/date-format';
@@ -17,6 +17,7 @@ import { IRequest } from '@/common/interfaces';
 import { config } from '@/config';
 import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
+import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
 import { IOnSponsorCheckoutCompleteEvent } from '@/modules/sponsor';
 
@@ -541,10 +542,10 @@ export class StripeService {
         charges_enabled &&
         payouts_enabled;
 
-      // Find the payout method to get the explorer ID
+      // Find the payout method to get the explorer ID and previous verification state
       const payoutMethod = await this.prisma.payoutMethod.findFirst({
         where: { stripe_account_id: stripeAccountId },
-        select: { explorer_id: true },
+        select: { explorer_id: true, is_verified: true },
       });
 
       // Update local payout method verification status
@@ -559,6 +560,38 @@ export class StripeService {
           where: { id: payoutMethod.explorer_id },
           data: { is_stripe_account_connected: isVerified },
         });
+
+        // Send notifications on state transitions
+        const wasVerified = payoutMethod.is_verified === true;
+
+        if (isVerified && !wasVerified) {
+          // Newly verified — send STRIPE_VERIFIED notification
+          this.eventService.trigger<IUserNotificationCreatePayload>({
+            event: EVENTS.NOTIFICATION_CREATE,
+            data: {
+              context: UserNotificationContext.STRIPE_VERIFIED,
+              userId: payoutMethod.explorer_id,
+              body: 'Your Stripe Connect account has been verified. You can now receive sponsorships!',
+            },
+          });
+          this.logger.log(
+            `Sent STRIPE_VERIFIED notification to explorer ${payoutMethod.explorer_id}`,
+          );
+        } else if (!isVerified && requirements?.currently_due?.length > 0) {
+          // Action required — send STRIPE_ACTION_REQUIRED notification
+          const dueItems = requirements.currently_due.slice(0, 3).join(', ');
+          this.eventService.trigger<IUserNotificationCreatePayload>({
+            event: EVENTS.NOTIFICATION_CREATE,
+            data: {
+              context: UserNotificationContext.STRIPE_ACTION_REQUIRED,
+              userId: payoutMethod.explorer_id,
+              body: `Stripe requires additional information: ${dueItems}. Complete your setup to receive sponsorships.`,
+            },
+          });
+          this.logger.log(
+            `Sent STRIPE_ACTION_REQUIRED notification to explorer ${payoutMethod.explorer_id}`,
+          );
+        }
 
         this.logger.log(
           `Updated explorer ${payoutMethod.explorer_id} stripe account connected: ${isVerified}`,

@@ -1,4 +1,4 @@
-import { User, DollarSign, MessageSquare, FileText, Map, MapPin, Bell, Flag, Globe, Award, EyeOff } from "lucide-react";
+import { User, DollarSign, MessageSquare, FileText, Map, MapPin, Bell, Flag, Globe, Award, EyeOff, AlertTriangle, CheckCircle } from "lucide-react";
 import { UserNotificationContext } from "@repo/types";
 
 type NotificationType = `${UserNotificationContext}`;
@@ -34,6 +34,7 @@ export function NotificationCardCompact({
         return <DollarSign className="w-3.5 h-3.5" />;
       case "comment":
       case "comment_reply":
+      case "expedition_note_reply":
         return <MessageSquare className="w-3.5 h-3.5" />;
       case "entry_milestone":
         return <FileText className="w-3.5 h-3.5" />;
@@ -49,6 +50,10 @@ export function NotificationCardCompact({
         return <Globe className="w-3.5 h-3.5" />;
       case "passport_stamp":
         return <Award className="w-3.5 h-3.5" />;
+      case "stripe_action_required":
+        return <AlertTriangle className="w-3.5 h-3.5" />;
+      case "stripe_verified":
+        return <CheckCircle className="w-3.5 h-3.5" />;
       case "system":
         return <Bell className="w-3.5 h-3.5" />;
       default:
@@ -64,6 +69,7 @@ export function NotificationCardCompact({
       case "follow":
       case "comment":
       case "comment_reply":
+      case "expedition_note_reply":
         return "text-[#4676ac]";
       case "expedition_started":
       case "expedition_completed":
@@ -73,6 +79,10 @@ export function NotificationCardCompact({
       case "passport_continent":
       case "passport_stamp":
         return "text-[#ac6d46]";
+      case "stripe_action_required":
+        return "text-amber-500";
+      case "stripe_verified":
+        return "text-emerald-500";
       default:
         return "text-[#616161] dark:text-[#b5bcc4]";
     }
@@ -105,7 +115,7 @@ export function NotificationCardCompact({
           <div className={getNotificationColor()}>
             {getNotificationIcon()}
           </div>
-          <h4 className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] line-clamp-1">{title}</h4>
+          <h4 className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] line-clamp-2">{title}</h4>
           {!isRead && (
             <div className="h-1.5 w-1.5 bg-[#ac6d46] rounded-full flex-shrink-0" />
           )}

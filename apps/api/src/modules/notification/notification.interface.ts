@@ -13,6 +13,7 @@ export interface IUserNotificationCreatePayload {
   sponsorshipType?: string;
   sponsorshipAmount?: number;
   sponsorshipCurrency?: string;
+  expeditionPublicId?: string;
   // Passport fields
   passportCountryCode?: string;
   passportCountryName?: string;

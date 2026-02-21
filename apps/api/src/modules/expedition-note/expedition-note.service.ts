@@ -323,20 +323,14 @@ export class ExpeditionNoteService {
 
       // Notify the expedition owner (skip if replier IS the owner)
       if (!isOwner) {
-        const replier = await this.prisma.explorer.findUnique({
-          where: { id: explorerId },
-          select: { username: true, profile: { select: { name: true } } },
-        });
-        const replierName =
-          replier?.profile?.name || replier?.username || 'Someone';
-
         this.eventService.trigger<IUserNotificationCreatePayload>({
           event: EVENTS.NOTIFICATION_CREATE,
           data: {
             context: UserNotificationContext.EXPEDITION_NOTE_REPLY,
             userId: expedition.author_id,
             mentionUserId: explorerId,
-            body: `${replierName} replied to your expedition note`,
+            expeditionPublicId: expeditionId,
+            body: text,
           },
         });
       }

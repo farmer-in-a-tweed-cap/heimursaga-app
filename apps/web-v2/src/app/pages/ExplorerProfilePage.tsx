@@ -328,8 +328,7 @@ export function ExplorerProfilePage() {
       totalDistance: 0,
       daysOnRoad: 0,
       countriesVisited: passportData.countries.length,
-      totalSponsored: 0,
-      currentSponsors: 0,
+      totalSponsors: expeditions.reduce((sum, e) => sum + (e.sponsorsCount || 0), 0),
       followers: followers.length,
       totalViews: 0,
     },
@@ -555,18 +554,18 @@ export function ExplorerProfilePage() {
           <div className="absolute inset-0 flex flex-col p-4 pt-14 md:p-6 md:pt-16">
             <div className="flex items-start gap-3 md:gap-6 w-full">
               {/* Large Avatar */}
-              <div className="flex-shrink-0 mt-2">
+              <div className="flex-shrink-0 mt-2 flex flex-col items-center">
                 <div className={`w-20 h-20 md:w-40 md:h-40 border-2 md:border-4 ${explorer.accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020]`}>
                   <ExplorerAvatar username={explorer.name} src={explorer.avatarUrl} size={160} className="w-full h-full" />
                 </div>
+                <span className="mt-1.5 md:mt-2 px-2 py-0.5 md:px-3 md:py-1 bg-[#ac6d46] text-white text-[10px] md:text-xs font-bold rounded-full whitespace-nowrap">
+                  {explorer.accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
+                </span>
               </div>
 
               <div className="flex-1 pt-0 md:pt-2 min-w-0">
                 <div className="flex items-center gap-2 md:gap-3 mb-1 flex-wrap">
                   <h1 className="text-lg md:text-3xl font-bold text-white truncate">{explorer.name}</h1>
-                  <span className="px-2 py-0.5 md:px-3 md:py-1 bg-[#ac6d46] text-white text-xs md:text-xs font-bold rounded-full whitespace-nowrap">
-                    {explorer.accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
-                  </span>
                 </div>
                 <h2 className="text-sm md:text-xl text-[#ac6d46] mb-2 md:mb-3 truncate">{explorer.journalName}</h2>
                 <div className="space-y-0.5 md:space-y-1 text-xs md:text-sm text-white">
@@ -609,7 +608,7 @@ export function ExplorerProfilePage() {
                 {explorer.passport.stamps.map((stamp) => (
                   <div key={stamp.id} title={stamp.name}>
                     {stamp.image ? (
-                      <Image src={stamp.image} alt={stamp.name} className="w-12 h-12 object-contain flex-shrink-0" width={48} height={48} />
+                      <Image src={stamp.image} alt={stamp.name} className="w-8 h-8 object-contain flex-shrink-0" width={32} height={32} />
                     ) : (
                       <div className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-bold uppercase whitespace-nowrap rounded-full">
                         {stamp.name}
@@ -619,7 +618,7 @@ export function ExplorerProfilePage() {
                 ))}
                 {/* Continents */}
                 {explorer.passport.continents.map((continent) => (
-                  <ContinentIcon key={continent.code} code={continent.code} className="w-7 h-7 flex-shrink-0" title={continent.name} />
+                  <ContinentIcon key={continent.code} code={continent.code} className="w-8 h-8 flex-shrink-0" title={continent.name} />
                 ))}
                 {/* Flags */}
                 {explorer.passport.countries.slice(0, 10).map((country) => (
@@ -648,9 +647,9 @@ export function ExplorerProfilePage() {
                         <Image
                           src={stamp.image}
                           alt={stamp.name}
-                          className="w-32 h-32 object-contain drop-shadow-md"
-                          width={128}
-                          height={128}
+                          className="w-20 h-20 object-contain drop-shadow-md"
+                          width={80}
+                          height={80}
                         />
                       ) : (
                         <div className="px-3 py-1 bg-[#ac6d46] text-white text-xs font-bold uppercase tracking-wide border border-[#8a5738] shadow-md rounded-full">
@@ -658,7 +657,7 @@ export function ExplorerProfilePage() {
                         </div>
                       )}
                       {/* Tooltip */}
-                      <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block z-10">
+                      <div className="absolute top-full right-0 mt-1 hidden group-hover:block z-10">
                         <div className="bg-[#202020] text-white text-xs px-2 py-1 whitespace-nowrap border border-[#616161]">
                           <div className="font-bold">{stamp.name}</div>
                           <div className="font-normal text-[#b5bcc4]">{stamp.description}</div>
@@ -678,9 +677,9 @@ export function ExplorerProfilePage() {
                       key={continent.code}
                       className="group relative"
                     >
-                      <ContinentIcon code={continent.code} className="w-10 h-10" title={continent.name} />
+                      <ContinentIcon code={continent.code} className="w-20 h-20" title={continent.name} />
                       {/* Tooltip */}
-                      <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block z-10">
+                      <div className="absolute top-full right-0 mt-1 hidden group-hover:block z-10">
                         <div className="bg-[#202020] text-white text-xs px-2 py-1 whitespace-nowrap border border-[#616161]">
                           <div className="font-bold">{continent.name}</div>
                           <div className="font-mono text-[#616161]">First: {continent.firstVisit}</div>
@@ -732,11 +731,11 @@ export function ExplorerProfilePage() {
             <div className="text-lg md:text-2xl font-bold dark:text-[#e5e5e5]">{explorer.stats.totalEntries}</div>
             <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Entries</div>
           </div>
-          {/* Sponsored stat - only show for Explorer Pro accounts */}
+          {/* Sponsors stat - only show for Explorer Pro accounts */}
           {profile.creator && (
             <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-              <div className="text-lg md:text-2xl font-bold text-[#ac6d46]">${(explorer.stats.totalSponsored / 1000).toFixed(1)}k</div>
-              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Sponsored</div>
+              <div className="text-lg md:text-2xl font-bold text-[#ac6d46]">{explorer.stats.totalSponsors}</div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Sponsors</div>
             </div>
           )}
           <div className="p-2 md:p-4 border-r border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
@@ -786,8 +785,8 @@ export function ExplorerProfilePage() {
               <span>{isFollowing ? 'FOLLOWING' : 'FOLLOW'}</span>
             </button>
           )}
-          {/* Sponsor button - Visible when explorer is Pro with active/planned expedition */}
-          {!isOwnProfile && profile.creator && sponsorableExpedition && (
+          {/* Sponsor button - Visible when explorer is Pro with Stripe Connect and active/planned expedition */}
+          {!isOwnProfile && profile.creator && profile.stripeAccountConnected && sponsorableExpedition && (
             <Link
               href={isAuthenticated ? `/sponsor/${sponsorableExpedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${sponsorableExpedition.id}`)}`}
               className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs md:text-sm font-bold font-mono gap-1.5 md:gap-2 flex items-center"
@@ -814,6 +813,27 @@ export function ExplorerProfilePage() {
             />
           )}
         </div>
+
+        {/* Stripe Connect Setup Banner — only shown to owner when Pro but not connected */}
+        {isOwnProfile && profile.creator && !profile.stripeAccountConnected && (
+          <div className="px-4 py-3 bg-[#202020] dark:bg-[#1a1a1a] border-l-4 border-l-[#ac6d46] border-b-2 border-b-[#202020] dark:border-b-[#616161] flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-[#ac6d46] flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-white tracking-wide">
+                STRIPE CONNECT SETUP REQUIRED
+              </p>
+              <p className="text-xs text-[#b5bcc4] mt-0.5">
+                Complete your Stripe onboarding to start receiving sponsorships.
+              </p>
+            </div>
+            <Link
+              href="/sponsorship"
+              className="px-3 py-1.5 bg-[#ac6d46] hover:bg-[#8a5738] text-white text-xs font-bold whitespace-nowrap transition-all active:scale-[0.98]"
+            >
+              COMPLETE SETUP
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Map of All Expeditions */}
@@ -913,6 +933,7 @@ export function ExplorerProfilePage() {
                     onSupport={() => router.push(`/sponsor/${expedition.id}`)}
                     sponsorshipsEnabled={expedition.goal > 0}
                     explorerIsPro={profile.creator}
+                    stripeConnected={profile.stripeAccountConnected}
                     isBookmarked={bookmarkedExpeditions.has(expedition.id)}
                     onBookmark={() => handleBookmarkExpedition(expedition.id)}
                   />
@@ -1216,16 +1237,10 @@ export function ExplorerProfilePage() {
               </div>
               {/* Sponsorship stats - only show for Explorer Pro accounts */}
               {profile.creator && (
-                <>
-                  <div className="flex justify-between border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
-                    <span className="text-[#616161] dark:text-[#b5bcc4]">Current Sponsors</span>
-                    <span className="font-bold text-[#ac6d46]">{explorer.stats.currentSponsors}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#616161] dark:text-[#b5bcc4]">Total Sponsored</span>
-                    <span className="font-bold text-[#ac6d46]">${explorer.stats.totalSponsored.toLocaleString()}</span>
-                  </div>
-                </>
+                <div className="flex justify-between border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
+                  <span className="text-[#616161] dark:text-[#b5bcc4]">All-Time Sponsors</span>
+                  <span className="font-bold text-[#ac6d46]">{explorer.stats.totalSponsors}</span>
+                </div>
               )}
             </div>
           </div>

@@ -48,6 +48,18 @@ export function Header() {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
+  // Close notifications dropdown on outside click
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target as Node)) {
+        setNotificationsOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [notificationsOpen]);
+
   // Refresh badge count when notifications dropdown closes
   useEffect(() => {
     if (!notificationsOpen && isAuthenticated) {
