@@ -3,7 +3,13 @@ import {
   IExplorerSettingsProfileUpdatePayload,
   ISponsorshipTierUpdatePayload,
 } from '@repo/types';
-import { IsArray, IsObject, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsObject,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 import { SanitizeContent, SanitizeText } from '@/lib/sanitizer';
 
@@ -108,7 +114,9 @@ export class ExplorerSettingsProfileUpdateDto
   @SanitizeText()
   @IsString()
   @IsOptional()
-  @MaxLength(50, { message: 'Location visibility must be less than 50 characters' })
+  @MaxLength(50, {
+    message: 'Location visibility must be less than 50 characters',
+  })
   locationVisibility: string;
 
   @ApiProperty({ required: false })

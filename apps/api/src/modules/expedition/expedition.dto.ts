@@ -14,6 +14,7 @@ import {
   IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 
@@ -167,6 +168,14 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @ApiProperty({ required: false })
   @IsOptional()
   routeGeometry?: number[][];
+}
+
+export class ExpeditionCancelDto {
+  @ApiProperty({ required: true, maxLength: 500 })
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
+  cancellationReason: string;
 }
 
 export class ExpeditionParamDto {

@@ -157,6 +157,16 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
         title: 'Stripe Account Verified',
         message: apiNotif.body || 'You can now receive sponsorships!'
       };
+    case 'expedition_cancelled':
+      return {
+        title: 'Expedition Cancelled',
+        message: apiNotif.body || ''
+      };
+    case 'expedition_date_changed':
+      return {
+        title: 'Expedition Date Changed',
+        message: apiNotif.body || ''
+      };
     case 'system':
       return {
         title: 'System',
@@ -360,6 +370,8 @@ export function NotificationsPage() {
     // Navigate based on notification type
     if (notification.type === 'stripe_action_required' || notification.type === 'stripe_verified') {
       router.push('/sponsorships/admin');
+    } else if ((notification.type === 'expedition_cancelled' || notification.type === 'expedition_date_changed') && notification.metadata?.expeditionId) {
+      router.push(`/expedition/${notification.metadata.expeditionId}`);
     } else if (notification.type === 'follow' && notification.actor) {
       router.push(`/journal/${notification.actor}`);
     } else if (notification.metadata?.postId) {
@@ -481,6 +493,8 @@ export function NotificationsPage() {
                   <option value="expedition_completed">EXPEDITION COMPLETE</option>
                   <option value="expedition_off_grid">EXPEDITION STATUS</option>
                   <option value="sponsorship_milestone">FUNDING MILESTONE</option>
+                  <option value="expedition_cancelled">EXPEDITION CANCELLED</option>
+                  <option value="expedition_date_changed">DATE CHANGED</option>
                   <option value="stripe_action_required">STRIPE ACTION REQUIRED</option>
                   <option value="stripe_verified">STRIPE VERIFIED</option>
                   <option value="passport">PASSPORT</option>
@@ -632,6 +646,18 @@ export function NotificationsPage() {
                     onClick: () => router.push(`/journal/${notification.actor}`),
                   };
                 }
+                break;
+
+              case 'expedition_cancelled':
+              case 'expedition_date_changed':
+                actions.primary = {
+                  label: 'VIEW EXPEDITION',
+                  onClick: () => {
+                    if (notification.metadata?.expeditionId) {
+                      router.push(`/expedition/${notification.metadata.expeditionId}`);
+                    }
+                  },
+                };
                 break;
 
               case 'expedition_off_grid':

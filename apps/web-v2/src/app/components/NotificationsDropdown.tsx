@@ -139,6 +139,16 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
         title: 'Stripe Account Verified',
         message: apiNotif.body || 'You can now receive sponsorships!'
       };
+    case 'expedition_cancelled':
+      return {
+        title: 'Expedition Cancelled',
+        message: apiNotif.body || ''
+      };
+    case 'expedition_date_changed':
+      return {
+        title: 'Expedition Date Changed',
+        message: apiNotif.body || ''
+      };
     case 'system':
       return {
         title: 'System',
@@ -231,6 +241,8 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
         target = `/journal/${notification.actor}`;
       }
     } else if (notification.type === 'expedition_note_reply' && notification.metadata?.expeditionId) {
+      target = `/expedition/${notification.metadata.expeditionId}`;
+    } else if ((notification.type === 'expedition_cancelled' || notification.type === 'expedition_date_changed') && notification.metadata?.expeditionId) {
       target = `/expedition/${notification.metadata.expeditionId}`;
     } else if (notification.type === 'expedition_off_grid') {
       target = '/sponsorship';

@@ -124,7 +124,11 @@ export class AuthService {
         stripeAccountConnected: isStripeAccountConnected,
         createdAt,
         activeExpedition: activeExpedition
-          ? { id: activeExpedition.id, publicId: activeExpedition.public_id, title: activeExpedition.title }
+          ? {
+              id: activeExpedition.id,
+              publicId: activeExpedition.public_id,
+              title: activeExpedition.title,
+            }
           : null,
       };
     } catch (e) {
@@ -450,7 +454,9 @@ export class AuthService {
             payload.recaptchaToken,
           );
           if (!isValidRecaptcha) {
-            throw new ServiceForbiddenException('reCAPTCHA verification failed');
+            throw new ServiceForbiddenException(
+              'reCAPTCHA verification failed',
+            );
           }
         }
       }
@@ -727,7 +733,11 @@ export class AuthService {
         data: {
           to: email,
           template: EMAIL_TEMPLATES.PASSWORD_RESET,
-          vars: { reset_link: link, username: user.username, expiresInMinutes: 180 },
+          vars: {
+            reset_link: link,
+            username: user.username,
+            expiresInMinutes: 180,
+          },
         },
       });
     } catch (e) {

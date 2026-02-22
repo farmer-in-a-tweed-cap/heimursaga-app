@@ -359,7 +359,9 @@ model Expedition {
   created_at     DateTime?            @default(now())
   updated_at     DateTime?            @updatedAt
   deleted_at     DateTime?
-  status         String?              @default("planned") @db.VarChar(20) // draft, planned, active, completed
+  cancelled_at        DateTime?
+  cancellation_reason String?              @db.VarChar(500)
+  status         String?              @default("planned") @db.VarChar(20) // draft, planned, active, completed, cancelled
   start_date     DateTime?
   end_date       DateTime?
   cover_image    String?              @db.VarChar(250)

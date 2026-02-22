@@ -37,7 +37,6 @@ export class MapService {
     private prisma: PrismaService,
   ) {}
 
-
   async query({
     query,
     session,
@@ -151,7 +150,10 @@ export class MapService {
                 OR: [
                   ...(userId ? [{ author_id: userId }] : []),
                   { expedition_id: null, NOT: { visibility: 'off-grid' } },
-                  { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+                  {
+                    expedition: { visibility: 'public' },
+                    NOT: { visibility: 'off-grid' },
+                  },
                 ],
               },
             },
@@ -171,7 +173,10 @@ export class MapService {
                   OR: [
                     { author_id: userId },
                     { expedition_id: null, NOT: { visibility: 'off-grid' } },
-                    { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+                    {
+                      expedition: { visibility: 'public' },
+                      NOT: { visibility: 'off-grid' },
+                    },
                   ],
                   author: {
                     followers: {
@@ -197,7 +202,10 @@ export class MapService {
                 OR: [
                   ...(userId ? [{ author_id: userId }] : []),
                   { expedition_id: null, NOT: { visibility: 'off-grid' } },
-                  { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+                  {
+                    expedition: { visibility: 'public' },
+                    NOT: { visibility: 'off-grid' },
+                  },
                 ],
                 author: {
                   username,
@@ -254,7 +262,8 @@ export class MapService {
         take,
       });
 
-      const filteredWaypoints = waypoints.map(({ id, title, lat, lon, date, entries }) => {
+      const filteredWaypoints = waypoints.map(
+        ({ id, title, lat, lon, date, entries }) => {
           const post = entries[0];
 
           return {
@@ -302,7 +311,8 @@ export class MapService {
                 }
               : undefined,
           };
-        });
+        },
+      );
 
       const finalWaypoints = filteredWaypoints;
 

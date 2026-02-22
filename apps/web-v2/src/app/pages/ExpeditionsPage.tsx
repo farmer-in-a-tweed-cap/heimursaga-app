@@ -123,7 +123,7 @@ export function ExpeditionsPage() {
     region: exp.region || '',
     startDate: exp.startDate || '',
     endDate: exp.endDate || '',
-    status: (exp.status === 'active' ? 'active' : exp.status === 'completed' ? 'completed' : 'planned') as 'active' | 'completed' | 'planned',
+    status: (exp.status === 'active' ? 'active' : exp.status === 'completed' ? 'completed' : exp.status === 'cancelled' ? 'cancelled' : 'planned') as 'active' | 'completed' | 'planned' | 'cancelled',
     daysActive: calculateDaysElapsed(exp.startDate, exp.endDate, exp.status),
     goal: exp.goal || 0,
     raised: exp.raised || 0,

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { UserNotificationContext } from '@repo/types';
 
 import { getStaticMediaUrl } from '@/lib/upload';
 
@@ -13,7 +14,6 @@ import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
-import { UserNotificationContext } from '@repo/types';
 
 export interface IExpeditionNoteDetail {
   id: number;

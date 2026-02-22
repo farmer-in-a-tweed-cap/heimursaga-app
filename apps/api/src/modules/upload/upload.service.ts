@@ -48,9 +48,7 @@ function validateMagicBytes(buffer: Buffer, claimedMime: string): boolean {
   for (const sig of MAGIC_BYTES) {
     if (sig.mime !== claimedMime) continue;
     const offset = sig.offset ?? 0;
-    const matches = sig.bytes.every(
-      (byte, i) => buffer[offset + i] === byte,
-    );
+    const matches = sig.bytes.every((byte, i) => buffer[offset + i] === byte);
     if (matches) return true;
   }
   return false;

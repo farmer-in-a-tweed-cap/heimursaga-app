@@ -751,6 +751,8 @@ export interface Expedition {
   };
   waypoints?: ExpeditionWaypoint[];
   entries?: ExpeditionEntry[];
+  cancelledAt?: string;
+  cancellationReason?: string;
   bookmarked?: boolean;
   followingAuthor?: boolean;
 }
@@ -830,6 +832,12 @@ export const expeditionApi = {
    */
   delete: (id: string) =>
     api.delete<void>(`/trips/${id}`),
+
+  /**
+   * Cancel an expedition (requires auth)
+   */
+  cancel: (id: string, cancellationReason: string) =>
+    api.patch<void>(`/trips/${id}/cancel`, { cancellationReason }),
 
   /**
    * Create a waypoint for an expedition

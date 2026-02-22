@@ -34,9 +34,7 @@ export async function getCoordinatesFromLocation(
   const token = process.env.MAPBOX_ACCESS_TOKEN;
 
   if (!token) {
-    console.warn(
-      'MAPBOX_ACCESS_TOKEN not configured, skipping geocoding',
-    );
+    console.warn('MAPBOX_ACCESS_TOKEN not configured, skipping geocoding');
     return null;
   }
 

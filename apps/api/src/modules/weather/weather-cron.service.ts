@@ -21,9 +21,7 @@ export class WeatherCronService implements OnModuleInit {
       ]);
       this.logger.log('[CRON] Weather caches warmed');
     } catch (e) {
-      this.logger.error(
-        `[CRON] Weather cache warm-up failed: ${e.message}`,
-      );
+      this.logger.error(`[CRON] Weather cache warm-up failed: ${e.message}`);
     }
   }
 
@@ -37,9 +35,7 @@ export class WeatherCronService implements OnModuleInit {
       ]);
       this.logger.log('[CRON] Weather refresh complete');
     } catch (e) {
-      this.logger.error(
-        `[CRON] Weather refresh failed: ${e.message}`,
-      );
+      this.logger.error(`[CRON] Weather refresh failed: ${e.message}`);
     }
   }
 }

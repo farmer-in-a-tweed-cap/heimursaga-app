@@ -1,6 +1,9 @@
 import { IOnSubscriptionUpgradeCompleteEvent } from '../payment';
 import { Injectable, RawBodyRequest } from '@nestjs/common';
-import { IStripeCreateSetupIntentResponse, UserNotificationContext } from '@repo/types';
+import {
+  IStripeCreateSetupIntentResponse,
+  UserNotificationContext,
+} from '@repo/types';
 import Stripe from 'stripe';
 
 import { dateformat } from '@/lib/date-format';
@@ -801,9 +804,8 @@ export class StripeService {
 
       // If the subscription is paused (managed by SponsorBillingService), skip
       // status update — this may be a retry for a pre-pause invoice.
-      const stripeSubscription = await this.stripe.subscriptions.retrieve(
-        stripeSubscriptionId,
-      );
+      const stripeSubscription =
+        await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
       if (stripeSubscription.pause_collection) {
         this.logger.log(
           `Subscription ${stripeSubscriptionId} has pause_collection set, skipping past_due status update`,

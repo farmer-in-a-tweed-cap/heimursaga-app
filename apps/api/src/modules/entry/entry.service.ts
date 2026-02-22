@@ -154,7 +154,10 @@ export class EntryService {
         OR: [
           ...(explorerId ? [{ author_id: explorerId }] : []),
           { expedition_id: null, visibility: 'public' },
-          { expedition: { visibility: 'public' }, NOT: { visibility: 'private' } },
+          {
+            expedition: { visibility: 'public' },
+            NOT: { visibility: 'private' },
+          },
         ],
       } as Prisma.EntryWhereInput;
       where = { ...where, ...publicExpeditionFilter };
@@ -255,7 +258,10 @@ export class EntryService {
           created_at: true,
         },
         take,
-        orderBy: context === 'following' ? [{ updated_at: 'desc' }] : [{ date: 'desc' }],
+        orderBy:
+          context === 'following'
+            ? [{ updated_at: 'desc' }]
+            : [{ date: 'desc' }],
       });
 
       const responseData = data.map((entry) => {
@@ -289,7 +295,11 @@ export class EntryService {
           mediaCount: entry._count?.media || 0,
           wordCount,
           coverImage,
-          entryType: (entry.entry_type || 'standard') as 'standard' | 'photo-essay' | 'data-log' | 'waypoint',
+          entryType: (entry.entry_type || 'standard') as
+            | 'standard'
+            | 'photo-essay'
+            | 'data-log'
+            | 'waypoint',
           expedition: entry.expedition
             ? {
                 id: entry.expedition.public_id,
@@ -304,7 +314,8 @@ export class EntryService {
                   ? getStaticMediaUrl(entry.author.profile.picture)
                   : undefined,
                 creator: entry.author.role === ExplorerRole.CREATOR,
-                stripeAccountConnected: entry.author.is_stripe_account_connected === true,
+                stripeAccountConnected:
+                  entry.author.is_stripe_account_connected === true,
               }
             : undefined,
           liked: explorerId ? entry.likes.length > 0 : false,
@@ -590,7 +601,11 @@ export class EntryService {
           ? {
               id: entry.expedition.public_id,
               title: entry.expedition.title,
-              visibility: entry.expedition.visibility as 'public' | 'off-grid' | 'private' | undefined,
+              visibility: entry.expedition.visibility as
+                | 'public'
+                | 'off-grid'
+                | 'private'
+                | undefined,
               status: entry.expedition.status,
               entriesCount: expeditionEntriesCount || 0,
             }
@@ -613,7 +628,8 @@ export class EntryService {
                 ? getStaticMediaUrl(entry.author.profile.picture)
                 : undefined,
               creator: entry.author.role === ExplorerRole.CREATOR,
-              stripeAccountConnected: entry.author.is_stripe_account_connected === true,
+              stripeAccountConnected:
+                entry.author.is_stripe_account_connected === true,
             }
           : undefined,
         createdByMe: explorerId ? explorerId === entry.author?.id : undefined,

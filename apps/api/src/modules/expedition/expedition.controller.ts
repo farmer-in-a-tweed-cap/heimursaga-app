@@ -17,6 +17,7 @@ import { Public, Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
 
 import {
+  ExpeditionCancelDto,
   ExpeditionCreateDto,
   ExpeditionParamDto,
   ExpeditionUpdateLocationDto,
@@ -92,6 +93,20 @@ export class ExpeditionController {
   ) {
     return await this.expeditionService.deleteExpedition({
       query: { id: param.trip_id },
+      session,
+    });
+  }
+
+  @Patch(':trip_id/cancel')
+  @HttpCode(HttpStatus.OK)
+  async cancelExpedition(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+    @Body() body: ExpeditionCancelDto,
+  ) {
+    return await this.expeditionService.cancelExpedition({
+      query: { id: param.trip_id },
+      payload: body,
       session,
     });
   }

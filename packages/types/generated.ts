@@ -932,6 +932,8 @@ export interface ITripDetail {
     creator?: boolean;
     stripeAccountConnected?: boolean;
   };
+  cancelledAt?: Date;
+  cancellationReason?: string;
   bookmarked?: boolean;
   followingAuthor?: boolean;
   sponsors?: {

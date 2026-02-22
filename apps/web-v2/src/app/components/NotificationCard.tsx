@@ -1,4 +1,4 @@
-import { Bell, User, DollarSign, MessageSquare, FileText, Map, MapPin, Clock, Trash2, Flag, Globe, Award, EyeOff, AlertTriangle, CheckCircle } from "lucide-react";
+import { Bell, User, DollarSign, MessageSquare, FileText, Map, MapPin, Clock, Trash2, Flag, Globe, Award, EyeOff, AlertTriangle, CheckCircle, XCircle, Calendar } from "lucide-react";
 import { UserNotificationContext } from "@repo/types";
 
 type NotificationType = `${UserNotificationContext}`;
@@ -33,6 +33,15 @@ interface NotificationCardProps {
   isSelected?: boolean;
   onSelect?: (id: string) => void;
   onDelete?: (id: string) => void;
+}
+
+// Render _text_ as italic
+function renderMessage(text: string) {
+  const parts = text.split(/_(.*?)_/);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <em key={i}>{part}</em> : part
+  );
 }
 
 export function NotificationCard({
@@ -75,6 +84,10 @@ export function NotificationCard({
         return <Globe className="w-4 h-4" />;
       case "passport_stamp":
         return <Award className="w-4 h-4" />;
+      case "expedition_cancelled":
+        return <XCircle className="w-4 h-4" />;
+      case "expedition_date_changed":
+        return <Calendar className="w-4 h-4" />;
       case "stripe_action_required":
         return <AlertTriangle className="w-4 h-4" />;
       case "stripe_verified":
@@ -100,6 +113,10 @@ export function NotificationCard({
       case "comment":
       case "comment_reply":
       case "expedition_note_reply":
+        return "bg-[#4676ac]"; // Blue
+      case "expedition_cancelled":
+        return "bg-[#994040]"; // Burgundy
+      case "expedition_date_changed":
         return "bg-[#4676ac]"; // Blue
       case "stripe_action_required":
         return "bg-amber-500"; // Amber
@@ -139,6 +156,10 @@ export function NotificationCard({
         return "CONTINENT EXPLORED";
       case "passport_stamp":
         return "STAMP EARNED";
+      case "expedition_cancelled":
+        return "EXPEDITION CANCELLED";
+      case "expedition_date_changed":
+        return "DATE CHANGED";
       case "stripe_action_required":
         return "ACTION REQUIRED";
       case "stripe_verified":
@@ -241,7 +262,7 @@ export function NotificationCard({
             <h3 className="font-bold text-sm text-[#202020] dark:text-[#e5e5e5]">{title}</h3>
             {message && (
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mt-1">
-                {message}
+                {renderMessage(message)}
               </p>
             )}
           </div>

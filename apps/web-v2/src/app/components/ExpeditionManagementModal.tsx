@@ -1,6 +1,6 @@
 'use client';
 
-import { X, CheckCircle2, Calendar, AlertTriangle, Edit } from 'lucide-react';
+import { X, CheckCircle2, Calendar, AlertTriangle, Edit, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/app/utils/dateFormat';
@@ -11,7 +11,7 @@ interface ExpeditionManagementModalProps {
   expedition: {
     id: string;
     title: string;
-    status: 'active' | 'planned' | 'completed';
+    status: 'active' | 'planned' | 'completed' | 'cancelled';
     startDate: string;
     estimatedEndDate: string;
     daysActive: number;
@@ -21,6 +21,7 @@ interface ExpeditionManagementModalProps {
     backers?: number;
   };
   onStatusChange?: (newStatus: 'active' | 'completed') => void;
+  onCancel?: (reason: string) => void;
 }
 
 export function ExpeditionManagementModal({
@@ -28,9 +29,13 @@ export function ExpeditionManagementModal({
   onClose,
   expedition,
   onStatusChange,
+  onCancel,
 }: ExpeditionManagementModalProps) {
   const router = useRouter();
   const [confirmComplete, setConfirmComplete] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
+  const [cancellationReason, setCancellationReason] = useState('');
+  const [cancelError, setCancelError] = useState('');
   const [actualEndDate, setActualEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,10 +44,10 @@ export function ExpeditionManagementModal({
   // Date validation logic
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  
+
   const startDate = new Date(expedition.startDate);
   startDate.setHours(0, 0, 0, 0);
-  
+
   const estimatedEndDate = new Date(expedition.estimatedEndDate);
   estimatedEndDate.setHours(0, 0, 0, 0);
 
@@ -51,33 +56,26 @@ export function ExpeditionManagementModal({
   const isPlanned = expedition.status === 'planned';
   const isActive = expedition.status === 'active';
   const isCompleted = expedition.status === 'completed';
+  const isCancelled = expedition.status === 'cancelled';
 
   // Calculate actual duration if completing
   const actualDuration = expedition.daysActive;
 
   // Determine if expedition can be completed
-  const canComplete = (isActive || (isPlanned && hasStarted)) && !isCompleted;
-  const canActivate = isPlanned && hasStarted && !isCompleted;
+  const canComplete = (isActive || (isPlanned && hasStarted)) && !isCompleted && !isCancelled;
+  const canActivate = isPlanned && hasStarted && !isCompleted && !isCancelled;
+  const canCancel = (isPlanned || isActive) && !isCompleted && !isCancelled;
 
   const handleComplete = async () => {
     setIsSubmitting(true);
-    
+
     try {
-      // ============================================================
-      // 🔴 BACKEND API CALL NEEDED
-      // ============================================================
-      // Endpoint: PATCH /api/expeditions/:expeditionId/status
-      // Body: { status: 'completed', actualEndDate: actualEndDate }
-      // Description: Mark expedition as completed
-      // Response: Updated expedition object
-      // ============================================================
-      
       await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-      
+
       if (onStatusChange) {
         onStatusChange('completed');
       }
-      
+
       onClose();
     } catch (error) {
       console.error('Failed to complete expedition:', error);
@@ -89,26 +87,39 @@ export function ExpeditionManagementModal({
 
   const handleActivate = async () => {
     setIsSubmitting(true);
-    
+
     try {
-      // ============================================================
-      // 🔴 BACKEND API CALL NEEDED
-      // ============================================================
-      // Endpoint: PATCH /api/expeditions/:expeditionId/status
-      // Body: { status: 'active' }
-      // Description: Activate a planned expedition that has reached start date
-      // Response: Updated expedition object
-      // ============================================================
-      
       await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-      
+
       if (onStatusChange) {
         onStatusChange('active');
       }
-      
+
       onClose();
     } catch (error) {
       console.error('Failed to activate expedition:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!cancellationReason.trim()) {
+      setCancelError('A cancellation reason is required');
+      return;
+    }
+    setCancelError('');
+    setIsSubmitting(true);
+
+    try {
+      if (onCancel) {
+        await onCancel(cancellationReason.trim());
+      }
+      onClose();
+    } catch (error: any) {
+      console.error('Failed to cancel expedition:', error);
+      const message = error?.response?.data?.message || error?.message || 'Failed to cancel expedition. Please try again.';
+      setCancelError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -146,6 +157,7 @@ export function ExpeditionManagementModal({
                   <div className={`font-bold ${
                     expedition.status === 'active' ? 'text-[#ac6d46]' :
                     expedition.status === 'planned' ? 'text-[#4676ac]' :
+                    expedition.status === 'cancelled' ? 'text-[#994040]' :
                     'text-[#616161]'
                   }`}>
                     {expedition.status.toUpperCase()}
@@ -216,27 +228,29 @@ export function ExpeditionManagementModal({
 
           {/* Status Change Options */}
           <div className="space-y-4">
-            {/* Edit Details & Waypoints - Always available */}
-            <div className="border-2 border-[#4676ac] p-4">
-              <div className="flex items-start gap-3 mb-4">
-                <Edit size={20} className="text-[#4676ac] mt-0.5" strokeWidth={2} />
-                <div className="flex-1">
-                  <h4 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
-                    EDIT EXPEDITION DETAILS
-                  </h4>
-                  <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
-                    Modify expedition details, dates, description, waypoints, and route planning. Changes will be reflected immediately across all journal views.
-                  </p>
+            {/* Edit Details & Waypoints - Always available for non-cancelled */}
+            {!isCancelled && (
+              <div className="border-2 border-[#4676ac] p-4">
+                <div className="flex items-start gap-3 mb-4">
+                  <Edit size={20} className="text-[#4676ac] mt-0.5" strokeWidth={2} />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
+                      EDIT EXPEDITION DETAILS
+                    </h4>
+                    <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
+                      Modify expedition details, dates, description, waypoints, and route planning. Changes will be reflected immediately across all journal views.
+                    </p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => router.push(`/expedition-builder/${expedition.id}`)}
+                  className="w-full px-4 py-3 bg-[#4676ac] text-white text-sm font-bold hover:bg-[#3a5f8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] flex items-center justify-center gap-2"
+                >
+                  <Edit size={16} strokeWidth={2} />
+                  <span>EDIT DETAILS & WAYPOINTS</span>
+                </button>
               </div>
-              <button
-                onClick={() => router.push(`/expedition-builder/${expedition.id}`)}
-                className="w-full px-4 py-3 bg-[#4676ac] text-white text-sm font-bold hover:bg-[#3a5f8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] flex items-center justify-center gap-2"
-              >
-                <Edit size={16} strokeWidth={2} />
-                <span>EDIT DETAILS & WAYPOINTS</span>
-              </button>
-            </div>
+            )}
 
             {/* Activate Planned Expedition */}
             {canActivate && (
@@ -300,7 +314,7 @@ export function ExpeditionManagementModal({
                   <h4 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-3">
                     CONFIRM EXPEDITION COMPLETION
                   </h4>
-                  
+
                   <div className="mb-4">
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                       ACTUAL END DATE <span className="text-[#ac6d46]">*REQUIRED</span>
@@ -367,7 +381,7 @@ export function ExpeditionManagementModal({
                     disabled={isSubmitting}
                     className="flex-1 px-4 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] text-sm font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] dark:focus-visible:ring-[#616161] disabled:opacity-50 disabled:active:scale-100"
                   >
-                    CANCEL
+                    BACK
                   </button>
                   <button
                     onClick={handleComplete}
@@ -375,6 +389,103 @@ export function ExpeditionManagementModal({
                     className="flex-1 px-4 py-3 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
                   >
                     {isSubmitting ? 'COMPLETING...' : 'CONFIRM COMPLETION'}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Cancel Expedition */}
+            {canCancel && !confirmCancel && !confirmComplete && (
+              <div className="border-2 border-[#994040] p-4">
+                <div className="flex items-start gap-3 mb-4">
+                  <XCircle size={20} className="text-[#994040] mt-0.5" strokeWidth={2} />
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
+                      CANCEL EXPEDITION
+                    </h4>
+                    <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
+                      Permanently cancel this expedition. Recurring sponsorships will be paused and all sponsors will be notified with the reason you provide.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setConfirmCancel(true)}
+                  className="w-full px-4 py-3 bg-[#994040] text-white text-sm font-bold hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
+                >
+                  CANCEL EXPEDITION
+                </button>
+              </div>
+            )}
+
+            {/* Cancel Confirmation Step */}
+            {confirmCancel && canCancel && (
+              <div className="border-2 border-[#994040] p-4 bg-[#994040]/10 dark:bg-[#994040]/20">
+                <div className="mb-4">
+                  <h4 className="text-sm font-bold text-[#994040] mb-3">
+                    CONFIRM EXPEDITION CANCELLATION
+                  </h4>
+
+                  <div className="mb-4">
+                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                      CANCELLATION REASON <span className="text-[#994040]">*REQUIRED</span>
+                    </label>
+                    <textarea
+                      value={cancellationReason}
+                      onChange={(e) => {
+                        setCancellationReason(e.target.value);
+                        if (cancelError) setCancelError('');
+                      }}
+                      placeholder="Explain why you are cancelling this expedition..."
+                      rows={3}
+                      maxLength={500}
+                      className="w-full px-3 py-2 border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#2a2a2a] text-[#202020] dark:text-[#e5e5e5] text-xs font-mono resize-none"
+                    />
+                    <div className="flex justify-between mt-1">
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                        This reason will be shared with all sponsors.
+                      </div>
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                        {cancellationReason.length}/500
+                      </div>
+                    </div>
+                    {cancelError && (
+                      <div className="text-xs text-[#994040] mt-1">{cancelError}</div>
+                    )}
+                  </div>
+
+                  <div className="p-3 bg-white dark:bg-[#202020] border-2 border-[#994040] mb-4">
+                    <div className="text-xs font-bold text-[#994040] mb-2">
+                      WHAT HAPPENS WHEN YOU CANCEL:
+                    </div>
+                    <ul className="space-y-1 text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      <li>• Recurring sponsorships will be paused (they resume if you start a new expedition)</li>
+                      <li>• One-time sponsorships are retained as support already given</li>
+                      <li>• All sponsors will be notified with your cancellation reason</li>
+                      <li>• Expedition will be hidden from public listings</li>
+                      <li>• Expedition remains accessible via direct link with a cancelled banner</li>
+                      <li>• This action cannot be undone</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setConfirmCancel(false);
+                      setCancellationReason('');
+                      setCancelError('');
+                    }}
+                    disabled={isSubmitting}
+                    className="flex-1 px-4 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] text-sm font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] dark:focus-visible:ring-[#616161] disabled:opacity-50 disabled:active:scale-100"
+                  >
+                    BACK
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    disabled={isSubmitting || !cancellationReason.trim()}
+                    className="flex-1 px-4 py-3 bg-[#994040] text-white text-sm font-bold hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                  >
+                    {isSubmitting ? 'CANCELLING...' : 'CONFIRM CANCELLATION'}
                   </button>
                 </div>
               </div>
@@ -407,6 +518,22 @@ export function ExpeditionManagementModal({
                     </h4>
                     <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
                       This expedition has already been marked as complete. Sponsorships are closed, but you can still add retrospective journal entries. Your journal remains publicly visible.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isCancelled && (
+              <div className="border-2 border-[#994040] p-4 bg-[#994040]/10 dark:bg-[#994040]/20">
+                <div className="flex items-start gap-3">
+                  <XCircle size={20} className="text-[#994040] mt-0.5" strokeWidth={2} />
+                  <div>
+                    <h4 className="text-sm font-bold text-[#994040] mb-2">
+                      EXPEDITION CANCELLED
+                    </h4>
+                    <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      This expedition has been cancelled. Recurring sponsorships have been paused and all sponsors have been notified. The expedition is hidden from public listings but remains accessible via direct link.
                     </p>
                   </div>
                 </div>

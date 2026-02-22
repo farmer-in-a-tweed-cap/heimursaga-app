@@ -51,7 +51,7 @@ interface ExpeditionCardProps {
   fundingPercentage: number;
   backers: number;
   distance: number;
-  status: "active" | "completed" | "planned";
+  status: "active" | "completed" | "planned" | "cancelled";
   terrain: string;
   averageSpeed: number;
   visibility?: 'public' | 'off-grid' | 'private';
@@ -139,16 +139,18 @@ export function ExpeditionCard({
   };
 
   const currentLocation = getCurrentLocation();
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     active: "bg-[#ac6d46]",
     completed: "bg-[#616161]",
     planned: "bg-[#4676ac]",
+    cancelled: "bg-[#994040]",
   };
 
-  const statusLabels = {
+  const statusLabels: Record<string, string> = {
     active: "ACTIVE EXPEDITION",
     completed: "COMPLETED EXPEDITION",
     planned: "PLANNED EXPEDITION",
+    cancelled: "CANCELLED EXPEDITION",
   };
 
   // Calculate timeline progress

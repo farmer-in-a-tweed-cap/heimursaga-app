@@ -172,7 +172,10 @@ export class PayoutService {
       const mode = StripePlayformAccountLinkMode.ONBOARDING;
 
       // check access - only Explorer Pro can set up Stripe Connect
-      const access = !!payoutMethodId && !!userId && matchRoles(userRole, [UserRole.CREATOR]);
+      const access =
+        !!payoutMethodId &&
+        !!userId &&
+        matchRoles(userRole, [UserRole.CREATOR]);
       if (!access) throw new ServiceForbiddenException();
 
       // get a payout method

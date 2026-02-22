@@ -82,7 +82,10 @@ export class SearchService {
               OR: [
                 ...(explorerId ? [{ author_id: explorerId }] : []),
                 { expedition_id: null, NOT: { visibility: 'off-grid' } },
-                { expedition: { visibility: 'public' }, NOT: { visibility: 'off-grid' } },
+                {
+                  expedition: { visibility: 'public' },
+                  NOT: { visibility: 'off-grid' },
+                },
               ],
             },
           ],

@@ -1,4 +1,4 @@
-import { User, DollarSign, MessageSquare, FileText, Map, MapPin, Bell, Flag, Globe, Award, EyeOff, AlertTriangle, CheckCircle } from "lucide-react";
+import { User, DollarSign, MessageSquare, FileText, Map, MapPin, Bell, Flag, Globe, Award, EyeOff, AlertTriangle, CheckCircle, XCircle, Calendar } from "lucide-react";
 import { UserNotificationContext } from "@repo/types";
 
 type NotificationType = `${UserNotificationContext}`;
@@ -12,6 +12,15 @@ interface NotificationCardCompactProps {
   isRead: boolean;
   onClick?: () => void;
   onMarkAsRead?: (id: string) => void;
+}
+
+// Render _text_ as italic
+function renderMessage(text: string) {
+  const parts = text.split(/_(.*?)_/);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <em key={i}>{part}</em> : part
+  );
 }
 
 export function NotificationCardCompact({
@@ -50,6 +59,10 @@ export function NotificationCardCompact({
         return <Globe className="w-3.5 h-3.5" />;
       case "passport_stamp":
         return <Award className="w-3.5 h-3.5" />;
+      case "expedition_cancelled":
+        return <XCircle className="w-3.5 h-3.5" />;
+      case "expedition_date_changed":
+        return <Calendar className="w-3.5 h-3.5" />;
       case "stripe_action_required":
         return <AlertTriangle className="w-3.5 h-3.5" />;
       case "stripe_verified":
@@ -79,6 +92,10 @@ export function NotificationCardCompact({
       case "passport_continent":
       case "passport_stamp":
         return "text-[#ac6d46]";
+      case "expedition_cancelled":
+        return "text-[#994040]";
+      case "expedition_date_changed":
+        return "text-[#4676ac]";
       case "stripe_action_required":
         return "text-amber-500";
       case "stripe_verified":
@@ -128,7 +145,7 @@ export function NotificationCardCompact({
       {/* Message - only show if there's content */}
       {message && (
         <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed line-clamp-2">
-          {message}
+          {renderMessage(message)}
         </p>
       )}
     </div>

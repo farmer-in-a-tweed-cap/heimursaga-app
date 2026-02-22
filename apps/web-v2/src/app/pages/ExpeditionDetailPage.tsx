@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Users, UserPlus, Bookmark, Share2, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Lock, ChevronLeft, ChevronRight, Play, EyeOff } from 'lucide-react';
+import { Users, UserPlus, Bookmark, Share2, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Lock, ChevronLeft, ChevronRight, Play, EyeOff, XCircle } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
@@ -344,7 +344,7 @@ export function ExpeditionDetailPage() {
       explorerPicture: api.author?.picture || api.explorer?.picture,
       explorerIsPro: api.author?.creator === true,
       stripeAccountConnected: api.author?.stripeAccountConnected === true,
-      status: (api.status || 'active') as 'active' | 'planned' | 'completed',
+      status: (api.status || 'active') as 'active' | 'planned' | 'completed' | 'cancelled',
       category: api.category || '',
       region: api.region || '',
       description: api.description || '',
@@ -1932,7 +1932,7 @@ export function ExpeditionDetailPage() {
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2">
                   {/* Sponsor button */}
-                  {!isOwner && showSponsorshipSection && expedition.status !== 'completed' && (
+                  {!isOwner && showSponsorshipSection && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
                     <Link
                       href={isAuthenticated ? `/sponsor/${expedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
                       className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap flex items-center gap-2"
@@ -1992,6 +1992,26 @@ export function ExpeditionDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Cancelled Banner */}
+        {expedition.status === 'cancelled' && apiExpedition?.cancelledAt && (
+          <div className="border-t-2 border-[#994040] bg-[#994040]/10 dark:bg-[#994040]/20 p-4">
+            <div className="flex items-start gap-3">
+              <XCircle size={20} className="text-[#994040] mt-0.5 flex-shrink-0" strokeWidth={2} />
+              <div>
+                <h3 className="text-sm font-bold text-[#994040] mb-1">EXPEDITION CANCELLED</h3>
+                {apiExpedition.cancellationReason && (
+                  <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">
+                    {apiExpedition.cancellationReason}
+                  </p>
+                )}
+                <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                  Cancelled on {formatDate(apiExpedition.cancelledAt as unknown as string)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats Bar */}
         <div className={`grid grid-cols-2 ${showSponsorshipSection ? 'md:grid-cols-6' : 'md:grid-cols-4'} border-t-2 border-[#202020] dark:border-[#616161]`}>
@@ -2297,7 +2317,7 @@ export function ExpeditionDetailPage() {
                       <div className="text-xs text-[#b5bcc4] dark:text-[#616161]">
                         Be the first to support this expedition.
                       </div>
-                      {!isOwner && expedition.status !== 'completed' && (
+                      {!isOwner && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
                         <Link
                           href={isAuthenticated ? `/sponsor/${expedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
                           className="inline-block mt-4 px-6 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] text-sm font-bold"
@@ -2473,7 +2493,7 @@ export function ExpeditionDetailPage() {
               </div>
 
               {/* Sponsor Button */}
-              {!isOwner && expedition.status !== 'completed' && (
+              {!isOwner && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
                 <Link
                   href={isAuthenticated ? `/sponsor/${expedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
                   className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
@@ -2568,9 +2588,9 @@ export function ExpeditionDetailPage() {
         expedition={{
           id: expedition.id,
           title: expedition.title,
-          status: (expedition.status === 'active' || expedition.status === 'planned' || expedition.status === 'completed'
+          status: (['active', 'planned', 'completed', 'cancelled'].includes(expedition.status)
             ? expedition.status
-            : 'active') as 'active' | 'planned' | 'completed',
+            : 'active') as 'active' | 'planned' | 'completed' | 'cancelled',
           startDate: expedition.startDate,
           estimatedEndDate: expedition.estimatedEndDate,
           daysActive: expedition.daysActive,
@@ -2579,6 +2599,12 @@ export function ExpeditionDetailPage() {
           backers: expedition.sponsors,
         }}
         onStatusChange={handleStatusChange}
+        onCancel={async (reason) => {
+          await expeditionApi.cancel(expedition.id, reason);
+          // Refetch expedition data
+          const refreshed = await expeditionApi.getById(expedition.id);
+          setApiExpedition(refreshed);
+        }}
       />
 
       {/* Fullscreen Map Modal */}

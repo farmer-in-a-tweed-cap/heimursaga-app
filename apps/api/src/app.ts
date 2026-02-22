@@ -229,7 +229,11 @@ export async function app() {
         .setTitle('saga api')
         .setVersion(`${API_VERSION}`)
         .build();
-      SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config));
+      SwaggerModule.setup(
+        'docs',
+        app,
+        SwaggerModule.createDocument(app, config),
+      );
     }
 
     // Enable graceful shutdown hooks (releases port on SIGTERM/SIGINT)

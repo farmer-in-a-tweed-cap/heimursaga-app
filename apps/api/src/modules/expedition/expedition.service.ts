@@ -29,7 +29,6 @@ import {
   ServiceInternalException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import { IUserNotificationCreatePayload } from '@/modules/notification';
 import {
   IQueryWithSession,
   ISessionQuery,
@@ -37,6 +36,7 @@ import {
 } from '@/common/interfaces';
 import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
+import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
 
 @Injectable()
@@ -132,13 +132,16 @@ export class ExpeditionService {
   async getExpeditions({
     query,
     session,
-  }: IQueryWithSession<{ context?: string }>): Promise<IExpeditionGetAllResponse> {
+  }: IQueryWithSession<{
+    context?: string;
+  }>): Promise<IExpeditionGetAllResponse> {
     try {
       const { context } = query;
       const { explorerId, explorerRole } = session;
 
       let where: Prisma.ExpeditionWhereInput = {
         deleted_at: null,
+        status: { not: 'cancelled' },
       };
 
       const take = 50;
@@ -238,7 +241,8 @@ export class ExpeditionService {
           },
         },
         take,
-        orderBy: context === 'following' ? [{ updated_at: 'desc' }] : [{ id: 'desc' }],
+        orderBy:
+          context === 'following' ? [{ updated_at: 'desc' }] : [{ id: 'desc' }],
       });
 
       // Get unique sponsor counts per author
@@ -300,7 +304,11 @@ export class ExpeditionService {
               title,
               description,
               public: isPublic,
-              visibility: (visibility || (isPublic !== false ? 'public' : 'private')) as 'public' | 'off-grid' | 'private',
+              visibility: (visibility ||
+                (isPublic !== false ? 'public' : 'private')) as
+                | 'public'
+                | 'off-grid'
+                | 'private',
               status,
               startDate,
               endDate,
@@ -315,7 +323,8 @@ export class ExpeditionService {
                     username: author.username,
                     name: author.profile?.name,
                     picture: getStaticMediaUrl(author.profile?.picture),
-                    stripeAccountConnected: author?.is_stripe_account_connected === true,
+                    stripeAccountConnected:
+                      author?.is_stripe_account_connected === true,
                   }
                 : undefined,
               tags: tags ? JSON.parse(tags) : [],
@@ -347,13 +356,18 @@ export class ExpeditionService {
       if (!username) throw new ServiceNotFoundException('explorer not found');
 
       // Check if the viewing explorer is the profile owner
-      const owner = await this.prisma.explorer.findFirst({ where: { username }, select: { id: true } });
+      const owner = await this.prisma.explorer.findFirst({
+        where: { username },
+        select: { id: true },
+      });
       const isOwner = owner && owner.id === explorerId;
 
-      // get expeditions (owner sees all their own, others see only public)
+      // get expeditions (owner sees all their own, others see only public and non-cancelled)
       const where = {
         author: { username },
-        ...(isOwner ? {} : { visibility: 'public' }),
+        ...(isOwner
+          ? {}
+          : { visibility: 'public', status: { not: 'cancelled' } }),
         deleted_at: null,
       } satisfies Prisma.ExpeditionWhereInput;
 
@@ -506,7 +520,10 @@ export class ExpeditionService {
               description,
               coverImage: getStaticMediaUrl(cover_image),
               status,
-              visibility: (visibility || 'public') as 'public' | 'off-grid' | 'private',
+              visibility: (visibility || 'public') as
+                | 'public'
+                | 'off-grid'
+                | 'private',
               category,
               region,
               tags: tags ? JSON.parse(tags) : [],
@@ -528,17 +545,15 @@ export class ExpeditionService {
                       source: current_location_type,
                     }
                   : undefined,
-              currentLocationVisibility:
-                (current_location_visibility || 'public') as
-                  | 'public'
-                  | 'sponsors'
-                  | 'private',
+              currentLocationVisibility: (current_location_visibility ||
+                'public') as 'public' | 'sponsors' | 'private',
               author: author
                 ? {
                     username: author.username,
                     picture: getStaticMediaUrl(author.profile.picture),
                     name: author.profile.name,
-                    stripeAccountConnected: author?.is_stripe_account_connected === true,
+                    stripeAccountConnected:
+                      author?.is_stripe_account_connected === true,
                   }
                 : undefined,
             };
@@ -602,6 +617,8 @@ export class ExpeditionService {
             goal: true,
             raised: true,
             entries_count: true,
+            cancelled_at: true,
+            cancellation_reason: true,
             author_id: true,
             author: {
               select: {
@@ -706,6 +723,8 @@ export class ExpeditionService {
         goal,
         raised,
         entries_count,
+        cancelled_at,
+        cancellation_reason,
         public: isPublic,
         waypoints,
         entries,
@@ -880,9 +899,15 @@ export class ExpeditionService {
           totalCommitted: totalRecurringCommitted,
         },
         public: isPublic,
-        visibility: (expedition.visibility || (isPublic !== false ? 'public' : 'private')) as 'public' | 'off-grid' | 'private',
+        visibility: (expedition.visibility ||
+          (isPublic !== false ? 'public' : 'private')) as
+          | 'public'
+          | 'off-grid'
+          | 'private',
         startDate,
         endDate,
+        cancelledAt: cancelled_at || undefined,
+        cancellationReason: cancellation_reason || undefined,
         bookmarked: isBookmarked,
         followingAuthor: isFollowingAuthor,
         author: author
@@ -890,7 +915,8 @@ export class ExpeditionService {
               username: author.username,
               picture: getStaticMediaUrl(author.profile.picture),
               creator: author.role === ExplorerRole.CREATOR,
-              stripeAccountConnected: author?.is_stripe_account_connected === true,
+              stripeAccountConnected:
+                author?.is_stripe_account_connected === true,
             }
           : undefined,
         // Entries directly linked to this expedition
@@ -908,9 +934,13 @@ export class ExpeditionService {
             .map((entry) => {
               const fullContent = normalizeText(entry.content);
               // Derive visibility from expedition (except private entries stay private)
-              const effectiveVisibility = entry.visibility === 'private'
-                ? 'private'
-                : (expedition.visibility || 'public') as 'public' | 'off-grid' | 'private';
+              const effectiveVisibility =
+                entry.visibility === 'private'
+                  ? 'private'
+                  : ((expedition.visibility || 'public') as
+                      | 'public'
+                      | 'off-grid'
+                      | 'private');
               return {
                 id: entry.public_id,
                 title: entry.title,
@@ -1027,7 +1057,11 @@ export class ExpeditionService {
       if (!explorerId) throw new ServiceForbiddenException();
 
       // Sponsorship goal requires Explorer Pro
-      if (payload.goal && payload.goal > 0 && !matchRoles(userRole, [UserRole.CREATOR])) {
+      if (
+        payload.goal &&
+        payload.goal > 0 &&
+        !matchRoles(userRole, [UserRole.CREATOR])
+      ) {
         throw new ServiceBadRequestException(
           'Setting a sponsorship goal requires Explorer Pro',
         );
@@ -1039,8 +1073,11 @@ export class ExpeditionService {
           public_id: generator.publicId(),
           title: payload.title,
           description: payload.description,
-          public: payload.visibility === 'private' ? false : (payload.public ?? true),
-          visibility: payload.visibility || (payload.public === false ? 'private' : 'public'),
+          public:
+            payload.visibility === 'private' ? false : payload.public ?? true,
+          visibility:
+            payload.visibility ||
+            (payload.public === false ? 'private' : 'public'),
           status: payload.status ?? 'planned',
           start_date: payload.startDate ? new Date(payload.startDate) : null,
           end_date: payload.endDate ? new Date(payload.endDate) : null,
@@ -1101,7 +1138,15 @@ export class ExpeditionService {
       if (!id) throw new ServiceNotFoundException('expedition not found');
       const expedition = await this.prisma.expedition.findFirstOrThrow({
         where: { public_id: id, author_id: explorerId, deleted_at: null },
-        select: { id: true, visibility: true },
+        select: {
+          id: true,
+          visibility: true,
+          status: true,
+          start_date: true,
+          public_id: true,
+          title: true,
+          author_id: true,
+        },
       });
 
       // update the expedition
@@ -1127,7 +1172,8 @@ export class ExpeditionService {
         if (['public', 'off-grid', 'private'].includes(vis)) {
           // Private is locked: cannot change to or from private after creation
           const currentVis = expedition.visibility || 'public';
-          const isPrivateTransition = (currentVis === 'private') !== (vis === 'private');
+          const isPrivateTransition =
+            (currentVis === 'private') !== (vis === 'private');
           if (!isPrivateTransition) {
             updateData.visibility = vis;
             updateData.public = vis !== 'private';
@@ -1144,7 +1190,30 @@ export class ExpeditionService {
         updateData.status = status;
       }
       if (startDate !== undefined) {
-        updateData.start_date = startDate ? new Date(startDate) : null;
+        if (startDate) {
+          const newStartDate = new Date(startDate);
+          // Only planned expeditions can have their start date changed
+          if (expedition.start_date && expedition.status !== 'planned') {
+            throw new ServiceBadRequestException(
+              'Start date can only be changed for planned expeditions',
+            );
+          }
+          // If expedition already has a start_date, enforce ±30 day limit
+          if (expedition.start_date) {
+            const diffMs = Math.abs(
+              newStartDate.getTime() - expedition.start_date.getTime(),
+            );
+            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            if (diffDays > 30) {
+              throw new ServiceBadRequestException(
+                'Start date can only be changed within 30 days of the original date',
+              );
+            }
+          }
+          updateData.start_date = newStartDate;
+        } else {
+          updateData.start_date = null;
+        }
       }
       if (endDate !== undefined) {
         updateData.end_date = endDate ? new Date(endDate) : null;
@@ -1216,6 +1285,45 @@ export class ExpeditionService {
         }
       }
 
+      // Notify sponsors when start date changes
+      if (
+        updateData.start_date &&
+        expedition.start_date &&
+        updateData.start_date.getTime() !== expedition.start_date.getTime()
+      ) {
+        try {
+          const sponsors = await this.prisma.sponsorship.findMany({
+            where: {
+              sponsored_explorer_id: explorerId,
+              status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
+              deleted_at: null,
+            },
+            select: { sponsor_id: true },
+          });
+
+          const formattedDate = dateformat(updateData.start_date).format(
+            'MMMM D, YYYY',
+          );
+          for (const sponsor of sponsors) {
+            this.eventService.trigger<IUserNotificationCreatePayload>({
+              event: EVENTS.NOTIFICATION_CREATE,
+              data: {
+                context: UserNotificationContext.EXPEDITION_DATE_CHANGED,
+                userId: sponsor.sponsor_id,
+                mentionUserId: explorerId,
+                expeditionPublicId: expedition.public_id,
+                body: `"${expedition.title}" start date has been changed to ${formattedDate}.`,
+              },
+            });
+          }
+        } catch (notifErr) {
+          this.logger.error(
+            'Failed to send date change notifications:',
+            notifErr,
+          );
+        }
+      }
+
       await this.checkAndUpdateRestingStatus(explorerId);
     } catch (e) {
       this.logger.error(e);
@@ -1246,6 +1354,70 @@ export class ExpeditionService {
       await this.prisma.expedition.update({
         where: { id: expedition.id },
         data: { deleted_at: dateformat().toDate() },
+      });
+
+      await this.checkAndUpdateRestingStatus(explorerId);
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async cancelExpedition({
+    session,
+    query,
+    payload,
+  }: ISessionQueryWithPayload<
+    { id: string },
+    { cancellationReason: string }
+  >): Promise<void> {
+    try {
+      const { id } = query;
+      const { explorerId } = session;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+      if (!id) throw new ServiceNotFoundException('expedition not found');
+
+      // Get expedition and verify ownership
+      const expedition = await this.prisma.expedition.findFirstOrThrow({
+        where: { public_id: id, author_id: explorerId, deleted_at: null },
+        select: {
+          id: true,
+          public_id: true,
+          title: true,
+          status: true,
+          author_id: true,
+        },
+      });
+
+      // Can only cancel planned or active expeditions
+      const allowedStatuses = ['planned', 'active'];
+      if (!allowedStatuses.includes(expedition.status || '')) {
+        throw new ServiceBadRequestException(
+          'Only planned or active expeditions can be cancelled',
+        );
+      }
+
+      // Update expedition
+      await this.prisma.expedition.update({
+        where: { id: expedition.id },
+        data: {
+          status: 'cancelled',
+          cancelled_at: dateformat().toDate(),
+          cancellation_reason: payload.cancellationReason,
+        },
+      });
+
+      // Emit cancellation event for sponsor refunds and notifications
+      this.eventService.trigger({
+        event: EVENTS.EXPEDITION_CANCELLED,
+        data: {
+          expeditionPublicId: expedition.public_id,
+          expeditionTitle: expedition.title,
+          explorerId: expedition.author_id,
+          cancellationReason: payload.cancellationReason,
+        },
       });
 
       await this.checkAndUpdateRestingStatus(explorerId);
@@ -1412,7 +1584,11 @@ export class ExpeditionService {
       // create a waypoint
       const { title, lat, lon, date, description, sequence } = payload;
       // Convert date: string → Date, null → null (no date), undefined → undefined (Prisma skips)
-      const dateTime = date ? new Date(date as unknown as string) : (date === null ? null : undefined);
+      const dateTime = date
+        ? new Date(date as unknown as string)
+        : date === null
+          ? null
+          : undefined;
       await this.prisma.expeditionWaypoint.create({
         data: {
           sequence: sequence ?? 0,
@@ -1485,7 +1661,11 @@ export class ExpeditionService {
       // update the waypoint
       const { title, lat, lon, date, description, sequence } = payload;
       // Convert date: string → Date, null → null (clear date), undefined → undefined (Prisma skips)
-      const dateTime = date ? new Date(date as unknown as string) : (date === null ? null : undefined);
+      const dateTime = date
+        ? new Date(date as unknown as string)
+        : date === null
+          ? null
+          : undefined;
       await this.prisma.waypoint.update({
         where: { id: waypoint.id },
         data: {

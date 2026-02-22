@@ -59,7 +59,13 @@ export async function resolveExpeditionLocations(
   if (entryPublicIds.length > 0) {
     const entries = await prisma.entry.findMany({
       where: { public_id: { in: entryPublicIds }, deleted_at: null },
-      select: { public_id: true, lat: true, lon: true, place: true, country_code: true },
+      select: {
+        public_id: true,
+        lat: true,
+        lon: true,
+        place: true,
+        country_code: true,
+      },
     });
     for (const entry of entries) {
       if (entry.lat != null && entry.lon != null) {

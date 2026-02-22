@@ -2,9 +2,10 @@ import { Injectable } from '@nestjs/common';
 
 import { getCountryCodeFromCoordinates } from '@/lib/geocoding';
 import {
-  resolveExpeditionLocations,
   ResolvedLocation,
+  resolveExpeditionLocations,
 } from '@/lib/resolve-expedition-location';
+
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
@@ -292,9 +293,7 @@ export class WeatherService {
 
       // Build summary
       const countryCodes = new Set(
-        conditions
-          .map((c) => c.countryCode)
-          .filter((c): c is string => !!c),
+        conditions.map((c) => c.countryCode).filter((c): c is string => !!c),
       );
       const temps = conditions.map((c) => c.tempC);
       const tempsF = conditions.map((c) => c.tempF);

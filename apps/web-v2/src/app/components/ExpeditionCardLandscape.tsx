@@ -30,7 +30,7 @@ interface ExpeditionCardLandscapeProps {
   currentLocationId?: string;
   waypoints?: Waypoint[];
   journalEntriesData?: JournalEntry[];
-  status: "active" | "completed" | "planned" | "paused";
+  status: "active" | "completed" | "planned" | "paused" | "cancelled";
   daysElapsed: number;
   journalEntries: number;
   fundingPercentage: number;
@@ -82,18 +82,20 @@ export function ExpeditionCardLandscape({
   };
 
   const currentLocation = getCurrentLocation();
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     active: "bg-[#ac6d46]",
     completed: "bg-[#616161]",
     planned: "bg-[#4676ac]",
     paused: "bg-[#b5bcc4]",
+    cancelled: "bg-[#994040]",
   };
 
-  const statusLabels = {
+  const statusLabels: Record<string, string> = {
     active: "ACTIVE EXPEDITION",
     completed: "COMPLETED EXPEDITION",
     planned: "PLANNED EXPEDITION",
     paused: "PAUSED EXPEDITION",
+    cancelled: "CANCELLED EXPEDITION",
   };
 
   return (

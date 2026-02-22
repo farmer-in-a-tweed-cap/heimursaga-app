@@ -237,23 +237,21 @@ export class SponsorService {
 
       if (paymentMethodId) {
         // Look up from local DB (existing flow — card was saved)
-        const paymentMethod =
-          await this.prisma.paymentMethod.findFirstOrThrow({
-            where: { public_id: paymentMethodId, explorer_id: userId },
-            select: {
-              id: true,
-              stripe_payment_method_id: true,
-            },
-          });
+        const paymentMethod = await this.prisma.paymentMethod.findFirstOrThrow({
+          where: { public_id: paymentMethodId, explorer_id: userId },
+          select: {
+            id: true,
+            stripe_payment_method_id: true,
+          },
+        });
         stripePaymentMethodId = paymentMethod.stripe_payment_method_id;
       } else if (payload.stripePaymentMethodId) {
         // Direct Stripe PM ID (card not being saved locally)
         stripePaymentMethodId = payload.stripePaymentMethodId;
         // Attach to customer so Stripe can use it for this transaction
-        await this.stripeService.paymentMethods.attach(
-          stripePaymentMethodId,
-          { customer: stripeCustomer.id },
-        );
+        await this.stripeService.paymentMethods.attach(stripePaymentMethodId, {
+          customer: stripeCustomer.id,
+        });
       } else {
         throw new ServiceBadRequestException('Payment method is required');
       }
@@ -555,118 +553,121 @@ export class SponsorService {
         currency: string;
       };
 
-      await this.prisma.$transaction(async (tx) => {
-        // get a checkout (only if still pending — prevents double-completion race)
-        // Serializable isolation ensures concurrent transactions will fail rather than duplicate
-        const checkout = await tx.checkout.findFirstOrThrow({
-          where: { id: checkoutId, status: CheckoutStatus.PENDING },
-          select: {
-            id: true,
-            transaction_type: true,
-            total: true,
-            currency: true,
-            sponsorship_type: true,
-            sponsorship_tier_id: true,
-            stripe_subscription_id: true,
-            message: true,
-            email_delivery_enabled: true,
-            is_public: true,
-            is_message_public: true,
-            expedition_public_id: true,
-          },
-        });
-
-        // Store checkout data for notification
-        checkoutData = {
-          message: checkout.message,
-          sponsorship_type: checkout.sponsorship_type,
-          total: checkout.total,
-          currency: checkout.currency,
-        };
-
-        const expiry = dateformat().add(1, 'month').toDate();
-
-        let status: SponsorshipStatus;
-
-        switch (checkout.sponsorship_type) {
-          case SponsorshipType.ONE_TIME_PAYMENT:
-            status = SponsorshipStatus.CONFIRMED;
-            break;
-          case SponsorshipType.SUBSCRIPTION:
-            status = SponsorshipStatus.ACTIVE;
-            break;
-          default:
-            status = SponsorshipStatus.PENDING;
-            break;
-        }
-
-        // create a sponsorship
-        const sponsorship = await tx.sponsorship.create({
-          data: {
-            public_id: generator.publicId(),
-            type: checkout.sponsorship_type,
-            status,
-            amount: checkout.total,
-            message: checkout.message,
-            currency: checkout.currency,
-            stripe_subscription_id: checkout.stripe_subscription_id,
-            email_delivery_enabled:
-              checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
-                ? checkout.email_delivery_enabled
-                : false,
-            is_public: checkout.is_public ?? true,
-            is_message_public: checkout.is_message_public ?? true,
-            expedition_public_id: checkout.expedition_public_id || null,
-            expiry:
-              checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
-                ? expiry
-                : undefined,
-            tier: { connect: { id: checkout.sponsorship_tier_id } },
-            sponsor: {
-              connect: { id: userId },
-            },
-            sponsored_explorer: {
-              connect: { id: creatorId },
-            },
-          },
-          select: {
-            sponsor_id: true,
-            sponsored_explorer_id: true,
-          },
-        });
-
-        // update the checkout
-        await tx.checkout.update({
-          where: { id: checkout.id },
-          data: {
-            status: CheckoutStatus.CONFIRMED,
-            confirmed_at: new Date(),
-          },
-        });
-
-        // Update the creator's active expedition raised amount and sponsor count
-        // Goal and raised are stored in dollars, checkout.total is in cents
-        const raisedDollars = integerToDecimal(checkout.total);
-        const activeExpedition = await tx.expedition.findFirst({
-          where: {
-            author_id: creatorId,
-            deleted_at: null,
-            status: { in: ['active', 'planned'] },
-          },
-          select: { id: true },
-          orderBy: { id: 'desc' },
-        });
-
-        if (activeExpedition) {
-          await tx.expedition.update({
-            where: { id: activeExpedition.id },
-            data: {
-              raised: { increment: raisedDollars },
-              sponsors_count: { increment: 1 },
+      await this.prisma.$transaction(
+        async (tx) => {
+          // get a checkout (only if still pending — prevents double-completion race)
+          // Serializable isolation ensures concurrent transactions will fail rather than duplicate
+          const checkout = await tx.checkout.findFirstOrThrow({
+            where: { id: checkoutId, status: CheckoutStatus.PENDING },
+            select: {
+              id: true,
+              transaction_type: true,
+              total: true,
+              currency: true,
+              sponsorship_type: true,
+              sponsorship_tier_id: true,
+              stripe_subscription_id: true,
+              message: true,
+              email_delivery_enabled: true,
+              is_public: true,
+              is_message_public: true,
+              expedition_public_id: true,
             },
           });
-        }
-      }, { isolationLevel: 'Serializable' });
+
+          // Store checkout data for notification
+          checkoutData = {
+            message: checkout.message,
+            sponsorship_type: checkout.sponsorship_type,
+            total: checkout.total,
+            currency: checkout.currency,
+          };
+
+          const expiry = dateformat().add(1, 'month').toDate();
+
+          let status: SponsorshipStatus;
+
+          switch (checkout.sponsorship_type) {
+            case SponsorshipType.ONE_TIME_PAYMENT:
+              status = SponsorshipStatus.CONFIRMED;
+              break;
+            case SponsorshipType.SUBSCRIPTION:
+              status = SponsorshipStatus.ACTIVE;
+              break;
+            default:
+              status = SponsorshipStatus.PENDING;
+              break;
+          }
+
+          // create a sponsorship
+          const sponsorship = await tx.sponsorship.create({
+            data: {
+              public_id: generator.publicId(),
+              type: checkout.sponsorship_type,
+              status,
+              amount: checkout.total,
+              message: checkout.message,
+              currency: checkout.currency,
+              stripe_subscription_id: checkout.stripe_subscription_id,
+              email_delivery_enabled:
+                checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
+                  ? checkout.email_delivery_enabled
+                  : false,
+              is_public: checkout.is_public ?? true,
+              is_message_public: checkout.is_message_public ?? true,
+              expedition_public_id: checkout.expedition_public_id || null,
+              expiry:
+                checkout.sponsorship_type === SponsorshipType.SUBSCRIPTION
+                  ? expiry
+                  : undefined,
+              tier: { connect: { id: checkout.sponsorship_tier_id } },
+              sponsor: {
+                connect: { id: userId },
+              },
+              sponsored_explorer: {
+                connect: { id: creatorId },
+              },
+            },
+            select: {
+              sponsor_id: true,
+              sponsored_explorer_id: true,
+            },
+          });
+
+          // update the checkout
+          await tx.checkout.update({
+            where: { id: checkout.id },
+            data: {
+              status: CheckoutStatus.CONFIRMED,
+              confirmed_at: new Date(),
+            },
+          });
+
+          // Update the creator's active expedition raised amount and sponsor count
+          // Goal and raised are stored in dollars, checkout.total is in cents
+          const raisedDollars = integerToDecimal(checkout.total);
+          const activeExpedition = await tx.expedition.findFirst({
+            where: {
+              author_id: creatorId,
+              deleted_at: null,
+              status: { in: ['active', 'planned'] },
+            },
+            select: { id: true },
+            orderBy: { id: 'desc' },
+          });
+
+          if (activeExpedition) {
+            await tx.expedition.update({
+              where: { id: activeExpedition.id },
+              data: {
+                raised: { increment: raisedDollars },
+                sponsors_count: { increment: 1 },
+              },
+            });
+          }
+        },
+        { isolationLevel: 'Serializable' },
+      );
 
       // create a notification
       if (creatorId && userId && checkoutData) {
@@ -1435,26 +1436,29 @@ export class SponsorService {
       });
 
       // Batch-query expeditions by their public_ids stored on each sponsorship
-      const expeditionPublicIds = [...new Set(
-        data.map((s) => s.expedition_public_id).filter(Boolean),
-      )] as string[];
-      const expeditions = expeditionPublicIds.length > 0
-        ? await this.prisma.expedition.findMany({
-            where: {
-              public_id: { in: expeditionPublicIds },
-              deleted_at: null,
-            },
-            select: {
-              public_id: true,
-              title: true,
-              status: true,
-              visibility: true,
-              cover_image: true,
-            },
-          })
-        : [];
+      const expeditionPublicIds = [
+        ...new Set(data.map((s) => s.expedition_public_id).filter(Boolean)),
+      ] as string[];
+      const expeditions =
+        expeditionPublicIds.length > 0
+          ? await this.prisma.expedition.findMany({
+              where: {
+                public_id: { in: expeditionPublicIds },
+                deleted_at: null,
+              },
+              select: {
+                public_id: true,
+                title: true,
+                status: true,
+                visibility: true,
+                cover_image: true,
+              },
+            })
+          : [];
 
-      const expeditionByPublicId = new Map(expeditions.map((exp) => [exp.public_id, exp]));
+      const expeditionByPublicId = new Map(
+        expeditions.map((exp) => [exp.public_id, exp]),
+      );
 
       const response: ISponsorshipGetAllResponse = {
         results,
@@ -1488,14 +1492,20 @@ export class SponsorService {
                 }
               : undefined,
             expedition: (() => {
-              const exp = expedition_public_id ? expeditionByPublicId.get(expedition_public_id) : undefined;
-              return exp ? {
-                id: exp.public_id,
-                title: exp.title,
-                status: exp.status,
-                visibility: exp.visibility || 'public',
-                coverPhoto: exp.cover_image ? getStaticMediaUrl(exp.cover_image) : undefined,
-              } : undefined;
+              const exp = expedition_public_id
+                ? expeditionByPublicId.get(expedition_public_id)
+                : undefined;
+              return exp
+                ? {
+                    id: exp.public_id,
+                    title: exp.title,
+                    status: exp.status,
+                    visibility: exp.visibility || 'public',
+                    coverPhoto: exp.cover_image
+                      ? getStaticMediaUrl(exp.cover_image)
+                      : undefined,
+                  }
+                : undefined;
             })(),
             createdAt: created_at,
           }),
@@ -1961,7 +1971,9 @@ export class SponsorService {
         select: { status: true },
       });
       if (!checkout || checkout.status !== CheckoutStatus.PENDING) {
-        this.logger.log(`Checkout ${checkoutId} already completed, skipping webhook completion`);
+        this.logger.log(
+          `Checkout ${checkoutId} already completed, skipping webhook completion`,
+        );
         return;
       }
 
@@ -1972,6 +1984,209 @@ export class SponsorService {
       });
     } catch (e) {
       this.logger.error('Error completing sponsor checkout:', e);
+    }
+  }
+
+  @OnEvent(EVENTS.EXPEDITION_CANCELLED)
+  async onExpeditionCancelled(event: {
+    expeditionPublicId: string;
+    expeditionTitle: string;
+    explorerId: number;
+    cancellationReason: string;
+  }) {
+    try {
+      const {
+        expeditionPublicId,
+        expeditionTitle,
+        explorerId,
+        cancellationReason,
+      } = event;
+
+      this.logger.log(
+        `Processing cancellation for expedition ${expeditionPublicId}: "${expeditionTitle}"`,
+      );
+
+      // Idempotency guard: verify expedition is actually cancelled
+      const expedition = await this.prisma.expedition.findFirst({
+        where: {
+          public_id: expeditionPublicId,
+          author_id: explorerId,
+        },
+        select: {
+          id: true,
+          status: true,
+          cancelled_at: true,
+        },
+      });
+
+      if (!expedition) {
+        this.logger.warn(
+          `Expedition ${expeditionPublicId} not found, skipping cancellation processing`,
+        );
+        return;
+      }
+
+      if (expedition.status !== 'cancelled' || !expedition.cancelled_at) {
+        this.logger.warn(
+          `Expedition ${expeditionPublicId} is not in cancelled status (status: ${expedition.status}), skipping processing`,
+        );
+        return;
+      }
+
+      // Find all active/confirmed sponsorships for this expedition
+      const sponsorships = await this.prisma.sponsorship.findMany({
+        where: {
+          sponsored_explorer_id: explorerId,
+          expedition_public_id: expeditionPublicId,
+          status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+          public_id: true,
+          type: true,
+          amount: true,
+          sponsor_id: true,
+          stripe_subscription_id: true,
+        },
+      });
+
+      this.logger.log(
+        `Found ${sponsorships.length} active sponsorships to process for expedition ${expeditionPublicId}`,
+      );
+
+      let pausedCount = 0;
+      let failureCount = 0;
+      // Track which sponsors had a recurring subscription paused (for notification message)
+      const sponsorsWithPausedRecurring = new Set<number>();
+
+      for (const sponsorship of sponsorships) {
+        try {
+          // Pause recurring subscriptions (same pattern as resting status)
+          // One-time payments are kept — sponsorships are support given, not conditional purchases
+          if (
+            sponsorship.type === SponsorshipType.SUBSCRIPTION &&
+            sponsorship.stripe_subscription_id
+          ) {
+            try {
+              const sub = await this.stripeService.subscriptions.retrieve(
+                sponsorship.stripe_subscription_id,
+              );
+              if (
+                ['active', 'past_due', 'unpaid', 'trialing'].includes(
+                  sub.status,
+                )
+              ) {
+                await this.stripeService.subscriptions.update(
+                  sponsorship.stripe_subscription_id,
+                  { pause_collection: { behavior: 'void' } },
+                  {
+                    idempotencyKey: `cancel_exp_pause_${expeditionPublicId}_${sponsorship.public_id}`,
+                  },
+                );
+              }
+              this.logger.log(
+                `Paused subscription ${sponsorship.stripe_subscription_id} for sponsorship ${sponsorship.public_id}`,
+              );
+            } catch (pauseErr) {
+              this.logger.error(
+                `Failed to pause subscription ${sponsorship.stripe_subscription_id}:`,
+                pauseErr,
+              );
+            }
+            // Always mark as paused in DB regardless of Stripe result
+            await this.prisma.sponsorship.update({
+              where: { id: sponsorship.id },
+              data: { status: SponsorshipStatus.PAUSED },
+            });
+            pausedCount++;
+            sponsorsWithPausedRecurring.add(sponsorship.sponsor_id);
+          }
+        } catch (sponsorErr) {
+          this.logger.error(
+            `Error processing sponsorship ${sponsorship.public_id} during cancellation:`,
+            sponsorErr,
+          );
+          failureCount++;
+        }
+      }
+
+      // Notify each unique sponsor once
+      const uniqueSponsorIds = [
+        ...new Set(sponsorships.map((s) => s.sponsor_id)),
+      ];
+      for (const sponsorId of uniqueSponsorIds) {
+        const hadRecurring = sponsorsWithPausedRecurring.has(sponsorId);
+        this.eventService.trigger<IUserNotificationCreatePayload>({
+          event: EVENTS.NOTIFICATION_CREATE,
+          data: {
+            context: UserNotificationContext.EXPEDITION_CANCELLED,
+            userId: sponsorId,
+            mentionUserId: explorerId,
+            expeditionPublicId,
+            body: hadRecurring
+              ? `"${expeditionTitle}" has been cancelled. Reason: _${cancellationReason}_ Your recurring sponsorship has been paused and will resume if the explorer starts a new expedition.`
+              : `"${expeditionTitle}" has been cancelled. Reason: _${cancellationReason}_`,
+          },
+        });
+      }
+
+      // Summary notification to expedition owner
+      if (sponsorships.length === 0) {
+        this.eventService.trigger<IUserNotificationCreatePayload>({
+          event: EVENTS.NOTIFICATION_CREATE,
+          data: {
+            context: UserNotificationContext.EXPEDITION_CANCELLED,
+            userId: explorerId,
+            expeditionPublicId,
+            body: `"${expeditionTitle}" has been cancelled.`,
+          },
+        });
+      } else {
+        const recurringCount = sponsorships.filter(
+          (s) => s.type === SponsorshipType.SUBSCRIPTION,
+        ).length;
+        const oneTimeCount = sponsorships.filter(
+          (s) => s.type === SponsorshipType.ONE_TIME_PAYMENT,
+        ).length;
+
+        const summaryParts = [
+          `"${expeditionTitle}" has been cancelled. ${sponsorships.length} sponsor(s) have been notified.`,
+        ];
+
+        if (pausedCount > 0) {
+          summaryParts.push(
+            `${pausedCount} recurring sponsorship(s) paused — they will resume automatically if you start a new expedition.`,
+          );
+        }
+
+        if (oneTimeCount > 0) {
+          summaryParts.push(
+            `${oneTimeCount} one-time sponsorship(s) retained.`,
+          );
+        }
+
+        if (failureCount > 0) {
+          summaryParts.push(`${failureCount} failed to process (check logs).`);
+        }
+
+        this.eventService.trigger<IUserNotificationCreatePayload>({
+          event: EVENTS.NOTIFICATION_CREATE,
+          data: {
+            context: UserNotificationContext.EXPEDITION_CANCELLED,
+            userId: explorerId,
+            mentionUserId: explorerId,
+            expeditionPublicId,
+            body: summaryParts.join(' '),
+          },
+        });
+      }
+
+      this.logger.log(
+        `Completed cancellation processing for expedition ${expeditionPublicId}: ${pausedCount} paused, ${failureCount} failed`,
+      );
+    } catch (e) {
+      this.logger.error('Error handling expedition cancellation:', e);
     }
   }
 }

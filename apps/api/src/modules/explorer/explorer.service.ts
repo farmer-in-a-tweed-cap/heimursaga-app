@@ -25,8 +25,8 @@ import {
 
 import { dateformat } from '@/lib/date-format';
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
-import { toGeoJson } from '@/lib/geojson';
 import { getCoordinatesFromLocation } from '@/lib/geocoding';
+import { toGeoJson } from '@/lib/geojson';
 import { resolveExpeditionLocations } from '@/lib/resolve-expedition-location';
 import { getStaticMediaUrl } from '@/lib/upload';
 import { matchRoles } from '@/lib/utils';
@@ -69,9 +69,7 @@ export class ExplorerService {
       const isAdmin =
         !!explorerId && matchRoles(explorerRole, [UserRole.ADMIN]);
 
-      let where: Prisma.ExplorerWhereInput = isAdmin
-        ? {}
-        : { blocked: false };
+      let where: Prisma.ExplorerWhereInput = isAdmin ? {} : { blocked: false };
 
       // Filter to followed explorers
       if (context === 'following') {
@@ -208,19 +206,22 @@ export class ExplorerService {
           // Check for active expedition location
           const activeExpInfo = explorerActiveExpMap.get(username);
           const resolvedLoc = activeExpInfo
-            ? resolvedLocations.get(
-                `${activeExpInfo.type}:${activeExpInfo.id}`,
-              )
+            ? resolvedLocations.get(`${activeExpInfo.type}:${activeExpInfo.id}`)
             : undefined;
 
           // Check if explorer has active off-grid expedition (but no public one)
           const hasPublicActiveExp = expeditions?.some(
-            (exp) => (exp.status === 'active' || exp.status === 'planned') && exp.visibility === 'public',
+            (exp) =>
+              (exp.status === 'active' || exp.status === 'planned') &&
+              exp.visibility === 'public',
           );
           const hasOffGridActiveExp = expeditions?.some(
-            (exp) => (exp.status === 'active' || exp.status === 'planned') && exp.visibility === 'off-grid',
+            (exp) =>
+              (exp.status === 'active' || exp.status === 'planned') &&
+              exp.visibility === 'off-grid',
           );
-          const activeExpeditionOffGrid = !hasPublicActiveExp && !!hasOffGridActiveExp;
+          const activeExpeditionOffGrid =
+            !hasPublicActiveExp && !!hasOffGridActiveExp;
 
           return {
             username,
@@ -248,7 +249,9 @@ export class ExplorerService {
                 : undefined,
             // Include expedition data for status calculation
             recentExpeditions: expeditions
-              ?.filter((exp) => exp.visibility !== 'off-grid' || id === explorerId)
+              ?.filter(
+                (exp) => exp.visibility !== 'off-grid' || id === explorerId,
+              )
               .map((exp) => ({
                 id: exp.public_id,
                 title: exp.title,
@@ -344,7 +347,10 @@ export class ExplorerService {
 
       // Check if the viewing explorer is the profile owner (for bypassing visibility filters)
       const isOwnerProfile = explorerId
-        ? await this.prisma.explorer.findFirst({ where: { username, id: explorerId }, select: { id: true } })
+        ? await this.prisma.explorer.findFirst({
+            where: { username, id: explorerId },
+            select: { id: true },
+          })
         : null;
 
       // get the explorer
@@ -393,7 +399,9 @@ export class ExplorerService {
               status: { in: ['active', 'planned'] },
               current_location_id: { not: null },
               // Owner can see their own location regardless of visibility setting
-              ...(isOwnerProfile ? {} : { current_location_visibility: 'public' }),
+              ...(isOwnerProfile
+                ? {}
+                : { current_location_visibility: 'public' }),
             },
             select: {
               public_id: true,
@@ -418,9 +426,14 @@ export class ExplorerService {
         },
         select: { visibility: true },
       });
-      const hasPublicActiveExp = allActiveExps.some((e) => e.visibility === 'public');
-      const hasOffGridActiveExp = allActiveExps.some((e) => e.visibility === 'off-grid');
-      const activeExpeditionOffGrid = !hasPublicActiveExp && !!hasOffGridActiveExp;
+      const hasPublicActiveExp = allActiveExps.some(
+        (e) => e.visibility === 'public',
+      );
+      const hasOffGridActiveExp = allActiveExps.some(
+        (e) => e.visibility === 'off-grid',
+      );
+      const activeExpeditionOffGrid =
+        !hasPublicActiveExp && !!hasOffGridActiveExp;
 
       // Resolve active expedition location if available
       const activeExp = explorer.expeditions?.[0];
@@ -434,10 +447,7 @@ export class ExplorerService {
           }
         | undefined;
 
-      if (
-        activeExp?.current_location_type &&
-        activeExp?.current_location_id
-      ) {
+      if (activeExp?.current_location_type && activeExp?.current_location_id) {
         const resolved = await resolveExpeditionLocations(this.prisma, [
           {
             type: activeExp.current_location_type,
@@ -566,7 +576,10 @@ export class ExplorerService {
       if (!username) throw new ServiceNotFoundException('explorer not found');
 
       // Check if the viewing explorer is the profile owner
-      const owner = await this.prisma.explorer.findFirst({ where: { username }, select: { id: true } });
+      const owner = await this.prisma.explorer.findFirst({
+        where: { username },
+        select: { id: true },
+      });
       const isOwner = owner && owner.id === explorerId;
 
       const where = {
@@ -579,12 +592,17 @@ export class ExplorerService {
         lon: { not: null },
         // Entry visibility derived from expedition
         // Owner bypass: always show the explorer's own entries regardless of visibility
-        ...(isOwner ? {} : {
-          OR: [
-            { expedition_id: null, visibility: 'public' },
-            { expedition: { visibility: 'public' }, NOT: { visibility: 'private' } },
-          ],
-        }),
+        ...(isOwner
+          ? {}
+          : {
+              OR: [
+                { expedition_id: null, visibility: 'public' },
+                {
+                  expedition: { visibility: 'public' },
+                  NOT: { visibility: 'private' },
+                },
+              ],
+            }),
       } as Prisma.EntryWhereInput;
 
       const select = {
@@ -797,7 +815,10 @@ export class ExplorerService {
       if (!username) throw new ServiceNotFoundException('explorer not found');
 
       // Check if the viewing explorer is the profile owner
-      const owner = await this.prisma.explorer.findFirst({ where: { username }, select: { id: true } });
+      const owner = await this.prisma.explorer.findFirst({
+        where: { username },
+        select: { id: true },
+      });
       const isOwner = owner && owner.id === explorerId;
 
       // get explorer entries (exclude off-grid unless owner)
@@ -808,12 +829,17 @@ export class ExplorerService {
             username,
           },
           deleted_at: null,
-          ...(isOwner ? {} : {
-            OR: [
-              { expedition_id: null, visibility: 'public' },
-              { expedition: { visibility: 'public' }, NOT: { visibility: 'private' } },
-            ],
-          }),
+          ...(isOwner
+            ? {}
+            : {
+                OR: [
+                  { expedition_id: null, visibility: 'public' },
+                  {
+                    expedition: { visibility: 'public' },
+                    NOT: { visibility: 'private' },
+                  },
+                ],
+              }),
         },
         select: {
           public_id: true,
@@ -1416,7 +1442,10 @@ export class SessionExplorerService {
             OR: [
               { author: { id: explorerId } },
               { expedition_id: null, visibility: 'public' },
-              { expedition: { visibility: 'public' }, NOT: { visibility: 'private' } },
+              {
+                expedition: { visibility: 'public' },
+                NOT: { visibility: 'private' },
+              },
             ],
           };
           break;
@@ -1567,7 +1596,8 @@ export class SessionExplorerService {
           sponsorsCount: bookmark.expedition.sponsors_count,
           entriesCount: bookmark.expedition.entries_count,
           bookmarksCount: bookmark.expedition.bookmarks_count,
-          stripeAccountConnected: bookmark.expedition.author.is_stripe_account_connected === true,
+          stripeAccountConnected:
+            bookmark.expedition.author.is_stripe_account_connected === true,
           explorer: {
             username: bookmark.expedition.author.username,
             name: bookmark.expedition.author.profile?.name,
@@ -1725,7 +1755,11 @@ export class SessionExplorerService {
                 instagram: profile?.instagram,
                 youtube: profile?.youtube,
                 equipment: (profile?.equipment as string[]) || [],
-                notificationPreferences: (profile?.notification_preferences as Record<string, boolean>) || {},
+                notificationPreferences:
+                  (profile?.notification_preferences as Record<
+                    string,
+                    boolean
+                  >) || {},
               } as IUserSettingsProfileGetResponse;
             });
           this.logger.log(
@@ -1829,7 +1863,9 @@ export class SessionExplorerService {
             ...(instagram !== undefined && { instagram }),
             ...(youtube !== undefined && { youtube }),
             ...(equipment !== undefined && { equipment }),
-            ...(notificationPreferences !== undefined && { notification_preferences: notificationPreferences }),
+            ...(notificationPreferences !== undefined && {
+              notification_preferences: notificationPreferences,
+            }),
           };
 
           this.logger.log(

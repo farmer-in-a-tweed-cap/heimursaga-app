@@ -377,10 +377,7 @@ export class SessionExplorerController {
 
   @Post('sessions/:id/revoke')
   @HttpCode(HttpStatus.OK)
-  async revokeSession(
-    @Param('id') id: string,
-    @Session() session: ISession,
-  ) {
+  async revokeSession(@Param('id') id: string, @Session() session: ISession) {
     return await this.sessionExplorerService.revokeSession({
       sessionId: parseInt(id, 10),
       session,
