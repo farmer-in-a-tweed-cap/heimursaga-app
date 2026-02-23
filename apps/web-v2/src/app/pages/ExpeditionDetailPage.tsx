@@ -1778,9 +1778,9 @@ export function ExpeditionDetailPage() {
             <div className="flex items-start justify-between gap-6">
               <div className="flex-1">
                 <div className="mb-3">
-                  <h1 className="text-4xl font-bold whitespace-nowrap">{expedition.title}</h1>
+                  <h1 className="text-4xl font-bold">{expedition.title}</h1>
                   {(expedition.category || expedition.region) && (
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex flex-wrap items-center gap-2 mt-2">
                       {expedition.category && (
                         <span className="px-3 py-1 bg-[#4676ac] text-white text-xs font-semibold whitespace-nowrap rounded-full">
                           {expedition.category.toUpperCase()}
@@ -1794,7 +1794,7 @@ export function ExpeditionDetailPage() {
                     </div>
                   )}
                 </div>
-                <div className="flex items-center gap-3 text-sm text-[#b5bcc4] mb-3 font-mono whitespace-nowrap">
+                <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm text-[#b5bcc4] mb-3 font-mono">
                   <span>Day {expedition.daysActive} of {totalDuration || '?'}</span>
                   <span>•</span>
                   <span>{formatDate(expedition.startDate)} to {formatDate(expedition.estimatedEndDate)}</span>
@@ -2010,26 +2010,26 @@ export function ExpeditionDetailPage() {
         {/* Stats Bar */}
         <div className={`grid grid-cols-2 ${showSponsorshipSection ? 'md:grid-cols-6' : 'md:grid-cols-4'} border-t-2 border-[#202020] dark:border-[#616161]`}>
           {/* Days to Start (planned) or Days Active (active/completed) */}
-          <div className="p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
+          <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
             {expedition.status === 'planned' && expedition.startDate ? (() => {
               const daysUntilStart = Math.max(0, Math.ceil((new Date(expedition.startDate).getTime() - now) / (1000 * 60 * 60 * 24)));
               return (
                 <>
-                  <div className="text-2xl font-bold text-[#4676ac]">{daysUntilStart}</div>
+                  <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{daysUntilStart}</div>
                   <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Days to Start</div>
                 </>
               );
             })() : (
               <>
-                <div className="text-2xl font-bold dark:text-[#e5e5e5]">{expedition.daysActive}</div>
+                <div className="text-xl md:text-2xl font-bold dark:text-[#e5e5e5]">{expedition.daysActive}</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Days Active</div>
               </>
             )}
           </div>
           {/* Raised - only show if sponsorships enabled */}
           {showSponsorshipSection && (
-            <div className="p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-              <div className="text-2xl font-bold dark:text-[#e5e5e5]">
+            <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
+              <div className="text-xl md:text-2xl font-bold dark:text-[#e5e5e5]">
                 ${totalRaised >= 1000 ? `${(totalRaised / 1000).toFixed(1)}k` : totalRaised.toFixed(0)}
               </div>
               <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
@@ -2039,21 +2039,21 @@ export function ExpeditionDetailPage() {
           )}
           {/* Sponsors - only show if sponsorships enabled */}
           {showSponsorshipSection && (
-            <div className="p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-              <div className="text-2xl font-bold text-[#ac6d46]">{expedition.sponsors}</div>
+            <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
+              <div className="text-xl md:text-2xl font-bold text-[#ac6d46]">{expedition.sponsors}</div>
               <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Sponsors</div>
             </div>
           )}
-          <div className="p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-            <div className="text-2xl font-bold text-[#4676ac]">{expedition.totalWaypoints}</div>
+          <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
+            <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{expedition.totalWaypoints}</div>
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Waypoints</div>
           </div>
-          <div className="p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-            <div className="text-2xl font-bold text-[#ac6d46]">{expedition.totalEntries}</div>
+          <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
+            <div className="text-xl md:text-2xl font-bold text-[#ac6d46]">{expedition.totalEntries}</div>
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Entries</div>
           </div>
-          <div className="p-4 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-            <div className="text-2xl font-bold text-[#4676ac]">{formatDistance(totalRouteDistance, 1)}</div>
+          <div className="p-2 md:p-4 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
+            <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{formatDistance(totalRouteDistance, 1)}</div>
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
               {(() => {
                 const mode = apiExpedition?.routeMode;

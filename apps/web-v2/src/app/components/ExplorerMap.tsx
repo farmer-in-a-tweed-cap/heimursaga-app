@@ -624,9 +624,9 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     }`}>
       {/* Map Header */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-[#616161] dark:bg-[#3a3a3a]">
-        <div className="flex items-center justify-between gap-4 p-4 text-white">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4 p-3 md:p-4 text-white">
           <div className="flex items-center gap-3">
-            <h3 className="text-sm font-bold font-mono">THE EXPLORER ATLAS</h3>
+            <h3 className="text-xs md:text-sm font-bold font-mono">THE EXPLORER ATLAS</h3>
             <div className="h-4 w-px bg-white opacity-30"></div>
             <div className="text-xs font-mono bg-[#202020] bg-opacity-40 px-2.5 py-1.5 border border-[#202020] border-opacity-30 rounded-full">
               {loading ? (
@@ -938,35 +938,35 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
         )}
 
         {/* Stats Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 bg-[#202020] bg-opacity-95 text-white p-4 z-10">
+        <div className="absolute bottom-0 left-0 right-0 bg-[#202020] bg-opacity-95 text-white p-2 md:p-4 z-10">
           {mapMode === 'explorer' ? (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
               <div className="border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">IN VIEW</div>
-                <div className="font-bold text-lg">{visibleExplorers.length}</div>
+                <div className="font-bold text-base md:text-lg">{visibleExplorers.length}</div>
               </div>
               <div className="border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">PRO EXPLORERS</div>
-                <div className="font-bold text-lg text-[#ac6d46]">{visibleExplorers.filter(e => e.creator).length}</div>
+                <div className="font-bold text-base md:text-lg text-[#ac6d46]">{visibleExplorers.filter(e => e.creator).length}</div>
               </div>
               <div className="border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">TOTAL ENTRIES</div>
-                <div className="font-bold text-lg">{visibleExplorers.reduce((sum, e) => sum + e.entriesCount, 0)}</div>
+                <div className="font-bold text-base md:text-lg">{visibleExplorers.reduce((sum, e) => sum + e.entriesCount, 0)}</div>
               </div>
               <div className="border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">LOCATIONS</div>
-                <div className="font-bold text-lg">{new Set(visibleExplorers.map(e => e.location)).size}</div>
+                <div className="font-bold text-base md:text-lg">{new Set(visibleExplorers.map(e => e.location)).size}</div>
               </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-xs font-mono">
               <div className="border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">IN VIEW</div>
-                <div className="font-bold text-lg">{visibleEntries.length}</div>
+                <div className="font-bold text-base md:text-lg">{visibleEntries.length}</div>
               </div>
               <div className="border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">TOTAL WORDS</div>
-                <div className="font-bold text-lg">
+                <div className="font-bold text-base md:text-lg">
                   {visibleEntries.length > 0
                     ? (visibleEntries.reduce((sum, e) => sum + (e.wordCount || 0), 0) / 1000).toFixed(1) + 'k'
                     : '0'}
@@ -974,15 +974,15 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
               </div>
               <div className="border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">TOTAL MEDIA</div>
-                <div className="font-bold text-lg">{visibleEntries.reduce((sum, e) => sum + (e.mediaCount || 0), 0)}</div>
+                <div className="font-bold text-base md:text-lg">{visibleEntries.reduce((sum, e) => sum + (e.mediaCount || 0), 0)}</div>
               </div>
               <div className="border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">EXPLORERS</div>
-                <div className="font-bold text-lg text-[#ac6d46]">{new Set(visibleEntries.map(e => e.explorerUsername)).size}</div>
+                <div className="font-bold text-base md:text-lg text-[#ac6d46]">{new Set(visibleEntries.map(e => e.explorerUsername)).size}</div>
               </div>
-              <div className="border-l-2 border-[#ac6d46] pl-3">
+              <div className="hidden md:block border-l-2 border-[#ac6d46] pl-3">
                 <div className="text-[#b5bcc4]">EXPEDITIONS</div>
-                <div className="font-bold text-lg">{new Set(visibleEntries.filter(e => e.expeditionName).map(e => e.expeditionName)).size}</div>
+                <div className="font-bold text-base md:text-lg">{new Set(visibleEntries.filter(e => e.expeditionName).map(e => e.expeditionName)).size}</div>
               </div>
             </div>
           )}

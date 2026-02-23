@@ -127,7 +127,7 @@ export function SelectExpeditionPage() {
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
         <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
-          <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">LOG JOURNAL ENTRY</h1>
+          <h1 className="text-xl md:text-2xl font-bold dark:text-[#e5e5e5]">LOG JOURNAL ENTRY</h1>
           <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
             Session: {formatDateTime(new Date())}
           </span>
@@ -170,9 +170,9 @@ export function SelectExpeditionPage() {
             {!showCompleted && currentExpedition && (
               <div className="space-y-4">
                 <div className="border-2 border-[#ac6d46] dark:border-[#ac6d46] p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
                         <h3 className="font-bold text-lg dark:text-[#e5e5e5]">{currentExpedition.title}</h3>
                         <span className="text-xs bg-[#ac6d46] text-white px-2 py-1">
                           {(currentExpedition.status || 'active').toUpperCase()}
@@ -190,7 +190,7 @@ export function SelectExpeditionPage() {
                     </Link>
                   </div>
 
-                  <div className="grid grid-cols-4 gap-3 mb-3 text-xs">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 text-xs">
                     <div className="border border-[#b5bcc4] dark:border-[#3a3a3a] p-2">
                       <div className="text-[#616161] dark:text-[#b5bcc4]">Status</div>
                       <div className="font-bold dark:text-[#e5e5e5]">{(currentExpedition.status || 'active').charAt(0).toUpperCase() + (currentExpedition.status || 'active').slice(1)}</div>
@@ -264,9 +264,9 @@ export function SelectExpeditionPage() {
                         key={expedition.publicId}
                         className="border-2 border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#616161] transition-all p-4"
                       >
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-2">
                               <h3 className="font-bold text-base dark:text-[#e5e5e5]">{expedition.title}</h3>
                               <span className="text-xs bg-[#616161] text-white px-2 py-1">
                                 COMPLETED
@@ -284,7 +284,7 @@ export function SelectExpeditionPage() {
                           </Link>
                         </div>
 
-                        <div className="grid grid-cols-4 gap-3 text-xs">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                           <div className="border border-[#b5bcc4] dark:border-[#3a3a3a] p-2">
                             <div className="text-[#616161] dark:text-[#b5bcc4]">Duration</div>
                             <div className="font-bold dark:text-[#e5e5e5]">{duration} days</div>

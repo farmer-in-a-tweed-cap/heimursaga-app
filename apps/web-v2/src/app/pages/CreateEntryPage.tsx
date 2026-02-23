@@ -514,9 +514,9 @@ export function CreateEntryPage() {
     <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
-        <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
           <div>
-            <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">
+            <h1 className="text-xl md:text-2xl font-bold dark:text-[#e5e5e5]">
               {isStandalone ? 'CREATE STANDALONE ENTRY' : 'CREATE JOURNAL ENTRY'}
             </h1>
             <div className="text-sm text-[#616161] dark:text-[#b5bcc4] mt-1">
@@ -557,7 +557,7 @@ export function CreateEntryPage() {
       {/* Draft Recovery Prompt */}
       {showDraftPrompt && existingDraft && (
         <div className="bg-[#fff7f0] dark:bg-[#2a2420] border-2 border-[#ac6d46] p-4 mb-6">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
             <div className="flex-1">
               <div className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">
                 DRAFT FOUND
@@ -567,7 +567,7 @@ export function CreateEntryPage() {
                 Would you like to continue editing it?
               </div>
             </div>
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex gap-2 flex-shrink-0 w-full md:w-auto">
               <button
                 type="button"
                 onClick={() => loadDraft(existingDraft)}
@@ -770,7 +770,7 @@ export function CreateEntryPage() {
               
               {/* Date & Time - ALL TYPES */}
               <div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                       ENTRY DATE
@@ -811,7 +811,7 @@ export function CreateEntryPage() {
               </div>
 
               {/* Location - ALL TYPES */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                     LOCATION NAME
@@ -854,7 +854,7 @@ export function CreateEntryPage() {
               
               {/* Location Details - Only for data-log and standard */}
               {(entryType === 'data-log' || entryType === 'standard') && (
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                       ELEVATION (meters)

@@ -366,7 +366,7 @@ export function HomePage() {
           {/* GLOBAL Option */}
           <button
             onClick={() => setViewMode('global')}
-            className={`p-4 transition-all text-sm ${
+            className={`p-2.5 md:p-4 transition-all text-xs md:text-sm ${
               viewMode === 'global'
                 ? 'bg-[#ac6d46] border-r-2 border-[#202020] dark:border-[#616161] text-white'
                 : 'bg-white dark:bg-[#202020] border-r-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-white hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a]'
@@ -375,7 +375,7 @@ export function HomePage() {
             <div className="flex items-center justify-center gap-2">
               <Globe className="w-4 h-4" />
               <span className="font-bold">GLOBAL</span>
-              <span className={`font-mono ${viewMode === 'global' ? 'text-white/80' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+              <span className={`font-mono hidden md:inline ${viewMode === 'global' ? 'text-white/80' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                 ({explorerCount} explorer{explorerCount !== 1 ? 's' : ''})
               </span>
             </div>
@@ -385,7 +385,7 @@ export function HomePage() {
           <button
             onClick={() => setViewMode('following')}
             disabled={!isAuthenticated}
-            className={`p-4 transition-all text-sm ${
+            className={`p-2.5 md:p-4 transition-all text-xs md:text-sm ${
               viewMode === 'following'
                 ? 'bg-[#4676ac] text-white'
                 : isAuthenticated
@@ -396,7 +396,7 @@ export function HomePage() {
             <div className="flex items-center justify-center gap-2">
               <Users className="w-4 h-4" />
               <span className="font-bold">FOLLOWING</span>
-              <span className={`font-mono ${viewMode === 'following' ? 'text-white/80' : isAuthenticated ? 'text-[#616161] dark:text-[#b5bcc4]' : 'text-[#b5bcc4]'}`}>
+              <span className={`font-mono hidden md:inline ${viewMode === 'following' ? 'text-white/80' : isAuthenticated ? 'text-[#616161] dark:text-[#b5bcc4]' : 'text-[#b5bcc4]'}`}>
                 {isAuthenticated
                   ? `(${followedExplorers.size} explorer${followedExplorers.size !== 1 ? 's' : ''})`
                   : '(login required)'}

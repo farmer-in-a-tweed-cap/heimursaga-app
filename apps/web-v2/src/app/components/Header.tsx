@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
-import { Bell, Settings, MapPin, CloudSun } from 'lucide-react';
+import { Bell, Settings } from 'lucide-react';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { NotificationsDropdown } from '@/app/components/NotificationsDropdown';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
@@ -16,8 +16,6 @@ export function Header() {
   const { isPro } = useProFeatures();
   const pathname = usePathname();
   const router = useRouter();
-  const [connectionStatus] = useState<'connected' | 'disconnected'>('connected');
-  const [lastSync] = useState(new Date());
   const [overflowMenuOpen, setOverflowMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
@@ -443,84 +441,38 @@ export function Header() {
       {overflowMenuOpen && (
         <div className="xl:hidden bg-[#616161]">
           <div className="max-w-[1800px] mx-auto px-4 lg:px-6 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* System Status */}
-              <div className="bg-[#202020] p-3 border-l-2 border-[#4676ac]">
-                <div className="text-xs font-bold mb-2 text-[#b5bcc4]">SYSTEM STATUS:</div>
-                <div className="text-xs font-mono text-[#b5bcc4] space-y-1">
-                  <div>Version: v2.4.1</div>
-                  <div className={connectionStatus === 'connected' ? 'text-[#ac6d46]' : 'text-[#4676ac]'}>
-                    Connection: ● {connectionStatus.toUpperCase()}
-                  </div>
-                  <div>Session: Active</div>
-                  <div>Last Sync: {lastSync.toLocaleTimeString()}</div>
-                </div>
-              </div>
-
-              {/* User Session Info */}
-              {isAuthenticated && user ? (
-                <div className="bg-[#202020] p-3 border-l-2 border-[#ac6d46]">
-                  <div className="text-xs font-bold mb-2 text-[#b5bcc4]">USER SESSION:</div>
-                  <div className="text-sm font-bold text-white mb-1">
-                    <Link 
-                      href={`/journal/${user.username}`} 
-                      className="hover:text-[#ac6d46] transition-all focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
-                    >
-                      {user.username}
-                    </Link>
-                  </div>
-                  <div className="text-xs font-mono text-[#b5bcc4] space-y-1">
-                    <div>Account: {user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}</div>
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      Samarkand, UZ
+            {/* User Session Info */}
+            {isAuthenticated && user ? (
+              <div className="bg-[#202020] p-3 border-l-2 border-[#ac6d46] mb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-bold text-white mb-1">
+                      <Link
+                        href={`/journal/${user.username}`}
+                        className="hover:text-[#ac6d46] transition-all focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
+                      >
+                        {user.username}
+                      </Link>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <CloudSun className="w-3 h-3" />
-                      18°C • Clear
+                    <div className="text-xs font-mono text-[#b5bcc4]">
+                      {user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}
                     </div>
                   </div>
-                  <button className="mt-2 text-xs text-[#ac6d46] hover:text-white transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:underline" onClick={handleLogout}>
+                  <button className="text-xs text-[#ac6d46] hover:text-white transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:underline" onClick={handleLogout}>
                     → LOGOUT
                   </button>
                 </div>
-              ) : (
-                <div className="bg-[#202020] p-3 border-l-2 border-[#ac6d46]">
-                  <div className="text-xs font-bold mb-2 text-[#b5bcc4]">ACCOUNT:</div>
-                  <Link 
-                    href="/auth" 
-                    className="block px-4 py-2 bg-[#ac6d46] text-white text-center text-sm font-bold hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
-                  >
-                    LOGIN / REGISTER
-                  </Link>
-                </div>
-              )}
-
-              {/* Quick Stats - TODO: Fetch from profile/explorer endpoint */}
-              {isAuthenticated && user && (
-                <div className="bg-[#202020] p-3 border-l-2 border-[#4676ac]">
-                  <div className="text-xs font-bold mb-2 text-[#b5bcc4]">QUICK STATS:</div>
-                  <div className="grid grid-cols-2 gap-2 text-xs font-mono text-[#b5bcc4]">
-                    <div>
-                      <div>Expeditions:</div>
-                      <div className="text-white font-bold">-</div>
-                    </div>
-                    <div>
-                      <div>Entries:</div>
-                      <div className="text-white font-bold">-</div>
-                    </div>
-                    <div>
-                      <div>Sponsored:</div>
-                      <div className="text-[#ac6d46] font-bold">-</div>
-                    </div>
-                    <div>
-                      <div>Views:</div>
-                      <div className="text-white font-bold">-</div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div className="bg-[#202020] p-3 border-l-2 border-[#ac6d46] mb-4">
+                <Link
+                  href="/auth"
+                  className="block px-4 py-2 bg-[#ac6d46] text-white text-center text-sm font-bold hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
+                >
+                  LOGIN / REGISTER
+                </Link>
+              </div>
+            )}
 
             {/* Navigation */}
             <div className="mt-4">

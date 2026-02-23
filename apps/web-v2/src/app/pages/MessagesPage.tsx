@@ -555,12 +555,12 @@ export function MessagesPage() {
         {/* Page Header */}
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
           <div className="p-6">
-            <div className="flex items-center justify-between mb-4 pb-4 border-b-2 border-[#b5bcc4] dark:border-[#616161]">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 pb-4 border-b-2 border-[#b5bcc4] dark:border-[#616161]">
               <div className="flex items-center gap-3">
-                <MessageSquare className="w-8 h-8 text-[#ac6d46]" />
+                <MessageSquare className="w-6 h-6 md:w-8 md:h-8 text-[#ac6d46]" />
                 <div>
                   <div className="flex items-center gap-3">
-                    <h1 className="text-3xl font-bold dark:text-[#e5e5e5]">MESSAGES</h1>
+                    <h1 className="text-xl md:text-3xl font-bold dark:text-[#e5e5e5]">MESSAGES</h1>
                     {totalUnread > 0 && (
                       <span className="px-3 py-1 bg-[#ac6d46] text-white text-xs font-bold font-mono rounded-full">
                         {totalUnread} UNREAD
@@ -574,7 +574,7 @@ export function MessagesPage() {
               </div>
               <button
                 onClick={() => setShowCompose(true)}
-                className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center gap-2"
+                className="px-3 py-2 md:px-6 md:py-3 bg-[#ac6d46] text-white text-sm md:text-base font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center gap-2"
               >
                 <Send className="w-4 h-4" />
                 NEW MESSAGE

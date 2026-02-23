@@ -385,12 +385,12 @@ export function NotificationsPage() {
     <div className="max-w-[800px] mx-auto px-6 py-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
-        <div className="bg-[#616161] text-white px-6 py-4 flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161]">
+        <div className="bg-[#616161] text-white px-4 md:px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b-2 border-[#202020] dark:border-[#616161]">
           <div className="flex items-center gap-3">
             <Bell className="w-6 h-6" />
             <div>
-              <h1 className="text-xl font-bold">NOTIFICATIONS CENTER</h1>
-              <div className="text-xs font-mono text-[#b5bcc4] mt-1">
+              <h1 className="text-base md:text-xl font-bold">NOTIFICATIONS CENTER</h1>
+              <div className="text-xs font-mono text-[#b5bcc4] mt-1 hidden md:block">
                 MANAGE ALL PLATFORM NOTIFICATIONS
               </div>
             </div>
