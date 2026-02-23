@@ -602,7 +602,7 @@ export function ExpeditionDetailPage() {
 
   // Helper function to get current location data from waypoints or entries
   const getCurrentLocationData = () => {
-    if (!expedition?.currentLocationSource || !expedition?.currentLocationId) {
+    if (!expedition?.currentLocationSource || !expedition?.currentLocationId || expedition?.status === 'cancelled') {
       return null;
     }
 
@@ -1737,19 +1737,19 @@ export function ExpeditionDetailPage() {
           onKeyDown={hasMapData ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsMapModalOpen(true); } } : undefined}
         >
           {/* Banner Map */}
-          <div ref={bannerMapContainerRef} className="absolute inset-0 w-full h-full" />
+          <div ref={bannerMapContainerRef} className="absolute inset-0 w-full h-full z-0" />
 
           {/* Fallback cover image when no map data */}
           {!hasMapData && (
             <ImageWithFallback
               src={expedition.imageUrl}
               alt={expedition.title}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="absolute inset-0 h-full w-full object-cover z-0"
             />
           )}
 
           {/* Dark gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90 pointer-events-none z-[1]" />
           
           {/* Expedition Status Banner - Top Border */}
           <div className={`absolute top-0 left-0 right-0 py-2 px-6 ${
@@ -1760,7 +1760,7 @@ export function ExpeditionDetailPage() {
               : 'bg-[#616161]'
           } z-10 flex items-center justify-between pointer-events-auto`} onClick={(e) => e.stopPropagation()}>
             <div className="text-white font-bold text-sm tracking-wide">
-              {expedition.status === 'active' ? 'ACTIVE EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'COMPLETED EXPEDITION'}
+              {expedition.status === 'cancelled' ? 'CANCELLED EXPEDITION' : expedition.status === 'active' ? 'ACTIVE EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'COMPLETED EXPEDITION'}
             </div>
             {expedition.privacy !== 'public' && (
               <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold tracking-wide ${
@@ -1773,7 +1773,7 @@ export function ExpeditionDetailPage() {
           </div>
           
           {/* Content Overlay */}
-          <div className="absolute inset-0 flex flex-col justify-between p-6 text-white pt-16 pointer-events-none">
+          <div className="absolute inset-0 flex flex-col justify-between p-6 text-white pt-16 pointer-events-none z-[2]">
             {/* Top Section: Title, Explorer, Description */}
             <div className="flex items-start justify-between gap-6">
               <div className="flex-1">
@@ -1866,6 +1866,19 @@ export function ExpeditionDetailPage() {
                   </div>
                 </div>
               )}
+              {/* Cancelled Banner */}
+              {expedition.status === 'cancelled' && apiExpedition?.cancelledAt && (
+                <div className="bg-[#994040] px-6 py-3 flex items-center gap-3 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                  <XCircle size={16} className="text-white flex-shrink-0" strokeWidth={2} />
+                  <div className="font-mono text-sm">
+                    <span className="text-white font-bold tracking-wide mr-3">EXPEDITION CANCELLED</span>
+                    {apiExpedition.cancellationReason && (
+                      <span className="text-white/70">{apiExpedition.cancellationReason} · </span>
+                    )}
+                    <span className="text-white/70">{formatDate(apiExpedition.cancelledAt as unknown as string)}</span>
+                  </div>
+                </div>
+              )}
               {/* Current Location Bar - showing for all statuses temporarily */}
               {currentLocationData?.location && (
                 <button
@@ -1917,7 +1930,7 @@ export function ExpeditionDetailPage() {
                 {/* Expedition Status */}
                 <div className="flex items-center gap-3">
                   <div className="font-mono text-sm text-[#b5bcc4]">
-                    {expedition.status === 'completed' ? 'COMPLETED EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'ACTIVE EXPEDITION'}
+                    {expedition.status === 'cancelled' ? 'CANCELLED EXPEDITION' : expedition.status === 'completed' ? 'COMPLETED EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'ACTIVE EXPEDITION'}
                   </div>
                   {expedition.privacy !== 'public' && (
                     <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
@@ -1993,25 +2006,6 @@ export function ExpeditionDetailPage() {
           </div>
         </div>
 
-        {/* Cancelled Banner */}
-        {expedition.status === 'cancelled' && apiExpedition?.cancelledAt && (
-          <div className="border-t-2 border-[#994040] bg-[#994040]/10 dark:bg-[#994040]/20 p-4">
-            <div className="flex items-start gap-3">
-              <XCircle size={20} className="text-[#994040] mt-0.5 flex-shrink-0" strokeWidth={2} />
-              <div>
-                <h3 className="text-sm font-bold text-[#994040] mb-1">EXPEDITION CANCELLED</h3>
-                {apiExpedition.cancellationReason && (
-                  <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">
-                    {apiExpedition.cancellationReason}
-                  </p>
-                )}
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                  Cancelled on {formatDate(apiExpedition.cancelledAt as unknown as string)}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Stats Bar */}
         <div className={`grid grid-cols-2 ${showSponsorshipSection ? 'md:grid-cols-6' : 'md:grid-cols-4'} border-t-2 border-[#202020] dark:border-[#616161]`}>

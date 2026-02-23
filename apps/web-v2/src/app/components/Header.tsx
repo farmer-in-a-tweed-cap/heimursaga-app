@@ -260,7 +260,7 @@ export function Header() {
                       : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
                   }`}
                 >
-                  SPONSORSHIP
+                  SPONSOR
                 </Link>
                 <Link
                   href="/messages"
@@ -270,7 +270,7 @@ export function Header() {
                       : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
                   }`}
                 >
-                  MESSAGES
+                  MESSAGE
                   {unreadMessagesCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-[#ac6d46] text-white text-xs font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
                       {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
@@ -285,7 +285,7 @@ export function Header() {
                       : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
                   }`}
                 >
-                  BOOKMARKS
+                  BOOKMARK
                 </Link>
                 <Link
                   href="/select-expedition"
@@ -581,7 +581,7 @@ export function Header() {
                           : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
                       }`}
                     >
-                      SPONSORSHIP
+                      SPONSOR
                     </Link>
                     <Link
                       href="/messages"
@@ -591,7 +591,7 @@ export function Header() {
                           : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
                       }`}
                     >
-                      MESSAGES
+                      MESSAGE
                       {unreadMessagesCount > 0 && (
                         <span className="absolute top-1 right-1 bg-[#ac6d46] text-white text-xs font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
                           {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
@@ -606,7 +606,7 @@ export function Header() {
                           : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
                       }`}
                     >
-                      BOOKMARKS
+                      BOOKMARK
                     </Link>
                     <Link 
                       href="/notifications" 
