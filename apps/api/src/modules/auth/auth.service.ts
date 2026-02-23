@@ -721,7 +721,7 @@ export class AuthService {
 
       // generate a link
       const link = new URL(
-        `reset-password?token=${token}`,
+        `password-reset-confirm?token=${token}&email=${encodeURIComponent(email)}`,
         APP_BASE_URL,
       ).toString();
 

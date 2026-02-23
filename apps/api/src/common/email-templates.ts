@@ -279,7 +279,7 @@ const templates: {
     ) => {
       const resetUrl =
         v.reset_link ||
-        `${APP_BASE_URL}/auth/reset-password/${v.resetToken || ''}`;
+        `${APP_BASE_URL}/password-reset-confirm?token=${v.resetToken || ''}`;
       const content = emailSection(`
         ${emailHeading('PASSWORD RESET REQUEST', 1)}
 

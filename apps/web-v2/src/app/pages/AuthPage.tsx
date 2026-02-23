@@ -550,13 +550,8 @@ export function AuthPage() {
                 <strong className="text-[#202020] dark:text-[#e5e5e5]">Response Time:</strong> &lt; 24 hours
               </div>
               <div>
-                <Link href="/" className="text-[#4676ac] hover:text-[#ac6d46]">
+                <Link href="/documentation" className="text-[#4676ac] hover:text-[#ac6d46]">
                   View Documentation →
-                </Link>
-              </div>
-              <div>
-                <Link href="/" className="text-[#4676ac] hover:text-[#ac6d46]">
-                  Browse FAQs →
                 </Link>
               </div>
             </div>
