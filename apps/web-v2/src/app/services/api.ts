@@ -1472,6 +1472,7 @@ export interface PlansResponse {
 export interface SubscriptionStatus {
   id: string;
   planSlug: string;
+  billingPeriod: 'month' | 'year';
   status: 'active' | 'canceled' | 'past_due' | 'trialing' | 'incomplete';
   currentPeriodEnd: string;
   cancelAtPeriodEnd: boolean;

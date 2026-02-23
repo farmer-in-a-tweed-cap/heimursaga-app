@@ -268,13 +268,15 @@ export function BillingSettingsPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="text-2xl font-bold whitespace-nowrap dark:text-[#e5e5e5]">$7/mo</div>
+                    <div className="text-2xl font-bold whitespace-nowrap dark:text-[#e5e5e5]">
+                      {subscription?.billingPeriod === 'year' ? '$50/yr' : '$7/mo'}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a] text-xs">
                     <div>
                       <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Billing Cycle:</div>
-                      <div className="font-bold font-mono dark:text-[#e5e5e5]">MONTHLY</div>
+                      <div className="font-bold font-mono dark:text-[#e5e5e5]">{subscription?.billingPeriod === 'year' ? 'ANNUAL' : 'MONTHLY'}</div>
                     </div>
                     <div>
                       <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Next Billing Date:</div>
@@ -544,8 +546,10 @@ export function BillingSettingsPage() {
                 </span>
               </div>
               <div className="flex justify-between items-center border-t border-[#b5bcc4] dark:border-[#616161] pt-3">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Monthly Cost:</span>
-                <span className="font-bold dark:text-[#e5e5e5]">${isProAccount ? '29.00' : '0.00'}</span>
+                <span className="text-[#616161] dark:text-[#b5bcc4]">{subscription?.billingPeriod === 'year' ? 'Annual Cost:' : 'Monthly Cost:'}</span>
+                <span className="font-bold dark:text-[#e5e5e5]">
+                  {isProAccount ? (subscription?.billingPeriod === 'year' ? '$50.00' : '$7.00') : '$0.00'}
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Payment Methods:</span>

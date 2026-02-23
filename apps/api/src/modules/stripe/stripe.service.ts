@@ -102,8 +102,8 @@ export class StripeService {
           'Webhook signature verification failed',
         );
       }
-      // For processing errors, still throw to trigger Stripe retry
-      throw new ServiceBadRequestException('Webhook processing failed');
+      // For processing errors, throw 500 to signal Stripe should retry
+      throw new ServiceInternalException('Webhook processing failed');
     }
   }
 
@@ -733,8 +733,18 @@ export class StripeService {
           case 'paused':
             sponsorshipStatus = 'paused';
             break;
-          default:
+          case 'incomplete':
+          case 'incomplete_expired':
+            sponsorshipStatus = 'pending';
+            break;
+          case 'trialing':
             sponsorshipStatus = 'active';
+            break;
+          default:
+            this.logger.warn(
+              `Unknown Stripe subscription status '${status}' for ${stripeSubscriptionId}, defaulting to pending`,
+            );
+            sponsorshipStatus = 'pending';
         }
 
         // Update sponsorship status
@@ -769,7 +779,7 @@ export class StripeService {
           this.logger.log(
             `Explorer Pro subscription ${stripeSubscriptionId} status ${status}: downgraded explorer ${explorerSubscription.explorer_id} to USER`,
           );
-        } else if (status === 'active') {
+        } else if (status === 'active' || status === 'trialing') {
           // Restore CREATOR role when subscription becomes active again
           await this.prisma.explorer.update({
             where: { id: explorerSubscription.explorer_id },

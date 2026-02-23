@@ -958,89 +958,96 @@ export class PaymentService {
         },
       });
 
-      const { stripeSubscription } = await this.prisma.$transaction(
-        async (tx) => {
-          // create a subscription
-          const subscriptionParams: any = {
-            customer: customer.id,
-            items: [{ price: plan.stripePriceId }],
-            payment_behavior: 'default_incomplete',
-            payment_settings: {
-              save_default_payment_method: 'on_subscription',
-            },
-            expand: [
-              'latest_invoice.confirmation_secret',
-              'latest_invoice.payment_intent',
-            ],
-          };
-
-          // apply promotion code if validated
-          if (validatedPromotionCode) {
-            subscriptionParams.promotion_code = validatedPromotionCode;
-          }
-
-          const idempotencyKey = `sub_upgrade_${userId}_${plan.stripePriceId}`;
-          const stripeSubscription =
-            await this.stripeService.subscriptions.create(subscriptionParams, {
-              idempotencyKey,
-            });
-
-          const invoice = stripeSubscription.latest_invoice as Stripe.Invoice;
-          const paymentIntent = invoice.payment_intent;
-
-          // Get payment intent ID - can be string or object
-          const paymentIntentId =
-            typeof paymentIntent === 'string'
-              ? paymentIntent
-              : paymentIntent?.id || null;
-
-          // create a checkout - use original amount since promo discounts are handled by Stripe
-          const checkout = await tx.checkout.create({
-            data: {
-              public_id: generator.publicId(),
-              status: CheckoutStatus.PENDING,
-              total: amount,
-              explorer_id: userId,
-              plan_id: plan.id,
-              stripe_subscription_id: stripeSubscription.id,
-              stripe_payment_intent_id: paymentIntentId,
-            },
-            select: {
-              id: true,
-              public_id: true,
-              status: true,
-              total: true,
-              currency: true,
-            },
-          });
-
-          // add metadata to the subscription (for free subscriptions) and payment intent (for paid subscriptions)
-          const metadata = {
-            [StripeMetadataKey.TRANSACTION]:
-              PaymentTransactionType.SUBSCRIPTION,
-            [StripeMetadataKey.USER_ID]: user.id,
-            [StripeMetadataKey.SUBSCRIPTION_PLAN_ID]: plan.id,
-            [StripeMetadataKey.CHECKOUT_ID]: checkout.id,
-          };
-
-          // Always add metadata to subscription for free subscriptions
-          await this.stripeService.subscriptions.update(stripeSubscription.id, {
-            metadata,
-          });
-
-          // Also add to payment intent if it exists (for paid subscriptions)
-          if (paymentIntentId) {
-            await this.stripeService.paymentIntents.update(paymentIntentId, {
-              metadata,
-            });
-          }
-
-          return {
-            checkout,
-            stripeSubscription,
-          };
+      // Create checkout record first so we can use its ID in the idempotency key
+      const checkout = await this.prisma.checkout.create({
+        data: {
+          public_id: generator.publicId(),
+          status: CheckoutStatus.PENDING,
+          total: amount,
+          explorer_id: userId,
+          plan_id: plan.id,
         },
-      );
+        select: {
+          id: true,
+          public_id: true,
+          status: true,
+          total: true,
+          currency: true,
+        },
+      });
+
+      // Create Stripe subscription with checkout-based idempotency key
+      const subscriptionParams: any = {
+        customer: customer.id,
+        items: [{ price: plan.stripePriceId }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: {
+          save_default_payment_method: 'on_subscription',
+        },
+        expand: [
+          'latest_invoice.confirmation_secret',
+          'latest_invoice.payment_intent',
+        ],
+      };
+
+      if (validatedPromotionCode) {
+        subscriptionParams.promotion_code = validatedPromotionCode;
+      }
+
+      const idempotencyKey = `sub_upgrade_${userId}_${checkout.id}`;
+      let stripeSubscription: Stripe.Subscription;
+      try {
+        stripeSubscription =
+          await this.stripeService.subscriptions.create(subscriptionParams, {
+            idempotencyKey,
+          });
+      } catch (stripeError) {
+        // Clean up the orphaned checkout if Stripe call fails
+        await this.prisma.checkout.update({
+          where: { id: checkout.id },
+          data: { status: CheckoutStatus.CANCELED },
+        });
+        throw stripeError;
+      }
+
+      const invoice = stripeSubscription.latest_invoice as Stripe.Invoice;
+      const paymentIntent = invoice.payment_intent;
+      const paymentIntentId =
+        typeof paymentIntent === 'string'
+          ? paymentIntent
+          : paymentIntent?.id || null;
+
+      // Update checkout with Stripe IDs and add metadata
+      const metadata = {
+        [StripeMetadataKey.TRANSACTION]:
+          PaymentTransactionType.SUBSCRIPTION,
+        [StripeMetadataKey.USER_ID]: user.id,
+        [StripeMetadataKey.SUBSCRIPTION_PLAN_ID]: plan.id,
+        [StripeMetadataKey.CHECKOUT_ID]: checkout.id,
+      };
+
+      await Promise.all([
+        // Link Stripe IDs to checkout record
+        this.prisma.checkout.update({
+          where: { id: checkout.id },
+          data: {
+            stripe_subscription_id: stripeSubscription.id,
+            stripe_payment_intent_id: paymentIntentId,
+          },
+        }),
+        // Add metadata to subscription (for free subscriptions)
+        this.stripeService.subscriptions.update(stripeSubscription.id, {
+          metadata,
+        }),
+        // Add metadata to payment intent if it exists (for paid subscriptions)
+        ...(paymentIntentId
+          ? [
+              this.stripeService.paymentIntents.update(paymentIntentId, {
+                metadata,
+              }),
+            ]
+          : []),
+      ]);
 
       const subscriptionPlanId = plan.id;
       const subscriptionId = stripeSubscription.id;
@@ -1385,6 +1392,7 @@ export class PaymentService {
         subscription: {
           id: sub.public_id,
           planSlug: userPlan.plan.slug,
+          billingPeriod: sub.period || 'month',
           status,
           currentPeriodEnd,
           cancelAtPeriodEnd,

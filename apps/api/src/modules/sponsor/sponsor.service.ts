@@ -779,6 +779,7 @@ export class SponsorService {
 
       // Extract checkout info from metadata
       const metadata = paymentIntent.metadata || {};
+      const transactionType = metadata[StripeMetadataKey.TRANSACTION];
       const checkoutId = metadata[StripeMetadataKey.CHECKOUT_ID]
         ? parseInt(metadata[StripeMetadataKey.CHECKOUT_ID])
         : undefined;
@@ -789,6 +790,13 @@ export class SponsorService {
       if (!checkoutId) {
         throw new ServiceBadRequestException(
           'Checkout ID not found in payment',
+        );
+      }
+
+      // Verify this is a sponsorship transaction, not a subscription or other type
+      if (transactionType && transactionType !== PaymentTransactionType.SPONSORSHIP) {
+        throw new ServiceBadRequestException(
+          'Payment is not a sponsorship transaction',
         );
       }
 
@@ -1896,8 +1904,7 @@ export class SponsorService {
           sponsorship.stripe_subscription_id,
         );
       if (stripeSubscription.status !== 'active')
-        if (!sponsorship.stripe_subscription_id)
-          throw new ServiceForbiddenException(`sponsorship can't be canceled`);
+        throw new ServiceForbiddenException(`sponsorship can't be canceled`);
 
       // cancel the subscription on stripe
       await this.stripeService.subscriptions.cancel(stripeSubscription.id);
