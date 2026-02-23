@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ExternalLink, UserPlus, UserCheck, Globe, Twitter, Instagram, Youtube, Linkedin, Camera, Share2, Settings, AlertTriangle, Loader2, Users } from 'lucide-react';
+import { ExternalLink, Globe, Twitter, Instagram, Youtube, Linkedin, Camera, AlertTriangle, Loader2 } from 'lucide-react';
 import { ExplorerExpeditionsMap } from '@/app/components/ExplorerExpeditionsMap';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { ExpeditionCard } from '@/app/components/ExpeditionCard';
@@ -754,15 +754,22 @@ export function ExplorerProfilePage() {
 
         {/* Action Bar */}
         <div className="p-3 md:p-4 flex flex-wrap gap-2 md:gap-3">
-          {/* Edit Profile button - Only shown on own profile */}
+          {/* Log Entry + Edit Profile buttons - Only shown on own profile */}
           {isOwnProfile && (
-            <Link
-              href="/edit-profile"
-              className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs md:text-sm font-bold font-mono gap-1.5 md:gap-2 flex items-center"
-            >
-              <Settings size={14} className="md:w-4 md:h-4" strokeWidth={2} />
-              <span>EDIT PROFILE</span>
-            </Link>
+            <>
+              <Link
+                href="/select-expedition"
+                className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs md:text-sm font-bold font-mono inline-flex items-center leading-none"
+              >
+                LOG JOURNAL ENTRY
+              </Link>
+              <Link
+                href="/edit-profile"
+                className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs md:text-sm font-bold font-mono inline-flex items-center leading-none"
+              >
+                EDIT PROFILE
+              </Link>
+            </>
           )}
           {/* Follow button - Hidden when not authenticated or on own profile */}
           {isAuthenticated && !isOwnProfile && (
@@ -775,30 +782,22 @@ export function ExplorerProfilePage() {
                   : 'border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#4676ac] hover:border-[#4676ac] hover:text-white focus-visible:ring-[#4676ac]'
               }`}
             >
-              {followLoading ? (
-                <Loader2 size={14} className="md:w-4 md:h-4 animate-spin" />
-              ) : isFollowing ? (
-                <UserCheck size={14} className="md:w-4 md:h-4" strokeWidth={2} />
-              ) : (
-                <UserPlus size={14} className="md:w-4 md:h-4" strokeWidth={2} />
-              )}
-              <span>{isFollowing ? 'FOLLOWING' : 'FOLLOW'}</span>
+              {followLoading && <Loader2 size={14} className="md:w-4 md:h-4 animate-spin" />}
+              {isFollowing ? 'FOLLOWING' : 'FOLLOW'}
             </button>
           )}
           {/* Sponsor button - Visible when explorer is Pro with Stripe Connect and active/planned expedition */}
           {!isOwnProfile && profile.creator && profile.stripeAccountConnected && sponsorableExpedition && (
             <Link
               href={isAuthenticated ? `/sponsor/${sponsorableExpedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${sponsorableExpedition.id}`)}`}
-              className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs md:text-sm font-bold font-mono gap-1.5 md:gap-2 flex items-center"
+              className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs md:text-sm font-bold font-mono inline-flex items-center leading-none"
             >
-              <Users size={14} className="md:w-4 md:h-4" strokeWidth={2} />
-              <span>SPONSOR</span>
+              SPONSOR
             </Link>
           )}
           {/* Share button - Always visible (public action) */}
-          <button className="px-2 py-1.5 md:px-3 md:py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:border-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] dark:hover:border-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs md:text-sm font-bold font-mono gap-1.5 md:gap-2 flex items-center">
-            <Share2 size={14} className="md:w-4 md:h-4" strokeWidth={2} />
-            <span>SHARE</span>
+          <button className="px-2 py-1.5 md:px-3 md:py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:border-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] dark:hover:border-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs md:text-sm font-bold font-mono inline-flex items-center leading-none">
+            SHARE
           </button>
           {/* Bookmark button - Hidden on own profile */}
           {!isOwnProfile && (

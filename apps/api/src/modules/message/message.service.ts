@@ -363,6 +363,10 @@ export class MessageService {
           recipient_id: userId,
           is_read: false,
           deleted_at: null,
+          sender: {
+            role: 'creator',
+            blocked: false,
+          },
         },
       });
 
