@@ -21,7 +21,10 @@ export function AboutPage() {
 
         <div className="p-6">
           <p className="text-sm leading-relaxed mb-3">
-            Heimursaga (HAY-mur-sah-guh), from Old Norse, roughly: "world-story." We humans are explorers and we always have been. Before satellites and social feeds, before pitch decks and content calendars, there were journals. Scratched by lantern light on ships crossing nameless oceans. Pressed into leather-bound pages on the backs of camels tracing the Silk Road. Scrawled in moleskins on overnight trains rattling through countries that no longer exist. Those journal entries—those world-stories—some documenting monumental discoveries, some a mundane log of meals eaten for the day, some recounting wonders or horrors that were previously only legend, and some simple pleas for financial sponsorship: those stories shaped the world and inspired the human race for millennia.
+            Heimursaga (HAY-mur-sah-guh), from Old Norse, roughly: "world-story."
+          </p>
+          <p className="text-sm leading-relaxed mb-3">
+            We humans are explorers and we always have been. Before satellites and social feeds, before pitch decks and content calendars, there were journals. Scratched by lantern light on ships crossing nameless oceans. Pressed into leather-bound pages on the backs of camels tracing the Silk Road. Scrawled in moleskins on overnight trains rattling through countries that no longer exist. Those journal entries—those world-stories—some documenting monumental discoveries, some a mundane log of meals eaten for the day, some recounting wonders or horrors that were previously only legend, and some simple pleas for financial sponsorship: those stories shaped the world and inspired the human race for millennia.
           </p>
           <p className="text-sm leading-relaxed text-[#b5bcc4] mb-3">
             The impulse to go, to see, to write it down hasn't changed. But we no longer send letters by horseback or present travel journals to kings. The digital age means we can share our stories with anyone and everyone in an instant. But social media buries authentic travel documentation under AI-generated slop and algorithmic noise. Crowdfunding sites treat expeditions like marketing campaigns. No platform has ever been built from the ground up for explorers only. Not until we built Heimursaga.
