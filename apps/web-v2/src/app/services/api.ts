@@ -1534,6 +1534,12 @@ export const planApi = {
     api.post<void>('/plan/downgrade'),
 
   /**
+   * Reactivate a subscription that is scheduled for cancellation
+   */
+  reactivateSubscription: () =>
+    api.post<void>('/plan/reactivate'),
+
+  /**
    * Validate a promo/coupon code
    */
   validatePromoCode: (code: string, planSlug: string) =>

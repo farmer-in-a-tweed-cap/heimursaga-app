@@ -27,6 +27,7 @@ export function BillingSettingsPage() {
   const [isAddingCard, setIsAddingCard] = useState(false);
   const [showAddCard, setShowAddCard] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [isReactivating, setIsReactivating] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [deletingCardId, setDeletingCardId] = useState<string | null>(null);
   const [settingDefaultId, setSettingDefaultId] = useState<string | null>(null);
@@ -143,6 +144,19 @@ export function BillingSettingsPage() {
       toast.error('Failed to cancel subscription');
     } finally {
       setIsCanceling(false);
+    }
+  };
+
+  const handleReactivateSubscription = async () => {
+    setIsReactivating(true);
+    try {
+      await planApi.reactivateSubscription();
+      toast.success('Subscription reactivated! Your Pro access will continue.');
+      fetchBillingData();
+    } catch {
+      toast.error('Failed to reactivate subscription');
+    } finally {
+      setIsReactivating(false);
     }
   };
 
@@ -303,12 +317,22 @@ export function BillingSettingsPage() {
                   </div>
 
                   {subscription?.cancelAtPeriodEnd && (
-                    <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 text-xs">
-                      <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-                      <div className="text-amber-800 dark:text-amber-200">
-                        Your subscription will end on {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.
-                        You will retain access until then.
+                    <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 text-xs space-y-3">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div className="text-amber-800 dark:text-amber-200">
+                          Your subscription will end on {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.
+                          You will retain access until then.
+                        </div>
                       </div>
+                      <button
+                        onClick={handleReactivateSubscription}
+                        disabled={isReactivating}
+                        className="w-full px-4 py-2 bg-[#4676ac] text-white text-xs font-bold hover:bg-[#365a87] transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {isReactivating && <Loader2 className="w-3 h-3 animate-spin" />}
+                        REACTIVATE SUBSCRIPTION
+                      </button>
                     </div>
                   )}
 
@@ -606,7 +630,7 @@ export function BillingSettingsPage() {
                 <div>* All payments processed securely via Stripe</div>
                 <div>* Cancel anytime, no commitments</div>
                 <div>* Invoices emailed automatically</div>
-                <div>* Pro rata refunds for downgrades</div>
+                <div>* Access continues until end of billing period</div>
               </div>
               <Link
                 href="/contact"

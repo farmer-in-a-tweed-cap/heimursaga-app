@@ -12,9 +12,19 @@ export function UpgradeSuccessPage() {
   const plan = searchParams.get('plan') || 'monthly';
   const amount = plan === 'monthly' ? 7 : 50;
 
-  // Refresh auth context so the user's role is updated to 'creator' (Explorer Pro)
+  // Poll auth context until the webhook processes and the user's role updates to 'creator'
   useEffect(() => {
-    refreshUser();
+    let attempts = 0;
+    const maxAttempts = 20; // 10 seconds total
+    const interval = setInterval(async () => {
+      attempts++;
+      await refreshUser();
+      if (attempts >= maxAttempts) {
+        clearInterval(interval);
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
   }, [refreshUser]);
 
   // Transaction details will be shown from the payment

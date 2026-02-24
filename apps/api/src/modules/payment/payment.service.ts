@@ -859,6 +859,34 @@ export class PaymentService {
 
       if (!userId) throw new ServiceForbiddenException();
 
+      // Check for existing active or canceling subscription
+      const existingSub = await this.prisma.explorerSubscription.findFirst({
+        where: {
+          explorer_id: userId,
+          stripe_subscription_id: { not: null },
+        },
+        select: { stripe_subscription_id: true },
+        orderBy: { created_at: 'desc' },
+      });
+
+      if (existingSub?.stripe_subscription_id) {
+        try {
+          const stripeSub = await this.stripeService.subscriptions.retrieve(
+            existingSub.stripe_subscription_id,
+          );
+          if (stripeSub.status === 'active' || stripeSub.status === 'trialing') {
+            throw new ServiceBadRequestException(
+              stripeSub.cancel_at_period_end
+                ? 'Your subscription is scheduled to cancel. Please reactivate it from billing settings instead of creating a new one.'
+                : 'You already have an active Explorer Pro subscription.',
+            );
+          }
+        } catch (e) {
+          // Re-throw our own exceptions, ignore Stripe retrieval errors (stale ID)
+          if (e instanceof ServiceBadRequestException) throw e;
+        }
+      }
+
       let currency = 'usd';
       let amount = 0;
 
@@ -1474,6 +1502,61 @@ export class PaymentService {
       }
       // Note: Actual role downgrade happens via customer.subscription.deleted webhook
       // when Stripe cancels the subscription at period end
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async reactivateSubscription({
+    session,
+  }: ISessionQuery): Promise<void> {
+    try {
+      const { userId } = session;
+      if (!userId) throw new ServiceForbiddenException();
+
+      const userPlan = await this.prisma.explorerPlan
+        .findFirstOrThrow({
+          where: { explorer_id: userId },
+          select: {
+            subscription: {
+              select: { stripe_subscription_id: true },
+            },
+          },
+        })
+        .catch(() => {
+          throw new ServiceBadRequestException(
+            'No active subscription to reactivate',
+          );
+        });
+
+      const stripeSubscriptionId =
+        userPlan?.subscription?.stripe_subscription_id;
+
+      if (!stripeSubscriptionId) {
+        throw new ServiceBadRequestException(
+          'No active subscription to reactivate',
+        );
+      }
+
+      const stripeSub = await this.stripeService.subscriptions.retrieve(
+        stripeSubscriptionId,
+      );
+
+      if (!stripeSub.cancel_at_period_end) {
+        throw new ServiceBadRequestException(
+          'Subscription is not scheduled for cancellation',
+        );
+      }
+
+      await this.stripeService.subscriptions.update(stripeSubscriptionId, {
+        cancel_at_period_end: false,
+      });
+
+      this.logger.log(
+        `stripe subscription ${stripeSubscriptionId} reactivated by user ${userId}`,
+      );
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

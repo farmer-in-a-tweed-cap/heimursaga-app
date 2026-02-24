@@ -167,6 +167,15 @@ export class PlanController {
     });
   }
 
+  @Post('reactivate')
+  @HttpCode(HttpStatus.OK)
+  async reactivate(@Session() session: ISession) {
+    return await this.paymentService.reactivateSubscription({
+      session,
+      query: {},
+    });
+  }
+
   @Post('validate-promo-code')
   @HttpCode(HttpStatus.OK)
   async validatePromoCode(
