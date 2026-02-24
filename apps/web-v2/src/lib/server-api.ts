@@ -17,7 +17,10 @@ export interface EntryMeta {
   body?: string;
   coverImage?: string;
   authorUsername?: string;
+  authorName?: string;
+  authorPicture?: string;
   publishedAt?: string;
+  expeditionTitle?: string;
 }
 
 export interface ExplorerMeta {
@@ -50,10 +53,13 @@ export async function getEntry(id: string): Promise<EntryMeta | null> {
     const data = await res.json();
     return {
       title: data.title,
-      body: data.body,
-      coverImage: data.cover_image || data.images?.[0]?.url,
-      authorUsername: data.user?.username,
+      body: data.content,
+      coverImage: data.coverImage || data.media?.[0]?.original,
+      authorUsername: data.author?.username,
+      authorName: data.author?.name || data.author?.username,
+      authorPicture: data.author?.picture,
       publishedAt: data.created_at,
+      expeditionTitle: data.trip?.title,
     };
   } catch {
     return null;

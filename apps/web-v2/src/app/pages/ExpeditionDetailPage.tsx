@@ -1730,7 +1730,7 @@ export function ExpeditionDetailPage() {
       {/* Hero Banner with Overlay Content */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div
-          className={`relative h-[600px] overflow-hidden${hasMapData ? ' cursor-pointer' : ''}`}
+          className={`relative h-[400px] md:h-[600px] overflow-hidden${hasMapData ? ' cursor-pointer' : ''}`}
           onClick={() => hasMapData && setIsMapModalOpen(true)}
           role={hasMapData ? 'button' : undefined}
           tabIndex={hasMapData ? 0 : undefined}
@@ -1778,7 +1778,7 @@ export function ExpeditionDetailPage() {
             <div className="flex items-start justify-between gap-6">
               <div className="flex-1">
                 <div className="mb-3">
-                  <h1 className="text-4xl font-bold">{expedition.title}</h1>
+                  <h1 className="text-2xl md:text-4xl font-bold">{expedition.title}</h1>
                   {(expedition.category || expedition.region) && (
                     <div className="flex flex-wrap items-center gap-2 mt-2">
                       {expedition.category && (
@@ -1800,11 +1800,11 @@ export function ExpeditionDetailPage() {
                   <span>{formatDate(expedition.startDate)} to {formatDate(expedition.estimatedEndDate)}</span>
                 </div>
 
-                <p className="text-sm text-white/90 max-w-4xl leading-relaxed">{expedition.description}</p>
+                <p className="text-sm text-white/90 max-w-4xl leading-relaxed line-clamp-3 md:line-clamp-none">{expedition.description}</p>
               </div>
               
-              {/* Explorer Info Card */}
-              <div className="text-xs font-mono bg-[#202020]/80 border-2 border-[#ac6d46] p-4 min-w-[280px] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+              {/* Explorer Info Card - hidden on mobile to prevent overlap */}
+              <div className="hidden md:block text-xs font-mono bg-[#202020]/80 border-2 border-[#ac6d46] p-4 min-w-[280px] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="text-[#b5bcc4] mb-3 font-bold border-b-2 border-[#616161] pb-2">EXPLORER INFORMATION</div>
                 
                 <div className="flex items-center gap-3 mb-4">

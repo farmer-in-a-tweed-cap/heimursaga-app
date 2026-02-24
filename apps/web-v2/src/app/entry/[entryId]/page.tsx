@@ -6,13 +6,31 @@ export async function generateMetadata({ params }: { params: Promise<{ entryId: 
   const { entryId } = await params;
   const entry = await getEntry(entryId);
   if (!entry) return { title: 'Journal Entry | Heimursaga' };
+
+  const authorLabel = entry.authorName || entry.authorUsername || 'an explorer';
+  const title = `${entry.title} | a journal entry by ${authorLabel}`;
+  const description = entry.body?.replace(/[#*_~`>\[\]()!]/g, '').slice(0, 160) || 'Read this journal entry on Heimursaga.';
+  const images = entry.coverImage
+    ? [entry.coverImage]
+    : entry.authorPicture
+      ? [entry.authorPicture]
+      : [];
+
   return {
-    title: entry.title,
-    description: entry.body?.slice(0, 160) || 'Read this journal entry on Heimursaga.',
+    title,
+    description,
     openGraph: {
       type: 'article',
-      images: entry.coverImage ? [entry.coverImage] : [],
+      title,
+      description,
+      images,
       ...(entry.publishedAt && { publishedTime: entry.publishedAt }),
+    },
+    twitter: {
+      card: entry.coverImage ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images,
     },
   };
 }

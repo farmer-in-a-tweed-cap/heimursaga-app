@@ -951,7 +951,7 @@ export function JournalEntryPage() {
                   href={`/expedition/${entry.expeditionId}`}
                   className="block w-full mt-4 py-2.5 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap"
                 >
-                  VIEW ALL ENTRIES
+                  VIEW EXPEDITION
                 </Link>
               </div>
             </div>
