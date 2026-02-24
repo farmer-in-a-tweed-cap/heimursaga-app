@@ -1389,6 +1389,45 @@ export class PaymentService {
       });
 
       if (!userPlan?.subscription) {
+        // Check for orphaned Stripe subscription (webhook may have failed to create explorerPlan)
+        const orphanedSub = await this.prisma.explorerSubscription.findFirst({
+          where: {
+            explorer_id: userId,
+            stripe_subscription_id: { not: null },
+          },
+          select: {
+            public_id: true,
+            stripe_subscription_id: true,
+            period: true,
+            expiry: true,
+          },
+          orderBy: { created_at: 'desc' },
+        });
+
+        if (orphanedSub?.stripe_subscription_id) {
+          try {
+            const stripeSub = await this.stripeService.subscriptions.retrieve(
+              orphanedSub.stripe_subscription_id,
+            );
+            if (stripeSub.status === 'active' || stripeSub.status === 'trialing') {
+              return {
+                subscription: {
+                  id: orphanedSub.public_id,
+                  planSlug: 'explorer-pro',
+                  billingPeriod: orphanedSub.period || 'month',
+                  status: stripeSub.status,
+                  currentPeriodEnd: new Date(
+                    stripeSub.current_period_end * 1000,
+                  ).toISOString(),
+                  cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
+                },
+              };
+            }
+          } catch {
+            // Stripe subscription doesn't exist or is invalid
+          }
+        }
+
         return { subscription: null };
       }
 

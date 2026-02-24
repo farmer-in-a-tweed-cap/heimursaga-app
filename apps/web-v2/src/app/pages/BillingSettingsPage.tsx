@@ -195,7 +195,7 @@ export function BillingSettingsPage() {
     );
   }
 
-  const isProAccount = isPro;
+  const isProAccount = isPro || (subscription?.status === 'active' || subscription?.status === 'trialing');
 
   // Loading state
   if (isLoading) {
