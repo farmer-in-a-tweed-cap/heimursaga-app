@@ -7,12 +7,11 @@ import { MapPin, Crosshair, X } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
+import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { toast } from 'sonner';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
-const MAPBOX_STYLE_LIGHT = 'mapbox://styles/cnh1187/cm9lit4gy007101rz4wxfdss6';
-const MAPBOX_STYLE_DARK = 'mapbox://styles/cnh1187/cminkk0hb002d01qy60mm74g0';
 
 if (!MAPBOX_TOKEN) {
   console.warn('NEXT_PUBLIC_MAPBOX_TOKEN environment variable is not set');
@@ -46,6 +45,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
   const markerRef = useRef<mapboxgl.Marker | null>(null);
   const expeditionMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const { theme } = useTheme();
+  const { mapLayer } = useMapLayer();
 
   // Delay map initialization to ensure container is rendered
   useEffect(() => {
@@ -61,7 +61,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     // Initialize map - default to world view centered on Atlantic
     const map = new mapboxgl.Map({
       container: container,
-      style: theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT,
+      style: getMapStyle(mapLayer, theme),
       center: [initialLng || 0, initialLat || 20],
       zoom: zoom,
     });
@@ -105,6 +105,16 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
               type: 'Feature',
               properties: {},
               geometry: { type: 'LineString', coordinates: routeCoords },
+            },
+          });
+          map.addLayer({
+            id: 'expedition-route-casing',
+            type: 'line',
+            source: 'expedition-route',
+            paint: {
+              'line-color': getLineCasingColor(mapLayer, theme),
+              'line-width': hasDirections ? 6 : 5,
+              'line-opacity': 0.3,
             },
           });
           map.addLayer({
@@ -329,7 +339,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, theme]);
+  }, [mapReady, theme, mapLayer]);
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {

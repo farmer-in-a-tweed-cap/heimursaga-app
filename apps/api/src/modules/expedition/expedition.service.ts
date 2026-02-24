@@ -1192,14 +1192,17 @@ export class ExpeditionService {
       if (startDate !== undefined) {
         if (startDate) {
           const newStartDate = new Date(startDate);
+          // Skip validation if the date hasn't actually changed
+          const dateChanged = !expedition.start_date ||
+            newStartDate.toISOString().split('T')[0] !== expedition.start_date.toISOString().split('T')[0];
           // Only planned expeditions can have their start date changed
-          if (expedition.start_date && expedition.status !== 'planned') {
+          if (dateChanged && expedition.start_date && expedition.status !== 'planned') {
             throw new ServiceBadRequestException(
               'Start date can only be changed for planned expeditions',
             );
           }
           // If expedition already has a start_date, enforce ±30 day limit
-          if (expedition.start_date) {
+          if (dateChanged && expedition.start_date) {
             const diffMs = Math.abs(
               newStartDate.getTime() - expedition.start_date.getTime(),
             );

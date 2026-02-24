@@ -8,6 +8,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { MapPin, User, X, Maximize2, Minimize2, Bookmark, UserPlus, UserCheck, BookmarkCheck, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/context/ThemeContext';
+import { useMapLayer, getMapStyle } from '@/app/context/MapLayerContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { entryApi, explorerApi } from '@/app/services/api';
 import { getExplorerStatus } from '@/app/components/ExplorerStatusBadge';
@@ -15,8 +16,6 @@ import { formatDate } from '@/app/utils/dateFormat';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
-const MAPBOX_STYLE_LIGHT = 'mapbox://styles/cnh1187/cm9lit4gy007101rz4wxfdss6';
-const MAPBOX_STYLE_DARK = 'mapbox://styles/cnh1187/cminkk0hb002d01qy60mm74g0';
 
 if (!MAPBOX_TOKEN) {
   console.warn('NEXT_PUBLIC_MAPBOX_TOKEN environment variable is not set');
@@ -119,6 +118,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
   const navControlRef = useRef<mapboxgl.NavigationControl | null>(null);
   const highlightMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const { theme } = useTheme();
+  const { mapLayer } = useMapLayer();
   const { isAuthenticated } = useAuth();
   const router = useRouter();
 
@@ -286,7 +286,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT,
+      style: getMapStyle(mapLayer, theme),
       center: [30, 20],
       zoom: 1.5,
       projection: 'mercator',
@@ -578,12 +578,11 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     };
   }, [mapMode, allExplorers, allEntries, loading, updateVisibleItems]);
 
-  // Update map style when theme changes
+  // Update map style when theme or map layer changes
   useEffect(() => {
     if (!mapRef.current) return;
-    const newStyle = theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT;
-    mapRef.current.setStyle(newStyle);
-  }, [theme]);
+    mapRef.current.setStyle(getMapStyle(mapLayer, theme));
+  }, [theme, mapLayer]);
 
   // Handle fullscreen map resize
   useEffect(() => {

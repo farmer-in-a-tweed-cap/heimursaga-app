@@ -6,12 +6,11 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
+import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { X } from 'lucide-react';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
-const MAPBOX_STYLE_LIGHT = 'mapbox://styles/cnh1187/cm9lit4gy007101rz4wxfdss6';
-const MAPBOX_STYLE_DARK = 'mapbox://styles/cnh1187/cminkk0hb002d01qy60mm74g0';
 
 if (!MAPBOX_TOKEN) {
   console.warn('NEXT_PUBLIC_MAPBOX_TOKEN environment variable is not set');
@@ -68,6 +67,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
   const [clickedEntry, setClickedEntry] = useState<JournalEntry | null>(null);
   const [popupPosition, setPopupPosition] = useState<'bottom-left' | 'bottom-right'>('bottom-left');
   const { theme } = useTheme();
+  const { mapLayer } = useMapLayer();
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -93,7 +93,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
     // Initialize map
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT,
+      style: getMapStyle(mapLayer, theme),
       bounds: bounds,
       fitBoundsOptions: { padding: 50 },
     });
@@ -146,6 +146,18 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
               },
             });
 
+            const casingColor = getLineCasingColor(mapLayer, theme);
+
+            map.addLayer({
+              id: `route-${expeditionId}-casing`,
+              type: 'line',
+              source: `route-${expeditionId}`,
+              paint: {
+                'line-color': casingColor,
+                'line-width': 7,
+                'line-opacity': 0.3,
+              },
+            });
             map.addLayer({
               id: `route-${expeditionId}`,
               type: 'line',
@@ -173,6 +185,16 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
                 },
               });
 
+              map.addLayer({
+                id: `completed-route-${expeditionId}-casing`,
+                type: 'line',
+                source: `completed-route-${expeditionId}`,
+                paint: {
+                  'line-color': casingColor,
+                  'line-width': 8,
+                  'line-opacity': 0.3,
+                },
+              });
               map.addLayer({
                 id: `completed-route-${expeditionId}`,
                 type: 'line',
@@ -375,7 +397,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
       });
       map.remove();
     };
-  }, [expeditions, allEntries, mapMode, theme]);
+  }, [expeditions, allEntries, mapMode, theme, mapLayer]);
 
   return (
     <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">{/* Map Header with Mode Toggle */}

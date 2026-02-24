@@ -7,6 +7,7 @@ import { useRouter, usePathname, useParams } from 'next/navigation';
 import { MapPin, Plus, Trash2, Save, FileText, Calendar, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
+import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelector';
@@ -47,8 +48,6 @@ interface ExpeditionData {
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
-const MAPBOX_STYLE_LIGHT = 'mapbox://styles/cnh1187/cm9lit4gy007101rz4wxfdss6';
-const MAPBOX_STYLE_DARK = 'mapbox://styles/cnh1187/cminkk0hb002d01qy60mm74g0';
 
 if (!MAPBOX_TOKEN) {
   console.warn('NEXT_PUBLIC_MAPBOX_TOKEN environment variable is not set');
@@ -57,6 +56,7 @@ if (!MAPBOX_TOKEN) {
 export function ExpeditionBuilderPage() {
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
+  const { mapLayer } = useMapLayer();
   const { formatDistance } = useDistanceUnit();
   const { isPro } = useProFeatures();
   const router = useRouter();
@@ -797,7 +797,7 @@ export function ExpeditionBuilderPage() {
       
       const newMap = new mapboxgl.Map({
         container: mapContainer.current,
-        style: theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT,
+        style: getMapStyle(mapLayer, theme),
         center: [-98.5795, 39.8283],
         zoom: 3,
         projection: 'mercator'
@@ -805,14 +805,15 @@ export function ExpeditionBuilderPage() {
 
       map.current = newMap;
 
-      // Add error handler - suppress style evaluation warnings
+      // Add error handler - suppress non-critical warnings
       newMap.on('error', (e) => {
-        // Suppress Mapbox style expression evaluation warnings (non-critical)
-        if (e.error?.message?.includes('evaluated to null but was expected to be of type') ||
-            e.error?.message?.includes('Failed to evaluate expression')) {
-          return; // These are harmless warnings from Mapbox's internal style
+        const msg = e.error?.message || '';
+        // Only show token error UI for actual auth/token failures
+        if (msg.includes('401') || msg.includes('403') || msg.includes('access token') || msg.includes('Not authorized')) {
+          setMapError('Failed to load map. Please check your Mapbox token.');
+          return;
         }
-        setMapError('Failed to load map. Please check your Mapbox token.');
+        // Suppress all other non-critical Mapbox errors (style transitions, expression evals, etc.)
       });
 
       // Add geocoder control
@@ -880,20 +881,19 @@ export function ExpeditionBuilderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, theme]);
 
-  // Update map style when theme changes
+  // Update map style when theme or map layer changes
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
 
     setMapLoaded(false); // Will be set back to true when new style loads
-    const newStyle = theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT;
-    map.current.setStyle(newStyle);
+    map.current.setStyle(getMapStyle(mapLayer, theme));
 
     // Wait for new style to load
     map.current.once('styledata', () => {
       setMapLoaded(true);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme]);
+  }, [theme, mapLayer]);
 
   // Hide instructions overlay when map moves
   useEffect(() => {
@@ -1122,7 +1122,8 @@ export function ExpeditionBuilderPage() {
       if (!map.current) return;
       try {
         if (map.current.getSource('route')) {
-          map.current.removeLayer('route-line');
+          if (map.current.getLayer('route-line')) map.current.removeLayer('route-line');
+          if (map.current.getLayer('route-line-casing')) map.current.removeLayer('route-line-casing');
           map.current.removeSource('route');
         }
       } catch {
@@ -1161,6 +1162,16 @@ export function ExpeditionBuilderPage() {
             }
           });
 
+          map.current.addLayer({
+            id: 'route-line-casing',
+            type: 'line',
+            source: 'route',
+            paint: {
+              'line-color': getLineCasingColor(mapLayer, theme),
+              'line-width': useDirections ? 8 : 7,
+              'line-opacity': 0.3,
+            }
+          });
           map.current.addLayer({
             id: 'route-line',
             type: 'line',

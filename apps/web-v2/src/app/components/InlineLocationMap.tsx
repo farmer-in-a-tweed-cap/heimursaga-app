@@ -4,10 +4,9 @@ import { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useTheme } from '@/app/context/ThemeContext';
+import { useMapLayer, getMapStyle } from '@/app/context/MapLayerContext';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
-const MAPBOX_STYLE_LIGHT = 'mapbox://styles/cnh1187/cm9lit4gy007101rz4wxfdss6';
-const MAPBOX_STYLE_DARK = 'mapbox://styles/cnh1187/cminkk0hb002d01qy60mm74g0';
 
 if (MAPBOX_TOKEN) {
   mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -24,6 +23,7 @@ export function InlineLocationMap({ lat, lng, className = '' }: InlineLocationMa
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const { theme } = useTheme();
+  const { mapLayer } = useMapLayer();
   const [mapReady, setMapReady] = useState(false);
 
   // Delay map initialization to ensure container is rendered
@@ -37,7 +37,7 @@ export function InlineLocationMap({ lat, lng, className = '' }: InlineLocationMa
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT,
+      style: getMapStyle(mapLayer, theme),
       center: [lng, lat],
       zoom: 12,
       interactive: true,
@@ -79,7 +79,7 @@ export function InlineLocationMap({ lat, lng, className = '' }: InlineLocationMa
       map.remove();
       mapRef.current = null;
     };
-  }, [mapReady, lat, lng, theme]);
+  }, [mapReady, lat, lng, theme, mapLayer]);
 
   if (!MAPBOX_TOKEN) {
     return (

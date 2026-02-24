@@ -1,16 +1,18 @@
 'use client';
 
-import { Palette, Lock } from 'lucide-react';
+import { Palette, Lock, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
+import { useMapLayer } from '@/app/context/MapLayerContext';
 import { useAuth } from '@/app/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 
 export function PreferencesSettingsPage() {
   const { theme, themeSetting, setTheme } = useTheme();
   const { unit: distanceUnit, setUnit: setDistanceUnit } = useDistanceUnit();
+  const { mapLayer, setMapLayer } = useMapLayer();
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -159,6 +161,50 @@ export function PreferencesSettingsPage() {
               </div>
             </div>
           </div>
+
+          {/* Map Layer */}
+          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+            <div className="bg-[#616161] text-white px-4 py-3 font-bold text-sm flex items-center gap-2">
+              <Globe className="w-4 h-4" />
+              MAP LAYER
+            </div>
+            <div className="p-4 lg:p-6">
+              <div className="space-y-2">
+                <label className="flex items-start gap-3 p-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98]">
+                  <input
+                    type="radio"
+                    name="mapLayer"
+                    value="heimursaga"
+                    checked={mapLayer === 'heimursaga'}
+                    onChange={() => { setMapLayer('heimursaga'); toast.success('Map layer updated'); }}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">Heimursaga</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      Custom-designed map with terrain and trail details
+                    </div>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 p-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98]">
+                  <input
+                    type="radio"
+                    name="mapLayer"
+                    value="satellite"
+                    checked={mapLayer === 'satellite'}
+                    onChange={() => { setMapLayer('satellite'); toast.success('Map layer updated'); }}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">Satellite</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      Real-world satellite imagery with street and place labels
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Sidebar */}
@@ -186,6 +232,12 @@ export function PreferencesSettingsPage() {
                 </span>
               </div>
               <div className="flex justify-between items-center">
+                <span className="text-[#616161] dark:text-[#b5bcc4]">Map Layer:</span>
+                <span className="font-bold dark:text-[#e5e5e5]">
+                  {mapLayer === 'heimursaga' ? 'HEIMURSAGA' : 'SATELLITE'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center border-t border-[#b5bcc4] dark:border-[#616161] pt-3">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Storage:</span>
                 <span className="font-bold dark:text-[#e5e5e5]">LOCAL</span>
               </div>
@@ -197,10 +249,11 @@ export function PreferencesSettingsPage() {
             <div className="p-4">
               <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">HOW PREFERENCES WORK</div>
               <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-2 leading-relaxed">
-                <div>Both settings save instantly to your browser's local storage</div>
-                <div>Theme and distance preferences apply across all pages</div>
+                <div>All settings save instantly to your browser's local storage</div>
+                <div>Theme, distance, and map layer preferences apply across all pages</div>
                 <div>System theme follows your OS dark/light mode setting</div>
                 <div>Distance units affect expedition stats, waypoints, and debriefs</div>
+                <div>Map layer switches all maps between Heimursaga custom style and satellite imagery</div>
               </div>
             </div>
           </div>

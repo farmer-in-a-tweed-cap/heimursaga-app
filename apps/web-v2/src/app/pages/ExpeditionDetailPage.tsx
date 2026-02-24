@@ -11,6 +11,7 @@ import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
 import { WaypointCardLandscape } from '@/app/components/WaypointCardLandscape';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
+import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { ExpeditionNotes } from '@/app/components/ExpeditionNotes';
@@ -21,8 +22,6 @@ import { formatDate, formatDateTime, formatShortDate } from '@/app/utils/dateFor
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
-const MAPBOX_STYLE_LIGHT = 'mapbox://styles/cnh1187/cm9lit4gy007101rz4wxfdss6';
-const MAPBOX_STYLE_DARK = 'mapbox://styles/cnh1187/cminkk0hb002d01qy60mm74g0';
 
 if (!MAPBOX_TOKEN) {
   console.warn('NEXT_PUBLIC_MAPBOX_TOKEN environment variable is not set');
@@ -85,6 +84,7 @@ export function ExpeditionDetailPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
+  const { mapLayer } = useMapLayer();
   const { formatDistance } = useDistanceUnit();
   const [selectedView, setSelectedView] = useState<'notes' | 'entries' | 'waypoints' | 'sponsors'>('entries');
   const [showUpdateLocationModal, setShowUpdateLocationModal] = useState(false);
@@ -1215,7 +1215,7 @@ export function ExpeditionDetailPage() {
 
     const map = new mapboxgl.Map({
       container: bannerMapContainerRef.current,
-      style: theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT,
+      style: getMapStyle(mapLayer, theme),
       center: [0, 0],
       zoom: 2,
       interactive: false,
@@ -1238,6 +1238,8 @@ export function ExpeditionDetailPage() {
             .filter(stop => stop.coords.lat !== 0 || stop.coords.lng !== 0)
             .map(stop => [stop.coords.lng, stop.coords.lat]);
 
+      const casingColor = getLineCasingColor(mapLayer, theme);
+
       if (routeCoordinates.length >= 2) {
         map.addSource('route-line', {
           type: 'geojson',
@@ -1245,6 +1247,16 @@ export function ExpeditionDetailPage() {
             type: 'Feature',
             properties: {},
             geometry: { type: 'LineString', coordinates: routeCoordinates },
+          },
+        });
+        map.addLayer({
+          id: 'route-line-casing',
+          type: 'line',
+          source: 'route-line',
+          paint: {
+            'line-color': casingColor,
+            'line-width': hasDirectionsRoute ? 8 : 7,
+            'line-opacity': 0.3,
           },
         });
         map.addLayer({
@@ -1291,6 +1303,12 @@ export function ExpeditionDetailPage() {
               properties: {},
               geometry: { type: 'LineString', coordinates: completedCoords },
             },
+          });
+          map.addLayer({
+            id: 'completed-route-casing',
+            type: 'line',
+            source: 'completed-route',
+            paint: { 'line-color': casingColor, 'line-width': 8, 'line-opacity': 0.3 },
           });
           map.addLayer({
             id: 'completed-route',
@@ -1386,7 +1404,7 @@ export function ExpeditionDetailPage() {
       bannerMapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [theme, waypoints, journalEntries, apiExpedition, debriefRoute]);
+  }, [theme, mapLayer, waypoints, journalEntries, apiExpedition, debriefRoute]);
 
   // Phase 1: When modal opens, wait for browser paint then signal ready
   useEffect(() => {
@@ -1414,7 +1432,7 @@ export function ExpeditionDetailPage() {
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: theme === 'dark' ? MAPBOX_STYLE_DARK : MAPBOX_STYLE_LIGHT,
+      style: getMapStyle(mapLayer, theme),
       center: currentLocationData?.coords ? [currentLocationData.coords.lng, currentLocationData.coords.lat] : [0, 0],
       zoom: 5,
     });
@@ -1458,6 +1476,7 @@ export function ExpeditionDetailPage() {
             .map(stop => [stop.coords.lng, stop.coords.lat]);
 
       routeCoordsRef.current = routeCoordinates;
+      const casingColor = getLineCasingColor(mapLayer, theme);
 
       if (routeCoordinates.length >= 2) {
         map.addSource('route-line', {
@@ -1466,6 +1485,16 @@ export function ExpeditionDetailPage() {
             type: 'Feature',
             properties: {},
             geometry: { type: 'LineString', coordinates: routeCoordinates },
+          },
+        });
+        map.addLayer({
+          id: 'route-line-casing',
+          type: 'line',
+          source: 'route-line',
+          paint: {
+            'line-color': casingColor,
+            'line-width': hasDirectionsRoute ? 8 : 7,
+            'line-opacity': 0.3,
           },
         });
         map.addLayer({
@@ -1514,6 +1543,12 @@ export function ExpeditionDetailPage() {
               properties: {},
               geometry: { type: 'LineString', coordinates: completedCoords },
             },
+          });
+          map.addLayer({
+            id: 'completed-route-casing',
+            type: 'line',
+            source: 'completed-route',
+            paint: { 'line-color': casingColor, 'line-width': 8, 'line-opacity': 0.3 },
           });
           map.addLayer({
             id: 'completed-route',
@@ -1676,7 +1711,7 @@ export function ExpeditionDetailPage() {
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalMapReady, theme, waypoints, journalEntries, apiExpedition]);
+  }, [modalMapReady, theme, mapLayer, waypoints, journalEntries, apiExpedition]);
 
   // Handle pendingFlyTo when modal is already open (clicking different waypoints)
   useEffect(() => {
