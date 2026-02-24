@@ -15,14 +15,14 @@ export function ProUpgradePrompt({
   showBenefits = true,
 }: ProUpgradePromptProps) {
   const benefits = [
-    'Receive sponsorships from other explorers',
-    'Advanced analytics and insights',
-    'Unlimited expeditions and entries',
-    'Priority support and feature requests',
-    'Custom domain and branding',
-    'Export all your data',
-    'Schedule entries in advance',
-    'Advanced map features and integrations',
+    'Receive sponsorships from supporters',
+    'Private messaging with explorers and sponsors',
+    'Expedition Notes (280-character updates)',
+    'Sponsor-only entries and content',
+    'Up to 10 photos per entry (vs 3 for free)',
+    'Expedition insights and analytics',
+    'Sponsorship dashboard and payout tools',
+    'Support platform development',
   ];
 
   if (size === 'small') {
@@ -94,10 +94,10 @@ export function ProUpgradePrompt({
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <div className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">
-                  $9.99/month or $99/year
+                  $7/month or $50/year
                 </div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                  Save 17% with annual billing • Cancel anytime
+                  Save 40% with annual billing • Cancel anytime
                 </div>
               </div>
               <Link
@@ -144,15 +144,15 @@ export function ProUpgradePrompt({
         <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac] p-4">
           <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">UPGRADE TO ACCESS:</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1">
-            <div>• Receive sponsorships from other explorers</div>
-            <div>• Unlimited expeditions and advanced analytics</div>
-            <div>• Priority support and all Pro features</div>
+            <div>• Receive sponsorships from supporters</div>
+            <div>• Private messaging, Expedition Notes, and sponsor-only content</div>
+            <div>• Expedition insights and sponsorship dashboard</div>
           </div>
         </div>
 
         <div className="flex items-center justify-between gap-4 pt-2">
           <div className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-            <span className="font-bold text-[#202020] dark:text-[#e5e5e5]">$9.99/mo</span> or $99/year
+            <span className="font-bold text-[#202020] dark:text-[#e5e5e5]">$7/mo</span> or $50/year
           </div>
           <Link
             href="/settings/billing"
