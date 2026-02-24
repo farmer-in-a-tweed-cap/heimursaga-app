@@ -3,6 +3,7 @@ import { Injectable, RawBodyRequest } from '@nestjs/common';
 import {
   IStripeCreateSetupIntentResponse,
   UserNotificationContext,
+  UserRole,
 } from '@repo/types';
 import Stripe from 'stripe';
 
@@ -683,7 +684,7 @@ export class StripeService {
           // Downgrade to USER role
           await tx.explorer.update({
             where: { id: explorerSubscription.explorer_id },
-            data: { role: 'USER' },
+            data: { role: UserRole.USER },
           });
         });
         this.logger.log(
@@ -774,7 +775,7 @@ export class StripeService {
           // Downgrade user role when Explorer Pro subscription lapses
           await this.prisma.explorer.update({
             where: { id: explorerSubscription.explorer_id },
-            data: { role: 'USER' },
+            data: { role: UserRole.USER },
           });
           this.logger.log(
             `Explorer Pro subscription ${stripeSubscriptionId} status ${status}: downgraded explorer ${explorerSubscription.explorer_id} to USER`,
@@ -783,7 +784,7 @@ export class StripeService {
           // Restore CREATOR role when subscription becomes active again
           await this.prisma.explorer.update({
             where: { id: explorerSubscription.explorer_id },
-            data: { role: 'CREATOR' },
+            data: { role: UserRole.CREATOR },
           });
           this.logger.log(
             `Explorer Pro subscription ${stripeSubscriptionId} reactivated: restored explorer ${explorerSubscription.explorer_id} to CREATOR`,
