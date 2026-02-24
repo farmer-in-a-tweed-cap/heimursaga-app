@@ -19,7 +19,7 @@ export function ProUpgradePrompt({
     'Private messaging with explorers and sponsors',
     'Expedition Notes (280-character updates)',
     'Sponsor-only entries and content',
-    'Up to 10 photos per entry (vs 3 for free)',
+    'Up to 10 photos per entry (vs 2 for free)',
     'Expedition insights and analytics',
     'Sponsorship dashboard and payout tools',
     'Support platform development',

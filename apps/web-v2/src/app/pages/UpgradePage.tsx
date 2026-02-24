@@ -7,11 +7,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   Check, 
-  Crown, 
   Lock, 
   Shield, 
   Zap,
-  Users,
   BarChart3,
   MessageSquare,
   DollarSign,
@@ -45,7 +43,7 @@ export function UpgradePage() {
       <div className="max-w-[1200px] mx-auto px-4 lg:px-6 py-12">
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
           <div className="bg-[#ac6d46] text-white px-6 py-4 font-bold text-lg flex items-center gap-2">
-            <Crown className="w-6 h-6" />
+            <Check className="w-6 h-6" />
             ALREADY EXPLORER PRO
           </div>
           <div className="p-8 text-center">
@@ -85,7 +83,7 @@ export function UpgradePage() {
     { icon: DollarSign, title: 'Receive Sponsorships', desc: 'Accept one-time contributions and monthly subscriptions from supporters who want to fund your expeditions' },
     { icon: MessageSquare, title: 'Private Messages', desc: 'Direct messaging with your sponsors and other explorers for deeper connections and coordination' },
     { icon: FileText, title: 'Additional Entry Types', desc: 'Unlock sponsor-only entries and Expedition Notes (280-char daily updates) to keep supporters engaged' },
-    { icon: Sparkles, title: 'More Photos Per Entry', desc: 'Upload up to 10 photos per journal entry instead of the standard 3 for free accounts' },
+    { icon: Sparkles, title: 'More Photos Per Entry', desc: 'Upload up to 10 photos per journal entry instead of the standard 2 for free accounts' },
     { icon: BarChart3, title: 'Expedition Insights', desc: 'Track entry views, engagement metrics, sponsor activity, and understand your audience better' },
     { icon: Eye, title: 'Sponsor-Only Content', desc: 'Create exclusive journal entries and updates visible only to your paying supporters' }
   ];
@@ -94,15 +92,12 @@ export function UpgradePage() {
     'Receive one-time and monthly sponsorships',
     'Private messaging with sponsors and explorers',
     'Sponsor-only journal entries',
-    'Expedition Notes (280-char daily sponsor updates)',
-    'Up to 10 photos per entry (vs 3 for free)',
+    'Expedition Notes (280-char sponsor updates)',
+    'Up to 10 photos per entry (vs 2 for free)',
     'Entry view counts and engagement insights',
     'Sponsor activity dashboard',
     'Custom sponsorship tiers (set your own prices)',
     'Stripe Connect payouts to your bank',
-    'Priority support',
-    'Profile badges and verification',
-    'Early access to new features'
   ];
 
   return (
@@ -111,7 +106,7 @@ export function UpgradePage() {
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="p-6">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <Crown className="w-8 h-8 text-[#ac6d46]" />
+            <Zap className="w-8 h-8 text-[#ac6d46]" />
             <h1 className="text-3xl font-bold dark:text-[#e5e5e5]">
               EXPLORER PRO
             </h1>
@@ -268,17 +263,10 @@ export function UpgradePage() {
       {/* Trust Indicators */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 text-center">
-          <Users className="w-10 h-10 text-[#ac6d46] mx-auto mb-3" />
-          <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">1,200+</div>
-          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-            Explorer Pro members worldwide
-          </div>
-        </div>
-        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 text-center">
           <Shield className="w-10 h-10 text-[#4676ac] mx-auto mb-3" />
-          <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">100%</div>
+          <div className="text-sm font-bold mb-2 dark:text-[#e5e5e5]">SECURE PAYMENTS</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-            Secure Stripe payment processing
+            All payments processed securely via Stripe
           </div>
         </div>
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 text-center">
@@ -286,6 +274,13 @@ export function UpgradePage() {
           <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">5%</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
             Platform fee on sponsorships received
+          </div>
+        </div>
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 text-center">
+          <Lock className="w-10 h-10 text-[#4676ac] mx-auto mb-3" />
+          <div className="text-sm font-bold mb-2 dark:text-[#e5e5e5]">CANCEL ANYTIME</div>
+          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+            No commitments, keep access until period ends
           </div>
         </div>
       </div>
@@ -326,26 +321,27 @@ export function UpgradePage() {
           </div>
 
           <div>
-            <div className="font-bold text-sm mb-2 dark:text-[#e5e5e5]">Do you offer refunds?</div>
+            <div className="font-bold text-sm mb-2 dark:text-[#e5e5e5]">What happens when I cancel?</div>
             <div className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
-              If you cancel within the first 7 days of your subscription, we offer a full refund. 
-              After that, we offer pro-rated refunds if you downgrade during your billing period.
+              When you cancel, you keep full Explorer Pro access until the end of your current
+              billing period. After that, your account reverts to the free Explorer plan. You can
+              reactivate anytime from your billing settings.
             </div>
           </div>
 
           <div>
             <div className="font-bold text-sm mb-2 dark:text-[#e5e5e5]">What fees do you take from sponsorships?</div>
             <div className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
-              heimursaga.com takes a 5% platform fee from received sponsorships, plus standard 
+              Heimursaga takes a 5% platform fee from received sponsorships, plus standard
               Stripe processing fees (2.9% + $0.30 per transaction). The rest goes directly to you.
             </div>
           </div>
 
           <div>
-            <div className="font-bold text-sm mb-2 dark:text-[#e5e5e5]">Can I upgrade from monthly to annual?</div>
+            <div className="font-bold text-sm mb-2 dark:text-[#e5e5e5]">What are Expedition Notes?</div>
             <div className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
-              Yes! You can switch between monthly and annual billing anytime from your billing 
-              settings. We'll pro-rate the difference and adjust your billing accordingly.
+              Expedition Notes are short 280-character updates you can post to keep your sponsors
+              informed between full journal entries. Think of them as quick field dispatches.
             </div>
           </div>
         </div>

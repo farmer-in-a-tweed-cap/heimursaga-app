@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Check, Crown, ArrowRight, BarChart3, Settings, DollarSign, MessageSquare, FileText, Eye, Receipt, CreditCard, Sparkles } from 'lucide-react';
+import { Check, ArrowRight, BarChart3, Settings, DollarSign, MessageSquare, FileText, Eye, Receipt, CreditCard, Sparkles } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 
 export function UpgradeSuccessPage() {
@@ -134,7 +134,7 @@ export function UpgradeSuccessPage() {
               className="bg-[#ac6d46] text-white p-6 hover:bg-[#8a5738] transition-all border-2 border-[#ac6d46]"
             >
               <div className="flex items-start justify-between mb-4">
-                <Crown className="w-8 h-8" />
+                <DollarSign className="w-8 h-8" />
                 <ArrowRight className="w-5 h-5" />
               </div>
               <div className="font-bold text-lg mb-2">Set Up Sponsorships</div>
@@ -239,7 +239,7 @@ export function UpgradeSuccessPage() {
               <div>
                 <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">More Photos Per Entry</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                  Upload up to 10 photos per entry (vs 3 for free)
+                  Upload up to 10 photos per entry (vs 2 for free)
                 </div>
               </div>
             </div>

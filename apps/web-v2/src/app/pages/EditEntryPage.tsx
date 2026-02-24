@@ -773,7 +773,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
                     <div className="mb-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#4676ac] text-xs">
                       <div className="flex items-center justify-between">
                         <span className="text-[#616161] dark:text-[#b5bcc4]">
-                          {isPro ? 'Pro: up to 5 photos' : 'Basic: up to 2 photos'}
+                          {isPro ? 'Pro: up to 10 photos' : 'Basic: up to 2 photos'}
                           {!isPro && (
                             <Link href="/settings/billing" className="text-[#ac6d46] hover:underline ml-1">
                               (Upgrade)

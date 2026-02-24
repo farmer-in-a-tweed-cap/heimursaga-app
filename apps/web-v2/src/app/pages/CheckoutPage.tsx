@@ -12,7 +12,6 @@ import {
   Check,
   AlertCircle,
   ArrowLeft,
-  Crown,
   Info,
   Plus,
   CheckCircle2
@@ -622,7 +621,7 @@ export function CheckoutPage() {
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
             <div className="bg-[#4676ac] text-white px-6 py-4 border-b-2 border-[#202020] dark:border-[#616161]">
               <div className="flex items-center gap-2">
-                <Crown className="w-5 h-5" />
+                <Shield className="w-5 h-5" />
                 <span className="font-bold text-xl">SELECTED PLAN</span>
               </div>
             </div>

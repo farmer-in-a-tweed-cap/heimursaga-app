@@ -825,10 +825,10 @@ export class EntryService {
       }
 
       // Enforce photo upload limits by account type
-      const maxUploads = matchRoles(userRole, [UserRole.CREATOR]) ? 5 : 2;
+      const maxUploads = matchRoles(userRole, [UserRole.CREATOR]) ? 10 : 2;
       if (payload.uploads && payload.uploads.length > maxUploads) {
         throw new ServiceBadRequestException(
-          `Maximum ${maxUploads} photos per entry${matchRoles(userRole, [UserRole.CREATOR]) ? '' : '. Upgrade to Explorer Pro for up to 5'}`,
+          `Maximum ${maxUploads} photos per entry${matchRoles(userRole, [UserRole.CREATOR]) ? '' : '. Upgrade to Explorer Pro for up to 10'}`,
         );
       }
 
@@ -1056,10 +1056,10 @@ export class EntryService {
       }
 
       // Enforce photo upload limits by account type
-      const maxUploads = matchRoles(userRole, [UserRole.CREATOR]) ? 5 : 2;
+      const maxUploads = matchRoles(userRole, [UserRole.CREATOR]) ? 10 : 2;
       if (uploads && uploads.length > maxUploads) {
         throw new ServiceBadRequestException(
-          `Maximum ${maxUploads} photos per entry${matchRoles(userRole, [UserRole.CREATOR]) ? '' : '. Upgrade to Explorer Pro for up to 5'}`,
+          `Maximum ${maxUploads} photos per entry${matchRoles(userRole, [UserRole.CREATOR]) ? '' : '. Upgrade to Explorer Pro for up to 10'}`,
         );
       }
 

@@ -22,7 +22,7 @@ export function useProFeatures() {
     canUseExpeditionBuilder: isPro,
     canCreateUnlimitedExpeditions: isPro,
     maxExpeditions: isPro ? Infinity : 3,
-    maxPhotosPerEntry: isPro ? 5 : 2,
+    maxPhotosPerEntry: isPro ? 10 : 2,
     canUseCustomThemes: isPro,
   };
 }
