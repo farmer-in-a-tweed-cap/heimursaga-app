@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Lock, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { Lock, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface ProUpgradePromptProps {
   featureName: string;
@@ -42,7 +42,6 @@ export function ProUpgradePrompt({
               className="inline-flex items-center gap-2 px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs font-bold"
             >
               UPGRADE TO PRO
-              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         </div>
@@ -104,9 +103,7 @@ export function ProUpgradePrompt({
                 href="/settings/billing"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-sm font-bold whitespace-nowrap"
               >
-                <Lock className="w-4 h-4" />
                 UPGRADE TO PRO
-                <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
           </div>
@@ -158,9 +155,7 @@ export function ProUpgradePrompt({
             href="/settings/billing"
             className="inline-flex items-center gap-2 px-6 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-sm font-bold"
           >
-            <Lock className="w-4 h-4" />
             UPGRADE NOW
-            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </div>

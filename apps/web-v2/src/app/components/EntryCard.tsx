@@ -139,10 +139,7 @@ export function EntryCard({
             onClick={onReadEntry}
             className="flex-1 px-4 py-2 text-xs font-bold bg-[#4676ac] text-white hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] whitespace-nowrap"
           >
-            <div className="flex items-center justify-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span>VIEW ENTRY</span>
-            </div>
+            VIEW ENTRY
           </button>
           {/* Bookmark button - Hidden when not authenticated */}
           {isAuthenticated && (

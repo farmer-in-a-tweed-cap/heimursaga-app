@@ -5,7 +5,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import Link from 'next/link';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Camera, Save, X, Upload, Shield, Home, Navigation, Info, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Camera, Shield, Home, Navigation, Info, Loader2, Image as ImageIcon } from 'lucide-react';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 // import { useProFeatures } from '@/app/hooks/useProFeatures';
@@ -402,7 +402,6 @@ export function EditProfilePage() {
                     </div>
                     <div className="flex gap-2">
                       <label className="px-4 py-2 bg-[#4676ac] text-white hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-xs font-medium cursor-pointer inline-flex items-center gap-2">
-                        <Upload size={14} strokeWidth={2} />
                         {avatarPreview ? 'CHANGE AVATAR' : 'UPLOAD AVATAR'}
                         <input
                           type="file"
@@ -454,7 +453,6 @@ export function EditProfilePage() {
 
                 <div className="flex gap-2">
                   <label className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-medium cursor-pointer inline-flex items-center gap-2">
-                    <Upload size={14} strokeWidth={2} />
                     {coverPhotoPreview ? 'CHANGE COVER PHOTO' : 'UPLOAD COVER PHOTO'}
                     <input
                       type="file"
@@ -811,18 +809,13 @@ export function EditProfilePage() {
                 saveStatus === 'saving' ? 'disabled:cursor-wait' : 'disabled:cursor-default'
               }`}
             >
-              {saveStatus === 'saving' ? (
-                <Loader2 size={16} className="animate-spin" />
-              ) : (
-                <Save size={16} strokeWidth={2} />
-              )}
+              {saveStatus === 'saving' && <Loader2 size={16} className="animate-spin" />}
               {saveStatus === 'saving' ? 'SAVING...' : isDirty ? 'SAVE CHANGES' : 'SAVED'}
             </button>
             <button
               onClick={handleCancel}
               className="px-6 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] font-bold text-sm flex items-center gap-2"
             >
-              <X size={16} strokeWidth={2} />
               CANCEL
             </button>
           </div>

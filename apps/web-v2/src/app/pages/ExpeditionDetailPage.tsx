@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Users, UserPlus, Bookmark, Share2, Maximize2, Settings, Loader2, Compass, X, BookmarkCheck, UserCheck, Lock, ChevronLeft, ChevronRight, Play, EyeOff, XCircle } from 'lucide-react';
+import { Users, Bookmark, Maximize2, Loader2, Compass, X, BookmarkCheck, Lock, ChevronLeft, ChevronRight, EyeOff, XCircle } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
@@ -1985,8 +1985,7 @@ export function ExpeditionDetailPage() {
                       href={isAuthenticated ? `/sponsor/${expedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
                       className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap flex items-center gap-2"
                     >
-                      <Users size={16} strokeWidth={2} />
-                      <span>SPONSOR</span>
+                      SPONSOR
                     </Link>
                   )}
                   {/* Follow button - Hidden when not authenticated or own expedition */}
@@ -2000,14 +1999,8 @@ export function ExpeditionDetailPage() {
                           : 'border-white/30 text-white hover:bg-white/10'
                       }`}
                     >
-                      {followLoading ? (
-                        <Loader2 size={16} strokeWidth={2} className="animate-spin" />
-                      ) : isFollowingExplorer ? (
-                        <UserCheck size={16} strokeWidth={2} />
-                      ) : (
-                        <UserPlus size={16} strokeWidth={2} />
-                      )}
-                      <span className="hidden md:inline">{isFollowingExplorer ? 'FOLLOWING EXPLORER' : 'FOLLOW EXPLORER'}</span>
+                      {followLoading && <Loader2 size={16} strokeWidth={2} className="animate-spin" />}
+                      {isFollowingExplorer ? 'FOLLOWING EXPLORER' : 'FOLLOW EXPLORER'}
                     </button>
                   )}
                   {/* Bookmark button - Hidden when not authenticated */}
@@ -2021,18 +2014,13 @@ export function ExpeditionDetailPage() {
                           : 'border-white/30 text-white hover:bg-white/10'
                       }`}
                     >
-                      {bookmarkLoading ? (
-                        <Loader2 size={16} strokeWidth={2} className="animate-spin" />
-                      ) : (
-                        <Bookmark size={16} strokeWidth={2} fill={isBookmarked ? 'currentColor' : 'none'} />
-                      )}
-                      <span className="hidden md:inline">{isBookmarked ? 'BOOKMARKED' : 'BOOKMARK'}</span>
+                      {bookmarkLoading && <Loader2 size={16} strokeWidth={2} className="animate-spin" />}
+                      {isBookmarked ? 'BOOKMARKED' : 'BOOKMARK'}
                     </button>
                   )}
                   {/* Share button - Always visible (public action) */}
                   <button className="px-4 py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2">
-                    <Share2 size={16} strokeWidth={2} />
-                    <span className="hidden md:inline">SHARE</span>
+                    SHARE
                   </button>
                 </div>
               </div>
@@ -2375,13 +2363,13 @@ export function ExpeditionDetailPage() {
                   href={`/log-entry/${expedition.id}`}
                   className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
                 >
-                  + LOG NEW ENTRY
+                  LOG NEW ENTRY
                 </Link>
                 <Link
                   href={expedition.explorerIsPro ? `/expedition-builder/${expedition.id}` : `/log-entry/${expedition.id}?type=waypoint`}
                   className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
                 >
-                  + LOG WAYPOINT
+                  LOG WAYPOINT
                 </Link>
                 <button
                   onClick={() => setShowUpdateLocationModal(true)}
@@ -2407,8 +2395,7 @@ export function ExpeditionDetailPage() {
                   onClick={() => setShowManagementModal(true)}
                   className="w-full py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#4a4a4a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm font-bold flex items-center justify-center gap-2"
                 >
-                  <Settings size={16} strokeWidth={2} />
-                  <span>MANAGE EXPEDITION</span>
+                  MANAGE EXPEDITION
                 </button>
               </div>
             </div>
@@ -2658,7 +2645,6 @@ export function ExpeditionDetailPage() {
                   onClick={exitDebriefMode}
                   className="px-4 py-2 bg-[#202020] hover:bg-[#333] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
                 >
-                  <X size={14} />
                   EXIT DEBRIEF
                 </button>
               ) : (
@@ -2668,7 +2654,6 @@ export function ExpeditionDetailPage() {
                       onClick={enterDebriefMode}
                       className="px-3 py-1.5 bg-[#ac6d46] hover:bg-[#8a5738] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
                     >
-                      <Play size={12} fill="currentColor" />
                       DEBRIEF MODE
                     </button>
                   )}
@@ -2676,7 +2661,6 @@ export function ExpeditionDetailPage() {
                     onClick={handleCloseModal}
                     className="px-4 py-2 bg-[#202020] hover:bg-[#333] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
                   >
-                    <X size={14} />
                     CLOSE
                   </button>
                 </>

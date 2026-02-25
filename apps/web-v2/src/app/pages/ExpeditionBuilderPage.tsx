@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
-import { MapPin, Plus, Trash2, Save, FileText, Calendar, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
+import { MapPin, Trash2, Calendar, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
@@ -2033,7 +2033,6 @@ export function ExpeditionBuilderPage() {
                             onClick={() => setConfirmingDelete(selectedWaypoint)}
                             className="flex-1 px-3 py-2 border-2 border-[#616161] dark:border-[#616161] bg-[#616161] dark:bg-[#4a4a4a] text-white hover:bg-[#202020] dark:hover:bg-[#616161] transition-all text-xs font-bold flex items-center justify-center gap-2"
                           >
-                            <Trash2 size={14} />
                             DELETE WAYPOINT
                           </button>
                         )}
@@ -2043,7 +2042,6 @@ export function ExpeditionBuilderPage() {
                           onClick={() => { setSelectedWaypoint(null); setConfirmingDelete(null); }}
                           className="flex-1 px-3 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold flex items-center justify-center gap-2"
                         >
-                          <Save size={14} />
                           DONE
                         </button>
                       </div>
@@ -2615,15 +2613,14 @@ export function ExpeditionBuilderPage() {
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mt-6 p-4 md:p-6">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <button className="px-6 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm font-bold flex items-center justify-center gap-2">
-            <Save size={18} />
-            <span>SAVE AS DRAFT</span>
+            SAVE AS DRAFT
           </button>
           <button
             onClick={() => handleCreateExpedition(false)}
             disabled={isSubmitting}
             className="px-6 py-3 bg-[#4676ac] text-white hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Save size={18} /> : <Plus size={18} />)}
+            {isSubmitting && <Loader2 size={18} className="animate-spin" />}
             <span>{isSubmitting ? 'SAVING...' : (isEditMode ? 'SAVE CHANGES' : 'CREATE EXPEDITION')}</span>
           </button>
           {!isEditMode && (
@@ -2632,7 +2629,6 @@ export function ExpeditionBuilderPage() {
               disabled={isSubmitting}
               className="px-6 py-3 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <FileText size={18} />
               <span>SAVE AND LOG FIRST ENTRY</span>
             </button>
           )}
@@ -2676,7 +2672,6 @@ export function ExpeditionBuilderPage() {
             disabled={expeditionEntries.length > 0}
             className="px-6 py-2.5 bg-[#994040] text-white hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            <Trash2 size={16} />
             DELETE EXPEDITION
           </button>
         </div>
@@ -2798,7 +2793,7 @@ export function ExpeditionBuilderPage() {
                   disabled={isDeletingExpedition}
                   className="flex-1 px-4 py-2.5 bg-[#994040] text-white hover:bg-[#7a3333] transition-all text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isDeletingExpedition ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  {isDeletingExpedition && <Loader2 size={14} className="animate-spin" />}
                   {isDeletingExpedition ? 'DELETING...' : 'DELETE EXPEDITION'}
                 </button>
               </div>

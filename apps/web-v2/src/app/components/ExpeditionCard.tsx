@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, FileText, DollarSign, Bookmark, Clock, Users, Loader2, EyeOff, Lock } from "lucide-react";
+import { MapPin, DollarSign, Bookmark, Clock, Loader2, EyeOff, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { RadialProgress } from "@/app/components/ui/radial-progress";
 import { Progress } from "@/app/components/ui/progress";
@@ -339,10 +339,7 @@ export function ExpeditionCard({
             onClick={onViewJournal}
             className="flex-1 px-4 py-2 text-xs font-bold bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] whitespace-nowrap"
           >
-            <div className="flex items-center justify-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span>VIEW EXPEDITION</span>
-            </div>
+            VIEW EXPEDITION
           </button>
           {/* Sponsor button - Visible when sponsorships available and not completed */}
           {showSponsorshipSection && status !== 'completed' && (
@@ -356,10 +353,7 @@ export function ExpeditionCard({
               }}
               className="flex-1 px-4 py-2 text-xs font-bold transition-all whitespace-nowrap active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a] focus-visible:ring-[#616161]"
             >
-              <div className="flex items-center justify-center gap-2">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">SPONSOR</span>
-              </div>
+              SPONSOR
             </button>
           )}
           {/* Bookmark button - Hidden when not authenticated */}

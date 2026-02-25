@@ -349,7 +349,6 @@ export function SelectExpeditionPage() {
                   href="/expedition-quick-entry"
                   className="w-full block text-center px-4 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
                 >
-                  <Zap className="inline w-4 h-4 mr-2" />
                   QUICK ENTRY
                 </Link>
               </div>
@@ -385,13 +384,11 @@ export function SelectExpeditionPage() {
                     href="/expedition-builder"
                     className="w-full block text-center px-4 py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm"
                   >
-                    <Map className="inline w-4 h-4 mr-2" />
                     EXPEDITION BUILDER
                   </Link>
                 ) : (
                   <div>
                     <div className="w-full text-center px-4 py-2 bg-[#616161] text-white font-bold cursor-not-allowed text-sm opacity-60">
-                      <Lock className="inline w-4 h-4 mr-2" />
                       EXPLORER PRO REQUIRED
                     </div>
                     <div className="mt-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
@@ -457,7 +454,6 @@ export function SelectExpeditionPage() {
                   href="/log-entry/standalone"
                   className="inline-block px-6 py-3 bg-[#616161] text-white font-bold hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
                 >
-                  <FileText className="inline w-4 h-4 mr-2" />
                   LOG STANDALONE ENTRY
                 </Link>
               </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, DollarSign, Clock, MessageSquare } from "lucide-react";
+import { DollarSign, Clock } from "lucide-react";
 import { Progress } from "@/app/components/ui/progress";
 import { formatDate } from "@/app/utils/dateFormat";
 
@@ -173,20 +173,14 @@ export function SponsorshipCard({
             onClick={onViewExpedition}
             className="px-4 py-2 text-xs font-bold bg-[#4676ac] text-white hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] whitespace-nowrap"
           >
-            <div className="flex items-center justify-center gap-2">
-              <FileText className="h-4 w-4" />
-              <span>VIEW DETAILS</span>
-            </div>
+            VIEW DETAILS
           </button>
           {showMessageButton && (
             <button
               onClick={onMessage}
               className="px-4 py-2 text-xs font-bold bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] whitespace-nowrap"
             >
-              <div className="flex items-center justify-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                <span>MESSAGE</span>
-              </div>
+              MESSAGE
             </button>
           )}
         </div>

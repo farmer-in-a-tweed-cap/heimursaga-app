@@ -8,14 +8,11 @@ import {
   DollarSign,
   TrendingUp,
   Users,
-  Edit,
-  Save,
   AlertCircle,
   CheckCircle,
   Calendar,
   HandHeart,
   Loader2,
-  Plus,
   Trash2,
   ExternalLink,
   X,
@@ -986,7 +983,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                         disabled={isSavingTiers}
                         className="px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 disabled:opacity-50"
                       >
-                        {isSavingTiers ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                        {isSavingTiers && <Loader2 className="w-4 h-4 animate-spin" />}
                         SAVE ALL CHANGES
                       </button>
                       <button
@@ -1014,7 +1011,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       onClick={() => setEditingTiers(true)}
                       className="px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2"
                     >
-                      <Edit className="w-4 h-4" /> EDIT TIERS
+                      EDIT TIERS
                     </button>
                   )}
                 </div>
@@ -1122,7 +1119,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       onClick={handleAddOneTimeTier}
                       className="w-full mt-4 py-3 border-2 border-dashed border-[#b5bcc4] dark:border-[#616161] font-bold text-sm hover:border-[#4676ac] hover:text-[#4676ac] transition-all flex items-center justify-center gap-2 dark:text-[#e5e5e5]"
                     >
-                      <Plus className="w-4 h-4" /> ADD ONE-TIME TIER
+                      ADD ONE-TIME TIER
                     </button>
                   )}
                   {editedOneTimeTiers.length === 0 && !editingTiers && (
@@ -1239,7 +1236,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       onClick={handleAddMonthlyTier}
                       className="w-full mt-4 py-3 border-2 border-dashed border-[#b5bcc4] dark:border-[#616161] font-bold text-sm hover:border-[#ac6d46] hover:text-[#ac6d46] transition-all flex items-center justify-center gap-2 dark:text-[#e5e5e5]"
                     >
-                      <Plus className="w-4 h-4" /> ADD MONTHLY TIER
+                      ADD MONTHLY TIER
                     </button>
                   )}
                   {editedMonthlyTiers.length === 0 && !editingTiers && (

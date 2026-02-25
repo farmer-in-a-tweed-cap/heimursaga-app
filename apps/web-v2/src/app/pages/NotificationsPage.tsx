@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Bell,
   Filter,
-  Check,
   ChevronDown,
-  CheckCircle2,
   Circle,
   Lock,
   Loader2
@@ -430,7 +428,6 @@ export function NotificationsPage() {
               onClick={toggleSelectAll}
               className="px-3 py-2 bg-[#616161] text-white text-xs font-bold hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border-2 border-[#202020] dark:border-[#616161] flex items-center gap-2 whitespace-nowrap"
             >
-              <Check className="w-3 h-3" />
               {selectedIds.length === filteredNotifications.length ? 'DESELECT ALL' : 'SELECT ALL'}
             </button>
 
@@ -440,7 +437,6 @@ export function NotificationsPage() {
                   onClick={markSelectedAsRead}
                   className="px-3 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] border-2 border-[#202020] dark:border-[#616161] flex items-center gap-2 whitespace-nowrap"
                 >
-                  <CheckCircle2 className="w-3 h-3" />
                   MARK AS READ ({selectedIds.length})
                 </button>
               </>
@@ -451,7 +447,6 @@ export function NotificationsPage() {
                 onClick={markAllAsRead}
                 className="px-3 py-2 bg-[#202020] dark:bg-[#616161] text-white text-xs font-bold hover:bg-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] border-2 border-[#202020] dark:border-[#616161] flex items-center gap-2 whitespace-nowrap"
               >
-                <CheckCircle2 className="w-3 h-3" />
                 MARK ALL AS READ
               </button>
             )}

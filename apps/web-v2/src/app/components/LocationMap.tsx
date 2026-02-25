@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
-import { MapPin, Crosshair, X } from 'lucide-react';
+import { MapPin, X } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
@@ -471,7 +471,6 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
               disabled={gettingLocation}
               className="px-4 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Crosshair className="w-4 h-4 inline mr-2" />
               {gettingLocation ? 'LOCATING...' : 'USE CURRENT LOCATION'}
             </button>
           </div>

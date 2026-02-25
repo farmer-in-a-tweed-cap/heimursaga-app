@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { NotificationCardCompact } from '@/app/components/NotificationCardCompact';
-import { Bell, ArrowRight, Loader2 } from 'lucide-react';
+import { Bell, Loader2 } from 'lucide-react';
 import { notificationApi, Notification as ApiNotification } from '@/app/services/api';
 import { UserNotificationContext } from "@repo/types";
 
@@ -339,7 +339,6 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
           className="w-full px-4 py-2 bg-[#ac6d46] hover:bg-[#8a5738] text-white text-xs font-bold tracking-wide transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-2 border-2 border-[#ac6d46] hover:border-[#8a5738]"
         >
           VIEW ALL NOTIFICATIONS
-          <ArrowRight className="w-3 h-3" />
         </button>
       </div>
     </div>

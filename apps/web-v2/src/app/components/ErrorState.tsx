@@ -1,4 +1,4 @@
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 interface ErrorStateProps {
   title?: string;
@@ -34,7 +34,6 @@ export function ErrorState({
           onClick={onRetry}
           className="inline-flex items-center gap-2 px-6 py-3 bg-[#616161] text-white font-bold hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm"
         >
-          <RefreshCw className="w-4 h-4" aria-hidden="true" />
           {retryLabel}
         </button>
       )}

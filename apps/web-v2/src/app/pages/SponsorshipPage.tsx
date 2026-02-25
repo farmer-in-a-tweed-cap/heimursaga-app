@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import {
-  HandHeart,
   DollarSign,
   RefreshCw,
   Users,
@@ -190,10 +189,7 @@ export function SponsorshipPage() {
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
-            <div className="flex items-center gap-3">
-              <HandHeart className="w-6 h-6 text-[#ac6d46]" />
-              <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">SPONSORSHIP MANAGEMENT</h1>
-            </div>
+            <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">SPONSORSHIP MANAGEMENT</h1>
             {isPro && (
               <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">EXPLORER PRO</span>
             )}

@@ -1,7 +1,7 @@
 'use client';
 
 import { ExplorerAvatar } from "@/app/components/ExplorerAvatar";
-import { MapPin, UserPlus, UserCheck, BookOpen, Bookmark, Loader2 } from "lucide-react";
+import { MapPin, Bookmark, Loader2 } from "lucide-react";
 import { ExplorerStatusBadge, ExplorerStatus } from "@/app/components/ExplorerStatusBadge";
 import { useAuth } from "@/app/context/AuthContext";
 
@@ -119,10 +119,7 @@ export function ExplorerCard({
             onClick={onViewJournal}
             className="flex-1 px-4 py-2 text-xs font-bold bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] whitespace-nowrap"
           >
-            <div className="flex items-center justify-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              <span>VIEW JOURNAL</span>
-            </div>
+            VIEW JOURNAL
           </button>
           {/* Follow button - Hidden when not authenticated */}
           {isAuthenticated && (
@@ -136,13 +133,7 @@ export function ExplorerCard({
               }`}
             >
               <div className="flex items-center justify-center gap-2">
-                {isFollowLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isFollowing ? (
-                  <UserCheck className="h-4 w-4" />
-                ) : (
-                  <UserPlus className="h-4 w-4" />
-                )}
+                {isFollowLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                 <span>{isFollowing ? 'FOLLOWING' : 'FOLLOW'}</span>
               </div>
             </button>

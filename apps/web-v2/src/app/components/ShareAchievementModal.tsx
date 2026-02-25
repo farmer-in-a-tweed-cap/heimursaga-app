@@ -8,7 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/app/components/ui/dialog';
-import { Award, Copy, Share2, Check, X, Download, Loader2 } from 'lucide-react';
+import { Award, X, Loader2 } from 'lucide-react';
 import { CountryFlag } from '@/app/components/CountryFlag';
 import { ContinentIcon } from '@/app/components/ContinentIcon';
 
@@ -300,10 +300,7 @@ export function ShareAchievementModal({
                 GENERATING...
               </>
             ) : (
-              <>
-                <Download className="w-4 h-4" />
-                DOWNLOAD IMAGE
-              </>
+              'DOWNLOAD IMAGE'
             )}
           </button>
 
@@ -313,7 +310,6 @@ export function ShareAchievementModal({
               onClick={handleNativeShare}
               className="w-full px-4 py-3 border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] text-[#202020] dark:text-[#e5e5e5] text-sm font-bold tracking-wide hover:border-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] flex items-center justify-center gap-2"
             >
-              <Share2 className="w-4 h-4" />
               SHARE IMAGE...
             </button>
           )}
@@ -323,17 +319,7 @@ export function ShareAchievementModal({
             onClick={handleCopyLink}
             className="w-full px-4 py-3 border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] text-[#202020] dark:text-[#e5e5e5] text-sm font-bold tracking-wide hover:border-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] flex items-center justify-center gap-2"
           >
-            {copied ? (
-              <>
-                <Check className="w-4 h-4" />
-                COPIED LINK
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4" />
-                COPY JOURNAL LINK
-              </>
-            )}
+            {copied ? 'COPIED LINK' : 'COPY JOURNAL LINK'}
           </button>
 
           {/* Info text */}

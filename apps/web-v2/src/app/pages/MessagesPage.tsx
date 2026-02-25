@@ -556,11 +556,10 @@ export function MessagesPage() {
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
           <div className="p-6">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4 pb-4 border-b-2 border-[#b5bcc4] dark:border-[#616161]">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="w-6 h-6 md:w-8 md:h-8 text-[#ac6d46]" />
+              <div>
                 <div>
                   <div className="flex items-center gap-3">
-                    <h1 className="text-xl md:text-3xl font-bold dark:text-[#e5e5e5]">MESSAGES</h1>
+                    <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">MESSAGES</h1>
                     {totalUnread > 0 && (
                       <span className="px-3 py-1 bg-[#ac6d46] text-white text-xs font-bold font-mono rounded-full">
                         {totalUnread} UNREAD

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { CreditCard, Check, AlertCircle, ArrowUpRight, Lock, DollarSign, Loader2, Plus, Trash2, Shield } from 'lucide-react';
+import { CreditCard, Check, AlertCircle, ArrowUpRight, Lock, DollarSign, Loader2, Trash2, Shield } from 'lucide-react';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
@@ -505,7 +505,6 @@ export function BillingSettingsPage() {
                   onClick={() => setShowAddCard(true)}
                   className="w-full px-4 py-3 bg-[#202020] dark:bg-[#4676ac] text-white text-xs font-bold hover:bg-[#4676ac] dark:hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] flex items-center justify-center gap-2"
                 >
-                  <Plus className="w-4 h-4" />
                   ADD PAYMENT METHOD
                 </button>
               )}

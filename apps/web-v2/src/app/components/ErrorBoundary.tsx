@@ -2,7 +2,7 @@
 
 import { Component, type ReactNode } from 'react';
 import Link from 'next/link';
-import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -49,14 +49,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 onClick={this.handleRetry}
                 className="inline-flex items-center gap-2 px-6 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] font-bold hover:bg-[#202020] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] text-sm"
               >
-                <RefreshCw className="w-4 h-4" />
                 TRY AGAIN
               </button>
               <Link
                 href="/"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-[#4676ac] text-white font-bold hover:bg-[#365a87] transition-all active:scale-[0.98] text-sm"
               >
-                <Home className="w-4 h-4" />
                 HOME
               </Link>
             </div>

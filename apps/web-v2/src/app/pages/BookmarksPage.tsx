@@ -1,6 +1,6 @@
 'use client';
 
-import { Bookmark, FileText, Map, User, Lock, Loader2 } from 'lucide-react';
+import { Bookmark, Lock, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
@@ -206,46 +206,33 @@ export function BookmarksPage() {
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
         <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
-          <div className="flex items-center gap-3">
-            <Bookmark className="w-6 h-6 text-[#ac6d46]" />
-            <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">BOOKMARKS</h1>
-          </div>
+          <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">BOOKMARKS</h1>
           <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">{totalCount} SAVED ITEMS</span>
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs">
-          <button
-            onClick={() => setActiveFilter('all')}
-            className="px-3 py-1.5 whitespace-nowrap flex items-center gap-1 hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
-            style={{ backgroundColor: activeFilter === 'all' ? '#4676ac' : 'transparent', color: activeFilter === 'all' ? '#ffffff' : undefined, border: activeFilter === 'all' ? 'none' : '1px solid #616161' }}
-          >
-            <Bookmark className="w-3 h-3" />
-            ALL ({totalCount})
-          </button>
-          <button
-            onClick={() => setActiveFilter('entries')}
-            className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] whitespace-nowrap flex items-center gap-1"
-            style={{ backgroundColor: activeFilter === 'entries' ? '#4676ac' : 'transparent', color: activeFilter === 'entries' ? '#ffffff' : undefined, borderColor: activeFilter === 'entries' ? '#4676ac' : undefined }}
-          >
-            <FileText className="w-3 h-3" />
-            ENTRIES ({bookmarkedEntries.length})
-          </button>
-          <button
-            onClick={() => setActiveFilter('expeditions')}
-            className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] whitespace-nowrap flex items-center gap-1"
-            style={{ backgroundColor: activeFilter === 'expeditions' ? '#4676ac' : 'transparent', color: activeFilter === 'expeditions' ? '#ffffff' : undefined, borderColor: activeFilter === 'expeditions' ? '#4676ac' : undefined }}
-          >
-            <Map className="w-3 h-3" />
-            EXPEDITIONS ({bookmarkedExpeditions.length})
-          </button>
-          <button
-            onClick={() => setActiveFilter('explorers')}
-            className="px-3 py-1.5 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] whitespace-nowrap flex items-center gap-1"
-            style={{ backgroundColor: activeFilter === 'explorers' ? '#4676ac' : 'transparent', color: activeFilter === 'explorers' ? '#ffffff' : undefined, borderColor: activeFilter === 'explorers' ? '#4676ac' : undefined }}
-          >
-            <User className="w-3 h-3" />
-            EXPLORERS ({bookmarkedExplorers.length})
-          </button>
+          {(['all', 'entries', 'expeditions', 'explorers'] as const).map((filter) => {
+            const isActive = activeFilter === filter;
+            const counts: Record<string, number> = {
+              all: totalCount,
+              entries: bookmarkedEntries.length,
+              expeditions: bookmarkedExpeditions.length,
+              explorers: bookmarkedExplorers.length,
+            };
+            return (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`px-3 py-1.5 border whitespace-nowrap transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
+                  isActive
+                    ? 'bg-[#4676ac] border-[#4676ac] text-white'
+                    : 'border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a]'
+                }`}
+              >
+                {filter.toUpperCase()} ({counts[filter]})
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -269,7 +256,7 @@ export function BookmarksPage() {
       {/* Bookmarked Entries */}
       {filteredEntries.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-sm font-bold mb-4 px-1 text-[#b5bcc4]">JOURNAL ENTRIES ({filteredEntries.length})</h2>
+          <h2 className="text-sm font-bold mb-4 px-1 text-[#b5bcc4]">ENTRIES ({filteredEntries.length})</h2>
           <div className="space-y-3">
             {filteredEntries.map((entry) => (
               <EntryCardLandscape
@@ -281,7 +268,7 @@ export function BookmarksPage() {
                 location={entry.place || 'Location not set'}
                 date={entry.createdAt || entry.date || ''}
                 excerpt={entry.content?.replace(/<[^>]*>/g, '').substring(0, 200) || ''}
-                type="Entry"
+                type=""
                 onClick={() => router.push(`/entry/${entry.id}`)}
                 onUnbookmark={() => handleUnbookmarkEntry(entry.id)}
               />

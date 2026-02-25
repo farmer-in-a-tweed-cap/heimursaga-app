@@ -1,4 +1,4 @@
-import { MapPin, FileText, Eye, User, Calendar, Bookmark, EyeOff, Lock } from "lucide-react";
+import { MapPin, FileText, User, Calendar, Bookmark, EyeOff, Lock } from "lucide-react";
 import { formatDateWithOptionalTime } from "@/app/utils/dateFormat";
 
 interface EntryCardLandscapeProps {
@@ -32,7 +32,7 @@ export function EntryCardLandscape({
   return (
     <div
       onClick={onClick}
-      className={`border-2 bg-white dark:bg-[#202020] cursor-pointer hover:border-[#4676ac] transition-all active:scale-[0.99] ${isCurrent ? 'border-[#ac6d46] ring-2 ring-[#ac6d46]/30' : 'border-[#202020] dark:border-[#616161]'}`}
+      className={`border-2 bg-white dark:bg-[#202020] cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.99] ${isCurrent ? 'border-[#ac6d46] ring-2 ring-[#ac6d46]/30' : 'border-[#202020] dark:border-[#616161]'}`}
     >
       {/* Header */}
       <div className={`flex items-center justify-between border-b-2 px-3 py-1.5 ${isCurrent ? 'bg-[#ac6d46] border-[#ac6d46]' : 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#202020] dark:border-[#616161]'}`}>
@@ -42,9 +42,11 @@ export function EntryCardLandscape({
             <span className={`text-xs font-mono font-semibold tracking-wide ${isCurrent ? 'text-white' : 'text-[#202020] dark:text-[#e5e5e5]'}`}>
               {isCurrent ? 'CURRENT LOCATION' : 'ENTRY'}
             </span>
-            <span className={`text-xs font-mono ${isCurrent ? 'text-white/70' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
-              {type}
-            </span>
+            {type && (
+              <span className={`text-xs font-mono ${isCurrent ? 'text-white/70' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                {type}
+              </span>
+            )}
             {visibility && visibility !== 'public' && (
               <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
                 visibility === 'off-grid' ? 'bg-[#6b5c4e] text-white'
@@ -67,52 +69,42 @@ export function EntryCardLandscape({
         <div className="flex-1 flex flex-col">
           {/* Title & Attribution */}
           <div className="border-b-2 border-[#202020] dark:border-[#616161] px-3 py-3 bg-white dark:bg-[#202020]">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-sm dark:text-[#e5e5e5] mb-2 line-clamp-2">{title}</h3>
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
-                  <div className="flex items-center gap-1.5">
-                    <User className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
-                    <span className="text-[#ac6d46]">{explorerUsername}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <FileText className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
-                    <span className="text-[#4676ac]">{expeditionName}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-[#616161] dark:text-[#b5bcc4]">
-                    <MapPin className="w-3 h-3" />
-                    <span>{location}</span>
-                  </div>
-                </div>
+            <h3 className="font-bold text-sm dark:text-[#e5e5e5] mb-2 line-clamp-2">{title}</h3>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
+              <div className="flex items-center gap-1.5">
+                <User className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
+                <span className="text-[#ac6d46]">{explorerUsername}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  className="flex-shrink-0 px-3 py-1.5 text-white text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none flex items-center gap-1.5 bg-[#ac6d46] hover:bg-[#8a5738] focus-visible:ring-[#ac6d46]"
-                >
-                  <Eye className="w-3 h-3" />
-                  VIEW ENTRY
-                </button>
-                {onUnbookmark && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onUnbookmark();
-                    }}
-                    className="flex-shrink-0 px-3 py-1.5 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center gap-1.5"
-                    title="Remove bookmark"
-                  >
-                    <Bookmark className="w-3 h-3" fill="currentColor" />
-                  </button>
-                )}
+              <div className="flex items-center gap-1.5">
+                <FileText className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
+                <span className="text-[#4676ac]">{expeditionName}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[#616161] dark:text-[#b5bcc4]">
+                <MapPin className="w-3 h-3" />
+                <span>{location}</span>
               </div>
             </div>
           </div>
 
           {/* Excerpt */}
           <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] px-3 py-2 flex-grow">
-            <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed line-clamp-2">
-              {excerpt}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed line-clamp-2 flex-1">
+                {excerpt}
+              </p>
+              {onUnbookmark && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUnbookmark();
+                  }}
+                  className="flex-shrink-0 ml-3 px-3 py-1.5 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
+                  title="Remove bookmark"
+                >
+                  <Bookmark className="w-3 h-3" fill="currentColor" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

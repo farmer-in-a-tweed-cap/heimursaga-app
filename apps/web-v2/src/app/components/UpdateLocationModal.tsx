@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { X, MapPin, Save, Globe, Users, Lock, AlertTriangle } from 'lucide-react';
+import { X, MapPin, Globe, Users, Lock, AlertTriangle } from 'lucide-react';
 import { CurrentLocationSelector } from './CurrentLocationSelector';
 
 type LocationVisibility = 'public' | 'sponsors' | 'private';
@@ -260,7 +260,6 @@ export function UpdateLocationModal({
                   disabled={!selectedId || isSaving}
                   className="px-6 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center gap-2"
                 >
-                  <Save className="w-4 h-4" />
                   {isSaving ? 'SAVING...' : 'SAVE LOCATION'}
                 </button>
               </div>

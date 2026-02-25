@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bookmark, Share2, Link as LinkIcon, Mail, X, Users, Loader2 } from 'lucide-react';
+import { Bookmark, Share2, Users, Loader2 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 
 interface InteractionButtonsProps {
@@ -159,7 +159,7 @@ export function InteractionButtons({
                   onClick={copyLink}
                   className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] dark:text-[#e5e5e5] flex items-center gap-2"
                 >
-                  <LinkIcon size={14} /> COPY LINK
+                  COPY LINK
                 </button>
                 <button
                   onClick={() => {
@@ -168,7 +168,7 @@ export function InteractionButtons({
                   }}
                   className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] dark:text-[#e5e5e5] flex items-center gap-2"
                 >
-                  <X size={14} /> SHARE ON X/TWITTER
+                  SHARE ON X/TWITTER
                 </button>
                 <button
                   onClick={() => {
@@ -177,7 +177,7 @@ export function InteractionButtons({
                   }}
                   className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] dark:text-[#e5e5e5] flex items-center gap-2"
                 >
-                  <Share2 size={14} /> SHARE ON FACEBOOK
+                  SHARE ON FACEBOOK
                 </button>
                 <button
                   onClick={() => {
@@ -186,13 +186,13 @@ export function InteractionButtons({
                   }}
                   className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] dark:text-[#e5e5e5] flex items-center gap-2"
                 >
-                  <Mail size={14} /> SHARE VIA EMAIL
+                  SHARE VIA EMAIL
                 </button>
                 <button
                   onClick={() => setShareMenuOpen(false)}
                   className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] text-[#616161] dark:text-[#b5bcc4] flex items-center gap-2"
                 >
-                  <X size={14} /> CANCEL
+                  CANCEL
                 </button>
               </div>
             </div>
