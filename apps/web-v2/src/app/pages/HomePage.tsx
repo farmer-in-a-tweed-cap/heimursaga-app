@@ -4,7 +4,9 @@ import { ExplorerMap } from "@/app/components/ExplorerMap";
 import { JournalGrid } from "@/app/components/JournalGrid";
 import { ExpeditionCard } from "@/app/components/ExpeditionCard";
 import { ExplorerCard } from "@/app/components/ExplorerCard";
-import { PlatformStats } from "@/app/components/PlatformStats";
+// PlatformStats absorbed into RegionReport (Page 1)
+// import { PlatformStats } from "@/app/components/PlatformStats";
+import { RegionReport } from "@/app/components/RegionReport";
 import { FollowedExplorerStrip } from "@/app/components/FollowedExplorerStrip";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
@@ -354,12 +356,8 @@ export function HomePage() {
       </div>
 
       <div className="max-w-[1600px] mx-auto px-6 py-12">
-        {/* Platform Statistics */}
-        <PlatformStats
-          explorerCount={explorerCount}
-          expeditionCount={expeditions.length}
-          entryCount={entries.length}
-        />
+        {/* Regional Field Report (replaces Platform Statistics) */}
+        <RegionReport />
 
         {/* View Mode Toggle */}
         <div className="mt-6 grid grid-cols-2 gap-0 border-2 border-[#202020] dark:border-[#616161] overflow-hidden">

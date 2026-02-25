@@ -19,10 +19,10 @@ const DistanceUnitContext = createContext<DistanceUnitContextType | undefined>(u
 
 export function DistanceUnitProvider({ children }: { children: ReactNode }) {
   const [unit, setUnitState] = useState<DistanceUnit>(() => {
-    if (typeof window === 'undefined') return 'km';
+    if (typeof window === 'undefined') return 'mi';
     const saved = localStorage.getItem('heimursaga-distance-unit');
     if (saved === 'km' || saved === 'mi') return saved;
-    return 'km';
+    return 'mi';
   });
 
   useEffect(() => {

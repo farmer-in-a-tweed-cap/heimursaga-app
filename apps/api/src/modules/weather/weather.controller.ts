@@ -1,4 +1,11 @@
-import { Controller, Get, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Query,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { Public } from '@/common/decorators';
@@ -22,5 +29,15 @@ export class WeatherController {
   @HttpCode(HttpStatus.OK)
   async getStats() {
     return await this.weatherService.getStats();
+  }
+
+  @Get('region')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async getRegionReport(@Query('q') query: string) {
+    if (!query || !query.trim()) {
+      throw new BadRequestException('Query parameter "q" is required');
+    }
+    return await this.weatherService.getRegionReport(query.trim());
   }
 }

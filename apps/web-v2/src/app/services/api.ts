@@ -2075,11 +2075,70 @@ export interface ActivityPulseResponse {
   cachedAt: string;
 }
 
+export interface RegionReportResponse {
+  location: {
+    name: string;
+    region: string;
+    country: string;
+    lat: number;
+    lon: number;
+    localTime: string;
+    timezone: string;
+  };
+  elevation: number;
+  current: {
+    tempC: number;
+    tempF: number;
+    feelsLikeC: number;
+    feelsLikeF: number;
+    condition: string;
+    conditionIcon: string;
+    windKph: number;
+    windMph: number;
+    windDir: string;
+    gustKph: number;
+    gustMph: number;
+    humidity: number;
+    uvIndex: number;
+    visibilityKm: number;
+    pressureMb: number;
+    precipMm: number;
+    cloudCover: number;
+  };
+  astronomy: {
+    sunrise: string;
+    sunset: string;
+    moonPhase: string;
+    moonIllumination: number;
+  };
+  forecast: {
+    maxTempC: number;
+    maxTempF: number;
+    minTempC: number;
+    minTempF: number;
+    chanceOfRain: number;
+    chanceOfSnow: number;
+    totalPrecipMm: number;
+  };
+  climate: { zone: string; description: string };
+  nearbyParks: Array<{ name: string; type: string; distanceKm: number }>;
+  nearbyPeaks: Array<{ name: string; elevationM: number; distanceKm: number }>;
+  nearbyExpeditions: Array<{
+    id: string;
+    title: string;
+    explorerUsername: string;
+    distanceKm: number;
+  }>;
+  cachedAt: string;
+}
+
 export const weatherApi = {
   getConditions: () =>
     api.get<ConditionsResponse>('/weather/conditions'),
   getStats: () =>
     api.get<ActivityPulseResponse>('/weather/stats'),
+  getRegionReport: (query: string) =>
+    api.get<RegionReportResponse>(`/weather/region?q=${encodeURIComponent(query)}`),
 };
 
 export default api;
