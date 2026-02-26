@@ -1,6 +1,7 @@
 'use client';
 
 import { X, CheckCircle2, Calendar, AlertTriangle, Edit, XCircle } from 'lucide-react';
+import { DatePicker } from '@/app/components/DatePicker';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/app/utils/dateFormat';
@@ -318,13 +319,12 @@ export function ExpeditionManagementModal({
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                       ACTUAL END DATE <span className="text-[#ac6d46]">*REQUIRED</span>
                     </label>
-                    <input
-                      type="date"
+                    <DatePicker
                       value={actualEndDate}
-                      onChange={(e) => setActualEndDate(e.target.value)}
+                      onChange={setActualEndDate}
                       max={new Date().toISOString().split('T')[0]}
                       min={expedition.startDate}
-                      className="w-full px-3 py-2 border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#2a2a2a] text-[#202020] dark:text-[#e5e5e5] text-xs font-mono"
+                      className="w-full px-3 py-2 border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#2a2a2a] text-[#202020] dark:text-[#e5e5e5] text-xs"
                     />
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
                       When did you complete this expedition? Must be between start date and today.

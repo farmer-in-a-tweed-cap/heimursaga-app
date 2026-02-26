@@ -692,6 +692,11 @@ export class ExpeditionService {
                     lon: true,
                     date: true,
                     description: true,
+                    entries: {
+                      where: { deleted_at: null },
+                      take: 1,
+                      select: { public_id: true },
+                    },
                   },
                 },
               },
@@ -967,7 +972,7 @@ export class ExpeditionService {
         waypoints: waypoints.map(
           ({
             sequence,
-            waypoint: { id, lat, lon, title, date, description },
+            waypoint: { id, lat, lon, title, date, description, entries },
           }) => ({
             id,
             lat,
@@ -976,6 +981,7 @@ export class ExpeditionService {
             date,
             description,
             sequence,
+            entryId: entries?.[0]?.public_id || null,
           }),
         ),
         sponsors: allSponsorships.map((s) => ({

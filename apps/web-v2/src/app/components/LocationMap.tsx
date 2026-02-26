@@ -25,13 +25,49 @@ interface LocationMapProps {
   onLocationSelect: (lat: number, lng: number) => void;
   onClose: () => void;
   // Optional expedition context
-  expeditionWaypoints?: Array<{ lat: number; lng: number; title: string; type?: 'start' | 'end' | 'standard' }>;
-  expeditionEntries?: Array<{ lat: number; lng: number; title: string }>;
+  expeditionWaypoints?: Array<{ id?: string; lat: number; lng: number; title: string; type?: 'start' | 'end' | 'standard' }>;
+  expeditionEntries?: Array<{ id?: string; lat: number; lng: number; title: string }>;
   expeditionRouteGeometry?: number[][];
   isRoundTrip?: boolean;
+  // Completed route overlay
+  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationId?: string;
+  // Fires when marker is placed/moved — true if on completed segment
+  onCompletedSegmentDrop?: (isOnCompletedSegment: boolean) => void;
 }
 
-export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose, expeditionWaypoints, expeditionEntries, expeditionRouteGeometry, isRoundTrip }: LocationMapProps) {
+function createEntryMarkerElement(): HTMLDivElement {
+  const el = document.createElement('div');
+  el.style.cssText = 'width:20px;height:20px;border-radius:50%;background:#ac6d46;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);cursor:grab;';
+  return el;
+}
+
+/** Find the closest segment on a route and insert a point at that position */
+function insertPointIntoRoute(routeCoords: number[][], point: [number, number]): number[][] {
+  if (routeCoords.length < 2) return routeCoords;
+
+  let bestSegIdx = 0;
+  let bestDist = Infinity;
+
+  for (let i = 0; i < routeCoords.length - 1; i++) {
+    const [ax, ay] = routeCoords[i];
+    const [bx, by] = routeCoords[i + 1];
+    // Project point onto segment and compute distance
+    const dx = bx - ax, dy = by - ay;
+    const lenSq = dx * dx + dy * dy;
+    let t = lenSq === 0 ? 0 : ((point[0] - ax) * dx + (point[1] - ay) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const px = ax + t * dx, py = ay + t * dy;
+    const d = Math.pow(point[0] - px, 2) + Math.pow(point[1] - py, 2);
+    if (d < bestDist) { bestDist = d; bestSegIdx = i; }
+  }
+
+  const result = [...routeCoords];
+  result.splice(bestSegIdx + 1, 0, point);
+  return result;
+}
+
+export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose, expeditionWaypoints, expeditionEntries, expeditionRouteGeometry, isRoundTrip, currentLocationSource, currentLocationId, onCompletedSegmentDrop }: LocationMapProps) {
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(
     initialLat && initialLng ? { lat: initialLat, lng: initialLng } : null
   );
@@ -44,6 +80,22 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
   const expeditionMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const originalRouteCoordsRef = useRef<number[][]>([]);
+  const completedEndIdxRef = useRef<number>(-1);
+  // Keep latest prop values accessible inside map-event closures without
+  // re-initialising the map when expedition data arrives asynchronously.
+  const expeditionWaypointsRef = useRef(expeditionWaypoints);
+  const expeditionEntriesRef = useRef(expeditionEntries);
+  const expeditionRouteGeometryRef = useRef(expeditionRouteGeometry);
+  const isRoundTripRef = useRef(isRoundTrip);
+  const currentLocationSourceRef = useRef(currentLocationSource);
+  const currentLocationIdRef = useRef(currentLocationId);
+  useEffect(() => { expeditionWaypointsRef.current = expeditionWaypoints; }, [expeditionWaypoints]);
+  useEffect(() => { expeditionEntriesRef.current = expeditionEntries; }, [expeditionEntries]);
+  useEffect(() => { expeditionRouteGeometryRef.current = expeditionRouteGeometry; }, [expeditionRouteGeometry]);
+  useEffect(() => { isRoundTripRef.current = isRoundTrip; }, [isRoundTrip]);
+  useEffect(() => { currentLocationSourceRef.current = currentLocationSource; }, [currentLocationSource]);
+  useEffect(() => { currentLocationIdRef.current = currentLocationId; }, [currentLocationId]);
   const { theme } = useTheme();
   const { mapLayer } = useMapLayer();
 
@@ -52,6 +104,113 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     const timer = setTimeout(() => setMapReady(true), 50);
     return () => clearTimeout(timer);
   }, []);
+
+  // ---------------------------------------------------------------------------
+  // Compute and render the completed-route overlay.
+  // This is called both from the map 'load' event and from a dedicated effect
+  // that fires when expedition data changes after the map is already loaded.
+  // Using a ref-based helper avoids stale closure issues.
+  // ---------------------------------------------------------------------------
+  const applyCompletedOverlay = (map: mapboxgl.Map, routeCoords: number[][]) => {
+    const wps = expeditionWaypointsRef.current;
+    const ents = expeditionEntriesRef.current;
+    const src = currentLocationSourceRef.current;
+    const locId = currentLocationIdRef.current;
+
+    let currentLocCoords: { lng: number; lat: number } | null = null;
+    if (src === 'waypoint' && locId) {
+      const wp = wps?.find(w => String(w.id) === String(locId));
+      if (wp) currentLocCoords = { lng: wp.lng, lat: wp.lat };
+    } else if (src === 'entry' && locId) {
+      const entry = ents?.find(e => String(e.id) === String(locId));
+      if (entry && (entry.lat !== 0 || entry.lng !== 0)) {
+        currentLocCoords = { lng: entry.lng, lat: entry.lat };
+      }
+    }
+
+    // Fallback: if no explicit current location, use the entry farthest along the route
+    if (!currentLocCoords && ents && ents.length > 0) {
+      let farthestIdx = -1;
+      for (const e of ents) {
+        if (e.lat === 0 && e.lng === 0) continue;
+        let closestPtIdx = 0;
+        let closestPtDist = Infinity;
+        for (let i = 0; i < routeCoords.length; i++) {
+          const [lng, lat] = routeCoords[i];
+          const d = Math.pow(lng - e.lng, 2) + Math.pow(lat - e.lat, 2);
+          if (d < closestPtDist) { closestPtDist = d; closestPtIdx = i; }
+        }
+        if (closestPtIdx > farthestIdx) farthestIdx = closestPtIdx;
+      }
+      if (farthestIdx > 0) {
+        const fe = ents.find(e => {
+          if (e.lat === 0 && e.lng === 0) return false;
+          let cIdx = 0, cDist = Infinity;
+          for (let i = 0; i < routeCoords.length; i++) {
+            const [lng, lat] = routeCoords[i];
+            const d = Math.pow(lng - e.lng, 2) + Math.pow(lat - e.lat, 2);
+            if (d < cDist) { cDist = d; cIdx = i; }
+          }
+          return cIdx === farthestIdx;
+        });
+        if (fe) currentLocCoords = { lng: fe.lng, lat: fe.lat };
+      }
+    }
+
+    if (!currentLocCoords) {
+      completedEndIdxRef.current = -1;
+      return;
+    }
+
+    let closestIdx = 0;
+    let closestDist = Infinity;
+    for (let i = 0; i < routeCoords.length; i++) {
+      const [lng, lat] = routeCoords[i];
+      const d = Math.pow(lng - currentLocCoords.lng, 2) + Math.pow(lat - currentLocCoords.lat, 2);
+      if (d < closestDist) { closestDist = d; closestIdx = i; }
+    }
+    completedEndIdxRef.current = closestIdx;
+    const completedCoords = routeCoords.slice(0, closestIdx + 1);
+    if (completedCoords.length < 2) return;
+
+    // Remove any existing completed-route layers/sources before re-adding
+    if (map.getLayer('completed-route')) map.removeLayer('completed-route');
+    if (map.getLayer('completed-route-casing')) map.removeLayer('completed-route-casing');
+    if (map.getSource('completed-route')) map.removeSource('completed-route');
+
+    map.addSource('completed-route', {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'LineString', coordinates: completedCoords },
+      },
+    });
+    map.addLayer({
+      id: 'completed-route-casing',
+      type: 'line',
+      source: 'completed-route',
+      paint: { 'line-color': getLineCasingColor(mapLayer, theme), 'line-width': 8, 'line-opacity': 0.3 },
+    });
+    map.addLayer({
+      id: 'completed-route',
+      type: 'line',
+      source: 'completed-route',
+      paint: { 'line-color': '#ac6d46', 'line-width': 4, 'line-opacity': 0.9 },
+    });
+  };
+
+  // Re-apply the completed overlay whenever expedition current-location data
+  // changes (handles the common case where the map loads before the async
+  // expedition API response arrives).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    const routeCoords = originalRouteCoordsRef.current;
+    if (routeCoords.length < 2) return;
+    applyCompletedOverlay(map, routeCoords);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLocationSource, currentLocationId, expeditionWaypoints, expeditionEntries]);
 
   useEffect(() => {
     if (!mapReady || !mapContainerRef.current || mapRef.current) return;
@@ -70,35 +229,38 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     map.on('load', () => {
       map.resize();
 
+      // Read expedition data from refs so that asynchronously-loaded expedition
+      // data (which arrives after this closure was created) is used correctly.
+      const wps = expeditionWaypointsRef.current;
+      const ents = expeditionEntriesRef.current;
+      const routeGeom = expeditionRouteGeometryRef.current;
+      const roundTrip = isRoundTripRef.current;
+
       // Render expedition context if provided
-      const hasExpeditionContext = (expeditionWaypoints && expeditionWaypoints.length > 0) ||
-        (expeditionEntries && expeditionEntries.length > 0);
+      const hasExpeditionContext = (wps && wps.length > 0) || (ents && ents.length > 0);
 
       if (hasExpeditionContext) {
-        // Build route coordinates: use provided geometry, or build from waypoints+entries
+        // Build route coordinates: use provided geometry, or build from waypoints only
         let routeCoords: number[][] = [];
-        if (expeditionRouteGeometry && expeditionRouteGeometry.length > 0) {
-          routeCoords = expeditionRouteGeometry;
+        if (routeGeom && routeGeom.length > 0) {
+          routeCoords = routeGeom;
         } else {
-          // Merge waypoints and entries chronologically (waypoints first, then entries)
           const allPoints: number[][] = [];
-          expeditionWaypoints?.forEach(wp => {
+          wps?.forEach(wp => {
             if (wp.lat !== 0 || wp.lng !== 0) allPoints.push([wp.lng, wp.lat]);
-          });
-          expeditionEntries?.forEach(e => {
-            if (e.lat !== 0 || e.lng !== 0) allPoints.push([e.lng, e.lat]);
           });
           routeCoords = allPoints;
         }
 
         // Close route for round trips (directions geometry already includes return)
-        if (!expeditionRouteGeometry?.length && isRoundTrip && routeCoords.length > 0) {
+        if (!routeGeom?.length && roundTrip && routeCoords.length > 0) {
           routeCoords = [...routeCoords, routeCoords[0]];
         }
 
         // Draw route line
         if (routeCoords.length >= 2) {
-          const hasDirections = expeditionRouteGeometry && expeditionRouteGeometry.length > 0;
+          originalRouteCoordsRef.current = routeCoords;
+          const hasDirections = routeGeom && routeGeom.length > 0;
           map.addSource('expedition-route', {
             type: 'geojson',
             data: {
@@ -113,7 +275,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
             source: 'expedition-route',
             paint: {
               'line-color': getLineCasingColor(mapLayer, theme),
-              'line-width': hasDirections ? 6 : 5,
+              'line-width': hasDirections ? 8 : 7,
               'line-opacity': 0.3,
             },
           });
@@ -123,34 +285,22 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
             source: 'expedition-route',
             paint: {
               'line-color': theme === 'dark' ? '#4676ac' : '#202020',
-              'line-width': hasDirections ? 3 : 2,
-              'line-opacity': 0.5,
+              'line-width': hasDirections ? 4 : 3,
+              'line-opacity': 0.8,
               ...(hasDirections ? {} : { 'line-dasharray': [2, 2] }),
             },
           });
+
+          // Completed route overlay — reads from refs so it works even when
+          // expedition data arrives after the map 'load' event fires.
+          applyCompletedOverlay(map, routeCoords);
         }
 
-        // Add waypoint markers
-        expeditionWaypoints?.forEach((wp, idx) => {
-          if (wp.lat === 0 && wp.lng === 0) return;
-          const el = document.createElement('div');
-          const isStart = wp.type === 'start';
-          const isEnd = wp.type === 'end';
-          const bgColor = isStart ? '#ac6d46' : isEnd ? '#4676ac' : '#616161';
-          el.style.cssText = `width:20px;height:20px;border-radius:50%;background:${bgColor};color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.3);`;
-          el.textContent = String(idx + 1);
-          el.title = wp.title;
-          const marker = new mapboxgl.Marker({ element: el })
-            .setLngLat([wp.lng, wp.lat])
-            .addTo(map);
-          expeditionMarkersRef.current.push(marker);
-        });
-
-        // Add entry markers
-        expeditionEntries?.forEach(e => {
+        // Add entry markers first (so waypoint diamonds render on top)
+        ents?.forEach(e => {
           if (e.lat === 0 && e.lng === 0) return;
           const el = document.createElement('div');
-          el.style.cssText = 'width:12px;height:12px;border-radius:50%;background:#ac6d46;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.3);';
+          el.style.cssText = 'width:16px;height:16px;border-radius:50%;background:#ac6d46;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.3);';
           el.title = e.title;
           const marker = new mapboxgl.Marker({ element: el })
             .setLngLat([e.lng, e.lat])
@@ -158,12 +308,42 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
           expeditionMarkersRef.current.push(marker);
         });
 
+        // Add waypoint markers on top (diamond shape, matching ExpeditionDetailPage)
+        wps?.forEach((wp, idx) => {
+          if (wp.lat === 0 && wp.lng === 0) return;
+          const isStart = wp.type === 'start';
+          const isEnd = wp.type === 'end';
+          const isStartEnd = isStart || isEnd;
+          const isStartAndRoundTrip = isStart && roundTrip;
+
+          const wrapper = document.createElement('div');
+          wrapper.title = wp.title;
+
+          const diamond = document.createElement('div');
+          const size = isStartEnd ? '26px' : '22px';
+          const bgColor = isStartAndRoundTrip ? '#ac6d46' : isStart ? '#ac6d46' : isEnd ? '#4676ac' : '#616161';
+          const borderStyle = isStartAndRoundTrip ? '3px solid #4676ac' : isStartEnd ? '3px solid white' : '2px solid white';
+          diamond.style.cssText = `width:${size};height:${size};display:flex;align-items:center;justify-content:center;transform:rotate(45deg);background:${bgColor};border:${borderStyle};box-shadow:0 1px 4px rgba(0,0,0,0.3);`;
+
+          const label = document.createElement('span');
+          label.style.cssText = `transform:rotate(-45deg);color:white;font-weight:bold;line-height:1;font-size:${isStartEnd ? '14px' : '12px'};`;
+          label.textContent = isStart ? 'S' : isEnd ? 'E' : String(idx + 1);
+
+          diamond.appendChild(label);
+          wrapper.appendChild(diamond);
+
+          const marker = new mapboxgl.Marker({ element: wrapper })
+            .setLngLat([wp.lng, wp.lat])
+            .addTo(map);
+          expeditionMarkersRef.current.push(marker);
+        });
+
         // Fit bounds to include all expedition points + selected location
         const bounds = new mapboxgl.LngLatBounds();
-        expeditionWaypoints?.forEach(wp => {
+        wps?.forEach(wp => {
           if (wp.lat !== 0 || wp.lng !== 0) bounds.extend([wp.lng, wp.lat]);
         });
-        expeditionEntries?.forEach(e => {
+        ents?.forEach(e => {
           if (e.lat !== 0 || e.lng !== 0) bounds.extend([e.lng, e.lat]);
         });
         if (initialLat && initialLng) {
@@ -196,6 +376,52 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     });
     map.addControl(geocoder as any, 'top-left');
 
+    // Check if a point falls on the completed segment and notify parent + show toast.
+    // Uses segment-based (point-to-line) distance, not vertex distance, so a marker
+    // near the middle of a long segment is correctly detected.
+    const checkCompletedSegment = (markerLng: number, markerLat: number) => {
+      if (completedEndIdxRef.current < 0) return;
+      const original = originalRouteCoordsRef.current;
+      if (original.length < 2) return;
+
+      // Find the closest route SEGMENT (edge between consecutive vertices)
+      let closestSegIdx = 0;
+      let closestDist = Infinity;
+      for (let i = 0; i < original.length - 1; i++) {
+        const [ax, ay] = original[i];
+        const [bx, by] = original[i + 1];
+        const dx = bx - ax, dy = by - ay;
+        const lenSq = dx * dx + dy * dy;
+        let t = lenSq === 0 ? 0 : ((markerLng - ax) * dx + (markerLat - ay) * dy) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+        const px = ax + t * dx, py = ay + t * dy;
+        const d = Math.pow(markerLng - px, 2) + Math.pow(markerLat - py, 2);
+        if (d < closestDist) { closestDist = d; closestSegIdx = i; }
+      }
+
+      // Segment (i, i+1) is completed if i+1 <= completedEndIdx
+      const isOnCompleted = closestSegIdx + 1 <= completedEndIdxRef.current;
+      onCompletedSegmentDrop?.(isOnCompleted);
+      if (isOnCompleted) {
+        toast.warning('This location is on the completed route — make sure the entry date is today or earlier.', { duration: 5000 });
+      }
+    };
+
+    // Update route display to include a placed entry marker
+    const updateRouteForMarker = (markerLng: number, markerLat: number) => {
+      const original = originalRouteCoordsRef.current;
+      if (original.length < 2) return;
+      const source = map.getSource('expedition-route') as mapboxgl.GeoJSONSource | undefined;
+      if (!source) return;
+      const updated = insertPointIntoRoute(original, [markerLng, markerLat]);
+      source.setData({
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'LineString', coordinates: updated },
+      });
+      checkCompletedSegment(markerLng, markerLat);
+    };
+
     // Handle geocoder result
     geocoder.on('result', (e: any) => {
       const { center } = e.result;
@@ -208,24 +434,17 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         markerRef.current.remove();
       }
 
-      // Create custom marker element
-      const el = document.createElement('div');
-      el.className = 'custom-marker';
-      el.innerHTML = `
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="#ac6d46" stroke="#ac6d46" stroke-width="2">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-          <circle cx="12" cy="10" r="3" fill="white"></circle>
-        </svg>
-      `;
-      el.style.cursor = 'pointer';
-      el.style.filter = 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))';
-
-      // Add marker
-      const marker = new mapboxgl.Marker(el)
+      const marker = new mapboxgl.Marker({ element: createEntryMarkerElement(), draggable: true })
         .setLngLat([lng, lat])
         .addTo(map);
-
+      marker.on('dragend', () => {
+        const lngLat = marker.getLngLat();
+        setPosition({ lat: lngLat.lat, lng: lngLat.lng });
+        onLocationSelect(lngLat.lat, lngLat.lng);
+        updateRouteForMarker(lngLat.lng, lngLat.lat);
+      });
       markerRef.current = marker;
+      updateRouteForMarker(lng, lat);
     });
 
     // Add geolocate control (only if geolocation is available)
@@ -285,43 +504,30 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         markerRef.current.remove();
       }
 
-      // Create custom marker element
-      const el = document.createElement('div');
-      el.className = 'custom-marker';
-      el.innerHTML = `
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="#ac6d46" stroke="#ac6d46" stroke-width="2">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-          <circle cx="12" cy="10" r="3" fill="white"></circle>
-        </svg>
-      `;
-      el.style.cursor = 'pointer';
-      el.style.filter = 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))';
-
-      // Add marker
-      const marker = new mapboxgl.Marker(el)
+      const marker = new mapboxgl.Marker({ element: createEntryMarkerElement(), draggable: true })
         .setLngLat([lng, lat])
         .addTo(map);
-
+      marker.on('dragend', () => {
+        const lngLat = marker.getLngLat();
+        setPosition({ lat: lngLat.lat, lng: lngLat.lng });
+        onLocationSelect(lngLat.lat, lngLat.lng);
+        updateRouteForMarker(lngLat.lng, lngLat.lat);
+      });
       markerRef.current = marker;
+      updateRouteForMarker(lng, lat);
     });
 
     // Add initial marker if position exists
     if (initialLat && initialLng) {
-      const el = document.createElement('div');
-      el.className = 'custom-marker';
-      el.innerHTML = `
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="#ac6d46" stroke="#ac6d46" stroke-width="2">
-          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-          <circle cx="12" cy="10" r="3" fill="white"></circle>
-        </svg>
-      `;
-      el.style.cursor = 'pointer';
-      el.style.filter = 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))';
-
-      const marker = new mapboxgl.Marker(el)
+      const marker = new mapboxgl.Marker({ element: createEntryMarkerElement(), draggable: true })
         .setLngLat([initialLng, initialLat])
         .addTo(map);
-
+      marker.on('dragend', () => {
+        const lngLat = marker.getLngLat();
+        setPosition({ lat: lngLat.lat, lng: lngLat.lng });
+        onLocationSelect(lngLat.lat, lngLat.lng);
+        updateRouteForMarker(lngLat.lng, lngLat.lat);
+      });
       markerRef.current = marker;
     }
 
@@ -340,6 +546,41 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady, theme, mapLayer]);
+
+  // Update route source from outside the map effect (e.g. getCurrentLocation button)
+  const updateRouteSource = (markerLng: number, markerLat: number) => {
+    const original = originalRouteCoordsRef.current;
+    if (original.length < 2 || !mapRef.current) return;
+    const source = mapRef.current.getSource('expedition-route') as mapboxgl.GeoJSONSource | undefined;
+    if (!source) return;
+    const updated = insertPointIntoRoute(original, [markerLng, markerLat]);
+    source.setData({
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'LineString', coordinates: updated },
+    });
+    // Check completed segment (segment-based distance)
+    if (completedEndIdxRef.current >= 0) {
+      let closestSegIdx = 0;
+      let closestDist = Infinity;
+      for (let i = 0; i < original.length - 1; i++) {
+        const [ax, ay] = original[i];
+        const [bx, by] = original[i + 1];
+        const dx = bx - ax, dy = by - ay;
+        const lenSq = dx * dx + dy * dy;
+        let t = lenSq === 0 ? 0 : ((markerLng - ax) * dx + (markerLat - ay) * dy) / lenSq;
+        t = Math.max(0, Math.min(1, t));
+        const px = ax + t * dx, py = ay + t * dy;
+        const d = Math.pow(markerLng - px, 2) + Math.pow(markerLat - py, 2);
+        if (d < closestDist) { closestDist = d; closestSegIdx = i; }
+      }
+      const isOnCompleted = closestSegIdx + 1 <= completedEndIdxRef.current;
+      onCompletedSegmentDrop?.(isOnCompleted);
+      if (isOnCompleted) {
+        toast.warning('This location is on the completed route — make sure the entry date is today or earlier.', { duration: 5000 });
+      }
+    }
+  };
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -369,25 +610,19 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
             markerRef.current.remove();
           }
 
-          // Add new marker
-          const el = document.createElement('div');
-          el.className = 'custom-marker';
-          el.innerHTML = `
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="#ac6d46" stroke="#ac6d46" stroke-width="2">
-              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-              <circle cx="12" cy="10" r="3" fill="white"></circle>
-            </svg>
-          `;
-          el.style.cursor = 'pointer';
-          el.style.filter = 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3))';
-
-          const marker = new mapboxgl.Marker(el)
+          const marker = new mapboxgl.Marker({ element: createEntryMarkerElement(), draggable: true })
             .setLngLat([lng, lat])
             .addTo(mapRef.current);
-
+          marker.on('dragend', () => {
+            const lngLat = marker.getLngLat();
+            setPosition({ lat: lngLat.lat, lng: lngLat.lng });
+            onLocationSelect(lngLat.lat, lngLat.lng);
+            updateRouteSource(lngLat.lng, lngLat.lat);
+          });
           markerRef.current = marker;
+          updateRouteSource(lng, lat);
         }
-        
+
         setGettingLocation(false);
       },
       (error) => {
@@ -488,8 +723,8 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1">
               <div>• Search for a location above</div>
               <div>• Click anywhere to drop a marker</div>
+              <div>• Drag the marker to reposition</div>
               <div>• Scroll to zoom in/out</div>
-              <div>• Drag to pan the map</div>
               <div>• Use location button (top-right) for GPS</div>
             </div>
           </div>

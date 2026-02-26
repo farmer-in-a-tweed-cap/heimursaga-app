@@ -139,16 +139,20 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
         title: 'Stripe Account Verified',
         message: apiNotif.body || 'You can now receive sponsorships!'
       };
-    case 'expedition_cancelled':
+    case 'expedition_cancelled': {
+      const cancelledName = apiNotif.body?.match(/"([^"]+)"/)?.[1];
       return {
-        title: 'Expedition Cancelled',
-        message: apiNotif.body || ''
+        title: cancelledName ? `"${cancelledName}" cancelled` : 'Expedition Cancelled',
+        message: ''
       };
-    case 'expedition_date_changed':
+    }
+    case 'expedition_date_changed': {
+      const changedName = apiNotif.body?.match(/"([^"]+)"/)?.[1];
       return {
-        title: 'Expedition Date Changed',
-        message: apiNotif.body || ''
+        title: changedName ? `"${changedName}" dates changed` : 'Expedition Date Changed',
+        message: ''
       };
+    }
     case 'system':
       return {
         title: 'System',

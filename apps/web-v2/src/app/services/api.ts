@@ -657,6 +657,7 @@ export interface ExpeditionWaypoint {
   lon?: number;
   date?: string;
   sequence?: number;
+  entryId?: string | null;
   entry?: {
     id: string;
     title: string;
@@ -900,6 +901,27 @@ export const expeditionApi = {
     api.delete<void>(`/trips/${expeditionId}/notes/${noteId}`),
 };
 
+// Entry metadata types
+export interface StandardMetadata {
+  weather?: string;
+  distanceTraveled?: number;
+  mood?: string;
+  expenses?: number;
+}
+
+export interface DataLogMetadata {
+  temperature?: number;
+  humidity?: number;
+  windSpeed?: number;
+  pressure?: number;
+  distanceCovered?: number;
+  elevationGain?: number;
+  duration?: number;
+  avgSpeed?: number;
+}
+
+export type EntryMetadata = StandardMetadata | DataLogMetadata;
+
 // Entry types matching API response from getById
 export interface Entry {
   id: string; // publicId
@@ -971,6 +993,7 @@ export interface Entry {
   coverImage?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';
+  metadata?: EntryMetadata;
   // Entry number within expedition (calculated on the fly)
   entryNumber?: number;
   // Day of the expedition when this entry was written
@@ -999,6 +1022,7 @@ export interface EntryCreatePayload {
   coverUploadId?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';
+  metadata?: EntryMetadata;
 }
 
 // Entry API endpoints

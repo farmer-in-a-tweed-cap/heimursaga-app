@@ -5,7 +5,7 @@ import mapboxgl from 'mapbox-gl';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
-import { MapPin, User, X, Maximize2, Minimize2, Bookmark, UserPlus, UserCheck, BookmarkCheck, Loader2 } from 'lucide-react';
+import { MapPin, User, X, Maximize2, Minimize2, Bookmark, UserPlus, UserCheck, BookmarkCheck, Loader2, ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle } from '@/app/context/MapLayerContext';
@@ -13,6 +13,8 @@ import { useAuth } from '@/app/context/AuthContext';
 import { entryApi, explorerApi } from '@/app/services/api';
 import { getExplorerStatus } from '@/app/components/ExplorerStatusBadge';
 import { formatDate } from '@/app/utils/dateFormat';
+import { renderClusteredMarkers, type EntryCluster, type ClusteredMarkersResult } from '@/app/utils/mapClustering';
+import { ClusterTimelinePopup } from '@/app/components/ClusterTimelinePopup';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -101,6 +103,8 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
   const [mapMode, setMapMode] = useState<MapMode>('entry');
   const [clickedExplorer, setClickedExplorer] = useState<MapExplorer | null>(null);
   const [clickedEntry, setClickedEntry] = useState<MapEntry | null>(null);
+  const [clickedCluster, setClickedCluster] = useState<EntryCluster<MapEntry> | null>(null);
+  const [sourceCluster, setSourceCluster] = useState<EntryCluster<MapEntry> | null>(null);
   const [popupPosition, setPopupPosition] = useState<'bottom-left' | 'bottom-right'>('bottom-right');
   const [visibleExplorers, setVisibleExplorers] = useState<MapExplorer[]>([]);
   const [visibleEntries, setVisibleEntries] = useState<MapEntry[]>([]);
@@ -117,6 +121,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
   const geocoderRef = useRef<MapboxGeocoder | null>(null);
   const navControlRef = useRef<mapboxgl.NavigationControl | null>(null);
   const highlightMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const clusteredRef = useRef<ClusteredMarkersResult | null>(null);
   const { theme } = useTheme();
   const { mapLayer } = useMapLayer();
   const { isAuthenticated } = useAuth();
@@ -351,12 +356,15 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     if (!mapRef.current || loading) return;
 
     // Clear existing markers
+    clusteredRef.current?.cleanup();
+    clusteredRef.current = null;
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
     // Close any open popups
     setClickedExplorer(null);
     setClickedEntry(null);
+    setClickedCluster(null);
 
     // Track event listeners for cleanup
     const eventListeners: Array<{ element: HTMLElement; handler: (e: MouseEvent) => void }> = [];
@@ -483,83 +491,36 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
       map.on('mouseenter', 'explorer-unclustered', () => { map.getCanvas().style.cursor = 'pointer'; });
       map.on('mouseleave', 'explorer-unclustered', () => { map.getCanvas().style.cursor = ''; });
     } else {
-      // Add entry markers
-      allEntries.forEach((entry) => {
-        const el = document.createElement('div');
-        el.className = 'entry-marker';
-        el.style.width = '40px';
-        el.style.height = '40px';
-        el.style.cursor = 'pointer';
-
-        const pin = document.createElement('div');
-        pin.style.width = '28px';
-        pin.style.height = '28px';
-        pin.style.borderRadius = '50% 50% 50% 0';
-        pin.style.backgroundColor = '#ac6d46';
-        pin.style.border = '3px solid white';
-        pin.style.position = 'absolute';
-        pin.style.top = '50%';
-        pin.style.left = '50%';
-        pin.style.transform = 'translate(-50%, -70%) rotate(-45deg)';
-        pin.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-        pin.style.display = 'flex';
-        pin.style.alignItems = 'center';
-        pin.style.justifyContent = 'center';
-
-        const dot = document.createElement('div');
-        dot.style.width = '10px';
-        dot.style.height = '10px';
-        dot.style.borderRadius = '50%';
-        dot.style.backgroundColor = 'white';
-        dot.style.transform = 'rotate(45deg)';
-        pin.appendChild(dot);
-
-        el.appendChild(pin);
-
-        const marker = new mapboxgl.Marker(el)
-          .setLngLat([entry.coords.lng, entry.coords.lat])
-          .addTo(mapRef.current!);
-
-        const clickHandler = (e: MouseEvent) => {
-          e.stopPropagation();
-
-          markersRef.current.forEach(m => {
-            const markerEl = m.getElement();
-            if (markerEl && (markerEl as any).removeHighlight) {
-              (markerEl as any).removeHighlight();
-            }
-          });
-
-          if (mapContainerRef.current) {
-            const mapRect = mapContainerRef.current.getBoundingClientRect();
-            const markerRect = el.getBoundingClientRect();
-            const markerCenterX = markerRect.left + markerRect.width / 2 - mapRect.left;
-            setPopupPosition(markerCenterX > mapRect.width / 2 ? 'bottom-left' : 'bottom-right');
-          }
-
+      // Add clustered entry markers
+      const result = renderClusteredMarkers<MapEntry>({
+        entries: allEntries,
+        map: mapRef.current,
+        mapContainerRef,
+        onSingleEntryClick: (entry, position) => {
+          setClickedCluster(null);
+          setSourceCluster(null);
+          setPopupPosition(position);
           setClickedEntry(entry);
-
-          pin.style.border = '4px solid #ac6d46';
-          pin.style.boxShadow = '0 0 20px rgba(172, 109, 70, 0.8), 0 4px 12px rgba(0,0,0,0.4)';
-          pin.style.transform = 'translate(-50%, -70%) rotate(-45deg) scale(1.1)';
-        };
-
-        el.addEventListener('click', clickHandler);
-        eventListeners.push({ element: el, handler: clickHandler });
-
-        (el as any).removeHighlight = () => {
-          pin.style.border = '3px solid white';
-          pin.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-          pin.style.transform = 'translate(-50%, -70%) rotate(-45deg)';
-        };
-
-        markersRef.current.push(marker);
+        },
+        onClusterClick: (cluster, position) => {
+          setClickedEntry(null);
+          setSourceCluster(null);
+          setPopupPosition(position);
+          setClickedCluster(cluster);
+        },
       });
+      markersRef.current = result.markers;
+      clusteredRef.current = result;
+      mapRef.current.on('zoomend', result.recalculate);
     }
 
     updateVisibleItems();
 
     return () => {
+      // Clean up clustered markers
+      clusteredRef.current?.cleanup();
+      clusteredRef.current = null;
+
       // Remove event listeners before removing markers
       eventListeners.forEach(({ element, handler }) => {
         element.removeEventListener('click', handler);
@@ -850,6 +811,20 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
             }`}
           >
             <div className="p-3 text-xs font-mono">
+              {sourceCluster && (
+                <button
+                  onClick={() => {
+                    setClickedEntry(null);
+                    setClickedCluster(sourceCluster);
+                    setSourceCluster(null);
+                    clusteredRef.current?.removeAllHighlights();
+                  }}
+                  className="flex items-center gap-1 text-[10px] text-[#ac6d46] hover:underline mb-2"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                  BACK TO {sourceCluster.entries.length} ENTRIES
+                </button>
+              )}
               <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">
                 <div className="flex-1">
                   <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">{clickedEntry.title}</div>
@@ -876,12 +851,8 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
                 <button
                   onClick={() => {
                     setClickedEntry(null);
-                    markersRef.current.forEach(m => {
-                      const el = m.getElement();
-                      if (el && (el as any).removeHighlight) {
-                        (el as any).removeHighlight();
-                      }
-                    });
+                    setSourceCluster(null);
+                    clusteredRef.current?.removeAllHighlights();
                   }}
                   className="p-1 hover:bg-[#202020] hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded transition-all active:scale-[0.95] focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#616161] ml-2"
                 >
@@ -934,6 +905,45 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Cluster Timeline Popup */}
+        {clickedCluster && mapMode === 'entry' && (
+          <ClusterTimelinePopup
+            cluster={clickedCluster}
+            position={popupPosition}
+            className="w-96 max-w-[calc(100%-2rem)] bottom-20"
+            onClose={() => {
+              setClickedCluster(null);
+              clusteredRef.current?.removeAllHighlights();
+            }}
+            onEntrySelect={(entry) => {
+              setSourceCluster(clickedCluster);
+              setClickedCluster(null);
+              setClickedEntry(entry);
+            }}
+            renderEntryMeta={(entry) => (
+              <>
+                <button
+                  onClick={(e) => { e.stopPropagation(); window.open(`/journal/${entry.explorerUsername}`, '_blank'); }}
+                  className="text-[#ac6d46] hover:underline"
+                >
+                  {entry.explorerUsername}
+                </button>
+                {entry.expeditionName && (
+                  <>
+                    {' • '}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); window.open(`/expedition/${entry.expeditionId}`, '_blank'); }}
+                      className="text-[#4676ac] hover:underline"
+                    >
+                      {entry.expeditionName}
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+          />
         )}
 
         {/* Stats Overlay */}

@@ -32,6 +32,65 @@ import { Logger } from '@/modules/logger';
 import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
 
+/**
+ * Whitelist-based sanitizer for entry metadata.
+ * Strips unexpected keys and validates types per entry type.
+ */
+function sanitizeEntryMetadata(
+  entryType: string | undefined,
+  metadata: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (!metadata || typeof metadata !== 'object') return undefined;
+
+  const truncateStr = (val: unknown, max = 200): string | undefined => {
+    if (typeof val !== 'string') return undefined;
+    return val.slice(0, max);
+  };
+
+  const toNumber = (val: unknown): number | undefined => {
+    if (typeof val === 'number' && isFinite(val)) return val;
+    if (typeof val === 'string') {
+      const n = parseFloat(val);
+      if (isFinite(n)) return n;
+    }
+    return undefined;
+  };
+
+  const result: Record<string, unknown> = {};
+
+  if (entryType === 'standard') {
+    const weather = truncateStr(metadata.weather);
+    const distanceTraveled = toNumber(metadata.distanceTraveled);
+    const mood = truncateStr(metadata.mood);
+    const expenses = toNumber(metadata.expenses);
+
+    if (weather !== undefined) result.weather = weather;
+    if (distanceTraveled !== undefined) result.distanceTraveled = distanceTraveled;
+    if (mood !== undefined) result.mood = mood;
+    if (expenses !== undefined) result.expenses = expenses;
+  } else if (entryType === 'data-log') {
+    const fields: Array<[string, 'number']> = [
+      ['temperature', 'number'],
+      ['humidity', 'number'],
+      ['windSpeed', 'number'],
+      ['pressure', 'number'],
+      ['distanceCovered', 'number'],
+      ['elevationGain', 'number'],
+      ['duration', 'number'],
+      ['avgSpeed', 'number'],
+    ];
+
+    for (const [key] of fields) {
+      const val = toNumber(metadata[key]);
+      if (val !== undefined) result[key] = val;
+    }
+  }
+  // photo-essay has no extra metadata
+
+  // Return undefined if empty (don't store empty objects)
+  return Object.keys(result).length > 0 ? result : undefined;
+}
+
 @Injectable()
 export class EntryService {
   constructor(
@@ -69,8 +128,36 @@ export class EntryService {
           is_draft: true,
           place: true,
           date: true,
+          lat: true,
+          lon: true,
           created_at: true,
           updated_at: true,
+          entry_type: true,
+          metadata: true,
+          visibility: true,
+          cover_upload_id: true,
+          is_milestone: true,
+          media: {
+            select: {
+              upload: {
+                select: {
+                  public_id: true,
+                  original: true,
+                  thumbnail: true,
+                },
+              },
+              caption: true,
+              alt_text: true,
+              credit: true,
+            },
+            orderBy: { created_at: 'asc' as const },
+          },
+          expedition: {
+            select: {
+              public_id: true,
+              title: true,
+            },
+          },
         },
         take,
         orderBy: [{ updated_at: 'desc' }], // Most recently updated drafts first
@@ -79,14 +166,34 @@ export class EntryService {
       const processedData = data.map((entry) => ({
         id: entry.public_id,
         title: entry.title,
-        content: entry.content?.slice(0, 140) || '',
+        content: entry.content || '',
         place: entry.place,
         date: entry.date,
+        lat: entry.lat,
+        lon: entry.lon,
         public: entry.public,
         sponsored: entry.sponsored,
         isDraft: entry.is_draft,
         createdAt: entry.created_at,
         updatedAt: entry.updated_at,
+        entryType: entry.entry_type as 'standard' | 'photo-essay' | 'data-log' | 'waypoint' | undefined,
+        metadata: entry.metadata && typeof entry.metadata === 'object'
+          ? (entry.metadata as Record<string, unknown>)
+          : undefined,
+        visibility: entry.visibility as 'public' | 'off-grid' | 'private' | undefined,
+        coverImage: undefined,
+        isMilestone: entry.is_milestone,
+        media: entry.media?.map((u) => ({
+          id: u.upload.public_id,
+          thumbnail: u.upload.thumbnail ? getStaticMediaUrl(u.upload.thumbnail) : '',
+          original: u.upload.original ? getStaticMediaUrl(u.upload.original) : undefined,
+          caption: u.caption || undefined,
+          altText: u.alt_text || undefined,
+          credit: u.credit || undefined,
+        })),
+        expedition: entry.expedition
+          ? { id: entry.expedition.public_id, title: entry.expedition.title }
+          : undefined,
       }));
 
       const response: IEntryGetAllResponse = {
@@ -425,6 +532,7 @@ export class EntryService {
           cover_upload_id: true,
           is_milestone: true,
           visibility: true,
+          metadata: true,
           cover_upload: {
             select: {
               original: true,
@@ -591,6 +699,9 @@ export class EntryService {
           ? getStaticMediaUrl(entry.cover_upload.original)
           : undefined,
         isMilestone: entry.is_milestone,
+        metadata: entry.metadata && typeof entry.metadata === 'object'
+          ? (entry.metadata as Record<string, unknown>)
+          : undefined,
         visibility: entry.visibility as
           | 'public'
           | 'off-grid'
@@ -739,6 +850,7 @@ export class EntryService {
         coverUploadId,
         isMilestone,
         visibility,
+        metadata,
       } = payload;
       const privacy = {
         public: payload.public,
@@ -775,12 +887,15 @@ export class EntryService {
             throw new ServiceBadRequestException('waypoint is not available');
           });
 
-        // check if the waypoint attached already
-        await this.prisma.entry
-          .count({ where: { waypoint: { id: waypointId } } })
-          .catch(() => {
-            throw new ServiceBadRequestException('waypoint is not available');
-          });
+        // check if the waypoint already has an entry linked
+        const existingEntryCount = await this.prisma.entry.count({
+          where: { waypoint_id: waypointId, deleted_at: null },
+        });
+        if (existingEntryCount > 0) {
+          throw new ServiceBadRequestException(
+            'waypoint already has an entry linked',
+          );
+        }
       }
 
       // Look up expedition if provided
@@ -892,7 +1007,12 @@ export class EntryService {
             entry_type: entryType || 'standard',
             is_milestone: isMilestone || false,
             visibility: visibility || 'public',
+            metadata: (sanitizeEntryMetadata(entryType, metadata) as Prisma.InputJsonValue) ?? Prisma.DbNull,
             author: { connect: { id: explorerId } },
+            // Connect to waypoint if provided (waypoint-to-entry conversion)
+            waypoint: waypointId
+              ? { connect: { id: waypointId } }
+              : undefined,
             // Connect to expedition if provided
             expedition: expeditionDbId
               ? { connect: { id: expeditionDbId } }
@@ -986,6 +1106,7 @@ export class EntryService {
         coverUploadId,
         isMilestone,
         visibility,
+        metadata,
       } = payload;
 
       this.logger.log('entry_update');
@@ -1135,6 +1256,9 @@ export class EntryService {
             entry_type: entryType,
             is_milestone: isMilestone,
             visibility: visibility,
+            metadata: metadata !== undefined
+              ? ((sanitizeEntryMetadata(entryType || 'standard', metadata) as Prisma.InputJsonValue) ?? Prisma.DbNull)
+              : undefined,
             cover_upload:
               coverUploadDbId !== undefined
                 ? coverUploadDbId === null

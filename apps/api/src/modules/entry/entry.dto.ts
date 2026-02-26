@@ -94,6 +94,46 @@ export class EntryCreateDto implements IEntryCreatePayload {
   @IsBoolean()
   @IsOptional()
   commentsEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  uploadCaptions?: { [uploadId: string]: string };
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  uploadAltTexts?: { [uploadId: string]: string };
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  uploadCredits?: { [uploadId: string]: string };
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  coverUploadId?: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isMilestone?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  visibility?: 'public' | 'off-grid' | 'private';
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  metadata?: Record<string, unknown>;
 }
 
 export class EntryUpdateDto implements IEntryUpdatePayload {
@@ -110,6 +150,16 @@ export class EntryUpdateDto implements IEntryUpdatePayload {
   @IsOptional()
   @MaxLength(10000, { message: 'Content must be less than 10,000 characters' })
   content: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lat: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  lon: number;
 
   @ApiProperty({ required: false })
   @IsObject()
@@ -147,6 +197,11 @@ export class EntryUpdateDto implements IEntryUpdatePayload {
   uploads?: string[];
 
   @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  waypointId: number;
+
+  @ApiProperty({ required: false })
   @SanitizeText()
   @IsString()
   @IsOptional()
@@ -161,6 +216,46 @@ export class EntryUpdateDto implements IEntryUpdatePayload {
   @IsBoolean()
   @IsOptional()
   commentsEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  coverUploadId?: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isMilestone?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  visibility?: 'public' | 'off-grid' | 'private';
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  metadata?: Record<string, unknown>;
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  uploadCaptions?: { [uploadId: string]: string };
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  uploadAltTexts?: { [uploadId: string]: string };
+
+  @ApiProperty({ required: false })
+  @IsObject()
+  @IsOptional()
+  uploadCredits?: { [uploadId: string]: string };
 }
 
 class EntryWaypointCreateDto implements IWaypointCreatePayload {

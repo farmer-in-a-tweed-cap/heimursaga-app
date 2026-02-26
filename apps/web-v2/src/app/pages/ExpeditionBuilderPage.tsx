@@ -4,7 +4,8 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
-import { MapPin, Trash2, Calendar, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
+import { MapPin, Trash2, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
+import { DatePicker } from '@/app/components/DatePicker';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
@@ -1039,30 +1040,22 @@ export function ExpeditionBuilderPage() {
       const timelinePos = timeline.findIndex(t => t.kind === 'waypoint' && t.data.id === waypoint.id) + 1;
 
       if (isStartEnd) {
-        // Start/End markers — larger with letter label
-        const size = 36;
+        // Start/End markers — larger diamond with letter label
         const fillColor = (isStart && isRoundTrip) ? '#ac6d46' : isStart ? '#ac6d46' : '#4676ac';
-        const strokeColor = (isStart && isRoundTrip) ? '#4676ac' : 'white';
+        const borderStyle = (isStart && isRoundTrip) ? '3px solid #4676ac' : '3px solid white';
         const label = isStart ? 'S' : 'E';
-        el.style.cssText += ` width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center;`;
+        el.style.cssText += ` width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;`;
         el.innerHTML = `
-          <div style="position: relative; width: ${size}px; height: ${size}px;">
-            <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display: block;">
-              <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 2}" fill="${fillColor}" stroke="${strokeColor}" stroke-width="3"/>
-            </svg>
-            <div style="position: absolute; top: 0; left: 0; width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center; color: white; font-size: 15px; font-weight: bold; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; pointer-events: none;">${label}</div>
+          <div style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); background: ${fillColor}; border: ${borderStyle}; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+            <span style="transform: rotate(-45deg); color: white; font-size: 14px; font-weight: bold; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${label}</span>
           </div>
         `;
       } else {
-        // Standard waypoint markers — gray numbered circles with timeline position
-        const size = 28;
-        el.style.cssText += ` width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center;`;
+        // Standard waypoint markers — gray numbered diamond with timeline position
+        el.style.cssText += ` width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;`;
         el.innerHTML = `
-          <div style="position: relative; width: ${size}px; height: ${size}px;">
-            <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display: block;">
-              <circle cx="${size/2}" cy="${size/2}" r="${size/2 - 1.5}" fill="#616161" stroke="white" stroke-width="2"/>
-            </svg>
-            <div style="position: absolute; top: 0; left: 0; width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; pointer-events: none;">${timelinePos}</div>
+          <div style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); background: #616161; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2);">
+            <span style="transform: rotate(-45deg); color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${timelinePos}</span>
           </div>
         `;
       }
@@ -1096,14 +1089,15 @@ export function ExpeditionBuilderPage() {
       markers.current.push(marker);
     });
 
-    // Add entry markers (copper squares with timeline position numbers, non-draggable)
+    // Add entry markers (copper circles with timeline position numbers, non-draggable)
     expeditionEntries.forEach(entry => {
       const entryTimelinePos = timeline.findIndex(t => t.kind === 'entry' && t.data.id === entry.id) + 1;
       const el = document.createElement('div');
       el.className = 'entry-marker';
-      el.style.cssText = 'width: 24px; height: 24px; cursor: default; display: flex; align-items: center; justify-content: center;';
+      const size = entryTimelinePos > 0 ? '22px' : '20px';
+      el.style.cssText = `width: ${size}; height: ${size}; cursor: default; display: flex; align-items: center; justify-content: center;`;
       el.innerHTML = `
-        <div style="width: 24px; height: 24px; background: #ac6d46; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${entryTimelinePos}</div>
+        <div style="width: ${size}; height: ${size}; border-radius: 50%; background: #ac6d46; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${entryTimelinePos > 0 ? entryTimelinePos : ''}</div>
       `;
 
       const marker = new mapboxgl.Marker({
@@ -1121,6 +1115,11 @@ export function ExpeditionBuilderPage() {
     const drawRoute = () => {
       if (!map.current) return;
       try {
+        if (map.current.getSource('completed-route')) {
+          if (map.current.getLayer('completed-route')) map.current.removeLayer('completed-route');
+          if (map.current.getLayer('completed-route-casing')) map.current.removeLayer('completed-route-casing');
+          map.current.removeSource('completed-route');
+        }
         if (map.current.getSource('route')) {
           if (map.current.getLayer('route-line')) map.current.removeLayer('route-line');
           if (map.current.getLayer('route-line-casing')) map.current.removeLayer('route-line-casing');
@@ -1177,12 +1176,55 @@ export function ExpeditionBuilderPage() {
             type: 'line',
             source: 'route',
             paint: {
-              'line-color': '#202020',
+              'line-color': theme === 'dark' ? '#4676ac' : '#202020',
               'line-width': useDirections ? 4 : 3,
               'line-opacity': 0.8,
               ...(useDirections ? {} : { 'line-dasharray': [2, 2] })
             }
           });
+
+          // Completed route overlay
+          let currentLocCoords: { lng: number; lat: number } | null = null;
+          if (currentLocationSource === 'waypoint' && currentLocationId) {
+            const wp = waypoints.find(w => w.id === currentLocationId);
+            if (wp) currentLocCoords = { lng: wp.coordinates.lng, lat: wp.coordinates.lat };
+          } else if (currentLocationSource === 'entry' && currentLocationId) {
+            const entry = expeditionEntries.find(e => e.id === currentLocationId);
+            if (entry) currentLocCoords = { lng: entry.coords.lng, lat: entry.coords.lat };
+          }
+
+          if (currentLocCoords && routeCoordinates.length >= 2) {
+            let closestIdx = 0;
+            let closestDist = Infinity;
+            for (let i = 0; i < routeCoordinates.length; i++) {
+              const [lng, lat] = routeCoordinates[i];
+              const d = Math.pow(lng - currentLocCoords.lng, 2) + Math.pow(lat - currentLocCoords.lat, 2);
+              if (d < closestDist) { closestDist = d; closestIdx = i; }
+            }
+            const completedCoords = routeCoordinates.slice(0, closestIdx + 1);
+            if (completedCoords.length >= 2) {
+              map.current!.addSource('completed-route', {
+                type: 'geojson',
+                data: {
+                  type: 'Feature',
+                  properties: {},
+                  geometry: { type: 'LineString', coordinates: completedCoords },
+                },
+              });
+              map.current!.addLayer({
+                id: 'completed-route-casing',
+                type: 'line',
+                source: 'completed-route',
+                paint: { 'line-color': getLineCasingColor(mapLayer, theme), 'line-width': 8, 'line-opacity': 0.3 },
+              });
+              map.current!.addLayer({
+                id: 'completed-route',
+                type: 'line',
+                source: 'completed-route',
+                paint: { 'line-color': '#ac6d46', 'line-width': 4, 'line-opacity': 0.9 },
+              });
+            }
+          }
         } catch {
           // Map may be in a transitional state; route will be drawn on next update
         }
@@ -1600,16 +1642,12 @@ export function ExpeditionBuilderPage() {
               START DATE <span className="text-[#ac6d46]">*</span>
               {isEditMode && <span className="ml-2 text-xs text-[#616161] dark:text-[#b5bcc4]">(LOCKED)</span>}
             </label>
-            <div className="relative">
-              <input
-                type="date"
-                value={expeditionData.startDate}
-                onChange={(e) => handleStartDateChange(e.target.value)}
-                className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] font-mono"
-                disabled={isEditMode}
-              />
-              <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#616161] dark:text-[#b5bcc4] pointer-events-none" />
-            </div>
+            <DatePicker
+              value={expeditionData.startDate}
+              onChange={handleStartDateChange}
+              className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
+              disabled={isEditMode}
+            />
           </div>
 
           {/* End Date / Duration - same layout as start date */}
@@ -1619,16 +1657,12 @@ export function ExpeditionBuilderPage() {
               <span className="text-[#616161] dark:text-[#b5bcc4] ml-2 font-normal">or duration in days</span>
             </label>
             <div className="grid grid-cols-[1fr_auto_80px] gap-2 items-center">
-              <div className="relative">
-                <input
-                  type="date"
-                  value={expeditionData.endDate}
-                  onChange={(e) => handleEndDateChange(e.target.value)}
-                  min={expeditionData.startDate || undefined}
-                  className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] font-mono"
-                />
-                <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#616161] dark:text-[#b5bcc4] pointer-events-none" />
-              </div>
+              <DatePicker
+                value={expeditionData.endDate}
+                onChange={handleEndDateChange}
+                min={expeditionData.startDate || undefined}
+                className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
+              />
               <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-bold">OR</span>
               <input
                 type="number"
@@ -1913,18 +1947,16 @@ export function ExpeditionBuilderPage() {
                                 : expeditionData.endDate;
 
                               return (
-                                <input
-                                  type="date"
+                                <DatePicker
                                   value={selectedWaypointData.date || ''}
-                                  onChange={(e) => handleUpdateWaypoint(selectedWaypoint!, { date: e.target.value })}
+                                  onChange={(val) => handleUpdateWaypoint(selectedWaypoint!, { date: val })}
                                   min={dateMin || expeditionData.startDate || undefined}
                                   max={dateMax || expeditionData.endDate || undefined}
-                                  className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] font-mono"
+                                  className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
                                 />
                               );
                             })()}
-                            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#616161] dark:text-[#b5bcc4] pointer-events-none" />
-                          </div>
+                                        </div>
                           <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
                             {expeditionData.startDate && expeditionData.endDate
                               ? `Must be between ${expeditionData.startDate} and ${expeditionData.endDate}`

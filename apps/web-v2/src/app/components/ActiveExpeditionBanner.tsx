@@ -16,7 +16,6 @@ export function ActiveExpeditionBanner() {
     >
       <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center text-sm font-mono gap-2">
         <span className="truncate min-w-0">
-          <span className="opacity-75 mr-2">&#x2316;</span>
           Active Expedition: <span className="font-bold">{title}</span>
         </span>
         <span className="shrink-0 opacity-75">&rarr;</span>

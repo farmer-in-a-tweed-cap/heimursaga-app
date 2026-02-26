@@ -8,7 +8,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { ViewLocationMap } from '@/app/components/ViewLocationMap';
 import { InlineLocationMap } from '@/app/components/InlineLocationMap';
-import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2 } from 'lucide-react';
+import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { entryApi, commentApi, explorerApi, type Entry, type Comment } from '@/app/services/api';
 
@@ -42,6 +42,9 @@ export function JournalEntryPage() {
   // Delete state
   const [confirmingDeleteEntry, setConfirmingDeleteEntry] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Share state
+  const [shareMenuOpen, setShareMenuOpen] = useState(false);
 
   // Bookmark state
   const [entryBookmarkLoading, setEntryBookmarkLoading] = useState(false);
@@ -268,9 +271,8 @@ export function JournalEntryPage() {
 
       location: api.place || 'Unknown location',
       coords: { lat, lng: lon },
-      elevation: 0, // Not in API yet
-      timezone: 'UTC', // Not in API yet
-      weather: '', // Not in API yet
+      entryType: (api.entryType || 'standard') as 'standard' | 'photo-essay' | 'data-log' | 'waypoint',
+      metadata: api.metadata as Record<string, unknown> | undefined,
 
       content: api.content || '',
 
@@ -371,10 +373,7 @@ export function JournalEntryPage() {
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
             {/* Banner with optional cover photo background */}
             <div
-              className="relative text-white p-6 border-b-2 border-[#202020] dark:border-[#616161] overflow-hidden"
-              style={{
-                backgroundColor: entry.coverPhotoUrl ? 'transparent' : undefined,
-              }}
+              className={`relative text-white p-6 border-b-2 border-[#202020] dark:border-[#616161] overflow-hidden ${!entry.coverPhotoUrl ? 'bg-[#202020] dark:bg-[#1a1a1a]' : ''}`}
             >
               {/* Cover Photo Background */}
               {entry.coverPhotoUrl && (
@@ -392,13 +391,21 @@ export function JournalEntryPage() {
 
               {/* Content - positioned above background */}
               <div className="relative z-10">
-                {!entry.coverPhotoUrl && (
-                  <div className="absolute inset-0 -z-10 bg-[#202020] dark:bg-[#1a1a1a]" />
-                )}
 
                 {/* Badges */}
                 <div className="flex items-center gap-2 mb-4 flex-wrap">
-                  <span className="px-2 py-1 bg-[#ac6d46] text-white text-xs rounded-full">{entry.category.toUpperCase()}</span>
+                  <span
+                    className="px-2 py-1 text-white text-xs rounded-full"
+                    style={{
+                      backgroundColor: entry.entryType === 'photo-essay' ? '#4676ac'
+                        : entry.entryType === 'data-log' ? '#616161'
+                        : '#ac6d46'
+                    }}
+                  >
+                    {entry.entryType === 'photo-essay' ? 'PHOTO ESSAY'
+                      : entry.entryType === 'data-log' ? 'DATA LOG'
+                      : 'STANDARD'}
+                  </span>
                   <span className="px-2 py-1 bg-[#616161] dark:bg-[#3a3a3a] text-white text-xs rounded-full">{entry.visibility.toUpperCase()}</span>
                   {entry.sponsored && (
                     <span className="px-2 py-1 bg-[#4676ac] text-white text-xs rounded-full">SPONSORED</span>
@@ -445,15 +452,65 @@ export function JournalEntryPage() {
             <div className="p-4 flex flex-wrap gap-3 items-center justify-between border-b-2 border-[#202020] dark:border-[#616161]">
               {isOwner ? (
                 <div className="flex flex-wrap gap-2">
-                  <Link 
+                  <Link
                     href={`/edit-entry/${entry.id}`}
                     className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold"
                   >
                     EDIT ENTRY
                   </Link>
-                  <button className="px-4 py-2 border-2 border-[#616161] hover:bg-[#95a2aa] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs dark:text-[#e5e5e5]">
-                    CHANGE VISIBILITY
-                  </button>
+                  <div className="relative">
+                    <button
+                      onClick={() => setShareMenuOpen(!shareMenuOpen)}
+                      className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] hover:bg-[#202020] hover:text-white dark:hover:bg-[#616161] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] text-xs font-bold flex items-center gap-2 dark:text-[#e5e5e5]"
+                    >
+                      <Share2 size={14} />
+                      SHARE
+                    </button>
+                    {shareMenuOpen && (
+                      <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-lg z-50 min-w-[200px]">
+                        <div className="border-b-2 border-[#202020] dark:border-[#616161] p-2 bg-[#616161] text-white">
+                          <div className="text-xs font-bold font-mono">SHARE OPTIONS:</div>
+                        </div>
+                        <div className="p-2 space-y-1">
+                          <button
+                            onClick={() => { navigator.clipboard.writeText(window.location.href); setShareMenuOpen(false); }}
+                            className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] flex items-center gap-2"
+                          >
+                            COPY LINK
+                          </button>
+                          <button
+                            onClick={() => { window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`, '_blank'); setShareMenuOpen(false); }}
+                            className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] flex items-center gap-2"
+                          >
+                            SHARE ON X/TWITTER
+                          </button>
+                          <button
+                            onClick={() => { window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank'); setShareMenuOpen(false); }}
+                            className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] flex items-center gap-2"
+                          >
+                            SHARE ON FACEBOOK
+                          </button>
+                          <button
+                            onClick={() => { window.open(`mailto:?subject=Check this out&body=${encodeURIComponent(window.location.href)}`, '_blank'); setShareMenuOpen(false); }}
+                            className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] flex items-center gap-2"
+                          >
+                            SHARE VIA EMAIL
+                          </button>
+                          <button
+                            onClick={() => setShareMenuOpen(false)}
+                            className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all text-[#616161] dark:text-[#b5bcc4] flex items-center gap-2"
+                          >
+                            CANCEL
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  {!entry.expeditionId && (
+                    <button className="px-4 py-2 border-2 border-[#616161] hover:bg-[#95a2aa] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs dark:text-[#e5e5e5]">
+                      CHANGE VISIBILITY
+                    </button>
+                  )}
                   <button
                     onClick={() => setConfirmingDeleteEntry(true)}
                     className="px-4 py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold flex items-center gap-2"
@@ -485,8 +542,122 @@ export function JournalEntryPage() {
               </div>
             </div>
 
+            {/* Data-Log Metrics (above content) */}
+            {entry.entryType === 'data-log' && entry.metadata && (
+              <div className="p-6 lg:p-8 pb-0 space-y-4">
+                {/* Environmental Data */}
+                {(entry.metadata.temperature != null || entry.metadata.humidity != null || entry.metadata.windSpeed != null || entry.metadata.pressure != null) && (
+                  <div className="border-2 border-[#4676ac] p-4">
+                    <div className="text-xs font-bold mb-3 text-[#4676ac]">ENVIRONMENTAL DATA</div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {entry.metadata.temperature != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Temperature</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.temperature)}°C</div>
+                        </div>
+                      )}
+                      {entry.metadata.humidity != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Humidity</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.humidity)}%</div>
+                        </div>
+                      )}
+                      {entry.metadata.windSpeed != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Wind Speed</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.windSpeed)} km/h</div>
+                        </div>
+                      )}
+                      {entry.metadata.pressure != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Pressure</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.pressure)} hPa</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Activity Metrics */}
+                {(entry.metadata.distanceCovered != null || entry.metadata.elevationGain != null || entry.metadata.duration != null || entry.metadata.avgSpeed != null) && (
+                  <div className="border-2 border-[#ac6d46] p-4">
+                    <div className="text-xs font-bold mb-3 text-[#ac6d46]">ACTIVITY METRICS</div>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                      {entry.metadata.distanceCovered != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Distance</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.distanceCovered)} km</div>
+                        </div>
+                      )}
+                      {entry.metadata.elevationGain != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Elevation Gain</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.elevationGain)} m</div>
+                        </div>
+                      )}
+                      {entry.metadata.duration != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Duration</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.duration)} hrs</div>
+                        </div>
+                      )}
+                      {entry.metadata.avgSpeed != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Avg Speed</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.avgSpeed)} km/h</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Photo-Essay Inline Gallery (above narrative) */}
+            {entry.entryType === 'photo-essay' && entry.media.length > 0 && (
+              <div className="p-6 lg:p-8 pb-0 space-y-4">
+                {entry.media.map((item, idx) => (
+                  <div key={item.id || idx} className="border border-[#b5bcc4] dark:border-[#3a3a3a] overflow-hidden">
+                    <div className="relative bg-[#202020]">
+                      {item.url ? (
+                        <Image
+                          src={item.url}
+                          alt={item.altText || item.caption || `Photo ${idx + 1}`}
+                          className="w-full h-auto object-contain max-h-[600px]"
+                          width={0}
+                          height={0}
+                          sizes="100vw"
+                          style={{ width: '100%', height: 'auto' }}
+                        />
+                      ) : (
+                        <div className="w-full h-48 bg-[#616161] flex items-center justify-center text-white text-sm">
+                          No image available
+                        </div>
+                      )}
+                    </div>
+                    {(item.caption || item.credit) && (
+                      <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-3 border-t border-[#b5bcc4] dark:border-[#3a3a3a]">
+                        {item.caption && (
+                          <div className="text-sm text-[#202020] dark:text-[#e5e5e5] italic">{item.caption}</div>
+                        )}
+                        {item.credit && (
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono mt-1">Photo: {item.credit}</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* Entry Content */}
             <div className="p-6 lg:p-8">
+              {entry.entryType === 'data-log' && (
+                <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">TECHNICAL NOTES</div>
+              )}
+              {entry.entryType === 'photo-essay' && (
+                <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">ESSAY NARRATIVE</div>
+              )}
               <div className="prose prose-sm max-w-none">
                 {entry.content.split('\n\n').map((paragraph, idx) => (
                   <p key={idx} className="text-sm lg:text-base leading-relaxed text-[#202020] dark:text-[#e5e5e5] mb-4">
@@ -512,8 +683,8 @@ export function JournalEntryPage() {
             </div>
           </div>
 
-          {/* Media Gallery */}
-          {entry.media.length > 0 && (
+          {/* Media Gallery (hidden for photo-essay to avoid duplication with inline gallery) */}
+          {entry.media.length > 0 && entry.entryType !== 'photo-essay' && (
             <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
               <div className="bg-[#616161] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center justify-between">
                 <h2 className="text-sm font-bold">MEDIA GALLERY ({entry.media.length})</h2>
@@ -627,10 +798,6 @@ export function JournalEntryPage() {
                 <div className="text-[#616161] dark:text-[#b5bcc4]">GPS Coordinates:</div>
                 <div className="font-bold dark:text-[#e5e5e5]">{entry.coords.lat.toFixed(6)}°N</div>
                 <div className="font-bold dark:text-[#e5e5e5]">{entry.coords.lng.toFixed(6)}°E</div>
-                <div className="text-[#616161] dark:text-[#b5bcc4] mt-2">Elevation:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">{entry.elevation}m</div>
-                <div className="text-[#616161] dark:text-[#b5bcc4] mt-2">Timezone:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">{entry.timezone}</div>
               </div>
             </div>
             <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] flex gap-2 flex-wrap">
@@ -1033,22 +1200,37 @@ export function JournalEntryPage() {
                   {entry.coords.lat.toFixed(6)}°, {entry.coords.lng.toFixed(6)}°
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Elevation:</div>
-                  <div className="font-bold dark:text-[#e5e5e5]">{entry.elevation}m</div>
-                </div>
-                <div>
-                  <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Timezone:</div>
-                  <div className="font-bold dark:text-[#e5e5e5]">{entry.timezone}</div>
-                </div>
-              </div>
-              <div>
-                <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Weather:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">{entry.weather}</div>
-              </div>
+              {/* Standard metadata in sidebar */}
+              {entry.entryType === 'standard' && entry.metadata && (
+                <>
+                  {(entry.metadata as Record<string, unknown>).weather && (
+                    <div>
+                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Weather:</div>
+                      <div className="font-bold dark:text-[#e5e5e5]">{String((entry.metadata as Record<string, unknown>).weather)}</div>
+                    </div>
+                  )}
+                  {(entry.metadata as Record<string, unknown>).distanceTraveled != null && (
+                    <div>
+                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Distance Traveled:</div>
+                      <div className="font-bold dark:text-[#e5e5e5] font-mono">{String((entry.metadata as Record<string, unknown>).distanceTraveled)} km</div>
+                    </div>
+                  )}
+                  {(entry.metadata as Record<string, unknown>).mood && (
+                    <div>
+                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Mood/Energy:</div>
+                      <div className="font-bold dark:text-[#e5e5e5]">{String((entry.metadata as Record<string, unknown>).mood)}</div>
+                    </div>
+                  )}
+                  {(entry.metadata as Record<string, unknown>).expenses != null && (
+                    <div>
+                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Expenses:</div>
+                      <div className="font-bold dark:text-[#e5e5e5] font-mono">${String((entry.metadata as Record<string, unknown>).expenses)}</div>
+                    </div>
+                  )}
+                </>
+              )}
               <div className="pt-2 border-t border-[#b5bcc4] dark:border-[#3a3a3a]">
-                <button 
+                <button
                   onClick={() => setShowMapModal(true)}
                   className="w-full py-2 bg-[#4676ac] text-white hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] font-bold"
                 >
@@ -1082,10 +1264,6 @@ export function JournalEntryPage() {
                   <div className="font-bold text-[#4676ac]">Day {entry.expeditionDay}</div>
                 </div>
               )}
-              <div>
-                <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Local Timezone:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">{entry.timezone}</div>
-              </div>
               <div>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Read Time:</div>
                 <div className="font-bold dark:text-[#e5e5e5]">{entry.readTime} min</div>
@@ -1211,7 +1389,7 @@ export function JournalEntryPage() {
           lat={entry.coords.lat}
           lng={entry.coords.lng}
           locationName={entry.location}
-          elevation={entry.elevation}
+          elevation={0}
           onClose={() => setShowMapModal(false)}
         />
       )}

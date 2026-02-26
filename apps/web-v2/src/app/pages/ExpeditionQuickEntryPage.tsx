@@ -6,7 +6,8 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
-import { Upload, Calendar, ArrowLeft, Lock, Loader2 } from 'lucide-react';
+import { Upload, ArrowLeft, Lock, Loader2 } from 'lucide-react';
+import { DatePicker } from '@/app/components/DatePicker';
 import { expeditionApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 
@@ -298,16 +299,11 @@ export function ExpeditionQuickEntryPage() {
                     START DATE
                     <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
                   </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      required
-                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                      value={startDate}
-                      onChange={(e) => handleStartDateChange(e.target.value)}
-                    />
-                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#616161] dark:text-[#b5bcc4] pointer-events-none" />
-                  </div>
+                  <DatePicker
+                    className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                    value={startDate}
+                    onChange={handleStartDateChange}
+                  />
                 </div>
 
                 <div>
@@ -331,15 +327,11 @@ export function ExpeditionQuickEntryPage() {
                     <label className="block text-xs text-[#616161] dark:text-[#b5bcc4] mb-2">
                       End Date
                     </label>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                        value={endDate}
-                        onChange={(e) => handleEndDateChange(e.target.value)}
-                      />
-                      <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#616161] dark:text-[#b5bcc4] pointer-events-none" />
-                    </div>
+                    <DatePicker
+                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                      value={endDate}
+                      onChange={handleEndDateChange}
+                    />
                   </div>
                   <div>
                     <label className="block text-xs text-[#616161] dark:text-[#b5bcc4] mb-2">

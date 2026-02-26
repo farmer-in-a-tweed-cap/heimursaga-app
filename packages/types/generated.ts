@@ -323,6 +323,7 @@ export interface IPostDetail {
   coverImage?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';
+  metadata?: Record<string, unknown>;
   author?: {
     username: string;
     name?: string;
@@ -379,6 +380,7 @@ export interface IPostCreatePayload {
   coverUploadId?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';
+  metadata?: Record<string, unknown>;
 }
 
 export interface IPostCreateResponse {
@@ -388,12 +390,15 @@ export interface IPostCreateResponse {
 export interface IPostUpdatePayload {
   title?: string;
   content?: string;
+  lat?: number;
+  lon?: number;
   waypoint?: IWaypointUpdatePayload;
   public?: boolean;
   sponsored?: boolean;
   isDraft?: boolean;
   place?: string;
   date?: Date;
+  waypointId?: number;
   uploads?: string[];
   uploadCaptions?: { [uploadId: string]: string };
   uploadAltTexts?: { [uploadId: string]: string };
@@ -406,6 +411,7 @@ export interface IPostUpdatePayload {
   coverUploadId?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';
+  metadata?: Record<string, unknown>;
 }
 
 export interface IPostLikeResponse {

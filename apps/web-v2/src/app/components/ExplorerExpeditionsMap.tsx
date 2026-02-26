@@ -7,7 +7,20 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
-import { X } from 'lucide-react';
+import { X, ChevronLeft } from 'lucide-react';
+import {
+  clusterEntriesByProximity,
+  createSingleEntryMarker,
+  createClusterMarker,
+  computePopupPosition,
+  renderClusteredMarkers,
+  darkenColor,
+  thresholdForZoom,
+  type EntryCluster,
+  type PopupPosition,
+  type ClusteredMarkersResult,
+} from '@/app/utils/mapClustering';
+import { ClusterTimelinePopup } from '@/app/components/ClusterTimelinePopup';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -65,6 +78,8 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
     hasActiveExpedition ? 'expedition' : 'all-entries'
   );
   const [clickedEntry, setClickedEntry] = useState<JournalEntry | null>(null);
+  const [clickedCluster, setClickedCluster] = useState<EntryCluster<JournalEntry> | null>(null);
+  const [sourceCluster, setSourceCluster] = useState<EntryCluster<JournalEntry> | null>(null);
   const [popupPosition, setPopupPosition] = useState<'bottom-left' | 'bottom-right'>('bottom-left');
   const { theme } = useTheme();
   const { mapLayer } = useMapLayer();
@@ -208,32 +223,40 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
             }
           }
 
-          // Add waypoint markers
+          // Add waypoint markers (diamond shape)
           expedition.waypoints.forEach((wp, idx) => {
             const isCompleted = wp.status === 'completed';
             const isCurrent = wp.status === 'current';
-            
-            const el = document.createElement('div');
-            el.className = 'waypoint-marker';
-            el.style.width = isCurrent ? '40px' : '28px';
-            el.style.height = isCurrent ? '40px' : '28px';
-            el.style.borderRadius = '50%';
-            el.style.backgroundColor = isCompleted || isCurrent ? expedition.color : '#b5bcc4';
-            el.style.border = '2px solid #202020';
-            el.style.display = 'flex';
-            el.style.alignItems = 'center';
-            el.style.justifyContent = 'center';
-            el.style.color = 'white';
-            el.style.fontWeight = 'bold';
-            el.style.fontSize = isCurrent ? '14px' : '12px';
-            el.style.cursor = 'pointer';
-            el.textContent = String(idx + 1);
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'waypoint-marker';
+            wrapper.style.cursor = 'pointer';
+
+            const diamond = document.createElement('div');
+            diamond.style.width = isCurrent ? '28px' : '22px';
+            diamond.style.height = isCurrent ? '28px' : '22px';
+            diamond.style.backgroundColor = isCompleted || isCurrent ? expedition.color : '#b5bcc4';
+            diamond.style.border = '2px solid #202020';
+            diamond.style.display = 'flex';
+            diamond.style.alignItems = 'center';
+            diamond.style.justifyContent = 'center';
+            diamond.style.transform = 'rotate(45deg)';
+
+            const label = document.createElement('span');
+            label.style.transform = 'rotate(-45deg)';
+            label.style.color = 'white';
+            label.style.fontWeight = 'bold';
+            label.style.fontSize = isCurrent ? '12px' : '11px';
+            label.style.lineHeight = '1';
+            label.textContent = String(idx + 1);
+            diamond.appendChild(label);
+            wrapper.appendChild(diamond);
 
             if (isCurrent) {
-              el.style.boxShadow = `0 0 0 4px ${expedition.color}40`;
+              diamond.style.boxShadow = `0 0 0 4px ${expedition.color}40`;
             }
 
-            new mapboxgl.Marker(el)
+            new mapboxgl.Marker(wrapper)
               .setLngLat([wp.coords.lng, wp.coords.lat])
               .setPopup(
                 new mapboxgl.Popup({ offset: 25 }).setHTML(`
@@ -247,154 +270,173 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
               .addTo(map);
           });
 
-          // Add journal entry markers
-          expedition.entries.forEach((entry) => {
-            const el = document.createElement('div');
-            el.className = 'entry-marker';
-            el.style.width = '20px';
-            el.style.height = '20px';
-            el.style.backgroundColor = expedition.color;
-            el.style.border = '2px solid white';
-            el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-            el.style.display = 'flex';
-            el.style.alignItems = 'center';
-            el.style.justifyContent = 'center';
-            el.style.color = 'white';
-            el.style.fontWeight = 'bold';
-            el.style.fontSize = '10px';
-            el.style.cursor = 'pointer';
-            el.style.transition = 'all 0.2s ease';
-            el.style.transformOrigin = 'center';
-            el.textContent = 'E';
-
-            // Add highlight functionality
-            const clickHandler = () => {
-              // Use entry directly since it now has full JournalEntry data
-
-              // Remove highlight from all markers
-              markersRef.current.forEach(marker => {
-                const el = marker.getElement();
-                if (el && (el as any).removeHighlight) {
-                  (el as any).removeHighlight();
-                }
-              });
-
-              // Calculate marker position on screen to determine optimal popup placement
-              if (mapContainerRef.current) {
-                const mapRect = mapContainerRef.current.getBoundingClientRect();
-                const markerRect = el.getBoundingClientRect();
-                const markerCenterX = markerRect.left + markerRect.width / 2 - mapRect.left;
-
-                const isRightHalf = markerCenterX > mapRect.width / 2;
-
-                // Position popup on opposite side (always bottom)
-                if (isRightHalf) {
-                  setPopupPosition('bottom-left');
-                } else {
-                  setPopupPosition('bottom-right');
-                }
-              }
-
-              setClickedEntry(entry);
-
-              // Add prominent highlight to this marker with enhanced glow
-              el.style.boxShadow = '0 0 0 8px rgba(172, 109, 70, 0.5), 0 0 0 16px rgba(172, 109, 70, 0.3), 0 0 30px rgba(172, 109, 70, 0.8), 0 4px 12px rgba(0,0,0,0.5)';
-              el.style.border = '3px solid white';
-              el.style.zIndex = '1000';
-              (el as any).removeHighlight = () => {
-                el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-                el.style.border = '2px solid white';
-                el.style.zIndex = 'auto';
-              };
-            };
-
-            el.addEventListener('click', clickHandler);
-            eventListeners.push({ element: el, handler: clickHandler });
-
-            const marker = new mapboxgl.Marker(el)
-              .setLngLat([entry.coords.lng, entry.coords.lat])
-              .addTo(map);
-
-            markersRef.current.push(marker);
-          });
-        });
-      } else if (mapMode === 'all-entries') {
-        allEntries.forEach((entry) => {
-          const el = document.createElement('div');
-          el.className = 'entry-marker';
-          el.style.width = '20px';
-          el.style.height = '20px';
-          el.style.backgroundColor = '#ac6d46';
-          el.style.border = '2px solid white';
-          el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-          el.style.display = 'flex';
-          el.style.alignItems = 'center';
-          el.style.justifyContent = 'center';
-          el.style.color = 'white';
-          el.style.fontWeight = 'bold';
-          el.style.fontSize = '10px';
-          el.style.cursor = 'pointer';
-          el.style.transition = 'all 0.2s ease';
-          el.style.transformOrigin = 'center';
-          el.textContent = 'E';
-
-          // Add highlight functionality
-          const clickHandler = () => {
-            // Remove highlight from all markers
-            markersRef.current.forEach(marker => {
-              const el = marker.getElement();
-              if (el && (el as any).removeHighlight) {
-                (el as any).removeHighlight();
-              }
+          // Add clustered journal entry markers
+          const removeAllHighlights = () => {
+            markersRef.current.forEach(m => {
+              const el = m.getElement();
+              if (el && (el as any).removeHighlight) (el as any).removeHighlight();
             });
-
-            // Calculate marker position on screen to determine optimal popup placement
-            if (mapContainerRef.current) {
-              const mapRect = mapContainerRef.current.getBoundingClientRect();
-              const markerRect = el.getBoundingClientRect();
-              const markerCenterX = markerRect.left + markerRect.width / 2 - mapRect.left;
-
-              const isRightHalf = markerCenterX > mapRect.width / 2;
-
-              // Position popup on opposite side (always bottom)
-              if (isRightHalf) {
-                setPopupPosition('bottom-left');
-              } else {
-                setPopupPosition('bottom-right');
-              }
-            }
-
-            setClickedEntry(entry);
-
-            // Add prominent highlight to this marker with enhanced glow
-            el.style.boxShadow = '0 0 0 8px rgba(172, 109, 70, 0.5), 0 0 0 16px rgba(172, 109, 70, 0.3), 0 0 30px rgba(172, 109, 70, 0.8), 0 4px 12px rgba(0,0,0,0.5)';
-            el.style.border = '3px solid white';
-            el.style.zIndex = '1000';
-            (el as any).removeHighlight = () => {
-              el.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-              el.style.border = '2px solid white';
-              el.style.zIndex = 'auto';
-            };
           };
 
-          el.addEventListener('click', clickHandler);
-          eventListeners.push({ element: el, handler: clickHandler });
+          const handleEntryClick = (entry: JournalEntry, container: HTMLElement, applyHighlight: () => void) => {
+            removeAllHighlights();
+            const position = mapContainerRef.current
+              ? computePopupPosition(container, mapContainerRef.current)
+              : 'bottom-right' as PopupPosition;
+            setClickedCluster(null);
+            setSourceCluster(null);
+            setPopupPosition(position);
+            setClickedEntry(entry);
+            applyHighlight();
+          };
 
-          const marker = new mapboxgl.Marker(el)
-            .setLngLat([entry.coords.lng, entry.coords.lat])
-            .addTo(map);
+          const handleClusterClick = (cluster: EntryCluster<JournalEntry>, container: HTMLElement, applyHighlight: () => void) => {
+            removeAllHighlights();
+            const position = mapContainerRef.current
+              ? computePopupPosition(container, mapContainerRef.current)
+              : 'bottom-right' as PopupPosition;
+            setClickedEntry(null);
+            setSourceCluster(null);
+            setPopupPosition(position);
+            setClickedCluster(cluster);
+            applyHighlight();
+          };
 
-          markersRef.current.push(marker);
+          const validEntries = expedition.entries.filter(
+            (e) => e.coords.lat !== 0 || e.coords.lng !== 0,
+          );
+          const clusters = clusterEntriesByProximity(validEntries, thresholdForZoom(map.getZoom()));
+
+          clusters.forEach((cluster) => {
+            if (cluster.entries.length === 1) {
+              const entry = cluster.entries[0];
+              const { container, applyHighlight } = createSingleEntryMarker(expedition.color);
+
+              const marker = new mapboxgl.Marker(container)
+                .setLngLat([entry.coords.lng, entry.coords.lat])
+                .addTo(map);
+
+              const handler = () => handleEntryClick(entry, container, applyHighlight);
+              container.addEventListener('click', handler);
+              eventListeners.push({ element: container, handler });
+              markersRef.current.push(marker);
+            } else {
+              const { container, applyHighlight } = createClusterMarker(
+                cluster.entries.length,
+                darkenColor(expedition.color),
+              );
+
+              const marker = new mapboxgl.Marker(container)
+                .setLngLat([cluster.center.lng, cluster.center.lat])
+                .addTo(map);
+
+              const handler = () => handleClusterClick(cluster, container, applyHighlight);
+              container.addEventListener('click', handler);
+              eventListeners.push({ element: container, handler });
+              markersRef.current.push(marker);
+            }
+          });
         });
+
+        // Zoom-based cluster dissolution for expedition mode
+        const expeditionZoomHandler = () => {
+          const zoom = map.getZoom();
+          const threshold = thresholdForZoom(zoom);
+
+          // Remove only entry markers (keep waypoint markers which aren't in markersRef)
+          eventListeners.forEach(({ element, handler }) => element.removeEventListener('click', handler));
+          eventListeners.length = 0;
+          markersRef.current.forEach(m => m.remove());
+          markersRef.current = [];
+
+          const removeAll = () => {
+            markersRef.current.forEach(m => {
+              const el = m.getElement();
+              if (el && (el as any).removeHighlight) (el as any).removeHighlight();
+            });
+          };
+
+          expeditions.forEach((expedition) => {
+            const valid = expedition.entries.filter(e => e.coords.lat !== 0 || e.coords.lng !== 0);
+            const cls = clusterEntriesByProximity(valid, threshold);
+
+            cls.forEach((cluster) => {
+              if (cluster.entries.length === 1) {
+                const entry = cluster.entries[0];
+                const { container, applyHighlight } = createSingleEntryMarker(expedition.color);
+                const marker = new mapboxgl.Marker(container)
+                  .setLngLat([entry.coords.lng, entry.coords.lat])
+                  .addTo(map);
+                const handler = () => {
+                  removeAll();
+                  const pos = mapContainerRef.current
+                    ? computePopupPosition(container, mapContainerRef.current)
+                    : 'bottom-right' as PopupPosition;
+                  setClickedCluster(null);
+                  setSourceCluster(null);
+                  setPopupPosition(pos);
+                  setClickedEntry(entry);
+                  applyHighlight();
+                };
+                container.addEventListener('click', handler);
+                eventListeners.push({ element: container, handler });
+                markersRef.current.push(marker);
+              } else {
+                const { container, applyHighlight } = createClusterMarker(
+                  cluster.entries.length,
+                  darkenColor(expedition.color),
+                );
+                const marker = new mapboxgl.Marker(container)
+                  .setLngLat([cluster.center.lng, cluster.center.lat])
+                  .addTo(map);
+                const handler = () => {
+                  removeAll();
+                  const pos = mapContainerRef.current
+                    ? computePopupPosition(container, mapContainerRef.current)
+                    : 'bottom-right' as PopupPosition;
+                  setClickedEntry(null);
+                  setSourceCluster(null);
+                  setPopupPosition(pos);
+                  setClickedCluster(cluster);
+                  applyHighlight();
+                };
+                container.addEventListener('click', handler);
+                eventListeners.push({ element: container, handler });
+                markersRef.current.push(marker);
+              }
+            });
+          });
+        };
+        map.on('zoomend', expeditionZoomHandler);
+      } else if (mapMode === 'all-entries') {
+        const result = renderClusteredMarkers<JournalEntry>({
+          entries: allEntries,
+          map,
+          mapContainerRef,
+          onSingleEntryClick: (entry, position) => {
+            setClickedCluster(null);
+            setSourceCluster(null);
+            setPopupPosition(position);
+            setClickedEntry(entry);
+          },
+          onClusterClick: (cluster, position) => {
+            setClickedEntry(null);
+            setSourceCluster(null);
+            setPopupPosition(position);
+            setClickedCluster(cluster);
+          },
+        });
+        markersRef.current = result.markers;
+        map.on('zoomend', result.recalculate);
       }
     });
 
     // Cleanup
     return () => {
-      // Remove event listeners before removing map
       eventListeners.forEach(({ element, handler }) => {
         element.removeEventListener('click', handler);
       });
+      setClickedCluster(null);
       map.remove();
     };
   }, [expeditions, allEntries, mapMode, theme, mapLayer]);
@@ -451,6 +493,23 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
             }`}
           >
             <div className="p-3 text-xs font-mono">
+              {sourceCluster && (
+                <button
+                  onClick={() => {
+                    setClickedEntry(null);
+                    setClickedCluster(sourceCluster);
+                    setSourceCluster(null);
+                    markersRef.current.forEach(m => {
+                      const el = m.getElement();
+                      if (el && (el as any).removeHighlight) (el as any).removeHighlight();
+                    });
+                  }}
+                  className="flex items-center gap-1 text-[10px] text-[#ac6d46] hover:underline mb-2"
+                >
+                  <ChevronLeft className="w-3 h-3" />
+                  BACK TO {sourceCluster.entries.length} ENTRIES
+                </button>
+              )}
               <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">
                 <div className="flex-1">
                   <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">{clickedEntry.title}</div>
@@ -458,15 +517,13 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
                     {clickedEntry.explorerName} • {clickedEntry.expeditionName}
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => {
                     setClickedEntry(null);
-                    // Remove highlight from all markers
-                    markersRef.current.forEach(marker => {
-                      const el = marker.getElement();
-                      if (el && (el as any).removeHighlight) {
-                        (el as any).removeHighlight();
-                      }
+                    setSourceCluster(null);
+                    markersRef.current.forEach(m => {
+                      const el = m.getElement();
+                      if (el && (el as any).removeHighlight) (el as any).removeHighlight();
                     });
                   }}
                   className="p-1 hover:bg-[#202020] hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] ml-2"
@@ -497,6 +554,30 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
             </div>
           </div>
         )}
+
+        {/* Cluster Timeline Popup */}
+        {clickedCluster && (
+          <ClusterTimelinePopup
+            cluster={clickedCluster}
+            position={popupPosition}
+            className="w-96 max-w-[calc(100%-2rem)] bottom-[20px]"
+            onClose={() => {
+              setClickedCluster(null);
+              markersRef.current.forEach(m => {
+                const el = m.getElement();
+                if (el && (el as any).removeHighlight) (el as any).removeHighlight();
+              });
+            }}
+            onEntrySelect={(entry) => {
+              setSourceCluster(clickedCluster);
+              setClickedCluster(null);
+              setClickedEntry(entry);
+            }}
+            renderEntryMeta={(entry) => (
+              <>{entry.explorerName} {entry.expeditionName ? `• ${entry.expeditionName}` : ''}</>
+            )}
+          />
+        )}
       </div>
 
       {/* Legend */}
@@ -512,7 +593,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
                 >
                   <div className="flex items-center gap-2">
                     <div
-                      className="w-4 h-4 rounded-full border-2 border-[#202020]"
+                      className="w-3.5 h-3.5 rotate-45 border-2 border-[#202020]"
                       style={{ backgroundColor: expedition.color }}
                     />
                     <span

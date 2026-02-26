@@ -8,11 +8,13 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationMap } from '@/app/components/LocationMap';
+import { DatePicker } from '@/app/components/DatePicker';
 import { X, Image as ImageIcon, Lock, Camera, Loader2, Clock, AlertTriangle } from 'lucide-react';
-import { entryApi, expeditionApi, uploadApi, type Expedition, type Entry } from '@/app/services/api';
+import { entryApi, expeditionApi, uploadApi, type Expedition, type Entry, type StandardMetadata, type DataLogMetadata } from '@/app/services/api';
 import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
 import { useContentValidation } from '@/app/hooks/useContentValidation';
 import { checkImageExif, type ExifResult } from '@/app/utils/exifCheck';
+import { haversineMeters } from '@/app/utils/mapClustering';
 
 export function CreateEntryPage() {
   const { isAuthenticated } = useAuth();
@@ -30,13 +32,16 @@ export function CreateEntryPage() {
   const [showMap, setShowMap] = useState(false);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedWaypointId, setSelectedWaypointId] = useState<string | null>(null);
+  const [nearbyWaypoint, setNearbyWaypoint] = useState<{ id: string; title: string } | null>(null);
+  const [showWaypointPrompt, setShowWaypointPrompt] = useState(false);
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [entryLocation, setEntryLocation] = useState('');
+  const [markerOnCompletedSegment, setMarkerOnCompletedSegment] = useState(false);
 
   // Media upload state
   const [uploadedMedia, setUploadedMedia] = useState<Array<{ id: string; name: string; type: string; size: number; url: string; thumbnail: string; exifResult?: ExifResult }>>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const mediaLimit = isPro ? 5 : 2;
+  const mediaLimit = isPro ? (entryType === 'photo-essay' ? 10 : 5) : 2;
   const [selectedMediaForEdit, setSelectedMediaForEdit] = useState<string | null>(null);
   const [mediaMetadata, setMediaMetadata] = useState<Record<string, { caption: string; altText: string; credit: string }>>({});
   const [coverPhotoId, setCoverPhotoId] = useState<string | null>(null);
@@ -54,6 +59,22 @@ export function CreateEntryPage() {
   const [photoEssayContent, setPhotoEssayContent] = useState('');
   const [dataLogContent, setDataLogContent] = useState('');
   const [entryTitle, setEntryTitle] = useState('');
+
+  // Standard metadata state
+  const [stdWeather, setStdWeather] = useState('');
+  const [stdDistanceTraveled, setStdDistanceTraveled] = useState('');
+  const [stdMood, setStdMood] = useState('');
+  const [stdExpenses, setStdExpenses] = useState('');
+
+  // Data-log metadata state
+  const [dlTemperature, setDlTemperature] = useState('');
+  const [dlHumidity, setDlHumidity] = useState('');
+  const [dlWindSpeed, setDlWindSpeed] = useState('');
+  const [dlPressure, setDlPressure] = useState('');
+  const [dlDistanceCovered, setDlDistanceCovered] = useState('');
+  const [dlElevationGain, setDlElevationGain] = useState('');
+  const [dlDuration, setDlDuration] = useState('');
+  const [dlAvgSpeed, setDlAvgSpeed] = useState('');
 
   // API state
   const [expedition, setExpedition] = useState<Expedition | null>(null);
@@ -146,7 +167,14 @@ export function CreateEntryPage() {
     setEntryTitle(draft.title || '');
     const draftType = draft.entryType === 'waypoint' ? 'standard' : (draft.entryType || 'standard');
     setEntryType(draftType as 'standard' | 'photo-essay' | 'data-log');
-    setStandardContent(draft.content || '');
+    // Load content into the correct field based on entry type
+    if (draftType === 'photo-essay') {
+      setPhotoEssayContent(draft.content || '');
+    } else if (draftType === 'data-log') {
+      setDataLogContent(draft.content || '');
+    } else {
+      setStandardContent(draft.content || '');
+    }
     setEntryLocation(draft.place || '');
 
     if (draft.lat && draft.lon) {
@@ -156,6 +184,26 @@ export function CreateEntryPage() {
     if (draft.date) {
       const dateObj = new Date(draft.date);
       setEntryDate(dateObj.toISOString().split('T')[0]);
+    }
+
+    // Load metadata if present
+    if (draft.metadata) {
+      const meta = draft.metadata as Record<string, unknown>;
+      if (draftType === 'standard') {
+        setStdWeather(String(meta.weather || ''));
+        setStdDistanceTraveled(meta.distanceTraveled != null ? String(meta.distanceTraveled) : '');
+        setStdMood(String(meta.mood || ''));
+        setStdExpenses(meta.expenses != null ? String(meta.expenses) : '');
+      } else if (draftType === 'data-log') {
+        setDlTemperature(meta.temperature != null ? String(meta.temperature) : '');
+        setDlHumidity(meta.humidity != null ? String(meta.humidity) : '');
+        setDlWindSpeed(meta.windSpeed != null ? String(meta.windSpeed) : '');
+        setDlPressure(meta.pressure != null ? String(meta.pressure) : '');
+        setDlDistanceCovered(meta.distanceCovered != null ? String(meta.distanceCovered) : '');
+        setDlElevationGain(meta.elevationGain != null ? String(meta.elevationGain) : '');
+        setDlDuration(meta.duration != null ? String(meta.duration) : '');
+        setDlAvgSpeed(meta.avgSpeed != null ? String(meta.avgSpeed) : '');
+      }
     }
 
     // Load media if present
@@ -184,7 +232,14 @@ export function CreateEntryPage() {
     }
 
     // Update the content signature so auto-save doesn't immediately trigger
-    const contentSignature = `${draft.title || ''}|${draft.content || ''}|${draft.place || ''}|${draft.lat}|${draft.lon}`;
+    // Must match the format used in performAutoSave
+    const draftMetadataStr = JSON.stringify(draft.metadata || '');
+    const draftMediaIds = draft.media ? draft.media.map(m => m.id || '').join(',') : '';
+    const draftCaptionsStr = draft.media ? JSON.stringify(
+      Object.fromEntries(draft.media.map((m, idx) => [m.id || `media-${idx}`, { caption: m.caption || '', altText: m.altText || '', credit: m.credit || '' }]))
+    ) : JSON.stringify({});
+    const draftCoverPhotoId = '';
+    const contentSignature = `${draft.title || ''}|${draft.content || ''}|${draft.place || ''}|${draft.lat}|${draft.lon}|${draftMetadataStr}|${draftType}|${draftMediaIds}|${draftCaptionsStr}|${draftCoverPhotoId}|${draft.visibility || 'public'}`;
     lastSavedContentRef.current = contentSignature;
     setLastSaved(new Date(draft.createdAt || Date.now()));
 
@@ -206,6 +261,31 @@ export function CreateEntryPage() {
       default: return '';
     }
   }, [entryType, standardContent, photoEssayContent, dataLogContent]);
+
+  // Build metadata for current entry type
+  const buildMetadata = useCallback(() => {
+    if (entryType === 'standard') {
+      const meta: Record<string, unknown> = {};
+      if (stdWeather) meta.weather = stdWeather;
+      if (stdDistanceTraveled) meta.distanceTraveled = parseFloat(stdDistanceTraveled);
+      if (stdMood && stdMood !== 'Not specified') meta.mood = stdMood;
+      if (stdExpenses) meta.expenses = parseFloat(stdExpenses);
+      return Object.keys(meta).length > 0 ? meta : undefined;
+    }
+    if (entryType === 'data-log') {
+      const meta: Record<string, unknown> = {};
+      if (dlTemperature) meta.temperature = parseFloat(dlTemperature);
+      if (dlHumidity) meta.humidity = parseFloat(dlHumidity);
+      if (dlWindSpeed) meta.windSpeed = parseFloat(dlWindSpeed);
+      if (dlPressure) meta.pressure = parseFloat(dlPressure);
+      if (dlDistanceCovered) meta.distanceCovered = parseFloat(dlDistanceCovered);
+      if (dlElevationGain) meta.elevationGain = parseFloat(dlElevationGain);
+      if (dlDuration) meta.duration = parseFloat(dlDuration);
+      if (dlAvgSpeed) meta.avgSpeed = parseFloat(dlAvgSpeed);
+      return Object.keys(meta).length > 0 ? meta : undefined;
+    }
+    return undefined;
+  }, [entryType, stdWeather, stdDistanceTraveled, stdMood, stdExpenses, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
 
   // Build payload for saving
   const buildSavePayload = useCallback((isDraft: boolean) => {
@@ -240,16 +320,20 @@ export function CreateEntryPage() {
       coverUploadId: coverPhotoId || undefined,
       isMilestone,
       visibility,
+      metadata: buildMetadata(),
     };
-  }, [entryTitle, getCurrentContent, isStandalone, expedition?.publicId, expeditionId, coordinates, entryDate, entryLocation, visibility, selectedWaypointId, uploadedMedia, mediaMetadata, entryType, coverPhotoId, isMilestone, commentsEnabled]);
+  }, [entryTitle, getCurrentContent, isStandalone, expedition?.publicId, expeditionId, coordinates, entryDate, entryLocation, visibility, selectedWaypointId, uploadedMedia, mediaMetadata, entryType, coverPhotoId, isMilestone, commentsEnabled, buildMetadata]);
 
   // Auto-save function
   const performAutoSave = useCallback(async () => {
     const content = getCurrentContent();
-    const contentSignature = `${entryTitle}|${content}|${entryLocation}|${coordinates?.lat}|${coordinates?.lng}`;
+    const metadataStr = JSON.stringify(buildMetadata() || '');
+    const mediaIds = uploadedMedia.map(m => m.id).join(',');
+    const captionsStr = JSON.stringify(mediaMetadata);
+    const contentSignature = `${entryTitle}|${content}|${entryLocation}|${coordinates?.lat}|${coordinates?.lng}|${metadataStr}|${entryType}|${mediaIds}|${captionsStr}|${coverPhotoId}|${visibility}`;
 
     // Skip if no meaningful content or no changes
-    if (!entryTitle && !content) return;
+    if (!entryTitle && !content && uploadedMedia.length === 0) return;
     if (contentSignature === lastSavedContentRef.current) return;
 
     setIsAutoSaving(true);
@@ -277,7 +361,7 @@ export function CreateEntryPage() {
       setIsAutoSaving(false);
       isAutoSavingRef.current = false;
     }
-  }, [entryTitle, getCurrentContent, entryLocation, coordinates, buildSavePayload, draftId]);
+  }, [entryTitle, getCurrentContent, entryLocation, coordinates, buildSavePayload, draftId, buildMetadata, uploadedMedia, mediaMetadata, coverPhotoId, entryType, visibility]);
 
   // Auto-save interval (every 30 seconds)
   useEffect(() => {
@@ -466,6 +550,26 @@ export function CreateEntryPage() {
     }
   };
 
+  // Check if coordinates are near an unconverted waypoint
+  const checkWaypointProximity = (coords: { lat: number; lng: number }) => {
+    if (!expedition?.waypoints) return;
+    for (const wp of expedition.waypoints) {
+      if (wp.entryId) continue; // already converted
+      if (!wp.lat || !wp.lon) continue;
+      const dist = haversineMeters(
+        { lat: coords.lat, lng: coords.lng },
+        { lat: wp.lat, lng: wp.lon },
+      );
+      if (dist <= 50) {
+        setNearbyWaypoint({ id: String(wp.id), title: wp.title || 'Untitled Waypoint' });
+        setShowWaypointPrompt(true);
+        return;
+      }
+    }
+    setNearbyWaypoint(null);
+    setShowWaypointPrompt(false);
+  };
+
   // Handle waypoint selection for conversion
   const handleWaypointSelection = (waypointId: string) => {
     setSelectedWaypointId(waypointId);
@@ -550,7 +654,9 @@ export function CreateEntryPage() {
           ) : expedition ? (
             <span>ID: {expedition.publicId || expeditionId}</span>
           ) : null}
-          <span className="text-[#4676ac]">Auto-save on</span>
+          <span className="text-[#4676ac]">
+            {isAutoSaving ? 'Saving...' : lastSaved ? `Auto-saved ${lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'Auto-save on'}
+          </span>
         </div>
       </div>
 
@@ -776,11 +882,10 @@ export function CreateEntryPage() {
                       ENTRY DATE
                       <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
                     </label>
-                    <input
-                      type="date"
-                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                    <DatePicker
+                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                       value={entryDate}
-                      onChange={(e) => setEntryDate(e.target.value)}
+                      onChange={setEntryDate}
                       min={expedition?.startDate ? new Date(expedition.startDate).toISOString().split('T')[0] : undefined}
                       max={expedition?.endDate ? new Date(expedition.endDate).toISOString().split('T')[0] : undefined}
                     />
@@ -808,6 +913,12 @@ export function CreateEntryPage() {
                     Retrospective entry
                   </div>
                 )}
+                {markerOnCompletedSegment && entryDate && new Date(entryDate) > new Date(new Date().toISOString().split('T')[0]) && (
+                  <div className="mt-2 px-2 py-1 bg-[#ac6d46]/10 border-l-2 border-[#ac6d46] text-xs text-[#ac6d46] inline-block">
+                    <AlertTriangle size={12} className="inline mr-1" />
+                    Location is on the completed route — entry date should be today or earlier
+                  </div>
+                )}
               </div>
 
               {/* Location - ALL TYPES */}
@@ -832,26 +943,63 @@ export function CreateEntryPage() {
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                    className={`w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5] ${selectedWaypointId ? 'opacity-60 cursor-not-allowed bg-[#f5f5f5] dark:bg-[#1a1a1a]' : ''}`}
                     placeholder="e.g., 39.6270, 66.9750"
                     value={coordinates ? `${coordinates.lat}, ${coordinates.lng}` : ''}
+                    readOnly={!!selectedWaypointId}
                     onChange={(e) => {
                       const [lat, lng] = e.target.value.split(',').map(Number);
                       if (!isNaN(lat) && !isNaN(lng)) {
                         setCoordinates({ lat, lng });
+                        checkWaypointProximity({ lat, lng });
                       }
                     }}
                   />
-                  <button
-                    type="button"
-                    className="mt-2 w-full px-3 py-2 bg-[#4676ac] text-white text-xs hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
-                    onClick={() => setShowMap(true)}
-                  >
-                    SET LOCATION MARKER
-                  </button>
+                  {selectedWaypointId ? (
+                    <div className="mt-2 px-3 py-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      Coordinates locked to selected waypoint
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="mt-2 w-full px-3 py-2 bg-[#4676ac] text-white text-xs hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
+                      onClick={() => setShowMap(true)}
+                    >
+                      SET LOCATION MARKER
+                    </button>
+                  )}
+
+                  {/* Nearby waypoint conversion prompt */}
+                  {showWaypointPrompt && nearbyWaypoint && (
+                    <div className="mt-3 p-4 bg-[#fff8e1] dark:bg-[#3a3320] border-2 border-[#ac6d46]">
+                      <p className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">NEARBY WAYPOINT DETECTED</p>
+                      <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
+                        This location is within 50m of waypoint: <strong className="text-[#202020] dark:text-[#e5e5e5]">{nearbyWaypoint.title}</strong>. Convert this waypoint into a journal entry?
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98]"
+                          onClick={() => {
+                            handleWaypointSelection(nearbyWaypoint.id);
+                            setShowWaypointPrompt(false);
+                          }}
+                        >
+                          CONVERT WAYPOINT
+                        </button>
+                        <button
+                          type="button"
+                          className="px-3 py-1.5 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] text-xs font-bold text-[#616161] dark:text-[#b5bcc4] hover:border-[#ac6d46] transition-all active:scale-[0.98]"
+                          onClick={() => setShowWaypointPrompt(false)}
+                        >
+                          KEEP AS NEW ENTRY
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-              
+
               {/* Location Details - Only for data-log and standard */}
               {(entryType === 'data-log' || entryType === 'standard') && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1012,7 +1160,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
                     <div className="mb-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#4676ac] text-xs">
                       <div className="flex items-center justify-between">
                         <span className="text-[#616161] dark:text-[#b5bcc4]">
-                          {isPro ? 'Pro: up to 10 photos' : 'Basic: up to 2 photos'}
+                          {isPro ? `Pro: up to ${mediaLimit} photos` : 'Basic: up to 2 photos'}
                           {!isPro && (
                             <Link href="/settings/billing" className="text-[#ac6d46] hover:underline ml-1">
                               (Upgrade)
@@ -1090,7 +1238,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
                                 onClick={() => setSelectedMediaForEdit(media.id)}
                                 className="px-3 py-1.5 text-xs font-bold border-2 border-[#4676ac] text-[#4676ac] hover:bg-[#4676ac] hover:text-white flex items-center gap-1.5 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
                               >
-                                EDIT
+                                CAPTION
                               </button>
                               <button
                                 type="button"
@@ -1190,21 +1338,180 @@ Remember: Your sponsors and followers are reading this to understand your journe
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                       PHOTO UPLOADS
                       <span className="text-[#ac6d46] ml-1">*REQUIRED - Minimum 3 photos</span>
+                      <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">({uploadedMedia.length}/{mediaLimit} photos)</span>
                     </label>
-                    <div className="border-2 border-dashed border-[#ac6d46] dark:border-[#8a5738] p-8 text-center hover:border-[#8a5738] transition-all bg-[#fef9f5] dark:bg-[#2a2420]">
-                      <div className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-3">
-                        Drag and drop photos here or click to browse
-                      </div>
-                      <button
-                        type="button"
-                        className="px-6 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
-                      >
-                        BROWSE PHOTOS
-                      </button>
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-3 font-mono">
-                        Accepted: JPG, PNG • Recommended: High resolution
+
+                    {/* Media Info */}
+                    <div className="mb-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#4676ac] text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[#616161] dark:text-[#b5bcc4]">
+                          {isPro ? `Pro: up to ${mediaLimit} photos` : 'Basic: up to 2 photos'}
+                          {!isPro && (
+                            <Link href="/settings/billing" className="text-[#ac6d46] hover:underline ml-1">
+                              (Upgrade)
+                            </Link>
+                          )}
+                        </span>
+                        {uploadedMedia.length > 0 && (
+                          <span className="text-[#616161] dark:text-[#b5bcc4]">
+                            <Camera size={12} className="inline mr-1" />
+                            {coverPhotoId ? 'Cover set' : 'No cover'}
+                          </span>
+                        )}
                       </div>
                     </div>
+
+                    {/* Uploaded Media Grid */}
+                    {uploadedMedia.length > 0 && (
+                      <div className="mb-3 grid grid-cols-1 gap-2">
+                        {uploadedMedia.map((media) => (
+                          <div
+                            key={media.id}
+                            className={`p-2 border ${
+                              media.exifResult?.isSuspicious && !imageWarnings[media.id]
+                                ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-900/10'
+                                : coverPhotoId === media.id
+                                ? 'border-[#ac6d46] bg-[#fff7f0] dark:bg-[#2a2420]'
+                                : 'border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#f5f5f5] dark:bg-[#2a2a2a]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              {media.thumbnail ? (
+                                <Image
+                                  src={media.thumbnail}
+                                  alt={media.name}
+                                  className="w-16 h-16 object-cover border border-[#b5bcc4] dark:border-[#3a3a3a] flex-shrink-0"
+                                  width={64}
+                                  height={64}
+                                />
+                              ) : (
+                                <div className="w-16 h-16 bg-[#e5e5e5] dark:bg-[#3a3a3a] flex items-center justify-center flex-shrink-0">
+                                  <ImageIcon size={24} className="text-[#616161]" />
+                                </div>
+                              )}
+
+                              <div className="flex-1 min-w-0">
+                                <div className="text-xs font-bold dark:text-[#e5e5e5] truncate">{media.name}</div>
+                                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+                                  {(media.size / 1024 / 1024).toFixed(1)} MB
+                                </div>
+                                {mediaMetadata[media.id]?.caption && (
+                                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] truncate mt-0.5">
+                                    "{mediaMetadata[media.id].caption}"
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-2 flex-shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={() => setCoverPhotoId(coverPhotoId === media.id ? null : media.id)}
+                                  className={`px-3 py-1.5 text-xs font-bold flex items-center gap-1.5 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] ${
+                                    coverPhotoId === media.id
+                                      ? 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
+                                      : 'border-2 border-[#ac6d46] text-[#ac6d46] hover:bg-[#ac6d46] hover:text-white'
+                                  }`}
+                                >
+                                  <Camera size={14} />
+                                  {coverPhotoId === media.id ? 'COVER' : 'SET COVER'}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedMediaForEdit(media.id)}
+                                  className="px-3 py-1.5 text-xs font-bold border-2 border-[#4676ac] text-[#4676ac] hover:bg-[#4676ac] hover:text-white flex items-center gap-1.5 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
+                                >
+                                  CAPTION
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (coverPhotoId === media.id) setCoverPhotoId(null);
+                                    setUploadedMedia(prev => prev.filter(m => m.id !== media.id));
+                                    setImageWarnings(prev => {
+                                      const next = { ...prev };
+                                      delete next[media.id];
+                                      return next;
+                                    });
+                                  }}
+                                  className="px-3 py-1.5 text-xs font-bold border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white flex items-center gap-1.5 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-red-600"
+                                >
+                                  <X size={14} />
+                                  REMOVE
+                                </button>
+                              </div>
+                            </div>
+
+                            {media.exifResult?.isSuspicious && (
+                              <div className="col-span-full mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-400 text-xs">
+                                <div className="flex items-start gap-2">
+                                  <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                                  <div className="flex-1">
+                                    <div className="font-bold text-amber-800 dark:text-amber-300 mb-1">IMAGE AUTHENTICITY WARNING</div>
+                                    <div className="text-amber-700 dark:text-amber-400 text-xs mb-2">
+                                      {media.exifResult.suspiciousReasons.map((reason, idx) => (
+                                        <div key={idx}>• {reason}</div>
+                                      ))}
+                                      <span className="block mt-1 font-bold">Our Terms of Service require original, human-created content. We screen all text and media for AI.</span>
+                                    </div>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={imageWarnings[media.id] || false}
+                                        onChange={() => setImageWarnings(prev => ({ ...prev, [media.id]: !prev[media.id] }))}
+                                        className="w-3 h-3 border border-amber-500 accent-amber-600"
+                                      />
+                                      <span className="text-xs font-bold text-amber-800 dark:text-amber-300">
+                                        I confirm this is an authentic photo I took myself
+                                      </span>
+                                    </label>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Upload Area */}
+                    <label className={`block border-2 border-dashed p-4 text-center transition-all cursor-pointer ${
+                      uploadedMedia.length >= mediaLimit || isUploading
+                        ? 'border-[#b5bcc4] dark:border-[#3a3a3a] opacity-50 cursor-not-allowed'
+                        : 'border-[#ac6d46] dark:border-[#8a5738] hover:border-[#8a5738] bg-[#fef9f5] dark:bg-[#2a2420]'
+                    }`}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleFileUpload}
+                        disabled={uploadedMedia.length >= mediaLimit || isUploading}
+                        className="hidden"
+                      />
+                      <div className="flex items-center justify-center gap-3">
+                        <div className={`px-4 py-2 text-white text-sm font-bold ${
+                          uploadedMedia.length >= mediaLimit || isUploading
+                            ? 'bg-[#b5bcc4] cursor-not-allowed'
+                            : 'bg-[#ac6d46] hover:bg-[#8a5738]'
+                        }`}>
+                          {isUploading ? (
+                            <span className="flex items-center gap-2">
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              UPLOADING...
+                            </span>
+                          ) : (
+                            'ADD PHOTOS'
+                          )}
+                        </div>
+                        <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+                          JPG, PNG, WEBP • Max 15MB
+                        </span>
+                      </div>
+                    </label>
+                    {uploadedMedia.length > 0 && uploadedMedia.length < 3 && (
+                      <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border-l-2 border-amber-500 text-xs text-amber-700 dark:text-amber-400">
+                        Photo essays require at least 3 photos. {3 - uploadedMedia.length} more needed.
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1257,6 +1564,8 @@ Individual photo captions can be added after upload.`}
                           step="0.1"
                           className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
                           placeholder="e.g., 28.5"
+                          value={dlTemperature}
+                          onChange={(e) => setDlTemperature(e.target.value)}
                         />
                       </div>
                       <div>
@@ -1265,6 +1574,8 @@ Individual photo captions can be added after upload.`}
                           type="number"
                           className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
                           placeholder="e.g., 65"
+                          value={dlHumidity}
+                          onChange={(e) => setDlHumidity(e.target.value)}
                         />
                       </div>
                       <div>
@@ -1274,6 +1585,8 @@ Individual photo captions can be added after upload.`}
                           step="0.1"
                           className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
                           placeholder="e.g., 12.5"
+                          value={dlWindSpeed}
+                          onChange={(e) => setDlWindSpeed(e.target.value)}
                         />
                       </div>
                       <div>
@@ -1282,6 +1595,8 @@ Individual photo captions can be added after upload.`}
                           type="number"
                           className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
                           placeholder="e.g., 1013"
+                          value={dlPressure}
+                          onChange={(e) => setDlPressure(e.target.value)}
                         />
                       </div>
                     </div>
@@ -1297,6 +1612,8 @@ Individual photo captions can be added after upload.`}
                           step="0.1"
                           className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
                           placeholder="e.g., 87.3"
+                          value={dlDistanceCovered}
+                          onChange={(e) => setDlDistanceCovered(e.target.value)}
                         />
                       </div>
                       <div>
@@ -1305,6 +1622,8 @@ Individual photo captions can be added after upload.`}
                           type="number"
                           className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
                           placeholder="e.g., 450"
+                          value={dlElevationGain}
+                          onChange={(e) => setDlElevationGain(e.target.value)}
                         />
                       </div>
                       <div>
@@ -1314,6 +1633,8 @@ Individual photo captions can be added after upload.`}
                           step="0.1"
                           className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
                           placeholder="e.g., 6.5"
+                          value={dlDuration}
+                          onChange={(e) => setDlDuration(e.target.value)}
                         />
                       </div>
                       <div>
@@ -1323,6 +1644,8 @@ Individual photo captions can be added after upload.`}
                           step="0.1"
                           className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
                           placeholder="e.g., 13.4"
+                          value={dlAvgSpeed}
+                          onChange={(e) => setDlAvgSpeed(e.target.value)}
                         />
                       </div>
                     </div>
@@ -1362,26 +1685,6 @@ Include:
                     )}
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                      DATA FILES / CHARTS
-                      <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
-                    </label>
-                    <div className="border-2 border-dashed border-[#b5bcc4] dark:border-[#3a3a3a] p-8 text-center hover:border-[#ac6d46] transition-all">
-                      <div className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-3">
-                        Upload CSV, Excel, or image files with charts/graphs
-                      </div>
-                      <button
-                        type="button"
-                        className="px-6 py-2 bg-[#4676ac] text-white hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm"
-                      >
-                        BROWSE FILES
-                      </button>
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-3 font-mono">
-                        Accepted: CSV, XLSX, PNG, JPG • Max 25MB per file
-                      </div>
-                    </div>
-                  </div>
                 </>
               )}
 
@@ -1413,6 +1716,8 @@ Include:
                         type="text"
                         className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs dark:bg-[#202020] dark:text-[#e5e5e5]"
                         placeholder="e.g., Sunny, 28°C"
+                        value={stdWeather}
+                        onChange={(e) => setStdWeather(e.target.value)}
                       />
                     </div>
                     <div>
@@ -1421,17 +1726,23 @@ Include:
                         type="number"
                         className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
                         placeholder="e.g., 87"
+                        value={stdDistanceTraveled}
+                        onChange={(e) => setStdDistanceTraveled(e.target.value)}
                       />
                     </div>
                     <div>
                       <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Mood/Energy Level</label>
-                      <select className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs dark:bg-[#202020] dark:text-[#e5e5e5]">
-                        <option>Not specified</option>
-                        <option>High Energy</option>
-                        <option>Good</option>
-                        <option>Moderate</option>
-                        <option>Low</option>
-                        <option>Exhausted</option>
+                      <select
+                        className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs dark:bg-[#202020] dark:text-[#e5e5e5]"
+                        value={stdMood}
+                        onChange={(e) => setStdMood(e.target.value)}
+                      >
+                        <option value="">Not specified</option>
+                        <option value="High Energy">High Energy</option>
+                        <option value="Good">Good</option>
+                        <option value="Moderate">Moderate</option>
+                        <option value="Low">Low</option>
+                        <option value="Exhausted">Exhausted</option>
                       </select>
                     </div>
                     <div>
@@ -1440,6 +1751,8 @@ Include:
                         type="number"
                         className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
                         placeholder="e.g., 45.50"
+                        value={stdExpenses}
+                        onChange={(e) => setStdExpenses(e.target.value)}
                       />
                     </div>
                   </div>
@@ -1547,28 +1860,11 @@ Include:
                 </div>
               </div>
 
-              {/* Action Buttons - ALL TYPES */}
-              <div className="flex gap-3 pt-6 border-t-2 border-[#202020] dark:border-[#616161]">
-                <button
-                  type="button"
-                  onClick={() => performAutoSave()}
-                  disabled={isSubmitting || isAutoSaving}
-                  className="px-6 py-3 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] disabled:opacity-50 flex items-center gap-2"
-                >
-                  {isAutoSaving ? (
-                    <>
-                      <Loader2 size={14} className="animate-spin" />
-                      SAVING...
-                    </>
-                  ) : lastSaved ? (
-                    <>SAVED {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</>
-                  ) : (
-                    'SAVE DRAFT'
-                  )}
-                </button>
+              {/* Action Button */}
+              <div className="pt-6 border-t-2 border-[#202020] dark:border-[#616161]">
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
                   disabled={!isWordCountValid || isSubmitting || (contentValidation.hasWarnings && !contentValidation.allAcknowledged) || hasUnacknowledgedImageWarnings}
                 >
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -1678,22 +1974,28 @@ Include:
           initialLng={coordinates?.lng}
           onLocationSelect={(lat, lng) => {
             setCoordinates({ lat, lng });
+            checkWaypointProximity({ lat, lng });
             // Don't close modal here - user must click CONFIRM LOCATION
           }}
           onClose={() => setShowMap(false)}
           expeditionWaypoints={expedition?.waypoints?.map((wp, idx) => ({
+            id: String(wp.id),
             lat: wp.lat || 0,
             lng: wp.lon || 0,
             title: wp.title || `Waypoint ${idx + 1}`,
             type: idx === 0 ? 'start' as const : (idx === (expedition?.waypoints?.length || 0) - 1 ? 'end' as const : 'standard' as const),
           }))}
           expeditionEntries={expedition?.entries?.filter(e => e.lat && e.lon).map(e => ({
+            id: e.id,
             lat: e.lat!,
             lng: e.lon!,
             title: e.title,
           }))}
           expeditionRouteGeometry={expedition?.routeGeometry}
           isRoundTrip={expedition?.isRoundTrip}
+          currentLocationSource={expedition?.currentLocationSource}
+          currentLocationId={expedition?.currentLocationId}
+          onCompletedSegmentDrop={setMarkerOnCompletedSegment}
         />
       )}
 
@@ -1712,13 +2014,30 @@ Include:
             </div>
 
             <div className="space-y-4">
-              {/* Photo Name Display */}
-              <div className="p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#4676ac]">
-                <div className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">PHOTO:</div>
-                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                  {uploadedMedia.find(m => m.id === selectedMediaForEdit)?.name}
-                </div>
-              </div>
+              {/* Photo Preview */}
+              {(() => {
+                const media = uploadedMedia.find(m => m.id === selectedMediaForEdit);
+                return media ? (
+                  <div>
+                    {(media.url || media.thumbnail) ? (
+                      <Image
+                        src={media.url || media.thumbnail}
+                        alt={media.name}
+                        className="w-full max-h-64 object-contain bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#3a3a3a]"
+                        width={600}
+                        height={256}
+                      />
+                    ) : (
+                      <div className="w-full h-40 bg-[#f5f5f5] dark:bg-[#2a2a2a] flex items-center justify-center border border-[#b5bcc4] dark:border-[#3a3a3a]">
+                        <ImageIcon size={48} className="text-[#b5bcc4]" />
+                      </div>
+                    )}
+                    <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4] font-mono truncate">
+                      {media.name}
+                    </div>
+                  </div>
+                ) : null;
+              })()}
 
               {/* Caption */}
               <div>
