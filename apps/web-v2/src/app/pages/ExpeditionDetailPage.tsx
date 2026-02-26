@@ -19,6 +19,8 @@ import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
 import { expeditionApi, explorerApi, entryApi, weatherApi, type Expedition, type ExpeditionNote, type ExpeditionCondition } from '@/app/services/api';
 import { formatDate, formatDateTime, formatShortDate } from '@/app/utils/dateFormat';
+import { renderClusteredMarkers, type EntryCluster, type PopupPosition, type ClusteredMarkersResult } from '@/app/utils/mapClustering';
+import { ClusterTimelinePopup } from '@/app/components/ClusterTimelinePopup';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -49,6 +51,7 @@ type WaypointType = {
   date: string;
   status: 'completed' | 'current' | 'planned';
   notes?: string;
+  entryId?: string | null;
 };
 
 type JournalEntryType = {
@@ -62,6 +65,7 @@ type JournalEntryType = {
   mediaCount: number;
   views: number;
   visibility: 'public' | 'off-grid' | 'private';
+  timelinePosition?: number;
 };
 
 type DebriefStop = {
@@ -110,12 +114,15 @@ export function ExpeditionDetailPage() {
 
   // Map popup state
   const [clickedEntry, setClickedEntry] = useState<JournalEntryType | null>(null);
+  const [clickedCluster, setClickedCluster] = useState<EntryCluster<JournalEntryType> | null>(null);
+  const [sourceCluster, setSourceCluster] = useState<EntryCluster<JournalEntryType> | null>(null);
   const [popupPosition, setPopupPosition] = useState<'bottom-left' | 'bottom-right'>('bottom-right');
   const [entryBookmarked, setEntryBookmarked] = useState<Set<string>>(new Set());
   const [entryBookmarkLoading, setEntryBookmarkLoading] = useState<string | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const waypointMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const markerClickedRef = useRef(false);
+  const clusteredRef = useRef<ClusteredMarkersResult | null>(null);
   const routeCoordsRef = useRef<number[][]>([]);       // route geometry for debrief
 
   const prevDebriefIndexRef = useRef<number>(0);        // "from" stop for segment extraction
@@ -212,39 +219,39 @@ export function ExpeditionDetailPage() {
   };
 
   // Fetch expedition from API
-  useEffect(() => {
-    let cancelled = false;
+  const fetchExpedition = useCallback(async (showLoading = true) => {
+    if (!expeditionId) return;
+    if (showLoading) setLoading(true);
+    try {
+      const data = await expeditionApi.getById(expeditionId);
+      setApiExpedition(data);
+      if (data.bookmarked !== undefined) {
+        setIsBookmarked(data.bookmarked);
+      }
+      if (data.followingAuthor !== undefined) {
+        setIsFollowingExplorer(data.followingAuthor);
+      }
+    } catch (err) {
+      console.error('Error fetching expedition:', err);
+    } finally {
+      if (showLoading) setLoading(false);
+    }
+  }, [expeditionId]);
 
-    const fetchData = async () => {
-      if (!expeditionId) return;
-      setLoading(true);
-      try {
-        const data = await expeditionApi.getById(expeditionId);
-        if (!cancelled) {
-          setApiExpedition(data);
-          if (data.bookmarked !== undefined) {
-            setIsBookmarked(data.bookmarked);
-          }
-          if (data.followingAuthor !== undefined) {
-            setIsFollowingExplorer(data.followingAuthor);
-          }
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Error fetching expedition:', err);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+  // Initial fetch + re-fetch when page becomes visible again (e.g. navigating back)
+  useEffect(() => {
+    fetchExpedition();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchExpedition(false);
       }
     };
-    fetchData();
-
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
-      cancelled = true;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [expeditionId]);
+  }, [fetchExpedition]);
 
   // Build sponsors leaderboard from API data (public for all users)
   useEffect(() => {
@@ -411,6 +418,7 @@ export function ExpeditionDetailPage() {
         date: wp.date || '',
         status: 'planned' as const,
         notes: wp.entry?.content?.substring(0, 100) || '',
+        entryId: wp.entryId,
       }));
     }
 
@@ -465,6 +473,7 @@ export function ExpeditionDetailPage() {
         date: wp.date || '',
         status,
         notes: wp.entry?.content?.substring(0, 100) || '',
+        entryId: wp.entryId,
       };
     });
   }, [apiExpedition?.waypoints, apiExpedition?.currentLocationSource, apiExpedition?.currentLocationId, apiExpedition?.entries]);
@@ -578,6 +587,15 @@ export function ExpeditionDetailPage() {
   }, [waypoints, journalEntries, apiExpedition?.isRoundTrip]);
 
   const canDebrief = debriefRoute.length >= 2;
+
+  // Map entry IDs to their 1-based timeline position (for numbered markers)
+  const entryTimelinePositions = useMemo(() => {
+    const posMap = new Map<string, number>();
+    debriefRoute.forEach((stop, idx) => {
+      posMap.set(stop.id, idx + 1);
+    });
+    return posMap;
+  }, [debriefRoute]);
 
   // Compute total route distance (km) from route geometry or waypoints
   const totalRouteDistance = useMemo(() => {
@@ -845,11 +863,10 @@ export function ExpeditionDetailPage() {
           Math.abs(lngLat.lng - stop.coords.lng) < COORD_THRESHOLD
         ) {
           const el = m.getElement();
-          const pin = el?.querySelector('div') as HTMLElement | null;
-          if (pin) {
-            pin.style.border = '4px solid #ac6d46';
-            pin.style.boxShadow = '0 0 20px rgba(172, 109, 70, 0.8), 0 4px 12px rgba(0,0,0,0.4)';
-            pin.style.transform = 'translate(-50%, -70%) rotate(-45deg) scale(1.1)';
+          if (el) {
+            el.style.boxShadow = '0 0 0 6px rgba(172, 109, 70, 0.5), 0 0 0 12px rgba(172, 109, 70, 0.3), 0 0 20px rgba(172, 109, 70, 0.8)';
+            el.style.border = '3px solid white';
+            el.style.zIndex = '1000';
           }
         }
       });
@@ -1230,13 +1247,13 @@ export function ExpeditionDetailPage() {
     });
 
     map.on('load', () => {
-      // Route lines
+      // Route lines — fallback connects waypoints only (entries float as separate markers)
       const hasDirectionsRoute = apiExpedition?.routeGeometry && apiExpedition.routeGeometry.length > 0;
       const routeCoordinates = hasDirectionsRoute
         ? apiExpedition.routeGeometry!
-        : debriefRoute
-            .filter(stop => stop.coords.lat !== 0 || stop.coords.lng !== 0)
-            .map(stop => [stop.coords.lng, stop.coords.lat]);
+        : waypoints
+            .filter(wp => wp.coords.lat !== 0 || wp.coords.lng !== 0)
+            .map(wp => [wp.coords.lng, wp.coords.lat]);
 
       const casingColor = getLineCasingColor(mapLayer, theme);
 
@@ -1329,29 +1346,41 @@ export function ExpeditionDetailPage() {
 
       const isRoundTrip = apiExpedition?.isRoundTrip;
 
-      // Waypoint markers (non-interactive)
+      // Waypoint markers (non-interactive, diamond shape)
       waypoints.forEach((wp, idx) => {
+        // Skip rendering diamond for waypoints that have been converted to entries
+        if (wp.entryId) return;
+
         const isStart = idx === 0;
         const isEnd = !isRoundTrip && idx === waypoints.length - 1 && waypoints.length > 1;
         const isCurrent = wp.status === 'current';
 
-        const el = document.createElement('div');
-        el.className = 'banner-waypoint-marker';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'banner-waypoint-marker';
+
+        const diamond = document.createElement('div');
+        Object.assign(diamond.style, { display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(45deg)' });
+
+        const label = document.createElement('span');
+        Object.assign(label.style, { transform: 'rotate(-45deg)', color: 'white', fontWeight: 'bold', lineHeight: '1' });
 
         if (isStart && isRoundTrip) {
-          Object.assign(el.style, { width: '36px', height: '36px', borderRadius: '50%', backgroundColor: '#ac6d46', border: '3px solid #4676ac', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
-          el.textContent = 'S';
+          Object.assign(diamond.style, { width: '30px', height: '30px', backgroundColor: '#ac6d46', border: '3px solid #4676ac', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
+          label.style.fontSize = '13px'; label.textContent = 'S';
         } else if (isStart || isEnd) {
-          Object.assign(el.style, { width: '36px', height: '36px', borderRadius: '50%', backgroundColor: isStart ? '#ac6d46' : '#4676ac', border: '3px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '15px', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
-          el.textContent = isStart ? 'S' : 'E';
+          Object.assign(diamond.style, { width: '30px', height: '30px', backgroundColor: isStart ? '#ac6d46' : '#4676ac', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
+          label.style.fontSize = '13px'; label.textContent = isStart ? 'S' : 'E';
         } else {
-          Object.assign(el.style, { width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#616161', border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '12px', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' });
-          el.textContent = String(idx + 1);
+          Object.assign(diamond.style, { width: '24px', height: '24px', backgroundColor: '#616161', border: '2px solid white', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' });
+          label.style.fontSize = '11px'; label.textContent = String(idx + 1);
         }
 
-        if (isCurrent) el.style.animation = 'wp-pulse 2s ease-out infinite';
+        diamond.appendChild(label);
+        wrapper.appendChild(diamond);
 
-        new mapboxgl.Marker(el).setLngLat([wp.coords.lng, wp.coords.lat]).addTo(map);
+        if (isCurrent) diamond.style.animation = 'wp-pulse 2s ease-out infinite';
+
+        new mapboxgl.Marker(wrapper).setLngLat([wp.coords.lng, wp.coords.lat]).addTo(map);
       });
 
       // Entry markers (non-interactive)
@@ -1360,26 +1389,14 @@ export function ExpeditionDetailPage() {
         .forEach((entry) => {
           const el = document.createElement('div');
           el.className = 'banner-entry-marker';
-          el.style.width = '40px';
-          el.style.height = '40px';
-
-          const pin = document.createElement('div');
-          Object.assign(pin.style, {
-            width: '28px', height: '28px', borderRadius: '50% 50% 50% 0',
-            backgroundColor: '#ac6d46', border: '3px solid white',
-            position: 'absolute', top: '50%', left: '50%',
-            transform: 'translate(-50%, -70%) rotate(-45deg)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          Object.assign(el.style, {
+            width: '16px', height: '16px', borderRadius: '50%',
+            backgroundColor: '#ac6d46', border: '2px solid white',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
           });
 
-          const dot = document.createElement('div');
-          Object.assign(dot.style, { width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'white', transform: 'rotate(45deg)' });
-          pin.appendChild(dot);
-          el.appendChild(pin);
-
           if (curSrc === 'entry' && curId === entry.id) {
-            pin.style.animation = 'wp-pulse 2s ease-out infinite';
+            el.style.animation = 'wp-pulse 2s ease-out infinite';
           }
 
           new mapboxgl.Marker(el).setLngLat([entry.coords.lng, entry.coords.lat]).addTo(map);
@@ -1455,12 +1472,8 @@ export function ExpeditionDetailPage() {
         return;
       }
       setClickedEntry(null);
-      markersRef.current.forEach(m => {
-        const el = m.getElement();
-        if (el && (el as any).removeHighlight) {
-          (el as any).removeHighlight();
-        }
-      });
+      setClickedCluster(null);
+      clusteredRef.current?.removeAllHighlights();
     });
 
     // Wait for map to load
@@ -1471,9 +1484,9 @@ export function ExpeditionDetailPage() {
       const isRoundTrip = apiExpedition?.isRoundTrip;
       const routeCoordinates = hasDirectionsRoute
         ? apiExpedition.routeGeometry!
-        : debriefRoute
-            .filter(stop => stop.coords.lat !== 0 || stop.coords.lng !== 0)
-            .map(stop => [stop.coords.lng, stop.coords.lat]);
+        : waypoints
+            .filter(wp => wp.coords.lat !== 0 || wp.coords.lng !== 0)
+            .map(wp => [wp.coords.lng, wp.coords.lat]);
 
       routeCoordsRef.current = routeCoordinates;
       const casingColor = getLineCasingColor(mapLayer, theme);
@@ -1572,108 +1585,94 @@ export function ExpeditionDetailPage() {
         document.head.appendChild(style);
       }
 
-      // Add waypoint markers
+      // Add waypoint markers (diamond shape)
       waypoints.forEach((wp, idx) => {
+        // Skip rendering diamond for waypoints that have been converted to entries
+        if (wp.entryId) return;
+
         const isStart = idx === 0;
         const isEnd = !isRoundTrip && idx === waypoints.length - 1 && waypoints.length > 1;
         const isCurrent = wp.status === 'current';
 
-        const el = document.createElement('div');
-        el.className = 'waypoint-marker';
+        // Wrapper for Mapbox to control positioning; diamond lives inside
+        const wrapper = document.createElement('div');
+        wrapper.className = 'waypoint-marker';
+
+        const diamond = document.createElement('div');
+        diamond.style.display = 'flex';
+        diamond.style.alignItems = 'center';
+        diamond.style.justifyContent = 'center';
+        diamond.style.transform = 'rotate(45deg)';
+
+        const label = document.createElement('span');
+        label.style.transform = 'rotate(-45deg)';
+        label.style.color = 'white';
+        label.style.fontWeight = 'bold';
+        label.style.lineHeight = '1';
 
         if (isStart && isRoundTrip) {
-          el.style.width = '36px'; el.style.height = '36px'; el.style.borderRadius = '50%';
-          el.style.backgroundColor = '#ac6d46'; el.style.border = '3px solid #4676ac';
-          el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center';
-          el.style.color = 'white'; el.style.fontWeight = 'bold'; el.style.fontSize = '15px';
-          el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'; el.textContent = 'S';
+          diamond.style.width = '26px'; diamond.style.height = '26px';
+          diamond.style.backgroundColor = '#ac6d46'; diamond.style.border = '3px solid #4676ac';
+          diamond.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+          label.style.fontSize = '14px'; label.textContent = 'S';
         } else if (isStart || isEnd) {
-          el.style.width = '36px'; el.style.height = '36px'; el.style.borderRadius = '50%';
-          el.style.backgroundColor = isStart ? '#ac6d46' : '#4676ac'; el.style.border = '3px solid white';
-          el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center';
-          el.style.color = 'white'; el.style.fontWeight = 'bold'; el.style.fontSize = '15px';
-          el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'; el.textContent = isStart ? 'S' : 'E';
+          diamond.style.width = '26px'; diamond.style.height = '26px';
+          diamond.style.backgroundColor = isStart ? '#ac6d46' : '#4676ac'; diamond.style.border = '3px solid white';
+          diamond.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+          label.style.fontSize = '14px'; label.textContent = isStart ? 'S' : 'E';
         } else {
-          el.style.width = '28px'; el.style.height = '28px'; el.style.borderRadius = '50%';
-          el.style.backgroundColor = '#616161'; el.style.border = '2px solid white';
-          el.style.display = 'flex'; el.style.alignItems = 'center'; el.style.justifyContent = 'center';
-          el.style.color = 'white'; el.style.fontWeight = 'bold'; el.style.fontSize = '12px';
-          el.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)'; el.textContent = String(idx + 1);
+          diamond.style.width = '22px'; diamond.style.height = '22px';
+          diamond.style.backgroundColor = '#616161'; diamond.style.border = '2px solid white';
+          diamond.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
+          label.style.fontSize = '12px'; label.textContent = String(idx + 1);
         }
 
-        if (isCurrent) el.style.animation = 'wp-pulse 2s ease-out infinite';
+        diamond.appendChild(label);
+        wrapper.appendChild(diamond);
 
-        const wpMarker = new mapboxgl.Marker(el)
+        if (isCurrent) diamond.style.animation = 'wp-pulse 2s ease-out infinite';
+
+        const wpMarker = new mapboxgl.Marker(wrapper)
           .setLngLat([wp.coords.lng, wp.coords.lat])
           .addTo(map);
         waypointMarkersRef.current.push(wpMarker);
       });
 
       // Clear existing entry markers
-      markersRef.current.forEach(marker => marker.remove());
+      clusteredRef.current?.cleanup();
       markersRef.current = [];
 
-      // Add journal entry markers (only entries with valid coordinates)
-      journalEntries
-        .filter(entry => entry.coords.lat !== 0 || entry.coords.lng !== 0)
-        .forEach((entry) => {
-          const el = document.createElement('div');
-          el.className = 'entry-marker';
-          el.style.width = '40px'; el.style.height = '40px'; el.style.cursor = 'pointer';
+      // Add journal entry markers with clustering
+      const highlightId = curSrc === 'entry' ? curId : undefined;
+      const numberedEntries = journalEntries.map(e => ({
+        ...e,
+        timelinePosition: entryTimelinePositions.get(e.id),
+      }));
+      const result = renderClusteredMarkers<JournalEntryType>({
+        entries: numberedEntries,
+        map,
+        mapContainerRef,
+        onSingleEntryClick: (entry, position) => {
+          markerClickedRef.current = true;
+          setClickedCluster(null);
+          setSourceCluster(null);
+          setPopupPosition(position);
+          setClickedEntry(entry);
+        },
+        onClusterClick: (cluster, position) => {
+          markerClickedRef.current = true;
+          setClickedEntry(null);
+          setSourceCluster(null);
+          setPopupPosition(position);
+          setClickedCluster(cluster);
+        },
+        onMarkerClicked: () => { markerClickedRef.current = true; },
+        highlightEntryId: highlightId,
+      });
+      markersRef.current = result.markers;
+      clusteredRef.current = result;
 
-          const pin = document.createElement('div');
-          pin.style.width = '28px'; pin.style.height = '28px';
-          pin.style.borderRadius = '50% 50% 50% 0'; pin.style.backgroundColor = '#ac6d46';
-          pin.style.border = '3px solid white'; pin.style.position = 'absolute';
-          pin.style.top = '50%'; pin.style.left = '50%';
-          pin.style.transform = 'translate(-50%, -70%) rotate(-45deg)';
-          pin.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-          pin.style.display = 'flex'; pin.style.alignItems = 'center'; pin.style.justifyContent = 'center';
-
-          const dot = document.createElement('div');
-          dot.style.width = '10px'; dot.style.height = '10px';
-          dot.style.borderRadius = '50%'; dot.style.backgroundColor = 'white';
-          dot.style.transform = 'rotate(45deg)';
-          pin.appendChild(dot);
-          el.appendChild(pin);
-
-          if (curSrc === 'entry' && curId === entry.id) {
-            pin.style.animation = 'wp-pulse 2s ease-out infinite';
-          }
-
-          const marker = new mapboxgl.Marker(el)
-            .setLngLat([entry.coords.lng, entry.coords.lat])
-            .addTo(map);
-
-          el.addEventListener('click', (e) => {
-            e.stopPropagation();
-            markerClickedRef.current = true;
-            markersRef.current.forEach(m => {
-              const markerEl = m.getElement();
-              if (markerEl && (markerEl as any).removeHighlight) {
-                (markerEl as any).removeHighlight();
-              }
-            });
-            if (mapContainerRef.current) {
-              const mapRect = mapContainerRef.current.getBoundingClientRect();
-              const markerRect = el.getBoundingClientRect();
-              const markerCenterX = markerRect.left + markerRect.width / 2 - mapRect.left;
-              setPopupPosition(markerCenterX > mapRect.width / 2 ? 'bottom-left' : 'bottom-right');
-            }
-            setClickedEntry(entry);
-            pin.style.border = '4px solid #ac6d46';
-            pin.style.boxShadow = '0 0 20px rgba(172, 109, 70, 0.8), 0 4px 12px rgba(0,0,0,0.4)';
-            pin.style.transform = 'translate(-50%, -70%) rotate(-45deg) scale(1.1)';
-          });
-
-          (el as any).removeHighlight = () => {
-            pin.style.border = '3px solid white';
-            pin.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-            pin.style.transform = 'translate(-50%, -70%) rotate(-45deg)';
-          };
-
-          markersRef.current.push(marker);
-        });
+      map.on('zoomend', result.recalculate);
 
       // Fit bounds to show all markers
       const allCoords: [number, number][] = [
@@ -1704,9 +1703,11 @@ export function ExpeditionDetailPage() {
     return () => {
       waypointMarkersRef.current.forEach(marker => marker.remove());
       waypointMarkersRef.current = [];
-      markersRef.current.forEach(marker => marker.remove());
+      clusteredRef.current?.cleanup();
+      clusteredRef.current = null;
       markersRef.current = [];
       setClickedEntry(null);
+      setClickedCluster(null);
       try { map.remove(); } catch { /* container may already be unmounted */ }
       mapRef.current = null;
     };
@@ -2688,19 +2689,19 @@ export function ExpeditionDetailPage() {
                 </div>
                 <div className="space-y-1 dark:text-[#e5e5e5]">
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-[#ac6d46] border-2 border-[#202020] rounded-full"></div>
+                    <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-[#202020] rotate-45"></div>
                     <span>Completed Waypoint</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-[#4676ac] border-2 border-[#202020] rounded-full"></div>
+                    <div className="w-3.5 h-3.5 bg-[#4676ac] border-2 border-[#202020] rotate-45"></div>
                     <span>Current Location</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-[#b5bcc4] border-2 border-[#202020] rounded-full"></div>
+                    <div className="w-3.5 h-3.5 bg-[#b5bcc4] border-2 border-[#202020] rotate-45"></div>
                     <span>Planned Waypoint</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-[#ac6d46] border-2 border-[#202020]"></div>
+                    <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-[#202020] rounded-full"></div>
                     <span>Journal Entry</span>
                   </div>
                 </div>
@@ -2729,6 +2730,22 @@ export function ExpeditionDetailPage() {
                 }`}
               >
                 <div className="p-3 text-xs font-mono">
+                  {/* Back to cluster */}
+                  {sourceCluster && (
+                    <button
+                      onClick={() => {
+                        setClickedEntry(null);
+                        setClickedCluster(sourceCluster);
+                        setSourceCluster(null);
+                        clusteredRef.current?.removeAllHighlights();
+                      }}
+                      className="flex items-center gap-1 text-[10px] text-[#ac6d46] hover:underline mb-2"
+                    >
+                      <ChevronLeft className="w-3 h-3" />
+                      BACK TO {sourceCluster.entries.length} ENTRIES
+                    </button>
+                  )}
+
                   {/* Header */}
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div className="flex-1 min-w-0">
@@ -2742,12 +2759,8 @@ export function ExpeditionDetailPage() {
                     <button
                       onClick={() => {
                         setClickedEntry(null);
-                        markersRef.current.forEach(m => {
-                          const el = m.getElement();
-                          if (el && (el as any).removeHighlight) {
-                            (el as any).removeHighlight();
-                          }
-                        });
+                        setSourceCluster(null);
+                        clusteredRef.current?.removeAllHighlights();
                       }}
                       className="p-0.5 hover:bg-[#202020] hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded transition-all active:scale-[0.95] focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#616161] flex-shrink-0"
                     >
@@ -2791,6 +2804,24 @@ export function ExpeditionDetailPage() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* Cluster Timeline Popup */}
+            {!isDebriefMode && clickedCluster && (
+              <ClusterTimelinePopup
+                cluster={clickedCluster}
+                position={popupPosition}
+                className="w-72 bottom-4"
+                onClose={() => {
+                  setClickedCluster(null);
+                  clusteredRef.current?.removeAllHighlights();
+                }}
+                onEntrySelect={(entry) => {
+                  setSourceCluster(clickedCluster);
+                  setClickedCluster(null);
+                  setClickedEntry(entry);
+                }}
+              />
             )}
 
             {/* Debrief Info Popup */}
