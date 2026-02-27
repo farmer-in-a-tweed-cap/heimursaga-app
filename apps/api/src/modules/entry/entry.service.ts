@@ -887,15 +887,6 @@ export class EntryService {
             throw new ServiceBadRequestException('waypoint is not available');
           });
 
-        // check if the waypoint already has an entry linked
-        const existingEntryCount = await this.prisma.entry.count({
-          where: { waypoint_id: waypointId, deleted_at: null },
-        });
-        if (existingEntryCount > 0) {
-          throw new ServiceBadRequestException(
-            'waypoint already has an entry linked',
-          );
-        }
       }
 
       // Look up expedition if provided

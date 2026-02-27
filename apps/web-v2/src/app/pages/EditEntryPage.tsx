@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationMap } from '@/app/components/LocationMap';
@@ -319,6 +319,14 @@ export function EditEntryPage() {
   // Get expedition info from API entry
   const expedition = apiEntry?.trip || apiEntry?.expedition;
 
+  // Detect if entry is linked to a waypoint (coordinates should be locked)
+  const isLinkedToWaypoint = useMemo(() => {
+    if (!fullExpedition?.waypoints || !apiEntry?.id) return false;
+    return fullExpedition.waypoints.some(wp =>
+      (wp.entryIds || []).includes(apiEntry.id) || wp.entryId === apiEntry.id
+    );
+  }, [fullExpedition?.waypoints, apiEntry?.id]);
+
   // Build metadata for current entry type
   const buildMetadata = useCallback(() => {
     if (entryType === 'standard') {
@@ -417,6 +425,34 @@ export function EditEntryPage() {
 
     if (!entryId || !apiEntry) return;
 
+    // --- Form validation (toast notifications) ---
+    const errors: string[] = [];
+
+    if (!entryTitle.trim()) {
+      errors.push('Entry title is required');
+    }
+    if (!entryDate) {
+      errors.push('Entry date is required');
+    }
+    if (!locationName.trim()) {
+      errors.push('Location name is required');
+    }
+    if (!coordinates) {
+      errors.push('GPS coordinates are required');
+    }
+    if (!isWordCountValid) {
+      if (wordCount < 200) {
+        errors.push(`Entry content must be at least 200 words (currently ${wordCount})`);
+      } else if (wordCount > 2000) {
+        errors.push(`Entry content must not exceed 2,000 words (currently ${wordCount})`);
+      }
+    }
+
+    if (errors.length > 0) {
+      errors.forEach(msg => toast.error(msg));
+      return;
+    }
+
     setIsSubmitting(true);
     isSubmittingRef.current = true;
     setSubmitError(null);
@@ -426,7 +462,9 @@ export function EditEntryPage() {
       await entryApi.update(entryId, payload);
       router.push(`/entry/${entryId}`);
     } catch {
-      setSubmitError('Failed to update entry. Please try again.');
+      const msg = 'Failed to update entry. Please try again.';
+      toast.error(msg);
+      setSubmitError(msg);
     } finally {
       setIsSubmitting(false);
       isSubmittingRef.current = false;
@@ -679,23 +717,36 @@ export function EditEntryPage() {
                   </label>
                   <input
                     type="text"
-                    className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                    className={`w-full px-4 py-3 border-2 outline-none text-sm font-mono ${
+                      isLinkedToWaypoint
+                        ? 'border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#f5f5f5] dark:bg-[#1a1a1a] text-[#616161] dark:text-[#b5bcc4] cursor-not-allowed'
+                        : 'border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]'
+                    }`}
                     placeholder="e.g., 39.6270, 66.9750"
                     value={coordinates ? `${coordinates.lat}, ${coordinates.lng}` : ''}
+                    readOnly={isLinkedToWaypoint}
                     onChange={(e) => {
+                      if (isLinkedToWaypoint) return;
                       const [lat, lng] = e.target.value.split(',').map(Number);
                       if (!isNaN(lat) && !isNaN(lng)) {
                         setCoordinates({ lat, lng });
                       }
                     }}
                   />
-                  <button
-                    type="button"
-                    className="mt-2 w-full px-3 py-2 bg-[#4676ac] text-white text-xs font-bold hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
-                    onClick={() => setShowMap(true)}
-                  >
-                    UPDATE LOCATION
-                  </button>
+                  {isLinkedToWaypoint ? (
+                    <div className="mt-2 px-3 py-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#4676ac] text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      <Lock size={12} className="inline mr-1" />
+                      Coordinates locked to waypoint — edit location in the Expedition Builder
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="mt-2 w-full px-3 py-2 bg-[#4676ac] text-white text-xs font-bold hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
+                      onClick={() => setShowMap(true)}
+                    >
+                      UPDATE LOCATION
+                    </button>
+                  )}
                 </div>
               </div>
               
@@ -1424,7 +1475,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
       </div>
 
       {/* Location Map Modal */}
-      {showMap && (
+      {showMap && !isLinkedToWaypoint && (
         <div className="fixed inset-0 bg-[#202020]/90 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
             <div className="flex justify-between items-center mb-4">

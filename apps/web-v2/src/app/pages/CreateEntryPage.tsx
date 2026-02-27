@@ -8,13 +8,15 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { LocationMap } from '@/app/components/LocationMap';
+import { WaypointSelectorMap } from '@/app/components/WaypointSelectorMap';
 import { DatePicker } from '@/app/components/DatePicker';
 import { X, Image as ImageIcon, Lock, Camera, Loader2, Clock, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 import { entryApi, expeditionApi, uploadApi, type Expedition, type Entry, type StandardMetadata, type DataLogMetadata } from '@/app/services/api';
-import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
+import { formatDateTime } from '@/app/utils/dateFormat';
 import { useContentValidation } from '@/app/hooks/useContentValidation';
 import { checkImageExif, type ExifResult } from '@/app/utils/exifCheck';
-import { haversineMeters } from '@/app/utils/mapClustering';
+import { projectToSegment } from '@/app/utils/routeSnapping';
 
 export function CreateEntryPage() {
   const { isAuthenticated } = useAuth();
@@ -32,8 +34,11 @@ export function CreateEntryPage() {
   const [showMap, setShowMap] = useState(false);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedWaypointId, setSelectedWaypointId] = useState<string | null>(null);
-  const [nearbyWaypoint, setNearbyWaypoint] = useState<{ id: string; title: string } | null>(null);
-  const [showWaypointPrompt, setShowWaypointPrompt] = useState(false);
+  const [waypointMode, setWaypointMode] = useState<'existing' | 'new' | null>(null);
+  const [newWaypointCoords, setNewWaypointCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [newWaypointSequence, setNewWaypointSequence] = useState<number>(0);
+  const [showWaypointSelector, setShowWaypointSelector] = useState(false);
+  const shouldAutoCreateWaypoint = !isStandalone && !isPro;
   const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
   const [entryLocation, setEntryLocation] = useState('');
   const [markerOnCompletedSegment, setMarkerOnCompletedSegment] = useState(false);
@@ -518,12 +523,80 @@ export function CreateEntryPage() {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent, isDraft = false) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    isSubmittingRef.current = true;
     setSubmitError(null);
 
+    // --- Form validation (toast notifications) ---
+    if (!isDraft) {
+      const errors: string[] = [];
+
+      if (!entryTitle.trim()) {
+        errors.push('Entry title is required');
+      }
+      if (!entryDate) {
+        errors.push('Entry date is required');
+      }
+      if (!entryLocation.trim()) {
+        errors.push('Location name is required');
+      }
+      if (!coordinates) {
+        errors.push('GPS coordinates are required');
+      }
+      if (!isWordCountValid) {
+        if (wordCount < 200) {
+          errors.push(`Entry content must be at least 200 words (currently ${wordCount})`);
+        } else if (wordCount > 2000) {
+          errors.push(`Entry content must not exceed 2,000 words (currently ${wordCount})`);
+        }
+      }
+      if (isPro && !isStandalone && !selectedWaypointId && waypointMode !== 'new') {
+        errors.push('Please select a waypoint or create a new one');
+      }
+
+      if (errors.length > 0) {
+        errors.forEach(msg => toast.error(msg));
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    isSubmittingRef.current = true;
+
     try {
-      const payload = buildSavePayload(isDraft);
+
+      // Deferred waypoint creation — only on publish, not drafts
+      let resolvedWaypointId: number | undefined = selectedWaypointId ? parseInt(selectedWaypointId) : undefined;
+
+      if (!isDraft && !isStandalone && expedition) {
+        if (waypointMode === 'new' && newWaypointCoords) {
+          // Pro user chose "New Waypoint" on map — create it now
+          const expId = expedition.publicId || expeditionId;
+          const wpResult = await expeditionApi.createWaypoint(expId, {
+            title: entryTitle || 'Waypoint',
+            lat: newWaypointCoords.lat,
+            lon: newWaypointCoords.lng,
+            date: entryDate || undefined,
+            sequence: newWaypointSequence,
+          });
+          resolvedWaypointId = wpResult.waypointId;
+        } else if (shouldAutoCreateWaypoint && coordinates && !resolvedWaypointId) {
+          // Regular user — auto-create waypoint behind the scenes
+          const sequence = computeInsertionSequence(coordinates);
+          const expId = expedition.publicId || expeditionId;
+          const wpResult = await expeditionApi.createWaypoint(expId, {
+            title: entryTitle || 'Waypoint',
+            lat: coordinates.lat,
+            lon: coordinates.lng,
+            date: entryDate || undefined,
+            sequence,
+          });
+          resolvedWaypointId = wpResult.waypointId;
+        }
+      }
+
+      const payload = {
+        ...buildSavePayload(isDraft),
+        waypointId: resolvedWaypointId,
+      };
       let resultId: string | undefined;
 
       if (draftId) {
@@ -543,45 +616,60 @@ export function CreateEntryPage() {
         router.push(isStandalone ? '/entries' : `/expedition/${expeditionId}`);
       }
     } catch (err: any) {
-      setSubmitError(err.message || 'Failed to create entry');
+      const msg = err.message || 'Failed to create entry';
+      toast.error(msg);
+      setSubmitError(msg);
     } finally {
       setIsSubmitting(false);
       isSubmittingRef.current = false;
     }
   };
 
-  // Check if coordinates are near an unconverted waypoint
-  const checkWaypointProximity = (coords: { lat: number; lng: number }) => {
-    if (!expedition?.waypoints) return;
-    for (const wp of expedition.waypoints) {
-      if (wp.entryId) continue; // already converted
-      if (!wp.lat || !wp.lon) continue;
-      const dist = haversineMeters(
-        { lat: coords.lat, lng: coords.lng },
-        { lat: wp.lat, lng: wp.lon },
-      );
-      if (dist <= 50) {
-        setNearbyWaypoint({ id: String(wp.id), title: wp.title || 'Untitled Waypoint' });
-        setShowWaypointPrompt(true);
-        return;
-      }
-    }
-    setNearbyWaypoint(null);
-    setShowWaypointPrompt(false);
-  };
-
-  // Handle waypoint selection for conversion
-  const handleWaypointSelection = (waypointId: string) => {
+  // Handle selecting an existing waypoint from the visual selector
+  const handleSelectExistingWaypoint = (waypointId: string, coords: { lat: number; lng: number }) => {
     setSelectedWaypointId(waypointId);
+    setWaypointMode('existing');
+    setNewWaypointCoords(null);
+    setCoordinates(coords);
     const waypoint = expedition?.waypoints?.find(wp => String(wp.id) === waypointId);
     if (waypoint) {
-      setEntryTitle(waypoint.title || '');
+      if (!entryTitle && waypoint.title) setEntryTitle(waypoint.title);
       if (waypoint.date) setEntryDate(typeof waypoint.date === 'string' ? waypoint.date : new Date(waypoint.date).toISOString().split('T')[0]);
-      if (waypoint.lat && waypoint.lon) {
-        setCoordinates({ lat: waypoint.lat, lng: waypoint.lon });
-      }
     }
+    setShowWaypointSelector(false);
   };
+
+  // Handle placing a new waypoint on the visual selector map
+  const handleSelectNewWaypoint = (coords: { lat: number; lng: number }, sequence: number) => {
+    setSelectedWaypointId(null);
+    setWaypointMode('new');
+    setNewWaypointCoords(coords);
+    setNewWaypointSequence(sequence);
+    setCoordinates(coords);
+    setShowWaypointSelector(false);
+  };
+
+  // Compute insertion sequence for auto-created waypoints (regular users)
+  const computeInsertionSequence = (coords: { lat: number; lng: number }): number => {
+    const waypoints = expedition?.waypoints?.filter(wp => wp.lat && wp.lon) || [];
+    if (waypoints.length < 2) return waypoints.length;
+    let bestSeg = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const { distSq } = projectToSegment(
+        coords,
+        { lat: waypoints[i].lat!, lng: waypoints[i].lon! },
+        { lat: waypoints[i + 1].lat!, lng: waypoints[i + 1].lon! },
+      );
+      if (distSq < bestDist) { bestDist = distSq; bestSeg = i; }
+    }
+    return (waypoints[bestSeg].sequence ?? bestSeg) + 1;
+  };
+
+  // Get the selected waypoint's title for display
+  const selectedWaypointTitle = selectedWaypointId
+    ? expedition?.waypoints?.find(wp => String(wp.id) === selectedWaypointId)?.title || 'Waypoint'
+    : waypointMode === 'new' ? 'New Waypoint' : null;
 
   // Show loading state when fetching expedition
   if (!isStandalone && expeditionLoading) {
@@ -819,34 +907,40 @@ export function CreateEntryPage() {
               </div>
             )}
 
-            {/* Convert Waypoint Option - Only show for expedition entries */}
-            {!isStandalone && (
+            {/* Waypoint Selector — Pro users with expedition */}
+            {isPro && !isStandalone && (
               <div className="mb-6">
                 <label className="block text-xs font-medium mb-3 text-[#202020] dark:text-[#e5e5e5]">
-                  CONVERT WAYPOINT
-                  <span className="text-[#616161] dark:text-[#b5bcc4] ml-1 font-normal">(Optional)</span>
+                  SELECT WAYPOINT <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
                 </label>
-                <select
-                  className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                  value={selectedWaypointId || ''}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      handleWaypointSelection(e.target.value);
-                    } else {
-                      setSelectedWaypointId(null);
-                    }
-                  }}
-                >
-                  <option value="">-- Create New Entry --</option>
-                  {expedition?.waypoints?.map((waypoint) => (
-                    <option key={String(waypoint.id)} value={String(waypoint.id)}>
-                      {waypoint.title} {waypoint.date ? `(${formatDate(waypoint.date)})` : ''}
-                    </option>
-                  ))}
-                </select>
-                <div className="mt-2 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#4676ac] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                  <strong className="text-[#202020] dark:text-[#e5e5e5]">Convert a waypoint into a journal entry:</strong> Select an existing waypoint from this expedition to pre-populate the title, date, and location fields. This is useful for expanding waypoint markers into full narrative entries.
-                </div>
+                {selectedWaypointId || waypointMode === 'new' ? (
+                  <div className="flex items-center gap-3 p-3 border-2 border-[#ac6d46] bg-[#ac6d46]/5 dark:bg-[#ac6d46]/10">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold dark:text-[#e5e5e5]">{selectedWaypointTitle}</div>
+                      {coordinates && (
+                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+                          {coordinates.lat.toFixed(6)}, {coordinates.lng.toFixed(6)}
+                        </div>
+                      )}
+                      {waypointMode === 'new' && <span className="text-[10px] text-[#4676ac] font-bold">NEW WAYPOINT</span>}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowWaypointSelector(true)}
+                      className="px-3 py-1.5 border-2 border-[#616161] dark:border-[#b5bcc4] text-xs font-bold text-[#616161] dark:text-[#b5bcc4] hover:border-[#ac6d46] hover:text-[#ac6d46] transition-all active:scale-[0.98]"
+                    >
+                      CHANGE
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowWaypointSelector(true)}
+                    className="w-full py-4 border-2 border-dashed border-[#b5bcc4] dark:border-[#3a3a3a] text-sm text-[#616161] dark:text-[#b5bcc4] hover:border-[#ac6d46] hover:text-[#ac6d46] transition-all active:scale-[0.98]"
+                  >
+                    TAP TO SELECT WAYPOINT ON MAP
+                  </button>
+                )}
               </div>
             )}
 
@@ -941,60 +1035,42 @@ export function CreateEntryPage() {
                     GPS COORDINATES
                     <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
                   </label>
-                  <input
-                    type="text"
-                    className={`w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5] ${selectedWaypointId ? 'opacity-60 cursor-not-allowed bg-[#f5f5f5] dark:bg-[#1a1a1a]' : ''}`}
-                    placeholder="e.g., 39.6270, 66.9750"
-                    value={coordinates ? `${coordinates.lat}, ${coordinates.lng}` : ''}
-                    readOnly={!!selectedWaypointId}
-                    onChange={(e) => {
-                      const [lat, lng] = e.target.value.split(',').map(Number);
-                      if (!isNaN(lat) && !isNaN(lng)) {
-                        setCoordinates({ lat, lng });
-                        checkWaypointProximity({ lat, lng });
-                      }
-                    }}
-                  />
-                  {selectedWaypointId ? (
-                    <div className="mt-2 px-3 py-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      Coordinates locked to selected waypoint
+                  {isPro && !isStandalone ? (
+                    /* Pro users: coordinates are derived from waypoint selection */
+                    <div>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5] opacity-60 cursor-not-allowed bg-[#f5f5f5] dark:bg-[#1a1a1a]"
+                        placeholder="Select a waypoint above"
+                        value={coordinates ? `${coordinates.lat.toFixed(6)}, ${coordinates.lng.toFixed(6)}` : ''}
+                        readOnly
+                      />
+                      <div className="mt-2 px-3 py-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
+                        Coordinates derived from waypoint selection
+                      </div>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      className="mt-2 w-full px-3 py-2 bg-[#4676ac] text-white text-xs hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
-                      onClick={() => setShowMap(true)}
-                    >
-                      SET LOCATION MARKER
-                    </button>
-                  )}
-
-                  {/* Nearby waypoint conversion prompt */}
-                  {showWaypointPrompt && nearbyWaypoint && (
-                    <div className="mt-3 p-4 bg-[#fff8e1] dark:bg-[#3a3320] border-2 border-[#ac6d46]">
-                      <p className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">NEARBY WAYPOINT DETECTED</p>
-                      <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
-                        This location is within 50m of waypoint: <strong className="text-[#202020] dark:text-[#e5e5e5]">{nearbyWaypoint.title}</strong>. Convert this waypoint into a journal entry?
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98]"
-                          onClick={() => {
-                            handleWaypointSelection(nearbyWaypoint.id);
-                            setShowWaypointPrompt(false);
-                          }}
-                        >
-                          CONVERT WAYPOINT
-                        </button>
-                        <button
-                          type="button"
-                          className="px-3 py-1.5 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] text-xs font-bold text-[#616161] dark:text-[#b5bcc4] hover:border-[#ac6d46] transition-all active:scale-[0.98]"
-                          onClick={() => setShowWaypointPrompt(false)}
-                        >
-                          KEEP AS NEW ENTRY
-                        </button>
-                      </div>
+                    /* Regular users + standalone: manual coordinate entry / map */
+                    <div>
+                      <input
+                        type="text"
+                        className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                        placeholder="e.g., 39.6270, 66.9750"
+                        value={coordinates ? `${coordinates.lat}, ${coordinates.lng}` : ''}
+                        onChange={(e) => {
+                          const [lat, lng] = e.target.value.split(',').map(Number);
+                          if (!isNaN(lat) && !isNaN(lng)) {
+                            setCoordinates({ lat, lng });
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="mt-2 w-full px-3 py-2 bg-[#4676ac] text-white text-xs hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
+                        onClick={() => setShowMap(true)}
+                      >
+                        SET LOCATION MARKER
+                      </button>
                     </div>
                   )}
                 </div>
@@ -1974,7 +2050,6 @@ Include:
           initialLng={coordinates?.lng}
           onLocationSelect={(lat, lng) => {
             setCoordinates({ lat, lng });
-            checkWaypointProximity({ lat, lng });
             // Don't close modal here - user must click CONFIRM LOCATION
           }}
           onClose={() => setShowMap(false)}
@@ -1996,6 +2071,25 @@ Include:
           currentLocationSource={expedition?.currentLocationSource}
           currentLocationId={expedition?.currentLocationId}
           onCompletedSegmentDrop={setMarkerOnCompletedSegment}
+        />
+      )}
+
+      {/* Waypoint Selector Map Modal - Pro users */}
+      {showWaypointSelector && expedition?.waypoints && (
+        <WaypointSelectorMap
+          expeditionWaypoints={expedition.waypoints.map((wp, idx) => ({
+            id: String(wp.id),
+            lat: wp.lat || 0,
+            lng: wp.lon || 0,
+            title: wp.title || `Waypoint ${idx + 1}`,
+            sequence: wp.sequence ?? idx,
+            entryIds: wp.entryIds || (wp.entryId ? [wp.entryId] : []),
+          }))}
+          expeditionRouteGeometry={expedition.routeGeometry}
+          isRoundTrip={expedition.isRoundTrip}
+          onSelectExisting={handleSelectExistingWaypoint}
+          onSelectNew={handleSelectNewWaypoint}
+          onClose={() => setShowWaypointSelector(false)}
         />
       )}
 

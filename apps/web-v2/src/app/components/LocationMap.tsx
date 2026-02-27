@@ -8,6 +8,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
+import { buildMergedRouteCoords } from '@/app/utils/routeSnapping';
 import { toast } from 'sonner';
 
 // Mapbox configuration - token loaded from environment variable
@@ -240,16 +241,15 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       const hasExpeditionContext = (wps && wps.length > 0) || (ents && ents.length > 0);
 
       if (hasExpeditionContext) {
-        // Build route coordinates: use provided geometry, or build from waypoints only
+        // Build route coordinates: use provided geometry, or merge waypoints + entries
         let routeCoords: number[][] = [];
         if (routeGeom && routeGeom.length > 0) {
           routeCoords = routeGeom;
         } else {
-          const allPoints: number[][] = [];
-          wps?.forEach(wp => {
-            if (wp.lat !== 0 || wp.lng !== 0) allPoints.push([wp.lng, wp.lat]);
-          });
-          routeCoords = allPoints;
+          routeCoords = buildMergedRouteCoords(
+            (wps ?? []).map(wp => ({ lat: wp.lat, lng: wp.lng })),
+            (ents ?? []).map(e => ({ lat: e.lat, lng: e.lng })),
+          );
         }
 
         // Close route for round trips (directions geometry already includes return)

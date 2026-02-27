@@ -1,4 +1,5 @@
 import mapboxgl from 'mapbox-gl';
+import { haversineMeters } from '@/app/utils/haversine';
 
 // --- Types ---
 
@@ -23,24 +24,6 @@ export interface MarkerElements {
   pin: HTMLElement;
   applyHighlight: () => void;
   removeHighlight: () => void;
-}
-
-// --- Haversine distance (meters) ---
-
-export function haversineMeters(
-  a: { lat: number; lng: number },
-  b: { lat: number; lng: number },
-): number {
-  const R = 6371000;
-  const toRad = Math.PI / 180;
-  const dLat = (b.lat - a.lat) * toRad;
-  const dLng = (b.lng - a.lng) * toRad;
-  const sinLat = Math.sin(dLat / 2);
-  const sinLng = Math.sin(dLng / 2);
-  const h =
-    sinLat * sinLat +
-    Math.cos(a.lat * toRad) * Math.cos(b.lat * toRad) * sinLng * sinLng;
-  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
 // --- Zoom-adaptive threshold ---

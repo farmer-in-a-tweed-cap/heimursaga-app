@@ -658,6 +658,7 @@ export interface ExpeditionWaypoint {
   date?: string;
   sequence?: number;
   entryId?: string | null;
+  entryIds?: string[];
   entry?: {
     id: string;
     title: string;
@@ -844,7 +845,7 @@ export const expeditionApi = {
    * Create a waypoint for an expedition
    */
   createWaypoint: (expeditionId: string, payload: { title: string; lat: number; lon: number; date?: string | null; description?: string; sequence?: number }) =>
-    api.post<unknown>(`/trips/${expeditionId}/waypoints`, payload),
+    api.post<{ waypointId: number }>(`/trips/${expeditionId}/waypoints`, payload),
 
   /**
    * Update a waypoint

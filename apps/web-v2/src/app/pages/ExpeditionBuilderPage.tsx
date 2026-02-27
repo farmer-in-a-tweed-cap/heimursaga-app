@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { MapPin, Trash2, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
 import { DatePicker } from '@/app/components/DatePicker';
+import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
@@ -15,6 +16,11 @@ import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelecto
 import { toast } from 'sonner';
 import { expeditionApi, uploadApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
+import { haversineFromLatLng } from '@/app/utils/haversine';
+import { buildWaypointPayload } from '@/app/utils/waypointPayload';
+import { projectToSegment } from '@/app/utils/routeSnapping';
+import { renderClusteredMarkers } from '@/app/utils/mapClustering';
+import { useBuilderDateHandlers } from '@/app/hooks/useBuilderDateHandlers';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
@@ -35,6 +41,7 @@ interface Waypoint {
   cumulativeDistance?: number;
   travelTimeFromPrevious?: number; // seconds
   cumulativeTravelTime?: number; // seconds
+  entryIds: string[]; // entry public_ids linked to this waypoint
 }
 
 interface ExpeditionData {
@@ -54,6 +61,7 @@ if (!MAPBOX_TOKEN) {
   console.warn('NEXT_PUBLIC_MAPBOX_TOKEN environment variable is not set');
 }
 
+
 export function ExpeditionBuilderPage() {
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
@@ -69,6 +77,7 @@ export function ExpeditionBuilderPage() {
   const markers = useRef<mapboxgl.Marker[]>([]);
   const waypointsRef = useRef<Waypoint[]>([]);
   const entryMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const clusteredEntryRef = useRef<{ cleanup: () => void; recalculate: () => void; markers: mapboxgl.Marker[]; removeAllHighlights: () => void } | null>(null);
   const originalWaypointIdsRef = useRef<string[]>([]); // Track API waypoint IDs loaded in edit mode
   const reorderNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const directionsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -191,10 +200,34 @@ export function ExpeditionBuilderPage() {
   };
 
   // Handle expedition creation/update
-  const handleCreateExpedition = async (createFirstEntry = false) => {
-    if (!expeditionData.title.trim()) {
-      setSubmitError('Title is required');
-      return;
+  const handleCreateExpedition = async (createFirstEntry = false, isDraft = false) => {
+    // --- Form validation (toast notifications) ---
+    if (!isDraft) {
+      const errors: string[] = [];
+
+      if (!expeditionData.title.trim()) {
+        errors.push('Expedition title is required');
+      }
+      if (!expeditionData.region.trim()) {
+        errors.push('Region / location is required');
+      }
+      if (!expeditionData.description.trim()) {
+        errors.push('Expedition description is required');
+      }
+      if (!expeditionData.startDate) {
+        errors.push('Start date is required');
+      }
+
+      if (errors.length > 0) {
+        errors.forEach(msg => toast.error(msg));
+        return;
+      }
+    } else {
+      // Drafts only require title
+      if (!expeditionData.title.trim()) {
+        toast.error('Expedition title is required');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -205,7 +238,7 @@ export function ExpeditionBuilderPage() {
         title: expeditionData.title,
         description: expeditionData.description,
         visibility: expeditionData.visibility,
-        status: computeStatus(),
+        status: isDraft ? 'planned' : computeStatus(),
         startDate: expeditionData.startDate || undefined,
         endDate: expeditionData.endDate || undefined,
         coverImage: coverPhotoUrl || undefined,
@@ -239,25 +272,9 @@ export function ExpeditionBuilderPage() {
         // Update existing and create new waypoints
         for (const waypoint of waypoints) {
           if (waypoint.id.startsWith('waypoint-')) {
-            // New waypoint - create it
-            await expeditionApi.createWaypoint(expeditionPublicId, {
-              title: waypoint.name,
-              lat: waypoint.coordinates.lat,
-              lon: waypoint.coordinates.lng,
-              date: waypoint.date || null,
-              description: waypoint.description || undefined,
-              sequence: waypoint.sequence,
-            });
+            await expeditionApi.createWaypoint(expeditionPublicId, buildWaypointPayload(waypoint));
           } else {
-            // Existing waypoint - update it
-            await expeditionApi.updateWaypoint(expeditionPublicId, waypoint.id, {
-              title: waypoint.name,
-              lat: waypoint.coordinates.lat,
-              lon: waypoint.coordinates.lng,
-              date: waypoint.date || null,
-              description: waypoint.description || undefined,
-              sequence: waypoint.sequence,
-            });
+            await expeditionApi.updateWaypoint(expeditionPublicId, waypoint.id, buildWaypointPayload(waypoint));
           }
         }
       } else {
@@ -266,14 +283,7 @@ export function ExpeditionBuilderPage() {
 
         // Create waypoints for the new expedition
         for (const waypoint of waypoints) {
-          await expeditionApi.createWaypoint(expeditionPublicId, {
-            title: waypoint.name,
-            lat: waypoint.coordinates.lat,
-            lon: waypoint.coordinates.lng,
-            date: waypoint.date || null,
-            description: waypoint.description || undefined,
-            sequence: waypoint.sequence,
-          });
+          await expeditionApi.createWaypoint(expeditionPublicId, buildWaypointPayload(waypoint));
         }
       }
 
@@ -292,7 +302,9 @@ export function ExpeditionBuilderPage() {
         router.push(`/expedition/${expeditionPublicId}`);
       }
     } catch (err: any) {
-      setSubmitError(err.message || 'Failed to create expedition');
+      const msg = err.message || 'Failed to create expedition';
+      toast.error(msg);
+      setSubmitError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -317,78 +329,13 @@ export function ExpeditionBuilderPage() {
 
   const status = computeStatus();
 
-  // Calculate end date from start date + duration
-  const handleDurationChange = (days: string) => {
-    setExpectedDuration(days);
-    
-    if (days && expeditionData.startDate) {
-      const start = new Date(expeditionData.startDate);
-      const durationNum = parseInt(days);
-      if (!isNaN(durationNum) && durationNum > 0) {
-        const end = new Date(start);
-        end.setDate(end.getDate() + durationNum);
-        setExpeditionData({ ...expeditionData, endDate: end.toISOString().split('T')[0] });
-      }
-    }
-  };
-
-  // Calculate duration from start and end dates
-  const handleEndDateChange = (date: string) => {
-    setExpeditionData({ ...expeditionData, endDate: date });
-    
-    if (date && expeditionData.startDate) {
-      const start = new Date(date);
-      const end = new Date(expeditionData.endDate);
-      const diffTime = end.getTime() - start.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays >= 0) {
-        setExpectedDuration(diffDays.toString());
-      }
-    }
-  };
-
-  // Update duration when start date changes
-  const handleStartDateChange = (date: string) => {
-    setExpeditionData({ ...expeditionData, startDate: date });
-
-    // Recalculate end date if duration is set
-    if (expectedDuration && date) {
-      const start = new Date(date);
-      const durationNum = parseInt(expectedDuration);
-      if (!isNaN(durationNum) && durationNum > 0) {
-        const end = new Date(start);
-        end.setDate(end.getDate() + durationNum);
-        setExpeditionData({ ...expeditionData, startDate: date, endDate: end.toISOString().split('T')[0] });
-      }
-    } else if (expeditionData.endDate && date) {
-      // Recalculate duration if end date is set
-      const start = new Date(date);
-      const end = new Date(expeditionData.endDate);
-      const diffTime = end.getTime() - start.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays >= 0) {
-        setExpectedDuration(diffDays.toString());
-      }
-    }
-  };
+  const { handleStartDateChange, handleEndDateChange, handleDurationChange } =
+    useBuilderDateHandlers(expeditionData, setExpeditionData, expectedDuration, setExpectedDuration);
 
   // Keep ref in sync with state
   useEffect(() => {
     waypointsRef.current = waypoints;
   }, [waypoints]);
-
-  // Calculate distance between two coordinates (Haversine formula - as the crow flies)
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  };
 
   // Update distances when waypoints change
   const updateDistances = (points: Waypoint[]): Waypoint[] => {
@@ -398,12 +345,7 @@ export function ExpeditionBuilderPage() {
         return { ...point, distanceFromPrevious: 0, cumulativeDistance: 0 };
       }
       const prev = points[index - 1];
-      const distance = calculateDistance(
-        prev.coordinates.lat,
-        prev.coordinates.lng,
-        point.coordinates.lat,
-        point.coordinates.lng
-      );
+      const distance = haversineFromLatLng(prev.coordinates, point.coordinates);
       cumulative += distance;
       return {
         ...point,
@@ -747,11 +689,12 @@ export function ExpeditionBuilderPage() {
             id: String(wp.id),
             sequence: index,
             name: wp.title || `Waypoint ${index + 1}`,
-            type: index === 0 ? 'start' : (index === expedition.waypoints!.length - 1 ? 'end' : 'standard'),
+            type: 'standard' as const,
             coordinates: { lat: wp.lat || 0, lng: wp.lon || 0 },
             location: '', // Not in API response
             date: wp.date ? new Date(wp.date).toISOString().split('T')[0] : '',
-            description: wp.description || ''
+            description: wp.description || '',
+            entryIds: wp.entryIds || (wp.entryId ? [wp.entryId] : []),
           }));
           originalWaypointIdsRef.current = transformedWaypoints.map(wp => wp.id);
           setWaypoints(updateDistances(transformedWaypoints));
@@ -780,7 +723,6 @@ export function ExpeditionBuilderPage() {
     };
 
     loadExpedition();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expeditionId, isEditMode]);
 
   // Initialize map
@@ -843,27 +785,39 @@ export function ExpeditionBuilderPage() {
         const { lng, lat } = e.lngLat;
         const currentWaypoints = waypointsRef.current;
 
-        // Create new waypoint - simply append to end (no date, no resequencing)
         const newWaypoint: Waypoint = {
           id: `waypoint-${Date.now()}`,
-          sequence: currentWaypoints.length,
+          sequence: 0,
           name: `Waypoint ${currentWaypoints.length + 1}`,
           type: 'standard',
           coordinates: { lat, lng },
           location: '',
           date: '',
-          description: ''
+          description: '',
+          entryIds: [],
         };
 
         setWaypoints(prev => {
-          const all = [...prev, newWaypoint];
-          // Just update sequence numbers and types, no date-based sorting
-          const resequenced = all.map((w, index) => ({
-            ...w,
-            sequence: index,
-            type: (index === 0 ? 'start' : index === all.length - 1 ? 'end' : 'standard') as 'start' | 'end' | 'standard',
-          }));
-          return updateDistances(resequenced);
+          let all: Waypoint[];
+          if (prev.length < 2) {
+            // 0-1 existing waypoints — just append
+            all = [...prev, newWaypoint];
+          } else {
+            // 2+ waypoints — insert at geographically closest segment
+            let bestSegIdx = 0;
+            let bestDistSq = Infinity;
+            for (let i = 0; i < prev.length - 1; i++) {
+              const { distSq } = projectToSegment(
+                { lat, lng },
+                prev[i].coordinates,
+                prev[i + 1].coordinates,
+              );
+              if (distSq < bestDistSq) { bestDistSq = distSq; bestSegIdx = i; }
+            }
+            const insertIdx = bestSegIdx + 1;
+            all = [...prev.slice(0, insertIdx), newWaypoint, ...prev.slice(insertIdx)];
+          }
+          return updateDistances(all.map((w, i) => ({ ...w, sequence: i })));
         });
       });
 
@@ -928,11 +882,10 @@ export function ExpeditionBuilderPage() {
       return;
     }
 
-    // Build a fingerprint from coordinates + mode + roundTrip + entries to detect actual route changes.
+    // Build a fingerprint from coordinates + mode + roundTrip to detect actual route changes.
     // This prevents re-fetching when only distances were updated by applyDirectionsDistances.
-    const entryFingerprint = expeditionEntries.map(e => `${e.coords.lat},${e.coords.lng}`).join('|');
     const fingerprint = waypoints.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
-      + `::${routeMode}::${isRoundTrip}::${entryFingerprint}`;
+      + `::${routeMode}::${isRoundTrip}`;
 
     if (fingerprint === lastDirectionsCoordsRef.current) {
       return; // Coordinates haven't changed, skip fetch
@@ -951,43 +904,9 @@ export function ExpeditionBuilderPage() {
     setDirectionsWarnings([]);
     setDirectionsLoading(true);
 
-    // Build merged route points using timeline ordering (waypoint backbone with entries interleaved)
-    const datedEntryStops = expeditionEntries.filter(e => e.date);
-    const mergedStops: Array<{ coordinates: { lat: number; lng: number }; name: string; isWaypoint: boolean }> = [];
-    let entryInsertIdx = 0;
-    const sortedDatedEntries = [...datedEntryStops].sort((a, b) => a.date.localeCompare(b.date));
-
-    for (let i = 0; i < waypoints.length; i++) {
-      mergedStops.push({ coordinates: waypoints[i].coordinates, name: waypoints[i].name, isWaypoint: true });
-
-      // Find next dated waypoint to bound entry placement
-      let nextWpDate: string | undefined;
-      for (let j = i + 1; j < waypoints.length; j++) {
-        if (waypoints[j].date) { nextWpDate = waypoints[j].date; break; }
-      }
-
-      // Insert entries that belong between this waypoint and the next dated waypoint
-      while (entryInsertIdx < sortedDatedEntries.length) {
-        const entry = sortedDatedEntries[entryInsertIdx];
-        if (nextWpDate && entry.date >= nextWpDate) break;
-        mergedStops.push({ coordinates: { lat: entry.coords.lat, lng: entry.coords.lng }, name: entry.title, isWaypoint: false });
-        entryInsertIdx++;
-      }
-    }
-    // Remaining entries after last waypoint
-    while (entryInsertIdx < sortedDatedEntries.length) {
-      const entry = sortedDatedEntries[entryInsertIdx];
-      mergedStops.push({ coordinates: { lat: entry.coords.lat, lng: entry.coords.lng }, name: entry.title, isWaypoint: false });
-      entryInsertIdx++;
-    }
-
-    // Track waypoint indices in the merged list for leg aggregation
-    const wpIndices = mergedStops.map((s, i) => s.isWaypoint ? i : -1).filter(i => i >= 0);
-    const hasEntryStops = datedEntryStops.length > 0;
-
     directionsTimerRef.current = setTimeout(() => {
       lastDirectionsCoordsRef.current = fingerprint;
-      fetchDirectionsRoute(mergedStops, routeMode, hasEntryStops ? wpIndices : undefined);
+      fetchDirectionsRoute(waypoints, routeMode);
     }, 500);
 
     return () => {
@@ -1003,7 +922,7 @@ export function ExpeditionBuilderPage() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waypoints, routeMode, isRoundTrip, mapLoaded, expeditionEntries]);
+  }, [waypoints, routeMode, isRoundTrip, mapLoaded]);
 
   // Apply directions distances when they arrive from the API.
   // IMPORTANT: Only depend on directionsLegDistances — NOT routeMode.
@@ -1023,23 +942,35 @@ export function ExpeditionBuilderPage() {
     // Remove existing markers
     markers.current.forEach(marker => marker.remove());
     markers.current = [];
-    entryMarkersRef.current.forEach(marker => marker.remove());
+    clusteredEntryRef.current?.cleanup();
+    clusteredEntryRef.current = null;
     entryMarkersRef.current = [];
 
-    // Add new markers — use timeline position numbers
-    waypoints.forEach((waypoint) => {
+    // Add waypoint markers — first = start, last = end
+    waypoints.forEach((waypoint, wpIdx) => {
       const el = document.createElement('div');
       el.className = 'waypoint-marker';
       el.style.cssText = 'cursor: pointer;';
 
-      const isStart = waypoint.type === 'start';
-      const isEnd = waypoint.type === 'end' && !isRoundTrip;
+      const isStart = wpIdx === 0;
+      const isEnd = wpIdx === waypoints.length - 1 && !isRoundTrip && waypoints.length > 1;
       const isStartEnd = isStart || isEnd;
+      const positionNumber = wpIdx + 1;
+      const isConverted = waypoint.entryIds.length > 0;
 
-      // Find timeline position for this waypoint
-      const timelinePos = timeline.findIndex(t => t.kind === 'waypoint' && t.data.id === waypoint.id) + 1;
-
-      if (isStartEnd) {
+      if (isConverted) {
+        // Converted waypoint — circle marker (brown), shows entry count
+        const entryCount = waypoint.entryIds.length;
+        if (entryCount > 1) {
+          // Multi-entry cluster badge
+          el.style.cssText += ` width: 30px; height: 30px; border-radius: 50%; background: #8a5738; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;`;
+          el.innerHTML = `<span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${entryCount}</span>`;
+        } else {
+          // Single-entry circle
+          el.style.cssText += ` width: 26px; height: 26px; border-radius: 50%; background: #ac6d46; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;`;
+          el.innerHTML = `<span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${positionNumber}</span>`;
+        }
+      } else if (isStartEnd) {
         // Start/End markers — larger diamond with letter label
         const fillColor = (isStart && isRoundTrip) ? '#ac6d46' : isStart ? '#ac6d46' : '#4676ac';
         const borderStyle = (isStart && isRoundTrip) ? '3px solid #4676ac' : '3px solid white';
@@ -1051,11 +982,11 @@ export function ExpeditionBuilderPage() {
           </div>
         `;
       } else {
-        // Standard waypoint markers — gray numbered diamond with timeline position
+        // Standard waypoint markers — gray numbered diamond
         el.style.cssText += ` width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;`;
         el.innerHTML = `
           <div style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); background: #616161; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2);">
-            <span style="transform: rotate(-45deg); color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${timelinePos}</span>
+            <span style="transform: rotate(-45deg); color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${positionNumber}</span>
           </div>
         `;
       }
@@ -1068,48 +999,49 @@ export function ExpeditionBuilderPage() {
       const marker = new mapboxgl.Marker({
         element: el,
         anchor: 'center',
-        draggable: true
+        draggable: !isConverted, // Converted waypoints cannot be dragged
       })
         .setLngLat([waypoint.coordinates.lng, waypoint.coordinates.lat])
         .addTo(map.current!);
 
-      // Handle marker drag end to update waypoint coordinates
-      marker.on('dragend', () => {
-        const lngLat = marker.getLngLat();
-        setWaypoints(prev => {
-          const updated = prev.map(w =>
-            w.id === waypoint.id
-              ? { ...w, coordinates: { lat: lngLat.lat, lng: lngLat.lng } }
-              : w
-          );
-          return updateDistances(updated);
+      // Handle marker drag end to update waypoint coordinates (only for non-converted)
+      if (!isConverted) {
+        marker.on('dragend', () => {
+          const lngLat = marker.getLngLat();
+          setWaypoints(prev => {
+            const updated = prev.map(w =>
+              w.id === waypoint.id
+                ? { ...w, coordinates: { lat: lngLat.lat, lng: lngLat.lng } }
+                : w
+            );
+            return updateDistances(updated);
+          });
         });
-      });
+      }
 
       markers.current.push(marker);
     });
 
-    // Add entry markers (copper circles with timeline position numbers, non-draggable)
-    expeditionEntries.forEach(entry => {
-      const entryTimelinePos = timeline.findIndex(t => t.kind === 'entry' && t.data.id === entry.id) + 1;
-      const el = document.createElement('div');
-      el.className = 'entry-marker';
-      const size = entryTimelinePos > 0 ? '22px' : '20px';
-      el.style.cssText = `width: ${size}; height: ${size}; cursor: default; display: flex; align-items: center; justify-content: center;`;
-      el.innerHTML = `
-        <div style="width: ${size}; height: ${size}; border-radius: 50%; background: #ac6d46; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: bold; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${entryTimelinePos > 0 ? entryTimelinePos : ''}</div>
-      `;
-
-      const marker = new mapboxgl.Marker({
-        element: el,
-        anchor: 'center',
-        draggable: false,
-      })
-        .setLngLat([entry.coords.lng, entry.coords.lat])
-        .addTo(map.current!);
-
-      entryMarkersRef.current.push(marker);
+    // Add entry markers with clustering — only for legacy entries not linked to any waypoint
+    // (Linked entries are already represented by converted waypoint markers above)
+    const linkedEntryIds = new Set<string>();
+    waypoints.forEach(wp => {
+      (wp.entryIds || []).forEach(eid => linkedEntryIds.add(eid));
     });
+    const legacyEntries = expeditionEntries.filter(e => !linkedEntryIds.has(e.id));
+
+    if (legacyEntries.length > 0) {
+      const result = renderClusteredMarkers({
+        entries: legacyEntries,
+        map: map.current!,
+        mapContainerRef: mapContainer,
+        onSingleEntryClick: () => {},
+        onClusterClick: () => {},
+      });
+      entryMarkersRef.current = result.markers;
+      clusteredEntryRef.current = result;
+      map.current!.on('zoomend', result.recalculate);
+    }
 
     // Draw route line — deferred if style is still loading
     const drawRoute = () => {
@@ -1129,19 +1061,15 @@ export function ExpeditionBuilderPage() {
         // Source/layer may already be removed
       }
 
-      if (waypoints.length > 1 || (waypoints.length >= 1 && expeditionEntries.length >= 1)) {
+      if (waypoints.length > 1) {
         const useDirections = routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0;
 
         let routeCoordinates: number[][];
         if (useDirections) {
           routeCoordinates = directionsGeometry;
         } else {
-          // Use timeline ordering (waypoint backbone with entries interleaved)
-          routeCoordinates = timeline.map(item =>
-            item.kind === 'waypoint'
-              ? [item.data.coordinates.lng, item.data.coordinates.lat]
-              : [item.data.coords.lng, item.data.coords.lat]
-          );
+          // Straight-line route through waypoints in order
+          routeCoordinates = waypoints.map(w => [w.coordinates.lng, w.coordinates.lat]);
           // If round trip is enabled, add the start point to the end
           if (isRoundTrip && routeCoordinates.length > 0) {
             routeCoordinates.push(routeCoordinates[0]);
@@ -1260,7 +1188,8 @@ export function ExpeditionBuilderPage() {
     return () => {
       markers.current.forEach(marker => marker.remove());
       markers.current = [];
-      entryMarkersRef.current.forEach(marker => marker.remove());
+      clusteredEntryRef.current?.cleanup();
+      clusteredEntryRef.current = null;
       entryMarkersRef.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1282,11 +1211,10 @@ export function ExpeditionBuilderPage() {
       setIsRoundTrip(false);
     }
 
-    // Update sequence numbers and types without date-based reordering
+    // Update sequence numbers
     const updated = filtered.map((w, index) => ({
       ...w,
       sequence: index,
-      type: (index === 0 ? 'start' : index === filtered.length - 1 ? 'end' : 'standard') as 'start' | 'end' | 'standard',
     }));
     setWaypoints(updateDistances(updated));
     if (selectedWaypoint === id) setSelectedWaypoint(null);
@@ -1314,61 +1242,34 @@ export function ExpeditionBuilderPage() {
       result[entry.index] = sortedDated[i];
     });
 
-    // Update sequence and type based on final position
+    // Update sequence based on final position
     const resequenced = result.map((w, index) => ({
       ...w,
       sequence: index,
-      type: (index === 0 ? 'start' : index === result.length - 1 ? 'end' : 'standard') as 'start' | 'end' | 'standard',
     }));
 
     return updateDistances(resequenced);
   };
 
-  // Check if moving a waypoint maintains chronological order in the full timeline
-  // (waypoints + interleaved entries). This prevents a dated waypoint from landing
-  // before an earlier-dated entry or after a later-dated entry.
+  // Check if moving a waypoint maintains chronological order among dated waypoints
   const canMoveWaypoint = (waypointId: string, direction: 'up' | 'down', points: Waypoint[]): boolean => {
     const idx = points.findIndex(w => w.id === waypointId);
     if (idx < 0) return false;
     if (direction === 'up' && idx === 0) return false;
     if (direction === 'down' && idx === points.length - 1) return false;
 
-    // Build proposed waypoint order
-    const insertAt = direction === 'up' ? idx - 1 : idx + 1;
+    // Build proposed order
     const without = points.filter(w => w.id !== waypointId);
+    const insertAt = direction === 'up' ? idx - 1 : idx;
     const proposed = [...without.slice(0, insertAt), points[idx], ...without.slice(insertAt)];
 
-    // Simulate timeline interleaving with entries
-    const sortedEntries = [...expeditionEntries]
-      .filter(e => e.date)
-      .sort((a, b) => a.date.localeCompare(b.date));
-
-    const dates: string[] = [];
-    let eIdx = 0;
-    for (let i = 0; i < proposed.length; i++) {
-      if (proposed[i].date) dates.push(proposed[i].date);
-
-      // Find next dated waypoint to bound entry placement
-      let nextWpDate: string | undefined;
-      for (let j = i + 1; j < proposed.length; j++) {
-        if (proposed[j].date) { nextWpDate = proposed[j].date; break; }
+    // Check for any date inversion among dated waypoints
+    let lastDate = '';
+    for (const w of proposed) {
+      if (w.date) {
+        if (lastDate && w.date < lastDate) return false;
+        lastDate = w.date;
       }
-
-      while (eIdx < sortedEntries.length) {
-        const entry = sortedEntries[eIdx];
-        if (nextWpDate && entry.date >= nextWpDate) break;
-        dates.push(entry.date);
-        eIdx++;
-      }
-    }
-    while (eIdx < sortedEntries.length) {
-      dates.push(sortedEntries[eIdx].date);
-      eIdx++;
-    }
-
-    // Check for any date inversion in the timeline
-    for (let i = 1; i < dates.length; i++) {
-      if (dates[i] < dates[i - 1]) return false;
     }
     return true;
   };
@@ -1386,7 +1287,6 @@ export function ExpeditionBuilderPage() {
       const resequenced = inserted.map((w, i) => ({
         ...w,
         sequence: i,
-        type: (i === 0 ? 'start' : i === inserted.length - 1 ? 'end' : 'standard') as Waypoint['type'],
       }));
       return updateDistances(resequenced);
     });
@@ -1436,61 +1336,9 @@ export function ExpeditionBuilderPage() {
 
   const selectedWaypointData = waypoints.find(w => w.id === selectedWaypoint);
 
-  // Build merged timeline: waypoints form the backbone in sequence order,
-  // entries are interleaved between waypoints based on their dates.
-  type TimelineItem =
-    | { kind: 'waypoint'; data: Waypoint }
-    | { kind: 'entry'; data: (typeof expeditionEntries)[number] };
-
-  const timeline: TimelineItem[] = useMemo(() => {
-    if (expeditionEntries.length === 0) {
-      return waypoints.map(w => ({ kind: 'waypoint' as const, data: w }));
-    }
-
-    const result: TimelineItem[] = [];
-
-    // Sort entries by date for ordered insertion
-    const sortedEntries = [...expeditionEntries]
-      .sort((a, b) => {
-        if (a.date && b.date) return a.date.localeCompare(b.date);
-        if (a.date && !b.date) return -1;
-        if (!a.date && b.date) return 1;
-        return 0;
-      });
-
-    let entryIdx = 0;
-
-    for (let i = 0; i < waypoints.length; i++) {
-      result.push({ kind: 'waypoint' as const, data: waypoints[i] });
-
-      // Find the next waypoint that has a date (to bound entry placement)
-      let nextWpDate: string | undefined;
-      for (let j = i + 1; j < waypoints.length; j++) {
-        if (waypoints[j].date) {
-          nextWpDate = waypoints[j].date;
-          break;
-        }
-      }
-
-      // Insert entries that belong between this waypoint and the next dated waypoint
-      while (entryIdx < sortedEntries.length) {
-        const entry = sortedEntries[entryIdx];
-        if (!entry.date) break; // dateless entries go at the end
-        // If there's a next dated waypoint, only place entries before its date
-        if (nextWpDate && entry.date >= nextWpDate) break;
-        result.push({ kind: 'entry' as const, data: entry });
-        entryIdx++;
-      }
-    }
-
-    // Add remaining entries (dateless or after all waypoints) at the end
-    while (entryIdx < sortedEntries.length) {
-      result.push({ kind: 'entry' as const, data: sortedEntries[entryIdx] });
-      entryIdx++;
-    }
-
-    return result;
-  }, [waypoints, expeditionEntries]);
+  // Start/End waypoint IDs — simple: first waypoint = start, last = end
+  const startWaypointId = waypoints.length > 0 ? waypoints[0].id : null;
+  const endWaypointId = waypoints.length > 1 ? waypoints[waypoints.length - 1].id : null;
 
   // Authentication gate
   if (!isAuthenticated) {
@@ -1923,28 +1771,18 @@ export function ExpeditionBuilderPage() {
                           </label>
                           <div className="relative">
                             {(() => {
-                              // Compute min/max from timeline neighbors (entries are fixed date anchors)
-                              const selectedIdx = timeline.findIndex(
-                                t => t.kind === 'waypoint' && t.data.id === selectedWaypoint
-                              );
-                              const prevDated = selectedIdx > 0
-                                ? timeline.slice(0, selectedIdx).reverse().find(t => {
-                                    const d = t.kind === 'waypoint' ? t.data.date : t.data.date;
-                                    return !!d;
-                                  })
-                                : undefined;
-                              const nextDated = selectedIdx >= 0
-                                ? timeline.slice(selectedIdx + 1).find(t => {
-                                    const d = t.kind === 'waypoint' ? t.data.date : t.data.date;
-                                    return !!d;
-                                  })
-                                : undefined;
-                              const dateMin = prevDated
-                                ? (prevDated.kind === 'waypoint' ? prevDated.data.date : prevDated.data.date)
-                                : expeditionData.startDate;
-                              const dateMax = nextDated
-                                ? (nextDated.kind === 'waypoint' ? nextDated.data.date : nextDated.data.date)
-                                : expeditionData.endDate;
+                              // Compute min/max from neighboring waypoint dates
+                              const wpIdx = waypoints.findIndex(w => w.id === selectedWaypoint);
+                              let dateMin = expeditionData.startDate;
+                              let dateMax = expeditionData.endDate;
+                              // Find previous dated waypoint
+                              for (let i = wpIdx - 1; i >= 0; i--) {
+                                if (waypoints[i].date) { dateMin = waypoints[i].date; break; }
+                              }
+                              // Find next dated waypoint
+                              for (let i = wpIdx + 1; i < waypoints.length; i++) {
+                                if (waypoints[i].date) { dateMax = waypoints[i].date; break; }
+                              }
 
                               return (
                                 <DatePicker
@@ -1973,7 +1811,9 @@ export function ExpeditionBuilderPage() {
                             {Math.abs(selectedWaypointData.coordinates.lat).toFixed(6)}°{selectedWaypointData.coordinates.lat >= 0 ? 'N' : 'S'}, {Math.abs(selectedWaypointData.coordinates.lng).toFixed(6)}°{selectedWaypointData.coordinates.lng >= 0 ? 'E' : 'W'}
                           </div>
                           <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                            Coordinates are set automatically when you place the marker
+                            {selectedWaypointData.entryIds.length > 0
+                              ? 'Coordinates locked — this waypoint has linked entries'
+                              : 'Coordinates are set automatically when you place the marker'}
                           </p>
                         </div>
                       </div>
@@ -2045,8 +1885,8 @@ export function ExpeditionBuilderPage() {
                       </div>
                       
                       <div className="flex gap-3">
-                        {/* Round Trip button - only for start point */}
-                        {selectedWaypointData.type === 'start' && waypoints.length > 1 && (
+                        {/* Round Trip button - only for start waypoint */}
+                        {selectedWaypointData.id === startWaypointId && waypoints.length > 1 && (
                           <button
                             onClick={() => setIsRoundTrip(!isRoundTrip)}
                             className={`flex-1 px-3 py-2 transition-all text-xs font-bold ${
@@ -2059,8 +1899,8 @@ export function ExpeditionBuilderPage() {
                           </button>
                         )}
 
-                        {/* Delete Button - not for start point */}
-                        {selectedWaypointData.type !== 'start' && (
+                        {/* Delete Button - not for start waypoint, not for converted waypoints */}
+                        {selectedWaypointData.id !== startWaypointId && selectedWaypointData.entryIds.length === 0 && (
                           <button
                             onClick={() => setConfirmingDelete(selectedWaypoint)}
                             className="flex-1 px-3 py-2 border-2 border-[#616161] dark:border-[#616161] bg-[#616161] dark:bg-[#4a4a4a] text-white hover:bg-[#202020] dark:hover:bg-[#616161] transition-all text-xs font-bold flex items-center justify-center gap-2"
@@ -2097,7 +1937,7 @@ export function ExpeditionBuilderPage() {
             <div className="flex-1 overflow-y-auto min-h-0">
                 <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] sticky top-0 z-10">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold dark:text-[#e5e5e5]">ROUTE TIMELINE ({waypoints.length} waypoints{expeditionEntries.length > 0 ? `, ${expeditionEntries.length} ${expeditionEntries.length === 1 ? 'entry' : 'entries'}` : ''})</h3>
+                    <h3 className="text-xs font-bold dark:text-[#e5e5e5]">ROUTE WAYPOINTS ({waypoints.length})</h3>
                     <div className="flex items-center gap-3">
                       {waypoints.length > 0 && (
                         <button
@@ -2117,7 +1957,7 @@ export function ExpeditionBuilderPage() {
                   </div>
                 </div>
 
-                {waypoints.length === 0 && expeditionEntries.length === 0 ? (
+                {waypoints.length === 0 ? (
                   <div className="p-6 text-center">
                     <MapPin className="w-12 h-12 mx-auto mb-3 text-[#b5bcc4]" />
                     <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-1">No waypoints yet</p>
@@ -2127,96 +1967,118 @@ export function ExpeditionBuilderPage() {
                   </div>
                 ) : (
                   <div>
-                    {timeline.map((item, timelineIdx) => {
-                      const positionNumber = timelineIdx + 1;
+                    {waypoints.map((waypoint, wpIdx) => {
+                      const positionNumber = wpIdx + 1;
+                      const isStart = wpIdx === 0;
+                      const isEnd = wpIdx === waypoints.length - 1 && !isRoundTrip && waypoints.length > 1;
+                      const justMoved = movedWaypointId === waypoint.id;
+                      const canUp = canMoveWaypoint(waypoint.id, 'up', waypoints);
+                      const canDown = canMoveWaypoint(waypoint.id, 'down', waypoints);
 
-                      if (item.kind === 'waypoint') {
-                        const waypoint = item.data;
-                        const wpArrayIdx = waypoints.indexOf(waypoint);
-                        const isStart = waypoint.type === 'start';
-                        const isEnd = waypoint.type === 'end' && !isRoundTrip;
-                        const justMoved = movedWaypointId === waypoint.id;
-                        const canUp = canMoveWaypoint(waypoint.id, 'up', waypoints);
-                        const canDown = canMoveWaypoint(waypoint.id, 'down', waypoints);
+                      return (
+                        <div key={`wp-${waypoint.id}`}>
+                          {/* Waypoint row */}
+                          <div
+                            onClick={() => setSelectedWaypoint(waypoint.id)}
+                            className={`p-3 transition-colors duration-300 cursor-pointer ${
+                              justMoved
+                                ? 'bg-[#ac6d46]/15 dark:bg-[#ac6d46]/20 ring-1 ring-inset ring-[#ac6d46]/40'
+                                : selectedWaypoint === waypoint.id
+                                  ? 'bg-[#fff8dc] dark:bg-[#3a2f1f]'
+                                  : 'hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a]'
+                            }`}
+                          >
+                            <div className="flex items-start gap-2">
+                              {/* Move buttons */}
+                              {waypoints.length > 1 && (
+                                <div className="flex flex-col items-center flex-shrink-0 pt-1">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleMoveWaypoint(waypoint.id, 'up'); }}
+                                    disabled={!canUp}
+                                    className={`p-0.5 rounded transition-all ${canUp ? 'text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] hover:bg-[#ac6d46]/10' : 'text-[#e5e5e5] dark:text-[#3a3a3a] cursor-default'}`}
+                                    title="Move up"
+                                  >
+                                    <ChevronUp size={14} />
+                                  </button>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleMoveWaypoint(waypoint.id, 'down'); }}
+                                    disabled={!canDown}
+                                    className={`p-0.5 rounded transition-all ${canDown ? 'text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] hover:bg-[#ac6d46]/10' : 'text-[#e5e5e5] dark:text-[#3a3a3a] cursor-default'}`}
+                                    title="Move down"
+                                  >
+                                    <ChevronDown size={14} />
+                                  </button>
+                                </div>
+                              )}
 
-                        return (
-                          <div key={`wp-${waypoint.id}`}>
-                            {/* Waypoint row */}
-                            <div
-                              onClick={() => setSelectedWaypoint(waypoint.id)}
-                              className={`p-3 transition-colors duration-300 cursor-pointer ${
-                                justMoved
-                                  ? 'bg-[#ac6d46]/15 dark:bg-[#ac6d46]/20 ring-1 ring-inset ring-[#ac6d46]/40'
-                                  : selectedWaypoint === waypoint.id
-                                    ? 'bg-[#fff8dc] dark:bg-[#3a2f1f]'
-                                    : 'hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a]'
-                              }`}
-                            >
-                              <div className="flex items-start gap-2">
-                                {/* Move buttons */}
-                                {waypoints.length > 1 && (
-                                  <div className="flex flex-col items-center flex-shrink-0 pt-1">
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleMoveWaypoint(waypoint.id, 'up'); }}
-                                      disabled={!canUp}
-                                      className={`p-0.5 rounded transition-all ${canUp ? 'text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] hover:bg-[#ac6d46]/10' : 'text-[#e5e5e5] dark:text-[#3a3a3a] cursor-default'}`}
-                                      title="Move up"
-                                    >
-                                      <ChevronUp size={14} />
-                                    </button>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleMoveWaypoint(waypoint.id, 'down'); }}
-                                      disabled={!canDown}
-                                      className={`p-0.5 rounded transition-all ${canDown ? 'text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] hover:bg-[#ac6d46]/10' : 'text-[#e5e5e5] dark:text-[#3a3a3a] cursor-default'}`}
-                                      title="Move down"
-                                    >
-                                      <ChevronDown size={14} />
-                                    </button>
-                                  </div>
-                                )}
-
-                                {/* Marker Badge */}
+                              {/* Marker Badge — circle for converted, diamond for unconverted */}
+                              {waypoint.entryIds.length > 0 ? (
                                 <div
                                   className="rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
                                   style={{
-                                    width: isStart || isEnd ? '32px' : '28px',
-                                    height: isStart || isEnd ? '32px' : '28px',
-                                    fontSize: isStart || isEnd ? '14px' : '12px',
-                                    backgroundColor: isStart ? '#ac6d46' : isEnd ? '#4676ac' : '#616161',
-                                    border: waypoint.type === 'start' && isRoundTrip ? '3px solid #4676ac' : '2px solid white',
-                                    boxShadow: '0 1px 4px rgba(0,0,0,0.2)'
+                                    width: waypoint.entryIds.length > 1 ? '32px' : '28px',
+                                    height: waypoint.entryIds.length > 1 ? '32px' : '28px',
+                                    fontSize: waypoint.entryIds.length > 1 ? '12px' : '12px',
+                                    backgroundColor: waypoint.entryIds.length > 1 ? '#8a5738' : '#ac6d46',
+                                    border: '2px solid white',
+                                    boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
                                   }}
                                 >
-                                  {isStart ? 'S' : isEnd ? 'E' : positionNumber}
+                                  {waypoint.entryIds.length > 1 ? waypoint.entryIds.length : positionNumber}
                                 </div>
-
-                                {/* Waypoint Info */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5] truncate">
-                                    {waypoint.name || `Waypoint ${wpArrayIdx + 1}`}
+                              ) : (
+                                <div className="flex items-center justify-center flex-shrink-0" style={{ width: isStart || isEnd ? '32px' : '28px', height: isStart || isEnd ? '32px' : '28px' }}>
+                                  <div
+                                    className="flex items-center justify-center text-white font-bold"
+                                    style={{
+                                      width: isStart || isEnd ? '24px' : '20px',
+                                      height: isStart || isEnd ? '24px' : '20px',
+                                      transform: 'rotate(45deg)',
+                                      backgroundColor: isStart ? '#ac6d46' : isEnd ? '#4676ac' : '#616161',
+                                      border: isStart && isRoundTrip ? '2px solid #4676ac' : '2px solid white',
+                                      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                                    }}
+                                  >
+                                    <span style={{ transform: 'rotate(-45deg)', fontSize: isStart || isEnd ? '12px' : '10px', lineHeight: '1' }}>
+                                      {isStart ? 'S' : isEnd ? 'E' : positionNumber}
+                                    </span>
                                   </div>
-                                  {waypoint.location && (
-                                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] truncate mb-1">
-                                      {waypoint.location}
+                                </div>
+                              )}
+
+                              {/* Waypoint Info */}
+                              <div className="flex-1 min-w-0">
+                                <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5] truncate flex items-center gap-2">
+                                  <span className="truncate">{waypoint.name || `Waypoint ${wpIdx + 1}`}</span>
+                                  {waypoint.entryIds.length > 0 && (
+                                    <span className="ml-auto px-1.5 py-0.5 bg-[#ac6d46]/15 text-[#ac6d46] text-[10px] font-bold border border-[#ac6d46]/30 flex-shrink-0">
+                                      {waypoint.entryIds.length === 1 ? 'ENTRY' : `${waypoint.entryIds.length} ENTRIES`}
+                                    </span>
+                                  )}
+                                </div>
+                                {waypoint.location && (
+                                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] truncate mb-1">
+                                    {waypoint.location}
+                                  </div>
+                                )}
+                                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono space-y-0.5">
+                                  <div className="truncate">{Math.abs(waypoint.coordinates.lat).toFixed(4)}°{waypoint.coordinates.lat >= 0 ? 'N' : 'S'}, {Math.abs(waypoint.coordinates.lng).toFixed(4)}°{waypoint.coordinates.lng >= 0 ? 'E' : 'W'}</div>
+                                  {waypoint.date && (
+                                    <div className="text-[#ac6d46]">{waypoint.date}</div>
+                                  )}
+                                  {wpIdx > 0 && waypoint.distanceFromPrevious !== undefined && (
+                                    <div className="text-[#4676ac]">
+                                      +{formatDistance(waypoint.distanceFromPrevious, 1)}
+                                      {waypoint.travelTimeFromPrevious ? ` (${formatTravelTime(waypoint.travelTimeFromPrevious)})` : ''}
+                                      {waypoint.cumulativeDistance !== undefined && (
+                                        <> • {formatDistance(waypoint.cumulativeDistance, 1)} total</>
+                                      )}
                                     </div>
                                   )}
-                                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono space-y-0.5">
-                                    <div className="truncate">{Math.abs(waypoint.coordinates.lat).toFixed(4)}°{waypoint.coordinates.lat >= 0 ? 'N' : 'S'}, {Math.abs(waypoint.coordinates.lng).toFixed(4)}°{waypoint.coordinates.lng >= 0 ? 'E' : 'W'}</div>
-                                    {waypoint.date && (
-                                      <div className="text-[#ac6d46]">{waypoint.date}</div>
-                                    )}
-                                    {wpArrayIdx > 0 && waypoint.distanceFromPrevious !== undefined && (
-                                      <div className="text-[#4676ac]">
-                                        +{formatDistance(waypoint.distanceFromPrevious, 1)}
-                                        {waypoint.travelTimeFromPrevious ? ` (${formatTravelTime(waypoint.travelTimeFromPrevious)})` : ''}
-                                        {waypoint.cumulativeDistance !== undefined && (
-                                          <> • {formatDistance(waypoint.cumulativeDistance, 1)} total</>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
                                 </div>
+                              </div>
 
+                              {waypoint.entryIds.length === 0 && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -2226,72 +2088,21 @@ export function ExpeditionBuilderPage() {
                                 >
                                   <Trash2 size={16} />
                                 </button>
-                              </div>
+                              )}
                             </div>
-
-                            {/* Separator */}
-                            <div className="h-px bg-[#202020] dark:bg-[#616161]" />
                           </div>
-                        );
-                      } else {
-                        const entry = item.data;
-                        return (
-                          <div key={`entry-${entry.id}`}>
-                            <div
-                              className="p-3 bg-[#faf6f2] dark:bg-[#2a2520] cursor-default"
-                            >
-                              <div className="flex items-start gap-2">
-                                {/* Spacer to align with waypoints that have move controls */}
-                                {waypoints.length > 1 && (
-                                  <div className="flex-shrink-0" style={{ width: '24px' }} />
-                                )}
 
-                                {/* Entry Square Icon */}
-                                <div
-                                  className="flex items-center justify-center text-white font-bold flex-shrink-0"
-                                  style={{
-                                    width: '24px',
-                                    height: '24px',
-                                    fontSize: '11px',
-                                    backgroundColor: '#ac6d46',
-                                    border: '2px solid white',
-                                    boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-                                    borderRadius: '2px',
-                                  }}
-                                >
-                                  {positionNumber}
-                                </div>
-
-                                {/* Entry Info */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <div className="font-bold text-sm dark:text-[#e5e5e5] truncate">
-                                      {entry.title}
-                                    </div>
-                                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-[#ac6d46] text-white flex-shrink-0">
-                                      ENTRY
-                                    </span>
-                                  </div>
-                                  {entry.place && (
-                                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] truncate mb-1">
-                                      {entry.place}
-                                    </div>
-                                  )}
-                                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono space-y-0.5">
-                                    <div className="truncate">{Math.abs(entry.coords.lat).toFixed(4)}°{entry.coords.lat >= 0 ? 'N' : 'S'}, {Math.abs(entry.coords.lng).toFixed(4)}°{entry.coords.lng >= 0 ? 'E' : 'W'}</div>
-                                    {entry.date && (
-                                      <div className="text-[#ac6d46]">{entry.date}</div>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                            {/* Separator */}
-                            <div className="h-px bg-[#202020] dark:bg-[#616161]" />
-                          </div>
-                        );
-                      }
+                          {/* Separator */}
+                          <div className="h-px bg-[#202020] dark:bg-[#616161]" />
+                        </div>
+                      );
                     })}
+                    {/* Entries indicator */}
+                    {expeditionEntries.length > 0 && (
+                      <div className="p-3 text-center text-xs text-[#616161] dark:text-[#b5bcc4] font-mono bg-[#faf6f2] dark:bg-[#2a2520]">
+                        {expeditionEntries.length} {expeditionEntries.length === 1 ? 'journal entry' : 'journal entries'} linked to waypoints
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -2461,7 +2272,7 @@ export function ExpeditionBuilderPage() {
                   UPLOAD COVER PHOTO
                 </div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                  Click or drag file here • JPG, PNG • Max 5MB • Recommended: 1200x600px
+                  Click or drag file here • JPG, PNG • Max 10MB • Recommended: 1200x600px
                 </div>
               </div>
             )}
@@ -2644,7 +2455,11 @@ export function ExpeditionBuilderPage() {
       {/* Action Buttons - Bottom */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mt-6 p-4 md:p-6">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <button className="px-6 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm font-bold flex items-center justify-center gap-2">
+          <button
+            onClick={() => handleCreateExpedition(false, true)}
+            disabled={isSubmitting}
+            className="px-6 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+          >
             SAVE AS DRAFT
           </button>
           <button
@@ -2714,125 +2529,74 @@ export function ExpeditionBuilderPage() {
         const wp = waypoints.find(w => w.id === confirmingDelete);
         if (!wp) return null;
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center">
-            <div className="absolute inset-0 bg-[#202020]/60" onClick={() => setConfirmingDelete(null)} />
-            <div className="relative w-[90%] max-w-md bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-              <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
-                <Trash2 size={18} />
-                <h3 className="text-sm font-bold">DELETE WAYPOINT</h3>
-              </div>
-              <div className="p-6">
-                <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-1">
-                  Are you sure you want to delete this waypoint?
-                </p>
-                <p className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-4">
-                  "{wp.name}"
-                </p>
-                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-6">
-                  This action cannot be undone. The waypoint will be removed from your route.
-                </p>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => setConfirmingDelete(null)}
-                    className="flex-1 px-4 py-2.5 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-xs font-bold"
-                  >
-                    CANCEL
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleDeleteWaypoint(confirmingDelete);
-                      setConfirmingDelete(null);
-                    }}
-                    className="flex-1 px-4 py-2.5 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs font-bold"
-                  >
-                    DELETE
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <ConfirmationModal
+            isOpen
+            onClose={() => setConfirmingDelete(null)}
+            onConfirm={() => {
+              handleDeleteWaypoint(confirmingDelete);
+              setConfirmingDelete(null);
+            }}
+            title="DELETE WAYPOINT"
+            icon={<Trash2 size={18} />}
+            confirmLabel="DELETE"
+          >
+            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-1">
+              Are you sure you want to delete this waypoint?
+            </p>
+            <p className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-4">
+              &ldquo;{wp.name}&rdquo;
+            </p>
+            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-6">
+              This action cannot be undone. The waypoint will be removed from your route.
+            </p>
+          </ConfirmationModal>
         );
       })()}
 
       {/* Clear All Waypoints Confirmation Modal */}
-      {confirmingClearAll && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-[#202020]/60" onClick={() => setConfirmingClearAll(false)} />
-          <div className="relative w-[90%] max-w-md bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-            <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
-              <Trash2 size={18} />
-              <h3 className="text-sm font-bold">CLEAR ALL WAYPOINTS</h3>
-            </div>
-            <div className="p-6">
-              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-4">
-                Are you sure you want to remove all {waypoints.length} waypoints from this route?
-              </p>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-6">
-                This action cannot be undone. All waypoints will be removed from the map and route.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmingClearAll(false)}
-                  className="flex-1 px-4 py-2.5 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-xs font-bold"
-                >
-                  CANCEL
-                </button>
-                <button
-                  onClick={() => {
-                    setWaypoints([]);
-                    setSelectedWaypoint(null);
-                    setIsRoundTrip(false);
-                    setConfirmingClearAll(false);
-                  }}
-                  className="flex-1 px-4 py-2.5 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs font-bold"
-                >
-                  CLEAR ALL
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={confirmingClearAll}
+        onClose={() => setConfirmingClearAll(false)}
+        onConfirm={() => {
+          setWaypoints([]);
+          setSelectedWaypoint(null);
+          setIsRoundTrip(false);
+          setConfirmingClearAll(false);
+        }}
+        title="CLEAR ALL WAYPOINTS"
+        icon={<Trash2 size={18} />}
+        confirmLabel="CLEAR ALL"
+      >
+        <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-4">
+          Are you sure you want to remove all {waypoints.length} waypoints from this route?
+        </p>
+        <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-6">
+          This action cannot be undone. All waypoints will be removed from the map and route.
+        </p>
+      </ConfirmationModal>
 
       {/* Delete Expedition Confirmation Modal */}
-      {confirmingDeleteExpedition && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-[#202020]/60" onClick={() => setConfirmingDeleteExpedition(false)} />
-          <div className="relative w-[90%] max-w-md bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-            <div className="bg-[#994040] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
-              <Trash2 size={18} />
-              <h3 className="text-sm font-bold">DELETE EXPEDITION</h3>
-            </div>
-            <div className="p-6">
-              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-1">
-                Are you sure you want to delete this expedition?
-              </p>
-              <p className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-4">
-                &ldquo;{expeditionData.title}&rdquo;
-              </p>
-              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-6">
-                This action cannot be undone.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setConfirmingDeleteExpedition(false)}
-                  className="flex-1 px-4 py-2.5 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-xs font-bold"
-                >
-                  CANCEL
-                </button>
-                <button
-                  onClick={handleDeleteExpedition}
-                  disabled={isDeletingExpedition}
-                  className="flex-1 px-4 py-2.5 bg-[#994040] text-white hover:bg-[#7a3333] transition-all text-xs font-bold disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isDeletingExpedition && <Loader2 size={14} className="animate-spin" />}
-                  {isDeletingExpedition ? 'DELETING...' : 'DELETE EXPEDITION'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationModal
+        isOpen={confirmingDeleteExpedition}
+        onClose={() => setConfirmingDeleteExpedition(false)}
+        onConfirm={handleDeleteExpedition}
+        title="DELETE EXPEDITION"
+        icon={<Trash2 size={18} />}
+        headerColor="bg-[#994040]"
+        confirmLabel={isDeletingExpedition ? 'DELETING...' : 'DELETE EXPEDITION'}
+        confirmColor="bg-[#994040] text-white hover:bg-[#7a3333]"
+        isLoading={isDeletingExpedition}
+      >
+        <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-1">
+          Are you sure you want to delete this expedition?
+        </p>
+        <p className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-4">
+          &ldquo;{expeditionData.title}&rdquo;
+        </p>
+        <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-6">
+          This action cannot be undone.
+        </p>
+      </ConfirmationModal>
     </div>
   );
 }

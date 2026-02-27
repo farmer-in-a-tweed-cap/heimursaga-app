@@ -2,25 +2,31 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Users, Bookmark, Maximize2, Loader2, Compass, X, BookmarkCheck, Lock, ChevronLeft, ChevronRight, EyeOff, XCircle } from 'lucide-react';
+import { Loader2, Compass } from 'lucide-react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
-import { WaypointCardLandscape } from '@/app/components/WaypointCardLandscape';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
-import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
-import { ExpeditionNotes } from '@/app/components/ExpeditionNotes';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
-import { expeditionApi, explorerApi, entryApi, weatherApi, type Expedition, type ExpeditionNote, type ExpeditionCondition } from '@/app/services/api';
-import { formatDate, formatDateTime, formatShortDate } from '@/app/utils/dateFormat';
-import { renderClusteredMarkers, type EntryCluster, type PopupPosition, type ClusteredMarkersResult } from '@/app/utils/mapClustering';
-import { ClusterTimelinePopup } from '@/app/components/ClusterTimelinePopup';
+import { expeditionApi } from '@/app/services/api';
+import { formatDate } from '@/app/utils/dateFormat';
+import { formatCoords } from '@/app/utils/formatCoords';
+import { renderClusteredMarkers, computePopupPosition, type EntryCluster } from '@/app/utils/mapClustering';
+import { buildMergedRouteCoords } from '@/app/utils/routeSnapping';
+import { HeroBanner } from '@/app/components/expedition-detail/HeroBanner';
+import { StatsBar } from '@/app/components/expedition-detail/StatsBar';
+import { ContentTabs } from '@/app/components/expedition-detail/ContentTabs';
+import { Sidebar } from '@/app/components/expedition-detail/Sidebar';
+import { MapModal } from '@/app/components/expedition-detail/MapModal';
+import { useExpeditionData } from '@/app/hooks/useExpeditionData';
+import { useExpeditionSponsors } from '@/app/hooks/useExpeditionSponsors';
+import { useWeatherConditions } from '@/app/hooks/useWeatherConditions';
+import { useExpeditionNotes } from '@/app/hooks/useExpeditionNotes';
+import { useDebriefMode } from '@/app/hooks/useDebriefMode';
+import type { JournalEntryType } from '@/app/components/expedition-detail/types';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -30,58 +36,6 @@ if (!MAPBOX_TOKEN) {
 }
 
 mapboxgl.accessToken = MAPBOX_TOKEN;
-
-function haversineKm(coord1: number[], coord2: number[]): number {
-  const R = 6371;
-  const toRad = Math.PI / 180;
-  const dLat = (coord2[1] - coord1[1]) * toRad;
-  const dLon = (coord2[0] - coord1[0]) * toRad;
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(coord1[1] * toRad) * Math.cos(coord2[1] * toRad) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-// Type definitions for map data
-type WaypointType = {
-  id: string;
-  title: string;
-  location: string;
-  description?: string;
-  coords: { lat: number; lng: number };
-  date: string;
-  status: 'completed' | 'current' | 'planned';
-  notes?: string;
-  entryId?: string | null;
-};
-
-type JournalEntryType = {
-  id: string;
-  title: string;
-  date: string;
-  location: string;
-  coords: { lat: number; lng: number };
-  excerpt: string;
-  type: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
-  mediaCount: number;
-  views: number;
-  visibility: 'public' | 'off-grid' | 'private';
-  timelinePosition?: number;
-};
-
-type DebriefStop = {
-  type: 'waypoint' | 'entry';
-  id: string;
-  title: string;
-  location: string;
-  date: string;
-  coords: { lat: number; lng: number };
-  description?: string;
-  status?: 'completed' | 'current' | 'planned';
-  notes?: string;
-  waypointIndex?: number;
-  excerpt?: string;
-  mediaCount?: number;
-};
 
 export function ExpeditionDetailPage() {
   const { expeditionId } = useParams<{ expeditionId: string }>();
@@ -97,651 +51,55 @@ export function ExpeditionDetailPage() {
   const notesSectionRef = useRef<HTMLDivElement>(null);
   const now = useMemo(() => Date.now(), []);
 
-  // API data state
-  const [apiExpedition, setApiExpedition] = useState<Expedition | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isFollowingExplorer, setIsFollowingExplorer] = useState(false);
-  const [followLoading, setFollowLoading] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  // Core data hook
+  const {
+    apiExpedition,
+    setApiExpedition,
+    loading,
+    expedition,
+    totalDuration,
+    isOwner,
+    showSponsorshipSection,
+    waypoints,
+    journalEntries,
+    totalRouteDistance,
+    currentLocationData,
+    isFollowingExplorer,
+    followLoading,
+    isBookmarked,
+    bookmarkLoading,
+    entryBookmarked,
+    entryBookmarkLoading,
+    handleFollowExplorer,
+    handleBookmarkExpedition,
+    handleBookmarkEntry,
+  } = useExpeditionData(expeditionId, user, isAuthenticated);
 
-  // Sponsorship funding stats (from API expedition response - public data)
-  const fundingStats = {
-    activeSubscribers: apiExpedition?.recurringStats?.activeSponsors || 0,
-    monthlyRecurring: apiExpedition?.recurringStats?.monthlyRevenue || 0,
-    totalRecurringToDate: apiExpedition?.recurringStats?.totalCommitted || 0,
-  };
+  // Derived data hooks
+  const { sponsors, fundingStats } = useExpeditionSponsors(apiExpedition);
+  const { weatherCondition, weatherLocalTime } = useWeatherConditions(apiExpedition, expeditionId);
+  const { expeditionNotes, noteCount, isSponsoring, handlePostNote, handlePostReply } =
+    useExpeditionNotes(expeditionId, isAuthenticated, isOwner);
+
+  // Total raised = one-time sponsorships + recurring committed during expedition lifetime
+  const totalRaised = (expedition?.raised || 0) + fundingStats.totalRecurringToDate;
 
   // Map popup state
   const [clickedEntry, setClickedEntry] = useState<JournalEntryType | null>(null);
   const [clickedCluster, setClickedCluster] = useState<EntryCluster<JournalEntryType> | null>(null);
   const [sourceCluster, setSourceCluster] = useState<EntryCluster<JournalEntryType> | null>(null);
   const [popupPosition, setPopupPosition] = useState<'bottom-left' | 'bottom-right'>('bottom-right');
-  const [entryBookmarked, setEntryBookmarked] = useState<Set<string>>(new Set());
-  const [entryBookmarkLoading, setEntryBookmarkLoading] = useState<string | null>(null);
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const waypointMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const markerClickedRef = useRef(false);
-  const clusteredRef = useRef<ClusteredMarkersResult | null>(null);
-  const routeCoordsRef = useRef<number[][]>([]);       // route geometry for debrief
 
-  const prevDebriefIndexRef = useRef<number>(0);        // "from" stop for segment extraction
-  const debriefRouteIndicesRef = useRef<number[]>([]);  // pre-computed route index per debrief stop
-
-  // Debrief mode state
-  const [isDebriefMode, setIsDebriefMode] = useState(false);
-  const [debriefIndex, setDebriefIndex] = useState(0);
-  const debriefCumulativeDistRef = useRef<number[]>([]);
-  const [debriefDistance, setDebriefDistance] = useState(0);
+  // Map & modal state
   const bannerMapContainerRef = useRef<HTMLDivElement | null>(null);
   const bannerMapRef = useRef<mapboxgl.Map | null>(null);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [modalMapReady, setModalMapReady] = useState(false);
   const [pendingFlyTo, setPendingFlyTo] = useState<{ lat: number; lng: number } | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
-  // Expedition notes state
-  const [expeditionNotes, setExpeditionNotes] = useState<ExpeditionNote[]>([]);
-  const [noteCount, setNoteCount] = useState(0);
-  const [isSponsoring, setIsSponsoring] = useState(false);
-  const [, setNotesLoading] = useState(false);
-  const [, setDailyNoteLimit] = useState<{ used: number; max: number }>({ used: 0, max: 1 });
-
-  // Sponsors leaderboard state
-  const [sponsors, setSponsors] = useState<any[]>([]);
-  // sponsorsLoading no longer needed - sponsors come from expedition API
-
-  // Weather conditions state
-  const [weatherCondition, setWeatherCondition] = useState<ExpeditionCondition | null>(null);
-  const [weatherLocalTime, setWeatherLocalTime] = useState<string>('');
-
-  // Handle follow/unfollow explorer
-  const handleFollowExplorer = async (username: string) => {
-    if (!isAuthenticated || !username) {
-      router.push('/login');
-      return;
-    }
-    setFollowLoading(true);
-    try {
-      if (isFollowingExplorer) {
-        await explorerApi.unfollow(username);
-        setIsFollowingExplorer(false);
-      } else {
-        await explorerApi.follow(username);
-        setIsFollowingExplorer(true);
-      }
-    } catch (err) {
-      console.error('Error following/unfollowing explorer:', err);
-    } finally {
-      setFollowLoading(false);
-    }
-  };
-
-  // Handle bookmark/unbookmark expedition
-  const handleBookmarkExpedition = async () => {
-    if (!isAuthenticated || !expeditionId) {
-      router.push('/login');
-      return;
-    }
-    setBookmarkLoading(true);
-    try {
-      await expeditionApi.bookmark(expeditionId);
-      setIsBookmarked(prev => !prev);
-    } catch (err) {
-      console.error('Error bookmarking expedition:', err);
-    } finally {
-      setBookmarkLoading(false);
-    }
-  };
-
-  // Handle bookmark/unbookmark entry from map popup
-  const handleBookmarkEntry = async (entryId: string) => {
-    if (!isAuthenticated) {
-      router.push('/login');
-      return;
-    }
-    setEntryBookmarkLoading(entryId);
-    try {
-      await entryApi.bookmark(entryId);
-      setEntryBookmarked(prev => {
-        const next = new Set(prev);
-        if (next.has(entryId)) {
-          next.delete(entryId);
-        } else {
-          next.add(entryId);
-        }
-        return next;
-      });
-    } catch (err) {
-      console.error('Error bookmarking entry:', err);
-    } finally {
-      setEntryBookmarkLoading(null);
-    }
-  };
-
-  // Fetch expedition from API
-  const fetchExpedition = useCallback(async (showLoading = true) => {
-    if (!expeditionId) return;
-    if (showLoading) setLoading(true);
-    try {
-      const data = await expeditionApi.getById(expeditionId);
-      setApiExpedition(data);
-      if (data.bookmarked !== undefined) {
-        setIsBookmarked(data.bookmarked);
-      }
-      if (data.followingAuthor !== undefined) {
-        setIsFollowingExplorer(data.followingAuthor);
-      }
-    } catch (err) {
-      console.error('Error fetching expedition:', err);
-    } finally {
-      if (showLoading) setLoading(false);
-    }
-  }, [expeditionId]);
-
-  // Initial fetch + re-fetch when page becomes visible again (e.g. navigating back)
-  useEffect(() => {
-    fetchExpedition();
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        fetchExpedition(false);
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [fetchExpedition]);
-
-  // Build sponsors leaderboard from API data (public for all users)
-  useEffect(() => {
-    if (!apiExpedition?.sponsors) return;
-
-    const now = new Date();
-    const expStart = apiExpedition.createdAt ? new Date(apiExpedition.createdAt) : now;
-    const expEnd = apiExpedition.endDate ? new Date(apiExpedition.endDate) : now;
-
-    const sponsorsWithTotal = apiExpedition.sponsors
-      .map((s) => {
-        let totalContribution = s.amount || 0;
-        if (s.type?.toUpperCase() === 'SUBSCRIPTION') {
-          const subStart = s.createdAt ? new Date(s.createdAt) : now;
-          const overlapStart = subStart > expStart ? subStart : expStart;
-          if (overlapStart <= expEnd) {
-            const diffMs = expEnd.getTime() - overlapStart.getTime();
-            const msPerMonth = 30 * 24 * 60 * 60 * 1000;
-            const months = Math.max(1, Math.ceil(diffMs / msPerMonth));
-            totalContribution = months * (s.amount || 0);
-          }
-        }
-        return { ...s, totalContribution };
-      })
-      .sort((a, b) => b.totalContribution - a.totalContribution);
-    setSponsors(sponsorsWithTotal);
-  }, [apiExpedition]);
-
-  // Fetch weather conditions for this expedition
-  useEffect(() => {
-    if (!apiExpedition || apiExpedition.status !== 'active') return;
-    if (apiExpedition.currentLocationVisibility !== 'public') return;
-
-    let cancelled = false;
-
-    const fetchWeather = async () => {
-      try {
-        const result = await weatherApi.getConditions();
-        if (!cancelled) {
-          const match = result.conditions.find(
-            (c) => c.expeditionId === expeditionId,
-          );
-          setWeatherCondition(match || null);
-        }
-      } catch {
-        // Weather is supplementary — fail silently
-      }
-    };
-
-    fetchWeather();
-    return () => { cancelled = true; };
-  }, [apiExpedition, expeditionId]);
-
-  // Update local time display every 60s
-  useEffect(() => {
-    if (!weatherCondition?.timezone) return;
-
-    const updateTime = () => {
-      try {
-        const formatted = new Intl.DateTimeFormat('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-          timeZone: weatherCondition.timezone,
-        }).format(new Date());
-        setWeatherLocalTime(formatted);
-      } catch {
-        setWeatherLocalTime('');
-      }
-    };
-
-    updateTime();
-    const interval = setInterval(updateTime, 60_000);
-    return () => clearInterval(interval);
-  }, [weatherCondition?.timezone]);
-
-  // Transform API expedition data to match component format
-  const transformApiExpedition = (api: Expedition) => {
-    const startDate = api.startDate ? new Date(api.startDate) : null;
-    const endDate = api.endDate ? new Date(api.endDate) : null;
-    const now = new Date();
-
-    // For completed expeditions, use end date; otherwise use today
-    const referenceDate = api.status === 'completed' && endDate ? endDate : now;
-
-    // Day 1 = first day of expedition, so add 1 to the difference
-    // If no start date or start date is in the future, show 0
-    const daysActive = startDate
-      ? Math.max(0, Math.floor((referenceDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-      : 0;
-
-    return {
-      id: api.id || api.publicId || expeditionId || '',
-      title: api.title,
-      explorerId: api.author?.username || api.explorer?.username || '',
-      explorerName: api.author?.username || api.explorer?.username || 'Unknown',
-      explorerPicture: api.author?.picture || api.explorer?.picture,
-      explorerIsPro: api.author?.creator === true,
-      stripeAccountConnected: api.author?.stripeAccountConnected === true,
-      status: (api.status || 'active') as 'active' | 'planned' | 'completed' | 'cancelled',
-      category: api.category || '',
-      region: api.region || '',
-      description: api.description || '',
-      startDate: api.startDate || '',
-      estimatedEndDate: api.endDate || '',
-      daysActive,
-      currentLocationSource: api.currentLocationSource,
-      currentLocationId: api.currentLocationId,
-      currentLocationVisibility: api.currentLocationVisibility || 'public',
-      goal: api.goal || 0,
-      raised: api.raised || 0,
-      sponsors: api.sponsorsCount || 0,
-      followers: 0, // Not in API yet
-      totalViews: 0, // Not in API yet
-      totalEntries: api.entriesCount || 0,
-      totalWaypoints: api.waypointsCount || api.waypoints?.length || 0,
-      tags: api.tags || [],
-      privacy: api.visibility || (api.public !== false ? 'public' : 'private'),
-      commentsEnabled: true, // Not in API yet
-      imageUrl: api.coverImage || 'https://images.unsplash.com/photo-1503806837798-ea0ce2e6402e?w=800',
-    };
-  };
-
-  // Transform API expedition data (returns null if no API data)
-  const expedition = apiExpedition ? transformApiExpedition(apiExpedition) : null;
-
-  // Calculate total expedition duration in days (inclusive of start and end dates)
-  const calculateTotalDuration = (startDateStr: string, endDateStr: string): number => {
-    if (!startDateStr || !endDateStr) return 0;
-    const start = new Date(startDateStr);
-    const end = new Date(endDateStr);
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0;
-    // Add 1 to include both start and end dates
-    return Math.max(0, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-  };
-
-  const totalDuration = expedition ? calculateTotalDuration(expedition.startDate, expedition.estimatedEndDate) : 0;
-
-  // Check if user is expedition owner (will be false if expedition is null)
-  const isOwner = !!(isAuthenticated && expedition && user?.username === expedition.explorerId);
-
-  // Sponsorship UI only shows if goal > 0 and explorer has completed Stripe Connect onboarding
-  const showSponsorshipSection = !!(expedition && expedition.goal > 0 && expedition.stripeAccountConnected);
-
-  // Total raised = one-time sponsorships + recurring committed during expedition lifetime
-  const totalRaised = (expedition?.raised || 0) + fundingStats.totalRecurringToDate;
-
-  // Use API waypoints only (memoized to prevent map recreation on re-render)
-  // Status is derived from the persisted current location
-  const waypoints: WaypointType[] = useMemo(() => {
-    if (!apiExpedition?.waypoints) return [];
-
-    const currentSource = apiExpedition.currentLocationSource;
-    const currentLocId = apiExpedition.currentLocationId;
-
-    // If no current location is set, all waypoints are "planned"
-    if (!currentSource || !currentLocId) {
-      return apiExpedition.waypoints.map((wp, idx) => ({
-        id: String(wp.id),
-        title: wp.title || `Waypoint ${idx + 1}`,
-        location: wp.entry?.title || wp.title || '',
-        description: wp.description || '',
-        coords: { lat: wp.lat || 0, lng: wp.lon || 0 },
-        date: wp.date || '',
-        status: 'planned' as const,
-        notes: wp.entry?.content?.substring(0, 100) || '',
-        entryId: wp.entryId,
-      }));
-    }
-
-    // Determine the "current waypoint index" based on source
-    let currentWpIdx = -1;
-    // When current location is an entry, no waypoint should be "current" —
-    // the nearest waypoint (and those before it) are "completed" instead.
-    let wpStatusAtIdx: 'current' | 'completed' = 'current';
-
-    if (currentSource === 'waypoint') {
-      // Find the waypoint in the list
-      currentWpIdx = apiExpedition.waypoints.findIndex(
-        (wp) => String(wp.id) === currentLocId,
-      );
-    } else if (currentSource === 'entry') {
-      // Find the entry's coordinates, then determine which waypoint segment it's nearest to
-      const entry = apiExpedition.entries?.find((e) => e.id === currentLocId);
-      if (entry && entry.lat != null && entry.lon != null) {
-        // Find the nearest waypoint by simple distance (before or at the entry)
-        let closestDist = Infinity;
-        for (let i = 0; i < apiExpedition.waypoints.length; i++) {
-          const wp = apiExpedition.waypoints[i];
-          const d = Math.pow((wp.lat || 0) - entry.lat, 2) + Math.pow((wp.lon || 0) - entry.lon, 2);
-          if (d < closestDist) {
-            closestDist = d;
-            currentWpIdx = i;
-          }
-        }
-      }
-      // The entry is the current location, not the waypoint
-      wpStatusAtIdx = 'completed';
-    }
-
-    return apiExpedition.waypoints.map((wp, idx) => {
-      let status: 'completed' | 'current' | 'planned';
-      if (currentWpIdx < 0) {
-        status = 'planned';
-      } else if (idx < currentWpIdx) {
-        status = 'completed';
-      } else if (idx === currentWpIdx) {
-        status = wpStatusAtIdx;
-      } else {
-        status = 'planned';
-      }
-
-      return {
-        id: String(wp.id),
-        title: wp.title || `Waypoint ${idx + 1}`,
-        location: wp.entry?.title || wp.title || '',
-        description: wp.description || '',
-        coords: { lat: wp.lat || 0, lng: wp.lon || 0 },
-        date: wp.date || '',
-        status,
-        notes: wp.entry?.content?.substring(0, 100) || '',
-        entryId: wp.entryId,
-      };
-    });
-  }, [apiExpedition?.waypoints, apiExpedition?.currentLocationSource, apiExpedition?.currentLocationId, apiExpedition?.entries]);
-
-  // Use API entries only (memoized to prevent map recreation on re-render)
-  const journalEntries: JournalEntryType[] = useMemo(() => {
-    if (!apiExpedition?.entries) return [];
-    return apiExpedition.entries
-      .map((entry) => ({
-        id: entry.id,
-        title: entry.title,
-        date: entry.date || '',
-        location: entry.place || 'Unknown location',
-        coords: { lat: entry.lat || 0, lng: entry.lon || 0 },
-        excerpt: entry.content?.substring(0, 200) || '',
-        type: 'standard' as const,
-        mediaCount: entry.mediaCount || 0,
-        views: 0,
-        visibility: (entry.visibility || 'public') as 'public' | 'off-grid' | 'private',
-      }))
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [apiExpedition?.entries]);
-
-  // Build debrief route using the same timeline interleaving as the expedition builder:
-  // waypoints form the backbone in their sequence order, entries interleave between
-  // waypoints based on their dates relative to the surrounding dated waypoints.
-  const debriefRoute: DebriefStop[] = useMemo(() => {
-    const stops: DebriefStop[] = [];
-
-    // Build waypoint stops (preserving sequence order)
-    const wpStops: DebriefStop[] = [];
-    waypoints.forEach((wp, idx) => {
-      if (wp.coords.lat === 0 && wp.coords.lng === 0) return;
-      wpStops.push({
-        type: 'waypoint',
-        id: wp.id,
-        title: wp.title,
-        location: wp.location,
-        date: wp.date,
-        coords: wp.coords,
-        description: wp.description,
-        status: wp.status,
-        notes: wp.notes,
-        waypointIndex: idx,
-      });
-    });
-
-    // Build entry stops sorted by date for interleaving
-    const entryStops: DebriefStop[] = [];
-    journalEntries.forEach((entry) => {
-      if (entry.coords.lat === 0 && entry.coords.lng === 0) return;
-      entryStops.push({
-        type: 'entry',
-        id: entry.id,
-        title: entry.title,
-        location: entry.location,
-        date: entry.date,
-        coords: entry.coords,
-        excerpt: entry.excerpt,
-        mediaCount: entry.mediaCount,
-      });
-    });
-
-    // Sort entries by date for ordered insertion
-    const sortedEntries = [...entryStops].sort((a, b) => {
-      if (a.date && b.date) return a.date.localeCompare(b.date);
-      if (a.date && !b.date) return -1;
-      if (!a.date && b.date) return 1;
-      return 0;
-    });
-
-    // Interleave: waypoints form backbone, entries placed between waypoints by date
-    let entryIdx = 0;
-    for (let i = 0; i < wpStops.length; i++) {
-      stops.push(wpStops[i]);
-
-      // Find next dated waypoint to bound entry placement
-      let nextWpDate: string | undefined;
-      for (let j = i + 1; j < wpStops.length; j++) {
-        if (wpStops[j].date) { nextWpDate = wpStops[j].date; break; }
-      }
-
-      // Insert entries that belong between this waypoint and the next dated waypoint
-      while (entryIdx < sortedEntries.length) {
-        const entry = sortedEntries[entryIdx];
-        if (!entry.date) break;
-        if (nextWpDate && entry.date >= nextWpDate) break;
-        stops.push(entry);
-        entryIdx++;
-      }
-    }
-
-    // Remaining entries (dateless or after all waypoints) at the end
-    while (entryIdx < sortedEntries.length) {
-      stops.push(sortedEntries[entryIdx]);
-      entryIdx++;
-    }
-
-    // For round-trip expeditions, add a "return to start" stop so the debrief
-    // animation follows the return leg back to the starting point
-    if (apiExpedition?.isRoundTrip && stops.length >= 2) {
-      const first = stops[0];
-      stops.push({
-        ...first,
-        id: `${first.id}-return`,
-        title: `Return: ${first.title}`,
-      });
-    }
-
-    return stops;
-  }, [waypoints, journalEntries, apiExpedition?.isRoundTrip]);
-
-  const canDebrief = debriefRoute.length >= 2;
-
-  // Map entry IDs to their 1-based timeline position (for numbered markers)
-  const entryTimelinePositions = useMemo(() => {
-    const posMap = new Map<string, number>();
-    debriefRoute.forEach((stop, idx) => {
-      posMap.set(stop.id, idx + 1);
-    });
-    return posMap;
-  }, [debriefRoute]);
-
-  // Compute total route distance (km) from route geometry or waypoints
-  const totalRouteDistance = useMemo(() => {
-    const coords = apiExpedition?.routeGeometry;
-    if (coords && coords.length >= 2) {
-      let total = 0;
-      for (let i = 1; i < coords.length; i++) {
-        total += haversineKm(coords[i - 1], coords[i]);
-      }
-      return total;
-    }
-    // Fallback: haversine between consecutive waypoints (matches builder behavior)
-    if (waypoints.length < 2) return 0;
-    let total = 0;
-    for (let i = 1; i < waypoints.length; i++) {
-      const prev = waypoints[i - 1].coords;
-      const curr = waypoints[i].coords;
-      total += haversineKm([prev.lng, prev.lat], [curr.lng, curr.lat]);
-    }
-    return total;
-  }, [apiExpedition?.routeGeometry, waypoints]);
-
-  // Helper function to get current location data from waypoints or entries
-  const getCurrentLocationData = () => {
-    if (!expedition?.currentLocationSource || !expedition?.currentLocationId || expedition?.status === 'cancelled') {
-      return null;
-    }
-
-    if (expedition.currentLocationSource === 'waypoint') {
-      const waypoint = waypoints.find(w => w.id === expedition?.currentLocationId);
-      if (waypoint) {
-        return {
-          location: waypoint.location,
-          coords: waypoint.coords,
-          source: 'waypoint' as const,
-          title: waypoint.title,
-          date: waypoint.date,
-          status: waypoint.status,
-        };
-      }
-    } else {
-      const entry = journalEntries.find(e => e.id === expedition?.currentLocationId);
-      if (entry) {
-        return {
-          location: entry.location,
-          coords: entry.coords,
-          source: 'entry' as const,
-          title: entry.title,
-          date: entry.date,
-          type: entry.type,
-        };
-      }
-    }
-
-    return null;
-  };
-
-  const currentLocationData = getCurrentLocationData();
-
-  // Fetch expedition notes
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchNotes = async () => {
-      if (!expeditionId) return;
-
-      // Always fetch note count (public)
-      try {
-        const countData = await expeditionApi.getNoteCount(expeditionId);
-        if (!cancelled) {
-          setNoteCount(countData.count);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Error fetching note count:', err);
-        }
-      }
-
-      // Only fetch full notes if authenticated (owner or sponsor will have access)
-      if (!isAuthenticated) return;
-
-      if (!cancelled) {
-        setNotesLoading(true);
-      }
-      try {
-        const notesData = await expeditionApi.getNotes(expeditionId);
-        if (!cancelled) {
-          setExpeditionNotes(notesData.notes);
-          setDailyNoteLimit(notesData.dailyLimit);
-          // If we got notes, user has access (either owner or sponsor)
-          if (!isOwner) {
-            setIsSponsoring(true);
-          }
-        }
-      } catch (err: any) {
-        if (!cancelled) {
-          // 403 means user doesn't have access (not owner and not sponsor)
-          if (err?.status === 403) {
-            setIsSponsoring(false);
-          } else {
-            console.error('Error fetching notes:', err);
-          }
-        }
-      } finally {
-        if (!cancelled) {
-          setNotesLoading(false);
-        }
-      }
-    };
-
-    fetchNotes();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [expeditionId, isAuthenticated, isOwner]);
-
-  // Handle posting a new note
-  const handlePostNote = async (text: string) => {
-    if (!expeditionId) return;
-    try {
-      await expeditionApi.createNote(expeditionId, text);
-      // Refetch notes to get the new note with all data
-      const notesData = await expeditionApi.getNotes(expeditionId);
-      setExpeditionNotes(notesData.notes);
-      setDailyNoteLimit(notesData.dailyLimit);
-      setNoteCount(prev => prev + 1);
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  // Handle posting a reply
-  const handlePostReply = async (noteId: string, text: string) => {
-    if (!expeditionId) return;
-    try {
-      await expeditionApi.createNoteReply(expeditionId, parseInt(noteId), text);
-      // Refetch notes to get the new reply with all data
-      const notesData = await expeditionApi.getNotes(expeditionId);
-      setExpeditionNotes(notesData.notes);
-    } catch (err) {
-      throw err;
-    }
-  };
-
-  // Mapbox map reference
+  // Mapbox map reference (modal)
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
 
@@ -778,6 +136,22 @@ export function ExpeditionDetailPage() {
     }, 100);
   };
 
+  // Handler for sharing expedition
+  const handleShare = async () => {
+    const url = `${window.location.origin}/expedition/${expeditionId}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: expedition?.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      // User cancelled share dialog
+    }
+  };
+
   // Handler for updating location from modal
   const handleLocationUpdate = async (source: 'waypoint' | 'entry', id: string, visibility: 'public' | 'sponsors' | 'private') => {
     if (!expedition?.id) return;
@@ -808,7 +182,6 @@ export function ExpeditionDetailPage() {
   const handleFitBounds = useCallback(() => {
     if (!mapRef.current) return;
 
-    // Collect all coordinates from waypoints and entries
     const allCoords: [number, number][] = [
       ...waypoints.map(wp => [wp.coords.lng, wp.coords.lat] as [number, number]),
       ...journalEntries.map(entry => [entry.coords.lng, entry.coords.lat] as [number, number]),
@@ -816,12 +189,10 @@ export function ExpeditionDetailPage() {
 
     if (allCoords.length === 0) return;
 
-    // Calculate bounds
     const bounds = allCoords.reduce((bounds, coord) => {
       return bounds.extend(coord);
     }, new mapboxgl.LngLatBounds(allCoords[0], allCoords[0]));
 
-    // Fit map to bounds with padding
     mapRef.current.fitBounds(bounds, {
       padding: 50,
       maxZoom: 10,
@@ -829,382 +200,37 @@ export function ExpeditionDetailPage() {
     });
   }, [waypoints, journalEntries]);
 
-  // Debrief mode helpers
-  const removeAllHighlights = useCallback(() => {
-    // Remove highlights from entry markers
-    markersRef.current.forEach(m => {
-      const el = m.getElement();
-      if (el && (el as any).removeHighlight) {
-        (el as any).removeHighlight();
-      }
-    });
-    // Reset waypoint marker styles
-    waypointMarkersRef.current.forEach(m => {
-      const el = m.getElement();
-      if (el) {
-        el.style.outline = 'none';
-        el.style.boxShadow = el.style.boxShadow?.includes('wp-pulse')
-          ? el.style.boxShadow
-          : (el.dataset.originalBoxShadow || '');
-      }
-    });
-  }, []);
-
-  const highlightDebriefStop = useCallback((stop: DebriefStop) => {
-    removeAllHighlights();
-    const COORD_THRESHOLD = 0.0001;
-
-    if (stop.type === 'entry') {
-      // Find entry marker by coordinate proximity
-      markersRef.current.forEach(m => {
-        const lngLat = m.getLngLat();
-        if (
-          Math.abs(lngLat.lat - stop.coords.lat) < COORD_THRESHOLD &&
-          Math.abs(lngLat.lng - stop.coords.lng) < COORD_THRESHOLD
-        ) {
-          const el = m.getElement();
-          if (el) {
-            el.style.boxShadow = '0 0 0 6px rgba(172, 109, 70, 0.5), 0 0 0 12px rgba(172, 109, 70, 0.3), 0 0 20px rgba(172, 109, 70, 0.8)';
-            el.style.border = '3px solid white';
-            el.style.zIndex = '1000';
-          }
-        }
-      });
-    } else {
-      // Find waypoint marker by coordinate proximity
-      waypointMarkersRef.current.forEach(m => {
-        const lngLat = m.getLngLat();
-        if (
-          Math.abs(lngLat.lat - stop.coords.lat) < COORD_THRESHOLD &&
-          Math.abs(lngLat.lng - stop.coords.lng) < COORD_THRESHOLD
-        ) {
-          const el = m.getElement();
-          if (el) {
-            el.style.outline = '3px solid #ac6d46';
-            el.style.outlineOffset = '3px';
-            el.style.boxShadow = '0 0 20px rgba(172, 109, 70, 0.8), 0 4px 12px rgba(0,0,0,0.4)';
-          }
-        }
-      });
-    }
-  }, [removeAllHighlights]);
-
-  // Find the closest route coordinate index for a given lat/lng, searching from a start index
-  const findClosestRouteIndex = (
-    coords: { lat: number; lng: number },
-    route: number[][],
-    searchFrom = 0,
-  ): number => {
-    let closest = searchFrom;
-    let closestDist = Infinity;
-    for (let i = searchFrom; i < route.length; i++) {
-      const [lng, lat] = route[i];
-      const d = (lng - coords.lng) ** 2 + (lat - coords.lat) ** 2;
-      if (d < closestDist) {
-        closestDist = d;
-        closest = i;
-      }
-    }
-    return closest;
-  };
-
-  // Pre-compute monotonically increasing route indices for each debrief stop
-  // This ensures round-trip routes follow the return leg correctly
-  const computeDebriefRouteIndices = useCallback(() => {
-    const route = routeCoordsRef.current;
-    if (route.length < 2 || debriefRoute.length === 0) {
-      debriefRouteIndicesRef.current = [];
-      return;
-    }
-    const indices: number[] = [];
-    let searchFrom = 0;
-    for (const stop of debriefRoute) {
-      const idx = findClosestRouteIndex(stop.coords, route, searchFrom);
-      indices.push(idx);
-      searchFrom = idx;
-    }
-    debriefRouteIndicesRef.current = indices;
-  }, [debriefRoute]);
-
-  // Build cumulative haversine distances for the full route (real-world km)
-  const buildCumulativeHaversineDist = (route: number[][]): number[] => {
-    const d = [0];
-    for (let i = 1; i < route.length; i++) {
-      d.push(d[i - 1] + haversineKm(route[i - 1], route[i]));
-    }
-    return d;
-  };
-
-  // Build cumulative distance array for a polyline segment
-  const buildCumulativeDistances = (segment: number[][]): number[] => {
-    const distances = [0];
-    for (let i = 1; i < segment.length; i++) {
-      const dx = segment[i][0] - segment[i - 1][0];
-      const dy = segment[i][1] - segment[i - 1][1];
-      distances.push(distances[i - 1] + Math.sqrt(dx * dx + dy * dy));
-    }
-    return distances;
-  };
-
-  // Continuously interpolate a position along a polyline at a given fraction (0-1)
-  const interpolateAlongRoute = (
-    segment: number[][],
-    cumDist: number[],
-    t: number, // 0..1
-  ): [number, number] => {
-    const totalLen = cumDist[cumDist.length - 1];
-    if (totalLen === 0) return segment[0] as [number, number];
-
-    const targetDist = t * totalLen;
-
-    // Binary search for the segment containing targetDist
-    let lo = 0;
-    let hi = cumDist.length - 1;
-    while (lo < hi - 1) {
-      const mid = (lo + hi) >> 1;
-      if (cumDist[mid] <= targetDist) lo = mid;
-      else hi = mid;
-    }
-
-    const segStart = cumDist[lo];
-    const segEnd = cumDist[hi];
-    const segLen = segEnd - segStart;
-    const frac = segLen > 0 ? (targetDist - segStart) / segLen : 0;
-
-    return [
-      segment[lo][0] + frac * (segment[hi][0] - segment[lo][0]),
-      segment[lo][1] + frac * (segment[hi][1] - segment[lo][1]),
-    ];
-  };
-
-  // Cancel any in-progress debrief animation
-  const cancelDebriefAnimation = useCallback(() => {
-    if ((mapRef.current as any)?._debriefCleanup) {
-      (mapRef.current as any)._debriefCleanup();
-      (mapRef.current as any)._debriefCleanup = null;
-    }
-  }, []);
-
-  const flyToDebriefStop = useCallback((index: number) => {
-    if (!mapRef.current || index < 0 || index >= debriefRoute.length) return;
-
-    cancelDebriefAnimation();
-
-    const stop = debriefRoute[index];
-    setDebriefIndex(index);
-    highlightDebriefStop(stop);
-
-    const route = routeCoordsRef.current;
-    const fromStop = debriefRoute[prevDebriefIndexRef.current];
-
-    // Determine if we have route data and a valid "from" stop to animate along
-    const hasFrom = fromStop && prevDebriefIndexRef.current !== index && route.length >= 2;
-
-    if (!hasFrom) {
-      // First stop or no route — simple flyTo
-      mapRef.current.flyTo({
-        center: [stop.coords.lng, stop.coords.lat],
-        zoom: 13,
-        duration: 1500,
-      });
-      const targetIdx = debriefRouteIndicesRef.current[index] ?? 0;
-      setDebriefDistance(debriefCumulativeDistRef.current[targetIdx] ?? 0);
-      prevDebriefIndexRef.current = index;
-      return;
-    }
-
-    // Use pre-computed route indices (monotonically increasing, round-trip aware)
-    const indices = debriefRouteIndicesRef.current;
-    const fromIdx = indices[prevDebriefIndexRef.current] ?? 0;
-    const toIdx = indices[index] ?? 0;
-
-    // Extract sub-segment; reverse if navigating backward
-    const lo = Math.min(fromIdx, toIdx);
-    const hi = Math.max(fromIdx, toIdx);
-    let segment = route.slice(lo, hi + 1);
-    if (fromIdx > toIdx) {
-      segment = [...segment].reverse();
-    }
-
-    if (segment.length < 2) {
-      // Segment too short — fallback to flyTo
-      mapRef.current.flyTo({
-        center: [stop.coords.lng, stop.coords.lat],
-        zoom: 13,
-        duration: 1500,
-      });
-      const targetIdx = debriefRouteIndicesRef.current[index] ?? 0;
-      setDebriefDistance(debriefCumulativeDistRef.current[targetIdx] ?? 0);
-      prevDebriefIndexRef.current = index;
-      return;
-    }
-
-    // Pre-compute cumulative distances for interpolation
-    const cumDist = buildCumulativeDistances(segment);
-    const totalSegLen = cumDist[cumDist.length - 1];
-    const map = mapRef.current;
-    const startZoom = map.getZoom();
-    const endZoom = 13;
-
-    // Compute real-world distance range for this segment
-    const cumHav = debriefCumulativeDistRef.current;
-    const isBackward = fromIdx > toIdx;
-    const distStart = cumHav[isBackward ? hi : lo] ?? 0;
-    const distEnd = cumHav[isBackward ? lo : hi] ?? 0;
-
-    // Gentle zoom dip proportional to distance
-    const zoomOutAmount = Math.min(2.5, Math.max(0, totalSegLen * 1.2));
-
-    // Chain native easeTo calls for buttery-smooth Mapbox-rendered animation.
-    // More steps for longer segments, fewer for short hops.
-    const numSteps = Math.min(20, Math.max(6, Math.round(totalSegLen * 8)));
-    // Total time: 8s–18s scaled to distance
-    const totalDuration = Math.min(18000, Math.max(8000, totalSegLen * 6000));
-    const stepDuration = totalDuration / numSteps;
-
-    // Pre-compute waypoints along the route
-    const waypoints: { center: [number, number]; zoom: number; t: number }[] = [];
-    for (let i = 0; i <= numSteps; i++) {
-      const t = i / numSteps;
-      const center = interpolateAlongRoute(segment, cumDist, t);
-      const zoomDip = Math.sin(t * Math.PI);
-      const linearZoom = startZoom + t * (endZoom - startZoom);
-      const zoom = linearZoom - zoomDip * zoomOutAmount;
-      waypoints.push({ center, zoom, t });
-    }
-
-    let currentStep = 0;
-    let cancelled = false;
-    let distRaf: number | null = null;
-
-    const tickDistance = (stepIdx: number) => {
-      const tFrom = stepIdx > 0 ? waypoints[stepIdx - 1].t : 0;
-      const tTo = waypoints[stepIdx].t;
-      const startMs = performance.now();
-
-      const tick = () => {
-        if (cancelled) return;
-        const progress = Math.min(1, (performance.now() - startMs) / stepDuration);
-        const t = tFrom + progress * (tTo - tFrom);
-        setDebriefDistance(distStart + t * (distEnd - distStart));
-        if (progress < 1) distRaf = requestAnimationFrame(tick);
-      };
-      distRaf = requestAnimationFrame(tick);
-    };
-
-    const advanceStep = () => {
-      if (cancelled || !mapRef.current) return;
-      if (currentStep >= waypoints.length) {
-        // Final settle at exact destination
-        mapRef.current.easeTo({
-          center: [stop.coords.lng, stop.coords.lat],
-          zoom: endZoom,
-          duration: 400,
-        });
-        setDebriefDistance(distEnd);
-        return;
-      }
-      const wp = waypoints[currentStep];
-      mapRef.current.easeTo({
-        center: wp.center,
-        zoom: wp.zoom,
-        duration: stepDuration,
-        easing: (t) => t, // linear per-step; overall pacing comes from the step sequence
-      });
-      tickDistance(currentStep);
-      currentStep++;
-    };
-
-    const onMoveEnd = () => {
-      if (!cancelled) advanceStep();
-    };
-
-    // Store cancel function on the ref for cleanup
-    map.on('moveend', onMoveEnd);
-    // Attach cleanup to a property we can call later
-    (mapRef.current as any)._debriefCleanup = () => {
-      cancelled = true;
-      if (distRaf) cancelAnimationFrame(distRaf);
-      map.off('moveend', onMoveEnd);
-      map.stop();
-    };
-
-    // Kick off first step
-    advanceStep();
-    prevDebriefIndexRef.current = index;
-  }, [debriefRoute, highlightDebriefStop, cancelDebriefAnimation]);
+  // Debrief mode hook
+  const {
+    isDebriefMode,
+    debriefIndex,
+    debriefDistance,
+    debriefRoute,
+    canDebrief,
+    entryTimelinePositions,
+    routeCoordsRef,
+    markersRef,
+    waypointMarkersRef,
+    clusteredRef,
+    enterDebriefMode: enterDebriefModeRaw,
+    exitDebriefMode,
+    flyToDebriefStop,
+  } = useDebriefMode({
+    waypoints,
+    journalEntries,
+    apiExpedition,
+    mapRef,
+    handleFitBounds,
+    formatDistance,
+  });
 
   const enterDebriefMode = useCallback(() => {
-    setIsDebriefMode(true);
-    setClickedEntry(null);
-    prevDebriefIndexRef.current = 0;
-    computeDebriefRouteIndices();
-    debriefCumulativeDistRef.current = buildCumulativeHaversineDist(routeCoordsRef.current);
-    setDebriefDistance(0);
-    // Resize map after transition
-    setTimeout(() => {
-      mapRef.current?.resize();
-      // Fly to first stop after resize
-      setTimeout(() => {
-        flyToDebriefStop(0);
-      }, 100);
-    }, 150);
-  }, [flyToDebriefStop, computeDebriefRouteIndices]);
+    enterDebriefModeRaw(setClickedEntry);
+  }, [enterDebriefModeRaw]);
 
-  const exitDebriefMode = useCallback(() => {
-    cancelDebriefAnimation();
-    setIsDebriefMode(false);
-    setDebriefIndex(0);
-    debriefCumulativeDistRef.current = [];
-    setDebriefDistance(0);
-    removeAllHighlights();
-    setTimeout(() => {
-      mapRef.current?.resize();
-      setTimeout(() => {
-        handleFitBounds();
-      }, 100);
-    }, 150);
-  }, [removeAllHighlights, handleFitBounds, cancelDebriefAnimation]);
 
-  // Debrief mode keyboard navigation
-  useEffect(() => {
-    if (!isDebriefMode) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        exitDebriefMode();
-      } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        setDebriefIndex(prev => {
-          const next = Math.min(prev + 1, debriefRoute.length - 1);
-          if (next !== prev) {
-            // Use setTimeout so flyTo runs after state update
-            setTimeout(() => flyToDebriefStop(next), 0);
-          }
-          return next;
-        });
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        setDebriefIndex(prev => {
-          const next = Math.max(prev - 1, 0);
-          if (next !== prev) {
-            setTimeout(() => flyToDebriefStop(next), 0);
-          }
-          return next;
-        });
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isDebriefMode, debriefRoute.length, exitDebriefMode, flyToDebriefStop]);
 
-  // Resize map when debrief mode changes
-  useEffect(() => {
-    if (mapRef.current) {
-      setTimeout(() => {
-        mapRef.current?.resize();
-      }, 200);
-    }
-  }, [isDebriefMode]);
+
 
   // Modal Escape handler (when not in debrief mode)
   useEffect(() => {
@@ -1247,13 +273,14 @@ export function ExpeditionDetailPage() {
     });
 
     map.on('load', () => {
-      // Route lines — fallback connects waypoints only (entries float as separate markers)
+      // Route lines — fallback merges waypoints + entries by geographic proximity
       const hasDirectionsRoute = apiExpedition?.routeGeometry && apiExpedition.routeGeometry.length > 0;
       const routeCoordinates = hasDirectionsRoute
         ? apiExpedition.routeGeometry!
-        : waypoints
-            .filter(wp => wp.coords.lat !== 0 || wp.coords.lng !== 0)
-            .map(wp => [wp.coords.lng, wp.coords.lat]);
+        : buildMergedRouteCoords(
+            waypoints.map(wp => wp.coords),
+            journalEntries.map(e => e.coords),
+          );
 
       const casingColor = getLineCasingColor(mapLayer, theme);
 
@@ -1304,14 +331,26 @@ export function ExpeditionDetailPage() {
       }
 
       if (currentLocCoords && routeCoordinates.length >= 2) {
-        let closestIdx = 0;
-        let closestDist = Infinity;
-        for (let i = 0; i < routeCoordinates.length; i++) {
-          const [lng, lat] = routeCoordinates[i];
-          const d = Math.pow(lng - currentLocCoords.lng, 2) + Math.pow(lat - currentLocCoords.lat, 2);
-          if (d < closestDist) { closestDist = d; closestIdx = i; }
+        let completedCoords: number[][];
+        if (hasDirectionsRoute) {
+          // Dense point set — nearest-coordinate search works fine
+          let closestIdx = 0;
+          let closestDist = Infinity;
+          for (let i = 0; i < routeCoordinates.length; i++) {
+            const [lng, lat] = routeCoordinates[i];
+            const d = Math.pow(lng - currentLocCoords.lng, 2) + Math.pow(lat - currentLocCoords.lat, 2);
+            if (d < closestDist) { closestDist = d; closestIdx = i; }
+          }
+          completedCoords = routeCoordinates.slice(0, closestIdx + 1);
+        } else {
+          // Fallback route (waypoint-to-waypoint) — use waypoint status
+          completedCoords = waypoints
+            .filter(w => (w.status === 'completed' || w.status === 'current') && (w.coords.lat !== 0 || w.coords.lng !== 0))
+            .map(w => [w.coords.lng, w.coords.lat]);
+          if (curSrc === 'entry') {
+            completedCoords.push([currentLocCoords.lng, currentLocCoords.lat]);
+          }
         }
-        const completedCoords = routeCoordinates.slice(0, closestIdx + 1);
         if (completedCoords.length >= 2) {
           map.addSource('completed-route', {
             type: 'geojson',
@@ -1346,51 +385,82 @@ export function ExpeditionDetailPage() {
 
       const isRoundTrip = apiExpedition?.isRoundTrip;
 
-      // Waypoint markers (non-interactive, diamond shape)
-      waypoints.forEach((wp, idx) => {
-        // Skip rendering diamond for waypoints that have been converted to entries
-        if (wp.entryId) return;
+      // Unified waypoint markers — all markers rendered from waypoints array
+      // Converted waypoints (with entries) show as circles, unconverted as diamonds
+      const linkedEntryIds = new Set<string>();
+      waypoints.forEach((wp) => {
+        (wp.entryIds || []).forEach(eid => linkedEntryIds.add(eid));
+      });
 
+      waypoints.forEach((wp, idx) => {
         const isStart = idx === 0;
         const isEnd = !isRoundTrip && idx === waypoints.length - 1 && waypoints.length > 1;
         const isCurrent = wp.status === 'current';
+        const entryIds = wp.entryIds || [];
 
         const wrapper = document.createElement('div');
         wrapper.className = 'banner-waypoint-marker';
 
-        const diamond = document.createElement('div');
-        Object.assign(diamond.style, { display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(45deg)' });
-
-        const label = document.createElement('span');
-        Object.assign(label.style, { transform: 'rotate(-45deg)', color: 'white', fontWeight: 'bold', lineHeight: '1' });
-
-        if (isStart && isRoundTrip) {
-          Object.assign(diamond.style, { width: '30px', height: '30px', backgroundColor: '#ac6d46', border: '3px solid #4676ac', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
-          label.style.fontSize = '13px'; label.textContent = 'S';
-        } else if (isStart || isEnd) {
-          Object.assign(diamond.style, { width: '30px', height: '30px', backgroundColor: isStart ? '#ac6d46' : '#4676ac', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
-          label.style.fontSize = '13px'; label.textContent = isStart ? 'S' : 'E';
+        if (entryIds.length > 1) {
+          // Multi-entry cluster badge (circle)
+          Object.assign(wrapper.style, {
+            width: '30px', height: '30px', borderRadius: '50%',
+            backgroundColor: '#8a5738', border: '3px solid white',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            fontSize: '12px', color: 'white', textAlign: 'center', lineHeight: '24px',
+            fontWeight: 'bold', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+          });
+          wrapper.textContent = String(entryIds.length);
+        } else if (entryIds.length === 1) {
+          // Single-entry circle marker
+          Object.assign(wrapper.style, {
+            width: '24px', height: '24px', borderRadius: '50%',
+            backgroundColor: '#ac6d46', border: '2px solid white',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '11px', color: 'white', fontWeight: 'bold',
+            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+          });
+          wrapper.textContent = String(idx + 1);
         } else {
-          Object.assign(diamond.style, { width: '24px', height: '24px', backgroundColor: '#616161', border: '2px solid white', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' });
-          label.style.fontSize = '11px'; label.textContent = String(idx + 1);
+          // Unconverted — diamond marker
+          const diamond = document.createElement('div');
+          Object.assign(diamond.style, { display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(45deg)' });
+
+          const label = document.createElement('span');
+          Object.assign(label.style, { transform: 'rotate(-45deg)', color: 'white', fontWeight: 'bold', lineHeight: '1' });
+
+          if (isStart && isRoundTrip) {
+            Object.assign(diamond.style, { width: '30px', height: '30px', backgroundColor: '#ac6d46', border: '3px solid #4676ac', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
+            label.style.fontSize = '13px'; label.textContent = 'S';
+          } else if (isStart || isEnd) {
+            Object.assign(diamond.style, { width: '30px', height: '30px', backgroundColor: isStart ? '#ac6d46' : '#4676ac', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
+            label.style.fontSize = '13px'; label.textContent = isStart ? 'S' : 'E';
+          } else {
+            Object.assign(diamond.style, { width: '24px', height: '24px', backgroundColor: '#616161', border: '2px solid white', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' });
+            label.style.fontSize = '11px'; label.textContent = String(idx + 1);
+          }
+
+          diamond.appendChild(label);
+          wrapper.appendChild(diamond);
+          if (isCurrent) diamond.style.animation = 'wp-pulse 2s ease-out infinite';
         }
 
-        diamond.appendChild(label);
-        wrapper.appendChild(diamond);
-
-        if (isCurrent) diamond.style.animation = 'wp-pulse 2s ease-out infinite';
+        if (isCurrent && entryIds.length > 0) {
+          wrapper.style.animation = 'wp-pulse 2s ease-out infinite';
+        }
 
         new mapboxgl.Marker(wrapper).setLngLat([wp.coords.lng, wp.coords.lat]).addTo(map);
       });
 
-      // Entry markers (non-interactive)
+      // Legacy entry markers — entries not linked to any waypoint
       journalEntries
-        .filter(entry => entry.coords.lat !== 0 || entry.coords.lng !== 0)
+        .filter(entry => (entry.coords.lat !== 0 || entry.coords.lng !== 0) && !linkedEntryIds.has(entry.id))
         .forEach((entry) => {
           const el = document.createElement('div');
           el.className = 'banner-entry-marker';
           Object.assign(el.style, {
-            width: '16px', height: '16px', borderRadius: '50%',
+            width: '24px', height: '24px', borderRadius: '50%',
             backgroundColor: '#ac6d46', border: '2px solid white',
             boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
           });
@@ -1420,7 +490,6 @@ export function ExpeditionDetailPage() {
       map.remove();
       bannerMapRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, mapLayer, waypoints, journalEntries, apiExpedition, debriefRoute]);
 
   // Phase 1: When modal opens, wait for browser paint then signal ready
@@ -1484,9 +553,10 @@ export function ExpeditionDetailPage() {
       const isRoundTrip = apiExpedition?.isRoundTrip;
       const routeCoordinates = hasDirectionsRoute
         ? apiExpedition.routeGeometry!
-        : waypoints
-            .filter(wp => wp.coords.lat !== 0 || wp.coords.lng !== 0)
-            .map(wp => [wp.coords.lng, wp.coords.lat]);
+        : buildMergedRouteCoords(
+            waypoints.map(wp => wp.coords),
+            journalEntries.map(e => e.coords),
+          );
 
       routeCoordsRef.current = routeCoordinates;
       const casingColor = getLineCasingColor(mapLayer, theme);
@@ -1539,15 +609,26 @@ export function ExpeditionDetailPage() {
       }
 
       if (currentLocCoords && routeCoordinates.length >= 2) {
-        let closestIdx = 0;
-        let closestDist = Infinity;
-        for (let i = 0; i < routeCoordinates.length; i++) {
-          const [lng, lat] = routeCoordinates[i];
-          const d = Math.pow(lng - currentLocCoords.lng, 2) + Math.pow(lat - currentLocCoords.lat, 2);
-          if (d < closestDist) { closestDist = d; closestIdx = i; }
+        let completedCoords: number[][];
+        if (hasDirectionsRoute) {
+          // Dense point set — nearest-coordinate search works fine
+          let closestIdx = 0;
+          let closestDist = Infinity;
+          for (let i = 0; i < routeCoordinates.length; i++) {
+            const [lng, lat] = routeCoordinates[i];
+            const d = Math.pow(lng - currentLocCoords.lng, 2) + Math.pow(lat - currentLocCoords.lat, 2);
+            if (d < closestDist) { closestDist = d; closestIdx = i; }
+          }
+          completedCoords = routeCoordinates.slice(0, closestIdx + 1);
+        } else {
+          // Fallback route (waypoint-to-waypoint) — use waypoint status
+          completedCoords = waypoints
+            .filter(w => (w.status === 'completed' || w.status === 'current') && (w.coords.lat !== 0 || w.coords.lng !== 0))
+            .map(w => [w.coords.lng, w.coords.lat]);
+          if (curSrc === 'entry') {
+            completedCoords.push([currentLocCoords.lng, currentLocCoords.lat]);
+          }
         }
-        const completedCoords = routeCoordinates.slice(0, closestIdx + 1);
-
         if (completedCoords.length >= 2) {
           map.addSource('completed-route', {
             type: 'geojson',
@@ -1585,52 +666,114 @@ export function ExpeditionDetailPage() {
         document.head.appendChild(style);
       }
 
-      // Add waypoint markers (diamond shape)
-      waypoints.forEach((wp, idx) => {
-        // Skip rendering diamond for waypoints that have been converted to entries
-        if (wp.entryId) return;
+      // Unified waypoint markers with click handlers
+      const linkedEntryIds = new Set<string>();
+      waypoints.forEach((wp) => {
+        (wp.entryIds || []).forEach(eid => linkedEntryIds.add(eid));
+      });
 
+      waypoints.forEach((wp, idx) => {
         const isStart = idx === 0;
         const isEnd = !isRoundTrip && idx === waypoints.length - 1 && waypoints.length > 1;
         const isCurrent = wp.status === 'current';
+        const entryIds = wp.entryIds || [];
 
-        // Wrapper for Mapbox to control positioning; diamond lives inside
         const wrapper = document.createElement('div');
         wrapper.className = 'waypoint-marker';
 
-        const diamond = document.createElement('div');
-        diamond.style.display = 'flex';
-        diamond.style.alignItems = 'center';
-        diamond.style.justifyContent = 'center';
-        diamond.style.transform = 'rotate(45deg)';
+        if (entryIds.length > 1) {
+          // Multi-entry cluster badge
+          Object.assign(wrapper.style, {
+            width: '30px', height: '30px', borderRadius: '50%',
+            backgroundColor: '#8a5738', border: '3px solid white',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+            fontSize: '12px', color: 'white', textAlign: 'center', lineHeight: '24px',
+            fontWeight: 'bold', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+            cursor: 'pointer',
+          });
+          wrapper.textContent = String(entryIds.length);
 
-        const label = document.createElement('span');
-        label.style.transform = 'rotate(-45deg)';
-        label.style.color = 'white';
-        label.style.fontWeight = 'bold';
-        label.style.lineHeight = '1';
+          wrapper.addEventListener('click', () => {
+            markerClickedRef.current = true;
+            const entries = entryIds
+              .map(eid => journalEntries.find(e => e.id === eid))
+              .filter(Boolean) as JournalEntryType[];
+            if (entries.length > 0) {
+              const cluster = {
+                id: entryIds.sort().join('-'),
+                center: wp.coords,
+                entries,
+              };
+              setClickedEntry(null);
+              setSourceCluster(null);
+              const containerEl = mapContainerRef.current;
+              if (containerEl) setPopupPosition(computePopupPosition(wrapper, containerEl));
+              setClickedCluster(cluster);
+            }
+          });
+        } else if (entryIds.length === 1) {
+          // Single-entry circle marker
+          Object.assign(wrapper.style, {
+            width: '22px', height: '22px', borderRadius: '50%',
+            backgroundColor: '#ac6d46', border: '2px solid white',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '11px', color: 'white', fontWeight: 'bold',
+            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+          });
+          wrapper.textContent = String(idx + 1);
 
-        if (isStart && isRoundTrip) {
-          diamond.style.width = '26px'; diamond.style.height = '26px';
-          diamond.style.backgroundColor = '#ac6d46'; diamond.style.border = '3px solid #4676ac';
-          diamond.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-          label.style.fontSize = '14px'; label.textContent = 'S';
-        } else if (isStart || isEnd) {
-          diamond.style.width = '26px'; diamond.style.height = '26px';
-          diamond.style.backgroundColor = isStart ? '#ac6d46' : '#4676ac'; diamond.style.border = '3px solid white';
-          diamond.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
-          label.style.fontSize = '14px'; label.textContent = isStart ? 'S' : 'E';
+          wrapper.addEventListener('click', () => {
+            markerClickedRef.current = true;
+            const entry = journalEntries.find(e => e.id === entryIds[0]);
+            if (entry) {
+              setClickedCluster(null);
+              setSourceCluster(null);
+              const containerEl = mapContainerRef.current;
+              if (containerEl) setPopupPosition(computePopupPosition(wrapper, containerEl));
+              setClickedEntry(entry);
+            }
+          });
         } else {
-          diamond.style.width = '22px'; diamond.style.height = '22px';
-          diamond.style.backgroundColor = '#616161'; diamond.style.border = '2px solid white';
-          diamond.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
-          label.style.fontSize = '12px'; label.textContent = String(idx + 1);
+          // Unconverted — diamond marker
+          const diamond = document.createElement('div');
+          diamond.style.display = 'flex';
+          diamond.style.alignItems = 'center';
+          diamond.style.justifyContent = 'center';
+          diamond.style.transform = 'rotate(45deg)';
+
+          const label = document.createElement('span');
+          label.style.transform = 'rotate(-45deg)';
+          label.style.color = 'white';
+          label.style.fontWeight = 'bold';
+          label.style.lineHeight = '1';
+
+          if (isStart && isRoundTrip) {
+            diamond.style.width = '26px'; diamond.style.height = '26px';
+            diamond.style.backgroundColor = '#ac6d46'; diamond.style.border = '3px solid #4676ac';
+            diamond.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+            label.style.fontSize = '14px'; label.textContent = 'S';
+          } else if (isStart || isEnd) {
+            diamond.style.width = '26px'; diamond.style.height = '26px';
+            diamond.style.backgroundColor = isStart ? '#ac6d46' : '#4676ac'; diamond.style.border = '3px solid white';
+            diamond.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+            label.style.fontSize = '14px'; label.textContent = isStart ? 'S' : 'E';
+          } else {
+            diamond.style.width = '22px'; diamond.style.height = '22px';
+            diamond.style.backgroundColor = '#616161'; diamond.style.border = '2px solid white';
+            diamond.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
+            label.style.fontSize = '12px'; label.textContent = String(idx + 1);
+          }
+
+          diamond.appendChild(label);
+          wrapper.appendChild(diamond);
+          if (isCurrent) diamond.style.animation = 'wp-pulse 2s ease-out infinite';
         }
 
-        diamond.appendChild(label);
-        wrapper.appendChild(diamond);
-
-        if (isCurrent) diamond.style.animation = 'wp-pulse 2s ease-out infinite';
+        if (isCurrent && entryIds.length > 0) {
+          wrapper.style.animation = 'wp-pulse 2s ease-out infinite';
+        }
 
         const wpMarker = new mapboxgl.Marker(wrapper)
           .setLngLat([wp.coords.lng, wp.coords.lat])
@@ -1642,37 +785,42 @@ export function ExpeditionDetailPage() {
       clusteredRef.current?.cleanup();
       markersRef.current = [];
 
-      // Add journal entry markers with clustering
-      const highlightId = curSrc === 'entry' ? curId : undefined;
-      const numberedEntries = journalEntries.map(e => ({
-        ...e,
-        timelinePosition: entryTimelinePositions.get(e.id),
-      }));
-      const result = renderClusteredMarkers<JournalEntryType>({
-        entries: numberedEntries,
-        map,
-        mapContainerRef,
-        onSingleEntryClick: (entry, position) => {
-          markerClickedRef.current = true;
-          setClickedCluster(null);
-          setSourceCluster(null);
-          setPopupPosition(position);
-          setClickedEntry(entry);
-        },
-        onClusterClick: (cluster, position) => {
-          markerClickedRef.current = true;
-          setClickedEntry(null);
-          setSourceCluster(null);
-          setPopupPosition(position);
-          setClickedCluster(cluster);
-        },
-        onMarkerClicked: () => { markerClickedRef.current = true; },
-        highlightEntryId: highlightId,
-      });
-      markersRef.current = result.markers;
-      clusteredRef.current = result;
+      // Legacy entry markers — only for entries not linked to any waypoint
+      const legacyEntries = journalEntries.filter(e =>
+        (e.coords.lat !== 0 || e.coords.lng !== 0) && !linkedEntryIds.has(e.id)
+      );
 
-      map.on('zoomend', result.recalculate);
+      if (legacyEntries.length > 0) {
+        const highlightId = curSrc === 'entry' ? curId : undefined;
+        const numberedEntries = legacyEntries.map(e => ({
+          ...e,
+          timelinePosition: entryTimelinePositions.get(e.id),
+        }));
+        const result = renderClusteredMarkers<JournalEntryType>({
+          entries: numberedEntries,
+          map,
+          mapContainerRef,
+          onSingleEntryClick: (entry, position) => {
+            markerClickedRef.current = true;
+            setClickedCluster(null);
+            setSourceCluster(null);
+            setPopupPosition(position);
+            setClickedEntry(entry);
+          },
+          onClusterClick: (cluster, position) => {
+            markerClickedRef.current = true;
+            setClickedEntry(null);
+            setSourceCluster(null);
+            setPopupPosition(position);
+            setClickedCluster(cluster);
+          },
+          onMarkerClicked: () => { markerClickedRef.current = true; },
+          highlightEntryId: highlightId,
+        });
+        markersRef.current = result.markers;
+        clusteredRef.current = result;
+        map.on('zoomend', result.recalculate);
+      }
 
       // Fit bounds to show all markers
       const allCoords: [number, number][] = [
@@ -1761,827 +909,92 @@ export function ExpeditionDetailPage() {
     );
   }
 
+
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-12">
-      {/* Hero Banner with Overlay Content */}
+      {/* Hero Banner + Stats Bar */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
-        <div
-          className={`relative h-[400px] md:h-[600px] overflow-hidden${hasMapData ? ' cursor-pointer' : ''}`}
-          onClick={() => hasMapData && setIsMapModalOpen(true)}
-          role={hasMapData ? 'button' : undefined}
-          tabIndex={hasMapData ? 0 : undefined}
-          onKeyDown={hasMapData ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsMapModalOpen(true); } } : undefined}
-        >
-          {/* Banner Map */}
-          <div ref={bannerMapContainerRef} className="absolute inset-0 w-full h-full z-0" />
-
-          {/* Fallback cover image when no map data */}
-          {!hasMapData && (
-            <ImageWithFallback
-              src={expedition.imageUrl}
-              alt={expedition.title}
-              className="absolute inset-0 h-full w-full object-cover z-0"
-            />
-          )}
-
-          {/* Dark gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90 pointer-events-none z-[1]" />
-          
-          {/* Expedition Status Banner - Top Border */}
-          <div className={`absolute top-0 left-0 right-0 py-2 px-6 ${
-            expedition.status === 'active'
-              ? 'bg-[#ac6d46]'
-              : expedition.status === 'planned'
-              ? 'bg-[#4676ac]'
-              : 'bg-[#616161]'
-          } z-10 flex items-center justify-between pointer-events-auto`} onClick={(e) => e.stopPropagation()}>
-            <div className="text-white font-bold text-sm tracking-wide">
-              {expedition.status === 'cancelled' ? 'CANCELLED EXPEDITION' : expedition.status === 'active' ? 'ACTIVE EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'COMPLETED EXPEDITION'}
-            </div>
-            {expedition.privacy !== 'public' && (
-              <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold tracking-wide ${
-                expedition.privacy === 'off-grid' ? 'bg-[#6b5c4e] text-white' : 'bg-[#202020] text-white'
-              }`}>
-                {expedition.privacy === 'off-grid' ? <EyeOff className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                {expedition.privacy === 'off-grid' ? 'OFF-GRID' : 'PRIVATE'}
-              </div>
-            )}
-          </div>
-          
-          {/* Content Overlay */}
-          <div className="absolute inset-0 flex flex-col justify-between p-6 text-white pt-16 pointer-events-none z-[2]">
-            {/* Top Section: Title, Explorer, Description */}
-            <div className="flex items-start justify-between gap-6">
-              <div className="flex-1">
-                <div className="mb-3">
-                  <h1 className="text-2xl md:text-4xl font-bold">{expedition.title}</h1>
-                  {(expedition.category || expedition.region) && (
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      {expedition.category && (
-                        <span className="px-3 py-1 bg-[#4676ac] text-white text-xs font-semibold whitespace-nowrap rounded-full">
-                          {expedition.category.toUpperCase()}
-                        </span>
-                      )}
-                      {expedition.region && (
-                        <span className="px-3 py-1 bg-[#616161] text-white text-xs font-semibold whitespace-nowrap rounded-full">
-                          {expedition.region.toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm text-[#b5bcc4] mb-3 font-mono">
-                  <span>Day {expedition.daysActive} of {totalDuration || '?'}</span>
-                  <span>•</span>
-                  <span>{formatDate(expedition.startDate)} to {formatDate(expedition.estimatedEndDate)}</span>
-                </div>
-
-                <p className="text-sm text-white/90 max-w-4xl leading-relaxed line-clamp-3 md:line-clamp-none">{expedition.description}</p>
-              </div>
-              
-              {/* Explorer Info Card - hidden on mobile to prevent overlap */}
-              <div className="hidden md:block text-xs font-mono bg-[#202020]/80 border-2 border-[#ac6d46] p-4 min-w-[280px] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                <div className="text-[#b5bcc4] mb-3 font-bold border-b-2 border-[#616161] pb-2">EXPLORER INFORMATION</div>
-                
-                <div className="flex items-center gap-3 mb-4">
-                  <Link href={`/journal/${expedition.explorerId}`} className="flex-shrink-0">
-                    <div className={`w-16 h-16 border-2 ${expedition.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all`}>
-                      <Image
-                        src={expedition.explorerPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${expedition.explorerId}`}
-                        alt={expedition.explorerName}
-                        className="w-full h-full object-cover"
-                        width={64}
-                        height={64}
-                      />
-                    </div>
-                  </Link>
-                  <div className="flex-1">
-                    <Link href={`/journal/${expedition.explorerId}`} className="text-white font-bold hover:text-[#ac6d46] transition-all focus-visible:outline-none focus-visible:underline block mb-1">
-                      {expedition.explorerName}
-                    </Link>
-                    <div className="text-[#b5bcc4]">@{expedition.explorerId}</div>
-                  </div>
-                </div>
-                
-                <div className="space-y-2 border-t-2 border-[#616161] pt-3">
-                  <div className="flex justify-between gap-4">
-                    <span className="text-[#b5bcc4]">Account Type:</span>
-                    <span className="text-[#ac6d46] font-bold">EXPLORER PRO</span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span className="text-[#b5bcc4]">Active Expeditions:</span>
-                    <span className="text-white font-bold">3</span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span className="text-[#b5bcc4]">Total Followers:</span>
-                    <span className="text-white font-bold">{expedition.followers}</span>
-                  </div>
-                  <div className="flex justify-between gap-4">
-                    <span className="text-[#b5bcc4]">Member Since:</span>
-                    <span className="text-white font-bold">2024</span>
-                  </div>
-                </div>
-                
-                <Link 
-                  href={`/journal/${expedition.explorerId}`}
-                  className="block mt-4 w-full py-2 bg-[#4676ac] text-white text-center hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] font-bold"
-                >
-                  VIEW JOURNAL
-                </Link>
-              </div>
-            </div>
-            
-            {/* Bottom Section: Current Location + Action Bar */}
-            <div className="-mx-6 -mb-6">
-              {/* "CLICK MAP TO EXPLORE" hint */}
-              {hasMapData && (
-                <div className="flex justify-center pb-3 pointer-events-none">
-                  <div className="bg-[#202020]/60 text-white/80 text-xs font-mono px-3 py-1.5 flex items-center gap-2">
-                    <Maximize2 size={12} />
-                    CLICK MAP TO EXPLORE
-                  </div>
-                </div>
-              )}
-              {/* Cancelled Banner */}
-              {expedition.status === 'cancelled' && apiExpedition?.cancelledAt && (
-                <div className="bg-[#994040] px-6 py-3 flex items-center gap-3 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                  <XCircle size={16} className="text-white flex-shrink-0" strokeWidth={2} />
-                  <div className="font-mono text-sm">
-                    <span className="text-white font-bold tracking-wide mr-3">EXPEDITION CANCELLED</span>
-                    {apiExpedition.cancellationReason && (
-                      <span className="text-white/70">{apiExpedition.cancellationReason} · </span>
-                    )}
-                    <span className="text-white/70">{formatDate(apiExpedition.cancelledAt as unknown as string)}</span>
-                  </div>
-                </div>
-              )}
-              {/* Current Location Bar - showing for all statuses temporarily */}
-              {currentLocationData?.location && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (currentLocationData.coords) {
-                      setPendingFlyTo(currentLocationData.coords);
-                      setIsMapModalOpen(true);
-                    }
-                  }}
-                  className="w-full bg-[#ac6d46] px-6 py-3 flex items-center justify-center gap-4 hover:bg-[#8a5738] transition-all cursor-pointer pointer-events-auto"
-                >
-                  <div className="relative flex items-center justify-center">
-                    <div className="absolute w-3 h-3 bg-white rounded-full animate-ping opacity-75" />
-                    <div className="relative w-2 h-2 bg-white rounded-full" />
-                  </div>
-                  <div className="font-mono text-sm">
-                    <span className="text-white/70 font-bold tracking-wide mr-3">CURRENT LOCATION</span>
-                    <span className="text-white font-bold">{currentLocationData.location}</span>
-                  </div>
-                  {currentLocationData.coords && (
-                    <div className="text-xs text-white/70 font-mono border-l border-white/30 pl-4">
-                      {currentLocationData.coords.lat.toFixed(4)}°N, {currentLocationData.coords.lng.toFixed(4)}°E
-                    </div>
-                  )}
-                  {/* Visibility indicator */}
-                  {isOwner && expedition.currentLocationVisibility && expedition.currentLocationVisibility !== 'public' && (
-                    <div className="flex items-center gap-1.5 border-l border-white/30 pl-4">
-                      {expedition.currentLocationVisibility === 'sponsors' && (
-                        <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full">
-                          <Users className="w-3.5 h-3.5 text-white" />
-                          <span className="text-white text-xs font-bold font-mono tracking-wide">SPONSORS ONLY</span>
-                        </div>
-                      )}
-                      {expedition.currentLocationVisibility === 'private' && (
-                        <div className="flex items-center gap-1.5 bg-white/20 px-3 py-1 rounded-full">
-                          <Lock className="w-3.5 h-3.5 text-white" />
-                          <span className="text-white text-xs font-bold font-mono tracking-wide">PRIVATE</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </button>
-              )}
-
-              {/* Action Bar - Always visible */}
-              <div className="bg-[#202020]/90 px-6 py-3 border-t-2 border-[#616161] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between gap-6">
-                {/* Expedition Status */}
-                <div className="flex items-center gap-3">
-                  <div className="font-mono text-sm text-[#b5bcc4]">
-                    {expedition.status === 'cancelled' ? 'CANCELLED EXPEDITION' : expedition.status === 'completed' ? 'COMPLETED EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'ACTIVE EXPEDITION'}
-                  </div>
-                  {expedition.privacy !== 'public' && (
-                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
-                      expedition.privacy === 'off-grid' ? 'bg-[#6b5c4e] text-white' : 'bg-[#202020] text-white border border-[#616161]'
-                    }`}>
-                      {expedition.privacy === 'off-grid' ? <EyeOff className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
-                      {expedition.privacy === 'off-grid' ? 'OFF-GRID' : 'PRIVATE'}
-                    </div>
-                  )}
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2">
-                  {/* Sponsor button */}
-                  {!isOwner && showSponsorshipSection && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
-                    <Link
-                      href={isAuthenticated ? `/sponsor/${expedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
-                      className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap flex items-center gap-2"
-                    >
-                      SPONSOR
-                    </Link>
-                  )}
-                  {/* Follow button - Hidden when not authenticated or own expedition */}
-                  {isAuthenticated && !isOwner && (
-                    <button
-                      onClick={() => handleFollowExplorer(expedition.explorerId)}
-                      disabled={followLoading}
-                      className={`px-4 py-2 border-2 transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2 ${
-                        isFollowingExplorer
-                          ? 'border-[#4676ac] bg-[#4676ac] text-white hover:bg-[#365a87]'
-                          : 'border-white/30 text-white hover:bg-white/10'
-                      }`}
-                    >
-                      {followLoading && <Loader2 size={16} strokeWidth={2} className="animate-spin" />}
-                      {isFollowingExplorer ? 'FOLLOWING EXPLORER' : 'FOLLOW EXPLORER'}
-                    </button>
-                  )}
-                  {/* Bookmark button - Hidden when not authenticated */}
-                  {isAuthenticated && (
-                    <button
-                      onClick={handleBookmarkExpedition}
-                      disabled={bookmarkLoading}
-                      className={`px-4 py-2 border-2 transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2 ${
-                        isBookmarked
-                          ? 'border-[#ac6d46] bg-[#ac6d46] text-white hover:bg-[#8a5738]'
-                          : 'border-white/30 text-white hover:bg-white/10'
-                      }`}
-                    >
-                      {bookmarkLoading && <Loader2 size={16} strokeWidth={2} className="animate-spin" />}
-                      {isBookmarked ? 'BOOKMARKED' : 'BOOKMARK'}
-                    </button>
-                  )}
-                  {/* Share button - Always visible (public action) */}
-                  <button className="px-4 py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2">
-                    SHARE
-                  </button>
-                </div>
-              </div>
-            </div>
-            </div>
-          </div>
-        </div>
-
-
-        {/* Stats Bar */}
-        <div className={`grid grid-cols-2 ${showSponsorshipSection ? 'md:grid-cols-6' : 'md:grid-cols-4'} border-t-2 border-[#202020] dark:border-[#616161]`}>
-          {/* Days to Start (planned) or Days Active (active/completed) */}
-          <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-            {expedition.status === 'planned' && expedition.startDate ? (() => {
-              const daysUntilStart = Math.max(0, Math.ceil((new Date(expedition.startDate).getTime() - now) / (1000 * 60 * 60 * 24)));
-              return (
-                <>
-                  <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{daysUntilStart}</div>
-                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Days to Start</div>
-                </>
-              );
-            })() : (
-              <>
-                <div className="text-xl md:text-2xl font-bold dark:text-[#e5e5e5]">{expedition.daysActive}</div>
-                <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Days Active</div>
-              </>
-            )}
-          </div>
-          {/* Raised - only show if sponsorships enabled */}
-          {showSponsorshipSection && (
-            <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-              <div className="text-xl md:text-2xl font-bold dark:text-[#e5e5e5]">
-                ${totalRaised >= 1000 ? `${(totalRaised / 1000).toFixed(1)}k` : totalRaised.toFixed(0)}
-              </div>
-              <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                {expedition.goal > 0 ? `of $${expedition.goal >= 1000 ? `${(expedition.goal / 1000).toFixed(1)}k` : expedition.goal.toLocaleString()} goal` : 'Raised'}
-              </div>
-            </div>
-          )}
-          {/* Sponsors - only show if sponsorships enabled */}
-          {showSponsorshipSection && (
-            <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-              <div className="text-xl md:text-2xl font-bold text-[#ac6d46]">{expedition.sponsors}</div>
-              <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Sponsors</div>
-            </div>
-          )}
-          <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-            <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{expedition.totalWaypoints}</div>
-            <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Waypoints</div>
-          </div>
-          <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-            <div className="text-xl md:text-2xl font-bold text-[#ac6d46]">{expedition.totalEntries}</div>
-            <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Entries</div>
-          </div>
-          <div className="p-2 md:p-4 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-            <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{formatDistance(totalRouteDistance, 1)}</div>
-            <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-              {(() => {
-                const mode = apiExpedition?.routeMode;
-                const modeLabel = mode === 'driving' ? 'Driving' : mode === 'walking' ? 'Walking' : mode === 'cycling' ? 'Cycling' : 'Haversine';
-                const tripLabel = apiExpedition?.isRoundTrip ? 'Round Trip' : 'One Way';
-                return `${modeLabel} • ${tripLabel}`;
-              })()}
-            </div>
-          </div>
-        </div>
+        <HeroBanner
+          expedition={expedition}
+          hasMapData={hasMapData}
+          bannerMapContainerRef={bannerMapContainerRef}
+          currentLocationData={currentLocationData}
+          isOwner={isOwner}
+          isAuthenticated={isAuthenticated}
+          showSponsorshipSection={showSponsorshipSection}
+          isFollowingExplorer={isFollowingExplorer}
+          followLoading={followLoading}
+          isBookmarked={isBookmarked}
+          bookmarkLoading={bookmarkLoading}
+          shareCopied={shareCopied}
+          apiExpedition={apiExpedition}
+          totalDuration={totalDuration}
+          formatDate={formatDate}
+          formatCoords={formatCoords}
+          onOpenMapModal={() => setIsMapModalOpen(true)}
+          onFollow={handleFollowExplorer}
+          onBookmark={handleBookmarkExpedition}
+          onShare={handleShare}
+          onCurrentLocationClick={(coords) => {
+            setPendingFlyTo(coords);
+            setIsMapModalOpen(true);
+          }}
+        />
+        <StatsBar
+          expedition={expedition}
+          showSponsorshipSection={showSponsorshipSection}
+          totalRaised={totalRaised}
+          totalRouteDistance={totalRouteDistance}
+          now={now}
+          apiExpedition={apiExpedition}
+          formatDistance={formatDistance}
+        />
       </div>
 
       {/* Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Map & Route - Left Column */}
+        {/* Content Tabs - Left Column */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Content Tabs */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-            {/* Tab Navigation */}
-            <div className="border-b-2 border-[#202020] dark:border-[#616161] flex">
-              <button
-                onClick={() => setSelectedView('entries')}
-                className={`flex-1 py-3 text-sm font-bold ${
-                  selectedView === 'entries'
-                    ? 'bg-[#4676ac] text-white'
-                    : 'bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#4676ac]'
-                } transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]`}
-              >
-                JOURNAL ENTRIES ({expedition.totalEntries})
-              </button>
-              {/* Expedition Notes tab - TEMPORARILY VISIBLE FOR TESTING (normally only shows if sponsorships enabled) */}
-              {/* {showSponsorshipSection && ( */}
-                <button
-                  onClick={() => setSelectedView('notes')}
-                  className={`flex-1 py-3 text-sm font-bold ${
-                    selectedView === 'notes'
-                      ? 'bg-[#4676ac] text-white'
-                      : 'bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#4676ac]'
-                  } transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border-l-2 border-[#202020] dark:border-[#616161]`}
-                >
-                  EXPEDITION NOTES
-                </button>
-              {/* )} */}
-              <button
-                onClick={() => setSelectedView('waypoints')}
-                className={`flex-1 py-3 text-sm font-bold ${
-                  selectedView === 'waypoints'
-                    ? 'bg-[#4676ac] text-white'
-                    : 'bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#4676ac]'
-                } transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border-l-2 border-[#202020] dark:border-[#616161]`}
-              >
-                WAYPOINTS ({expedition.totalWaypoints})
-              </button>
-              {/* Sponsors tab - only show if sponsorships enabled */}
-              {showSponsorshipSection && (
-                <button
-                  onClick={() => setSelectedView('sponsors')}
-                  className={`flex-1 py-3 text-sm font-bold ${
-                    selectedView === 'sponsors'
-                      ? 'bg-[#4676ac] text-white'
-                      : 'bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#4676ac]'
-                  } transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border-l-2 border-[#202020] dark:border-[#616161]`}
-                >
-                  SPONSORS ({expedition.sponsors})
-                </button>
-              )}
-            </div>
-
-            {/* Tab Content */}
-            <div className="p-6">
-              {/* Expedition Notes View - TEMPORARILY VISIBLE FOR TESTING (normally only shows if sponsorships enabled) */}
-              {selectedView === 'notes' && /* showSponsorshipSection && */ (
-                <div ref={notesSectionRef}>
-                  <ExpeditionNotes
-                    expeditionId={expedition.id}
-                    explorerId={expedition.explorerId}
-                    explorerName={expedition.explorerName}
-                    explorerPicture={expedition.explorerPicture}
-                    isOwner={isOwner}
-                    isSponsoring={isSponsoring}
-                    notes={expeditionNotes.map(note => ({
-                      ...note,
-                      id: String(note.id),
-                      replies: note.replies?.map(reply => ({
-                        ...reply,
-                        id: String(reply.id),
-                        noteId: String(reply.noteId),
-                      })),
-                    }))}
-                    noteCount={noteCount}
-                    onPostNote={handlePostNote}
-                    onPostReply={handlePostReply}
-                  />
-                </div>
-              )}
-
-              {/* Journal Entries View */}
-              {selectedView === 'entries' && (
-                <div className="space-y-4">
-                  {journalEntries.length > 0 ? (
-                    <>
-                      {journalEntries.map((entry) => (
-                        <EntryCardLandscape
-                          key={entry.id}
-                          id={entry.id}
-                          title={entry.title}
-                          explorerUsername={expedition.explorerName}
-                          expeditionName={expedition.title}
-                          location={entry.location}
-                          date={entry.date}
-                          excerpt={entry.excerpt}
-                          type={entry.type}
-                          visibility={entry.visibility}
-                          isCurrent={expedition.currentLocationSource === 'entry' && expedition.currentLocationId === entry.id}
-                          onClick={() => router.push(`/entry/${entry.id}`)}
-                        />
-                      ))}
-                      <button className="w-full py-3 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm font-bold">
-                        LOAD MORE ENTRIES
-                      </button>
-                    </>
-                  ) : (
-                    <div className="border border-dashed border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#fafafa] dark:bg-[#1a1a1a] p-8 text-center">
-                      <div className="text-sm font-bold font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">
-                        NO ENTRIES LOGGED YET
-                      </div>
-                      <div className="text-xs text-[#b5bcc4] dark:text-[#616161]">
-                        Journal entries for this expedition will appear here once published.
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Waypoints View */}
-              {selectedView === 'waypoints' && (
-                  <div className="space-y-4">
-                    {waypoints.map((wp, idx) => (
-                      <WaypointCardLandscape
-                        key={wp.id}
-                        id={wp.id}
-                        title={wp.title}
-                        explorerUsername={expedition.explorerName}
-                        expeditionName={expedition.title}
-                        location={wp.location}
-                        description={wp.description}
-                        date={wp.date}
-                        latitude={wp.coords.lat}
-                        longitude={wp.coords.lng}
-                        elevation={undefined}
-                        views={0}
-                        markerNumber={idx + 1}
-                        isStart={idx === 0}
-                        isEnd={idx === waypoints.length - 1}
-                        isCurrent={expedition.currentLocationSource === 'waypoint' && expedition.currentLocationId === wp.id}
-                        onClick={() => handleWaypointClick(wp.coords)}
-                      />
-                    ))}
-                  </div>
-              )}
-
-              {/* Sponsors Leaderboard - only show if sponsorships enabled */}
-              {selectedView === 'sponsors' && showSponsorshipSection && (
-                <div>
-                  {sponsors.length > 0 ? (
-                    <div className="space-y-0">
-                      {/* Leaderboard Header */}
-                      <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-2 bg-[#616161] dark:bg-[#3a3a3a] text-white text-xs font-bold font-mono">
-                        <span className="w-8 text-center">#</span>
-                        <span>SPONSOR</span>
-                        <span className="text-right">TYPE</span>
-                        <span className="w-24 text-right">AMOUNT</span>
-                      </div>
-
-                      {sponsors.map((s: any, idx: number) => {
-                        const isPublic = s.isPublic !== false;
-                        const isMessagePublic = s.isMessagePublic !== false;
-                        const sponsor = s.user || s.sponsor;
-                        const isRecurring = s.type?.toUpperCase() === 'SUBSCRIPTION';
-                        const isCustomAmount = !s.tier || (s.tier.price && s.amount !== s.tier.price);
-                        const tierLabel = isCustomAmount ? 'Custom' : s.tier?.description || 'Custom';
-
-                        return (
-                          <div
-                            key={s.id}
-                            className={`grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-3 items-center border-b border-[#b5bcc4] dark:border-[#3a3a3a] ${
-                              idx === 0 ? 'bg-[#fff5f0] dark:bg-[#2a2018]' : idx === 1 ? 'bg-[#fafafa] dark:bg-[#252525]' : idx === 2 ? 'bg-[#fafafa] dark:bg-[#232323]' : ''
-                            }`}
-                          >
-                            {/* Rank */}
-                            <div className={`w-8 text-center font-bold font-mono text-sm ${
-                              idx === 0 ? 'text-[#ac6d46]' : idx === 1 ? 'text-[#4676ac]' : idx === 2 ? 'text-[#616161] dark:text-[#b5bcc4]' : 'text-[#b5bcc4] dark:text-[#616161]'
-                            }`}>
-                              {idx + 1}
-                            </div>
-
-                            {/* Sponsor Info */}
-                            <div className="min-w-0">
-                              {isPublic && sponsor ? (
-                                <div>
-                                  <Link
-                                    href={`/journal/${sponsor.username}`}
-                                    className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] hover:text-[#ac6d46] transition-all"
-                                  >
-                                    {sponsor.username}
-                                  </Link>
-                                  {isMessagePublic && s.message && (
-                                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-0.5 truncate italic">
-                                      "{s.message}"
-                                    </div>
-                                  )}
-                                </div>
-                              ) : (
-                                <div className="text-sm text-[#616161] dark:text-[#b5bcc4] italic">
-                                  Anonymous Sponsor
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Tier / Type */}
-                            <div className="text-right">
-                              <span className={`inline-block px-2 py-0.5 text-xs font-bold ${
-                                isRecurring
-                                  ? 'bg-[#4676ac] text-white'
-                                  : 'bg-[#ac6d46] text-white'
-                              }`}>
-                                {tierLabel}
-                              </span>
-                              <div className="text-[10px] text-[#b5bcc4] dark:text-[#616161] mt-0.5 font-mono">
-                                {isRecurring ? 'MONTHLY' : 'ONE-TIME'}
-                              </div>
-                            </div>
-
-                            {/* Amount */}
-                            <div className="w-24 text-right">
-                              <div className="font-bold text-sm dark:text-[#e5e5e5]">
-                                ${(s.totalContribution || s.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </div>
-                              {isRecurring && (
-                                <div className="text-[10px] text-[#4676ac] font-mono">
-                                  ${(s.amount || 0).toFixed(2)}/mo
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="border border-dashed border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#fafafa] dark:bg-[#1a1a1a] p-8 text-center">
-                      <Users className="w-12 h-12 text-[#b5bcc4] dark:text-[#616161] mx-auto mb-3" />
-                      <div className="text-sm font-bold font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">
-                        NO SPONSORS YET
-                      </div>
-                      <div className="text-xs text-[#b5bcc4] dark:text-[#616161]">
-                        Be the first to support this expedition.
-                      </div>
-                      {!isOwner && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
-                        <Link
-                          href={isAuthenticated ? `/sponsor/${expedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
-                          className="inline-block mt-4 px-6 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] text-sm font-bold"
-                        >
-                          BECOME A SPONSOR
-                        </Link>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          <ContentTabs
+            selectedView={selectedView}
+            onSelectView={setSelectedView}
+            expedition={expedition}
+            showSponsorshipSection={showSponsorshipSection}
+            journalEntries={journalEntries}
+            waypoints={waypoints}
+            sponsors={sponsors}
+            expeditionNotes={expeditionNotes}
+            noteCount={noteCount}
+            isSponsoring={isSponsoring}
+            isOwner={isOwner}
+            isAuthenticated={isAuthenticated}
+            notesSectionRef={notesSectionRef}
+            onPostNote={handlePostNote}
+            onPostReply={handlePostReply}
+            onWaypointClick={handleWaypointClick}
+            router={router}
+          />
         </div>
 
         {/* Right Sidebar */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          {isOwner && (
-            <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-              <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-                QUICK ACTIONS
-              </h3>
-              <div className="space-y-2">
-                <Link
-                  href={`/log-entry/${expedition.id}`}
-                  className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
-                >
-                  LOG NEW ENTRY
-                </Link>
-                <Link
-                  href={expedition.explorerIsPro ? `/expedition-builder/${expedition.id}` : `/log-entry/${expedition.id}?type=waypoint`}
-                  className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
-                >
-                  LOG WAYPOINT
-                </Link>
-                <button
-                  onClick={() => setShowUpdateLocationModal(true)}
-                  disabled={expedition.status === 'completed'}
-                  className={`w-full py-2 border-2 border-[#202020] dark:border-[#616161] transition-all text-sm font-bold ${
-                    expedition.status === 'completed'
-                      ? 'opacity-50 cursor-not-allowed text-[#616161] dark:text-[#616161]'
-                      : 'dark:text-[#e5e5e5] hover:bg-[#4a4a4a] hover:text-white dark:hover:bg-[#4a4a4a] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]'
-                  }`}
-                  title={expedition.status === 'completed' ? 'Cannot update location on completed expeditions' : undefined}
-                >
-                  UPDATE LOCATION
-                </button>
-{showSponsorshipSection && (
-                  <button
-                    onClick={handleSponsorUpdate}
-                    className="w-full py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#4a4a4a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm font-bold"
-                  >
-                    SPONSOR UPDATE
-                  </button>
-                )}
-                <button
-                  onClick={() => setShowManagementModal(true)}
-                  className="w-full py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#4a4a4a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm font-bold flex items-center justify-center gap-2"
-                >
-                  MANAGE EXPEDITION
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Expedition Details */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-              EXPEDITION DETAILS
-            </h3>
-            <div className="text-xs font-mono space-y-2 text-[#616161] dark:text-[#b5bcc4]">
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">ID:</span> {expedition.id}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Status:</span> {expedition.status}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Category:</span> {expedition.category || 'Not set'}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Region:</span> {expedition.region || 'Not set'}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Started:</span> {formatDate(expedition.startDate)}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Est. End:</span> {formatDate(expedition.estimatedEndDate)}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Duration:</span> {expedition.daysActive} / {totalDuration || '?'} days</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Privacy:</span> {expedition.privacy === 'off-grid' ? 'Off-Grid' : expedition.privacy === 'private' ? 'Private' : 'Public'}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Comments:</span> {expedition.commentsEnabled ? 'Enabled' : 'Disabled'}</div>
-            </div>
-          </div>
-
-          {/* Current Weather Conditions — active expeditions with weather data */}
-          {weatherCondition && (
-            <WeatherCard
-              condition={weatherCondition}
-              localTime={weatherLocalTime}
-              formatDistance={formatDistance}
-            />
-          )}
-
-          {/* Funding Breakdown - only show if sponsorships enabled */}
-          {showSponsorshipSection && (
-            <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-              <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-                SPONSORSHIP FUNDING BREAKDOWN
-              </h3>
-
-              {/* Goal & Progress */}
-              <div className="mb-4">
-                <div className="space-y-2 mb-3">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">Goal:</span>
-                    <span className="font-bold text-sm dark:text-[#e5e5e5]">${expedition.goal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">Raised:</span>
-                    <span className="font-bold text-sm text-[#ac6d46]">${totalRaised.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">Remaining:</span>
-                    <span className="font-bold text-sm dark:text-[#e5e5e5]">${Math.max(0, expedition.goal - totalRaised).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="mb-3">
-                  <div className="flex justify-between text-xs font-mono mb-1">
-                    <span className="text-[#616161] dark:text-[#b5bcc4]">PROGRESS</span>
-                    <span className="font-bold text-[#ac6d46]">{Math.min(100, (expedition.goal > 0 ? (totalRaised / expedition.goal) * 100 : 0)).toFixed(1)}%</span>
-                  </div>
-                  <div className="h-3 bg-[#b5bcc4] dark:bg-[#3a3a3a] border-2 border-[#202020] dark:border-[#616161]">
-                    <div
-                      className="h-full bg-[#ac6d46]"
-                      style={{ width: `${Math.min(100, expedition.goal > 0 ? (totalRaised / expedition.goal) * 100 : 0)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Excess Funding Notice */}
-              {expedition.goal > 0 && totalRaised > expedition.goal && (
-                <div className="mb-4 p-3 bg-[#fef9e7] dark:bg-[#2a2518] border-l-4 border-[#d4a844]">
-                  <div className="text-xs font-bold mb-1 text-[#d4a844]">
-                    {totalRaised > expedition.goal && fundingStats.totalRecurringToDate > 0 && expedition.raised <= expedition.goal
-                      ? 'PROJECTED TO EXCEED GOAL'
-                      : 'GOAL EXCEEDED'}
-                  </div>
-                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                    Excess of <span className="font-bold">${(totalRaised - expedition.goal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                    {totalRaised > expedition.goal && fundingStats.totalRecurringToDate > 0 && expedition.raised <= expedition.goal
-                      ? ' is projected by end of expedition from recurring sponsorships. '
-                      : '. '}
-                    Excess funds will be allocated to future expeditions.
-                  </div>
-                </div>
-              )}
-
-              {/* Funding Sources Breakdown */}
-              <div className="mb-4 p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46]">
-                <div className="text-xs font-bold mb-2 text-[#ac6d46]">ONE-TIME SPONSORSHIPS</div>
-                <div className="flex justify-between items-baseline">
-                  <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">{expedition.sponsors} sponsor{expedition.sponsors !== 1 ? 's' : ''}</span>
-                  <span className="font-bold text-sm text-[#ac6d46]">${expedition.raised.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-              </div>
-
-              <div className="mb-4 p-3 bg-[#f0f4f8] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
-                <div className="text-xs font-bold mb-2 text-[#4676ac]">RECURRING MONTHLY</div>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">{fundingStats.activeSubscribers} active sponsor{fundingStats.activeSubscribers !== 1 ? 's' : ''}</span>
-                    <span className="font-bold text-sm text-[#4676ac]">${fundingStats.monthlyRecurring.toFixed(2)}/mo</span>
-                  </div>
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">Committed to date:</span>
-                    <span className="font-bold text-sm text-[#4676ac]">${fundingStats.totalRecurringToDate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sponsor Button */}
-              {!isOwner && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
-                <Link
-                  href={isAuthenticated ? `/sponsor/${expedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
-                  className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
-                >
-                  SPONSOR
-                </Link>
-              )}
-            </div>
-          )}
-
-          {/* Tags */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-              TAGS
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {expedition.tags.map((tag) => (
-                <span key={tag} className="px-2 py-1 bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#202020] dark:text-[#e5e5e5] text-xs">
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Route Statistics */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-              ROUTE STATISTICS
-            </h3>
-            <div className="space-y-3 text-xs">
-              <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Total Waypoints</span>
-                <span className="font-bold dark:text-[#e5e5e5]">{expedition.totalWaypoints}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Completed</span>
-                <span className="font-bold text-[#ac6d46]">{waypoints.filter(w => w.status === 'completed').length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Current</span>
-                <span className="font-bold text-[#4676ac]">{waypoints.filter(w => w.status === 'current').length}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Planned</span>
-                <span className="font-bold dark:text-[#e5e5e5]">{waypoints.filter(w => w.status === 'planned').length}</span>
-              </div>
-              <div className="flex justify-between border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Estimated Distance</span>
-                <span className="font-bold dark:text-[#e5e5e5]">~{formatDistance(3247, 0)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Avg. Daily Distance</span>
-                <span className="font-bold dark:text-[#e5e5e5]">~{formatDistance(22.1, 1)}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* System Information */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-              SYSTEM INFORMATION
-            </h3>
-            <div className="text-xs font-mono space-y-2 text-[#616161] dark:text-[#b5bcc4]">
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Last Update:</span> {formatDateTime(new Date())}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Data Points:</span> {expedition.totalEntries + expedition.totalWaypoints}</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">GPS Accuracy:</span> ±50m avg</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Map Renders:</span> 3</div>
-              <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Page Load:</span> 247ms</div>
-            </div>
-          </div>
-        </div>
+        <Sidebar
+          expedition={expedition}
+          isOwner={isOwner}
+          isAuthenticated={isAuthenticated}
+          showSponsorshipSection={showSponsorshipSection}
+          waypoints={waypoints}
+          totalRouteDistance={totalRouteDistance}
+          totalRaised={totalRaised}
+          totalDuration={totalDuration}
+          fundingStats={fundingStats}
+          weatherCondition={weatherCondition}
+          weatherLocalTime={weatherLocalTime}
+          formatDistance={formatDistance}
+          formatDate={formatDate}
+          onShowUpdateLocationModal={() => setShowUpdateLocationModal(true)}
+          onShowManagementModal={() => setShowManagementModal(true)}
+          onSponsorUpdate={handleSponsorUpdate}
+        />
       </div>
 
       {/* Update Location Modal */}
@@ -2618,397 +1031,43 @@ export function ExpeditionDetailPage() {
         onStatusChange={handleStatusChange}
         onCancel={async (reason) => {
           await expeditionApi.cancel(expedition.id, reason);
-          // Refetch expedition data
           const refreshed = await expeditionApi.getById(expedition.id);
           setApiExpedition(refreshed);
         }}
       />
 
       {/* Fullscreen Map Modal */}
-      {isMapModalOpen && (
-        <div className="fixed inset-0 z-50 bg-white dark:bg-[#202020]">
-          {/* Header - explicit height */}
-          <div className="absolute top-0 left-0 right-0 h-14 z-10 bg-[#616161] dark:bg-[#3a3a3a] text-white px-4 flex items-center border-b-2 border-[#202020] dark:border-[#616161]">
-            {/* Title - centered */}
-            <div className="absolute left-0 right-0 flex justify-center pointer-events-none">
-              <h2 className="text-sm font-bold truncate max-w-[60%] text-center">{expedition.title}</h2>
-            </div>
-            {/* Debrief stop counter - left side (debrief only) */}
-            {isDebriefMode && (
-              <div className="text-xs font-mono bg-white/10 px-3 py-1 z-10">
-                {debriefIndex + 1} / {debriefRoute.length}
-              </div>
-            )}
-            {/* Buttons - right side */}
-            <div className="ml-auto flex items-center gap-2 z-10">
-              {isDebriefMode ? (
-                <button
-                  onClick={exitDebriefMode}
-                  className="px-4 py-2 bg-[#202020] hover:bg-[#333] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
-                >
-                  EXIT DEBRIEF
-                </button>
-              ) : (
-                <>
-                  {canDebrief && (
-                    <button
-                      onClick={enterDebriefMode}
-                      className="px-3 py-1.5 bg-[#ac6d46] hover:bg-[#8a5738] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
-                    >
-                      DEBRIEF MODE
-                    </button>
-                  )}
-                  <button
-                    onClick={handleCloseModal}
-                    className="px-4 py-2 bg-[#202020] hover:bg-[#333] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"
-                  >
-                    CLOSE
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Map + all overlays - explicit positioning below h-14 header */}
-          <div className="absolute top-14 left-0 right-0 bottom-0 bg-[#e8e8e8] overflow-hidden">
-            <div ref={mapContainerRef} style={{ width: '100%', height: '100%' }} />
-
-            {/* Map Legend (bottom-left) */}
-            {!isDebriefMode && (
-              <div className="absolute bottom-4 left-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 text-xs z-10">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="font-bold dark:text-[#e5e5e5]">MAP LEGEND:</div>
-                  <button
-                    onClick={handleFitBounds}
-                    className="px-2 py-1 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center gap-1"
-                    title="Fit all markers in view"
-                  >
-                    <Maximize2 size={12} />
-                    <span className="text-xs font-bold">FIT</span>
-                  </button>
-                </div>
-                <div className="space-y-1 dark:text-[#e5e5e5]">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-[#202020] rotate-45"></div>
-                    <span>Completed Waypoint</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 bg-[#4676ac] border-2 border-[#202020] rotate-45"></div>
-                    <span>Current Location</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 bg-[#b5bcc4] border-2 border-[#202020] rotate-45"></div>
-                    <span>Planned Waypoint</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-[#202020] rounded-full"></div>
-                    <span>Journal Entry</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Map Info (top-right) */}
-            {!isDebriefMode && (
-              <div className="absolute top-4 right-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 text-xs font-mono z-10">
-                <div className="text-[#616161] dark:text-[#b5bcc4]">Current Position:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">
-                  {currentLocationData?.coords
-                    ? `${currentLocationData.coords.lat.toFixed(4)}°N, ${currentLocationData.coords.lng.toFixed(4)}°E`
-                    : 'No location set'}
-                </div>
-                <div className="text-[#616161] dark:text-[#b5bcc4] mt-2">Total Distance:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">~{formatDistance(3247, 0)}</div>
-              </div>
-            )}
-
-            {/* Entry Popup */}
-            {!isDebriefMode && clickedEntry && (
-              <div
-                className={`absolute w-72 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20 bottom-4 ${
-                  popupPosition === 'bottom-left' ? 'left-4' : 'right-4'
-                }`}
-              >
-                <div className="p-3 text-xs font-mono">
-                  {/* Back to cluster */}
-                  {sourceCluster && (
-                    <button
-                      onClick={() => {
-                        setClickedEntry(null);
-                        setClickedCluster(sourceCluster);
-                        setSourceCluster(null);
-                        clusteredRef.current?.removeAllHighlights();
-                      }}
-                      className="flex items-center gap-1 text-[10px] text-[#ac6d46] hover:underline mb-2"
-                    >
-                      <ChevronLeft className="w-3 h-3" />
-                      BACK TO {sourceCluster.entries.length} ENTRIES
-                    </button>
-                  )}
-
-                  {/* Header */}
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-sm dark:text-[#e5e5e5] truncate">{clickedEntry.title}</div>
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-0.5">
-                        {clickedEntry.location && <span>{clickedEntry.location}</span>}
-                        {clickedEntry.location && clickedEntry.date && <span> • </span>}
-                        {clickedEntry.date && <span>{formatShortDate(clickedEntry.date)}</span>}
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setClickedEntry(null);
-                        setSourceCluster(null);
-                        clusteredRef.current?.removeAllHighlights();
-                      }}
-                      className="p-0.5 hover:bg-[#202020] hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded transition-all active:scale-[0.95] focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#616161] flex-shrink-0"
-                    >
-                      <X className="w-3.5 h-3.5 text-[#616161] dark:text-[#b5bcc4]" />
-                    </button>
-                  </div>
-
-                  {/* Excerpt */}
-                  {clickedEntry.excerpt && (
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3 line-clamp-2">
-                      {clickedEntry.excerpt}
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => window.open(`/entry/${clickedEntry.id}`, '_blank')}
-                      className="flex-1 bg-[#ac6d46] text-white py-1.5 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold text-center"
-                    >
-                      VIEW ENTRY
-                    </button>
-                    <button
-                      onClick={() => handleBookmarkEntry(clickedEntry.id)}
-                      disabled={entryBookmarkLoading === clickedEntry.id}
-                      className={`py-1.5 px-2 transition-all active:scale-95 flex items-center justify-center ${
-                        entryBookmarked.has(clickedEntry.id)
-                          ? 'bg-[#4676ac] text-white hover:bg-[#365a87]'
-                          : 'bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a]'
-                      }`}
-                      title={entryBookmarked.has(clickedEntry.id) ? 'Bookmarked' : 'Bookmark'}
-                    >
-                      {entryBookmarkLoading === clickedEntry.id ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : entryBookmarked.has(clickedEntry.id) ? (
-                        <BookmarkCheck className="w-3.5 h-3.5" />
-                      ) : (
-                        <Bookmark className="w-3.5 h-3.5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Cluster Timeline Popup */}
-            {!isDebriefMode && clickedCluster && (
-              <ClusterTimelinePopup
-                cluster={clickedCluster}
-                position={popupPosition}
-                className="w-72 bottom-4"
-                onClose={() => {
-                  setClickedCluster(null);
-                  clusteredRef.current?.removeAllHighlights();
-                }}
-                onEntrySelect={(entry) => {
-                  setSourceCluster(clickedCluster);
-                  setClickedCluster(null);
-                  setClickedEntry(entry);
-                }}
-              />
-            )}
-
-            {/* Debrief Info Popup */}
-            {isDebriefMode && debriefRoute[debriefIndex] && (() => {
-              const stop = debriefRoute[debriefIndex];
-              return (
-                <div className="absolute top-4 right-4 w-80 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20">
-                  {/* Header */}
-                  <div className={`px-3 py-2 text-xs font-bold font-mono flex items-center justify-between ${
-                    stop.type === 'waypoint' ? 'bg-[#616161] text-white' : 'bg-[#ac6d46] text-white'
-                  }`}>
-                    <span>{stop.type === 'waypoint' ? 'WAYPOINT' : 'JOURNAL ENTRY'}</span>
-                    <span className="text-white/70">STOP {debriefIndex + 1} OF {debriefRoute.length}</span>
-                  </div>
-
-                  <div className="p-3 text-xs font-mono">
-                    {/* Title */}
-                    <div className="font-bold text-sm dark:text-[#e5e5e5] mb-1">{stop.title}</div>
-
-                    {/* Location & Date */}
-                    <div className="text-[#616161] dark:text-[#b5bcc4] mb-3">
-                      {stop.location && <span>{stop.location}</span>}
-                      {stop.location && stop.date && <span> &bull; </span>}
-                      {stop.date && <span>{formatDate(stop.date)}</span>}
-                    </div>
-
-                    {/* Waypoint-specific fields */}
-                    {stop.type === 'waypoint' && (
-                      <>
-                        {stop.description && (
-                          <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-2 line-clamp-3">
-                            {stop.description}
-                          </div>
-                        )}
-                        {stop.status && (
-                          <div className="mb-2">
-                            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold ${
-                              stop.status === 'completed' ? 'bg-[#ac6d46] text-white' :
-                              stop.status === 'current' ? 'bg-[#4676ac] text-white' :
-                              'bg-[#b5bcc4] text-[#202020]'
-                            }`}>
-                              {stop.status.toUpperCase()}
-                            </span>
-                          </div>
-                        )}
-                        {stop.notes && (
-                          <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-2 italic line-clamp-2">
-                            {stop.notes}
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {/* Entry-specific fields */}
-                    {stop.type === 'entry' && (
-                      <>
-                        {stop.excerpt && (
-                          <div className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3 line-clamp-3">
-                            {stop.excerpt}
-                          </div>
-                        )}
-                        <button
-                          onClick={() => window.open(`/entry/${stop.id}`, '_blank')}
-                          className="w-full bg-[#ac6d46] text-white py-1.5 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] text-xs font-bold text-center mb-2"
-                        >
-                          VIEW FULL ENTRY
-                        </button>
-                      </>
-                    )}
-
-                    {/* Coordinates */}
-                    <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2 text-[10px] text-[#b5bcc4] dark:text-[#616161]">
-                      {stop.coords.lat.toFixed(4)}&deg;N, {stop.coords.lng.toFixed(4)}&deg;E
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Debrief Navigation Controls */}
-            {isDebriefMode && (
-              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
-                <button
-                  onClick={() => debriefIndex > 0 && flyToDebriefStop(debriefIndex - 1)}
-                  disabled={debriefIndex === 0}
-                  className={`w-12 h-12 flex items-center justify-center border-2 transition-all active:scale-[0.95] ${
-                    debriefIndex === 0
-                      ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#b5bcc4] dark:border-[#3a3a3a] text-white/50 cursor-not-allowed'
-                      : 'bg-white dark:bg-[#202020] border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#4a4a4a]'
-                  }`}
-                  aria-label="Previous stop"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] px-4 h-12 flex items-center text-sm font-bold font-mono dark:text-[#e5e5e5]">
-                  {debriefIndex + 1} / {debriefRoute.length}
-                </div>
-                <button
-                  onClick={() => debriefIndex < debriefRoute.length - 1 && flyToDebriefStop(debriefIndex + 1)}
-                  disabled={debriefIndex === debriefRoute.length - 1}
-                  className={`w-12 h-12 flex items-center justify-center border-2 transition-all active:scale-[0.95] ${
-                    debriefIndex === debriefRoute.length - 1
-                      ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#b5bcc4] dark:border-[#3a3a3a] text-white/50 cursor-not-allowed'
-                      : 'bg-white dark:bg-[#202020] border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#4a4a4a]'
-                  }`}
-                  aria-label="Next stop"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            )}
-
-            {/* Debrief Distance Counter */}
-            {isDebriefMode && (
-              <div className="absolute bottom-6 right-4 z-20">
-                <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] px-4 py-2">
-                  <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] font-mono uppercase tracking-wider mb-0.5">
-                    Distance Traveled
-                  </div>
-                  <div className="text-lg font-bold font-mono dark:text-[#e5e5e5] tabular-nums">
-                    {formatDistance(debriefDistance, 1)}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function WeatherCard({
-  condition,
-  localTime,
-  formatDistance,
-}: {
-  condition: ExpeditionCondition;
-  localTime: string;
-  formatDistance: (km: number, decimals?: number) => string;
-}) {
-  const { unit } = useDistanceUnit();
-  const useMetric = unit === 'km';
-
-  const temp = useMetric ? condition.tempC : condition.tempF;
-  const feelsLike = useMetric ? condition.feelsLikeC : condition.feelsLikeF;
-  const tempUnit = useMetric ? '°C' : '°F';
-  const wind = useMetric ? condition.windKph : condition.windMph;
-  const windUnit = useMetric ? 'km/h' : 'mph';
-  const iconUrl = condition.conditionIcon.startsWith('//')
-    ? `https:${condition.conditionIcon}`
-    : condition.conditionIcon;
-
-  return (
-    <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-      <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-        CURRENT CONDITIONS
-      </h3>
-      <div className="text-xs font-mono space-y-2 text-[#616161] dark:text-[#b5bcc4]">
-        {/* Condition + Temp header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <img src={iconUrl} alt={condition.condition} className="w-8 h-8" />
-            <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{condition.condition}</span>
-          </div>
-          <span className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5]">
-            {temp.toFixed(1)}{tempUnit}
-          </span>
-        </div>
-        <div>Feels like {feelsLike.toFixed(1)}{tempUnit}</div>
-
-        <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2 space-y-1">
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Wind:</span> {wind.toFixed(0)} {windUnit} {condition.windDir}</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Humidity:</span> {condition.humidity}%</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">UV Index:</span> {condition.uvIndex}</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Visibility:</span> {formatDistance(condition.visibilityKm, 0)}</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Pressure:</span> {condition.pressureMb} mb</div>
-        </div>
-
-        <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2 space-y-1">
-          {localTime && (
-            <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Local Time:</span> {localTime}</div>
-          )}
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Timezone:</span> {condition.timezone}</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Updated:</span> {condition.lastUpdated}</div>
-        </div>
-      </div>
+      <MapModal
+        isOpen={isMapModalOpen}
+        expedition={expedition}
+        mapContainerRef={mapContainerRef}
+        isDebriefMode={isDebriefMode}
+        debriefIndex={debriefIndex}
+        debriefDistance={debriefDistance}
+        debriefRoute={debriefRoute}
+        canDebrief={canDebrief}
+        clickedEntry={clickedEntry}
+        clickedCluster={clickedCluster}
+        sourceCluster={sourceCluster}
+        popupPosition={popupPosition}
+        entryBookmarked={entryBookmarked}
+        entryBookmarkLoading={entryBookmarkLoading}
+        currentLocationData={currentLocationData}
+        totalRouteDistance={totalRouteDistance}
+        formatDistance={formatDistance}
+        formatDate={formatDate}
+        formatCoords={formatCoords}
+        onClose={handleCloseModal}
+        onEnterDebrief={enterDebriefMode}
+        onExitDebrief={exitDebriefMode}
+        onFitBounds={handleFitBounds}
+        onFlyToDebriefStop={flyToDebriefStop}
+        onClickedEntryChange={setClickedEntry}
+        onClickedClusterChange={setClickedCluster}
+        onSourceClusterChange={setSourceCluster}
+        onBookmarkEntry={handleBookmarkEntry}
+        clusteredRef={clusteredRef}
+      />
     </div>
   );
 }

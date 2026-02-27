@@ -314,8 +314,8 @@ export class ExpeditionService {
               endDate,
               coverImage: getStaticMediaUrl(cover_image),
               isRoundTrip: is_round_trip ?? false,
-              goal,
-              raised,
+              goal: integerToDecimal(goal ?? 0),
+              raised: integerToDecimal(raised ?? 0),
               sponsorsCount: sponsorCounts.get(author_id) ?? 0,
               entriesCount: entries_count,
               author: author
@@ -360,7 +360,7 @@ export class ExpeditionService {
         where: { username },
         select: { id: true },
       });
-      const isOwner = owner && owner.id === explorerId;
+      const isOwner = !!explorerId && !!owner && owner.id === explorerId;
 
       // get expeditions (owner sees all their own, others see only public and non-cancelled)
       const where = {
@@ -530,8 +530,8 @@ export class ExpeditionService {
               isRoundTrip: is_round_trip ?? false,
               startDate,
               endDate,
-              goal,
-              raised,
+              goal: integerToDecimal(goal ?? 0),
+              raised: integerToDecimal(raised ?? 0),
               sponsorsCount: sponsorCounts.get(author_id) ?? 0,
               entriesCount: entries_count,
               waypointsCount: waypoints.length,
@@ -694,8 +694,8 @@ export class ExpeditionService {
                     description: true,
                     entries: {
                       where: { deleted_at: null },
-                      take: 1,
                       select: { public_id: true },
+                      orderBy: { date: 'desc' },
                     },
                   },
                 },
@@ -782,7 +782,9 @@ export class ExpeditionService {
       }
 
       // Calculate date range from waypoints/entries if explicit dates not set
-      const waypointDates = waypoints.map(({ waypoint: { date } }) => date);
+      const waypointDates = waypoints
+        .map(({ waypoint: { date } }) => date)
+        .filter((d): d is Date => d != null);
       const entryDates = entries
         .filter((e) => e.date)
         .map((e) => e.date as Date);
@@ -894,7 +896,7 @@ export class ExpeditionService {
           'public',
         currentLocationSource: undefined as 'waypoint' | 'entry' | undefined,
         currentLocationId: undefined as string | undefined,
-        goal,
+        goal: integerToDecimal(goal ?? 0),
         raised: oneTimeTotal,
         sponsorsCount: uniqueSponsorsCount,
         entriesCount: entries.length,
@@ -982,6 +984,7 @@ export class ExpeditionService {
             description,
             sequence,
             entryId: entries?.[0]?.public_id || null,
+            entryIds: entries?.map(e => e.public_id) || [],
           }),
         ),
         sponsors: allSponsorships.map((s) => ({
@@ -1096,7 +1099,7 @@ export class ExpeditionService {
           route_geometry: payload.routeGeometry
             ? JSON.stringify(payload.routeGeometry)
             : null,
-          goal: payload.goal ?? 0,
+          goal: payload.goal ? Math.round(payload.goal * 100) : 0,
           author_id: explorerId,
         },
         select: {
@@ -1180,10 +1183,13 @@ export class ExpeditionService {
           const currentVis = expedition.visibility || 'public';
           const isPrivateTransition =
             (currentVis === 'private') !== (vis === 'private');
-          if (!isPrivateTransition) {
-            updateData.visibility = vis;
-            updateData.public = vis !== 'private';
+          if (isPrivateTransition) {
+            throw new ServiceBadRequestException(
+              'Expedition visibility cannot be changed to or from private after creation',
+            );
           }
+          updateData.visibility = vis;
+          updateData.public = vis !== 'private';
         }
       } else if (isPublic !== undefined) {
         updateData.public = isPublic;
@@ -1237,7 +1243,7 @@ export class ExpeditionService {
             'Setting a sponsorship goal requires Explorer Pro',
           );
         }
-        updateData.goal = goal;
+        updateData.goal = Math.round(goal * 100);
       }
       if (category !== undefined) {
         updateData.category = category;
@@ -1570,7 +1576,7 @@ export class ExpeditionService {
   }: ISessionQueryWithPayload<
     { expeditionId: string },
     IWaypointCreatePayload
-  >): Promise<void> {
+  >): Promise<{ waypointId: number }> {
     try {
       const { expeditionId } = query;
       const { explorerId } = session;
@@ -1583,7 +1589,7 @@ export class ExpeditionService {
         throw new ServiceNotFoundException('expedition not found');
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
-          where: { public_id: expeditionId },
+          where: { public_id: expeditionId, author_id: explorerId, deleted_at: null },
           select: { id: true },
         })
         .catch(() => {
@@ -1598,7 +1604,7 @@ export class ExpeditionService {
         : date === null
           ? null
           : undefined;
-      await this.prisma.expeditionWaypoint.create({
+      const created = await this.prisma.expeditionWaypoint.create({
         data: {
           sequence: sequence ?? 0,
           waypoint: {
@@ -1617,7 +1623,10 @@ export class ExpeditionService {
             },
           },
         },
+        select: { waypoint_id: true },
       });
+
+      return { waypointId: created.waypoint_id };
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;
