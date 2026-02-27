@@ -414,6 +414,12 @@ export class ExplorerService {
             orderBy: { id: 'desc' },
           },
           created_at: true,
+          _count: {
+            select: {
+              entries: { where: { deleted_at: null } },
+              expeditions: { where: { deleted_at: null } },
+            },
+          },
         },
       });
 
@@ -498,6 +504,8 @@ export class ExplorerService {
         instagram: explorer.profile?.instagram,
         youtube: explorer.profile?.youtube,
         equipment: (explorer.profile?.equipment as string[]) || [],
+        entriesCount: explorer._count.entries,
+        expeditionsCount: explorer._count.expeditions,
         activeExpeditionLocation,
         activeExpeditionOffGrid,
         isPioneer:

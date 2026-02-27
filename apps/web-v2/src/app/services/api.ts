@@ -305,6 +305,8 @@ export interface ExplorerProfile {
   };
   activeExpeditionOffGrid?: boolean;
   isPioneer?: boolean;
+  entriesCount?: number;
+  expeditionsCount?: number;
 }
 
 export interface ExplorerListItem {
@@ -956,6 +958,9 @@ export interface Entry {
     title: string;
     status?: string;
     entriesCount?: number;
+    goal?: number;
+    raised?: number;
+    sponsorsCount?: number;
   };
   // Alias for compatibility
   expedition?: {
@@ -964,6 +969,9 @@ export interface Entry {
     title: string;
     status?: string;
     entriesCount?: number;
+    goal?: number;
+    raised?: number;
+    sponsorsCount?: number;
   };
   author?: {
     username: string;

@@ -826,6 +826,7 @@ export class ExpeditionService {
           is_message_public: true,
           created_at: true,
           sponsor_id: true,
+          expedition_public_id: true,
           sponsor: {
             select: {
               username: true,
@@ -845,9 +846,13 @@ export class ExpeditionService {
         orderBy: { id: 'desc' },
       });
 
-      // Compute sponsorship stats from actual records (source of truth)
+      // One-time sponsorships are allocated to a specific expedition;
+      // only include those matching this expedition's public_id.
+      // Recurring sponsorships apply across all expeditions.
       const oneTimeSponsors = allSponsorships.filter(
-        (s) => s.type?.toLowerCase() !== 'subscription',
+        (s) =>
+          s.type?.toLowerCase() !== 'subscription' &&
+          s.expedition_public_id === public_id,
       );
       const oneTimeTotal = oneTimeSponsors.reduce(
         (sum, s) => sum + integerToDecimal(s.amount),
@@ -878,6 +883,12 @@ export class ExpeditionService {
         return sum + months * integerToDecimal(s.amount);
       }, 0);
 
+      // Count unique sponsors for this expedition (one-time allocated here + recurring)
+      const expeditionSponsorIds = new Set<number>();
+      for (const s of oneTimeSponsors) expeditionSponsorIds.add(s.sponsor_id);
+      for (const s of recurringSponsors) expeditionSponsorIds.add(s.sponsor_id);
+      const expeditionSponsorsCount = expeditionSponsorIds.size;
+
       const response: IExpeditionGetByIdResponse = {
         id: public_id,
         title,
@@ -898,7 +909,7 @@ export class ExpeditionService {
         currentLocationId: undefined as string | undefined,
         goal: integerToDecimal(goal ?? 0),
         raised: oneTimeTotal,
-        sponsorsCount: uniqueSponsorsCount,
+        sponsorsCount: expeditionSponsorsCount,
         entriesCount: entries.length,
         recurringStats: {
           activeSponsors: activeRecurring.length,
@@ -987,7 +998,12 @@ export class ExpeditionService {
             entryIds: entries?.map(e => e.public_id) || [],
           }),
         ),
-        sponsors: allSponsorships.map((s) => ({
+        sponsors: allSponsorships
+          .filter((s) =>
+            s.type?.toLowerCase() === 'subscription' ||
+            s.expedition_public_id === public_id,
+          )
+          .map((s) => ({
           id: s.public_id,
           type: s.type?.toLowerCase(),
           amount: integerToDecimal(s.amount),

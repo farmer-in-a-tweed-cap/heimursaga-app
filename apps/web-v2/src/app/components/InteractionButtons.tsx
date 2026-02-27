@@ -82,7 +82,7 @@ export function InteractionButtons({
     onSponsor?.();
   };
 
-  const showSponsorButton = explorerIsPro && sponsorshipsEnabled && stripeConnected && expeditionStatus !== 'completed';
+  const showSponsorButton = sponsorshipsEnabled && expeditionStatus !== 'completed' && expeditionStatus !== 'cancelled';
 
   const handleShare = () => {
     setShareMenuOpen(!shareMenuOpen);

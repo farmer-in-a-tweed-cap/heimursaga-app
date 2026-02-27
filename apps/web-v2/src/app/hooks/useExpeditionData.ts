@@ -259,7 +259,11 @@ export function useExpeditionData(
         date: entry.date || '',
         location: entry.place || 'Unknown location',
         coords: { lat: entry.lat || 0, lng: entry.lon || 0 },
-        excerpt: entry.content?.substring(0, 200) || '',
+        excerpt: entry.content
+          ? entry.content.length <= 200
+            ? entry.content
+            : entry.content.substring(0, 200).replace(/\s+\S*$/, '') + '...'
+          : '',
         type: 'standard' as const,
         mediaCount: entry.mediaCount || 0,
         views: 0,

@@ -13,7 +13,7 @@ import {
 import { IEntryBookmarkResponse, IEntryLikeResponse } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
-import { normalizeText } from '@/lib/formatter';
+import { integerToDecimal, normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { getCountryCodeFromCoordinates } from '@/lib/geocoding';
 import { getStaticMediaUrl } from '@/lib/upload';
@@ -549,6 +549,8 @@ export class EntryService {
               start_date: true, // Need for expeditionDay calculation
               status: true,
               end_date: true,
+              goal: true,
+              author_id: true,
             },
           },
           // check if the session explorer has liked this entry
@@ -670,6 +672,37 @@ export class EntryService {
         });
       }
 
+      // Calculate expedition sponsor count and raised from actual sponsorship records
+      let expeditionSponsorsCount = 0;
+      let expeditionRaised = 0;
+      if (entry.expedition?.author_id) {
+        const sponsorships = await this.prisma.sponsorship.findMany({
+          where: {
+            sponsored_explorer_id: entry.expedition.author_id,
+            deleted_at: null,
+            status: { in: ['active', 'confirmed', 'ACTIVE', 'CONFIRMED'] },
+          },
+          select: {
+            type: true,
+            amount: true,
+            sponsor_id: true,
+            expedition_public_id: true,
+          },
+        });
+        // One-time: only those allocated to this expedition. Recurring: all.
+        const relevant = sponsorships.filter(
+          (s) =>
+            s.type?.toLowerCase() === 'subscription' ||
+            s.expedition_public_id === entry.expedition!.public_id,
+        );
+        const uniqueSponsors = new Set(relevant.map((s) => s.sponsor_id));
+        expeditionSponsorsCount = uniqueSponsors.size;
+        // Raised = sum of one-time amounts for this expedition
+        expeditionRaised = relevant
+          .filter((s) => s.type?.toLowerCase() !== 'subscription')
+          .reduce((sum, s) => sum + integerToDecimal(s.amount), 0);
+      }
+
       const response: IEntryGetByIdResponse = {
         id: entry.public_id,
         title: entry.title,
@@ -719,6 +752,9 @@ export class EntryService {
                 | undefined,
               status: entry.expedition.status,
               entriesCount: expeditionEntriesCount || 0,
+              goal: integerToDecimal(entry.expedition.goal ?? 0),
+              raised: expeditionRaised,
+              sponsorsCount: expeditionSponsorsCount,
             }
           : undefined,
         media: entry.media

@@ -11,7 +11,7 @@ import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapL
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
-import { expeditionApi } from '@/app/services/api';
+import { expeditionApi, explorerApi, type ExplorerProfile } from '@/app/services/api';
 import { formatDate } from '@/app/utils/dateFormat';
 import { formatCoords } from '@/app/utils/formatCoords';
 import { renderClusteredMarkers, computePopupPosition, type EntryCluster } from '@/app/utils/mapClustering';
@@ -80,6 +80,13 @@ export function ExpeditionDetailPage() {
   const { weatherCondition, weatherLocalTime } = useWeatherConditions(apiExpedition, expeditionId);
   const { expeditionNotes, noteCount, isSponsoring, handlePostNote, handlePostReply } =
     useExpeditionNotes(expeditionId, isAuthenticated, isOwner);
+
+  // Explorer profile data (for global stats in HeroBanner)
+  const [explorerProfile, setExplorerProfile] = useState<ExplorerProfile | null>(null);
+  useEffect(() => {
+    if (!expedition?.explorerId) return;
+    explorerApi.getByUsername(expedition.explorerId).then(setExplorerProfile).catch(() => {});
+  }, [expedition?.explorerId]);
 
   // Total raised = one-time sponsorships + recurring committed during expedition lifetime
   const totalRaised = (expedition?.raised || 0) + fundingStats.totalRecurringToDate;
@@ -939,6 +946,7 @@ export function ExpeditionDetailPage() {
             setPendingFlyTo(coords);
             setIsMapModalOpen(true);
           }}
+          explorerProfile={explorerProfile}
         />
         <StatsBar
           expedition={expedition}
@@ -993,6 +1001,7 @@ export function ExpeditionDetailPage() {
           formatDate={formatDate}
           onShowUpdateLocationModal={() => setShowUpdateLocationModal(true)}
           onShowManagementModal={() => setShowManagementModal(true)}
+          sponsors={sponsors}
           onSponsorUpdate={handleSponsorUpdate}
         />
       </div>

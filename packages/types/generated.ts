@@ -338,6 +338,9 @@ export interface IPostDetail {
     status?: string;
     entriesCount?: number;
     visibility?: 'public' | 'off-grid' | 'private';
+    goal?: number;
+    raised?: number;
+    sponsorsCount?: number;
   };
   // Entry number within expedition (calculated on the fly)
   entryNumber?: number;

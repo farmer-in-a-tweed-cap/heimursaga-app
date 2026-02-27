@@ -424,7 +424,11 @@ export function ExplorerProfilePage() {
       expeditionId: e.expedition?.id || '',
       date: e.date || e.createdAt || '',
       timeAgo: '',
-      excerpt: e.content?.substring(0, 150) || '',
+      excerpt: e.content
+        ? e.content.length <= 150
+          ? e.content
+          : e.content.substring(0, 150).replace(/\s+\S*$/, '') + '...'
+        : '',
       mediaCount: (e as any).mediaCount || 0,
       wordCount: (e as any).wordCount || 0,
       type: (e as any).entryType || 'standard',
@@ -450,7 +454,11 @@ export function ExplorerProfilePage() {
       coords: { lat: e.lat!, lng: e.lon! },
       location: e.place || '',
       date: e.date || e.createdAt || '',
-      excerpt: e.content?.substring(0, 200) || '',
+      excerpt: e.content
+        ? e.content.length <= 200
+          ? e.content
+          : e.content.substring(0, 200).replace(/\s+\S*$/, '') + '...'
+        : '',
       mediaCount: (e as any).mediaCount || 0,
       views: 0,
       explorerName: explorer.name,

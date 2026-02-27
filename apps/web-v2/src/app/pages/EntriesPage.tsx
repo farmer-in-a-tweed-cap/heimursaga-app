@@ -121,7 +121,11 @@ export function EntriesPage() {
     expeditionId: entry.expedition?.id || entry.trip?.id || '',
     location: entry.place || '',
     date: entry.date || entry.createdAt || '',
-    excerpt: entry.content?.substring(0, 300) || '',
+    excerpt: entry.content
+      ? entry.content.length <= 300
+        ? entry.content
+        : entry.content.substring(0, 300).replace(/\s+\S*$/, '') + '...'
+      : '',
     mediaCount: entry.mediaCount || 0,
     views: entry.viewsCount || 0,
     wordCount: entry.wordCount || 0,

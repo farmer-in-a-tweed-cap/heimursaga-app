@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
-import type { TransformedExpedition, WaypointType, FundingStats } from '@/app/components/expedition-detail/types';
+import type { TransformedExpedition, WaypointType, FundingStats, SponsorWithTotal } from '@/app/components/expedition-detail/types';
 import type { ExpeditionCondition } from '@/app/services/api';
 
 interface SidebarProps {
@@ -21,6 +21,7 @@ interface SidebarProps {
   formatDate: (date: string | undefined) => string;
   onShowUpdateLocationModal: () => void;
   onShowManagementModal: () => void;
+  sponsors: SponsorWithTotal[];
   onSponsorUpdate: () => void;
 }
 
@@ -99,8 +100,13 @@ export function Sidebar({
   formatDate,
   onShowUpdateLocationModal,
   onShowManagementModal,
+  sponsors,
   onSponsorUpdate,
 }: SidebarProps) {
+  const oneTimeSponsorsCount = new Set(
+    sponsors.filter(s => s.type?.toLowerCase() !== 'subscription').map(s => s.user?.username)
+  ).size;
+
   return (
     <div className="space-y-6">
       {/* Quick Actions */}
@@ -240,7 +246,7 @@ export function Sidebar({
           <div className="mb-4 p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46]">
             <div className="text-xs font-bold mb-2 text-[#ac6d46]">ONE-TIME SPONSORSHIPS</div>
             <div className="flex justify-between items-baseline">
-              <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">{expedition.sponsors} sponsor{expedition.sponsors !== 1 ? 's' : ''}</span>
+              <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">{oneTimeSponsorsCount} sponsor{oneTimeSponsorsCount !== 1 ? 's' : ''}</span>
               <span className="font-bold text-sm text-[#ac6d46]">${expedition.raised.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
           </div>

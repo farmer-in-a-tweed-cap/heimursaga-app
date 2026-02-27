@@ -6,7 +6,6 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
-import { ViewLocationMap } from '@/app/components/ViewLocationMap';
 import { InlineLocationMap } from '@/app/components/InlineLocationMap';
 import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,7 +17,6 @@ export function JournalEntryPage() {
   const { user, isAuthenticated } = useAuth();
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [showCommentForm, setShowCommentForm] = useState(false);
-  const [showMapModal, setShowMapModal] = useState(false);
 
   // API data state
   const [apiEntry, setApiEntry] = useState<Entry | null>(null);
@@ -266,7 +264,10 @@ export function JournalEntryPage() {
       expeditionDay: api.expeditionDay || 1,
       expeditionTotalEntries: expedition?.entriesCount || 0,
       expeditionStatus: expedition?.status || '',
-      expeditionSponsorshipsEnabled: true, // Not in API yet
+      expeditionSponsorshipsEnabled: (expedition?.goal ?? 0) > 0 || (expedition?.sponsorsCount ?? 0) > 0,
+      expeditionGoal: expedition?.goal || 0,
+      expeditionRaised: expedition?.raised || 0,
+      expeditionSponsorsCount: expedition?.sponsorsCount || 0,
       stripeAccountConnected: api.author?.stripeAccountConnected === true,
 
       location: api.place || 'Unknown location',
@@ -296,8 +297,6 @@ export function JournalEntryPage() {
       reactions: { heart: api.likesCount || 0, bookmark: api.bookmarksCount || 0, share: 0 },
       commentsCount: api.commentsCount || 0,
 
-      entrySponsors: 0, // Not in API yet
-      entryFunding: 0, // Not in API yet
 
       wordCount,
       readTime: Math.ceil(wordCount / 200),
@@ -526,7 +525,7 @@ export function JournalEntryPage() {
                   expeditionId={entry.expeditionId}
                   expeditionStatus={entry.expeditionStatus}
                   sponsorshipsEnabled={entry.expeditionSponsorshipsEnabled}
-                  explorerIsPro={true}
+                  explorerIsPro={entry.explorerIsPro}
                   stripeConnected={entry.stripeAccountConnected}
                   initialBookmarks={entry.reactions.bookmark}
                   isBookmarked={entry.bookmarked || false}
@@ -781,50 +780,82 @@ export function JournalEntryPage() {
           )}
 
           {/* Location Map */}
-          <div className="bg-white border-2 border-[#202020]">
-            <div className="bg-[#616161] text-white p-4 border-b-2 border-[#202020]">
+          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+            <div className="bg-[#ac6d46] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161]">
               <h2 className="text-sm font-bold">ENTRY LOCATION</h2>
             </div>
-            <div className="relative h-[300px] overflow-hidden">
+            <div className="px-4 py-3 border-b-2 border-[#202020] dark:border-[#616161] text-xs space-y-1">
+              <div>
+                <span className="text-[#616161] dark:text-[#b5bcc4]">Location: </span>
+                <span className="font-bold dark:text-[#e5e5e5]">{entry.location}</span>
+              </div>
+              <div className="font-mono">
+                <span className="text-[#616161] dark:text-[#b5bcc4]">GPS: </span>
+                <span className="font-bold dark:text-[#e5e5e5]">{entry.coords.lat.toFixed(6)}°, {entry.coords.lng.toFixed(6)}°</span>
+              </div>
+            </div>
+            <div className="relative overflow-hidden h-[300px]">
               <InlineLocationMap
                 lat={entry.coords.lat}
                 lng={entry.coords.lng}
                 locationName={entry.location}
                 className="h-full"
               />
-
-              {/* Location Info Overlay */}
-              <div className="absolute bottom-4 left-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 text-xs font-mono z-10">
-                <div className="text-[#616161] dark:text-[#b5bcc4]">GPS Coordinates:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">{entry.coords.lat.toFixed(6)}°N</div>
-                <div className="font-bold dark:text-[#e5e5e5]">{entry.coords.lng.toFixed(6)}°E</div>
-              </div>
             </div>
-            <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] flex gap-2 flex-wrap">
-{entry.expeditionId && (
-                <Link
-                  href={`/expedition/${entry.expeditionId}`}
-                  className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#3a3a3a] transition-all text-xs font-bold whitespace-nowrap"
-                >
-                  VIEW ON EXPEDITION MAP
-                </Link>
-              )}
-              <a
-                href={`https://www.google.com/maps?q=${entry.coords.lat},${entry.coords.lng}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#3a3a3a] transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2"
-              >
-                OPEN IN GOOGLE MAPS
-                <ExternalLink size={14} />
-              </a>
-              <button
-                onClick={() => setShowMapModal(true)}
-                className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#3a3a3a] transition-all text-xs font-bold whitespace-nowrap"
-              >
-                VIEW INTERACTIVE MAP
-              </button>
-            </div>
+            {entry.entryType === 'standard' && entry.metadata && (
+                  (() => {
+                    const meta = entry.metadata as Record<string, unknown>;
+                    const hasMetadata = meta.weather || meta.distanceTraveled != null || meta.mood || meta.expenses != null;
+                    if (!hasMetadata) return null;
+                    return (
+                      <div className="px-4 py-3 border-t-2 border-[#202020] dark:border-[#616161] grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                        {meta.weather ? (
+                          <div>
+                            <div className="text-[#616161] dark:text-[#b5bcc4]">Weather:</div>
+                            <div className="font-bold dark:text-[#e5e5e5]">{String(meta.weather)}</div>
+                          </div>
+                        ) : null}
+                        {meta.distanceTraveled != null ? (
+                          <div>
+                            <div className="text-[#616161] dark:text-[#b5bcc4]">Distance:</div>
+                            <div className="font-bold dark:text-[#e5e5e5] font-mono">{String(meta.distanceTraveled)} km</div>
+                          </div>
+                        ) : null}
+                        {meta.mood ? (
+                          <div>
+                            <div className="text-[#616161] dark:text-[#b5bcc4]">Mood/Energy:</div>
+                            <div className="font-bold dark:text-[#e5e5e5]">{String(meta.mood)}</div>
+                          </div>
+                        ) : null}
+                        {meta.expenses != null ? (
+                          <div>
+                            <div className="text-[#616161] dark:text-[#b5bcc4]">Expenses:</div>
+                            <div className="font-bold dark:text-[#e5e5e5] font-mono">${String(meta.expenses)}</div>
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })()
+                )}
+                <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] flex gap-2 flex-wrap">
+                  {entry.expeditionId && (
+                    <Link
+                      href={`/expedition/${entry.expeditionId}`}
+                      className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#3a3a3a] transition-all text-xs font-bold whitespace-nowrap"
+                    >
+                      VIEW ON EXPEDITION MAP
+                    </Link>
+                  )}
+                  <a
+                    href={`https://www.google.com/maps?q=${entry.coords.lat},${entry.coords.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#202020] hover:text-white dark:hover:bg-[#3a3a3a] transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2"
+                  >
+                    OPEN IN GOOGLE MAPS
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
           </div>
 
           {/* Entry Notes Section */}
@@ -1099,17 +1130,17 @@ export function JournalEntryPage() {
                     <span className="font-bold text-[#4676ac]">#{entry.entryNumber}</span>
                   </div>
 
-                  {/* Sponsorship Impact Rows (only if sponsorships enabled) */}
-                  {entry.expeditionSponsorshipsEnabled && entry.entrySponsors !== undefined && (
+                  {/* Expedition Sponsorship Totals (only if sponsorships enabled) */}
+                  {entry.expeditionSponsorshipsEnabled && (
                     <>
                       <div className="h-px bg-[#b5bcc4] dark:bg-[#3a3a3a] my-2" />
                       <div className="flex justify-between">
-                        <span>Entry Sponsors:</span>
-                        <span className="font-bold text-[#ac6d46]">{entry.entrySponsors}</span>
+                        <span>Sponsors:</span>
+                        <span className="font-bold text-[#ac6d46]">{entry.expeditionSponsorsCount}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Entry Funding:</span>
-                        <span className="font-bold text-[#ac6d46]">${entry.entryFunding.toLocaleString()}</span>
+                        <span>Raised:</span>
+                        <span className="font-bold text-[#ac6d46]">${entry.expeditionRaised.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     </>
                   )}
@@ -1179,62 +1210,6 @@ export function JournalEntryPage() {
                     <UserPlus size={14} strokeWidth={2.5} />
                   )}
                   {isFollowingExplorer ? 'FOLLOWING' : 'FOLLOW'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Related Entries */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-              LOCATION DATA
-            </h3>
-            <div className="space-y-3 text-xs">
-              <div>
-                <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Location Name:</div>
-                <div className="font-bold text-sm dark:text-[#e5e5e5]">{entry.location}</div>
-              </div>
-              <div>
-                <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">GPS Coordinates:</div>
-                <div className="font-mono font-bold dark:text-[#e5e5e5]">
-                  {entry.coords.lat.toFixed(6)}°, {entry.coords.lng.toFixed(6)}°
-                </div>
-              </div>
-              {/* Standard metadata in sidebar */}
-              {entry.entryType === 'standard' && entry.metadata && (
-                <>
-                  {(entry.metadata as Record<string, unknown>).weather && (
-                    <div>
-                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Weather:</div>
-                      <div className="font-bold dark:text-[#e5e5e5]">{String((entry.metadata as Record<string, unknown>).weather)}</div>
-                    </div>
-                  )}
-                  {(entry.metadata as Record<string, unknown>).distanceTraveled != null && (
-                    <div>
-                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Distance Traveled:</div>
-                      <div className="font-bold dark:text-[#e5e5e5] font-mono">{String((entry.metadata as Record<string, unknown>).distanceTraveled)} km</div>
-                    </div>
-                  )}
-                  {(entry.metadata as Record<string, unknown>).mood && (
-                    <div>
-                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Mood/Energy:</div>
-                      <div className="font-bold dark:text-[#e5e5e5]">{String((entry.metadata as Record<string, unknown>).mood)}</div>
-                    </div>
-                  )}
-                  {(entry.metadata as Record<string, unknown>).expenses != null && (
-                    <div>
-                      <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Expenses:</div>
-                      <div className="font-bold dark:text-[#e5e5e5] font-mono">${String((entry.metadata as Record<string, unknown>).expenses)}</div>
-                    </div>
-                  )}
-                </>
-              )}
-              <div className="pt-2 border-t border-[#b5bcc4] dark:border-[#3a3a3a]">
-                <button
-                  onClick={() => setShowMapModal(true)}
-                  className="w-full py-2 bg-[#4676ac] text-white hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] font-bold"
-                >
-                  VIEW ON MAP
                 </button>
               </div>
             </div>
@@ -1383,16 +1358,6 @@ export function JournalEntryPage() {
         </div>
       )}
 
-      {/* Map Modal */}
-      {showMapModal && (
-        <ViewLocationMap
-          lat={entry.coords.lat}
-          lng={entry.coords.lng}
-          locationName={entry.location}
-          elevation={0}
-          onClose={() => setShowMapModal(false)}
-        />
-      )}
     </div>
   );
 }

@@ -58,16 +58,17 @@ export function InlineLocationMap({ lat, lng, className = '' }: InlineLocationMa
     // Add navigation controls
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
 
-    // Create custom marker
+    // Create circle marker (matching entry markers on expedition maps)
     const el = document.createElement('div');
-    el.innerHTML = `
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="#ac6d46" stroke="#ac6d46" stroke-width="2">
-        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-        <circle cx="12" cy="10" r="3" fill="white"></circle>
-      </svg>
-    `;
-    el.style.cursor = 'pointer';
-    el.style.filter = 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))';
+    Object.assign(el.style, {
+      width: '24px',
+      height: '24px',
+      borderRadius: '50%',
+      backgroundColor: '#ac6d46',
+      border: '3px solid white',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+      cursor: 'pointer',
+    });
 
     new mapboxgl.Marker(el)
       .setLngLat([lng, lat])

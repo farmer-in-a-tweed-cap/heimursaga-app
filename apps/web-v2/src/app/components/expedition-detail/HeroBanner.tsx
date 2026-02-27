@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import type { TransformedExpedition, CurrentLocationData } from '@/app/components/expedition-detail/types';
-import type { Expedition } from '@/app/services/api';
+import type { Expedition, ExplorerProfile } from '@/app/services/api';
 
 interface HeroBannerProps {
   expedition: TransformedExpedition;
@@ -28,6 +28,7 @@ interface HeroBannerProps {
   onBookmark: () => void;
   onShare: () => void;
   onCurrentLocationClick: (coords: { lat: number; lng: number }) => void;
+  explorerProfile: ExplorerProfile | null;
 }
 
 export function HeroBanner({
@@ -52,6 +53,7 @@ export function HeroBanner({
   onBookmark,
   onShare,
   onCurrentLocationClick,
+  explorerProfile,
 }: HeroBannerProps) {
   return (
     <div
@@ -146,9 +148,11 @@ export function HeroBanner({
               </Link>
               <div className="flex-1">
                 <Link href={`/journal/${expedition.explorerId}`} className="text-white font-bold hover:text-[#ac6d46] transition-all focus-visible:outline-none focus-visible:underline block mb-1">
-                  {expedition.explorerName}
+                  {expedition.explorerId}
                 </Link>
-                <div className="text-[#b5bcc4]">@{expedition.explorerId}</div>
+                {explorerProfile?.name && (
+                  <div className="text-[#b5bcc4]">{explorerProfile.name}</div>
+                )}
               </div>
             </div>
 
@@ -157,14 +161,37 @@ export function HeroBanner({
                 <span className="text-[#b5bcc4]">Account Type:</span>
                 <span className="text-[#ac6d46] font-bold">{expedition.explorerIsPro ? 'EXPLORER PRO' : 'EXPLORER'}</span>
               </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-[#b5bcc4]">Total Expeditions:</span>
+                <span className="text-white font-bold">{explorerProfile?.expeditionsCount ?? '—'}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-[#b5bcc4]">Total Entries:</span>
+                <span className="text-white font-bold">{explorerProfile?.entriesCount ?? '—'}</span>
+              </div>
             </div>
 
-            <Link
-              href={`/journal/${expedition.explorerId}`}
-              className="block mt-4 w-full py-2 bg-[#4676ac] text-white text-center hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] font-bold"
-            >
-              VIEW JOURNAL
-            </Link>
+            <div className="mt-4 space-y-2">
+              <Link
+                href={`/journal/${expedition.explorerId}`}
+                className="block w-full py-2 bg-[#4676ac] text-white text-center hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] font-bold"
+              >
+                VIEW JOURNAL
+              </Link>
+              {!isOwner && (
+                <button
+                  onClick={() => onFollow(expedition.explorerId)}
+                  disabled={followLoading}
+                  className={`w-full py-1.5 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none text-xs font-bold ${
+                    isFollowingExplorer
+                      ? 'border-2 border-[#616161] text-white hover:bg-[#616161]/30 focus-visible:ring-[#616161]'
+                      : 'bg-[#ac6d46] text-white hover:bg-[#8a5738] focus-visible:ring-[#ac6d46]'
+                  }`}
+                >
+                  {followLoading ? 'LOADING...' : isFollowingExplorer ? 'FOLLOWING' : 'FOLLOW'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -265,21 +292,7 @@ export function HeroBanner({
                   SPONSOR
                 </Link>
               )}
-              {/* Follow button - Hidden when not authenticated or own expedition */}
-              {isAuthenticated && !isOwner && (
-                <button
-                  onClick={() => onFollow(expedition.explorerId)}
-                  disabled={followLoading}
-                  className={`px-4 py-2 border-2 transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2 ${
-                    isFollowingExplorer
-                      ? 'border-[#4676ac] bg-[#4676ac] text-white hover:bg-[#365a87]'
-                      : 'border-white/30 text-white hover:bg-white/10'
-                  }`}
-                >
-                  {followLoading && <Loader2 size={16} strokeWidth={2} className="animate-spin" />}
-                  {isFollowingExplorer ? 'FOLLOWING EXPLORER' : 'FOLLOW EXPLORER'}
-                </button>
-              )}
+              {/* Follow button moved to Explorer Information card */}
               {/* Bookmark button - Hidden when not authenticated */}
               {isAuthenticated && (
                 <button

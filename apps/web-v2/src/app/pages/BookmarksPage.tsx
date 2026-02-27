@@ -267,7 +267,10 @@ export function BookmarksPage() {
                 expeditionName={entry.expedition?.title || ''}
                 location={entry.place || 'Location not set'}
                 date={entry.createdAt || entry.date || ''}
-                excerpt={entry.content?.replace(/<[^>]*>/g, '').substring(0, 200) || ''}
+                excerpt={(() => {
+                  const text = entry.content?.replace(/<[^>]*>/g, '') || '';
+                  return text.length <= 200 ? text : text.substring(0, 200).replace(/\s+\S*$/, '') + '...';
+                })()}
                 type=""
                 onClick={() => router.push(`/entry/${entry.id}`)}
                 onUnbookmark={() => handleUnbookmarkEntry(entry.id)}
