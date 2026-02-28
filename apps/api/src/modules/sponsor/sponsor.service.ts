@@ -356,8 +356,10 @@ export class SponsorService {
               select: {
                 id: true,
                 price: true,
+                stripe_product_id: true,
                 stripe_price_month_id: true,
                 stripe_price_year_id: true,
+                explorer_id: true,
               },
             })
             .catch(() => {
@@ -404,7 +406,7 @@ export class SponsorService {
             });
             stripePriceId = dynamicPrice.id;
           } else {
-            // Tier-based amount: use pre-set Stripe price
+            // Tier-based amount: use pre-set Stripe price or create dynamically
             stripePriceId = isYearly
               ? subscriptionTier.stripe_price_year_id
               : subscriptionTier.stripe_price_month_id;
@@ -414,10 +416,79 @@ export class SponsorService {
               ? this.calculateYearlyAmount(monthlyAmount)
               : monthlyAmount;
 
+            // If no pre-set Stripe price exists, provision the tier's Stripe
+            // product and both monthly + yearly prices, then persist them so
+            // future checkouts reuse the same Stripe objects.
             if (!stripePriceId) {
-              throw new ServiceBadRequestException(
-                `${isYearly ? 'Yearly' : 'Monthly'} pricing not available for this tier`,
+              this.logger.log(
+                `tier ${subscriptionTier.id} missing Stripe price, provisioning product and prices`,
               );
+
+              let productId = subscriptionTier.stripe_product_id;
+
+              // Create Stripe product if the tier doesn't have one yet
+              if (!productId) {
+                const stripeProduct =
+                  await this.stripeService.products.create({
+                    name: `creator_${subscriptionTier.explorer_id}__sponsorship`,
+                    active: true,
+                    default_price_data: {
+                      currency,
+                      unit_amount: monthlyAmount,
+                      recurring: { interval: 'month' },
+                    },
+                  });
+                productId = stripeProduct.id;
+                // The default price created with the product is the monthly price
+                subscriptionTier.stripe_price_month_id =
+                  stripeProduct.default_price as string;
+              }
+
+              // Create monthly price if still missing (product existed but price didn't)
+              if (!subscriptionTier.stripe_price_month_id) {
+                const monthlyPrice =
+                  await this.stripeService.prices.create({
+                    currency,
+                    unit_amount: monthlyAmount,
+                    recurring: { interval: 'month' },
+                    product: productId,
+                  });
+                subscriptionTier.stripe_price_month_id = monthlyPrice.id;
+              }
+
+              // Create yearly price if missing
+              if (!subscriptionTier.stripe_price_year_id) {
+                const yearlyPrice =
+                  await this.stripeService.prices.create({
+                    currency,
+                    unit_amount: this.calculateYearlyAmount(monthlyAmount),
+                    recurring: { interval: 'year' },
+                    product: productId,
+                  });
+                subscriptionTier.stripe_price_year_id = yearlyPrice.id;
+              }
+
+              // Persist the Stripe IDs back to the tier so future checkouts
+              // don't need to create new prices
+              await tx.sponsorshipTier.update({
+                where: { id: subscriptionTier.id },
+                data: {
+                  stripe_product_id: productId,
+                  stripe_price_month_id:
+                    subscriptionTier.stripe_price_month_id,
+                  stripe_price_year_id:
+                    subscriptionTier.stripe_price_year_id,
+                },
+              });
+
+              this.logger.log(
+                `tier ${subscriptionTier.id} Stripe prices provisioned and saved`,
+              );
+
+              // Now select the correct price for this checkout
+              stripePriceId = isYearly
+                ? subscriptionTier.stripe_price_year_id
+                : subscriptionTier.stripe_price_month_id;
             }
           }
 

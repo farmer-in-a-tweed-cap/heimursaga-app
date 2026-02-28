@@ -249,8 +249,16 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             priority: tier.priority,
           });
         } else {
-          await sponsorshipApi.createTier({
+          // Create the tier, then immediately call update so the backend
+          // provisions the Stripe product and prices for this tier.
+          const created = await sponsorshipApi.createTier({
             type: 'ONE_TIME',
+            price: tier.price,
+            description: tier.description,
+            isAvailable: tier.isAvailable,
+            priority: tier.priority,
+          });
+          await sponsorshipApi.updateTier(created.id, {
             price: tier.price,
             description: tier.description,
             isAvailable: tier.isAvailable,
@@ -269,8 +277,16 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             priority: tier.priority,
           });
         } else {
-          await sponsorshipApi.createTier({
+          // Create the tier, then immediately call update so the backend
+          // provisions the Stripe product and prices for this tier.
+          const created = await sponsorshipApi.createTier({
             type: 'MONTHLY',
+            price: tier.price,
+            description: tier.description,
+            isAvailable: tier.isAvailable,
+            priority: tier.priority,
+          });
+          await sponsorshipApi.updateTier(created.id, {
             price: tier.price,
             description: tier.description,
             isAvailable: tier.isAvailable,
