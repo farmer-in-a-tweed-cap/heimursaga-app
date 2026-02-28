@@ -256,6 +256,13 @@ export class SponsorService {
         throw new ServiceBadRequestException('Payment method is required');
       }
 
+      // Validate the resolved Stripe payment method ID is non-empty
+      if (!stripePaymentMethodId) {
+        throw new ServiceBadRequestException(
+          'Payment method is invalid or missing Stripe details. Please remove and re-add your card.',
+        );
+      }
+
       // create a checkout and payment intent
       const { clientSecret } = await this.prisma.$transaction(
         async (tx) => {

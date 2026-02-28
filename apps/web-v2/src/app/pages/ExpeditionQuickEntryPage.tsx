@@ -117,6 +117,10 @@ export function ExpeditionQuickEntryPage() {
       setSubmitError('Title is required');
       return;
     }
+    if (!category) {
+      setSubmitError('Category is required');
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -272,8 +276,7 @@ export function ExpeditionQuickEntryPage() {
 
                 <div>
                   <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                    CATEGORY
-                    <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
+                    CATEGORY <span className="text-[#ac6d46]">*</span>
                   </label>
                   <select
                     value={category}

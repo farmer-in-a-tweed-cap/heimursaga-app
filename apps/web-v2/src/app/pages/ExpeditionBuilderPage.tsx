@@ -217,6 +217,9 @@ export function ExpeditionBuilderPage() {
       if (!expeditionData.startDate) {
         errors.push('Start date is required');
       }
+      if (!expeditionData.category) {
+        errors.push('Category is required');
+      }
 
       if (errors.length > 0) {
         errors.forEach(msg => toast.error(msg));

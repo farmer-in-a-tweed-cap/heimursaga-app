@@ -43,6 +43,7 @@ import {
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 import { RecaptchaService } from '@/modules/recaptcha/recaptcha.service';
+import { StripeService } from '@/modules/stripe';
 
 import { ISessionCreateOptions } from './auth.interface';
 
@@ -54,6 +55,7 @@ export class AuthService {
     private eventService: EventService,
     private recaptchaService: RecaptchaService,
     private jwtService: JwtService,
+    private stripeService: StripeService,
   ) {}
 
   async getSessionUser(payload: ISession): Promise<ISessionUserGetResponse> {
@@ -93,10 +95,35 @@ export class AuthService {
         username,
         is_email_verified: isEmailVerified,
         is_premium: isPremium,
-        is_stripe_account_connected: isStripeAccountConnected,
         created_at: createdAt,
       } = user;
       const { picture } = user?.profile || {};
+
+      // Dynamically check if explorer has a verified Stripe Connect payout method
+      const verifiedPayoutMethod = await this.prisma.payoutMethod.findFirst({
+        where: {
+          explorer_id: userId,
+          deleted_at: null,
+          stripe_account_id: { not: null },
+        },
+        select: { stripe_account_id: true },
+      });
+
+      let isStripeAccountConnected = false;
+      if (verifiedPayoutMethod?.stripe_account_id) {
+        try {
+          const stripeAccount =
+            await this.stripeService.accounts.retrieve(
+              verifiedPayoutMethod.stripe_account_id,
+            );
+          isStripeAccountConnected =
+            stripeAccount.charges_enabled === true &&
+            stripeAccount.payouts_enabled === true;
+        } catch {
+          // Stripe account not accessible (wrong mode, deleted, etc.)
+          isStripeAccountConnected = false;
+        }
+      }
 
       // Check for an active expedition owned by this user
       const activeExpedition = await this.prisma.expedition.findFirst({
@@ -384,7 +411,6 @@ export class AuthService {
           email: true,
           is_email_verified: true,
           is_premium: true,
-          is_stripe_account_connected: true,
           profile: {
             select: {
               picture: true,
@@ -397,6 +423,29 @@ export class AuthService {
         throw new ServiceNotFoundException('User not found');
       }
 
+      // Dynamically check Stripe Connect status
+      const verifiedPayout = await this.prisma.payoutMethod.findFirst({
+        where: {
+          explorer_id: tokenData.userId,
+          deleted_at: null,
+          stripe_account_id: { not: null },
+        },
+        select: { stripe_account_id: true },
+      });
+
+      let stripeConnected = false;
+      if (verifiedPayout?.stripe_account_id) {
+        try {
+          const acct = await this.stripeService.accounts.retrieve(
+            verifiedPayout.stripe_account_id,
+          );
+          stripeConnected =
+            acct.charges_enabled === true && acct.payouts_enabled === true;
+        } catch {
+          stripeConnected = false;
+        }
+      }
+
       return {
         id: user.id,
         role: user.role as UserRole,
@@ -407,7 +456,7 @@ export class AuthService {
           : undefined,
         isEmailVerified: user.is_email_verified,
         isPremium: user.is_premium,
-        stripeAccountConnected: user.is_stripe_account_connected,
+        stripeAccountConnected: stripeConnected,
       };
     } catch (e) {
       this.logger.error(e);

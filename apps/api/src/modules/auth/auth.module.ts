@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ExplorerModule } from '@/modules/explorer/explorer.module';
 import { PrismaModule } from '@/modules/prisma';
 import { RecaptchaModule } from '@/modules/recaptcha/recaptcha.module';
+import { StripeModule } from '@/modules/stripe/stripe.module';
 
 import { AuthController } from './auth.controller';
 import { AuthGuard, RolesGuard } from './auth.guard';
@@ -16,6 +17,7 @@ import { AuthService } from './auth.service';
     ConfigModule,
     PrismaModule,
     RecaptchaModule,
+    StripeModule,
     forwardRef(() => ExplorerModule),
     JwtModule.register({
       secret: (() => {
