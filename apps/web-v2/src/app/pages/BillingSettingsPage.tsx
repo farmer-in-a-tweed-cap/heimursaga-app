@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { paymentMethodApi, payoutApi, planApi, type PaymentMethodFull, type PayoutBalance, type SubscriptionStatus } from '@/app/services/api';
 import { useStripe, useElements, CardElement } from '@/app/context/StripeContext';
+import { useTheme } from '@/app/context/ThemeContext';
 import { toast } from 'sonner';
 
 export function BillingSettingsPage() {
@@ -18,6 +19,8 @@ export function BillingSettingsPage() {
   const pathname = usePathname();
   const stripe = useStripe();
   const elements = useElements();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // State
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodFull[]>([]);
@@ -463,10 +466,13 @@ export function BillingSettingsPage() {
                         style: {
                           base: {
                             fontSize: '14px',
-                            color: '#1f2937',
+                            color: isDark ? '#e5e5e5' : '#1f2937',
                             '::placeholder': {
-                              color: '#9ca3af',
+                              color: isDark ? '#6b7280' : '#9ca3af',
                             },
+                          },
+                          invalid: {
+                            color: '#994040',
                           },
                         },
                       }}

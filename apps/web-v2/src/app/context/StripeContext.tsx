@@ -8,6 +8,7 @@
 import { loadStripe, Stripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useTheme } from '@/app/context/ThemeContext';
 
 // Initialize Stripe with publishable key from environment
 const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
@@ -37,6 +38,8 @@ interface StripeProviderProps {
 }
 
 export function StripeProvider({ children }: StripeProviderProps) {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [stripe, setStripe] = useState<Stripe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -72,24 +75,24 @@ export function StripeProvider({ children }: StripeProviderProps) {
           appearance: {
             theme: 'stripe',
             variables: {
-              colorPrimary: '#10b981', // emerald-500
-              colorBackground: '#1f2937', // gray-800
-              colorText: '#f9fafb', // gray-50
-              colorDanger: '#ef4444', // red-500
+              colorPrimary: '#4676ac',
+              colorBackground: isDark ? '#2a2a2a' : '#ffffff',
+              colorText: isDark ? '#e5e5e5' : '#1f2937',
+              colorDanger: '#994040',
               fontFamily: 'Inter, system-ui, sans-serif',
-              borderRadius: '8px',
+              borderRadius: '0px',
             },
             rules: {
               '.Input': {
-                backgroundColor: '#374151', // gray-700
-                border: '1px solid #4b5563', // gray-600
+                backgroundColor: isDark ? '#333333' : '#ffffff',
+                border: isDark ? '1px solid #616161' : '1px solid #b5bcc4',
               },
               '.Input:focus': {
-                border: '1px solid #10b981', // emerald-500
-                boxShadow: '0 0 0 1px #10b981',
+                border: '1px solid #4676ac',
+                boxShadow: '0 0 0 1px #4676ac',
               },
               '.Label': {
-                color: '#d1d5db', // gray-300
+                color: isDark ? '#b5bcc4' : '#616161',
               },
             },
           },

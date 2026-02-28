@@ -9,6 +9,7 @@ import { CreditCard, RefreshCw, Lock, DollarSign, Loader2, AlertCircle, Shield }
 import { formatDate } from '@/app/utils/dateFormat';
 import { explorerApi, expeditionApi, sponsorshipApi, paymentMethodApi, type SponsorshipTierFull, type PaymentMethodFull, type Expedition } from '@/app/services/api';
 import { useStripe, useElements, CardElement } from '@/app/context/StripeContext';
+import { useTheme } from '@/app/context/ThemeContext';
 import { toast } from 'sonner';
 
 type PaymentType = 'one-time' | 'recurring';
@@ -29,6 +30,8 @@ export function SponsorshipPaymentPage() {
   const { user, isAuthenticated } = useAuth();
   const stripe = useStripe();
   const elements = useElements();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Form state
   const [paymentType, setPaymentType] = useState<PaymentType>('one-time');
@@ -854,10 +857,13 @@ export function SponsorshipPaymentPage() {
                           style: {
                             base: {
                               fontSize: '16px',
-                              color: '#1f2937',
+                              color: isDark ? '#e5e5e5' : '#1f2937',
                               '::placeholder': {
-                                color: '#9ca3af',
+                                color: isDark ? '#6b7280' : '#9ca3af',
                               },
+                            },
+                            invalid: {
+                              color: '#994040',
                             },
                           },
                         }}

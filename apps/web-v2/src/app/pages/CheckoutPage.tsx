@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
+import { useTheme } from '@/app/context/ThemeContext';
 
 // Stripe publishable key loaded from environment variable
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
@@ -42,6 +43,8 @@ interface PromoData {
 function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | null) => void }) {
   const stripe = useStripe();
   const elements = useElements();
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const router = useRouter();
   const { user } = useAuth();
   const searchParams = useSearchParams();
@@ -360,9 +363,9 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
                   style: {
                     base: {
                       fontSize: '16px',
-                      color: '#202020',
+                      color: isDark ? '#e5e5e5' : '#202020',
                       '::placeholder': {
-                        color: '#b5bcc4',
+                        color: isDark ? '#6b7280' : '#b5bcc4',
                       },
                     },
                     invalid: {
