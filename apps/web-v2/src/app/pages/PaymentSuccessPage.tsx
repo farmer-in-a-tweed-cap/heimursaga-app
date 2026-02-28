@@ -231,25 +231,15 @@ export function PaymentSuccessPage() {
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-8 h-8 bg-[#ac6d46] text-white rounded-full flex items-center justify-center font-bold">1</div>
                   <div>
-                    <div className="font-bold mb-1 dark:text-[#e5e5e5]">Confirmation Email Sent</div>
+                    <div className="font-bold mb-1 dark:text-[#e5e5e5]">Explorer Notified</div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      You'll receive a detailed receipt and confirmation email at {user?.email || 'your email'} within the next few minutes.
+                      {displayExplorerName} will be notified of your sponsorship via email.
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 w-8 h-8 bg-[#ac6d46] text-white rounded-full flex items-center justify-center font-bold">2</div>
-                  <div>
-                    <div className="font-bold mb-1 dark:text-[#e5e5e5]">Explorer Notification</div>
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      {displayExplorerName} will be notified of your sponsorship and may send a personal thank you message.
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-[#ac6d46] text-white rounded-full flex items-center justify-center font-bold">3</div>
                   <div>
                     <div className="font-bold mb-1 dark:text-[#e5e5e5]">Public Recognition</div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
@@ -258,18 +248,20 @@ export function PaymentSuccessPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-[#ac6d46] text-white rounded-full flex items-center justify-center font-bold">4</div>
-                  <div>
-                    <div className="font-bold mb-1 dark:text-[#e5e5e5]">Stay Updated</div>
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      You'll receive notifications when {displayExplorerName} posts new journal entries (if you opted in for updates).
+                {paymentType === 'recurring' && (
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 bg-[#ac6d46] text-white rounded-full flex items-center justify-center font-bold">3</div>
+                    <div>
+                      <div className="font-bold mb-1 dark:text-[#e5e5e5]">Stay Updated</div>
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                        You'll receive email updates when {displayExplorerName} posts new journal entries (if you opted in for updates).
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-[#ac6d46] text-white rounded-full flex items-center justify-center font-bold">5</div>
+                  <div className="flex-shrink-0 w-8 h-8 bg-[#ac6d46] text-white rounded-full flex items-center justify-center font-bold">{paymentType === 'recurring' ? '4' : '3'}</div>
                   <div>
                     <div className="font-bold mb-1 dark:text-[#e5e5e5]">Funds Transfer</div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
