@@ -311,7 +311,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
       mapboxgl: mapboxgl as any,
       placeholder: 'Search for a location',
       marker: false,
-      bbox: [-180, -85, 180, 85],
+      trackProximity: true,
       types: 'country,region,place,postcode,locality,neighborhood,address,poi',
       language: 'en',
       zoom: 10,
