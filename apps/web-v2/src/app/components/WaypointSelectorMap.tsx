@@ -350,6 +350,7 @@ export function WaypointSelectorMap({
       mapboxgl: mapboxgl as any,
       marker: false,
       placeholder: 'Search for a location...',
+      trackProximity: true,
     });
     map.addControl(geocoder as any, 'top-left');
 

@@ -373,6 +373,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       mapboxgl: mapboxgl as any,
       marker: false, // We'll add our own marker
       placeholder: 'Search for a location...',
+      trackProximity: true,
     });
     map.addControl(geocoder as any, 'top-left');
 
