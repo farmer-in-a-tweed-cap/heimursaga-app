@@ -109,6 +109,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
     sponsorName?: string;
     sponsorUsername?: string;
     description?: string;
+    sponsorshipType?: string;
   }>>([]);
   const [balance, setBalance] = useState<PayoutBalance | null>(null);
   const [payoutMethods, setPayoutMethods] = useState<PayoutMethod[]>([]);
@@ -930,8 +931,17 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                                 payment.sponsorName || payment.sponsorEmail || 'Sponsor'
                               )}
                             </div>
-                            <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                            <div className="text-xs text-[#616161] dark:text-[#b5bcc4] flex items-center gap-2">
                               {new Date(payment.created).toLocaleDateString()}
+                              {payment.sponsorshipType && (
+                                <span className={`px-1.5 py-0.5 text-[10px] font-bold ${
+                                  payment.sponsorshipType === 'subscription'
+                                    ? 'bg-[#4676ac] text-white'
+                                    : 'bg-[#616161] text-white'
+                                }`}>
+                                  {payment.sponsorshipType === 'subscription' ? 'RECURRING' : 'ONE-TIME'}
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="text-right">
@@ -1289,7 +1299,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       <thead className="bg-[#b5bcc4] dark:bg-[#3a3a3a]">
                         <tr>
                           <th className="px-4 py-3 text-left text-xs font-bold dark:text-[#e5e5e5]">SPONSOR</th>
-                          <th className="px-4 py-3 text-left text-xs font-bold dark:text-[#e5e5e5]">STRIPE ID</th>
+                          <th className="px-4 py-3 text-left text-xs font-bold dark:text-[#e5e5e5]">TYPE</th>
                           <th className="px-4 py-3 text-left text-xs font-bold dark:text-[#e5e5e5]">AMOUNT</th>
                           <th className="px-4 py-3 text-left text-xs font-bold dark:text-[#e5e5e5]">DATE</th>
                           <th className="px-4 py-3 text-left text-xs font-bold dark:text-[#e5e5e5]">STATUS</th>
@@ -1311,8 +1321,14 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                                 payment.sponsorName || payment.sponsorEmail || 'Sponsor'
                               )}
                             </td>
-                            <td className="px-4 py-3 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
-                              {payment.id.substring(0, 20)}...
+                            <td className="px-4 py-3">
+                              <span className={`px-2 py-0.5 text-xs font-bold ${
+                                payment.sponsorshipType === 'subscription'
+                                  ? 'bg-[#4676ac] text-white'
+                                  : 'bg-[#616161] text-white'
+                              }`}>
+                                {payment.sponsorshipType === 'subscription' ? 'RECURRING' : 'ONE-TIME'}
+                              </span>
                             </td>
                             <td className="px-4 py-3 font-bold text-[#ac6d46]">${payment.amount.toFixed(2)}</td>
                             <td className="px-4 py-3 text-xs text-[#616161] dark:text-[#b5bcc4]">

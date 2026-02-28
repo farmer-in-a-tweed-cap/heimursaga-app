@@ -1801,6 +1801,7 @@ export const sponsorshipApi = {
         sponsorName?: string;
         sponsorUsername?: string;
         description?: string;
+        sponsorshipType?: string;
       }>;
     }>('/sponsorships/stripe-payments'),
 

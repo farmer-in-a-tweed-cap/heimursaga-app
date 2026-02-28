@@ -1729,6 +1729,7 @@ export class SponsorService {
       sponsorName?: string;
       sponsorUsername?: string;
       description?: string;
+      sponsorshipType?: string;
     }>;
   }> {
     try {
@@ -1752,6 +1753,7 @@ export class SponsorService {
           currency: true,
           confirmed_at: true,
           message: true,
+          sponsorship_type: true,
           explorer: {
             select: {
               id: true,
@@ -1808,6 +1810,7 @@ export class SponsorService {
           sponsorName: checkout.explorer?.profile?.name || undefined,
           sponsorUsername: checkout.explorer?.username || undefined,
           description: checkout.message || undefined,
+          sponsorshipType: checkout.sponsorship_type || undefined,
         };
       });
 
