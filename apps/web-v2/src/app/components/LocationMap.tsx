@@ -9,6 +9,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { buildMergedRouteCoords } from '@/app/utils/routeSnapping';
+import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
 import { toast } from 'sonner';
 
 // Mapbox configuration - token loaded from environment variable
@@ -372,10 +373,21 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       accessToken: MAPBOX_TOKEN,
       mapboxgl: mapboxgl as any,
       marker: false, // We'll add our own marker
-      placeholder: 'Search for a location...',
-      trackProximity: true,
-    });
+      placeholder: 'Search for a location or business...',
+      trackProximity: false,
+      types: 'country,region,place,locality,neighborhood,address,poi',
+      limit: 10,
+      externalGeocoder: createPOIGeocoder(map),
+    } as any);
     map.addControl(geocoder as any, 'top-left');
+
+    // Manually manage proximity bias at all zoom levels
+    const updateGeocoderProximity = () => {
+      const center = map.getCenter();
+      geocoder.setProximity({ longitude: center.lng, latitude: center.lat });
+    };
+    map.on('moveend', updateGeocoderProximity);
+    map.on('load', updateGeocoderProximity);
 
     // Check if a point falls on the completed segment and notify parent + show toast.
     // Uses segment-based (point-to-line) distance, not vertex distance, so a marker

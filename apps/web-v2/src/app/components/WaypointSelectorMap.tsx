@@ -9,6 +9,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { projectToSegment } from '@/app/utils/routeSnapping';
+import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
 
 // ---------------------------------------------------------------------------
 // Mapbox token
@@ -349,10 +350,21 @@ export function WaypointSelectorMap({
       accessToken: MAPBOX_TOKEN,
       mapboxgl: mapboxgl as any,
       marker: false,
-      placeholder: 'Search for a location...',
-      trackProximity: true,
-    });
+      placeholder: 'Search for a location or business...',
+      trackProximity: false,
+      types: 'country,region,place,locality,neighborhood,address,poi',
+      limit: 10,
+      externalGeocoder: createPOIGeocoder(map),
+    } as any);
     map.addControl(geocoder as any, 'top-left');
+
+    // Manually manage proximity bias at all zoom levels
+    const updateGeocoderProximity = () => {
+      const center = map.getCenter();
+      geocoder.setProximity({ longitude: center.lng, latitude: center.lat });
+    };
+    map.on('moveend', updateGeocoderProximity);
+    map.on('load', updateGeocoderProximity);
 
     if (navigator.geolocation) {
       try {

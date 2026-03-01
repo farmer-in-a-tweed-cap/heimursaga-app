@@ -9,6 +9,7 @@ import { MapPin, User, X, Maximize2, Minimize2, Bookmark, UserPlus, UserCheck, B
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle } from '@/app/context/MapLayerContext';
+import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
 import { useAuth } from '@/app/context/AuthContext';
 import { entryApi, explorerApi } from '@/app/services/api';
 import { getExplorerStatus } from '@/app/components/ExplorerStatusBadge';
@@ -311,19 +312,29 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
       mapboxgl: mapboxgl as any,
       placeholder: 'Search for a location',
       marker: false,
-      trackProximity: true,
+      trackProximity: false,
       types: 'country,region,place,postcode,locality,neighborhood,address,poi',
       language: 'en',
       zoom: 10,
+      limit: 10,
       flyTo: {
         speed: 1.2,
         curve: 1.42,
         easing: (t: number) => t * (2 - t),
         maxDuration: 2000,
       },
-    });
+      externalGeocoder: createPOIGeocoder(map),
+    } as any);
     map.addControl(geocoder as any, 'top-right');
     geocoderRef.current = geocoder;
+
+    // Manually manage proximity bias at all zoom levels
+    const updateGeocoderProximity = () => {
+      const center = map.getCenter();
+      geocoder.setProximity({ longitude: center.lng, latitude: center.lat });
+    };
+    map.on('moveend', updateGeocoderProximity);
+    map.on('load', updateGeocoderProximity);
 
     const navControl = new mapboxgl.NavigationControl();
     map.addControl(navControl, 'top-right');

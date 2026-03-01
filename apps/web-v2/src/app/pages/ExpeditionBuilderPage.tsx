@@ -20,6 +20,7 @@ import { haversineFromLatLng } from '@/app/utils/haversine';
 import { buildWaypointPayload } from '@/app/utils/waypointPayload';
 import { projectToSegment } from '@/app/utils/routeSnapping';
 import { renderClusteredMarkers } from '@/app/utils/mapClustering';
+import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
 import { useBuilderDateHandlers } from '@/app/hooks/useBuilderDateHandlers';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -83,6 +84,7 @@ export function ExpeditionBuilderPage() {
   const directionsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const directionsAbortRef = useRef<AbortController | null>(null);
   const lastDirectionsCoordsRef = useRef<string>(''); // Fingerprint to prevent re-fetch loops
+  const skipFitBoundsRef = useRef(false); // Skip fitBounds after geocoder/POI waypoint placement
 
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -767,34 +769,32 @@ export function ExpeditionBuilderPage() {
         accessToken: MAPBOX_TOKEN,
         mapboxgl: mapboxgl as any,
         marker: false,
-        placeholder: 'Search for a location...',
-      });
+        placeholder: 'Search for a location or business...',
+        trackProximity: false,
+        types: 'country,region,place,locality,neighborhood,address,poi',
+        limit: 10,
+        externalGeocoder: createPOIGeocoder(newMap),
+      } as any);
       newMap.addControl(geocoder as any, 'top-left');
 
-      // Add navigation control
-      newMap.addControl(new mapboxgl.NavigationControl(), 'top-left');
+      // Manually manage proximity bias — the built-in trackProximity
+      // only applies at zoom > 9, which is too restrictive.
+      const updateGeocoderProximity = () => {
+        const center = newMap.getCenter();
+        geocoder.setProximity({ longitude: center.lng, latitude: center.lat });
+      };
+      newMap.on('moveend', updateGeocoderProximity);
+      newMap.on('load', updateGeocoderProximity);
 
-      // Set map loaded when style is loaded
-      newMap.on('load', () => {
-        setMapLoaded(true);
-        // Force resize to ensure map renders properly
-        setTimeout(() => {
-          newMap.resize();
-        }, 100);
-      });
-
-      // Add click handler for adding waypoints
-      newMap.on('click', (e) => {
-        const { lng, lat } = e.lngLat;
-        const currentWaypoints = waypointsRef.current;
-
+      // Shared helper: create and insert a waypoint
+      const addWaypoint = (lat: number, lng: number, name: string, location: string) => {
         const newWaypoint: Waypoint = {
           id: `waypoint-${Date.now()}`,
           sequence: 0,
-          name: `Waypoint ${currentWaypoints.length + 1}`,
+          name,
           type: 'standard',
           coordinates: { lat, lng },
-          location: '',
+          location,
           date: '',
           description: '',
           entryIds: [],
@@ -803,10 +803,8 @@ export function ExpeditionBuilderPage() {
         setWaypoints(prev => {
           let all: Waypoint[];
           if (prev.length < 2) {
-            // 0-1 existing waypoints — just append
             all = [...prev, newWaypoint];
           } else {
-            // 2+ waypoints — insert at geographically closest segment
             let bestSegIdx = 0;
             let bestDistSq = Infinity;
             for (let i = 0; i < prev.length - 1; i++) {
@@ -822,6 +820,77 @@ export function ExpeditionBuilderPage() {
           }
           return updateDistances(all.map((w, i) => ({ ...w, sequence: i })));
         });
+      };
+
+      // When user selects a geocoder result, create a waypoint
+      // (the geocoder's built-in flyTo handles the map animation)
+      geocoder.on('result', (e: any) => {
+        const feature = e.result;
+        const [lng, lat] = feature.center || feature.geometry?.coordinates || [];
+        if (lng == null || lat == null) return;
+
+        skipFitBoundsRef.current = true;
+        addWaypoint(lat, lng, feature.text || feature.place_name || '', feature.place_name || '');
+      });
+
+      // Add navigation control
+      newMap.addControl(new mapboxgl.NavigationControl(), 'top-left');
+
+      // Set map loaded when style is loaded
+      newMap.on('load', () => {
+        setMapLoaded(true);
+
+        // Enable POI labels so businesses/establishments are visible
+        const style = newMap.getStyle();
+        if (style?.layers) {
+          for (const layer of style.layers) {
+            if (layer.id.includes('poi') && layer.type === 'symbol') {
+              newMap.setLayoutProperty(layer.id, 'visibility', 'visible');
+            }
+          }
+        }
+
+        // Show pointer cursor when hovering over POI icons
+        const poiLayerIds = (newMap.getStyle()?.layers || [])
+          .filter(l => l.id.includes('poi') && l.type === 'symbol')
+          .map(l => l.id);
+        for (const layerId of poiLayerIds) {
+          newMap.on('mouseenter', layerId, () => { newMap.getCanvas().style.cursor = 'pointer'; });
+          newMap.on('mouseleave', layerId, () => { newMap.getCanvas().style.cursor = ''; });
+        }
+
+        // Force resize to ensure map renders properly
+        setTimeout(() => {
+          newMap.resize();
+        }, 100);
+      });
+
+      // Add click handler for adding waypoints
+      newMap.on('click', (e) => {
+        const { lng, lat } = e.lngLat;
+
+        // Check if user clicked on a POI feature on the map
+        const poiLayers = (newMap.getStyle()?.layers || [])
+          .filter(l => l.id.includes('poi') && l.type === 'symbol')
+          .map(l => l.id);
+        const poiFeatures = poiLayers.length
+          ? newMap.queryRenderedFeatures(e.point, { layers: poiLayers })
+          : [];
+
+        if (poiFeatures.length > 0) {
+          const poi = poiFeatures[0];
+          const poiName = (poi.properties?.name || poi.properties?.name_en || '') as string;
+          // Use the POI's actual geometry coordinates for precision
+          const poiCoords = poi.geometry.type === 'Point'
+            ? { lng: (poi.geometry as GeoJSON.Point).coordinates[0], lat: (poi.geometry as GeoJSON.Point).coordinates[1] }
+            : { lng, lat };
+          // Fly to POI so user can confirm the correct location
+          skipFitBoundsRef.current = true;
+          newMap.flyTo({ center: [poiCoords.lng, poiCoords.lat], zoom: Math.max(newMap.getZoom(), 15), speed: 1.2 });
+          addWaypoint(poiCoords.lat, poiCoords.lng, poiName || `Waypoint ${waypointsRef.current.length + 1}`, poiName);
+        } else {
+          addWaypoint(lat, lng, `Waypoint ${waypointsRef.current.length + 1}`, '');
+        }
       });
 
     } catch {
@@ -849,6 +918,19 @@ export function ExpeditionBuilderPage() {
     // Wait for new style to load
     map.current.once('styledata', () => {
       setMapLoaded(true);
+
+      // Re-enable POI labels after style change
+      const m = map.current;
+      if (m) {
+        const style = m.getStyle();
+        if (style?.layers) {
+          for (const layer of style.layers) {
+            if (layer.id.includes('poi') && layer.type === 'symbol') {
+              m.setLayoutProperty(layer.id, 'visibility', 'visible');
+            }
+          }
+        }
+      }
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, mapLayer]);
@@ -1167,24 +1249,29 @@ export function ExpeditionBuilderPage() {
     // Zoom map to fit all waypoints (especially useful in edit mode)
     // Only animate if not already zoomed in past the target level
     if ((waypoints.length > 0 || expeditionEntries.length > 0) && map.current) {
-      const currentZoom = map.current.getZoom();
-      const targetZoom = 8;
+      // Skip fitBounds if a geocoder/POI selection just placed a waypoint
+      if (skipFitBoundsRef.current) {
+        skipFitBoundsRef.current = false;
+      } else {
+        const currentZoom = map.current.getZoom();
+        const targetZoom = 8;
 
-      // Skip fitBounds if already zoomed in past target level
-      if (currentZoom <= targetZoom) {
-        const bounds = new mapboxgl.LngLatBounds();
-        waypoints.forEach(waypoint => {
-          bounds.extend([waypoint.coordinates.lng, waypoint.coordinates.lat]);
-        });
-        expeditionEntries.forEach(e => {
-          bounds.extend([e.coords.lng, e.coords.lat]);
-        });
+        // Skip fitBounds if already zoomed in past target level
+        if (currentZoom <= targetZoom) {
+          const bounds = new mapboxgl.LngLatBounds();
+          waypoints.forEach(waypoint => {
+            bounds.extend([waypoint.coordinates.lng, waypoint.coordinates.lat]);
+          });
+          expeditionEntries.forEach(e => {
+            bounds.extend([e.coords.lng, e.coords.lat]);
+          });
 
-        map.current.fitBounds(bounds, {
-          padding: 100,
-          maxZoom: targetZoom,
-          duration: 1000
-        });
+          map.current.fitBounds(bounds, {
+            padding: 100,
+            maxZoom: targetZoom,
+            duration: 1000
+          });
+        }
       }
     }
 

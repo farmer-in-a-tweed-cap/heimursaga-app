@@ -7,6 +7,7 @@ import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
+import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
 import { X, ChevronLeft } from 'lucide-react';
 import {
   clusterEntriesByProximity,
@@ -128,11 +129,22 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
     const geocoder = new MapboxGeocoder({
       accessToken: MAPBOX_TOKEN,
       mapboxgl: mapboxgl as any,
-      placeholder: 'Search for a location',
+      placeholder: 'Search for a location or business',
       marker: false,
-      bbox: bounds.toArray().flat() as [number, number, number, number],
-    });
+      trackProximity: false,
+      types: 'country,region,place,locality,neighborhood,address,poi',
+      limit: 10,
+      externalGeocoder: createPOIGeocoder(map),
+    } as any);
     map.addControl(geocoder as any, 'top-left');
+
+    // Manually manage proximity bias at all zoom levels
+    const updateGeocoderProximity = () => {
+      const center = map.getCenter();
+      geocoder.setProximity({ longitude: center.lng, latitude: center.lat });
+    };
+    map.on('moveend', updateGeocoderProximity);
+    map.on('load', updateGeocoderProximity);
 
     // Add navigation control (zoom buttons) below geocoder
     map.addControl(new mapboxgl.NavigationControl(), 'top-left');
