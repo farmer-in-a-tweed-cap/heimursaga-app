@@ -995,38 +995,39 @@ export class ExpeditionService {
             description,
             sequence,
             entryId: entries?.[0]?.public_id || null,
-            entryIds: entries?.map(e => e.public_id) || [],
+            entryIds: entries?.map((e) => e.public_id) || [],
           }),
         ),
         sponsors: allSponsorships
-          .filter((s) =>
-            s.type?.toLowerCase() === 'subscription' ||
-            s.expedition_public_id === public_id,
+          .filter(
+            (s) =>
+              s.type?.toLowerCase() === 'subscription' ||
+              s.expedition_public_id === public_id,
           )
           .map((s) => ({
-          id: s.public_id,
-          type: s.type?.toLowerCase(),
-          amount: integerToDecimal(s.amount),
-          status: s.status?.toLowerCase(),
-          message: s.message,
-          isPublic: s.is_public ?? true,
-          isMessagePublic: s.is_message_public ?? true,
-          createdAt: s.created_at,
-          user: s.sponsor
-            ? {
-                username: s.sponsor.username,
-                name: s.sponsor.profile?.name,
-                picture: getStaticMediaUrl(s.sponsor.profile?.picture),
-              }
-            : undefined,
-          tier: s.tier
-            ? {
-                id: s.tier.public_id,
-                description: s.tier.description,
-                price: integerToDecimal(s.tier.price),
-              }
-            : undefined,
-        })),
+            id: s.public_id,
+            type: s.type?.toLowerCase(),
+            amount: integerToDecimal(s.amount),
+            status: s.status?.toLowerCase(),
+            message: s.message,
+            isPublic: s.is_public ?? true,
+            isMessagePublic: s.is_message_public ?? true,
+            createdAt: s.created_at,
+            user: s.sponsor
+              ? {
+                  username: s.sponsor.username,
+                  name: s.sponsor.profile?.name,
+                  picture: getStaticMediaUrl(s.sponsor.profile?.picture),
+                }
+              : undefined,
+            tier: s.tier
+              ? {
+                  id: s.tier.public_id,
+                  description: s.tier.description,
+                  price: integerToDecimal(s.tier.price),
+                }
+              : undefined,
+          })),
       };
 
       // Apply current location visibility rules
@@ -1221,10 +1222,16 @@ export class ExpeditionService {
         if (startDate) {
           const newStartDate = new Date(startDate);
           // Skip validation if the date hasn't actually changed
-          const dateChanged = !expedition.start_date ||
-            newStartDate.toISOString().split('T')[0] !== expedition.start_date.toISOString().split('T')[0];
+          const dateChanged =
+            !expedition.start_date ||
+            newStartDate.toISOString().split('T')[0] !==
+              expedition.start_date.toISOString().split('T')[0];
           // Only planned expeditions can have their start date changed
-          if (dateChanged && expedition.start_date && expedition.status !== 'planned') {
+          if (
+            dateChanged &&
+            expedition.start_date &&
+            expedition.status !== 'planned'
+          ) {
             throw new ServiceBadRequestException(
               'Start date can only be changed for planned expeditions',
             );
@@ -1605,7 +1612,11 @@ export class ExpeditionService {
         throw new ServiceNotFoundException('expedition not found');
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
-          where: { public_id: expeditionId, author_id: explorerId, deleted_at: null },
+          where: {
+            public_id: expeditionId,
+            author_id: explorerId,
+            deleted_at: null,
+          },
           select: { id: true },
         })
         .catch(() => {

@@ -11,27 +11,27 @@
 
 ## A. Explorer Pro Subscription — Signup
 
-- [ ] **A1. Monthly subscription with new card** — Select Monthly ($7/mo), enter test card `4242 4242 4242 4242`, complete payment. Verify: redirected to success page, user role = CREATOR, subscription record created with `period = month`, default sponsorship tiers created, payment method saved.
-- [ ] **A2. Annual subscription** — Select Annual ($50/yr), complete payment. Verify: correct amount charged, `period = year`, `current_period_end` ~1 year out.
-- [ ] **A3. Subscription with existing saved card** — Select saved card, no card form shown, payment completes, no duplicate payment method.
+- [X] **A1. Monthly subscription with new card** — Select Monthly ($7/mo), enter test card `4242 4242 4242 4242`, complete payment. Verify: redirected to success page, user role = CREATOR, subscription record created with `period = month`, default sponsorship tiers created, payment method saved.
+- [X] **A2. Annual subscription** — Select Annual ($50/yr), complete payment. Verify: correct amount charged, `period = year`, `current_period_end` ~1 year out.
+- [X] **A3. Subscription with existing saved card** — Select saved card, no card form shown, payment completes, no duplicate payment method.
 - [ ] **A4. 100% off promo code** — Create 100% off coupon + promo in Stripe Dashboard. Enter promo, verify $0.00 total, "ACTIVATE FREE TRIAL" button, no payment required, CREATOR role granted.
-- [ ] **A5. Partial promo (50% off, first month)** — Enter promo, verify discounted amount, "first payment only" note, renewal shows full price.
-- [ ] **A6. Repeating promo (50% off, 3 months)** — Verify "for 3 months" text, full price date calculated correctly.
-- [ ] **A7. Invalid promo code** — Enter fake code, verify "Invalid promo code" error, can still proceed without promo.
-- [ ] **A8. Remove applied promo** — Apply valid promo, click REMOVE, verify original price restored.
-- [ ] **A9. 3D Secure required** — Use card `4000 0025 0000 3155`, complete 3DS, verify subscription activates.
-- [ ] **A10. 3D Secure failed** — Use card `4000 0084 0000 1629`, fail 3DS, verify no subscription created, user role unchanged.
+- [NA] **A5. Partial promo (50% off, first month)** — Enter promo, verify discounted amount, "first payment only" note, renewal shows full price.
+- [NA] **A6. Repeating promo (50% off, 3 months)** — Verify "for 3 months" text, full price date calculated correctly.
+- [X] **A7. Invalid promo code** — Enter fake code, verify "Invalid promo code" error, can still proceed without promo.
+- [X] **A8. Remove applied promo** — Apply valid promo, click REMOVE, verify original price restored.
+- [X] **A9. 3D Secure required** — Use card `4000 0025 0000 3155`, complete 3DS, verify subscription activates.
+- [X] **A10. 3D Secure failed** — Use card `4000 0084 0000 1629`, fail 3DS, verify no subscription created, user role unchanged.
 - [ ] **A11. Card declined** — Use card `4000 0000 0000 0002`, verify error shown, can retry with different card, no orphaned checkout left as PENDING.
 - [ ] **A12. Insufficient funds** — Use card `4000 0000 0000 9995`, verify appropriate error message.
 
 ## B. Explorer Pro — Lifecycle Management
 
-- [ ] **B1. View subscription in Billing Settings** — Verify correct plan, billing period (MONTHLY/ANNUAL), next billing date from Stripe, status ACTIVE, correct price displayed ($7/mo or $50/yr).
-- [ ] **B2. Cancel subscription** — Click CANCEL, confirm, verify "CANCELING" status, end date shown, user retains CREATOR role until period end, Stripe has `cancel_at_period_end = true`.
-- [ ] **B3. Subscription expires after cancellation** — Use Stripe test clock to advance past period end. Verify `customer.subscription.deleted` webhook fires, user downgraded to USER, `explorerPlan` deleted.
+- [X] **B1. View subscription in Billing Settings** — Verify correct plan, billing period (MONTHLY/ANNUAL), next billing date from Stripe, status ACTIVE, correct price displayed ($7/mo or $50/yr).
+- [X] **B2. Cancel subscription** — Click CANCEL, confirm, verify "CANCELING" status, end date shown, user retains CREATOR role until period end, Stripe has `cancel_at_period_end = true`.
+- [X] **B3. Subscription expires after cancellation** — Use Stripe test clock to advance past period end. Verify `customer.subscription.deleted` webhook fires, user downgraded to USER, `explorerPlan` deleted.
 - [ ] **B4. Payment failure on renewal** — Attach card `4000 0000 0000 0341` (succeeds on setup, fails on charge). Use test clock to advance to renewal. Verify `invoice.payment_failed` webhook fires, subscription goes `past_due`, user downgraded to USER.
 - [ ] **B5. Recovery after payment failure** — Add valid test card as default, trigger retry in Stripe Dashboard. Verify subscription returns to `active`, CREATOR role restored.
-- [ ] **B6. Sidebar billing summary** — Verify cost label says "Monthly Cost: $7.00" or "Annual Cost: $50.00" based on actual period.
+- [X] **B6. Sidebar billing summary** — Verify cost label says "Monthly Cost: $7.00" or "Annual Cost: $50.00" based on actual period.
 
 ## C. Sponsorship — One-Time Payments
 

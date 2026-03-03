@@ -188,7 +188,11 @@ export async function app() {
       if (request.headers.authorization?.startsWith('Bearer ')) return;
 
       // Skip CSRF for Stripe webhooks (they use signature verification)
-      if (request.url.startsWith('/stripe') || request.url.startsWith('/v1/stripe')) return;
+      if (
+        request.url.startsWith('/stripe') ||
+        request.url.startsWith('/v1/stripe')
+      )
+        return;
 
       // Skip CSRF for auth endpoints — no authenticated session to protect.
       // Login/signup establish sessions, password reset uses tokens.

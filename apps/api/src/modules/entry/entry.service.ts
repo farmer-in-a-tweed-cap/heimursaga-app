@@ -65,7 +65,8 @@ function sanitizeEntryMetadata(
     const expenses = toNumber(metadata.expenses);
 
     if (weather !== undefined) result.weather = weather;
-    if (distanceTraveled !== undefined) result.distanceTraveled = distanceTraveled;
+    if (distanceTraveled !== undefined)
+      result.distanceTraveled = distanceTraveled;
     if (mood !== undefined) result.mood = mood;
     if (expenses !== undefined) result.expenses = expenses;
   } else if (entryType === 'data-log') {
@@ -176,17 +177,31 @@ export class EntryService {
         isDraft: entry.is_draft,
         createdAt: entry.created_at,
         updatedAt: entry.updated_at,
-        entryType: entry.entry_type as 'standard' | 'photo-essay' | 'data-log' | 'waypoint' | undefined,
-        metadata: entry.metadata && typeof entry.metadata === 'object'
-          ? (entry.metadata as Record<string, unknown>)
-          : undefined,
-        visibility: entry.visibility as 'public' | 'off-grid' | 'private' | undefined,
+        entryType: entry.entry_type as
+          | 'standard'
+          | 'photo-essay'
+          | 'data-log'
+          | 'waypoint'
+          | undefined,
+        metadata:
+          entry.metadata && typeof entry.metadata === 'object'
+            ? (entry.metadata as Record<string, unknown>)
+            : undefined,
+        visibility: entry.visibility as
+          | 'public'
+          | 'off-grid'
+          | 'private'
+          | undefined,
         coverImage: undefined,
         isMilestone: entry.is_milestone,
         media: entry.media?.map((u) => ({
           id: u.upload.public_id,
-          thumbnail: u.upload.thumbnail ? getStaticMediaUrl(u.upload.thumbnail) : '',
-          original: u.upload.original ? getStaticMediaUrl(u.upload.original) : undefined,
+          thumbnail: u.upload.thumbnail
+            ? getStaticMediaUrl(u.upload.thumbnail)
+            : '',
+          original: u.upload.original
+            ? getStaticMediaUrl(u.upload.original)
+            : undefined,
           caption: u.caption || undefined,
           altText: u.alt_text || undefined,
           credit: u.credit || undefined,
@@ -732,9 +747,10 @@ export class EntryService {
           ? getStaticMediaUrl(entry.cover_upload.original)
           : undefined,
         isMilestone: entry.is_milestone,
-        metadata: entry.metadata && typeof entry.metadata === 'object'
-          ? (entry.metadata as Record<string, unknown>)
-          : undefined,
+        metadata:
+          entry.metadata && typeof entry.metadata === 'object'
+            ? (entry.metadata as Record<string, unknown>)
+            : undefined,
         visibility: entry.visibility as
           | 'public'
           | 'off-grid'
@@ -922,7 +938,6 @@ export class EntryService {
           .catch(() => {
             throw new ServiceBadRequestException('waypoint is not available');
           });
-
       }
 
       // Look up expedition if provided
@@ -1034,12 +1049,14 @@ export class EntryService {
             entry_type: entryType || 'standard',
             is_milestone: isMilestone || false,
             visibility: visibility || 'public',
-            metadata: (sanitizeEntryMetadata(entryType, metadata) as Prisma.InputJsonValue) ?? Prisma.DbNull,
+            metadata:
+              (sanitizeEntryMetadata(
+                entryType,
+                metadata,
+              ) as Prisma.InputJsonValue) ?? Prisma.DbNull,
             author: { connect: { id: explorerId } },
             // Connect to waypoint if provided (waypoint-to-entry conversion)
-            waypoint: waypointId
-              ? { connect: { id: waypointId } }
-              : undefined,
+            waypoint: waypointId ? { connect: { id: waypointId } } : undefined,
             // Connect to expedition if provided
             expedition: expeditionDbId
               ? { connect: { id: expeditionDbId } }
@@ -1283,9 +1300,13 @@ export class EntryService {
             entry_type: entryType,
             is_milestone: isMilestone,
             visibility: visibility,
-            metadata: metadata !== undefined
-              ? ((sanitizeEntryMetadata(entryType || 'standard', metadata) as Prisma.InputJsonValue) ?? Prisma.DbNull)
-              : undefined,
+            metadata:
+              metadata !== undefined
+                ? (sanitizeEntryMetadata(
+                    entryType || 'standard',
+                    metadata,
+                  ) as Prisma.InputJsonValue) ?? Prisma.DbNull
+                : undefined,
             cover_upload:
               coverUploadDbId !== undefined
                 ? coverUploadDbId === null

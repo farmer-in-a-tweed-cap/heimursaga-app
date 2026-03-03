@@ -428,16 +428,15 @@ export class SponsorService {
 
               // Create Stripe product if the tier doesn't have one yet
               if (!productId) {
-                const stripeProduct =
-                  await this.stripeService.products.create({
-                    name: `creator_${subscriptionTier.explorer_id}__sponsorship`,
-                    active: true,
-                    default_price_data: {
-                      currency,
-                      unit_amount: monthlyAmount,
-                      recurring: { interval: 'month' },
-                    },
-                  });
+                const stripeProduct = await this.stripeService.products.create({
+                  name: `creator_${subscriptionTier.explorer_id}__sponsorship`,
+                  active: true,
+                  default_price_data: {
+                    currency,
+                    unit_amount: monthlyAmount,
+                    recurring: { interval: 'month' },
+                  },
+                });
                 productId = stripeProduct.id;
                 // The default price created with the product is the monthly price
                 subscriptionTier.stripe_price_month_id =
@@ -446,25 +445,23 @@ export class SponsorService {
 
               // Create monthly price if still missing (product existed but price didn't)
               if (!subscriptionTier.stripe_price_month_id) {
-                const monthlyPrice =
-                  await this.stripeService.prices.create({
-                    currency,
-                    unit_amount: monthlyAmount,
-                    recurring: { interval: 'month' },
-                    product: productId,
-                  });
+                const monthlyPrice = await this.stripeService.prices.create({
+                  currency,
+                  unit_amount: monthlyAmount,
+                  recurring: { interval: 'month' },
+                  product: productId,
+                });
                 subscriptionTier.stripe_price_month_id = monthlyPrice.id;
               }
 
               // Create yearly price if missing
               if (!subscriptionTier.stripe_price_year_id) {
-                const yearlyPrice =
-                  await this.stripeService.prices.create({
-                    currency,
-                    unit_amount: this.calculateYearlyAmount(monthlyAmount),
-                    recurring: { interval: 'year' },
-                    product: productId,
-                  });
+                const yearlyPrice = await this.stripeService.prices.create({
+                  currency,
+                  unit_amount: this.calculateYearlyAmount(monthlyAmount),
+                  recurring: { interval: 'year' },
+                  product: productId,
+                });
                 subscriptionTier.stripe_price_year_id = yearlyPrice.id;
               }
 
@@ -474,10 +471,8 @@ export class SponsorService {
                 where: { id: subscriptionTier.id },
                 data: {
                   stripe_product_id: productId,
-                  stripe_price_month_id:
-                    subscriptionTier.stripe_price_month_id,
-                  stripe_price_year_id:
-                    subscriptionTier.stripe_price_year_id,
+                  stripe_price_month_id: subscriptionTier.stripe_price_month_id,
+                  stripe_price_year_id: subscriptionTier.stripe_price_year_id,
                 },
               });
 
@@ -872,7 +867,10 @@ export class SponsorService {
       }
 
       // Verify this is a sponsorship transaction, not a subscription or other type
-      if (transactionType && transactionType !== PaymentTransactionType.SPONSORSHIP) {
+      if (
+        transactionType &&
+        transactionType !== PaymentTransactionType.SPONSORSHIP
+      ) {
         throw new ServiceBadRequestException(
           'Payment is not a sponsorship transaction',
         );

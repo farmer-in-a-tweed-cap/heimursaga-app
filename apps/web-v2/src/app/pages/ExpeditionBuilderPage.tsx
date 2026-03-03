@@ -4,7 +4,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
-import { MapPin, Trash2, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle } from 'lucide-react';
+import { MapPin, Trash2, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle, Search, Plus } from 'lucide-react';
+import { Slider } from '@/app/components/ui/slider';
 import { DatePicker } from '@/app/components/DatePicker';
 import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 import { useAuth } from '@/app/context/AuthContext';
@@ -20,7 +21,8 @@ import { haversineFromLatLng } from '@/app/utils/haversine';
 import { buildWaypointPayload } from '@/app/utils/waypointPayload';
 import { projectToSegment } from '@/app/utils/routeSnapping';
 import { renderClusteredMarkers } from '@/app/utils/mapClustering';
-import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
+import { createPOIGeocoder, searchAlongRoute, fetchPOICategories, retrievePOI, clearRouteSearchCache, clipRouteToBounds } from '@/app/utils/poiGeocoder';
+import type { POIResult, POICategory } from '@/app/utils/poiGeocoder';
 import { useBuilderDateHandlers } from '@/app/hooks/useBuilderDateHandlers';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -85,6 +87,10 @@ export function ExpeditionBuilderPage() {
   const directionsAbortRef = useRef<AbortController | null>(null);
   const lastDirectionsCoordsRef = useRef<string>(''); // Fingerprint to prevent re-fetch loops
   const skipFitBoundsRef = useRef(false); // Skip fitBounds after geocoder/POI waypoint placement
+  const addWaypointRef = useRef<((lat: number, lng: number, name: string, location: string) => void) | null>(null);
+  const routeSearchMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
+  const routeSearchResultsRef = useRef<POIResult[]>([]);
+  const searchResultRef = useRef<{ lng: number; lat: number; name: string; address: string } | null>(null);
 
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -110,6 +116,15 @@ export function ExpeditionBuilderPage() {
   const [directionsLoading, setDirectionsLoading] = useState(false);
   const [directionsError, setDirectionsError] = useState<string | null>(null);
   const [directionsWarnings, setDirectionsWarnings] = useState<string[]>([]);
+
+  // Route search (Find Along Route) state
+  const [showRouteSearch, setShowRouteSearch] = useState(false);
+  const [routeSearchResults, setRouteSearchResults] = useState<POIResult[]>([]);
+  const [routeSearchLoading, setRouteSearchLoading] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [allCategories, setAllCategories] = useState<POICategory[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [routeSearchProximity, setRouteSearchProximity] = useState(5);
 
   const [expeditionData, setExpeditionData] = useState<ExpeditionData>({
     title: '',
@@ -771,6 +786,7 @@ export function ExpeditionBuilderPage() {
         marker: false,
         placeholder: 'Search for a location or business...',
         trackProximity: false,
+        flyTo: false,
         types: 'country,region,place,locality,neighborhood,address,poi',
         limit: 10,
         externalGeocoder: createPOIGeocoder(newMap),
@@ -822,15 +838,97 @@ export function ExpeditionBuilderPage() {
         });
       };
 
-      // When user selects a geocoder result, create a waypoint
-      // (the geocoder's built-in flyTo handles the map animation)
+      addWaypointRef.current = addWaypoint;
+
+      // Helper to show search label + fly to coordinates
+      const showSearchResult = (lng: number, lat: number, poiName: string, address: string) => {
+        searchResultRef.current = { lng, lat, name: poiName, address };
+
+        const labelData: GeoJSON.FeatureCollection = {
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: { name: poiName } }],
+        };
+        if (newMap.getSource('search-label')) {
+          (newMap.getSource('search-label') as mapboxgl.GeoJSONSource).setData(labelData);
+        } else {
+          newMap.addSource('search-label', { type: 'geojson', data: labelData });
+          newMap.addLayer({
+            id: 'search-label-dot',
+            type: 'circle',
+            source: 'search-label',
+            paint: {
+              'circle-radius': 6,
+              'circle-color': '#4676ac',
+              'circle-stroke-width': 2,
+              'circle-stroke-color': '#ffffff',
+            },
+          });
+          newMap.addLayer({
+            id: 'search-label-text',
+            type: 'symbol',
+            source: 'search-label',
+            layout: {
+              'text-field': ['get', 'name'],
+              'text-size': 13,
+              'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+              'text-offset': [0, 1.4],
+              'text-anchor': 'top',
+              'text-max-width': 12,
+            },
+            paint: {
+              'text-color': '#4676ac',
+              'text-halo-color': '#ffffff',
+              'text-halo-width': 1.5,
+            },
+          });
+        }
+
+        newMap.flyTo({ center: [lng, lat], zoom: 15 });
+
+        // After fly, hide our label if the map already has one for this POI
+        newMap.once('moveend', () => {
+          const pt = newMap.project([lng, lat]);
+          const poiSymbolLayers = (newMap.getStyle()?.layers || [])
+            .filter(l => l.id.includes('poi') && l.type === 'symbol')
+            .map(l => l.id);
+          if (poiSymbolLayers.length) {
+            const hits = newMap.queryRenderedFeatures(
+              [[pt.x - 20, pt.y - 20], [pt.x + 20, pt.y + 20]],
+              { layers: poiSymbolLayers },
+            );
+            const hasMapLabel = hits.some(f => {
+              const fname = (f.properties?.name || f.properties?.name_en || '').toLowerCase();
+              return fname && poiName.toLowerCase().includes(fname);
+            });
+            if (hasMapLabel && newMap.getSource('search-label')) {
+              (newMap.getSource('search-label') as mapboxgl.GeoJSONSource).setData({
+                type: 'FeatureCollection',
+                features: [{ type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: { name: '' } }],
+              });
+            }
+          }
+        });
+      };
+
+      // When user selects a geocoder result
       geocoder.on('result', (e: any) => {
         const feature = e.result;
+        const mapboxId = feature.properties?.mapbox_id;
+
+        // External POI results have placeholder [0,0] coords — resolve via /retrieve
+        if (mapboxId && feature.center?.[0] === 0 && feature.center?.[1] === 0) {
+          retrievePOI(mapboxId).then(poi => {
+            if (poi) showSearchResult(poi.lng, poi.lat, poi.name, poi.address);
+          });
+          return;
+        }
+
+        // Standard geocoder result — already has real coordinates
         const [lng, lat] = feature.center || feature.geometry?.coordinates || [];
         if (lng == null || lat == null) return;
-
-        skipFitBoundsRef.current = true;
-        addWaypoint(lat, lng, feature.text || feature.place_name || '', feature.place_name || '');
+        const poiName = feature.text || feature.place_name || '';
+        const address = feature.properties?.full_address || feature.properties?.place_formatted || feature.place_name || '';
+        showSearchResult(lng, lat, poiName, address);
       });
 
       // Add navigation control
@@ -877,7 +975,19 @@ export function ExpeditionBuilderPage() {
           ? newMap.queryRenderedFeatures(e.point, { layers: poiLayers })
           : [];
 
-        if (poiFeatures.length > 0) {
+        // Check if click is near a pending search result marker
+        const sr = searchResultRef.current;
+        const nearSearch = sr && Math.abs(lat - sr.lat) < 0.001 && Math.abs(lng - sr.lng) < 0.001;
+
+        if (nearSearch && sr) {
+          skipFitBoundsRef.current = true;
+          addWaypoint(sr.lat, sr.lng, sr.name, sr.address);
+          // Clear label
+          if (newMap.getSource('search-label')) {
+            (newMap.getSource('search-label') as mapboxgl.GeoJSONSource).setData({ type: 'FeatureCollection', features: [] });
+          }
+          searchResultRef.current = null;
+        } else if (poiFeatures.length > 0) {
           const poi = poiFeatures[0];
           const poiName = (poi.properties?.name || poi.properties?.name_en || '') as string;
           // Use the POI's actual geometry coordinates for precision
@@ -900,6 +1010,8 @@ export function ExpeditionBuilderPage() {
     return () => {
       markers.current.forEach(marker => marker.remove());
       markers.current = [];
+      routeSearchMarkersRef.current.forEach(m => m.remove());
+      routeSearchMarkersRef.current.clear();
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -946,6 +1058,34 @@ export function ExpeditionBuilderPage() {
       map.current?.off('movestart', hideInstructions);
     };
   }, [mapLoaded]);
+
+  // Fetch Mapbox POI categories lazily when panel first opens
+  const categoriesFetchedRef = useRef(false);
+  useEffect(() => {
+    if (!showRouteSearch || categoriesFetchedRef.current) return;
+    categoriesFetchedRef.current = true;
+    fetchPOICategories().then(cats => {
+      if (cats.length > 0) setAllCategories(cats);
+    });
+  }, [showRouteSearch]);
+
+  // Clear route search results and cache when route changes
+  const routeFingerprint = waypoints.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|');
+  useEffect(() => {
+    clearRouteSearchCache();
+    allRouteResultsRef.current = [];
+    if (showRouteSearch && routeSearchResults.length > 0) {
+      setRouteSearchResults([]);
+      routeSearchResultsRef.current = [];
+      setActiveCategory(null);
+      routeSearchMarkersRef.current.forEach(m => m.remove());
+      routeSearchMarkersRef.current.clear();
+      if (map.current?.getSource('route-search-pois')) {
+        (map.current.getSource('route-search-pois') as mapboxgl.GeoJSONSource).setData({ type: 'FeatureCollection', features: [] });
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeFingerprint, directionsGeometry, routeMode]);
 
   // Debounced directions fetch when waypoints or route mode changes
   useEffect(() => {
@@ -1418,6 +1558,227 @@ export function ExpeditionBuilderPage() {
 
     setWaypoints(updated);
   };
+
+  // Route search helpers
+  const getRouteCoordinates = useCallback((): number[][] => {
+    if (routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0) {
+      return directionsGeometry;
+    }
+    return waypoints.map(w => [w.coordinates.lng, w.coordinates.lat]);
+  }, [routeMode, directionsGeometry, waypoints]);
+
+  // All results from the API (unfiltered). Filtered subset goes into routeSearchResults.
+  const allRouteResultsRef = useRef<POIResult[]>([]);
+
+  // Approximate driving distance for N minutes of detour (~50km/h avg)
+  const proximityMeters = routeSearchProximity * 830; // ~830m per minute at 50km/h
+
+  // Filter + sort results: keep within proximity, sort by distance from map center
+  const applyRouteSearchFilter = useCallback((allResults: POIResult[]) => {
+    const filtered = allResults.filter(p => (p.distanceFromRoute ?? 0) <= proximityMeters);
+    // Sort by distance from current map center (viewport proximity)
+    if (map.current) {
+      const center = map.current.getCenter();
+      filtered.sort((a, b) => {
+        const da = Math.pow(a.coordinates.lat - center.lat, 2) + Math.pow(a.coordinates.lng - center.lng, 2);
+        const db = Math.pow(b.coordinates.lat - center.lat, 2) + Math.pow(b.coordinates.lng - center.lng, 2);
+        return da - db;
+      });
+    }
+    setRouteSearchResults(filtered);
+    routeSearchResultsRef.current = filtered;
+
+    // Update map layer
+    if (map.current) {
+      const m = map.current;
+      const poiSymbolLayers = (m.getStyle()?.layers || [])
+        .filter(l => l.id.includes('poi') && l.type === 'symbol')
+        .map(l => l.id);
+
+      const geojson: GeoJSON.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: filtered.map(poi => {
+          let showLabel = true;
+          if (poiSymbolLayers.length) {
+            try {
+              const pt = m.project([poi.coordinates.lng, poi.coordinates.lat]);
+              const hits = m.queryRenderedFeatures(
+                [[pt.x - 15, pt.y - 15], [pt.x + 15, pt.y + 15]],
+                { layers: poiSymbolLayers },
+              );
+              showLabel = !hits.some(f => {
+                const fname = (f.properties?.name || f.properties?.name_en || '').toLowerCase();
+                return fname && poi.name.toLowerCase().includes(fname);
+              });
+            } catch {
+              // Point may be off-screen, show label
+            }
+          }
+          return {
+            type: 'Feature' as const,
+            geometry: { type: 'Point' as const, coordinates: [poi.coordinates.lng, poi.coordinates.lat] },
+            properties: { id: poi.id, name: showLabel ? poi.name : '' },
+          };
+        }),
+      };
+
+      if (m.getSource('route-search-pois')) {
+        (m.getSource('route-search-pois') as mapboxgl.GeoJSONSource).setData(geojson);
+      }
+    }
+  }, [proximityMeters]);
+
+  // Re-sort results when the map moves (viewport proximity changes)
+  useEffect(() => {
+    if (!map.current || !showRouteSearch || allRouteResultsRef.current.length === 0) return;
+    const m = map.current;
+    const onMoveEnd = () => applyRouteSearchFilter(allRouteResultsRef.current);
+    m.on('moveend', onMoveEnd);
+    return () => { m.off('moveend', onMoveEnd); };
+  }, [showRouteSearch, applyRouteSearchFilter]);
+
+  // Re-filter when the proximity slider changes (client-side, no API call)
+  useEffect(() => {
+    if (allRouteResultsRef.current.length > 0) {
+      applyRouteSearchFilter(allRouteResultsRef.current);
+    }
+  }, [proximityMeters, applyRouteSearchFilter]);
+
+  const handleRouteSearch = useCallback(async (categoryId: string) => {
+    if (waypoints.length < 2) return;
+    if (routeMode !== 'straight' && directionsLoading) return;
+    setActiveCategory(categoryId);
+    setRouteSearchLoading(true);
+    setRouteSearchResults([]);
+
+    // Clear previous markers
+    routeSearchMarkersRef.current.forEach(m => m.remove());
+    routeSearchMarkersRef.current.clear();
+
+    try {
+      let coords = getRouteCoordinates();
+      // Clip to current viewport if the user is zoomed into a section of the route
+      const b = map.current?.getBounds();
+      if (b) {
+        coords = clipRouteToBounds(coords, {
+          west: b.getWest(), south: b.getSouth(),
+          east: b.getEast(), north: b.getNorth(),
+        });
+      }
+      // Always fetch with max time_deviation for full coverage (results are cached)
+      const results = await searchAlongRoute(categoryId, coords, { limit: 25, timeDeviation: 30 });
+      allRouteResultsRef.current = results;
+
+      // Ensure map layers exist
+      if (map.current && !map.current.getSource('route-search-pois')) {
+        map.current.addSource('route-search-pois', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.current.addLayer({
+          id: 'route-search-pois-dot',
+          type: 'circle',
+          source: 'route-search-pois',
+          paint: {
+            'circle-radius': 5,
+            'circle-color': '#4676ac',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff',
+          },
+        });
+        map.current.addLayer({
+          id: 'route-search-pois-label',
+          type: 'symbol',
+          source: 'route-search-pois',
+          layout: {
+            'text-field': ['get', 'name'],
+            'text-size': 11,
+            'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+            'text-offset': [0, 1.2],
+            'text-anchor': 'top',
+            'text-max-width': 10,
+            'text-allow-overlap': false,
+          },
+          paint: {
+            'text-color': '#4676ac',
+            'text-halo-color': '#ffffff',
+            'text-halo-width': 1.5,
+          },
+        });
+
+        // Click handler for route search POI dots
+        map.current.on('click', 'route-search-pois-dot', (e) => {
+          if (!e.features?.[0]) return;
+          const poiId = e.features[0].properties?.id;
+          const poi = routeSearchResultsRef.current.find(r => r.id === poiId);
+          if (poi) handleAddPOIAsWaypoint(poi);
+        });
+        map.current.on('mouseenter', 'route-search-pois-dot', () => {
+          if (map.current) map.current.getCanvas().style.cursor = 'pointer';
+        });
+        map.current.on('mouseleave', 'route-search-pois-dot', () => {
+          if (map.current) map.current.getCanvas().style.cursor = '';
+        });
+      }
+
+      // Apply client-side filter + sort
+      applyRouteSearchFilter(results);
+    } catch {
+      toast.error('Failed to search along route');
+    } finally {
+      setRouteSearchLoading(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waypoints, getRouteCoordinates, routeMode, directionsLoading, applyRouteSearchFilter]);
+
+  const handleAddPOIAsWaypoint = useCallback((poi: POIResult) => {
+    skipFitBoundsRef.current = true;
+    if (addWaypointRef.current) {
+      addWaypointRef.current(poi.coordinates.lat, poi.coordinates.lng, poi.name, poi.address);
+    }
+    // Remove from all results and filtered results, update map layer
+    allRouteResultsRef.current = allRouteResultsRef.current.filter(r => r.id !== poi.id);
+    const updated = routeSearchResultsRef.current.filter(r => r.id !== poi.id);
+    setRouteSearchResults(updated);
+    routeSearchResultsRef.current = updated;
+    if (map.current?.getSource('route-search-pois')) {
+      (map.current.getSource('route-search-pois') as mapboxgl.GeoJSONSource).setData({
+        type: 'FeatureCollection',
+        features: updated.map(p => ({
+          type: 'Feature' as const,
+          geometry: { type: 'Point' as const, coordinates: [p.coordinates.lng, p.coordinates.lat] },
+          properties: { id: p.id, name: p.name },
+        })),
+      });
+    }
+    toast.success(`Added ${poi.name} as waypoint`);
+  }, []);
+
+  const handleCloseRouteSearch = useCallback(() => {
+    setShowRouteSearch(false);
+    setRouteSearchResults([]);
+    routeSearchResultsRef.current = [];
+    allRouteResultsRef.current = [];
+    setActiveCategory(null);
+    setCategoryFilter('');
+    routeSearchMarkersRef.current.forEach(m => m.remove());
+    routeSearchMarkersRef.current.clear();
+    if (map.current?.getSource('route-search-pois')) {
+      (map.current.getSource('route-search-pois') as mapboxgl.GeoJSONSource).setData({ type: 'FeatureCollection', features: [] });
+    }
+  }, []);
+
+  // Curated quick-pick categories relevant to expedition/exploration use cases
+  const QUICK_PICK_IDS = [
+    'restaurant', 'cafe', 'hotel', 'lodging', 'gas_station', 'grocery',
+    'supermarket', 'pharmacy', 'hospital', 'campground', 'parking',
+    'atm', 'post_office', 'drinking_water', 'laundry', 'bar',
+  ];
+  const quickPickCategories = QUICK_PICK_IDS
+    .map(id => allCategories.find(c => c.id === id))
+    .filter((c): c is POICategory => c != null);
+
+  // When user types a filter, search all categories; otherwise show quick-picks only
+  const filteredCategories = categoryFilter
+    ? allCategories.filter(c => c.name.toLowerCase().includes(categoryFilter.toLowerCase()))
+    : quickPickCategories;
 
   // Calculate total statistics
   const totalDistance = waypoints[waypoints.length - 1]?.cumulativeDistance || 0;
@@ -2025,27 +2386,163 @@ export function ExpeditionBuilderPage() {
             )}
             {/* Waypoint List */}
             <div className="flex-1 overflow-y-auto min-h-0">
-                <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] sticky top-0 z-10">
+                <div className="px-4 py-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] sticky top-0 z-10 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold dark:text-[#e5e5e5]">ROUTE WAYPOINTS ({waypoints.length})</h3>
+                    <h3 className="text-xs font-bold dark:text-[#e5e5e5] whitespace-nowrap">WAYPOINTS ({waypoints.length})</h3>
                     <div className="flex items-center gap-3">
+                      {waypoints.length >= 2 && (
+                        <button
+                          onClick={() => setShowRouteSearch(true)}
+                          className="px-2.5 py-1 text-[10px] text-white bg-[#4676ac] hover:bg-[#365d8a] font-bold transition-all flex items-center gap-1.5 whitespace-nowrap"
+                          title="Find POIs along your route"
+                        >
+                          <Search size={11} />
+                          FIND ALONG ROUTE
+                        </button>
+                      )}
                       {waypoints.length > 0 && (
                         <button
                           onClick={() => setConfirmingClearAll(true)}
-                          className="text-xs text-[#ac6d46] hover:text-[#8a5738] font-bold transition-all"
+                          className="text-[10px] text-[#ac6d46] hover:text-[#8a5738] font-bold transition-all whitespace-nowrap"
                         >
                           CLEAR ALL
                         </button>
                       )}
-                      <div className="text-xs text-[#4676ac] font-mono">
-                        {formatDistance(totalDistance, 1)} total
-                        {totalTravelTime > 0 && routeMode !== 'straight' && (
-                          <> • {formatTravelTime(totalTravelTime)}</>
-                        )}
-                      </div>
                     </div>
                   </div>
+                  {totalDistance > 0 && (
+                    <div className="text-[10px] text-[#4676ac] font-mono">
+                      {formatDistance(totalDistance, 1)} total
+                      {totalTravelTime > 0 && routeMode !== 'straight' && (
+                        <> • {formatTravelTime(totalTravelTime)}</>
+                      )}
+                    </div>
+                  )}
                 </div>
+
+                {/* Route Search Panel */}
+                {showRouteSearch && (
+                  <div className="border-b-2 border-[#202020] dark:border-[#616161]">
+                    <div className="p-3 bg-[#4676ac] text-white flex items-center justify-between">
+                      <span className="text-xs font-bold flex items-center gap-1.5">
+                        <Search size={13} />
+                        FIND ALONG ROUTE
+                      </span>
+                      <button
+                        onClick={handleCloseRouteSearch}
+                        className="text-white hover:text-[#e5e5e5] transition-all"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    <div className="p-3 space-y-3 bg-white dark:bg-[#202020]">
+                      {/* Category filter input */}
+                      <input
+                        type="text"
+                        value={categoryFilter}
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        placeholder="Search all categories..."
+                        className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#4676ac] outline-none text-xs dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161]"
+                      />
+
+                      {/* Proximity range slider */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold text-[#616161] dark:text-[#b5bcc4] uppercase tracking-wide">Proximity</span>
+                          <span className="text-[10px] font-bold text-[#4676ac] font-mono">{routeSearchProximity} min</span>
+                        </div>
+                        <Slider
+                          value={[routeSearchProximity]}
+                          min={1}
+                          max={30}
+                          step={1}
+                          className="[&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-track]]:bg-[#b5bcc4] [&_[data-slot=slider-track]]:dark:bg-[#616161] [&_[data-slot=slider-range]]:bg-[#4676ac] [&_[data-slot=slider-thumb]]:size-3.5 [&_[data-slot=slider-thumb]]:border-[#4676ac] [&_[data-slot=slider-thumb]]:bg-white"
+                          onValueChange={([val]) => setRouteSearchProximity(val)}
+                        />
+                      </div>
+
+                      {/* Category buttons grid */}
+                      <div className="flex flex-wrap gap-1.5 max-h-[120px] overflow-y-auto">
+                        {filteredCategories.map(cat => (
+                          <button
+                            key={cat.id}
+                            onClick={() => handleRouteSearch(cat.id)}
+                            disabled={routeSearchLoading || (routeMode !== 'straight' && directionsLoading)}
+                            className={`px-2.5 py-1 text-[10px] font-bold border transition-all ${
+                              activeCategory === cat.id
+                                ? 'bg-[#4676ac] text-white border-[#4676ac]'
+                                : 'bg-white dark:bg-[#2a2a2a] text-[#202020] dark:text-[#e5e5e5] border-[#b5bcc4] dark:border-[#616161] hover:border-[#4676ac] hover:text-[#4676ac]'
+                            } ${routeSearchLoading || (routeMode !== 'straight' && directionsLoading) ? 'opacity-50 cursor-wait' : ''}`}
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                        {filteredCategories.length === 0 && categoryFilter && (
+                          <p className="text-xs text-[#616161] dark:text-[#b5bcc4] py-2">No categories match &ldquo;{categoryFilter}&rdquo;</p>
+                        )}
+                        {allCategories.length === 0 && (
+                          <p className="text-xs text-[#616161] dark:text-[#b5bcc4] py-2 flex items-center gap-1.5">
+                            <Loader2 size={12} className="animate-spin" />
+                            Loading categories...
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Results area */}
+                      {(routeSearchLoading || routeSearchResults.length > 0 || activeCategory) && (
+                        <div className="border-t border-[#b5bcc4] dark:border-[#616161] pt-3">
+                          <div className="text-xs font-bold dark:text-[#e5e5e5] mb-2">
+                            {routeSearchLoading ? (
+                              <span className="flex items-center gap-1.5">
+                                <Loader2 size={12} className="animate-spin text-[#4676ac]" />
+                                Searching...
+                              </span>
+                            ) : routeSearchResults.length > 0 ? (
+                              `${routeSearchResults.length} result${routeSearchResults.length !== 1 ? 's' : ''}${allRouteResultsRef.current.length > routeSearchResults.length ? ` of ${allRouteResultsRef.current.length}` : ''}`
+                            ) : activeCategory ? (
+                              'No results found along this route'
+                            ) : null}
+                          </div>
+
+                          <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+                            {routeSearchResults.map(poi => (
+                              <div
+                                key={poi.id}
+                                className="p-2.5 border border-[#b5bcc4] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a] hover:border-[#4676ac] transition-all cursor-pointer"
+                                onClick={() => map.current?.flyTo({ center: [poi.coordinates.lng, poi.coordinates.lat], zoom: 15 })}
+                              >
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="text-xs font-bold dark:text-[#e5e5e5] truncate">{poi.name}</div>
+                                    {poi.address && (
+                                      <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] truncate mt-0.5">{poi.address}</div>
+                                    )}
+                                    {poi.distanceFromRoute != null && (
+                                      <div className="text-[10px] text-[#4676ac] font-mono mt-0.5">
+                                        ~{poi.distanceFromRoute < 1000
+                                          ? `${Math.round(poi.distanceFromRoute)}m`
+                                          : `${(poi.distanceFromRoute / 1000).toFixed(1)}km`
+                                        } from route
+                                      </div>
+                                    )}
+                                  </div>
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleAddPOIAsWaypoint(poi); }}
+                                    className="flex-shrink-0 p-1.5 text-[#4676ac] hover:bg-[#4676ac] hover:text-white border border-[#4676ac] transition-all"
+                                    title={`Add ${poi.name} as waypoint`}
+                                  >
+                                    <Plus size={14} />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {waypoints.length === 0 ? (
                   <div className="p-6 text-center">

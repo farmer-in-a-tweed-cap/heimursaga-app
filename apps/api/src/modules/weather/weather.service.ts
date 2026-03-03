@@ -534,7 +534,8 @@ export class WeatherService {
     const cached = this.regionCache.get(cacheKey);
 
     if (cached) {
-      const weatherFresh = now - cached.weatherTimestamp < REGION_WEATHER_TTL_MS;
+      const weatherFresh =
+        now - cached.weatherTimestamp < REGION_WEATHER_TTL_MS;
       const geoFresh = now - cached.geoTimestamp < REGION_GEO_TTL_MS;
       if (weatherFresh && geoFresh) {
         return cached.data;
@@ -550,37 +551,44 @@ export class WeatherService {
     const coords = this.parseCoords(query);
 
     // Fetch all data in parallel
-    const [weatherData, elevationData, overpassData, climateData, nearbyExpeditions] =
-      await Promise.all([
-        this.fetchRegionWeather(apiKey, query).catch((err) => {
-          this.logger.error(`Region weather fetch failed: ${err.message}`);
-          return null;
-        }),
-        coords
-          ? this.fetchElevation(coords.lat, coords.lon).catch((err) => {
-              this.logger.error(`Elevation fetch failed: ${err.message}`);
-              return null;
-            })
-          : Promise.resolve(null),
-        coords
-          ? this.fetchOverpassData(coords.lat, coords.lon).catch((err) => {
-              this.logger.error(`Overpass fetch failed: ${err.message}`);
-              return null;
-            })
-          : Promise.resolve(null),
-        coords
-          ? this.fetchClimateZone(coords.lat, coords.lon).catch((err) => {
-              this.logger.error(`Climate zone fetch failed: ${err.message}`);
-              return null;
-            })
-          : Promise.resolve(null),
-        coords
-          ? this.fetchNearbyExpeditions(coords.lat, coords.lon).catch((err) => {
-              this.logger.error(`Nearby expeditions fetch failed: ${err.message}`);
-              return [];
-            })
-          : Promise.resolve([]),
-      ]);
+    const [
+      weatherData,
+      elevationData,
+      overpassData,
+      climateData,
+      nearbyExpeditions,
+    ] = await Promise.all([
+      this.fetchRegionWeather(apiKey, query).catch((err) => {
+        this.logger.error(`Region weather fetch failed: ${err.message}`);
+        return null;
+      }),
+      coords
+        ? this.fetchElevation(coords.lat, coords.lon).catch((err) => {
+            this.logger.error(`Elevation fetch failed: ${err.message}`);
+            return null;
+          })
+        : Promise.resolve(null),
+      coords
+        ? this.fetchOverpassData(coords.lat, coords.lon).catch((err) => {
+            this.logger.error(`Overpass fetch failed: ${err.message}`);
+            return null;
+          })
+        : Promise.resolve(null),
+      coords
+        ? this.fetchClimateZone(coords.lat, coords.lon).catch((err) => {
+            this.logger.error(`Climate zone fetch failed: ${err.message}`);
+            return null;
+          })
+        : Promise.resolve(null),
+      coords
+        ? this.fetchNearbyExpeditions(coords.lat, coords.lon).catch((err) => {
+            this.logger.error(
+              `Nearby expeditions fetch failed: ${err.message}`,
+            );
+            return [];
+          })
+        : Promise.resolve([]),
+    ]);
 
     if (!weatherData) {
       throw new Error('Failed to fetch weather data for region report');
@@ -651,9 +659,10 @@ export class WeatherService {
     this.regionCache.set(cacheKey, {
       data: result,
       weatherTimestamp: now,
-      geoTimestamp: cached?.geoTimestamp && (now - cached.geoTimestamp < REGION_GEO_TTL_MS)
-        ? cached.geoTimestamp
-        : now,
+      geoTimestamp:
+        cached?.geoTimestamp && now - cached.geoTimestamp < REGION_GEO_TTL_MS
+          ? cached.geoTimestamp
+          : now,
     });
 
     return result;
@@ -672,28 +681,73 @@ export class WeatherService {
     if (parts.length === 2) {
       const lat = parseFloat(parts[0]);
       const lon = parseFloat(parts[1]);
-      if (!isNaN(lat) && !isNaN(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180) {
+      if (
+        !isNaN(lat) &&
+        !isNaN(lon) &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lon >= -180 &&
+        lon <= 180
+      ) {
         return { lat, lon };
       }
     }
     return null;
   }
 
-  private async fetchRegionWeather(apiKey: string, query: string): Promise<{
-    location: { name: string; region: string; country: string; lat: number; lon: number; localtime: string; tz_id: string };
-    current: {
-      temp_c: number; temp_f: number; feelslike_c: number; feelslike_f: number;
-      condition: { text: string; icon: string };
-      wind_kph: number; wind_mph: number; wind_dir: string; gust_kph: number; gust_mph: number;
-      humidity: number; uv: number; vis_km: number; pressure_mb: number; precip_mm: number; cloud: number;
+  private async fetchRegionWeather(
+    apiKey: string,
+    query: string,
+  ): Promise<{
+    location: {
+      name: string;
+      region: string;
+      country: string;
+      lat: number;
+      lon: number;
+      localtime: string;
+      tz_id: string;
     };
-    astronomy: { sunrise: string; sunset: string; moonPhase: string; moonIllumination: number };
-    forecast: { maxTempC: number; maxTempF: number; minTempC: number; minTempF: number; chanceOfRain: number; chanceOfSnow: number; totalPrecipMm: number };
+    current: {
+      temp_c: number;
+      temp_f: number;
+      feelslike_c: number;
+      feelslike_f: number;
+      condition: { text: string; icon: string };
+      wind_kph: number;
+      wind_mph: number;
+      wind_dir: string;
+      gust_kph: number;
+      gust_mph: number;
+      humidity: number;
+      uv: number;
+      vis_km: number;
+      pressure_mb: number;
+      precip_mm: number;
+      cloud: number;
+    };
+    astronomy: {
+      sunrise: string;
+      sunset: string;
+      moonPhase: string;
+      moonIllumination: number;
+    };
+    forecast: {
+      maxTempC: number;
+      maxTempF: number;
+      minTempC: number;
+      minTempF: number;
+      chanceOfRain: number;
+      chanceOfSnow: number;
+      totalPrecipMm: number;
+    };
   } | null> {
     const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${encodeURIComponent(query)}&days=1&aqi=no`;
     const response = await fetch(url);
     if (!response.ok) {
-      this.logger.error(`WeatherAPI forecast error: ${response.status} ${response.statusText}`);
+      this.logger.error(
+        `WeatherAPI forecast error: ${response.status} ${response.statusText}`,
+      );
       return null;
     }
 
@@ -751,7 +805,10 @@ export class WeatherService {
     };
   }
 
-  private async fetchElevation(lat: number, lon: number): Promise<number | null> {
+  private async fetchElevation(
+    lat: number,
+    lon: number,
+  ): Promise<number | null> {
     const url = `https://api.open-meteo.com/v1/elevation?latitude=${lat}&longitude=${lon}`;
     const response = await fetch(url);
     if (!response.ok) return null;
@@ -788,7 +845,11 @@ export class WeatherService {
 
     const data = await response.json();
     const parks: Array<{ name: string; type: string; distanceKm: number }> = [];
-    const peaks: Array<{ name: string; elevationM: number; distanceKm: number }> = [];
+    const peaks: Array<{
+      name: string;
+      elevationM: number;
+      distanceKm: number;
+    }> = [];
 
     for (const el of data.elements || []) {
       const name = el.tags?.name;
@@ -800,13 +861,23 @@ export class WeatherService {
 
       const dist = haversineKm([lon, lat], [elLon, elLat]);
 
-      if (el.tags?.boundary === 'national_park' || el.tags?.leisure === 'nature_reserve') {
-        const type = el.tags?.boundary === 'national_park' ? 'National Park' : 'Nature Reserve';
+      if (
+        el.tags?.boundary === 'national_park' ||
+        el.tags?.leisure === 'nature_reserve'
+      ) {
+        const type =
+          el.tags?.boundary === 'national_park'
+            ? 'National Park'
+            : 'Nature Reserve';
         parks.push({ name, type, distanceKm: Math.round(dist * 10) / 10 });
       } else if (el.tags?.natural === 'peak' && el.tags?.ele) {
         const elevationM = parseFloat(el.tags.ele);
         if (!isNaN(elevationM)) {
-          peaks.push({ name, elevationM, distanceKm: Math.round(dist * 10) / 10 });
+          peaks.push({
+            name,
+            elevationM,
+            distanceKm: Math.round(dist * 10) / 10,
+          });
         }
       }
     }
@@ -842,7 +913,12 @@ export class WeatherService {
     lat: number,
     lon: number,
   ): Promise<
-    Array<{ id: string; title: string; explorerUsername: string; distanceKm: number }>
+    Array<{
+      id: string;
+      title: string;
+      explorerUsername: string;
+      distanceKm: number;
+    }>
   > {
     // Rough bounding box for 500km (~4.5 degrees)
     const degRange = 4.5;
@@ -873,7 +949,10 @@ export class WeatherService {
         id: e.current_location_id!,
       }));
 
-    const locationMap = await resolveExpeditionLocations(this.prisma, references);
+    const locationMap = await resolveExpeditionLocations(
+      this.prisma,
+      references,
+    );
 
     const results: Array<{
       id: string;

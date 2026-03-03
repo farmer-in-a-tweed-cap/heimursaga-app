@@ -254,6 +254,9 @@ importers:
       '@mapbox/mapbox-gl-geocoder':
         specifier: ^5.1.2
         version: 5.1.2
+      '@mapbox/polyline':
+        specifier: ^1.2.1
+        version: 1.2.1
       '@mui/icons-material':
         specifier: 7.3.5
         version: 7.3.5(@mui/material@7.3.5)(@types/react@18.2.61)(react@18.2.0)
@@ -11538,7 +11541,7 @@ packages:
       minimatch: 3.1.2
       node-abort-controller: 3.1.1
       schema-utils: 3.3.0
-      semver: 7.7.2
+      semver: 7.7.3
       tapable: 2.2.3
       typescript: 5.1.3
       webpack: 5.101.3(esbuild@0.25.9)

@@ -112,10 +112,9 @@ export class AuthService {
       let isStripeAccountConnected = false;
       if (verifiedPayoutMethod?.stripe_account_id) {
         try {
-          const stripeAccount =
-            await this.stripeService.accounts.retrieve(
-              verifiedPayoutMethod.stripe_account_id,
-            );
+          const stripeAccount = await this.stripeService.accounts.retrieve(
+            verifiedPayoutMethod.stripe_account_id,
+          );
           isStripeAccountConnected =
             stripeAccount.charges_enabled === true &&
             stripeAccount.payouts_enabled === true;

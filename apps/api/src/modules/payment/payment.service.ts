@@ -874,7 +874,10 @@ export class PaymentService {
           const stripeSub = await this.stripeService.subscriptions.retrieve(
             existingSub.stripe_subscription_id,
           );
-          if (stripeSub.status === 'active' || stripeSub.status === 'trialing') {
+          if (
+            stripeSub.status === 'active' ||
+            stripeSub.status === 'trialing'
+          ) {
             throw new ServiceBadRequestException(
               stripeSub.cancel_at_period_end
                 ? 'Your subscription is scheduled to cancel. Please reactivate it from billing settings instead of creating a new one.'
@@ -1025,10 +1028,12 @@ export class PaymentService {
       const idempotencyKey = `sub_upgrade_${userId}_${checkout.id}`;
       let stripeSubscription: Stripe.Subscription;
       try {
-        stripeSubscription =
-          await this.stripeService.subscriptions.create(subscriptionParams, {
+        stripeSubscription = await this.stripeService.subscriptions.create(
+          subscriptionParams,
+          {
             idempotencyKey,
-          });
+          },
+        );
       } catch (stripeError) {
         // Clean up the orphaned checkout if Stripe call fails
         await this.prisma.checkout.update({
@@ -1047,8 +1052,7 @@ export class PaymentService {
 
       // Update checkout with Stripe IDs and add metadata
       const metadata = {
-        [StripeMetadataKey.TRANSACTION]:
-          PaymentTransactionType.SUBSCRIPTION,
+        [StripeMetadataKey.TRANSACTION]: PaymentTransactionType.SUBSCRIPTION,
         [StripeMetadataKey.USER_ID]: user.id,
         [StripeMetadataKey.SUBSCRIPTION_PLAN_ID]: plan.id,
         [StripeMetadataKey.CHECKOUT_ID]: checkout.id,
@@ -1409,7 +1413,10 @@ export class PaymentService {
             const stripeSub = await this.stripeService.subscriptions.retrieve(
               orphanedSub.stripe_subscription_id,
             );
-            if (stripeSub.status === 'active' || stripeSub.status === 'trialing') {
+            if (
+              stripeSub.status === 'active' ||
+              stripeSub.status === 'trialing'
+            ) {
               return {
                 subscription: {
                   id: orphanedSub.public_id,
@@ -1548,9 +1555,7 @@ export class PaymentService {
     }
   }
 
-  async reactivateSubscription({
-    session,
-  }: ISessionQuery): Promise<void> {
+  async reactivateSubscription({ session }: ISessionQuery): Promise<void> {
     try {
       const { userId } = session;
       if (!userId) throw new ServiceForbiddenException();
@@ -1579,9 +1584,8 @@ export class PaymentService {
         );
       }
 
-      const stripeSub = await this.stripeService.subscriptions.retrieve(
-        stripeSubscriptionId,
-      );
+      const stripeSub =
+        await this.stripeService.subscriptions.retrieve(stripeSubscriptionId);
 
       if (!stripeSub.cancel_at_period_end) {
         throw new ServiceBadRequestException(
