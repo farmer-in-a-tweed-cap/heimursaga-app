@@ -14,9 +14,9 @@ export function AboutPage() {
           { word: 'Journal',    def: 'n. L. diurnalis — a record of days.',             justify: 'justify-center md:justify-end' },
         ].map((entry) => (
           <div key={entry.word} className={`flex ${entry.justify}`}>
-            <div className="flex flex-col items-center">
+            <div className="flex flex-col items-center text-center">
               <span className="font-mono italic text-sm tracking-[0.2em] text-[#ac6d46] mb-1">{entry.word}</span>
-              <span className="font-mono text-[11px] tracking-wide text-[#b5bcc4]">{entry.def}</span>
+              <span className="font-mono text-[11px] tracking-wide text-[#b5bcc4] text-center">{entry.def}</span>
             </div>
           </div>
         ))}
@@ -64,7 +64,8 @@ export function AboutPage() {
         </div>
 
         <div className="p-6">
-          <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6 font-mono">
+          {/* Desktop: nested tree view */}
+          <div className="hidden md:block bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6 font-mono">
             <div className="text-sm">
               <div className="flex items-center gap-2 mb-3">
                 <Layers className="w-5 h-5 text-[#4676ac]" />
@@ -123,6 +124,34 @@ export function AboutPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Mobile: stacked cards */}
+          <div className="md:hidden space-y-3 mb-6">
+            <div className="flex items-center gap-2 mb-1">
+              <Layers className="w-5 h-5 text-[#4676ac]" />
+              <span className="font-bold text-[#4676ac] font-mono text-sm">PRIMARY HIERARCHY</span>
+            </div>
+            {[
+              { name: 'EXPLORER', desc: 'User Account', depth: 0, details: null },
+              { name: 'JOURNAL', desc: '1:1 with Explorer', depth: 1, details: null },
+              { name: 'EXPEDITION', desc: 'Many per Journal', depth: 2, details: ['Status: DRAFT | PLANNED | ACTIVE | COMPLETE', 'Max 1 ACTIVE + 1 PLANNED simultaneously', 'Title, Description, Dates, Goals, Waypoints'] },
+              { name: 'JOURNAL ENTRY', desc: 'Many per Expedition', depth: 3, details: ['Geo-tagged with coordinates', 'Visibility: PUBLIC | OFF-GRID | PRIVATE', 'Up to 10 images per entry'] },
+              { name: 'EXPEDITION NOTE', desc: 'Daily updates, 280 char max', depth: 3, details: ['Sponsor-only access', 'Single-threaded replies', 'Available during PLANNING, ACTIVE, post-COMPLETE'] },
+            ].map((item) => (
+              <div key={item.name} className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#202020] dark:border-[#616161] p-3 font-mono text-xs" style={{ marginLeft: `${item.depth * 12}px` }}>
+                <div className="flex items-center gap-2">
+                  {item.depth > 0 && <span className="text-[#ac6d46]">└</span>}
+                  <span className="font-bold dark:text-[#e5e5e5]">{item.name}</span>
+                  <span className="text-[#616161] dark:text-[#b5bcc4]">({item.desc})</span>
+                </div>
+                {item.details && (
+                  <div className="mt-2 space-y-1 text-[#616161] dark:text-[#b5bcc4]">
+                    {item.details.map((d) => <div key={d}>• {d}</div>)}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -277,30 +306,22 @@ export function AboutPage() {
           <div className="border-2 border-[#4676ac] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
             <h4 className="font-bold mb-3 dark:text-[#e5e5e5]">SUBSCRIPTION BILLING LOGIC (DETAILED)</h4>
             <div className="space-y-3 text-xs font-mono">
-              <div className="grid grid-cols-[120px_1fr] gap-4 p-2 border-b border-[#616161]">
+              <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-1 sm:gap-4 p-2 border-b border-[#616161]">
                 <div className="text-[#616161] dark:text-[#b5bcc4]">STATUS CHANGE</div>
-                <div className="text-[#616161] dark:text-[#b5bcc4]">BILLING OUTCOME</div>
+                <div className="text-[#616161] dark:text-[#b5bcc4] hidden sm:block">BILLING OUTCOME</div>
               </div>
-              <div className="grid grid-cols-[120px_1fr] gap-4 p-2 bg-white dark:bg-[#202020]">
-                <div className="dark:text-[#e5e5e5]">RESTING → PLANNING</div>
-                <div className="dark:text-[#e5e5e5]">Resume billing on next cycle date (pro-rated if mid-month)</div>
-              </div>
-              <div className="grid grid-cols-[120px_1fr] gap-4 p-2">
-                <div className="dark:text-[#e5e5e5]">PLANNING → ACTIVE</div>
-                <div className="dark:text-[#e5e5e5]">Continue billing (no change)</div>
-              </div>
-              <div className="grid grid-cols-[120px_1fr] gap-4 p-2 bg-white dark:bg-[#202020]">
-                <div className="dark:text-[#e5e5e5]">ACTIVE → COMPLETE</div>
-                <div className="dark:text-[#e5e5e5]">If no new PLANNED expedition exists, pause on next cycle</div>
-              </div>
-              <div className="grid grid-cols-[120px_1fr] gap-4 p-2">
-                <div className="dark:text-[#e5e5e5]">EXPLORING → RESTING</div>
-                <div className="dark:text-[#e5e5e5]">Pause immediately. No charge for full rest months.</div>
-              </div>
-              <div className="grid grid-cols-[120px_1fr] gap-4 p-2 bg-white dark:bg-[#202020]">
-                <div className="dark:text-[#e5e5e5]">90 Days RESTING</div>
-                <div className="dark:text-[#e5e5e5]">Auto-cancel subscription, send notification to sponsor</div>
-              </div>
+              {[
+                { status: 'RESTING → PLANNING', outcome: 'Resume billing on next cycle date (pro-rated if mid-month)', alt: true },
+                { status: 'PLANNING → ACTIVE', outcome: 'Continue billing (no change)', alt: false },
+                { status: 'ACTIVE → COMPLETE', outcome: 'If no new PLANNED expedition exists, pause on next cycle', alt: true },
+                { status: 'EXPLORING → RESTING', outcome: 'Pause immediately. No charge for full rest months.', alt: false },
+                { status: '90 Days RESTING', outcome: 'Auto-cancel subscription, send notification to sponsor', alt: true },
+              ].map((row) => (
+                <div key={row.status} className={`grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-1 sm:gap-4 p-2 ${row.alt ? 'bg-white dark:bg-[#202020]' : ''}`}>
+                  <div className="dark:text-[#e5e5e5] font-bold sm:font-normal">{row.status}</div>
+                  <div className="dark:text-[#e5e5e5] text-[#616161] sm:text-inherit">{row.outcome}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -312,8 +333,9 @@ export function AboutPage() {
           <h2 className="text-xl font-bold">ACCOUNT TYPES: FEATURE MATRIX</h2>
         </div>
 
-        <div className="p-6 overflow-x-auto">
-          <table className="w-full text-sm border-2 border-[#202020] dark:border-[#616161]">
+        <div className="p-6">
+          {/* Desktop: table view */}
+          <table className="hidden md:table w-full text-sm border-2 border-[#202020] dark:border-[#616161]">
             <thead>
               <tr className="bg-[#b5bcc4] dark:bg-[#3a3a3a]">
                 <th className="text-left p-3 border border-[#202020] dark:border-[#616161] font-bold">FEATURE</th>
@@ -322,97 +344,90 @@ export function AboutPage() {
               </tr>
             </thead>
             <tbody className="font-mono text-xs">
-              <tr>
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Create & publish journal entries</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#f5f5f5] dark:bg-[#2a2a2a]">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Geo-tagged waypoints on map</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr>
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Follow other explorers</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#f5f5f5] dark:bg-[#2a2a2a]">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Sponsor other explorers (send money)</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr>
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Bookmark & leave notes on entries</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#f5f5f5] dark:bg-[#2a2a2a]">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Access sponsor-only content from explorers you sponsor</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr>
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Reply to Expedition Notes (if monthly sponsor)</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#f5f5f5] dark:bg-[#2a2a2a]">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Private messaging (DMs)</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><XCircle className="w-4 h-4 text-red-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#ac6d46]/10 border-t-2 border-[#ac6d46]">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] font-bold dark:text-[#e5e5e5]">RECEIVE sponsorships (one-time + monthly)</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><XCircle className="w-4 h-4 text-red-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#ac6d46]/10">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Create expeditions (DRAFT/PLANNED/ACTIVE/COMPLETE)</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><XCircle className="w-4 h-4 text-red-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#ac6d46]/10">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Post sponsor-only journal entries</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><XCircle className="w-4 h-4 text-red-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#ac6d46]/10">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Create Expedition Notes (280 char daily updates)</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><XCircle className="w-4 h-4 text-red-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#ac6d46]/10">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Set custom monthly subscription tiers</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><XCircle className="w-4 h-4 text-red-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#ac6d46]/10">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">View entry analytics (views, bookmarks, notes)</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><XCircle className="w-4 h-4 text-red-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#ac6d46]/10">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Sponsorship admin dashboard (refunds, tracking)</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><XCircle className="w-4 h-4 text-red-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
-              <tr className="bg-[#ac6d46]/10">
-                <td className="p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5]">Stripe payout integration</td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><XCircle className="w-4 h-4 text-red-500 mx-auto" /></td>
-                <td className="text-center p-3 border border-[#202020] dark:border-[#616161]"><CheckCircle className="w-4 h-4 text-green-500 mx-auto" /></td>
-              </tr>
+              {[
+                { feature: 'Create & publish journal entries', free: true, pro: true },
+                { feature: 'Geo-tagged waypoints on map', free: true, pro: true, alt: true },
+                { feature: 'Follow other explorers', free: true, pro: true },
+                { feature: 'Sponsor other explorers (send money)', free: true, pro: true, alt: true },
+                { feature: 'Bookmark & leave notes on entries', free: true, pro: true },
+                { feature: 'Access sponsor-only content from explorers you sponsor', free: true, pro: true, alt: true },
+                { feature: 'Reply to Expedition Notes (if monthly sponsor)', free: true, pro: true },
+                { feature: 'Private messaging (DMs)', free: false, pro: true, alt: true },
+                { feature: 'RECEIVE sponsorships (one-time + monthly)', free: false, pro: true, proOnly: true, bold: true },
+                { feature: 'Create expeditions (DRAFT/PLANNED/ACTIVE/COMPLETE)', free: false, pro: true, proOnly: true },
+                { feature: 'Post sponsor-only journal entries', free: false, pro: true, proOnly: true },
+                { feature: 'Create Expedition Notes (280 char daily updates)', free: false, pro: true, proOnly: true },
+                { feature: 'Set custom monthly subscription tiers', free: false, pro: true, proOnly: true },
+                { feature: 'View entry analytics (views, bookmarks, notes)', free: false, pro: true, proOnly: true },
+                { feature: 'Sponsorship admin dashboard (refunds, tracking)', free: false, pro: true, proOnly: true },
+                { feature: 'Stripe payout integration', free: false, pro: true, proOnly: true },
+              ].map((row, i) => (
+                <tr key={i} className={row.proOnly ? 'bg-[#ac6d46]/10' : row.alt ? 'bg-[#f5f5f5] dark:bg-[#2a2a2a]' : ''}>
+                  <td className={`p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] ${row.bold ? 'font-bold' : ''}`}>{row.feature}</td>
+                  <td className="text-center p-3 border border-[#202020] dark:border-[#616161]">{row.free ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" /> : <XCircle className="w-4 h-4 text-red-500 mx-auto" />}</td>
+                  <td className="text-center p-3 border border-[#202020] dark:border-[#616161]">{row.pro ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" /> : <XCircle className="w-4 h-4 text-red-500 mx-auto" />}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
 
-          <div className="mt-4 flex items-center justify-between p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
+          {/* Mobile: two grouped lists */}
+          <div className="md:hidden space-y-6">
+            <div>
+              <div className="bg-[#b5bcc4] dark:bg-[#3a3a3a] p-3 border-2 border-[#202020] dark:border-[#616161] border-b-0">
+                <h4 className="font-bold text-sm">EXPLORER (FREE)</h4>
+              </div>
+              <div className="border-2 border-[#202020] dark:border-[#616161] divide-y divide-[#202020] dark:divide-[#616161]">
+                {[
+                  'Create & publish journal entries',
+                  'Geo-tagged waypoints on map',
+                  'Follow other explorers',
+                  'Sponsor other explorers',
+                  'Bookmark & leave notes on entries',
+                  'Access sponsor-only content',
+                  'Reply to Expedition Notes',
+                ].map((f) => (
+                  <div key={f} className="flex items-center gap-2 p-3 text-xs font-mono">
+                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                    <span className="dark:text-[#e5e5e5]">{f}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div className="bg-[#ac6d46] text-white p-3 border-2 border-[#202020] dark:border-[#616161] border-b-0">
+                <h4 className="font-bold text-sm">EXPLORER PRO ($7/mo)</h4>
+                <p className="text-xs opacity-80 mt-0.5">Everything in Free, plus:</p>
+              </div>
+              <div className="border-2 border-[#202020] dark:border-[#616161] divide-y divide-[#202020] dark:divide-[#616161]">
+                {[
+                  'Private messaging (DMs)',
+                  'Receive sponsorships (one-time + monthly)',
+                  'Create expeditions',
+                  'Post sponsor-only journal entries',
+                  'Create Expedition Notes (280 char)',
+                  'Set custom subscription tiers',
+                  'View entry analytics',
+                  'Sponsorship admin dashboard',
+                  'Stripe payout integration',
+                ].map((f) => (
+                  <div key={f} className="flex items-center gap-2 p-3 text-xs font-mono bg-[#ac6d46]/5">
+                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                    <span className="dark:text-[#e5e5e5]">{f}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
             <div>
               <div className="font-bold mb-1 dark:text-[#e5e5e5]">PRICING TRANSPARENCY</div>
               <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Explorer Pro: $7/month · Stripe processing: 2.9% + $0.30 per transaction · Platform fee: 5% of sponsorships · No hidden charges</div>
             </div>
             <Link
               href="/settings/billing"
-              className="px-6 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm"
+              className="px-6 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm text-center shrink-0"
             >
               UPGRADE TO PRO
             </Link>
