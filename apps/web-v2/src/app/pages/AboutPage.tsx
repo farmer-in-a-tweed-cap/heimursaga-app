@@ -6,6 +6,22 @@ import Link from 'next/link';
 export function AboutPage() {
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-12">
+      {/* Lexicon */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {[
+          { word: 'Explorer',   def: 'n. L. explorare — to call out into the unknown.', justify: 'justify-center md:justify-start' },
+          { word: 'Expedition', def: 'n. L. expedire — to free the feet.',              justify: 'justify-center' },
+          { word: 'Journal',    def: 'n. L. diurnalis — a record of days.',             justify: 'justify-center md:justify-end' },
+        ].map((entry) => (
+          <div key={entry.word} className={`flex ${entry.justify}`}>
+            <div className="flex flex-col items-center">
+              <span className="font-mono italic text-sm tracking-[0.2em] text-[#ac6d46] mb-1">{entry.word}</span>
+              <span className="font-mono text-[11px] tracking-wide text-[#b5bcc4]">{entry.def}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* System Header */}
       <div className="bg-[#202020] text-white border-2 border-[#616161] mb-6">
         <div className="bg-[#ac6d46] p-6 border-b-2 border-[#616161]">
