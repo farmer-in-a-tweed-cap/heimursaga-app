@@ -633,7 +633,7 @@ export function RegionReport() {
         )}
 
         {/* No-location prompt below pulse when no location */}
-        {hasLocation === false && currentPage === 0 && (
+        {hasLocation === false && currentPage === 0 && isAuthenticated && (
           <LocationPrompt />
         )}
       </div>

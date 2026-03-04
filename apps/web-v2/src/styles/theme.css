@@ -53,6 +53,7 @@
   --chart-3: #3a5a7a;
   --chart-4: #e8c040;
   --chart-5: #e0a030;
+  --topo-pattern: url("/patterns/topo-light.svg");
   --radius: 0.625rem;
   --sidebar: #fafafa;
   --sidebar-foreground: #202020;
@@ -111,6 +112,7 @@
   --chart-2: #4676ac;
   --chart-3: #b5bcc4;
   --chart-4: #8f5a3a;
+  --topo-pattern: url("/patterns/topo-dark.svg");
   --chart-5: #365a87;
   --sidebar: #202020;
   --sidebar-foreground: #e5e5e5;
@@ -221,6 +223,13 @@
     font-size: var(--text-base);
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
+  }
+
+  /* Topographic contour background pattern */
+  .topo-bg {
+    background-image: var(--topo-pattern);
+    background-repeat: repeat;
+    background-size: 800px 800px;
   }
 
   /* Tagline spread effect - centered with expanded letter spacing */

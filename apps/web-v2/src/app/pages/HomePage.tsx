@@ -347,7 +347,7 @@ export function HomePage() {
   return (
     <>
       {/* Heimursaga Tagline - Full Width Spread */}
-      <div className="bg-[#404040] dark:bg-[#2a2a2a]">
+      <div>
         <div className="max-w-[1600px] mx-auto px-6 pt-12 pb-0">
           <div className="tagline-spread text-[#e5e5e5] dark:text-[#e5e5e5] font-bold text-sm sm:text-base md:text-lg">
             EXPLORE · DISCOVER · SHARE · SPONSOR · INSPIRE
