@@ -415,7 +415,7 @@ export function ExpeditionDetailPage() {
             backgroundColor: '#8a5738', border: '3px solid white',
             boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
             fontSize: '12px', color: 'white', textAlign: 'center', lineHeight: '24px',
-            fontWeight: 'bold', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+            fontWeight: 'bold', fontFamily: 'Jost, system-ui, sans-serif',
           });
           wrapper.textContent = String(entryIds.length);
         } else if (entryIds.length === 1) {
@@ -426,7 +426,7 @@ export function ExpeditionDetailPage() {
             boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '11px', color: 'white', fontWeight: 'bold',
-            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+            fontFamily: 'Jost, system-ui, sans-serif',
           });
           wrapper.textContent = String(idx + 1);
         } else {
@@ -695,7 +695,7 @@ export function ExpeditionDetailPage() {
             backgroundColor: '#8a5738', border: '3px solid white',
             boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
             fontSize: '12px', color: 'white', textAlign: 'center', lineHeight: '24px',
-            fontWeight: 'bold', fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+            fontWeight: 'bold', fontFamily: 'Jost, system-ui, sans-serif',
             cursor: 'pointer',
           });
           wrapper.textContent = String(entryIds.length);
@@ -727,7 +727,7 @@ export function ExpeditionDetailPage() {
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '11px', color: 'white', fontWeight: 'bold',
-            fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
+            fontFamily: 'Jost, system-ui, sans-serif',
           });
           wrapper.textContent = String(idx + 1);
 

@@ -126,6 +126,7 @@
 
 @theme inline {
   --font-sans: var(--font-jost), system-ui, sans-serif;
+  --font-serif: var(--font-eczar), Georgia, serif;
   --font-heading: var(--font-eczar), Georgia, serif;
   --font-mono: var(--font-jost), system-ui, sans-serif;
   --color-background: var(--background);

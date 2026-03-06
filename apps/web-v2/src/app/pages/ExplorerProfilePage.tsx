@@ -497,8 +497,10 @@ export function ExplorerProfilePage() {
             <CoverPhotoFallback className="h-full w-full" />
           )}
           
-          {/* Dark gradient overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90" />
+          {/* Dark gradient overlay for text readability (only over cover images) */}
+          {explorer.coverImageUrl && (
+            <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90" />
+          )}
           
           {/* Explorer Status Banner - Top Border */}
           {(() => {

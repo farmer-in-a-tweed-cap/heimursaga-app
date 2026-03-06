@@ -720,33 +720,31 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
                   </button>
                 </>
               )}
+              <button
+                onClick={() => {
+                  setClickedExplorer(null);
+                  markersRef.current.forEach(m => {
+                    const el = m.getElement();
+                    if (el && (el as any).removeHighlight) {
+                      (el as any).removeHighlight();
+                    }
+                  });
+                }}
+                className="ml-auto p-0.5 hover:bg-white/20 rounded transition-all active:scale-[0.95]"
+              >
+                <X className="w-3.5 h-3.5 text-white" />
+              </button>
             </div>
 
             <div className="p-3 text-xs font-mono">
-              <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">
-                <div className="flex items-center gap-2">
-                  <div className={`w-8 h-8 border-2 ${clickedExplorer.creator ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden flex-shrink-0`}>
-                    <ExplorerAvatar username={clickedExplorer.username} src={clickedExplorer.picture} size={32} className="w-full h-full" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-sm dark:text-[#e5e5e5]">{clickedExplorer.username}</div>
-                    <div className="text-[#616161] dark:text-[#b5bcc4]">{clickedExplorer.name}</div>
-                  </div>
+              <div className="flex items-center gap-2 border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">
+                <div className={`w-8 h-8 border-2 ${clickedExplorer.creator ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden flex-shrink-0`}>
+                  <ExplorerAvatar username={clickedExplorer.username} src={clickedExplorer.picture} size={32} className="w-full h-full" />
                 </div>
-                <button
-                  onClick={() => {
-                    setClickedExplorer(null);
-                    markersRef.current.forEach(m => {
-                      const el = m.getElement();
-                      if (el && (el as any).removeHighlight) {
-                        (el as any).removeHighlight();
-                      }
-                    });
-                  }}
-                  className="p-1 hover:bg-[#202020] hover:bg-opacity-10 dark:hover:bg-white dark:hover:bg-opacity-10 rounded transition-all active:scale-[0.95] focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-[#616161]"
-                >
-                  <X className="w-4 h-4 text-[#202020] dark:text-[#e5e5e5]" />
-                </button>
+                <div>
+                  <div className="font-bold text-sm dark:text-[#e5e5e5]">{clickedExplorer.username}</div>
+                  <div className="text-[#616161] dark:text-[#b5bcc4]">{clickedExplorer.name}</div>
+                </div>
               </div>
               <div className="space-y-2 text-[#202020] dark:text-[#e5e5e5]">
                 {clickedExplorer.activeExpeditionLocation ? (
@@ -838,7 +836,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
               )}
               <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">
                 <div className="flex-1">
-                  <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">{clickedEntry.title}</div>
+                  <div className="font-serif font-bold text-base mb-1 dark:text-[#e5e5e5]">{clickedEntry.title}</div>
                   <div className="text-[#616161] dark:text-[#b5bcc4] text-xs">
                     <button
                       onClick={() => window.open(`/journal/${clickedEntry.explorerUsername}`, '_blank')}

@@ -1189,11 +1189,11 @@ export function ExpeditionBuilderPage() {
         if (entryCount > 1) {
           // Multi-entry cluster badge
           el.style.cssText += ` width: 30px; height: 30px; border-radius: 50%; background: #8a5738; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;`;
-          el.innerHTML = `<span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${entryCount}</span>`;
+          el.innerHTML = `<span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${entryCount}</span>`;
         } else {
           // Single-entry circle
           el.style.cssText += ` width: 26px; height: 26px; border-radius: 50%; background: #ac6d46; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;`;
-          el.innerHTML = `<span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${positionNumber}</span>`;
+          el.innerHTML = `<span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${positionNumber}</span>`;
         }
       } else if (isStartEnd) {
         // Start/End markers — larger diamond with letter label
@@ -1203,7 +1203,7 @@ export function ExpeditionBuilderPage() {
         el.style.cssText += ` width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;`;
         el.innerHTML = `
           <div style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); background: ${fillColor}; border: ${borderStyle}; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-            <span style="transform: rotate(-45deg); color: white; font-size: 14px; font-weight: bold; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${label}</span>
+            <span style="transform: rotate(-45deg); color: white; font-size: 14px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${label}</span>
           </div>
         `;
       } else {
@@ -1211,7 +1211,7 @@ export function ExpeditionBuilderPage() {
         el.style.cssText += ` width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;`;
         el.innerHTML = `
           <div style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); background: #616161; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2);">
-            <span style="transform: rotate(-45deg); color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">${positionNumber}</span>
+            <span style="transform: rotate(-45deg); color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${positionNumber}</span>
           </div>
         `;
       }
