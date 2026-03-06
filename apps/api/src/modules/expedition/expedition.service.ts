@@ -663,8 +663,11 @@ export class ExpeditionService {
                 },
                 media: {
                   select: {
+                    caption: true,
                     upload: {
                       select: {
+                        public_id: true,
+                        thumbnail: true,
                         original: true,
                       },
                     },
@@ -969,6 +972,14 @@ export class ExpeditionService {
                 lat: entry.lat,
                 lon: entry.lon,
                 mediaCount: entry.media?.length || 0,
+                media: entry.media
+                  ? entry.media.map((m) => ({
+                      id: m.upload?.public_id,
+                      thumbnail: getStaticMediaUrl(m.upload?.thumbnail),
+                      original: getStaticMediaUrl(m.upload?.original),
+                      caption: m.caption,
+                    }))
+                  : [],
                 author: entry.author
                   ? {
                       username: entry.author.username,

@@ -198,6 +198,8 @@ export async function app() {
       // Login/signup establish sessions, password reset uses tokens.
       const authPaths = [
         '/v1/auth/login',
+        '/v1/auth/mobile/login',
+        '/v1/auth/mobile/refresh',
         '/v1/auth/signup',
         '/v1/auth/reset-password',
         '/v1/auth/change-password',

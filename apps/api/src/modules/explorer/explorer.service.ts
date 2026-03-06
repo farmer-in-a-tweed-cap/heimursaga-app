@@ -1407,6 +1407,23 @@ export class SessionExplorerService {
         created_at: true,
         likes_count: true,
         bookmarks_count: true,
+        cover_upload: {
+          select: {
+            original: true,
+            thumbnail: true,
+          },
+        },
+        media: {
+          select: {
+            upload: {
+              select: {
+                original: true,
+                thumbnail: true,
+              },
+            },
+          },
+          take: 1,
+        },
         likes: explorerId
           ? {
               where: { explorer_id: explorerId },
@@ -1493,6 +1510,8 @@ export class SessionExplorerService {
             author,
             waypoint,
             expedition: directExpedition,
+            cover_upload,
+            media,
             likes,
             likes_count,
             bookmarks,
@@ -1508,6 +1527,11 @@ export class SessionExplorerService {
             place,
             lat,
             lon,
+            coverImage: cover_upload?.original
+              ? getStaticMediaUrl(cover_upload.original)
+              : media?.[0]?.upload?.original
+                ? getStaticMediaUrl(media[0].upload.original)
+                : undefined,
             waypoint: waypoint
               ? {
                   id: waypoint.id,
@@ -2360,7 +2384,7 @@ export class SessionExplorerService {
             sponsors_count,
             author,
           }) => ({
-            publicId: public_id,
+            id: public_id,
             title,
             description,
             status,

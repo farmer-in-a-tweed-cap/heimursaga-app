@@ -222,6 +222,7 @@ export class AuthController {
       session: {
         sid: 'mobile-jwt-session',
         userId: tokenData.userId,
+        explorerId: tokenData.userId,
         userRole: tokenData.role,
       },
       query: {},
@@ -257,6 +258,7 @@ export class AuthController {
       session: {
         sid: 'mobile-jwt-session',
         userId: tokenData.userId,
+        explorerId: tokenData.userId,
         userRole: tokenData.role,
       },
       query: {},
@@ -289,6 +291,7 @@ export class AuthController {
       session: {
         sid: 'mobile-jwt-session',
         userId: tokenData.userId,
+        explorerId: tokenData.userId,
         userRole: tokenData.role,
       },
       query: {},
