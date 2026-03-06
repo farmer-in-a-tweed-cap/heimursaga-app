@@ -79,7 +79,7 @@ export function StripeProvider({ children }: StripeProviderProps) {
               colorBackground: isDark ? '#2a2a2a' : '#ffffff',
               colorText: isDark ? '#e5e5e5' : '#1f2937',
               colorDanger: '#994040',
-              fontFamily: 'Inter, system-ui, sans-serif',
+              fontFamily: 'Jost, system-ui, sans-serif',
               borderRadius: '0px',
             },
             rules: {

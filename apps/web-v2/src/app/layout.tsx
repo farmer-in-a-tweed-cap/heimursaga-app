@@ -1,8 +1,23 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { Eczar, Jost } from 'next/font/google';
 import { ClientProviders } from './client-providers';
 import '@/styles/index.css';
 import 'mapbox-gl/dist/mapbox-gl.css';
+
+const eczar = Eczar({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-eczar',
+  display: 'swap',
+});
+
+const jost = Jost({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
+  variable: '--font-jost',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -60,7 +75,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${eczar.variable} ${jost.variable}`}>
       <head>
         <link rel="preconnect" href="https://api.mapbox.com" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />

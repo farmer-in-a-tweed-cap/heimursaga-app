@@ -125,6 +125,9 @@
 }
 
 @theme inline {
+  --font-sans: var(--font-jost), system-ui, sans-serif;
+  --font-heading: var(--font-eczar), Georgia, serif;
+  --font-mono: var(--font-jost), system-ui, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -172,6 +175,7 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
   }
 
   /**
@@ -184,26 +188,34 @@
   }
 
   h1 {
+    font-family: var(--font-heading);
     font-size: var(--text-2xl);
     font-weight: var(--font-weight-medium);
+    letter-spacing: 0.02em;
     line-height: 1.5;
   }
 
   h2 {
+    font-family: var(--font-heading);
     font-size: var(--text-xl);
     font-weight: var(--font-weight-medium);
+    letter-spacing: 0.02em;
     line-height: 1.5;
   }
 
   h3 {
+    font-family: var(--font-heading);
     font-size: var(--text-lg);
     font-weight: var(--font-weight-medium);
+    letter-spacing: 0.02em;
     line-height: 1.5;
   }
 
   h4 {
+    font-family: var(--font-heading);
     font-size: var(--text-base);
     font-weight: var(--font-weight-medium);
+    letter-spacing: 0.02em;
     line-height: 1.5;
   }
 
