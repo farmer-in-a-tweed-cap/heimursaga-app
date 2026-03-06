@@ -294,6 +294,8 @@ export class PaymentService {
           );
         }
       });
+
+      return { id: paymentMethodId };
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;
