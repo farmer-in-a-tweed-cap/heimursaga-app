@@ -19,8 +19,6 @@ import {
   ChevronDown,
   Shield,
   Info,
-  MessageSquare,
-  Lock,
 } from 'lucide-react';
 import {
   sponsorshipApi,
@@ -1310,12 +1308,6 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       </thead>
                       <tbody>
                         {stripePayments.map((payment) => {
-                          const matchedSponsorship = receivedSponsorships.find(
-                            (s) =>
-                              (s.sponsor?.username || (s as any).user?.username) === payment.sponsorUsername &&
-                              Math.abs(s.amount - payment.amount) < 0.01
-                          );
-                          const isPrivateMessage = matchedSponsorship && matchedSponsorship.isMessagePublic === false;
                           return (
                           <React.Fragment key={payment.id}>
                           <tr className="border-t-2 border-[#b5bcc4] dark:border-[#616161]">
@@ -1369,17 +1361,9 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                           {payment.description && (
                             <tr className="bg-[#f5f5f5] dark:bg-[#1a1a1a]">
                               <td colSpan={6} className="px-4 py-2">
-                                <div className="flex items-start gap-2">
-                                  <MessageSquare className="w-3.5 h-3.5 mt-0.5 text-[#4676ac] flex-shrink-0" />
-                                  <span className="text-sm italic text-[#616161] dark:text-[#b5bcc4]">
-                                    "{payment.description}"
-                                  </span>
-                                  {isPrivateMessage && (
-                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs font-bold bg-[#616161] text-white flex-shrink-0">
-                                      <Lock className="w-3 h-3" /> PRIVATE
-                                    </span>
-                                  )}
-                                </div>
+                                <span className="text-sm italic text-[#616161] dark:text-[#b5bcc4]">
+                                  "{payment.description}"
+                                </span>
                               </td>
                             </tr>
                           )}
