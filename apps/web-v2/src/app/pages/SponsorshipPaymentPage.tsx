@@ -7,6 +7,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { CreditCard, RefreshCw, Lock, DollarSign, Loader2, AlertCircle, Shield } from 'lucide-react';
 import { formatDate } from '@/app/utils/dateFormat';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 import { explorerApi, expeditionApi, sponsorshipApi, paymentMethodApi, type SponsorshipTierFull, type PaymentMethodFull, type Expedition } from '@/app/services/api';
 import { useStripe, useElements, CardElement } from '@/app/context/StripeContext';
 import { useTheme } from '@/app/context/ThemeContext';
@@ -417,6 +418,27 @@ export function SponsorshipPaymentPage() {
             className="inline-block px-6 py-3 bg-[#4676ac] text-white hover:bg-[#365a87] transition-all"
           >
             BROWSE EXPEDITIONS
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Block self-sponsorship
+  if (isAuthenticated && user?.username && explorer?.username && user.username === explorer.username) {
+    return (
+      <div className="max-w-4xl mx-auto px-6 py-12 text-center">
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#994040] p-8">
+          <AlertCircle className="w-12 h-12 mx-auto text-[#994040] mb-4" />
+          <h1 className="text-2xl font-bold mb-4 dark:text-[#e5e5e5]">Cannot Sponsor Yourself</h1>
+          <p className="text-[#616161] dark:text-[#b5bcc4] mb-6">
+            You cannot sponsor your own expedition. Share your expedition link with others to receive sponsorships.
+          </p>
+          <Link
+            href={`/expedition/${expeditionId}`}
+            className="inline-block px-6 py-3 bg-[#4676ac] text-white hover:bg-[#365a87] transition-all"
+          >
+            VIEW EXPEDITION
           </Link>
         </div>
       </div>
@@ -947,7 +969,7 @@ export function SponsorshipPaymentPage() {
                   ) : (
                     <><RefreshCw className="w-5 h-5" /> START MONTHLY SPONSORSHIP</>
                   )}
-                  {' - '}${finalAmount.toFixed(2)}
+                  {' - '}${formatCurrency(finalAmount)}
                   {paymentType === 'recurring' && '/month'}
                 </>
               )}
@@ -972,7 +994,7 @@ export function SponsorshipPaymentPage() {
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Amount:</span>
                   <span className="font-bold text-lg dark:text-[#e5e5e5]">
-                    ${finalAmount.toFixed(2)}
+                    ${formatCurrency(finalAmount)}
                     {paymentType === 'recurring' && <span className="text-sm">/mo</span>}
                   </span>
                 </div>
@@ -982,22 +1004,22 @@ export function SponsorshipPaymentPage() {
 
                   <div className="flex justify-between">
                     <span className="text-[#616161] dark:text-[#b5bcc4]">Your contribution:</span>
-                    <span className="font-bold dark:text-[#e5e5e5]">${finalAmount.toFixed(2)}</span>
+                    <span className="font-bold dark:text-[#e5e5e5]">${formatCurrency(finalAmount)}</span>
                   </div>
 
                   <div className="flex justify-between">
                     <span className="text-[#616161] dark:text-[#b5bcc4]">Platform fee (10%):</span>
-                    <span className="text-[#ac6d46]">-${platformFee.toFixed(2)}</span>
+                    <span className="text-[#ac6d46]">-${formatCurrency(platformFee)}</span>
                   </div>
 
                   <div className="flex justify-between">
                     <span className="text-[#616161] dark:text-[#b5bcc4]">Stripe fee (2.9% + $0.30):</span>
-                    <span className="text-[#ac6d46]">-${stripeFee.toFixed(2)}</span>
+                    <span className="text-[#ac6d46]">-${formatCurrency(stripeFee)}</span>
                   </div>
 
                   <div className="pt-2 border-t border-[#b5bcc4] dark:border-[#616161] flex justify-between font-bold">
                     <span className="dark:text-[#e5e5e5]">Explorer receives:</span>
-                    <span className="text-[#ac6d46] text-base">${explorerReceives.toFixed(2)}</span>
+                    <span className="text-[#ac6d46] text-base">${formatCurrency(explorerReceives)}</span>
                   </div>
                 </div>
 

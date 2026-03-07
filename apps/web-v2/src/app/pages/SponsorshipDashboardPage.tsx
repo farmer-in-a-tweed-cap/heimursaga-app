@@ -7,6 +7,7 @@ import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { CreditCard, RefreshCw, DollarSign, TrendingUp, Users, Search, ChevronDown, ChevronUp, ExternalLink, Pause, Play, X, Loader2, EyeOff, Map } from 'lucide-react';
 import { sponsorshipApi, payoutApi, type SponsorshipFull, type PayoutBalance } from '@/app/services/api';
 import { toast } from 'sonner';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 
 type TabType = 'overview' | 'active' | 'history' | 'received';
 
@@ -210,7 +211,7 @@ export function SponsorshipDashboardPage() {
                 <DollarSign className="w-5 h-5" />
               </div>
               <div className="p-6">
-                <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">${totalSponsored.toFixed(2)}</div>
+                <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">${formatCurrency(totalSponsored)}</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">All-time contributions</div>
               </div>
             </div>
@@ -223,7 +224,7 @@ export function SponsorshipDashboardPage() {
               <div className="p-6">
                 <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">{activeSubscriptions.length}</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                  ${totalActiveSubscriptions.toFixed(2)}/month recurring
+                  ${formatCurrency(totalActiveSubscriptions)}/month recurring
                 </div>
               </div>
             </div>
@@ -296,7 +297,7 @@ export function SponsorshipDashboardPage() {
                         @{sub.sponsoredExplorer?.username}
                       </span>
                       <span className="text-xs font-bold text-[#ac6d46] ml-auto">
-                        ${sub.amount.toFixed(2)}/mo
+                        ${formatCurrency(sub.amount)}/mo
                       </span>
                     </div>
                     {sub.expedition ? (
@@ -385,7 +386,7 @@ export function SponsorshipDashboardPage() {
                     </div>
                     <div className="text-right">
                       <div className="text-4xl font-bold text-[#ac6d46] mb-1">
-                        ${(sub.amount).toFixed(2)}<span className="text-xl">/mo</span>
+                        ${formatCurrency(sub.amount)}<span className="text-xl">/mo</span>
                       </div>
                       <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">Monthly subscription</div>
                     </div>
@@ -574,7 +575,7 @@ export function SponsorshipDashboardPage() {
                             </div>
                           </td>
                           <td className="p-4 text-right font-bold text-lg dark:text-[#e5e5e5]">
-                            ${(payment.amount).toFixed(2)}
+                            ${formatCurrency(payment.amount)}
                           </td>
                           <td className="p-4 text-center">
                             <span
@@ -640,13 +641,13 @@ export function SponsorshipDashboardPage() {
                                     <div className="flex justify-between">
                                       <span className="text-[#616161] dark:text-[#b5bcc4]">Your payment:</span>
                                       <span className="font-bold dark:text-[#e5e5e5]">
-                                        ${(payment.amount).toFixed(2)}
+                                        ${formatCurrency(payment.amount)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
                                       <span className="text-[#616161] dark:text-[#b5bcc4]">Platform fee (10%):</span>
                                       <span className="text-[#ac6d46]">
-                                        -${((payment.amount) * 0.10).toFixed(2)}
+                                        -${formatCurrency((payment.amount) * 0.10)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between">
@@ -654,18 +655,18 @@ export function SponsorshipDashboardPage() {
                                         Stripe fee (~2.9% + $0.30):
                                       </span>
                                       <span className="text-[#ac6d46]">
-                                        -${((payment.amount) * 0.029 + 0.3).toFixed(2)}
+                                        -${formatCurrency((payment.amount) * 0.029 + 0.3)}
                                       </span>
                                     </div>
                                     <div className="flex justify-between pt-2 border-t border-[#b5bcc4] dark:border-[#616161]">
                                       <span className="font-bold dark:text-[#e5e5e5]">Explorer received:</span>
                                       <span className="font-bold text-[#ac6d46]">
                                         $
-                                        {(
+                                        {formatCurrency(
                                           payment.amount -
                                           (payment.amount) * 0.10 -
                                           ((payment.amount) * 0.029 + 0.3)
-                                        ).toFixed(2)}
+                                        )}
                                       </span>
                                     </div>
                                   </div>
@@ -717,7 +718,7 @@ export function SponsorshipDashboardPage() {
                 </div>
                 <div className="text-3xl font-bold text-[#ac6d46]">
                   {balance.available.symbol}
-                  {(balance.available.amount).toFixed(2)}
+                  {formatCurrency(balance.available.amount)}
                 </div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">Ready for payout</div>
               </div>
@@ -729,7 +730,7 @@ export function SponsorshipDashboardPage() {
                 </div>
                 <div className="text-3xl font-bold dark:text-[#e5e5e5]">
                   {balance.pending.symbol}
-                  {(balance.pending.amount).toFixed(2)}
+                  {formatCurrency(balance.pending.amount)}
                 </div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">Processing</div>
               </div>
@@ -792,7 +793,7 @@ export function SponsorshipDashboardPage() {
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-[#ac6d46]">
-                          ${(sponsor.amount).toFixed(2)}
+                          ${formatCurrency(sponsor.amount)}
                           {sponsor.type === 'SUBSCRIPTION' && <span className="text-sm">/mo</span>}
                         </div>
                         <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">

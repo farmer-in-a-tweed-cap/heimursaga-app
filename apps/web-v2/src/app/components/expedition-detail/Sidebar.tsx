@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import type { TransformedExpedition, WaypointType, FundingStats, SponsorWithTotal } from '@/app/components/expedition-detail/types';
 import type { ExpeditionCondition } from '@/app/services/api';
@@ -256,11 +257,11 @@ export function Sidebar({
             <div className="space-y-2">
               <div className="flex justify-between items-baseline">
                 <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">{fundingStats.activeSubscribers} active sponsor{fundingStats.activeSubscribers !== 1 ? 's' : ''}</span>
-                <span className="font-bold text-sm text-[#4676ac]">${fundingStats.monthlyRecurring.toFixed(2)}/mo</span>
+                <span className="font-bold text-sm text-[#4676ac]">${formatCurrency(fundingStats.monthlyRecurring)}/mo</span>
               </div>
               <div className="flex justify-between items-baseline">
                 <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">Committed to date:</span>
-                <span className="font-bold text-sm text-[#4676ac]">${fundingStats.totalRecurringToDate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span className="font-bold text-sm text-[#4676ac]">${formatCurrency(fundingStats.totalRecurringToDate)}</span>
               </div>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useEffect, useState } from 'react';
 import { expeditionApi, explorerApi, type Expedition, type ExplorerProfile } from '@/app/services/api';
 import { Loader2 } from 'lucide-react';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 
 export function PaymentSuccessPage() {
   const searchParams = useSearchParams();
@@ -98,7 +99,7 @@ export function PaymentSuccessPage() {
             <div className="bg-[#f0f4f8] dark:bg-[#2a2a2a] border-2 border-[#4676ac] p-6 mb-6">
               <div className="text-center mb-6">
                 <div className="text-5xl font-bold text-[#ac6d46] mb-2">
-                  ${amount.toFixed(2)}
+                  ${formatCurrency(amount)}
                   {paymentType === 'recurring' && <span className="text-2xl">/month</span>}
                 </div>
                 <div className="text-sm text-[#616161] dark:text-[#b5bcc4] font-mono">
@@ -155,19 +156,19 @@ export function PaymentSuccessPage() {
               <div className="space-y-2 text-sm font-mono">
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Your contribution:</span>
-                  <span className="font-bold dark:text-[#e5e5e5]">${amount.toFixed(2)}</span>
+                  <span className="font-bold dark:text-[#e5e5e5]">${formatCurrency(amount)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Platform fee (10%):</span>
-                  <span className="text-[#ac6d46]">-${platformFee.toFixed(2)}</span>
+                  <span className="text-[#ac6d46]">-${formatCurrency(platformFee)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Stripe processing fee:</span>
-                  <span className="text-[#ac6d46]">-${stripeFee.toFixed(2)}</span>
+                  <span className="text-[#ac6d46]">-${formatCurrency(stripeFee)}</span>
                 </div>
                 <div className="pt-2 mt-2 border-t-2 border-[#202020] dark:border-[#616161] flex justify-between font-bold text-base">
                   <span className="dark:text-[#e5e5e5]">Explorer receives:</span>
-                  <span className="text-[#ac6d46]">${explorerReceives.toFixed(2)}</span>
+                  <span className="text-[#ac6d46]">${formatCurrency(explorerReceives)}</span>
                 </div>
               </div>
               <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#616161] text-xs text-[#616161] dark:text-[#b5bcc4]">
@@ -202,7 +203,7 @@ export function PaymentSuccessPage() {
                   SUBSCRIPTION ACTIVE
                 </div>
                 <div className="text-sm space-y-2 dark:text-[#e5e5e5]">
-                  <p>Your monthly subscription has been activated. You will be charged <strong>${amount.toFixed(2)}</strong> on the same day each month.</p>
+                  <p>Your monthly subscription has been activated. You will be charged <strong>${formatCurrency(amount)}</strong> on the same day each month.</p>
                   <div className="pt-3 border-t border-[#ac6d46] space-y-1 text-xs font-mono">
                     <div className="flex justify-between">
                       <span className="text-[#616161] dark:text-[#b5bcc4]">First charge:</span>

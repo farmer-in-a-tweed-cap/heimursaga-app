@@ -102,7 +102,7 @@ export function ExpeditionCard({
   onBookmark,
   onViewExplorer,
 }: ExpeditionCardProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const { unit: distanceUnit, distanceLabel } = useDistanceUnit();
   const router = useRouter();
 
@@ -341,8 +341,8 @@ export function ExpeditionCard({
           >
             VIEW EXPEDITION
           </button>
-          {/* Sponsor button - Visible when sponsorships available and not completed */}
-          {showSponsorshipSection && status !== 'completed' && (
+          {/* Sponsor button - Visible when sponsorships available, not completed, and not own expedition */}
+          {showSponsorshipSection && status !== 'completed' && user?.username !== explorer && (
             <button
               onClick={() => {
                 if (!isAuthenticated) {

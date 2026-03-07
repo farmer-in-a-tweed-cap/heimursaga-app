@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 import { Users } from 'lucide-react';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
 import { WaypointCardLandscape } from '@/app/components/WaypointCardLandscape';
@@ -265,11 +266,11 @@ export function ContentTabs({
                       {/* Amount */}
                       <div className="w-24 text-right">
                         <div className="font-bold text-sm dark:text-[#e5e5e5]">
-                          ${(s.totalContribution || s.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          ${formatCurrency(s.totalContribution || s.amount || 0)}
                         </div>
                         {isRecurring && (
                           <div className="text-[10px] text-[#4676ac] font-mono">
-                            ${(s.amount || 0).toFixed(2)}/mo
+                            ${formatCurrency(s.amount || 0)}/mo
                           </div>
                         )}
                       </div>

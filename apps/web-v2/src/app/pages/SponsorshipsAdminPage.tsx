@@ -30,6 +30,7 @@ import {
   type Payout,
 } from '@/app/services/api';
 import { toast } from 'sonner';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 import {
   ONE_TIME_TIER_SLOTS,
   MONTHLY_TIER_SLOTS,
@@ -588,7 +589,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             </div>
             <div className="p-4">
               <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-4">
-                Are you sure you want to refund <strong className="text-[#ac6d46]">${refundTarget.amount.toFixed(2)}</strong>?
+                Are you sure you want to refund <strong className="text-[#ac6d46]">${formatCurrency(refundTarget.amount)}</strong>?
               </p>
               <div className="p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-red-500 text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
                 <strong className="dark:text-[#e5e5e5]">Warning:</strong> This action cannot be undone. The full amount will be returned to the sponsor.
@@ -792,7 +793,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             <DollarSign className="w-5 h-5 text-[#ac6d46]" />
             <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">TOTAL REVENUE</div>
           </div>
-          <div className="text-3xl font-bold text-[#ac6d46]">${totalRevenue.toFixed(2)}</div>
+          <div className="text-3xl font-bold text-[#ac6d46]">${formatCurrency(totalRevenue)}</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">All-time</div>
         </div>
 
@@ -801,7 +802,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             <TrendingUp className="w-5 h-5 text-[#616161]" />
             <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">MONTHLY RECURRING</div>
           </div>
-          <div className="text-3xl font-bold dark:text-[#e5e5e5]">${monthlyRecurring.toFixed(2)}</div>
+          <div className="text-3xl font-bold dark:text-[#e5e5e5]">${formatCurrency(monthlyRecurring)}</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">{activeSubscribers} subscribers</div>
         </div>
 
@@ -821,7 +822,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
           </div>
           <div className="text-2xl font-bold dark:text-[#e5e5e5]">
             {balance?.available.symbol}
-            {(balance?.available.amount || 0).toFixed(2)}
+            {formatCurrency(balance?.available.amount || 0)}
           </div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">Ready for payout</div>
         </div>
@@ -946,7 +947,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                           </div>
                           <div className="text-right">
                             <div className={`font-bold ${payment.refunded ? 'text-gray-500 line-through' : 'text-[#ac6d46]'}`}>
-                              ${payment.amount.toFixed(2)}
+                              ${formatCurrency(payment.amount)}
                             </div>
                             <div className="text-xs">
                               <span className={`px-2 py-0.5 text-xs font-bold ${
@@ -1332,7 +1333,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                                 {payment.sponsorshipType === 'subscription' ? 'RECURRING' : 'ONE-TIME'}
                               </span>
                             </td>
-                            <td className="px-4 py-3 font-bold text-[#ac6d46]">${payment.amount.toFixed(2)}</td>
+                            <td className="px-4 py-3 font-bold text-[#ac6d46]">${formatCurrency(payment.amount)}</td>
                             <td className="px-4 py-3 text-xs text-[#616161] dark:text-[#b5bcc4]">
                               {new Date(payment.created).toLocaleDateString()}
                             </td>
@@ -1388,7 +1389,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Available Balance</div>
                     <div className="text-3xl font-bold text-[#ac6d46]">
                       {balance.available.symbol}
-                      {balance.available.amount.toFixed(2)}
+                      {formatCurrency(balance.available.amount)}
                     </div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">Ready for payout</div>
                   </div>
@@ -1396,7 +1397,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Pending</div>
                     <div className="text-3xl font-bold dark:text-[#e5e5e5]">
                       {balance.pending.symbol}
-                      {balance.pending.amount.toFixed(2)}
+                      {formatCurrency(balance.pending.amount)}
                     </div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">Processing</div>
                   </div>
@@ -1421,7 +1422,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                           <div>
                             <div className="font-bold text-lg dark:text-[#e5e5e5]">
                               {payout.currency.symbol}
-                              {payout.amount.toFixed(2)}
+                              {formatCurrency(payout.amount)}
                             </div>
                             <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
                               {new Date(payout.created).toLocaleDateString()}

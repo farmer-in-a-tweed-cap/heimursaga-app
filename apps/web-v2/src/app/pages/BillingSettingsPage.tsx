@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 import { CreditCard, Check, AlertCircle, ArrowUpRight, Lock, DollarSign, Loader2, Trash2, Shield } from 'lucide-react';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
 import { useAuth } from '@/app/context/AuthContext';
@@ -529,13 +530,13 @@ export function BillingSettingsPage() {
                   <div className="border-2 border-[#b5bcc4] dark:border-[#616161] p-4 text-center">
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-2">Available Balance</div>
                     <div className="text-2xl font-bold text-[#ac6d46]">
-                      {balance.available.symbol}{balance.available.amount.toFixed(2)}
+                      {balance.available.symbol}{formatCurrency(balance.available.amount)}
                     </div>
                   </div>
                   <div className="border-2 border-[#b5bcc4] dark:border-[#616161] p-4 text-center">
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-2">Pending</div>
                     <div className="text-2xl font-bold dark:text-[#e5e5e5]">
-                      {balance.pending.symbol}{balance.pending.amount.toFixed(2)}
+                      {balance.pending.symbol}{formatCurrency(balance.pending.amount)}
                     </div>
                   </div>
                 </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import Link from 'next/link';
@@ -162,7 +163,7 @@ export function UpgradePage() {
                   </span>
                   <div className="text-xs mb-1">ANNUAL</div>
                   <div className="text-2xl">${annualPrice}</div>
-                  <div className="text-xs opacity-80">${(annualPrice / 12).toFixed(2)}/month</div>
+                  <div className="text-xs opacity-80">${formatCurrency(annualPrice / 12)}/month</div>
                 </button>
               </div>
             </div>

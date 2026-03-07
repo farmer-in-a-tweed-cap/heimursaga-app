@@ -23,6 +23,7 @@ import {
 import { sponsorshipApi, type SponsorshipFull } from '@/app/services/api';
 import { toast } from 'sonner';
 import { SponsorshipsAdminPage } from './SponsorshipsAdminPage';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 
 type MainTab = 'incoming' | 'outgoing';
 type OutgoingSubTab = 'overview' | 'active' | 'history';
@@ -159,7 +160,7 @@ export function SponsorshipPage() {
               <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-4">
                 Are you sure you want to cancel this sponsorship? This action cannot be undone.
               </p>
-              <div className="p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
+              <div className="p-3 bg-[#fef2f2] dark:bg-[#2a2a2a] border-l-4 border-[#994040] text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
                 <strong className="dark:text-[#e5e5e5]">Note:</strong> Your subscription will remain
                 active until the end of the current billing period. No refunds for partial months.
               </div>
@@ -175,7 +176,7 @@ export function SponsorshipPage() {
                 </button>
                 <button
                   onClick={confirmCancelSponsorship}
-                  className="flex-1 py-3 bg-red-500 text-white font-bold text-sm hover:bg-red-600 transition-all"
+                  className="flex-1 py-3 bg-[#994040] text-white font-bold text-sm hover:bg-[#7a3333] transition-all"
                 >
                   CANCEL SPONSORSHIP
                 </button>
@@ -255,7 +256,7 @@ export function SponsorshipPage() {
                     </div>
                   </div>
                   <div className="text-3xl font-bold text-[#4676ac]">
-                    ${totalSponsored.toFixed(2)}
+                    ${formatCurrency(totalSponsored)}
                   </div>
                   <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
                     All-time contributions
@@ -270,7 +271,7 @@ export function SponsorshipPage() {
                     </div>
                   </div>
                   <div className="text-3xl font-bold dark:text-[#e5e5e5]">
-                    ${totalActiveSubscriptions.toFixed(2)}
+                    ${formatCurrency(totalActiveSubscriptions)}
                   </div>
                   <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
                     {activeSubscriptions.length} subscriptions/mo
@@ -409,7 +410,7 @@ export function SponsorshipPage() {
                                     </div>
                                     <div className="text-right">
                                       <div className="font-bold text-[#4676ac]">
-                                        ${sp.amount.toFixed(2)}
+                                        ${formatCurrency(sp.amount)}
                                         {sp.type?.toUpperCase() === 'SUBSCRIPTION' && (
                                           <span className="text-xs">/mo</span>
                                         )}
@@ -499,7 +500,7 @@ export function SponsorshipPage() {
                                   </div>
                                   <div className="text-right">
                                     <div className="text-2xl font-bold text-[#4676ac]">
-                                      ${sub.amount.toFixed(2)}
+                                      ${formatCurrency(sub.amount)}
                                       <span className="text-sm">/mo</span>
                                     </div>
                                   </div>
@@ -594,7 +595,7 @@ export function SponsorshipPage() {
                                   <button
                                     onClick={() => handleCancelSponsorship(sub.id)}
                                     disabled={cancelingId === sub.id}
-                                    className="px-4 py-2 border-2 border-red-500 text-red-500 text-xs font-bold hover:bg-red-500 hover:text-white transition-all flex items-center gap-2 disabled:opacity-50"
+                                    className="px-4 py-2 border-2 border-[#994040] text-[#994040] text-xs font-bold hover:bg-[#994040] hover:text-white transition-all flex items-center gap-2 disabled:opacity-50"
                                   >
                                     {cancelingId === sub.id ? (
                                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -696,7 +697,7 @@ export function SponsorshipPage() {
                                         </span>
                                       </td>
                                       <td className="px-4 py-3 font-bold text-[#4676ac]">
-                                        ${payment.amount.toFixed(2)}
+                                        ${formatCurrency(payment.amount)}
                                       </td>
                                       <td className="px-4 py-3">
                                         <span
@@ -788,7 +789,7 @@ export function SponsorshipPage() {
                                                     Your payment:
                                                   </span>
                                                   <span className="font-bold dark:text-[#e5e5e5]">
-                                                    ${payment.amount.toFixed(2)}
+                                                    ${formatCurrency(payment.amount)}
                                                   </span>
                                                 </div>
                                                 <div className="flex justify-between">
@@ -796,7 +797,7 @@ export function SponsorshipPage() {
                                                     Platform fee (10%):
                                                   </span>
                                                   <span className="text-[#ac6d46]">
-                                                    -${(payment.amount * 0.10).toFixed(2)}
+                                                    -${formatCurrency(payment.amount * 0.10)}
                                                   </span>
                                                 </div>
                                                 <div className="flex justify-between">
@@ -805,7 +806,7 @@ export function SponsorshipPage() {
                                                   </span>
                                                   <span className="text-[#ac6d46]">
                                                     -$
-                                                    {(payment.amount * 0.029 + 0.3).toFixed(2)}
+                                                    {formatCurrency(payment.amount * 0.029 + 0.3)}
                                                   </span>
                                                 </div>
                                                 <div className="flex justify-between pt-2 border-t border-[#b5bcc4] dark:border-[#616161]">
@@ -814,11 +815,11 @@ export function SponsorshipPage() {
                                                   </span>
                                                   <span className="font-bold text-[#4676ac]">
                                                     $
-                                                    {(
+                                                    {formatCurrency(
                                                       payment.amount -
                                                       payment.amount * 0.10 -
                                                       (payment.amount * 0.029 + 0.3)
-                                                    ).toFixed(2)}
+                                                    )}
                                                   </span>
                                                 </div>
                                               </div>

@@ -19,6 +19,7 @@ import {
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { useTheme } from '@/app/context/ThemeContext';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 
 // Stripe publishable key loaded from environment variable
 const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
@@ -420,7 +421,7 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
                   {promoApplied.coupon.percentOff
                     ? `${promoApplied.coupon.percentOff}% off`
                     : promoApplied.coupon.amountOff
-                      ? `$${(promoApplied.coupon.amountOff / 100).toFixed(2)} off`
+                      ? `$${formatCurrency(promoApplied.coupon.amountOff / 100)} off`
                       : 'Discount applied'}
                   {promoApplied.coupon.duration === 'repeating' && promoApplied.coupon.durationInMonths
                     ? ` for ${promoApplied.coupon.durationInMonths} month${promoApplied.coupon.durationInMonths > 1 ? 's' : ''}`
@@ -496,12 +497,12 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
           {promoApplied && (
             <div className="flex justify-between text-sm text-[#4676ac]">
               <span>Promo: {promoApplied.code.toUpperCase()}</span>
-              <span className="font-bold font-mono">-${(promoApplied.pricing.discountAmount / 100).toFixed(2)}</span>
+              <span className="font-bold font-mono">-${formatCurrency(promoApplied.pricing.discountAmount / 100)}</span>
             </div>
           )}
           <div className="border-t-2 border-[#b5bcc4] dark:border-[#616161] pt-3 flex justify-between items-center">
             <span className="font-bold dark:text-[#e5e5e5]">Total due today</span>
-            <span className="text-3xl font-bold text-[#ac6d46]">${price === 0 ? '0.00' : price.toFixed(2)}</span>
+            <span className="text-3xl font-bold text-[#ac6d46]">${formatCurrency(price)}</span>
           </div>
         </div>
       </div>
@@ -517,7 +518,7 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
         }`}
       >
         <Lock className="w-6 h-6" />
-        {isProcessing ? 'PROCESSING...' : price === 0 ? 'ACTIVATE FREE TRIAL' : `PAY $${price.toFixed(2)}`}
+        {isProcessing ? 'PROCESSING...' : price === 0 ? 'ACTIVATE FREE TRIAL' : `PAY $${formatCurrency(price)}`}
       </button>
 
       {/* Security notice */}
@@ -648,7 +649,7 @@ export function CheckoutPage() {
                 {promoApplied ? (
                   <>
                     <div className="text-4xl font-bold text-[#ac6d46]">
-                      ${effectivePrice === 0 ? '0' : effectivePrice.toFixed(2)}
+                      ${formatCurrency(effectivePrice)}
                     </div>
                     <div className="text-lg line-through text-[#b5bcc4]">${basePrice}</div>
                   </>
@@ -717,7 +718,7 @@ export function CheckoutPage() {
               <div className="flex justify-between">
                 <span>Due today:</span>
                 <span className="font-bold dark:text-[#e5e5e5]">
-                  ${effectivePrice === 0 ? '0.00' : effectivePrice.toFixed(2)}
+                  ${formatCurrency(effectivePrice)}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -729,7 +730,7 @@ export function CheckoutPage() {
               <div className="flex justify-between">
                 <span>Renewal price:</span>
                 <span className="font-bold dark:text-[#e5e5e5]">
-                  ${nextRenewalPrice === 0 ? '0.00' : nextRenewalPrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mo' : 'yr'}
+                  ${formatCurrency(nextRenewalPrice)}/{billingPeriod === 'monthly' ? 'mo' : 'yr'}
                 </span>
               </div>
               {promoApplied && promoApplied.coupon.duration === 'once' && (
@@ -739,7 +740,7 @@ export function CheckoutPage() {
               )}
               {fullPriceDate && (
                 <div className="text-xs text-[#ac6d46] pt-1">
-                  Promo rate for {promoApplied?.coupon.durationInMonths} month{(promoApplied?.coupon.durationInMonths || 0) > 1 ? 's' : ''}, then ${basePrice.toFixed(2)}/{billingPeriod === 'monthly' ? 'mo' : 'yr'} from {fullPriceDate}
+                  Promo rate for {promoApplied?.coupon.durationInMonths} month{(promoApplied?.coupon.durationInMonths || 0) > 1 ? 's' : ''}, then ${formatCurrency(basePrice)}/{billingPeriod === 'monthly' ? 'mo' : 'yr'} from {fullPriceDate}
                 </div>
               )}
               <div className="flex justify-between">

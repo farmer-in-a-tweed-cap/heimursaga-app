@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 import {
   Bell,
   Filter,
@@ -75,7 +76,7 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
         message: ''
       };
     case 'sponsorship':
-      const amount = apiNotif.sponsorshipAmount ? `$${(apiNotif.sponsorshipAmount / 100).toFixed(2)}` : '';
+      const amount = apiNotif.sponsorshipAmount ? `$${formatCurrency(apiNotif.sponsorshipAmount / 100)}` : '';
       return {
         title: amount ? `${actor} sponsored ${amount}` : `${actor} sponsored you`,
         message: apiNotif.body || ''

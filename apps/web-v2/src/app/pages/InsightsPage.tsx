@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 import {
   TrendingUp,
   BarChart3,
@@ -394,7 +395,7 @@ export function InsightsPage() {
   const formattedBalance = useMemo(() => {
     if (!data.balance?.available) return '$0.00';
     const { amount, symbol } = data.balance.available;
-    return `${symbol}${amount.toFixed(2)}`;
+    return `${symbol}${formatCurrency(amount)}`;
   }, [data.balance]);
 
   return (
@@ -671,7 +672,7 @@ export function InsightsPage() {
                         <div className="text-2xl font-bold text-[#ac6d46]">{formattedBalance}</div>
                         {data.balance?.pending && data.balance.pending.amount > 0 && (
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                            + {data.balance.pending.symbol}{data.balance.pending.amount.toFixed(2)} pending
+                            + {data.balance.pending.symbol}{formatCurrency(data.balance.pending.amount)} pending
                           </div>
                         )}
                       </div>
