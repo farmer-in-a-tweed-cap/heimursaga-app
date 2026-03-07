@@ -78,7 +78,7 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
       const amount = apiNotif.sponsorshipAmount ? `$${(apiNotif.sponsorshipAmount / 100).toFixed(2)}` : '';
       return {
         title: amount ? `${actor} sponsored ${amount}` : `${actor} sponsored you`,
-        message: ''
+        message: apiNotif.body || ''
       };
     case 'comment':
       return {

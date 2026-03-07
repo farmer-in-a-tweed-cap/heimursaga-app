@@ -271,7 +271,7 @@ export function UpgradePage() {
         </div>
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 text-center">
           <DollarSign className="w-10 h-10 text-[#ac6d46] mx-auto mb-3" />
-          <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">5%</div>
+          <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">10%</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
             Platform fee on sponsorships received
           </div>
@@ -332,7 +332,7 @@ export function UpgradePage() {
           <div>
             <div className="font-bold text-sm mb-2 dark:text-[#e5e5e5]">What fees do you take from sponsorships?</div>
             <div className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
-              Heimursaga takes a 5% platform fee from received sponsorships, plus standard
+              Heimursaga takes a 10% platform fee from received sponsorships, plus standard
               Stripe processing fees (2.9% + $0.30 per transaction). The rest goes directly to you.
             </div>
           </div>

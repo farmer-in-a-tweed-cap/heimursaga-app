@@ -72,7 +72,7 @@ export function SponsorshipPanel() {
         <div className="text-sm font-bold mb-2 dark:text-[#e5e5e5]">START YOUR OWN EXPEDITION</div>
         <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3 leading-relaxed">
           Launch a new expedition within your journal and enable sponsorships. 
-          Platform fee: 5% • Payment processing: 2.9% + $0.30 per transaction
+          Platform fee: 10% • Payment processing: 2.9% + $0.30 per transaction
         </p>
         <button className="w-full py-2 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]">
           CREATE EXPEDITION (REQUIRES LOGIN)

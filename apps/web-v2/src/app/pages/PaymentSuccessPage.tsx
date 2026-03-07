@@ -61,7 +61,7 @@ export function PaymentSuccessPage() {
   // Calculate fees
   const stripeFeePercent = 0.029;
   const stripeFeeFixed = 0.30;
-  const platformFee = amount * 0.05;
+  const platformFee = amount * 0.10;
   const stripeFee = (amount * stripeFeePercent) + stripeFeeFixed;
   const explorerReceives = amount - platformFee - stripeFee;
 
@@ -158,7 +158,7 @@ export function PaymentSuccessPage() {
                   <span className="font-bold dark:text-[#e5e5e5]">${amount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#616161] dark:text-[#b5bcc4]">Platform fee (5%):</span>
+                  <span className="text-[#616161] dark:text-[#b5bcc4]">Platform fee (10%):</span>
                   <span className="text-[#ac6d46]">-${platformFee.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">

@@ -87,8 +87,7 @@ export function AboutPage() {
                               <div className="flex-1">
                                 <span className="font-bold">EXPEDITION</span> <span className="text-[#616161]">(Many per Journal)</span>
                                 <div className="ml-4 mt-1 space-y-1 text-[#616161]">
-                                  <div>• Status: DRAFT | PLANNED | ACTIVE | COMPLETE</div>
-                                  <div>• Constraints: Max 1 ACTIVE + 1 PLANNED simultaneously</div>
+                                  <div>• Status: DRAFT | PLANNED | ACTIVE | COMPLETED | CANCELLED</div>
                                   <div>• Contains: Title, Description, Start/End Dates, Goals, Waypoints</div>
                                   <div className="flex items-start gap-2 mt-2">
                                     <span className="text-[#ac6d46]">└──</span>
@@ -97,7 +96,7 @@ export function AboutPage() {
                                       <div className="ml-4 mt-1 space-y-1">
                                         <div>• Geo-tagged with coordinates</div>
                                         <div>• Visibility: PUBLIC | OFF-GRID | PRIVATE</div>
-                                        <div>• Media: Up to 10 images per entry</div>
+                                        <div>• Media: Up to 2 images (Free) or 10 images (Pro) per entry</div>
                                         <div>• Timestamps: Created, Published, Modified (all tracked)</div>
                                       </div>
                                     </div>
@@ -135,8 +134,8 @@ export function AboutPage() {
             {[
               { name: 'EXPLORER', desc: 'User Account', depth: 0, details: null },
               { name: 'JOURNAL', desc: '1:1 with Explorer', depth: 1, details: null },
-              { name: 'EXPEDITION', desc: 'Many per Journal', depth: 2, details: ['Status: DRAFT | PLANNED | ACTIVE | COMPLETE', 'Max 1 ACTIVE + 1 PLANNED simultaneously', 'Title, Description, Dates, Goals, Waypoints'] },
-              { name: 'JOURNAL ENTRY', desc: 'Many per Expedition', depth: 3, details: ['Geo-tagged with coordinates', 'Visibility: PUBLIC | OFF-GRID | PRIVATE', 'Up to 10 images per entry'] },
+              { name: 'EXPEDITION', desc: 'Many per Journal', depth: 2, details: ['Status: DRAFT | PLANNED | ACTIVE | COMPLETED | CANCELLED', 'Title, Description, Dates, Goals, Waypoints'] },
+              { name: 'JOURNAL ENTRY', desc: 'Many per Expedition', depth: 3, details: ['Geo-tagged with coordinates', 'Visibility: PUBLIC | OFF-GRID | PRIVATE', 'Up to 2 images (Free) or 10 images (Pro) per entry'] },
               { name: 'EXPEDITION NOTE', desc: 'Daily updates, 280 char max', depth: 3, details: ['Sponsor-only access', 'Single-threaded replies', 'Available during PLANNING, ACTIVE, post-COMPLETE'] },
             ].map((item) => (
               <div key={item.name} className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#202020] dark:border-[#616161] p-3 font-mono text-xs" style={{ marginLeft: `${item.depth * 12}px` }}>
@@ -219,8 +218,15 @@ export function AboutPage() {
                 <div className="flex items-start gap-2">
                   <div className="w-3 h-3 bg-[#616161] rounded mt-0.5"></div>
                   <div className="flex-1">
-                    <div className="font-bold">COMPLETE</div>
+                    <div className="font-bold">COMPLETED</div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Finished, archived, read-only (except notes for 30 days)</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="w-3 h-3 bg-[#994040] rounded mt-0.5"></div>
+                  <div className="flex-1">
+                    <div className="font-bold">CANCELLED</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Expedition cancelled before completion</div>
                   </div>
                 </div>
               </div>
@@ -264,7 +270,7 @@ export function AboutPage() {
                 </div>
                 <div>
                   <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">BENEFITS</div>
-                  <div className="dark:text-[#e5e5e5]">Access to sponsor-only entries for expedition duration + 30 days post-complete</div>
+                  <div className="dark:text-[#e5e5e5]">Access to Expedition Notes for expedition duration + 30 days post-complete</div>
                 </div>
                 <div>
                   <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">REFUND POLICY</div>
@@ -293,7 +299,7 @@ export function AboutPage() {
                 </div>
                 <div>
                   <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">BENEFITS</div>
-                  <div className="dark:text-[#e5e5e5]">Perpetual access to all sponsor-only content, Expedition Notes with reply privileges, early expedition announcements</div>
+                  <div className="dark:text-[#e5e5e5]">Perpetual access to Expedition Notes with reply privileges, early expedition announcements</div>
                 </div>
                 <div>
                   <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">AUTO-CANCEL</div>
@@ -313,8 +319,8 @@ export function AboutPage() {
               {[
                 { status: 'RESTING → PLANNING', outcome: 'Resume billing on next cycle date (pro-rated if mid-month)', alt: true },
                 { status: 'PLANNING → ACTIVE', outcome: 'Continue billing (no change)', alt: false },
-                { status: 'ACTIVE → COMPLETE', outcome: 'If no new PLANNED expedition exists, pause on next cycle', alt: true },
-                { status: 'EXPLORING → RESTING', outcome: 'Pause immediately. No charge for full rest months.', alt: false },
+                { status: 'ACTIVE → COMPLETED', outcome: 'If no new PLANNED expedition exists, pause on next cycle', alt: true },
+                { status: 'EXPLORING → RESTING', outcome: 'Pause after 30 days resting. No charge for full rest months.', alt: false },
                 { status: '90 Days RESTING', outcome: 'Auto-cancel subscription, send notification to sponsor', alt: true },
               ].map((row) => (
                 <div key={row.status} className={`grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-1 sm:gap-4 p-2 ${row.alt ? 'bg-white dark:bg-[#202020]' : ''}`}>
@@ -350,12 +356,10 @@ export function AboutPage() {
                 { feature: 'Follow other explorers', free: true, pro: true },
                 { feature: 'Sponsor other explorers (send money)', free: true, pro: true, alt: true },
                 { feature: 'Bookmark & leave notes on entries', free: true, pro: true },
-                { feature: 'Access sponsor-only content from explorers you sponsor', free: true, pro: true, alt: true },
-                { feature: 'Reply to Expedition Notes (if monthly sponsor)', free: true, pro: true },
-                { feature: 'Private messaging (DMs)', free: false, pro: true, alt: true },
+                { feature: 'Reply to Expedition Notes (if monthly sponsor)', free: true, pro: true, alt: true },
+                { feature: 'Private messaging (DMs)', free: false, pro: true },
                 { feature: 'RECEIVE sponsorships (one-time + monthly)', free: false, pro: true, proOnly: true, bold: true },
                 { feature: 'Create expeditions (DRAFT/PLANNED/ACTIVE/COMPLETE)', free: false, pro: true, proOnly: true },
-                { feature: 'Post sponsor-only journal entries', free: false, pro: true, proOnly: true },
                 { feature: 'Create Expedition Notes (280 char daily updates)', free: false, pro: true, proOnly: true },
                 { feature: 'Set custom monthly subscription tiers', free: false, pro: true, proOnly: true },
                 { feature: 'View entry analytics (views, bookmarks, notes)', free: false, pro: true, proOnly: true },
@@ -384,7 +388,6 @@ export function AboutPage() {
                   'Follow other explorers',
                   'Sponsor other explorers',
                   'Bookmark & leave notes on entries',
-                  'Access sponsor-only content',
                   'Reply to Expedition Notes',
                 ].map((f) => (
                   <div key={f} className="flex items-center gap-2 p-3 text-xs font-mono">
@@ -404,7 +407,6 @@ export function AboutPage() {
                   'Private messaging (DMs)',
                   'Receive sponsorships (one-time + monthly)',
                   'Create expeditions',
-                  'Post sponsor-only journal entries',
                   'Create Expedition Notes (280 char)',
                   'Set custom subscription tiers',
                   'View entry analytics',
@@ -423,7 +425,7 @@ export function AboutPage() {
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
             <div>
               <div className="font-bold mb-1 dark:text-[#e5e5e5]">PRICING TRANSPARENCY</div>
-              <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Explorer Pro: $7/month · Stripe processing: 2.9% + $0.30 per transaction · Platform fee: 5% of sponsorships · No hidden charges</div>
+              <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Explorer Pro: $7/month · Stripe processing: 2.9% + $0.30 per transaction · Platform fee: 10% of sponsorships · No hidden charges</div>
             </div>
             <Link
               href="/settings/billing"
@@ -473,21 +475,21 @@ export function AboutPage() {
                 <div className="flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <DollarSign className="w-4 h-4 text-[#4676ac]" />
                   <div className="flex-1">
-                    <div className="font-bold">SPONSORSHIP</div>
+                    <div className="font-bold">SPONSOR</div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Manage sent/received sponsorships, admin tools (Pro)</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <MessageSquare className="w-4 h-4 text-[#4676ac]" />
                   <div className="flex-1">
-                    <div className="font-bold">MESSAGES</div>
+                    <div className="font-bold">MESSAGE</div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Direct messages (Pro only), Expedition Note replies</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <Award className="w-4 h-4 text-[#4676ac]" />
                   <div className="flex-1">
-                    <div className="font-bold">BOOKMARKS</div>
+                    <div className="font-bold">BOOKMARK</div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Saved entries, expeditions, explorers</div>
                   </div>
                 </div>
@@ -503,8 +505,8 @@ export function AboutPage() {
                 <div className="flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <User className="w-4 h-4 text-[#616161]" />
                   <div className="flex-1">
-                    <div className="font-bold">ACCOUNT</div>
-                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Profile editing, bio, avatar, display name</div>
+                    <div className="font-bold">OVERVIEW</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Account summary, profile link, quick actions</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
@@ -607,10 +609,6 @@ export function AboutPage() {
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Hosting:</span>
                   <span className="dark:text-[#e5e5e5]">Heroku</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#616161] dark:text-[#b5bcc4]">Avg Load:</span>
-                  <span className="dark:text-[#e5e5e5]">1.2s</span>
-                </div>
               </div>
             </div>
 
@@ -653,7 +651,7 @@ export function AboutPage() {
               </div>
               <div className="border border-[#616161] p-3">
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Images per Entry</div>
-                <div className="text-lg font-bold dark:text-[#e5e5e5]">10 max</div>
+                <div className="text-lg font-bold dark:text-[#e5e5e5]">2 (Free) / 10 (Pro)</div>
               </div>
               <div className="border border-[#616161] p-3">
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Expedition Note Length</div>

@@ -79,7 +79,7 @@ export function SponsorshipsPage() {
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-2 leading-relaxed">
               <p>• Explorers create expeditions within their journals and set sponsorship goals</p>
               <p>• Sponsors contribute any amount to support expedition costs (equipment, travel, research)</p>
-              <p>• Platform fee: 5% • Payment processing: 2.9% + $0.30 per transaction</p>
+              <p>• Platform fee: 10% • Payment processing: 2.9% + $0.30 per transaction</p>
               <p>• Sponsors receive updates and exclusive content from sponsored expeditions</p>
               <p>• All financial transactions are transparent and tracked in real-time</p>
             </div>

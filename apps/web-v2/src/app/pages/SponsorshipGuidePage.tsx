@@ -549,15 +549,15 @@ export function SponsorshipGuidePage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Platform Fee Structure</h3>
               <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac] p-4 mb-3">
                 <p className="text-sm text-[#202020] dark:text-[#e5e5e5] font-bold mb-2">
-                  Heimursaga Platform Fee: 5%
+                  Heimursaga Platform Fee: 10%
                 </p>
                 <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                   This fee covers platform maintenance, hosting, security, and ongoing development.
-                  95% of every sponsorship goes directly to the explorer.
+                  90% of every sponsorship goes directly to the explorer.
                 </p>
               </div>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                <strong>Example:</strong> A $100 sponsorship sends $95 to the explorer and $5 to platform operations.
+                <strong>Example:</strong> A $100 sponsorship sends $90 to the explorer and $10 to platform operations.
               </p>
             </div>
 
@@ -565,7 +565,7 @@ export function SponsorshipGuidePage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Stripe Processing Fees</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 Stripe charges standard payment processing fees (typically 2.9% + $0.30 per transaction in the US,
-                varies by region). These are separate from the 5% platform fee and are deducted by Stripe during
+                varies by region). These are separate from the 10% platform fee and are deducted by Stripe during
                 payment processing.
               </p>
             </div>

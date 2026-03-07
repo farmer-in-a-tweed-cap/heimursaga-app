@@ -793,10 +793,10 @@ export function SponsorshipPage() {
                                                 </div>
                                                 <div className="flex justify-between">
                                                   <span className="text-[#616161] dark:text-[#b5bcc4]">
-                                                    Platform fee (5%):
+                                                    Platform fee (10%):
                                                   </span>
                                                   <span className="text-[#ac6d46]">
-                                                    -${(payment.amount * 0.05).toFixed(2)}
+                                                    -${(payment.amount * 0.10).toFixed(2)}
                                                   </span>
                                                 </div>
                                                 <div className="flex justify-between">
@@ -816,7 +816,7 @@ export function SponsorshipPage() {
                                                     $
                                                     {(
                                                       payment.amount -
-                                                      payment.amount * 0.05 -
+                                                      payment.amount * 0.10 -
                                                       (payment.amount * 0.029 + 0.3)
                                                     ).toFixed(2)}
                                                   </span>

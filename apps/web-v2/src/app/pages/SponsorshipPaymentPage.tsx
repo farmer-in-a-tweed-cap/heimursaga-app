@@ -181,7 +181,7 @@ export function SponsorshipPaymentPage() {
   const finalAmount = selectedAmount || (customAmount ? parseFloat(customAmount) : 0);
   const stripeFeePercent = 0.029;
   const stripeFeeFixed = 0.30;
-  const platformFee = finalAmount > 0 ? finalAmount * 0.05 : 0;
+  const platformFee = finalAmount > 0 ? finalAmount * 0.10 : 0;
   const stripeFee = finalAmount > 0 ? (finalAmount * stripeFeePercent) + stripeFeeFixed : 0;
   const explorerReceives = finalAmount > 0 ? finalAmount - platformFee - stripeFee : 0;
 
@@ -986,7 +986,7 @@ export function SponsorshipPaymentPage() {
                   </div>
 
                   <div className="flex justify-between">
-                    <span className="text-[#616161] dark:text-[#b5bcc4]">Platform fee (5%):</span>
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">Platform fee (10%):</span>
                     <span className="text-[#ac6d46]">-${platformFee.toFixed(2)}</span>
                   </div>
 

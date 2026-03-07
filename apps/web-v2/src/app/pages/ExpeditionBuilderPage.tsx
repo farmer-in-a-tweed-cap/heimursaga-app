@@ -2936,7 +2936,7 @@ export function ExpeditionBuilderPage() {
                   required={sponsorshipsEnabled}
                 />
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                  Set a funding goal for your expedition • Platform fee: 5% • Processing: 2.9% + $0.30
+                  Set a funding goal for your expedition • Platform fee: 10% • Processing: 2.9% + $0.30
                 </div>
               </div>
             )}
