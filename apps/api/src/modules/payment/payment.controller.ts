@@ -89,22 +89,6 @@ export class PaymentMethodController {
   }
 }
 
-@ApiTags('payment-intents')
-@Controller('payment-intents')
-export class PaymentIntentController {
-  constructor(private paymentService: PaymentService) {}
-
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  async createPaymentIntent(@Session() session: ISession) {
-    return await this.paymentService.createPaymentIntent({
-      query: {},
-      session,
-      payload: {},
-    });
-  }
-}
-
 @ApiTags('plans')
 @Controller('plans')
 export class PlansController {

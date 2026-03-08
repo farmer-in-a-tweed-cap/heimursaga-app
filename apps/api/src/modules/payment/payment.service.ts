@@ -76,7 +76,7 @@ export class PaymentService {
 
       if (!userId) throw new ServiceForbiddenException();
 
-      const result = await this.stripeService.createSetupIntent(userId);
+      const result = await this.stripeService.createSetupIntent();
 
       return {
         clientSecret: result.secret,
@@ -216,74 +216,81 @@ export class PaymentService {
 
       const paymentMethodId = generator.publicId({ prefix: 'pm' });
 
-      await this.prisma.$transaction(async (tx) => {
-        // get the user
-        const user = await tx.explorer
-          .findFirstOrThrow({
-            where: { id: userId },
-            select: {
-              id: true,
-              username: true,
-              email: true,
-              stripe_customer_id: true,
+      // Step 1: DB transaction — read user, create PM record, count existing
+      const { user, isFirstPaymentMethod } = await this.prisma.$transaction(
+        async (tx) => {
+          const user = await tx.explorer
+            .findFirstOrThrow({
+              where: { id: userId },
+              select: {
+                id: true,
+                username: true,
+                email: true,
+                stripe_customer_id: true,
+              },
+            })
+            .catch(() => {
+              throw new ServiceForbiddenException();
+            });
+
+          // get the stripe payment method details (read-only Stripe call, safe in tx)
+          const stripePaymentMethod =
+            await this.stripeService.paymentMethods.retrieve(
+              stripePaymentMethodId,
+            );
+
+          // create a payment method record
+          await tx.paymentMethod.create({
+            data: {
+              public_id: paymentMethodId,
+              stripe_payment_method_id: stripePaymentMethodId,
+              label:
+                `${stripePaymentMethod.card.brand} ${stripePaymentMethod.card.last4}`.toUpperCase(),
+              last4: stripePaymentMethod.card.last4,
+              explorer_id: userId,
             },
-          })
-          .catch(() => {
-            throw new ServiceForbiddenException();
           });
 
-        // get the stripe payment method
-        const stripePaymentMethod =
-          await this.stripeService.paymentMethods.retrieve(
-            stripePaymentMethodId,
-          );
+          // Count existing methods to determine if this is the first
+          const existingPaymentMethodsCount = await tx.paymentMethod.count({
+            where: {
+              explorer_id: userId,
+              deleted_at: null,
+            },
+          });
 
-        // get the stripe customer or create if it doesn't exist
-        const stripeCustomer = await this.stripeService.getOrCreateCustomer({
+          return { user, isFirstPaymentMethod: existingPaymentMethodsCount === 1 };
+        },
+      );
+
+      // Step 2: After commit — Stripe attach + set default if first PM
+      // Get or create Stripe customer
+      const stripeCustomer = await this.stripeService.getOrCreateCustomer({
+        email: user.email,
+        data: {
           email: user.email,
-          data: {
-            email: user.email,
-            name: user.username,
-          },
+          name: user.username,
+        },
+      });
+      if (!stripeCustomer)
+        throw new ServiceBadRequestException('customer not found');
+
+      // Save stripe customer ID to explorer if not already saved
+      if (!user.stripe_customer_id) {
+        await this.prisma.explorer.update({
+          where: { id: userId },
+          data: { stripe_customer_id: stripeCustomer.id },
         });
-        if (!stripeCustomer)
-          throw new ServiceBadRequestException('customer not found');
+      }
 
-        // Save stripe customer ID to explorer if not already saved
-        if (!user.stripe_customer_id) {
-          await tx.explorer.update({
-            where: { id: userId },
-            data: { stripe_customer_id: stripeCustomer.id },
-          });
-        }
-
-        // create a payment method
-        const paymentMethod = await tx.paymentMethod.create({
-          data: {
-            public_id: paymentMethodId,
-            stripe_payment_method_id: stripePaymentMethodId,
-            label:
-              `${stripePaymentMethod.card.brand} ${stripePaymentMethod.card.last4}`.toUpperCase(),
-            last4: stripePaymentMethod.card.last4,
-            explorer_id: userId,
-          },
-        });
-
-        // attach the stripe payment method to the stripe customer
+      try {
+        // Attach the stripe payment method to the stripe customer
         await this.stripeService.paymentMethods.attach(stripePaymentMethodId, {
           customer: stripeCustomer.id,
         });
 
-        // Check if this is the user's first payment method
-        const existingPaymentMethodsCount = await tx.paymentMethod.count({
-          where: {
-            explorer_id: userId,
-            deleted_at: null,
-          },
-        });
-
         // If this is the only payment method, set it as default
-        if (existingPaymentMethodsCount === 1) {
+        if (isFirstPaymentMethod) {
           await this.stripeService.customers.update(stripeCustomer.id, {
             invoice_settings: {
               default_payment_method: stripePaymentMethodId,
@@ -293,7 +300,18 @@ export class PaymentService {
             `Auto-set first payment method ${paymentMethodId} as default for user ${userId}`,
           );
         }
-      });
+      } catch (stripeError) {
+        // Stripe attach failed — soft-delete the orphaned DB record
+        this.logger.error(
+          `Stripe attach failed for PM ${paymentMethodId}, soft-deleting DB record`,
+          stripeError,
+        );
+        await this.prisma.paymentMethod.updateMany({
+          where: { public_id: paymentMethodId },
+          data: { deleted_at: new Date() },
+        });
+        throw stripeError;
+      }
 
       return { id: paymentMethodId };
     } catch (e) {
@@ -397,18 +415,23 @@ export class PaymentService {
           throw new ServiceNotFoundException('payment method not found');
         });
 
-      // delete the payment method
+      // Detach from Stripe first — if this fails, we don't want orphaned local records
+      try {
+        await this.stripeService.paymentMethods.detach(
+          paymentMethod.stripe_payment_method_id,
+        );
+      } catch (stripeError) {
+        // If already detached on Stripe, proceed with local cleanup
+        if (stripeError?.code !== 'resource_missing') {
+          throw stripeError;
+        }
+      }
+
+      // Soft-delete locally after Stripe detach succeeds
       await this.prisma.paymentMethod.updateMany({
         where: { public_id: publicId, explorer_id: userId },
         data: { deleted_at: dateformat().toDate() },
       });
-
-      // delete the stripe payment method
-      await this.stripeService.paymentMethods
-        .detach(paymentMethod.stripe_payment_method_id)
-        .catch(() => {
-          // ..
-        });
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

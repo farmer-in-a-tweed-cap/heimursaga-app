@@ -238,9 +238,7 @@ export class StripeService {
     }
   }
 
-  async createSetupIntent(
-    userId?: number,
-  ): Promise<IStripeCreateSetupIntentResponse> {
+  async createSetupIntent(): Promise<IStripeCreateSetupIntentResponse> {
     try {
       // No idempotency key — setup intents are safe to create multiple times
       // (users need to add multiple cards)
@@ -362,66 +360,83 @@ export class StripeService {
   }
 
   async onInvoicePaymentSucceeded(event: Stripe.Invoice) {
-    try {
-      const { subscription } = event;
+    const { subscription } = event;
 
-      if (!subscription) return;
+    if (!subscription) return;
 
-      // Retrieve the subscription to get metadata
-      const stripeSubscription = await this.stripe.subscriptions.retrieve(
-        typeof subscription === 'string' ? subscription : subscription.id,
-      );
+    // Retrieve the subscription to get metadata
+    const stripeSubscription = await this.stripe.subscriptions.retrieve(
+      typeof subscription === 'string' ? subscription : subscription.id,
+    );
 
-      // Check if this is for a subscription (not a one-time payment)
-      if (!stripeSubscription.metadata?.[StripeMetadataKey.CHECKOUT_ID]) {
-        return;
-      }
+    // Check if this is for a subscription (not a one-time payment)
+    if (!stripeSubscription.metadata?.[StripeMetadataKey.CHECKOUT_ID]) {
+      return;
+    }
 
-      const metadata = stripeSubscription.metadata || {};
-      const params = {
-        transaction: metadata?.[
-          StripeMetadataKey.TRANSACTION
-        ] as PaymentTransactionType,
-        checkoutId: metadata?.[StripeMetadataKey.CHECKOUT_ID]
-          ? parseInt(metadata?.[StripeMetadataKey.CHECKOUT_ID])
-          : undefined,
-        userId: metadata?.[StripeMetadataKey.USER_ID]
-          ? parseInt(metadata?.[StripeMetadataKey.USER_ID])
-          : undefined,
-        creatorId: metadata?.[StripeMetadataKey.CREATOR_ID]
-          ? parseInt(metadata?.[StripeMetadataKey.CREATOR_ID])
-          : undefined,
-        subscriptionPlanId: metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID]
-          ? parseInt(metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID])
-          : undefined,
-      };
+    const metadata = stripeSubscription.metadata || {};
+    const params = {
+      transaction: metadata?.[
+        StripeMetadataKey.TRANSACTION
+      ] as PaymentTransactionType,
+      checkoutId: metadata?.[StripeMetadataKey.CHECKOUT_ID]
+        ? parseInt(metadata?.[StripeMetadataKey.CHECKOUT_ID])
+        : undefined,
+      userId: metadata?.[StripeMetadataKey.USER_ID]
+        ? parseInt(metadata?.[StripeMetadataKey.USER_ID])
+        : undefined,
+      creatorId: metadata?.[StripeMetadataKey.CREATOR_ID]
+        ? parseInt(metadata?.[StripeMetadataKey.CREATOR_ID])
+        : undefined,
+      subscriptionPlanId: metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID]
+        ? parseInt(metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID])
+        : undefined,
+    };
 
-      const { transaction, userId, checkoutId, creatorId, subscriptionPlanId } =
-        params;
+    const { transaction, userId, checkoutId, creatorId, subscriptionPlanId } =
+      params;
 
-      switch (transaction) {
-        case PaymentTransactionType.SUBSCRIPTION:
-          await this.eventService.trigger<IOnSubscriptionUpgradeCompleteEvent>({
-            event: EVENTS.SUBSCRIPTION_UPGRADE_COMPLETE,
-            data: {
-              userId,
-              subscriptionPlanId,
-              checkoutId,
-            },
-          });
-          break;
-        case PaymentTransactionType.SPONSORSHIP:
-          // Recurring sponsorship payment - update expedition raised amount
-          // Skip the first invoice (billing_reason === 'subscription_create')
-          // since completeCheckout already handles that via payment_intent.succeeded
-          if (
-            creatorId &&
-            event.amount_paid &&
-            event.billing_reason !== 'subscription_create'
-          ) {
-            const amountDollars = event.amount_paid / 100;
-            // Find the creator's active expedition and increment raised
-            const activeExpedition = await this.prisma.expedition.findFirst({
+    switch (transaction) {
+      case PaymentTransactionType.SUBSCRIPTION:
+        await this.eventService.trigger<IOnSubscriptionUpgradeCompleteEvent>({
+          event: EVENTS.SUBSCRIPTION_UPGRADE_COMPLETE,
+          data: {
+            userId,
+            subscriptionPlanId,
+            checkoutId,
+          },
+        });
+        break;
+      case PaymentTransactionType.SPONSORSHIP:
+        // Recurring sponsorship payment - update expedition raised amount
+        // Skip the first invoice (billing_reason === 'subscription_create')
+        // since completeCheckout already handles that via payment_intent.succeeded
+        if (
+          creatorId &&
+          event.amount_paid &&
+          event.billing_reason !== 'subscription_create'
+        ) {
+          const amountDollars = event.amount_paid / 100;
+
+          // Use the original expedition from checkout, fall back to latest active
+          let targetExpedition: { id: number } | null = null;
+          if (checkoutId) {
+            const checkout = await this.prisma.checkout.findFirst({
+              where: { id: checkoutId },
+              select: { expedition_public_id: true },
+            });
+            if (checkout?.expedition_public_id) {
+              targetExpedition = await this.prisma.expedition.findFirst({
+                where: {
+                  public_id: checkout.expedition_public_id,
+                  deleted_at: null,
+                },
+                select: { id: true },
+              });
+            }
+          }
+          if (!targetExpedition) {
+            targetExpedition = await this.prisma.expedition.findFirst({
               where: {
                 author_id: creatorId,
                 deleted_at: null,
@@ -430,75 +445,70 @@ export class StripeService {
               select: { id: true },
               orderBy: { id: 'desc' },
             });
-            if (activeExpedition) {
-              await this.prisma.expedition.update({
-                where: { id: activeExpedition.id },
-                data: {
-                  raised: { increment: amountDollars },
-                },
-              });
-              this.logger.log(
-                `Recurring sponsorship renewal: added $${amountDollars} to expedition ${activeExpedition.id} for creator ${creatorId}`,
-              );
-            }
           }
-          break;
-      }
-    } catch (e) {
-      this.logger.error('Error handling invoice payment succeeded:', e);
+
+          if (targetExpedition) {
+            await this.prisma.expedition.update({
+              where: { id: targetExpedition.id },
+              data: {
+                raised: { increment: amountDollars },
+              },
+            });
+            this.logger.log(
+              `Recurring sponsorship renewal: added $${amountDollars} to expedition ${targetExpedition.id} for creator ${creatorId}`,
+            );
+          }
+        }
+        break;
     }
   }
 
   async onPaymentIntentSucceeded(event: Stripe.PaymentIntent) {
-    try {
-      // Use metadata directly from the event (already retrieved)
-      const metadata = event.metadata || {};
+    // Use metadata directly from the event (already retrieved)
+    const metadata = event.metadata || {};
 
-      const params = {
-        transaction: metadata?.[
-          StripeMetadataKey.TRANSACTION
-        ] as PaymentTransactionType,
-        checkoutId: metadata?.[StripeMetadataKey.CHECKOUT_ID]
-          ? parseInt(metadata?.[StripeMetadataKey.CHECKOUT_ID])
-          : undefined,
-        userId: metadata?.[StripeMetadataKey.USER_ID]
-          ? parseInt(metadata?.[StripeMetadataKey.USER_ID])
-          : undefined,
-        creatorId: metadata?.[StripeMetadataKey.CREATOR_ID]
-          ? parseInt(metadata?.[StripeMetadataKey.CREATOR_ID])
-          : undefined,
-        subscriptionPlanId: metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID]
-          ? parseInt(metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID])
-          : undefined,
-      };
+    const params = {
+      transaction: metadata?.[
+        StripeMetadataKey.TRANSACTION
+      ] as PaymentTransactionType,
+      checkoutId: metadata?.[StripeMetadataKey.CHECKOUT_ID]
+        ? parseInt(metadata?.[StripeMetadataKey.CHECKOUT_ID])
+        : undefined,
+      userId: metadata?.[StripeMetadataKey.USER_ID]
+        ? parseInt(metadata?.[StripeMetadataKey.USER_ID])
+        : undefined,
+      creatorId: metadata?.[StripeMetadataKey.CREATOR_ID]
+        ? parseInt(metadata?.[StripeMetadataKey.CREATOR_ID])
+        : undefined,
+      subscriptionPlanId: metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID]
+        ? parseInt(metadata?.[StripeMetadataKey.SUBSCRIPTION_PLAN_ID])
+        : undefined,
+    };
 
-      const { transaction, userId, checkoutId, creatorId, subscriptionPlanId } =
-        params;
+    const { transaction, userId, checkoutId, creatorId, subscriptionPlanId } =
+      params;
 
-      switch (transaction) {
-        case PaymentTransactionType.SUBSCRIPTION:
-          await this.eventService.trigger<IOnSubscriptionUpgradeCompleteEvent>({
-            event: EVENTS.SUBSCRIPTION_UPGRADE_COMPLETE,
-            data: {
-              userId,
-              subscriptionPlanId,
-              checkoutId,
-            },
-          });
-          break;
-        case PaymentTransactionType.SPONSORSHIP:
-          await this.eventService.trigger<IOnSponsorCheckoutCompleteEvent>({
-            event: EVENTS.SPONSORSHIP_CHECKOUT_COMPLETE,
-            data: {
-              userId,
-              creatorId,
-              checkoutId,
-            },
-          });
-          break;
-      }
-    } catch (e) {
-      this.logger.error('Error handling payment intent succeeded:', e);
+    switch (transaction) {
+      case PaymentTransactionType.SUBSCRIPTION:
+        await this.eventService.trigger<IOnSubscriptionUpgradeCompleteEvent>({
+          event: EVENTS.SUBSCRIPTION_UPGRADE_COMPLETE,
+          data: {
+            userId,
+            subscriptionPlanId,
+            checkoutId,
+          },
+        });
+        break;
+      case PaymentTransactionType.SPONSORSHIP:
+        await this.eventService.trigger<IOnSponsorCheckoutCompleteEvent>({
+          event: EVENTS.SPONSORSHIP_CHECKOUT_COMPLETE,
+          data: {
+            userId,
+            creatorId,
+            checkoutId,
+          },
+        });
+        break;
     }
   }
 
@@ -506,25 +516,21 @@ export class StripeService {
    * Handle failed payment intents - notify user and update checkout status
    */
   async onPaymentIntentFailed(event: Stripe.PaymentIntent) {
-    try {
-      const metadata = event.metadata || {};
-      const checkoutId = metadata?.[StripeMetadataKey.CHECKOUT_ID]
-        ? parseInt(metadata?.[StripeMetadataKey.CHECKOUT_ID])
-        : undefined;
+    const metadata = event.metadata || {};
+    const checkoutId = metadata?.[StripeMetadataKey.CHECKOUT_ID]
+      ? parseInt(metadata?.[StripeMetadataKey.CHECKOUT_ID])
+      : undefined;
 
-      if (checkoutId) {
-        // Update checkout status to failed
-        await this.prisma.checkout.update({
-          where: { id: checkoutId },
-          data: { status: 'FAILED' },
-        });
+    if (checkoutId) {
+      // Update checkout status to failed
+      await this.prisma.checkout.updateMany({
+        where: { id: checkoutId },
+        data: { status: 'FAILED' },
+      });
 
-        this.logger.log(
-          `Payment intent failed for checkout ${checkoutId}: ${event.last_payment_error?.message || 'Unknown error'}`,
-        );
-      }
-    } catch (e) {
-      this.logger.error('Error handling payment intent failed:', e);
+      this.logger.log(
+        `Payment intent failed for checkout ${checkoutId}: ${event.last_payment_error?.message || 'Unknown error'}`,
+      );
     }
   }
 
@@ -532,180 +538,164 @@ export class StripeService {
    * Handle Stripe Connect account updates - sync verification status
    */
   async onAccountUpdated(event: Stripe.Account) {
-    try {
-      const {
-        id: stripeAccountId,
-        requirements,
-        charges_enabled,
-        payouts_enabled,
-      } = event;
+    const {
+      id: stripeAccountId,
+      requirements,
+      charges_enabled,
+      payouts_enabled,
+    } = event;
 
-      // Check if account is fully verified (no pending requirements and can accept payments)
-      const isVerified =
-        !requirements?.currently_due?.length &&
-        !requirements?.pending_verification?.length &&
-        charges_enabled &&
-        payouts_enabled;
+    // Check if account is fully verified (no pending requirements and can accept payments)
+    const isVerified =
+      !requirements?.currently_due?.length &&
+      !requirements?.pending_verification?.length &&
+      charges_enabled &&
+      payouts_enabled;
 
-      // Find the payout method to get the explorer ID and previous verification state
-      const payoutMethod = await this.prisma.payoutMethod.findFirst({
-        where: { stripe_account_id: stripeAccountId },
-        select: { explorer_id: true, is_verified: true },
+    // Find the payout method to get the explorer ID and previous verification state
+    const payoutMethod = await this.prisma.payoutMethod.findFirst({
+      where: { stripe_account_id: stripeAccountId },
+      select: { explorer_id: true, is_verified: true },
+    });
+
+    // Update local payout method verification status
+    await this.prisma.payoutMethod.updateMany({
+      where: { stripe_account_id: stripeAccountId },
+      data: { is_verified: isVerified },
+    });
+
+    // Also update the explorer's stripe account connected status
+    if (payoutMethod?.explorer_id) {
+      await this.prisma.explorer.update({
+        where: { id: payoutMethod.explorer_id },
+        data: { is_stripe_account_connected: isVerified },
       });
 
-      // Update local payout method verification status
-      await this.prisma.payoutMethod.updateMany({
-        where: { stripe_account_id: stripeAccountId },
-        data: { is_verified: isVerified },
-      });
+      // Send notifications on state transitions
+      const wasVerified = payoutMethod.is_verified === true;
 
-      // Also update the explorer's stripe account connected status
-      if (payoutMethod?.explorer_id) {
-        await this.prisma.explorer.update({
-          where: { id: payoutMethod.explorer_id },
-          data: { is_stripe_account_connected: isVerified },
+      if (isVerified && !wasVerified) {
+        // Newly verified — send STRIPE_VERIFIED notification
+        this.eventService.trigger<IUserNotificationCreatePayload>({
+          event: EVENTS.NOTIFICATION_CREATE,
+          data: {
+            context: UserNotificationContext.STRIPE_VERIFIED,
+            userId: payoutMethod.explorer_id,
+            body: 'Your Stripe Connect account has been verified. You can now receive sponsorships!',
+          },
         });
-
-        // Send notifications on state transitions
-        const wasVerified = payoutMethod.is_verified === true;
-
-        if (isVerified && !wasVerified) {
-          // Newly verified — send STRIPE_VERIFIED notification
-          this.eventService.trigger<IUserNotificationCreatePayload>({
-            event: EVENTS.NOTIFICATION_CREATE,
-            data: {
-              context: UserNotificationContext.STRIPE_VERIFIED,
-              userId: payoutMethod.explorer_id,
-              body: 'Your Stripe Connect account has been verified. You can now receive sponsorships!',
-            },
-          });
-          this.logger.log(
-            `Sent STRIPE_VERIFIED notification to explorer ${payoutMethod.explorer_id}`,
-          );
-        } else if (!isVerified && requirements?.currently_due?.length > 0) {
-          // Action required — send STRIPE_ACTION_REQUIRED notification
-          const friendlyItems = mapRequirementsToFriendly(
-            requirements.currently_due,
-          );
-          const displayItems = friendlyItems.slice(0, 3).join(', ');
-          const suffix =
-            friendlyItems.length > 3
-              ? ` and ${friendlyItems.length - 3} more`
-              : '';
-          this.eventService.trigger<IUserNotificationCreatePayload>({
-            event: EVENTS.NOTIFICATION_CREATE,
-            data: {
-              context: UserNotificationContext.STRIPE_ACTION_REQUIRED,
-              userId: payoutMethod.explorer_id,
-              body: `Stripe requires additional information: ${displayItems}${suffix}. Complete your setup to receive sponsorships.`,
-            },
-          });
-          this.logger.log(
-            `Sent STRIPE_ACTION_REQUIRED notification to explorer ${payoutMethod.explorer_id}`,
-          );
-        }
-
         this.logger.log(
-          `Updated explorer ${payoutMethod.explorer_id} stripe account connected: ${isVerified}`,
+          `Sent STRIPE_VERIFIED notification to explorer ${payoutMethod.explorer_id}`,
+        );
+      } else if (!isVerified && requirements?.currently_due?.length > 0) {
+        // Action required — send STRIPE_ACTION_REQUIRED notification
+        const friendlyItems = mapRequirementsToFriendly(
+          requirements.currently_due,
+        );
+        const displayItems = friendlyItems.slice(0, 3).join(', ');
+        const suffix =
+          friendlyItems.length > 3
+            ? ` and ${friendlyItems.length - 3} more`
+            : '';
+        this.eventService.trigger<IUserNotificationCreatePayload>({
+          event: EVENTS.NOTIFICATION_CREATE,
+          data: {
+            context: UserNotificationContext.STRIPE_ACTION_REQUIRED,
+            userId: payoutMethod.explorer_id,
+            body: `Stripe requires additional information: ${displayItems}${suffix}. Complete your setup to receive sponsorships.`,
+          },
+        });
+        this.logger.log(
+          `Sent STRIPE_ACTION_REQUIRED notification to explorer ${payoutMethod.explorer_id}`,
         );
       }
 
       this.logger.log(
-        `Stripe account ${stripeAccountId} verification status: ${isVerified} (charges: ${charges_enabled}, payouts: ${payouts_enabled})`,
+        `Updated explorer ${payoutMethod.explorer_id} stripe account connected: ${isVerified}`,
       );
-    } catch (e) {
-      this.logger.error('Error handling account updated:', e);
     }
+
+    this.logger.log(
+      `Stripe account ${stripeAccountId} verification status: ${isVerified} (charges: ${charges_enabled}, payouts: ${payouts_enabled})`,
+    );
   }
 
   /**
    * Handle failed payouts - update payout status and notify
    */
   async onPayoutFailed(event: Stripe.Payout) {
-    try {
-      const { id: stripePayoutId, failure_message } = event;
+    const { id: stripePayoutId, failure_message } = event;
 
-      // Update payout status in database
-      await this.prisma.payout.updateMany({
-        where: { stripe_payout_id: stripePayoutId },
-        data: { status: 'FAILED' },
-      });
+    // Update payout status in database
+    await this.prisma.payout.updateMany({
+      where: { stripe_payout_id: stripePayoutId },
+      data: { status: 'FAILED' },
+    });
 
-      this.logger.log(
-        `Payout ${stripePayoutId} failed: ${failure_message || 'Unknown error'}`,
-      );
-    } catch (e) {
-      this.logger.error('Error handling payout failed:', e);
-    }
+    this.logger.log(
+      `Payout ${stripePayoutId} failed: ${failure_message || 'Unknown error'}`,
+    );
   }
 
   /**
    * Handle successful payouts - update payout status
    */
   async onPayoutPaid(event: Stripe.Payout) {
-    try {
-      const { id: stripePayoutId, arrival_date } = event;
+    const { id: stripePayoutId, arrival_date } = event;
 
-      // Update payout status in database
-      await this.prisma.payout.updateMany({
-        where: { stripe_payout_id: stripePayoutId },
-        data: {
-          status: 'COMPLETED',
-          arrival_date: arrival_date
-            ? new Date(arrival_date * 1000)
-            : undefined,
-        },
-      });
+    // Update payout status in database
+    await this.prisma.payout.updateMany({
+      where: { stripe_payout_id: stripePayoutId },
+      data: {
+        status: 'COMPLETED',
+        arrival_date: arrival_date
+          ? new Date(arrival_date * 1000)
+          : undefined,
+      },
+    });
 
-      this.logger.log(`Payout ${stripePayoutId} completed successfully`);
-    } catch (e) {
-      this.logger.error('Error handling payout paid:', e);
-    }
+    this.logger.log(`Payout ${stripePayoutId} completed successfully`);
   }
 
   /**
    * Handle subscription deletion - update sponsorship status
    */
   async onSubscriptionDeleted(event: Stripe.Subscription) {
-    try {
-      const { id: stripeSubscriptionId } = event;
+    const { id: stripeSubscriptionId } = event;
 
-      // Update sponsorship status to canceled
-      await this.prisma.sponsorship.updateMany({
+    // Update sponsorship status to canceled
+    await this.prisma.sponsorship.updateMany({
+      where: { stripe_subscription_id: stripeSubscriptionId },
+      data: { status: 'canceled' },
+    });
+
+    // Handle Explorer Pro subscription deletion - downgrade user
+    const explorerSubscription =
+      await this.prisma.explorerSubscription.findFirst({
         where: { stripe_subscription_id: stripeSubscriptionId },
-        data: { status: 'canceled' },
+        select: { id: true, explorer_id: true },
       });
 
-      // Handle Explorer Pro subscription deletion - downgrade user
-      const explorerSubscription =
-        await this.prisma.explorerSubscription.findFirst({
-          where: { stripe_subscription_id: stripeSubscriptionId },
-          select: { id: true, explorer_id: true },
+    if (explorerSubscription?.explorer_id) {
+      await this.prisma.$transaction(async (tx) => {
+        // Delete the explorer plan
+        await tx.explorerPlan.deleteMany({
+          where: { explorer_id: explorerSubscription.explorer_id },
         });
-
-      if (explorerSubscription?.explorer_id) {
-        await this.prisma.$transaction(async (tx) => {
-          // Delete the explorer plan
-          await tx.explorerPlan.deleteMany({
-            where: { explorer_id: explorerSubscription.explorer_id },
-          });
-          // Downgrade to USER role
-          await tx.explorer.update({
-            where: { id: explorerSubscription.explorer_id },
-            data: { role: UserRole.USER },
-          });
+        // Downgrade to USER role
+        await tx.explorer.update({
+          where: { id: explorerSubscription.explorer_id },
+          data: { role: UserRole.USER },
         });
-        this.logger.log(
-          `Explorer Pro subscription ${stripeSubscriptionId} deleted: downgraded explorer ${explorerSubscription.explorer_id} to USER`,
-        );
-      }
-
+      });
       this.logger.log(
-        `Subscription ${stripeSubscriptionId} deleted, sponsorship canceled`,
+        `Explorer Pro subscription ${stripeSubscriptionId} deleted: downgraded explorer ${explorerSubscription.explorer_id} to USER`,
       );
-    } catch (e) {
-      this.logger.error('Error handling subscription deleted:', e);
     }
+
+    this.logger.log(
+      `Subscription ${stripeSubscriptionId} deleted, sponsorship canceled`,
+    );
   }
 
   /**
@@ -714,93 +704,89 @@ export class StripeService {
    * sponsorship status sync to avoid overwriting the local 'paused' status.
    */
   async onSubscriptionUpdated(event: Stripe.Subscription) {
-    try {
-      const { id: stripeSubscriptionId, status } = event;
+    const { id: stripeSubscriptionId, status } = event;
 
-      // If pause_collection is set, the SponsorBillingService is managing this
-      // subscription's local status — do not overwrite it.
-      if (event.pause_collection) {
-        this.logger.log(
-          `Subscription ${stripeSubscriptionId} has pause_collection set, skipping sponsorship status sync`,
-        );
-      } else {
-        // Map Stripe status to our status (lowercase, matching SponsorshipStatus enum)
-        let sponsorshipStatus: string;
-        switch (status) {
-          case 'active':
-            sponsorshipStatus = 'active';
-            break;
-          case 'past_due':
-            sponsorshipStatus = 'past_due';
-            break;
-          case 'canceled':
-            sponsorshipStatus = 'canceled';
-            break;
-          case 'unpaid':
-            sponsorshipStatus = 'unpaid';
-            break;
-          case 'paused':
-            sponsorshipStatus = 'paused';
-            break;
-          case 'incomplete':
-          case 'incomplete_expired':
-            sponsorshipStatus = 'pending';
-            break;
-          case 'trialing':
-            sponsorshipStatus = 'active';
-            break;
-          default:
-            this.logger.warn(
-              `Unknown Stripe subscription status '${status}' for ${stripeSubscriptionId}, defaulting to pending`,
-            );
-            sponsorshipStatus = 'pending';
-        }
-
-        // Update sponsorship status
-        await this.prisma.sponsorship.updateMany({
-          where: { stripe_subscription_id: stripeSubscriptionId },
-          data: { status: sponsorshipStatus },
-        });
-
-        this.logger.log(
-          `Subscription ${stripeSubscriptionId} updated to ${sponsorshipStatus}`,
-        );
+    // If pause_collection is set, the SponsorBillingService is managing this
+    // subscription's local status — do not overwrite it.
+    if (event.pause_collection) {
+      this.logger.log(
+        `Subscription ${stripeSubscriptionId} has pause_collection set, skipping sponsorship status sync`,
+      );
+    } else {
+      // Map Stripe status to our status (lowercase, matching SponsorshipStatus enum)
+      let sponsorshipStatus: string;
+      switch (status) {
+        case 'active':
+          sponsorshipStatus = 'active';
+          break;
+        case 'past_due':
+          sponsorshipStatus = 'past_due';
+          break;
+        case 'canceled':
+          sponsorshipStatus = 'canceled';
+          break;
+        case 'unpaid':
+          sponsorshipStatus = 'unpaid';
+          break;
+        case 'paused':
+          sponsorshipStatus = 'paused';
+          break;
+        case 'incomplete':
+        case 'incomplete_expired':
+          sponsorshipStatus = 'pending';
+          break;
+        case 'trialing':
+          sponsorshipStatus = 'active';
+          break;
+        default:
+          this.logger.warn(
+            `Unknown Stripe subscription status '${status}' for ${stripeSubscriptionId}, defaulting to pending`,
+          );
+          sponsorshipStatus = 'pending';
       }
 
-      // Also handle Explorer Pro subscription status changes
-      const explorerSubscription =
-        await this.prisma.explorerSubscription.findFirst({
-          where: { stripe_subscription_id: stripeSubscriptionId },
-          select: { id: true, explorer_id: true },
-        });
+      // Update sponsorship status
+      await this.prisma.sponsorship.updateMany({
+        where: { stripe_subscription_id: stripeSubscriptionId },
+        data: { status: sponsorshipStatus },
+      });
 
-      if (explorerSubscription?.explorer_id) {
-        if (
-          status === 'past_due' ||
-          status === 'unpaid' ||
-          status === 'canceled'
-        ) {
-          // Downgrade user role when Explorer Pro subscription lapses
-          await this.prisma.explorer.update({
-            where: { id: explorerSubscription.explorer_id },
-            data: { role: UserRole.USER },
-          });
-          this.logger.log(
-            `Explorer Pro subscription ${stripeSubscriptionId} status ${status}: downgraded explorer ${explorerSubscription.explorer_id} to USER`,
-          );
-        } else if (status === 'active' || status === 'trialing') {
-          // Restore CREATOR role when subscription becomes active again
-          await this.prisma.explorer.update({
-            where: { id: explorerSubscription.explorer_id },
-            data: { role: UserRole.CREATOR },
-          });
-          this.logger.log(
-            `Explorer Pro subscription ${stripeSubscriptionId} reactivated: restored explorer ${explorerSubscription.explorer_id} to CREATOR`,
-          );
-        }
+      this.logger.log(
+        `Subscription ${stripeSubscriptionId} updated to ${sponsorshipStatus}`,
+      );
+    }
+
+    // Also handle Explorer Pro subscription status changes
+    const explorerSubscription =
+      await this.prisma.explorerSubscription.findFirst({
+        where: { stripe_subscription_id: stripeSubscriptionId },
+        select: { id: true, explorer_id: true },
+      });
+
+    if (explorerSubscription?.explorer_id) {
+      if (
+        status === 'past_due' ||
+        status === 'unpaid' ||
+        status === 'canceled'
+      ) {
+        // Downgrade user role when Explorer Pro subscription lapses
+        await this.prisma.explorer.update({
+          where: { id: explorerSubscription.explorer_id },
+          data: { role: UserRole.USER },
+        });
+        this.logger.log(
+          `Explorer Pro subscription ${stripeSubscriptionId} status ${status}: downgraded explorer ${explorerSubscription.explorer_id} to USER`,
+        );
+      } else if (status === 'active' || status === 'trialing') {
+        // Restore CREATOR role when subscription becomes active again
+        await this.prisma.explorer.update({
+          where: { id: explorerSubscription.explorer_id },
+          data: { role: UserRole.CREATOR },
+        });
+        this.logger.log(
+          `Explorer Pro subscription ${stripeSubscriptionId} reactivated: restored explorer ${explorerSubscription.explorer_id} to CREATOR`,
+        );
       }
-    } catch (e) {
-      this.logger.error('Error handling subscription updated:', e);
     }
   }
 
@@ -808,44 +794,40 @@ export class StripeService {
    * Handle failed invoice payments - notify and update status
    */
   async onInvoicePaymentFailed(event: Stripe.Invoice) {
-    try {
-      const { subscription, attempt_count, next_payment_attempt } = event;
+    const { subscription, attempt_count, next_payment_attempt } = event;
 
-      if (!subscription) return;
+    if (!subscription) return;
 
-      const stripeSubscriptionId =
-        typeof subscription === 'string' ? subscription : subscription.id;
+    const stripeSubscriptionId =
+      typeof subscription === 'string' ? subscription : subscription.id;
 
-      // Log the failure
+    // Log the failure
+    this.logger.log(
+      `Invoice payment failed for subscription ${stripeSubscriptionId}, attempt ${attempt_count}`,
+    );
+
+    // If the subscription is paused (managed by SponsorBillingService), skip
+    // status update — this may be a retry for a pre-pause invoice.
+    const stripeSubscription =
+      await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
+    if (stripeSubscription.pause_collection) {
       this.logger.log(
-        `Invoice payment failed for subscription ${stripeSubscriptionId}, attempt ${attempt_count}`,
+        `Subscription ${stripeSubscriptionId} has pause_collection set, skipping past_due status update`,
       );
+      return;
+    }
 
-      // If the subscription is paused (managed by SponsorBillingService), skip
-      // status update — this may be a retry for a pre-pause invoice.
-      const stripeSubscription =
-        await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
-      if (stripeSubscription.pause_collection) {
-        this.logger.log(
-          `Subscription ${stripeSubscriptionId} has pause_collection set, skipping past_due status update`,
-        );
-        return;
-      }
+    // Update sponsorship to past_due status
+    await this.prisma.sponsorship.updateMany({
+      where: { stripe_subscription_id: stripeSubscriptionId },
+      data: { status: 'past_due' },
+    });
 
-      // Update sponsorship to past_due status
-      await this.prisma.sponsorship.updateMany({
-        where: { stripe_subscription_id: stripeSubscriptionId },
-        data: { status: 'past_due' },
-      });
-
-      // If no more retry attempts, the subscription will be canceled via webhook
-      if (!next_payment_attempt) {
-        this.logger.log(
-          `No more payment attempts for subscription ${stripeSubscriptionId}`,
-        );
-      }
-    } catch (e) {
-      this.logger.error('Error handling invoice payment failed:', e);
+    // If no more retry attempts, the subscription will be canceled via webhook
+    if (!next_payment_attempt) {
+      this.logger.log(
+        `No more payment attempts for subscription ${stripeSubscriptionId}`,
+      );
     }
   }
 
@@ -853,27 +835,93 @@ export class StripeService {
    * Handle charge refunds - update checkout and sponsorship status
    */
   async onChargeRefunded(event: Stripe.Charge) {
-    try {
-      const { id: chargeId, payment_intent, refunded, amount_refunded } = event;
+    const { id: chargeId, payment_intent, refunded, amount_refunded } = event;
 
-      const paymentIntentId =
-        typeof payment_intent === 'string'
-          ? payment_intent
-          : payment_intent?.id;
+    const paymentIntentId =
+      typeof payment_intent === 'string'
+        ? payment_intent
+        : payment_intent?.id;
 
-      this.logger.log(
-        `Charge ${chargeId} refunded: ${amount_refunded} cents (full refund: ${refunded})`,
-      );
+    this.logger.log(
+      `Charge ${chargeId} refunded: ${amount_refunded} cents (full refund: ${refunded})`,
+    );
 
-      if (paymentIntentId) {
-        // Update checkout status to refunded
-        await this.prisma.checkout.updateMany({
-          where: { stripe_payment_intent_id: paymentIntentId },
-          data: { status: 'REFUNDED' },
-        });
+    if (paymentIntentId) {
+      // Update checkout status to refunded
+      await this.prisma.checkout.updateMany({
+        where: { stripe_payment_intent_id: paymentIntentId },
+        data: { status: 'REFUNDED' },
+      });
+
+      // Decrement expedition raised amount
+      const checkout = await this.prisma.checkout.findFirst({
+        where: { stripe_payment_intent_id: paymentIntentId },
+        select: { sponsored_explorer_id: true, expedition_public_id: true },
+      });
+
+      if (checkout?.sponsored_explorer_id && amount_refunded) {
+        const amountDollars = amount_refunded / 100;
+
+        // Use the original expedition from checkout, fall back to latest active
+        let targetExpedition: { id: number; raised: number } | null = null;
+        if (checkout.expedition_public_id) {
+          targetExpedition = await this.prisma.expedition.findFirst({
+            where: {
+              public_id: checkout.expedition_public_id,
+              deleted_at: null,
+            },
+            select: { id: true, raised: true },
+          });
+        }
+        if (!targetExpedition) {
+          targetExpedition = await this.prisma.expedition.findFirst({
+            where: {
+              author_id: checkout.sponsored_explorer_id,
+              deleted_at: null,
+              status: { in: ['active', 'planned'] },
+            },
+            select: { id: true, raised: true },
+            orderBy: { id: 'desc' },
+          });
+        }
+
+        if (targetExpedition) {
+          // Clamp to 0 minimum to prevent negative values
+          const newRaised = Math.max(0, targetExpedition.raised - amountDollars);
+          await this.prisma.expedition.update({
+            where: { id: targetExpedition.id },
+            data: { raised: newRaised },
+          });
+          this.logger.log(
+            `Refund: decremented $${amountDollars} from expedition ${targetExpedition.id} for creator ${checkout.sponsored_explorer_id}`,
+          );
+        }
+
+        // On full refund, decrement sponsors_count
+        if (refunded) {
+          const expeditionForCount = targetExpedition
+            ? { id: targetExpedition.id }
+            : null;
+          if (expeditionForCount) {
+            await this.prisma.expedition.update({
+              where: { id: expeditionForCount.id },
+              data: {
+                sponsors_count: {
+                  decrement: 1,
+                },
+              },
+            });
+            // Clamp sponsors_count to 0
+            await this.prisma.expedition.updateMany({
+              where: { id: expeditionForCount.id, sponsors_count: { lt: 0 } },
+              data: { sponsors_count: 0 },
+            });
+            this.logger.log(
+              `Full refund: decremented sponsors_count on expedition ${expeditionForCount.id}`,
+            );
+          }
+        }
       }
-    } catch (e) {
-      this.logger.error('Error handling charge refunded:', e);
     }
   }
 
@@ -881,23 +929,19 @@ export class StripeService {
    * Handle disputes/chargebacks - critical for financial tracking
    */
   async onDisputeCreated(event: Stripe.Dispute) {
-    try {
-      const { id: disputeId, charge, amount, reason, status } = event;
+    const { id: disputeId, charge, amount, reason, status } = event;
 
-      const chargeId = typeof charge === 'string' ? charge : charge?.id;
+    const chargeId = typeof charge === 'string' ? charge : charge?.id;
 
-      this.logger.error(
-        `DISPUTE CREATED: ${disputeId} for charge ${chargeId}, amount: ${amount}, reason: ${reason}, status: ${status}`,
-      );
+    this.logger.error(
+      `DISPUTE CREATED: ${disputeId} for charge ${chargeId}, amount: ${amount}, reason: ${reason}, status: ${status}`,
+    );
 
-      // Alert admin via email — disputes have strict response deadlines (7-21 days)
-      await this.eventService.trigger({
-        event: EVENTS.ADMIN_DISPUTE_CREATED,
-        data: { disputeId, chargeId, amount, reason, status },
-      });
-    } catch (e) {
-      this.logger.error('Error handling dispute created:', e);
-    }
+    // Alert admin via email — disputes have strict response deadlines (7-21 days)
+    await this.eventService.trigger({
+      event: EVENTS.ADMIN_DISPUTE_CREATED,
+      data: { disputeId, chargeId, amount, reason, status },
+    });
   }
 
   /**

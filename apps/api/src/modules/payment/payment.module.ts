@@ -6,7 +6,6 @@ import { PrismaModule } from '@/modules/prisma';
 import { StripeModule } from '@/modules/stripe';
 
 import {
-  PaymentIntentController,
   PaymentMethodController,
   PlanController,
   PlansController,
@@ -17,7 +16,6 @@ import { PaymentService } from './payment.service';
   imports: [ConfigModule, PrismaModule, StripeModule, EventModule],
   controllers: [
     PaymentMethodController,
-    PaymentIntentController,
     PlanController,
     PlansController,
   ],

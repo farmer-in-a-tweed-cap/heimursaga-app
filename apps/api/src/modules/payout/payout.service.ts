@@ -443,7 +443,7 @@ export class PayoutService {
             status,
             currency: {
               code: currency,
-              symbol: CURRENCIES[currency].symbol,
+              symbol: CURRENCIES[currency]?.symbol || '$',
             },
             created: createdAt,
             arrival: arrival_date,

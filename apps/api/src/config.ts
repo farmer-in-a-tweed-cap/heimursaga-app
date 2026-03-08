@@ -14,7 +14,6 @@ export const config = {
     default: {
       currency: 'usd',
     },
-    application_fee: 100,
   },
   sponsorship: {
     default_amount: 500,
@@ -26,6 +25,7 @@ export const config = {
   },
 };
 
-export const APPLICATION_FEE = process.env?.APPLICATION_FEE
-  ? parseInt(process.env.APPLICATION_FEE)
-  : 10;
+export const APPLICATION_FEE =
+  process.env.APPLICATION_FEE !== undefined
+    ? parseInt(process.env.APPLICATION_FEE)
+    : 10;

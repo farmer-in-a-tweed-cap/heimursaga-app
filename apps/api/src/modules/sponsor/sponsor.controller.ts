@@ -18,7 +18,9 @@ import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
 import {
+  SponsorCheckoutCompleteDto,
   SponsorCheckoutDto,
+  SponsorshipRefundDto,
   SponsorshipTierCreateDto,
   SponsorshipTierUpdateDto,
 } from './sponsor.dto';
@@ -47,7 +49,7 @@ export class SponsorController {
   @HttpCode(HttpStatus.OK)
   async completeCheckout(
     @Session() session: ISession,
-    @Body() body: { paymentIntentId: string },
+    @Body() body: SponsorCheckoutCompleteDto,
   ) {
     return await this.sponsorService.completeCheckoutFromPaymentIntent({
       paymentIntentId: body.paymentIntentId,
@@ -93,7 +95,7 @@ export class SponsorshipController {
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 refunds per minute
   async issueRefund(
     @Session() session: ISession,
-    @Body() body: { chargeId: string; reason?: string },
+    @Body() body: SponsorshipRefundDto,
   ) {
     return await this.sponsorService.issueRefund({
       query: {},

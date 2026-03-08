@@ -38,7 +38,7 @@ export class StripeController {
     if (!session?.userId) {
       throw new ForbiddenException('Authentication required');
     }
-    return this.stripeService.createSetupIntent(session.userId);
+    return this.stripeService.createSetupIntent();
   }
 
   @Roles(UserRole.CREATOR)

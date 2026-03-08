@@ -200,7 +200,7 @@ export const CURRENCIES: {
     symbol: '€',
   },
   [CurrencyCode.SGD]: {
-    code: CurrencyCode.USD,
+    code: CurrencyCode.SGD,
     symbol: 'S$',
   },
 };

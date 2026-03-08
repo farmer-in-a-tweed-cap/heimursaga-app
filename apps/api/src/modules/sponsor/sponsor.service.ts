@@ -716,22 +716,36 @@ export class SponsorService {
             },
           });
 
-          // Update the creator's active expedition raised amount and sponsor count
+          // Update the creator's expedition raised amount and sponsor count
           // Goal and raised are stored in dollars, checkout.total is in cents
           const raisedDollars = integerToDecimal(checkout.total);
-          const activeExpedition = await tx.expedition.findFirst({
-            where: {
-              author_id: creatorId,
-              deleted_at: null,
-              status: { in: ['active', 'planned'] },
-            },
-            select: { id: true },
-            orderBy: { id: 'desc' },
-          });
 
-          if (activeExpedition) {
+          // Use the original expedition from checkout, fall back to latest active
+          let targetExpedition: { id: number } | null = null;
+          if (checkout.expedition_public_id) {
+            targetExpedition = await tx.expedition.findFirst({
+              where: {
+                public_id: checkout.expedition_public_id,
+                deleted_at: null,
+              },
+              select: { id: true },
+            });
+          }
+          if (!targetExpedition) {
+            targetExpedition = await tx.expedition.findFirst({
+              where: {
+                author_id: creatorId,
+                deleted_at: null,
+                status: { in: ['active', 'planned'] },
+              },
+              select: { id: true },
+              orderBy: { id: 'desc' },
+            });
+          }
+
+          if (targetExpedition) {
             await tx.expedition.update({
-              where: { id: activeExpedition.id },
+              where: { id: targetExpedition.id },
               data: {
                 raised: { increment: raisedDollars },
                 sponsors_count: { increment: 1 },
@@ -781,11 +795,10 @@ export class SponsorService {
 
           if (creator && creator.is_email_verified && sponsor) {
             const amount = integerToDecimal(checkoutData.total);
-            const processingFee = calculateFee({
-              amount,
-              percent: APPLICATION_FEE,
-            });
-            const netAmount = amount - processingFee;
+            const processingFee = Math.round(
+              calculateFee({ amount, percent: APPLICATION_FEE }) * 100,
+            ) / 100;
+            const netAmount = Math.round((amount - processingFee) * 100) / 100;
             const expedition = creator.expeditions[0];
 
             this.eventService.trigger<IEventSendEmail>({
@@ -1260,7 +1273,9 @@ export class SponsorService {
           );
         });
       const stripeAccountVerified =
-        stripeAccount?.requirements?.pending_verification?.length <= 0 || false;
+        stripeAccount.charges_enabled &&
+        stripeAccount.payouts_enabled &&
+        !stripeAccount.requirements?.currently_due?.length;
 
       if (!stripeAccountVerified)
         throw new ServiceForbiddenException(

@@ -85,6 +85,25 @@ export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
   expeditionId?: string;
 }
 
+export class SponsorCheckoutCompleteDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  paymentIntentId: string;
+}
+
+export class SponsorshipRefundDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  chargeId: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  reason?: string;
+}
+
 export class SponsorshipTierUpdateDto implements ISponsorshipTierUpdatePayload {
   @ApiProperty({ required: false })
   @IsNumber()

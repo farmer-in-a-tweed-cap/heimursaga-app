@@ -35,33 +35,33 @@
 
 ## C. Sponsorship — One-Time Payments
 
-- [ ] **C1. Preset tier one-time sponsorship** — Select tier (e.g. $25), verify amount in summary, fee breakdown (5% platform fee), complete payment with `4242 4242 4242 4242`. Verify: sponsorship CONFIRMED, expedition `raised` incremented, `sponsors_count` incremented, creator notified via email.
-- [ ] **C2. Custom amount sponsorship** — Enter $42, verify summary updates, fee recalculates. Complete payment, verify 4200 cents charged, application fee = 210 cents in Stripe Dashboard.
-- [ ] **C3. Saved card sponsorship** — Select saved card, complete payment, no new payment method created.
-- [ ] **C4. New card with save enabled** — Enter new card, leave "Save" checked, complete. Verify new card appears in Billing Settings.
-- [ ] **C5. New card with save disabled** — Uncheck "Save", complete. Verify no new payment method saved.
-- [ ] **C6. Minimum amount ($5)** — Enter $3, verify frontend error "Minimum amount is $5.00", submit disabled. Enter $5, verify accepted.
-- [ ] **C7. Maximum amount ($10,000)** — Enter $15,000, verify server rejects. Enter $10,000, verify accepted.
-- [ ] **C8. Anonymous sponsorship** — Uncheck "Show publicly", verify `is_public = false`, shows as "Anonymous" on public expedition page.
-- [ ] **C9. Private message** — Enter message, uncheck public, verify message delivered to creator but hidden on public page.
+- [X] **C1. Preset tier one-time sponsorship** — Select tier (e.g. $25), verify amount in summary, fee breakdown (5% platform fee), complete payment with `4242 4242 4242 4242`. Verify: sponsorship CONFIRMED, expedition `raised` incremented, `sponsors_count` incremented, creator notified via email.
+- [X] **C2. Custom amount sponsorship** — Enter $42, verify summary updates, fee recalculates. Complete payment, verify 4200 cents charged, application fee = 210 cents in Stripe Dashboard.
+- [X] **C3. Saved card sponsorship** — Select saved card, complete payment, no new payment method created.
+- [X] **C4. New card with save enabled** — Enter new card, leave "Save" checked, complete. Verify new card appears in Billing Settings.
+- [X] **C5. New card with save disabled** — Uncheck "Save", complete. Verify no new payment method saved.
+- [X] **C6. Minimum amount ($5)** — Enter $3, verify frontend error "Minimum amount is $5.00", submit disabled. Enter $5, verify accepted.
+- [X] **C7. Maximum amount ($10,000)** — Enter $15,000, verify server rejects. Enter $10,000, verify accepted.
+- [X] **C8. Anonymous sponsorship** — Uncheck "Show publicly", verify `is_public = false`, shows as "Anonymous" on public expedition page.
+- [X] **C9. Private message** — Enter message, uncheck public, verify message delivered to creator but hidden on public page.
 
 ## D. Sponsorship — Recurring Monthly
 
-- [ ] **D1. Preset tier recurring** — Select monthly tier, verify "/mo" suffix, next charge date shown. Complete payment. Verify: Stripe subscription with `transfer_data.destination`, `application_fee_percent` set, sponsorship ACTIVE with `stripe_subscription_id`.
-- [ ] **D2. Custom recurring amount** — Enter custom monthly amount ($15), verify dynamic Stripe Price created, correct amount charged.
+- [X] **D1. Preset tier recurring** — Select monthly tier, verify "/mo" suffix, next charge date shown. Complete payment. Verify: Stripe subscription with `transfer_data.destination`, `application_fee_percent` set, sponsorship ACTIVE with `stripe_subscription_id`.
+- [X] **D2. Custom recurring amount** — Enter custom monthly amount ($15), verify dynamic Stripe Price created, correct amount charged.
 - [ ] **D3. Recurring renewal (second month)** — Use Stripe test clock to advance 1 month. Verify `invoice.payment_succeeded` webhook fires with `billing_reason != subscription_create`, expedition `raised` incremented, NO duplicate sponsorship record.
-- [ ] **D4. Cancel recurring sponsorship** — From Sponsorship Dashboard, cancel. Verify Stripe subscription canceled immediately, sponsorship status = `canceled`.
-- [ ] **D5. Duplicate recurring prevention** — With active recurring to Creator X, try another. Verify recurring option disabled, server rejects if bypassed.
+- [X] **D4. Cancel recurring sponsorship** — From Sponsorship Dashboard, cancel. Verify Stripe subscription canceled immediately, sponsorship status = `canceled`.
+- [X] **D5. Duplicate recurring prevention** — With active recurring to Creator X, try another. Verify recurring option disabled, server rejects if bypassed.
 - [ ] **D6. Self-sponsorship blocked** — Navigate to sponsor your own expedition. Verify "You cannot sponsor yourself" error.
-- [ ] **D7. Sponsorship to non-Pro creator** — Verify "not eligible to receive sponsorships" error.
+- [X] **D7. Sponsorship to non-Pro creator** — Verify "not eligible to receive sponsorships" error.
 - [ ] **D8. Sponsorship to unverified Stripe account** — Verify "Sponsorships Not Available" page, server validates `charges_enabled` and `payouts_enabled`.
 
 ## E. Stripe Connect Onboarding
 
-- [ ] **E1. Create payout method** — As Pro user, initiate Stripe Connect setup. Verify Custom account created, `payoutMethod` record with `is_verified = false`.
-- [ ] **E2. Idempotent creation** — Call create again, verify returns existing (no duplicate).
-- [ ] **E3. Generate onboarding link** — Request link, verify URL from Stripe, `return_url` and `refresh_url` correct, ownership verified.
-- [ ] **E4. Complete onboarding** — Follow link, complete verification with test data. Verify `account.updated` webhook fires, `is_verified = true`, `is_stripe_account_connected = true`, STRIPE_VERIFIED notification received.
+- [X] **E1. Create payout method** — As Pro user, initiate Stripe Connect setup. Verify Custom account created, `payoutMethod` record with `is_verified = false`.
+- [X] **E2. Idempotent creation** — Call create again, verify returns existing (no duplicate).
+- [X] **E3. Generate onboarding link** — Request link, verify URL from Stripe, `return_url` and `refresh_url` correct, ownership verified.
+- [X] **E4. Complete onboarding** — Follow link, complete verification with test data. Verify `account.updated` webhook fires, `is_verified = true`, `is_stripe_account_connected = true`, STRIPE_VERIFIED notification received.
 - [ ] **E5. Partial onboarding** — Exit before completing. Verify `is_verified` stays `false`, STRIPE_ACTION_REQUIRED notification with due items listed.
 - [ ] **E6. View account details** — `GET /stripe/account` returns verification status and capabilities. Returns 403 for non-Creator.
 - [ ] **E7. Non-Creator blocked** — Regular USER cannot create payout method (403).
