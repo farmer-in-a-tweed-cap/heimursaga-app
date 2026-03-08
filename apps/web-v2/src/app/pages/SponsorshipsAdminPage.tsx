@@ -19,6 +19,7 @@ import {
   ChevronDown,
   Shield,
   Info,
+  RefreshCw,
 } from 'lucide-react';
 import {
   sponsorshipApi,
@@ -118,6 +119,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
   const [isLoading, setIsLoading] = useState(true);
   const [isSavingTiers, setIsSavingTiers] = useState(false);
   const [isStartingOnboarding, setIsStartingOnboarding] = useState(false);
+  const [isRefreshingStatus, setIsRefreshingStatus] = useState(false);
 
   // Country selector modal state
   const [showCountryModal, setShowCountryModal] = useState(false);
@@ -482,7 +484,9 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
 
   // Stripe Connect status
   const stripeConnected = payoutMethods.length > 0 && payoutMethods[0].isVerified;
-  const stripeAccountId = payoutMethods[0]?.stripeAccountId;
+  const stripeStatus = payoutMethods.length > 0
+    ? (payoutMethods[0].accountStatus || (payoutMethods[0].isVerified ? 'active' : 'onboarding_incomplete'))
+    : 'not_connected';
 
   // Check if user is Explorer Pro (skip when embedded - parent handles access)
   if (!embedded && !isPro) {
@@ -828,42 +832,8 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
         </div>
       </div>
 
-      {/* Stripe Connect Onboarding Notice */}
-      {!stripeConnected && (
-        <div className="bg-[#ac6d46] text-white border-2 border-[#ac6d46] mb-6">
-          <div className="p-6">
-            <div className="flex items-start gap-4">
-              <AlertCircle className="w-8 h-8 flex-shrink-0" />
-              <div className="flex-1">
-                <div className="font-bold text-xl mb-2">ACTION REQUIRED: Complete Stripe Connect Onboarding</div>
-                <div className="text-sm mb-4 opacity-90">
-                  To receive sponsorships and payouts, you must connect your Stripe account. This secure process links
-                  your bank account for direct deposits.
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  <button
-                    onClick={handleStartStripeOnboarding}
-                    disabled={isStartingOnboarding}
-                    className="px-6 py-3 bg-white text-[#ac6d46] font-bold hover:bg-[#f5f5f5] transition-all text-sm disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
-                    START STRIPE ONBOARDING
-                  </button>
-                  <button
-                    onClick={() => setSelectedView('stripe')}
-                    className="px-6 py-3 border-2 border-white text-white font-bold hover:bg-white hover:text-[#ac6d46] transition-all text-sm"
-                  >
-                    VIEW DETAILS
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stripe Connected Notice */}
-      {stripeConnected && (
+      {/* Stripe Connect Status Banner */}
+      {stripeStatus === 'active' && (
         <div className="bg-[#616161] text-white border-2 border-[#616161] mb-6 p-4">
           <div className="flex items-center gap-3">
             <CheckCircle className="w-5 h-5" />
@@ -871,6 +841,128 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             <button onClick={() => setSelectedView('stripe')} className="text-xs text-white opacity-90 hover:opacity-100 font-bold">
               MANAGE
             </button>
+          </div>
+        </div>
+      )}
+      {stripeStatus === 'not_connected' && (
+        <div className="bg-[#ac6d46] text-white border-2 border-[#ac6d46] mb-6">
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-8 h-8 flex-shrink-0" />
+              <div className="flex-1">
+                <div className="font-bold text-xl mb-2">Connect Your Stripe Account</div>
+                <div className="text-sm mb-4 opacity-90">
+                  To receive sponsorships and payouts, you must connect your Stripe account. This secure process links
+                  your bank account for direct deposits.
+                </div>
+                <button
+                  onClick={handleStartStripeOnboarding}
+                  disabled={isStartingOnboarding}
+                  className="px-6 py-3 bg-white text-[#ac6d46] font-bold hover:bg-[#f5f5f5] transition-all text-sm disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
+                  START STRIPE ONBOARDING
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {stripeStatus === 'onboarding_incomplete' && (
+        <div className="bg-[#ac6d46] text-white border-2 border-[#ac6d46] mb-6">
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-8 h-8 flex-shrink-0" />
+              <div className="flex-1">
+                <div className="font-bold text-xl mb-2">Complete Stripe Onboarding</div>
+                <div className="text-sm mb-4 opacity-90">
+                  Your Stripe account has been created but setup is not yet complete. Continue onboarding to start receiving sponsorships.
+                </div>
+                <button
+                  onClick={handleStartStripeOnboarding}
+                  disabled={isStartingOnboarding}
+                  className="px-6 py-3 bg-white text-[#ac6d46] font-bold hover:bg-[#f5f5f5] transition-all text-sm disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
+                  CONTINUE ONBOARDING
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {stripeStatus === 'pending_review' && (
+        <div className="bg-[#4676ac] text-white border-2 border-[#4676ac] mb-6">
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <Loader2 className="w-8 h-8 flex-shrink-0 animate-spin" />
+              <div className="flex-1">
+                <div className="font-bold text-xl mb-2">Verification In Progress</div>
+                <div className="text-sm mb-4 opacity-90">
+                  Your documents are being reviewed. This usually takes 1-2 business days.
+                </div>
+                <button
+                  onClick={() => setSelectedView('stripe')}
+                  className="px-6 py-3 border-2 border-white text-white font-bold hover:bg-white hover:text-[#4676ac] transition-all text-sm"
+                >
+                  VIEW DETAILS
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {stripeStatus === 'action_required' && (
+        <div className="bg-[#994040] text-white border-2 border-[#994040] mb-6">
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-8 h-8 flex-shrink-0" />
+              <div className="flex-1">
+                <div className="font-bold text-xl mb-2">ACTION REQUIRED: Additional Information Needed</div>
+                {payoutMethods[0]?.requirementsCurrentlyDue && payoutMethods[0].requirementsCurrentlyDue.length > 0 && (
+                  <ul className="text-sm mb-4 opacity-90 list-disc list-inside">
+                    {payoutMethods[0].requirementsCurrentlyDue.slice(0, 3).map((req, i) => (
+                      <li key={i}>{req}</li>
+                    ))}
+                    {payoutMethods[0].requirementsCurrentlyDue.length > 3 && (
+                      <li>and {payoutMethods[0].requirementsCurrentlyDue.length - 3} more...</li>
+                    )}
+                  </ul>
+                )}
+                <button
+                  onClick={handleStartStripeOnboarding}
+                  disabled={isStartingOnboarding}
+                  className="px-6 py-3 bg-white text-[#994040] font-bold hover:bg-[#f5f5f5] transition-all text-sm disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
+                  COMPLETE REQUIREMENTS
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {stripeStatus === 'restricted' && (
+        <div className="bg-[#994040] text-white border-2 border-[#994040] mb-6">
+          <div className="p-6">
+            <div className="flex items-start gap-4">
+              <AlertCircle className="w-8 h-8 flex-shrink-0" />
+              <div className="flex-1">
+                <div className="font-bold text-xl mb-2">Account Restricted</div>
+                <div className="text-sm mb-4 opacity-90">
+                  Your account has been restricted. Visit the Stripe Dashboard or contact support for more information.
+                </div>
+                <a
+                  href="https://dashboard.stripe.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#994040] font-bold hover:bg-[#f5f5f5] transition-all text-sm"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  OPEN STRIPE DASHBOARD
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1451,16 +1543,37 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
           {selectedView === 'stripe' && (
             <div className="space-y-6">
               <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6">
-                <h3 className="text-sm font-bold mb-4 dark:text-[#e5e5e5]">STRIPE CONNECT STATUS</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold dark:text-[#e5e5e5]">STRIPE CONNECT STATUS</h3>
+                  <button
+                    onClick={async () => {
+                      setIsRefreshingStatus(true);
+                      try {
+                        const res = await payoutApi.getPayoutMethods();
+                        setPayoutMethods(res.data || []);
+                        toast.success('Status refreshed');
+                      } catch {
+                        toast.error('Failed to refresh status');
+                      } finally {
+                        setIsRefreshingStatus(false);
+                      }
+                    }}
+                    disabled={isRefreshingStatus}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border-2 border-[#202020] dark:border-[#616161] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all dark:text-[#e5e5e5] disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingStatus ? 'animate-spin' : ''}`} />
+                    {isRefreshingStatus ? 'REFRESHING...' : 'REFRESH STATUS'}
+                  </button>
+                </div>
 
                 {payoutMethods.length === 0 ? (
                   <div className="space-y-4">
-                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500">
+                    <div className="p-4 bg-[#ac6d46]/10 dark:bg-[#ac6d46]/20 border-l-4 border-[#ac6d46]">
                       <div className="flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <AlertCircle className="w-5 h-5 text-[#ac6d46] flex-shrink-0 mt-0.5" />
                         <div>
-                          <div className="font-bold text-amber-800 dark:text-amber-200">Not Connected</div>
-                          <div className="text-sm text-amber-700 dark:text-amber-300">
+                          <div className="font-bold text-[#ac6d46]">Not Connected</div>
+                          <div className="text-sm text-[#616161] dark:text-[#b5bcc4]">
                             Connect your Stripe account to start receiving sponsorships and payouts.
                           </div>
                         </div>
@@ -1477,25 +1590,96 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   </div>
                 ) : (
                   <div className="space-y-4">
+                    {/* Status Badge */}
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white ${
+                        stripeStatus === 'active' ? 'bg-[#616161]'
+                        : stripeStatus === 'pending_review' ? 'bg-[#4676ac]'
+                        : stripeStatus === 'action_required' || stripeStatus === 'restricted' ? 'bg-[#994040]'
+                        : 'bg-[#ac6d46]'
+                      }`}>
+                        {stripeStatus === 'active' && <CheckCircle className="w-3.5 h-3.5" />}
+                        {stripeStatus === 'pending_review' && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                        {(stripeStatus === 'action_required' || stripeStatus === 'restricted' || stripeStatus === 'onboarding_incomplete') && <AlertCircle className="w-3.5 h-3.5" />}
+                        {stripeStatus === 'active' && 'ACTIVE'}
+                        {stripeStatus === 'pending_review' && 'PENDING REVIEW'}
+                        {stripeStatus === 'action_required' && 'ACTION REQUIRED'}
+                        {stripeStatus === 'restricted' && 'RESTRICTED'}
+                        {stripeStatus === 'onboarding_incomplete' && 'ONBOARDING INCOMPLETE'}
+                      </span>
+                    </div>
+
+                    {/* Capabilities */}
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Status:</div>
-                        <div className="font-bold dark:text-[#e5e5e5]">
-                          {payoutMethods[0].isVerified ? (
-                            <span className="text-green-600 flex items-center gap-1">
-                              <CheckCircle className="w-4 h-4" /> Verified
-                            </span>
+                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Accept Charges:</div>
+                        <div className="font-bold dark:text-[#e5e5e5] flex items-center gap-1">
+                          {payoutMethods[0].chargesEnabled ? (
+                            <><CheckCircle className="w-4 h-4 text-[#598636]" /> Enabled</>
                           ) : (
-                            <span className="text-amber-600">Pending Verification</span>
+                            <><AlertCircle className="w-4 h-4 text-[#994040]" /> Disabled</>
                           )}
                         </div>
                       </div>
                       <div>
-                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Account ID:</div>
-                        <div className="font-bold font-mono text-sm dark:text-[#e5e5e5]">
-                          {stripeAccountId || 'N/A'}
+                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Receive Payouts:</div>
+                        <div className="font-bold dark:text-[#e5e5e5] flex items-center gap-1">
+                          {payoutMethods[0].payoutsEnabled ? (
+                            <><CheckCircle className="w-4 h-4 text-[#598636]" /> Enabled</>
+                          ) : (
+                            <><AlertCircle className="w-4 h-4 text-[#994040]" /> Disabled</>
+                          )}
                         </div>
                       </div>
+                    </div>
+
+                    {/* Requirements (action_required) */}
+                    {stripeStatus === 'action_required' && payoutMethods[0].requirementsCurrentlyDue && payoutMethods[0].requirementsCurrentlyDue.length > 0 && (
+                      <div className="p-4 bg-[#994040]/10 dark:bg-[#994040]/20 border-l-4 border-[#994040]">
+                        <div className="font-bold text-sm text-[#994040] mb-2">Requirements Due</div>
+                        <ul className="text-sm text-[#616161] dark:text-[#b5bcc4] list-disc list-inside space-y-1">
+                          {payoutMethods[0].requirementsCurrentlyDue.map((req, i) => (
+                            <li key={i}>{req}</li>
+                          ))}
+                        </ul>
+                        <button
+                          onClick={handleStartStripeOnboarding}
+                          disabled={isStartingOnboarding}
+                          className="mt-3 px-4 py-2 bg-[#994040] text-white text-sm font-bold hover:bg-[#7a3333] transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
+                          COMPLETE REQUIREMENTS
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Pending items (pending_review) */}
+                    {stripeStatus === 'pending_review' && payoutMethods[0].requirementsPending && payoutMethods[0].requirementsPending.length > 0 && (
+                      <div className="p-4 bg-[#4676ac]/10 dark:bg-[#4676ac]/20 border-l-4 border-[#4676ac]">
+                        <div className="font-bold text-sm text-[#4676ac] mb-2">Under Review</div>
+                        <ul className="text-sm text-[#616161] dark:text-[#b5bcc4] list-disc list-inside space-y-1">
+                          {payoutMethods[0].requirementsPending.map((req, i) => (
+                            <li key={i}>{req}</li>
+                          ))}
+                        </ul>
+                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-2 italic">No action needed — Stripe is reviewing your documents.</div>
+                      </div>
+                    )}
+
+                    {/* Onboarding incomplete CTA */}
+                    {stripeStatus === 'onboarding_incomplete' && (
+                      <button
+                        onClick={handleStartStripeOnboarding}
+                        disabled={isStartingOnboarding}
+                        className="px-4 py-2 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 disabled:opacity-50"
+                      >
+                        {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
+                        CONTINUE ONBOARDING
+                      </button>
+                    )}
+
+                    {/* Account Details */}
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#b5bcc4] dark:border-[#616161]">
                       {payoutMethods[0].businessName && (
                         <div>
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Business Name:</div>
@@ -1508,20 +1692,32 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                           <div className="font-bold dark:text-[#e5e5e5]">{payoutMethods[0].country}</div>
                         </div>
                       )}
+                      {payoutMethods[0].email && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Email:</div>
+                          <div className="font-bold dark:text-[#e5e5e5]">{payoutMethods[0].email}</div>
+                        </div>
+                      )}
+                      {payoutMethods[0].currency && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Currency:</div>
+                          <div className="font-bold dark:text-[#e5e5e5] uppercase">{payoutMethods[0].currency}</div>
+                        </div>
+                      )}
                     </div>
 
-                    {!payoutMethods[0].isVerified && (
-                      <button
-                        onClick={handleStartStripeOnboarding}
-                        disabled={isStartingOnboarding}
-                        className="px-4 py-2 bg-[#4676ac] text-white text-sm font-bold hover:bg-[#365a87] transition-all flex items-center gap-2 disabled:opacity-50"
-                      >
-                        {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
-                        CONTINUE ONBOARDING
-                      </button>
+                    {/* Payout Schedule */}
+                    {payoutMethods[0].automaticPayouts && (
+                      <div className="p-4 bg-[#f0f4f8] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs dark:text-[#b5bcc4]">
+                        <strong className="dark:text-[#e5e5e5]">Payout Schedule:</strong>{' '}
+                        {payoutMethods[0].automaticPayouts.enabled
+                          ? `${payoutMethods[0].automaticPayouts.schedule.interval} payouts`
+                          : 'Manual payouts'}
+                      </div>
                     )}
 
-                    {payoutMethods[0].isVerified && (
+                    {/* Stripe Dashboard link */}
+                    {stripeStatus === 'active' && (
                       <a
                         href="https://dashboard.stripe.com"
                         target="_blank"
@@ -1531,15 +1727,6 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                         <ExternalLink className="w-4 h-4" />
                         OPEN STRIPE DASHBOARD
                       </a>
-                    )}
-
-                    {payoutMethods[0].automaticPayouts && (
-                      <div className="p-4 bg-[#f0f4f8] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs dark:text-[#b5bcc4]">
-                        <strong className="dark:text-[#e5e5e5]">Payout Schedule:</strong>{' '}
-                        {payoutMethods[0].automaticPayouts.enabled
-                          ? `${payoutMethods[0].automaticPayouts.schedule.interval} payouts`
-                          : 'Manual payouts'}
-                      </div>
                     )}
                   </div>
                 )}

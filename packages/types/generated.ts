@@ -727,17 +727,30 @@ export interface ISponsorshipTierWithPricing {
 }
 
 // payout
+export type StripeAccountStatus =
+  | 'not_connected'
+  | 'onboarding_incomplete'
+  | 'pending_review'
+  | 'action_required'
+  | 'restricted'
+  | 'active';
+
 export interface IPayoutMethodBaseDetail {
   id: string;
   platform: string;
   isVerified: boolean;
+  accountStatus?: StripeAccountStatus;
+  chargesEnabled?: boolean;
+  payoutsEnabled?: boolean;
+  requirementsCurrentlyDue?: string[];
+  requirementsPending?: string[];
+  detailsSubmitted?: boolean;
   businessName: string;
   businessType: string;
   phoneNumber?: string;
   email: string;
   currency?: string;
   country?: string;
-  stripeAccountId?: string;
   automaticPayouts?: {
     enabled: boolean;
     schedule?: {

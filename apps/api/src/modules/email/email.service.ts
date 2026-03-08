@@ -42,8 +42,11 @@ export class EmailService {
     try {
       const { to, subject, text, html } = options;
 
-      const emailAddress = process.env.SMTP_EMAIL_FROM;
-      const from = `"Heimursaga" <${emailAddress}>`;
+      const emailFrom = process.env.SMTP_EMAIL_FROM;
+      // If SMTP_EMAIL_FROM already has "Name <email>" format, use as-is; otherwise wrap it
+      const from = emailFrom?.includes('<')
+        ? emailFrom
+        : `"Heimursaga" <${emailFrom}>`;
 
       this.logger.log(
         JSON.stringify({ to, from, subject, text, html }, null, 2),

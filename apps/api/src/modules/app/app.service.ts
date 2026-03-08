@@ -9,8 +9,10 @@ import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
   ServiceBadRequestException,
   ServiceForbiddenException,
+  ServiceInternalException,
 } from '@/common/exceptions';
 import { EVENTS, EventService, IEventSendEmail } from '@/modules/event';
+import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 
 @Injectable()
@@ -19,6 +21,7 @@ export class AppService {
     private readonly prisma: PrismaService,
     private emailService: EmailService,
     private eventService: EventService,
+    private logger: Logger,
   ) {}
 
   async test() {
@@ -179,6 +182,101 @@ export class AppService {
       return response;
     } catch (error) {
       throw new ServiceBadRequestException('sitemap is not generated');
+    }
+  }
+
+  async submitContactForm(payload: {
+    name: string;
+    email: string;
+    category: string;
+    subject: string;
+    message: string;
+    url?: string;
+  }) {
+    const { name, email, category, subject, message, url } = payload;
+
+    if (!name || !email || !category || !subject || !message) {
+      throw new ServiceBadRequestException(
+        'Name, email, category, subject, and message are required',
+      );
+    }
+
+    // Basic email format validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw new ServiceBadRequestException('Invalid email address');
+    }
+
+    const validCategories = [
+      'violation',
+      'technical',
+      'account',
+      'billing',
+      'general',
+      'feedback',
+    ];
+    if (!validCategories.includes(category)) {
+      throw new ServiceBadRequestException('Invalid category');
+    }
+
+    const categoryLabels: Record<string, string> = {
+      violation: 'Content Violation Report',
+      technical: 'Technical Support',
+      account: 'Account Issue',
+      billing: 'Billing & Payments',
+      general: 'General Inquiry',
+      feedback: 'Feature Request / Feedback',
+    };
+
+    try {
+      const adminEmail = process.env.CONTACT_EMAIL || 'admin@heimursaga.com';
+      const categoryLabel = categoryLabels[category] || category;
+
+      const html = `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #202020; color: white; padding: 20px;">
+            <h2 style="margin: 0; font-size: 16px;">HEIMURSAGA CONTACT FORM</h2>
+          </div>
+          <div style="padding: 20px; background: #f5f5f5;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr>
+                <td style="padding: 8px 12px; font-weight: bold; width: 120px; vertical-align: top;">Category:</td>
+                <td style="padding: 8px 12px;">${categoryLabel}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 12px; font-weight: bold; vertical-align: top;">From:</td>
+                <td style="padding: 8px 12px;">${name} &lt;${email}&gt;</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 12px; font-weight: bold; vertical-align: top;">Subject:</td>
+                <td style="padding: 8px 12px;">${subject}</td>
+              </tr>
+              ${url ? `<tr><td style="padding: 8px 12px; font-weight: bold; vertical-align: top;">URL:</td><td style="padding: 8px 12px;"><a href="${url}">${url}</a></td></tr>` : ''}
+            </table>
+            <div style="margin-top: 16px; padding: 16px; background: white; border-left: 4px solid #ac6d46;">
+              <div style="font-weight: bold; margin-bottom: 8px; font-size: 12px; color: #616161;">MESSAGE</div>
+              <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${message}</div>
+            </div>
+          </div>
+        </div>
+      `;
+
+      this.eventService.trigger<IEventSendEmail>({
+        event: EVENTS.SEND_EMAIL,
+        data: {
+          to: adminEmail,
+          subject: `[${categoryLabel}] ${subject}`,
+          html,
+        },
+      });
+
+      this.logger.log(
+        `Contact form submitted: category=${category}, from=${email}`,
+      );
+
+      return { success: true };
+    } catch (e) {
+      this.logger.error('Failed to process contact form:', e);
+      throw new ServiceInternalException();
     }
   }
 }

@@ -23,6 +23,7 @@ import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
+import { mapRequirementsToFriendly } from '@/modules/payout/stripe-requirements.map';
 import { IOnSponsorCheckoutCompleteEvent } from '@/modules/sponsor';
 
 import {
@@ -583,13 +584,20 @@ export class StripeService {
           );
         } else if (!isVerified && requirements?.currently_due?.length > 0) {
           // Action required — send STRIPE_ACTION_REQUIRED notification
-          const dueItems = requirements.currently_due.slice(0, 3).join(', ');
+          const friendlyItems = mapRequirementsToFriendly(
+            requirements.currently_due,
+          );
+          const displayItems = friendlyItems.slice(0, 3).join(', ');
+          const suffix =
+            friendlyItems.length > 3
+              ? ` and ${friendlyItems.length - 3} more`
+              : '';
           this.eventService.trigger<IUserNotificationCreatePayload>({
             event: EVENTS.NOTIFICATION_CREATE,
             data: {
               context: UserNotificationContext.STRIPE_ACTION_REQUIRED,
               userId: payoutMethod.explorer_id,
-              body: `Stripe requires additional information: ${dueItems}. Complete your setup to receive sponsorships.`,
+              body: `Stripe requires additional information: ${displayItems}${suffix}. Complete your setup to receive sponsorships.`,
             },
           });
           this.logger.log(

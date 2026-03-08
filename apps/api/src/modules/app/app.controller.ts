@@ -1,5 +1,15 @@
-import { Controller, Get, Header, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { FastifyReply } from 'fastify';
 
 import { Public } from '@/common/decorators';
@@ -43,5 +53,28 @@ export class AppController {
       '</urlset>',
     ].join('\n');
     reply.header('Content-Type', 'application/xml').send(xml);
+  }
+
+  @Public()
+  @Post('contact')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 submissions per 5 minutes
+  async contact(
+    @Body('name') name: string,
+    @Body('email') email: string,
+    @Body('category') category: string,
+    @Body('subject') subject: string,
+    @Body('message') message: string,
+    @Body('url') url?: string,
+  ) {
+    return this.appService.submitContactForm({
+      name,
+      email,
+      category,
+      subject,
+      message,
+      url,
+    });
   }
 }

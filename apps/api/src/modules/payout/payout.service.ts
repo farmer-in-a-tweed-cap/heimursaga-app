@@ -13,9 +13,12 @@ import {
   IStripePlatformAccountLinkGenerateResponse,
   PayoutMethodPlatform,
   PayoutStatus,
+  StripeAccountStatus,
   StripePlayformAccountLinkMode,
   UserRole,
 } from '@repo/types';
+
+import { mapRequirementsToFriendly } from './stripe-requirements.map';
 
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
@@ -111,6 +114,37 @@ export class PayoutService {
         stripeAccount?.payouts_enabled === true &&
         (stripeAccount?.requirements?.currently_due?.length || 0) === 0;
 
+      // Derive granular account status
+      const chargesEnabled = stripeAccount?.charges_enabled ?? false;
+      const payoutsEnabled = stripeAccount?.payouts_enabled ?? false;
+      const detailsSubmitted = stripeAccount?.details_submitted ?? false;
+      const currentlyDue = stripeAccount?.requirements?.currently_due || [];
+      const pastDue = stripeAccount?.requirements?.past_due || [];
+      const pendingVerification =
+        stripeAccount?.requirements?.pending_verification || [];
+
+      let accountStatus: StripeAccountStatus = 'not_connected';
+      if (!stripeAccount) {
+        accountStatus = 'not_connected';
+      } else if (!detailsSubmitted) {
+        accountStatus = 'onboarding_incomplete';
+      } else if (currentlyDue.length > 0 || pastDue.length > 0) {
+        accountStatus = 'action_required';
+      } else if (pendingVerification.length > 0) {
+        accountStatus = 'pending_review';
+      } else if (!chargesEnabled || !payoutsEnabled) {
+        accountStatus = 'restricted';
+      } else {
+        accountStatus = 'active';
+      }
+
+      const requirementsCurrentlyDue = mapRequirementsToFriendly([
+        ...currentlyDue,
+        ...pastDue,
+      ]);
+      const requirementsPending =
+        mapRequirementsToFriendly(pendingVerification);
+
       // get automatic payout settings
       const stripeInterval =
         stripeAccount?.settings?.payouts?.schedule?.interval;
@@ -141,7 +175,12 @@ export class PayoutService {
               phoneNumber,
               platform,
               isVerified,
-              // Note: stripeAccountId intentionally omitted for security
+              accountStatus,
+              chargesEnabled,
+              payoutsEnabled,
+              detailsSubmitted,
+              requirementsCurrentlyDue,
+              requirementsPending,
               currency,
               country,
               automaticPayouts,

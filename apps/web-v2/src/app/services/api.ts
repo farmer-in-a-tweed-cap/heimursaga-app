@@ -1368,6 +1368,14 @@ export interface BalanceResponse {
 // Alias for backward compatibility
 export type PayoutBalance = BalanceResponse;
 
+export type StripeAccountStatus =
+  | 'not_connected'
+  | 'onboarding_incomplete'
+  | 'pending_review'
+  | 'action_required'
+  | 'restricted'
+  | 'active';
+
 export interface PayoutMethod {
   id: string;
   businessName?: string;
@@ -1376,7 +1384,12 @@ export interface PayoutMethod {
   phoneNumber?: string;
   platform: string;
   isVerified: boolean;
-  stripeAccountId?: string;
+  accountStatus?: StripeAccountStatus;
+  chargesEnabled?: boolean;
+  payoutsEnabled?: boolean;
+  requirementsCurrentlyDue?: string[];
+  requirementsPending?: string[];
+  detailsSubmitted?: boolean;
   currency?: string;
   country?: string;
   automaticPayouts?: {
@@ -2173,6 +2186,20 @@ export const weatherApi = {
     api.get<ActivityPulseResponse>('/weather/stats'),
   getRegionReport: (query: string) =>
     api.get<RegionReportResponse>(`/weather/region?q=${encodeURIComponent(query)}`),
+};
+
+export interface ContactFormPayload {
+  name: string;
+  email: string;
+  category: string;
+  subject: string;
+  message: string;
+  url?: string;
+}
+
+export const contactApi = {
+  submit: (payload: ContactFormPayload) =>
+    api.post<{ success: boolean }>('/contact', payload),
 };
 
 export default api;
