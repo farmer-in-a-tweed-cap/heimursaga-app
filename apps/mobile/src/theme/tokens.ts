@@ -1,5 +1,3 @@
-import { Platform } from 'react-native';
-
 // ─── Brand Colors ───
 export const colors = {
   copper: '#ac6d46',
@@ -65,10 +63,12 @@ export const surfaces: Record<ThemeMode, SurfaceColors> = {
 };
 
 // ─── Typography ───
-export const mono = Platform.select({
-  ios: 'SF Mono',
-  default: 'monospace',
-}) as string;
+export const sans = 'Jost';
+export const heading = 'Eczar';
+export const serif = heading;
+
+// Backward-compatible alias — all existing import sites continue working
+export const mono = sans;
 
 export const fontSize = {
   xs: 10,

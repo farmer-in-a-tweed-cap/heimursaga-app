@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { InlineLocationMap } from '@/app/components/InlineLocationMap';
+import { QuickSponsorButton } from '@/app/components/QuickSponsorButton';
 import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { entryApi, commentApi, explorerApi, type Entry, type Comment } from '@/app/services/api';
@@ -308,6 +309,10 @@ export function JournalEntryPage() {
       bookmarked: api.bookmarked,
       createdByMe: api.createdByMe,
       sponsored: api.sponsored,
+
+      // Quick sponsor
+      quickSponsorsCount: api.quickSponsorsCount || 0,
+      quickSponsorsTotal: api.quickSponsorsTotal || 0,
     };
   };
 
@@ -1080,23 +1085,33 @@ export function JournalEntryPage() {
             </div>
           )}
 
-          {/* Entry Navigation */}
+          {/* Entry Navigation + Quick Sponsor */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <div className="flex items-center justify-center gap-4">
+            <div className="flex items-stretch justify-center gap-4">
               {entry.expeditionId ? (
                 <Link
                   href={`/expedition/${entry.expeditionId}`}
-                  className="px-6 py-3 bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm whitespace-nowrap"
+                  className="px-6 py-3 bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm whitespace-nowrap flex items-center"
                 >
                   VIEW EXPEDITION
                 </Link>
               ) : (
                 <Link
                   href={`/journal/${entry.explorerId}`}
-                  className="px-6 py-3 bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm whitespace-nowrap"
+                  className="px-6 py-3 bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm whitespace-nowrap flex items-center"
                 >
                   VIEW JOURNAL
                 </Link>
+              )}
+              {!isOwner && entry.explorerIsPro && entry.stripeAccountConnected && (
+                <QuickSponsorButton
+                  entryPublicId={entry.id}
+                  authorUsername={entry.explorerName}
+                  quickSponsorsCount={entry.quickSponsorsCount}
+                  quickSponsorsTotal={entry.quickSponsorsTotal}
+                  isProAuthor={entry.explorerIsPro}
+                  stripeConnected={entry.stripeAccountConnected}
+                />
               )}
             </div>
           </div>

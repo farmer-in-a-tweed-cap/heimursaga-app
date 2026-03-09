@@ -14,14 +14,14 @@ import { SectionDivider } from '@/components/ui/SectionDivider';
 import { commentsApi, bookmarksApi } from '@/services/api';
 import { Svg, Path } from 'react-native-svg';
 import { TopoBackground } from '@/components/ui/TopoBackground';
-import { mono, colors as brandColors, borders } from '@/theme/tokens';
+import { mono, heading, colors as brandColors, borders } from '@/theme/tokens';
 import type { Entry, Comment } from '@/types/api';
 
 export default function EntryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { dark, colors } = useTheme();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [commentText, setCommentText] = useState('');
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
@@ -141,6 +141,17 @@ export default function EntryDetailScreen() {
               {comments.length} NOTES
             </Text>
           </TouchableOpacity>
+          {user && entry.author && user.username === entry.author.username && (
+            <TouchableOpacity
+              style={[styles.iconBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}
+              onPress={() => router.push(`/entry/edit/${id}`)}
+            >
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
+                <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </Svg>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={[styles.iconBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]} onPress={handleShare}>
             <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
               <Path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13" />
@@ -330,10 +341,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   heroTitle: {
+    fontFamily: heading,
     fontSize: 22,
     fontWeight: '700',
     color: '#ffffff',
-    lineHeight: 25,
+    lineHeight: 30,
   },
   heroAuthor: {
     flexDirection: 'row',

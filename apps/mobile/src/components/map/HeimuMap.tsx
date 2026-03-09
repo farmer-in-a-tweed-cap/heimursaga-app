@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from 'react';
 import { View, ViewStyle, StyleSheet } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
 import { useTheme } from '@/theme/ThemeContext';
@@ -15,10 +15,17 @@ const FALLBACK_STYLES = {
 let _tokenReady = false;
 const _tokenReadyCallbacks: Array<() => void> = [];
 
-MapboxGL.setAccessToken(MAPBOX_TOKEN).then(() => {
-  _tokenReady = true;
-  _tokenReadyCallbacks.splice(0).forEach((cb) => cb());
-});
+MapboxGL.setAccessToken(MAPBOX_TOKEN)
+  .then(() => {
+    _tokenReady = true;
+    _tokenReadyCallbacks.splice(0).forEach((cb) => cb());
+  })
+  .catch((err) => {
+    console.warn('Mapbox token init failed:', err);
+    // Still mark ready so the map renders (will use fallback style)
+    _tokenReady = true;
+    _tokenReadyCallbacks.splice(0).forEach((cb) => cb());
+  });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -52,6 +59,10 @@ export interface HeimuMapProps {
   onWaypointPress?: (index: number) => void;
 }
 
+export interface HeimuMapRef {
+  flyTo: (coords: [number, number], zoom?: number) => void;
+}
+
 // ─── Marker colors ───────────────────────────────────────────────────────────
 
 const MARKER_COLOR: Record<WaypointType, string> = {
@@ -68,7 +79,7 @@ const MARKER_RADIUS: Record<WaypointType, number> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function HeimuMap({
+const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
   style,
   center = [0, 20],
   zoom = 2,
@@ -78,10 +89,20 @@ export default function HeimuMap({
   interactive = true,
   onMapPress,
   onWaypointPress,
-}: HeimuMapProps) {
+}, ref) {
   const { mode } = useTheme();
   const [useFallbackStyle, setUseFallbackStyle] = useState(false);
   const [tokenReady, setTokenReady] = useState(_tokenReady);
+  const cameraRef = useRef<MapboxGL.Camera>(null);
+  useImperativeHandle(ref, () => ({
+    flyTo: (coords: [number, number], zoomLevel?: number) => {
+      cameraRef.current?.setCamera({
+        centerCoordinate: coords,
+        zoomLevel: zoomLevel ?? 10,
+        animationDuration: 1000,
+      });
+    },
+  }));
 
   useEffect(() => {
     if (_tokenReady) return;
@@ -172,6 +193,7 @@ export default function HeimuMap({
         onMapLoadingError={handleMapLoadError}
       >
         <MapboxGL.Camera
+          ref={cameraRef}
           {...(bounds
             ? {
                 bounds: { ne: bounds.ne, sw: bounds.sw, paddingTop: bounds.padding ?? 60, paddingBottom: bounds.padding ?? 60, paddingLeft: bounds.padding ?? 60, paddingRight: bounds.padding ?? 60 },
@@ -233,7 +255,9 @@ export default function HeimuMap({
       </MapboxGL.MapView>
     </View>
   );
-}
+});
+
+export default HeimuMap;
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 

@@ -548,6 +548,8 @@ export class EntryService {
           is_milestone: true,
           visibility: true,
           metadata: true,
+          quick_sponsors_count: true,
+          quick_sponsors_total: true,
           cover_upload: {
             select: {
               original: true,
@@ -803,6 +805,8 @@ export class EntryService {
         createdAt: entry.created_at,
         entryNumber,
         expeditionDay,
+        quickSponsorsCount: entry.quick_sponsors_count || 0,
+        quickSponsorsTotal: entry.quick_sponsors_total || 0,
       };
 
       // Track view asynchronously (fire and forget)

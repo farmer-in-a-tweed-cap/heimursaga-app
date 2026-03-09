@@ -20,7 +20,7 @@ export default function ExplorerExpeditionsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <NavBar title="EXPEDITIONS" onBack={() => router.back()} />
+      <NavBar title={`${username} · EXPEDITIONS`} onBack={() => router.back()} />
 
       <ScrollView>
         {loading && expeditions.length === 0 ? (

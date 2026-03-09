@@ -1007,6 +1007,9 @@ export interface Entry {
   entryNumber?: number;
   // Day of the expedition when this entry was written
   expeditionDay?: number;
+  // Quick sponsor stats
+  quickSponsorsCount?: number;
+  quickSponsorsTotal?: number;
 }
 
 export interface EntryCreatePayload {
@@ -1775,6 +1778,24 @@ export const sponsorshipApi = {
    */
   completeCheckout: (paymentIntentId: string) =>
     api.post<{ success: boolean }>('/sponsor/checkout/complete', { paymentIntentId }),
+
+  /**
+   * Quick sponsor — $3 micro-sponsorship for a specific entry
+   */
+  quickSponsor: (entryPublicId: string) =>
+    api.post<{ success?: boolean; sponsorshipId?: string; requiresPaymentMethod?: boolean; clientSecret?: string }>(
+      '/sponsor/quick',
+      { entryPublicId },
+    ),
+
+  /**
+   * Confirm quick sponsor after card save via SetupIntent
+   */
+  confirmQuickSponsor: (setupIntentId: string, entryPublicId: string) =>
+    api.post<{ success: boolean; sponsorshipId: string }>(
+      '/sponsor/quick/confirm',
+      { setupIntentId, entryPublicId },
+    ),
 
   /**
    * Get sponsorships sent BY the current user

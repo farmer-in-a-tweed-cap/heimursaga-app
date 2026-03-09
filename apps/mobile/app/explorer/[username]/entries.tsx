@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useApi } from '@/hooks/useApi';
 import { NavBar } from '@/components/ui/NavBar';
-import { EntryCardFull } from '@/components/cards/EntryCardFull';
+import { EntryCardMini } from '@/components/cards/EntryCardMini';
 import { colors as brandColors, mono } from '@/theme/tokens';
 import type { Entry } from '@/types/api';
 
@@ -20,7 +20,7 @@ export default function ExplorerEntriesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <NavBar title="JOURNAL ENTRIES" onBack={() => router.back()} />
+      <NavBar title={`${username} · ENTRIES`} onBack={() => router.back()} />
 
       <ScrollView>
         {loading && entries.length === 0 ? (
@@ -32,7 +32,7 @@ export default function ExplorerEntriesScreen() {
         ) : (
           <View style={styles.list}>
             {entries.map((entry) => (
-              <EntryCardFull
+              <EntryCardMini
                 key={entry.id}
                 entry={entry}
                 onPress={() => router.push(`/entry/${entry.id}`)}

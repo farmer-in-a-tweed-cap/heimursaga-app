@@ -245,7 +245,7 @@ export class PaymentService {
               public_id: paymentMethodId,
               stripe_payment_method_id: stripePaymentMethodId,
               label:
-                `${stripePaymentMethod.card.brand} ${stripePaymentMethod.card.last4}`.toUpperCase(),
+                stripePaymentMethod.card.brand.toUpperCase(),
               last4: stripePaymentMethod.card.last4,
               explorer_id: userId,
             },

@@ -1,28 +1,32 @@
-import React, { useState, useEffect, ComponentType } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback, ComponentType } from 'react';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useApi } from '@/hooks/useApi';
+import { explorerApi } from '@/services/api';
 import { ProfileBanner } from '@/components/profile/ProfileBanner';
 import { StatsBar } from '@/components/ui/StatsBar';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { HButton } from '@/components/ui/HButton';
 import { ExpeditionCardMini } from '@/components/cards/ExpeditionCardMini';
 import { EntryCardMini } from '@/components/cards/EntryCardMini';
+import { ExplorerCardMini } from '@/components/cards/ExplorerCardMini';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { HeimuMapProps, WaypointMarker } from '@/components/map/HeimuMap';
 import type { Expedition, Entry, ExplorerProfile } from '@/types/api';
 
-const TABS = ['EXPEDITIONS', 'ENTRIES'];
+const TABS = ['EXPEDITIONS', 'ENTRIES', 'FOLLOWS'];
+const FOLLOW_TABS = ['FOLLOWING', 'FOLLOWERS'];
 
 export default function ProfileScreen() {
   const { colors } = useTheme();
   const { ready, user } = useRequireAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(0);
+  const [followTab, setFollowTab] = useState(0);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<Entry | null>(null);
   const [bannerHeight, setBannerHeight] = useState(0);
@@ -36,16 +40,24 @@ export default function ProfileScreen() {
     return () => clearTimeout(timer);
   }, []);
 
+  const focusOpts = { refetchOnFocus: true };
+
   // Fetch full profile for avatar, cover photo, bio, location, etc.
   const { data: profile } = useApi<ExplorerProfile>(
-    ready && user ? `/users/${user.username}` : null,
+    ready && user ? `/users/${user.username}` : null, focusOpts,
   );
 
   const { data: tripsData } = useApi<{ data: Expedition[]; results: number }>(
-    ready ? '/user/trips' : null,
+    ready && user ? `/users/${user.username}/trips` : null, focusOpts,
   );
   const { data: postsData } = useApi<{ data: Entry[]; results: number }>(
-    ready ? '/user/posts' : null,
+    ready && user ? `/users/${user.username}/posts` : null, focusOpts,
+  );
+  const { data: followingData, refetch: refetchFollowing } = useApi<{ data: ExplorerProfile[] }>(
+    ready && user ? `/users/${user.username}/following` : null, focusOpts,
+  );
+  const { data: followersData, refetch: refetchFollowers } = useApi<{ data: ExplorerProfile[] }>(
+    ready && user ? `/users/${user.username}/followers` : null, focusOpts,
   );
 
   if (!ready) {
@@ -58,6 +70,35 @@ export default function ProfileScreen() {
 
   const expeditions = tripsData?.data ?? [];
   const entries = postsData?.data ?? [];
+  const following = followingData?.data ?? [];
+  const followers = followersData?.data ?? [];
+
+  const followingUsernames = new Set(following.map((f) => f.username));
+  const [loadingFollow, setLoadingFollow] = useState<Record<string, boolean>>({});
+
+  const handleFollow = useCallback(async (targetUsername: string) => {
+    setLoadingFollow((prev) => ({ ...prev, [targetUsername]: true }));
+    try {
+      await explorerApi.follow(targetUsername);
+      await Promise.all([refetchFollowing(), refetchFollowers()]);
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Failed to follow');
+    } finally {
+      setLoadingFollow((prev) => ({ ...prev, [targetUsername]: false }));
+    }
+  }, [refetchFollowing, refetchFollowers]);
+
+  const handleUnfollow = useCallback(async (targetUsername: string) => {
+    setLoadingFollow((prev) => ({ ...prev, [targetUsername]: true }));
+    try {
+      await explorerApi.unfollow(targetUsername);
+      await Promise.all([refetchFollowing(), refetchFollowers()]);
+    } catch (err: any) {
+      Alert.alert('Error', err.message ?? 'Failed to unfollow');
+    } finally {
+      setLoadingFollow((prev) => ({ ...prev, [targetUsername]: false }));
+    }
+  }, [refetchFollowing, refetchFollowers]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -84,7 +125,7 @@ export default function ProfileScreen() {
               { value: String(expeditions.length), label: 'EXPED.' },
               { value: String(entries.length), label: 'ENTRIES' },
               { value: '0', label: 'SPONSORS' },
-              { value: '0', label: 'FOLLOW' },
+              { value: String(following.length + followers.length), label: 'FOLLOW' },
             ]}
           />
         </View>
@@ -95,7 +136,7 @@ export default function ProfileScreen() {
             variant="copper"
             outline
             small
-            onPress={() => router.push('/settings/index')}
+            onPress={() => router.push('/settings/profile')}
           >
             EDIT PROFILE
           </HButton>
@@ -201,6 +242,51 @@ export default function ProfileScreen() {
                 />
               ))
             )
+          )}
+          {activeTab === 2 && (
+            <>
+              <SegmentedControl
+                options={FOLLOW_TABS}
+                active={followTab}
+                onSelect={setFollowTab}
+              />
+              <View style={styles.followGrid}>
+                {followTab === 0 && (
+                  following.length === 0 ? (
+                    <Text style={[styles.empty, { color: colors.textTertiary }]}>Not following anyone yet</Text>
+                  ) : (
+                    following.map((explorer) => (
+                      <ExplorerCardMini
+                        key={explorer.username}
+                        explorer={explorer}
+                        onPress={() => router.push(`/explorer/${explorer.username}`)}
+                        action={{ label: 'UNFOLLOW', color: brandColors.red, onPress: () => handleUnfollow(explorer.username), loading: !!loadingFollow[explorer.username] }}
+                      />
+                    ))
+                  )
+                )}
+                {followTab === 1 && (
+                  followers.length === 0 ? (
+                    <Text style={[styles.empty, { color: colors.textTertiary }]}>No followers yet</Text>
+                  ) : (
+                    followers.map((explorer) => {
+                      const isFollowing = followingUsernames.has(explorer.username);
+                      return (
+                        <ExplorerCardMini
+                          key={explorer.username}
+                          explorer={explorer}
+                          onPress={() => router.push(`/explorer/${explorer.username}`)}
+                          action={isFollowing
+                            ? { label: 'UNFOLLOW', color: brandColors.red, onPress: () => handleUnfollow(explorer.username), loading: !!loadingFollow[explorer.username] }
+                            : { label: 'FOLLOW BACK', color: brandColors.blue, onPress: () => handleFollow(explorer.username), loading: !!loadingFollow[explorer.username] }
+                          }
+                        />
+                      );
+                    })
+                  )
+                )}
+              </View>
+            </>
           )}
         </View>
 
@@ -320,6 +406,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     paddingVertical: 32,
+    width: '100%',
+  },
+  followGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 12,
   },
   spacer: { height: 32 },
 });

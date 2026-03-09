@@ -315,7 +315,7 @@ export class ExpeditionService {
               coverImage: getStaticMediaUrl(cover_image),
               isRoundTrip: is_round_trip ?? false,
               goal: integerToDecimal(goal ?? 0),
-              raised: integerToDecimal(raised ?? 0),
+              raised: raised ?? 0,
               sponsorsCount: sponsorCounts.get(author_id) ?? 0,
               entriesCount: entries_count,
               author: author
@@ -531,7 +531,7 @@ export class ExpeditionService {
               startDate,
               endDate,
               goal: integerToDecimal(goal ?? 0),
-              raised: integerToDecimal(raised ?? 0),
+              raised: raised ?? 0,
               sponsorsCount: sponsorCounts.get(author_id) ?? 0,
               entriesCount: entries_count,
               waypointsCount: waypoints.length,

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
@@ -25,13 +25,20 @@ export default function DiscoverScreen() {
   const [query, setQuery] = useState('');
 
   // Fetch trending data
-  const { data: tripsData } = useApi<{ data: Expedition[] }>('/trips');
-  const { data: usersData } = useApi<{ data: ExplorerProfile[] }>('/users');
-  const { data: postsData } = useApi<{ data: Entry[] }>('/posts');
+  const { data: tripsData, refetch: refetchTrips } = useApi<{ data: Expedition[] }>('/trips');
+  const { data: usersData, refetch: refetchUsers } = useApi<{ data: ExplorerProfile[] }>('/users');
+  const { data: postsData, refetch: refetchPosts } = useApi<{ data: Entry[] }>('/posts');
 
   const trending = tripsData?.data ?? [];
   const explorers = usersData?.data ?? [];
   const entries = postsData?.data ?? [];
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchTrips(), refetchUsers(), refetchPosts()]);
+    setRefreshing(false);
+  }, [refetchTrips, refetchUsers, refetchPosts]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -41,7 +48,9 @@ export default function DiscoverScreen() {
         <Text style={styles.headerTitle}>DISCOVER</Text>
       </View>
 
-      <ScrollView>
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={brandColors.copper} />}
+      >
         {/* Search */}
         <View style={styles.searchWrap}>
           <SearchBar

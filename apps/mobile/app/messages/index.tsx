@@ -7,7 +7,6 @@ import { useApi } from '@/hooks/useApi';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { HCard } from '@/components/ui/HCard';
 import { ConversationItem } from '@/components/ui/ConversationItem';
-import { Svg, Path } from 'react-native-svg';
 import { mono, colors as brandColors } from '@/theme/tokens';
 import { NavBar } from '@/components/ui/NavBar';
 import type { Conversation } from '@/types/api';
@@ -16,7 +15,6 @@ export default function MessagesScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { ready } = useRequireAuth();
-
   const { data: conversations, loading } = useApi<Conversation[]>(
     ready ? '/messages/conversations' : null,
   );
@@ -32,14 +30,7 @@ export default function MessagesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>MESSAGES</Text>
-        <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={brandColors.copper} strokeWidth={2}>
-          <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-          <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-        </Svg>
-      </View>
+      <NavBar onBack={() => router.back()} title="MESSAGES" />
 
       <ScrollView>
         <View style={styles.searchWrap}>
@@ -90,23 +81,6 @@ function formatTimeAgo(dateStr: string): string {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loader: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 3,
-    borderBottomColor: brandColors.copper,
-    backgroundColor: brandColors.black,
-  },
-  headerTitle: {
-    fontFamily: mono,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 2.1,
-    color: '#e5e5e5',
-  },
   searchWrap: {
     paddingHorizontal: 16,
     paddingTop: 12,

@@ -52,19 +52,6 @@ export default function SettingsScreen() {
     ]);
   };
 
-  const handleDeleteAccount = () => {
-    Alert.alert(
-      'Delete Account',
-      'This action is permanent and cannot be undone. All your expeditions, entries, and data will be deleted.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => {
-          Alert.alert('Not yet available', 'Account deletion is not yet implemented. Please contact support@heimursaga.com to request account deletion.');
-        } },
-      ],
-    );
-  };
-
   const handleToggleBiometric = async () => {
     await setBiometricEnabled(!biometricEnabled);
   };
@@ -82,9 +69,9 @@ export default function SettingsScreen() {
     {
       title: 'PREFERENCES',
       items: [
-        { label: 'Distance Units', value: 'Metric (km)' },
-        { label: 'Theme', value: dark ? 'Dark' : 'Light' },
-        { label: 'Notifications', value: 'All enabled' },
+        { label: 'Distance Units', value: 'Metric (km)', onPress: () => router.push('/settings/preferences') },
+        { label: 'Theme', value: dark ? 'Dark' : 'Light', onPress: () => router.push('/settings/preferences') },
+        { label: 'Notifications', value: 'All enabled', onPress: () => router.push('/settings/notifications') },
         ...(biometricAvailable ? [{
           label: 'Biometric Lock',
           value: biometricEnabled ? 'Enabled' : 'Disabled',
@@ -95,18 +82,17 @@ export default function SettingsScreen() {
     {
       title: 'PRIVACY & SECURITY',
       items: [
-        { label: 'Profile Visibility', value: 'Public' },
-        { label: 'Email', value: user.email ? `${user.email.charAt(0)}***@${user.email.split('@')[1] ?? 'mail.com'}` : 'Not set' },
-        { label: 'Password', value: 'Change password' },
+        { label: 'Email', value: user.email ? `${user.email.charAt(0)}***@${user.email.split('@')[1] ?? 'mail.com'}` : 'Not set', onPress: () => router.push('/settings/privacy') },
+        { label: 'Password', value: 'Change password', onPress: () => router.push('/settings/privacy') },
       ],
     },
     {
       title: 'BILLING',
       items: [
-        { label: 'Plan', value: user.is_pro ? 'Explorer Pro — $8/mo' : 'Free' },
+        { label: 'Plan', value: user.is_pro ? 'Explorer Pro — $8/mo' : 'Free', onPress: () => router.push('/settings/billing') },
         ...(user.is_pro ? [
-          { label: 'Payment Method', value: '•••• ****' },
-          { label: 'Next Billing', value: 'Manage billing' },
+          { label: 'Payment Method', value: '•••• ****', onPress: () => router.push('/settings/billing') },
+          { label: 'Next Billing', value: 'Manage billing', onPress: () => router.push('/settings/billing') },
         ] : []),
       ],
     },
@@ -170,25 +156,12 @@ export default function SettingsScreen() {
           </View>
         ))}
 
-        {/* Danger Zone */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: brandColors.red }]}>
-            DANGER ZONE
-          </Text>
-          <View style={[styles.sectionLine, { backgroundColor: brandColors.red }]} />
-        </View>
+        {/* Log Out */}
         <View style={styles.sectionContent}>
           <HCard>
             <TouchableOpacity style={styles.settingsItem} onPress={handleLogout}>
-              <Text style={[styles.itemLabel, { color: brandColors.red }]}>Log Out</Text>
-              <Chevron color={brandColors.red} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.settingsItem, { borderTopWidth: 1, borderTopColor: colors.borderThin }]}
-              onPress={handleDeleteAccount}
-            >
-              <Text style={[styles.itemLabel, { color: brandColors.red }]}>Delete Account</Text>
-              <Chevron color={brandColors.red} />
+              <Text style={[styles.itemLabel, { color: colors.text }]}>Log Out</Text>
+              <Chevron color={colors.borderThin} />
             </TouchableOpacity>
           </HCard>
         </View>

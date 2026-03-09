@@ -14,11 +14,11 @@ export function MessageBubble({ text, time, isMe }: MessageBubbleProps) {
 
   const bubbleBg = isMe
     ? dark ? '#2a2a2a' : '#ffffff'
-    : dark ? '#1a2a3a' : '#e8eef4';
+    : dark ? 'rgba(172,109,70,0.12)' : 'rgba(172,109,70,0.08)';
 
   const bubbleBorder = isMe
     ? dark ? '#3a3a3a' : '#e5e5e5'
-    : dark ? '#2a4060' : '#c8d8e8';
+    : dark ? 'rgba(172,109,70,0.3)' : 'rgba(172,109,70,0.2)';
 
   return (
     <View style={[styles.row, isMe ? styles.rowRight : styles.rowLeft]}>

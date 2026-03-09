@@ -45,7 +45,7 @@ import {
   ServiceInternalException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import { ISessionQuery, ISessionQueryWithPayload } from '@/common/interfaces';
+import { ISession, ISessionQuery, ISessionQueryWithPayload } from '@/common/interfaces';
 import { APPLICATION_FEE, config } from '@/config';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
@@ -2289,5 +2289,378 @@ export class SponsorService {
     } catch (e) {
       this.logger.error('Error handling expedition cancellation:', e);
     }
+  }
+
+  /**
+   * Quick Sponsor — $3 micro-sponsorship for a specific entry
+   */
+  async quickSponsor({
+    session,
+    entryPublicId,
+  }: {
+    session: ISession;
+    entryPublicId: string;
+  }) {
+    try {
+      const { userId } = session;
+      if (!userId) throw new ServiceForbiddenException();
+
+      // Look up entry and verify author is Pro
+      const entry = await this.prisma.entry.findFirst({
+        where: { public_id: entryPublicId, deleted_at: null },
+        select: {
+          id: true,
+          public_id: true,
+          author_id: true,
+          author: {
+            select: {
+              id: true,
+              role: true,
+              username: true,
+            },
+          },
+        },
+      });
+
+      if (!entry) throw new ServiceNotFoundException('Entry not found');
+
+      if (entry.author.role !== UserRole.CREATOR) {
+        throw new ServiceBadRequestException(
+          'This explorer is not eligible to receive sponsorships',
+        );
+      }
+
+      if (entry.author_id === userId) {
+        throw new ServiceBadRequestException('You cannot sponsor yourself');
+      }
+
+      // Resolve creator's Stripe account from payout methods (same as checkout flow)
+      const payoutMethod = await this.prisma.payoutMethod.findFirst({
+        where: {
+          explorer_id: entry.author.id,
+          platform: PayoutMethodPlatform.STRIPE,
+        },
+        select: { stripe_account_id: true },
+      });
+      const creatorStripeAccountId = payoutMethod?.stripe_account_id;
+
+      if (!creatorStripeAccountId) {
+        throw new ServiceBadRequestException(
+          'This explorer has not completed payment setup',
+        );
+      }
+
+      // Cooldown check: 30 seconds between quick sponsors on same entry
+      const recentQuickSponsor = await this.prisma.sponsorship.findFirst({
+        where: {
+          sponsor_id: userId,
+          entry_public_id: entryPublicId,
+          type: SponsorshipType.QUICK_SPONSOR,
+          created_at: { gte: new Date(Date.now() - 30000) },
+        },
+        select: { id: true },
+      });
+
+      if (recentQuickSponsor) {
+        throw new ServiceBadRequestException(
+          'Please wait 30 seconds before sponsoring this entry again',
+        );
+      }
+
+      // Verify Stripe account is fully onboarded
+      const stripeAccount = await this.stripeService.accounts.retrieve(
+        creatorStripeAccountId,
+      );
+      if (!stripeAccount.charges_enabled || !stripeAccount.payouts_enabled) {
+        throw new ServiceBadRequestException(
+          'This explorer has not completed Stripe onboarding',
+        );
+      }
+
+      // Get or create Stripe customer for the sponsor
+      const user = await this.prisma.explorer.findFirstOrThrow({
+        where: { id: userId },
+        select: { id: true, email: true, username: true, stripe_customer_id: true },
+      });
+      const stripeCustomer = await this.stripeService.getOrCreateCustomer({
+        email: user.email,
+        data: { email: user.email, name: user.username },
+      });
+
+      // Try to find a saved payment method
+      const savedPm = await this.prisma.paymentMethod.findFirst({
+        where: { explorer_id: userId, deleted_at: null },
+        select: { id: true, stripe_payment_method_id: true },
+        orderBy: { created_at: 'desc' },
+      });
+
+      if (!savedPm?.stripe_payment_method_id) {
+        // No saved PM → create SetupIntent so user can add a card
+        const setupIntent = await this.stripeService.setupIntents.create({
+          customer: stripeCustomer.id,
+          usage: 'off_session',
+        });
+        return {
+          requiresPaymentMethod: true,
+          clientSecret: setupIntent.client_secret,
+        };
+      }
+
+      // Has saved PM → charge directly, fall back to SetupIntent if PM is invalid
+      try {
+        return await this.executeQuickSponsor({
+          userId,
+          user,
+          entry,
+          stripeCustomer,
+          stripePaymentMethodId: savedPm.stripe_payment_method_id,
+          creatorStripeAccountId,
+        });
+      } catch (chargeError) {
+        if (chargeError?.raw?.code === 'resource_missing' && chargeError?.raw?.param === 'payment_method') {
+          this.logger.warn('Saved payment method invalid, falling back to SetupIntent');
+          const setupIntent = await this.stripeService.setupIntents.create({
+            customer: stripeCustomer.id,
+            usage: 'off_session',
+          });
+          return {
+            requiresPaymentMethod: true,
+            clientSecret: setupIntent.client_secret,
+          };
+        }
+        throw chargeError;
+      }
+    } catch (e) {
+      this.logger.error(e, 'Quick sponsor error');
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Confirm quick sponsor after card save via SetupIntent
+   */
+  async confirmQuickSponsorCard({
+    session,
+    setupIntentId,
+    entryPublicId,
+  }: {
+    session: ISession;
+    setupIntentId: string;
+    entryPublicId: string;
+  }) {
+    try {
+      const { userId } = session;
+      if (!userId) throw new ServiceForbiddenException();
+
+      // Retrieve the SetupIntent to get the payment method
+      const setupIntent =
+        await this.stripeService.setupIntents.retrieve(setupIntentId);
+      if (setupIntent.status !== 'succeeded') {
+        throw new ServiceBadRequestException('Card setup was not completed');
+      }
+
+      const stripePaymentMethodId =
+        typeof setupIntent.payment_method === 'string'
+          ? setupIntent.payment_method
+          : setupIntent.payment_method?.id;
+
+      if (!stripePaymentMethodId) {
+        throw new ServiceBadRequestException('No payment method found');
+      }
+
+      // Save the payment method locally
+      const stripePm =
+        await this.stripeService.paymentMethods.retrieve(stripePaymentMethodId);
+      await this.prisma.paymentMethod.create({
+        data: {
+          public_id: generator.publicId(),
+          stripe_payment_method_id: stripePaymentMethodId,
+          label: stripePm.card?.brand || 'card',
+          last4: stripePm.card?.last4 || '****',
+          explorer_id: userId,
+        },
+      });
+
+      // Look up entry
+      const entry = await this.prisma.entry.findFirst({
+        where: { public_id: entryPublicId, deleted_at: null },
+        select: {
+          id: true,
+          public_id: true,
+          author_id: true,
+          author: {
+            select: {
+              id: true,
+              role: true,
+              username: true,
+            },
+          },
+        },
+      });
+      if (!entry) throw new ServiceNotFoundException('Entry not found');
+
+      // Resolve creator's Stripe account from payout methods
+      const payoutMethod = await this.prisma.payoutMethod.findFirst({
+        where: {
+          explorer_id: entry.author.id,
+          platform: PayoutMethodPlatform.STRIPE,
+        },
+        select: { stripe_account_id: true },
+      });
+      const creatorStripeAccountId = payoutMethod?.stripe_account_id;
+
+      if (!creatorStripeAccountId) {
+        throw new ServiceBadRequestException(
+          'This explorer has not completed payment setup',
+        );
+      }
+
+      const user = await this.prisma.explorer.findFirstOrThrow({
+        where: { id: userId },
+        select: { id: true, email: true, username: true, stripe_customer_id: true },
+      });
+      const stripeCustomer = await this.stripeService.getOrCreateCustomer({
+        email: user.email,
+        data: { email: user.email, name: user.username },
+      });
+
+      return await this.executeQuickSponsor({
+        userId,
+        user,
+        entry,
+        stripeCustomer,
+        stripePaymentMethodId,
+        creatorStripeAccountId,
+      });
+    } catch (e) {
+      this.logger.error('Confirm quick sponsor error:', e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Execute the quick sponsor charge, create records, and notify
+   */
+  private async executeQuickSponsor({
+    userId,
+    user,
+    entry,
+    stripeCustomer,
+    stripePaymentMethodId,
+    creatorStripeAccountId,
+  }: {
+    userId: number;
+    user: { id: number; email: string; username: string };
+    entry: {
+      id: number;
+      public_id: string;
+      author_id: number;
+      author: { id: number; username: string; role: string };
+    };
+    stripeCustomer: { id: string };
+    stripePaymentMethodId: string;
+    creatorStripeAccountId: string;
+  }) {
+    const QUICK_SPONSOR_AMOUNT = 300; // $3.00 in cents
+    const applicationFeeAmount = 30; // 10% of 300
+
+    // Create checkout record first
+    const checkout = await this.prisma.checkout.create({
+      data: {
+        public_id: generator.publicId(),
+        status: CheckoutStatus.PENDING,
+        transaction_type: PaymentTransactionType.SPONSORSHIP,
+        sponsorship_type: SponsorshipType.QUICK_SPONSOR,
+        total: QUICK_SPONSOR_AMOUNT,
+        explorer_id: userId,
+        sponsored_explorer_id: entry.author.id,
+        entry_public_id: entry.public_id,
+      },
+      select: { id: true, public_id: true },
+    });
+
+    const idempotencyKey = `quick_sponsor_${checkout.id}`;
+
+    // Create PaymentIntent with transfer to connected account
+    const paymentIntent = await this.stripeService.paymentIntents.create(
+      {
+        amount: QUICK_SPONSOR_AMOUNT,
+        currency: CurrencyCode.USD,
+        customer: stripeCustomer.id,
+        payment_method: stripePaymentMethodId,
+        transfer_data: { destination: creatorStripeAccountId },
+        payment_method_types: ['card'],
+        application_fee_amount: applicationFeeAmount,
+        confirm: true,
+        off_session: true,
+        description: `Quick Sponsor from ${user.username} to ${entry.author.username}`,
+        metadata: {
+          [StripeMetadataKey.TRANSACTION]: PaymentTransactionType.SPONSORSHIP,
+          [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
+          [StripeMetadataKey.USER_ID]: userId.toString(),
+          [StripeMetadataKey.CREATOR_ID]: entry.author.id.toString(),
+        },
+      },
+      { idempotencyKey },
+    );
+
+    // Update checkout and create sponsorship in transaction
+    const sponsorship = await this.prisma.$transaction(async (tx) => {
+      await tx.checkout.update({
+        where: { id: checkout.id },
+        data: {
+          stripe_payment_intent_id: paymentIntent.id,
+          status: CheckoutStatus.CONFIRMED,
+          confirmed_at: new Date(),
+        },
+      });
+
+      const sponsorship = await tx.sponsorship.create({
+        data: {
+          public_id: generator.publicId(),
+          type: SponsorshipType.QUICK_SPONSOR,
+          status: SponsorshipStatus.CONFIRMED,
+          amount: QUICK_SPONSOR_AMOUNT,
+          currency: CurrencyCode.USD,
+          sponsor_id: userId,
+          sponsored_explorer_id: entry.author.id,
+          entry_public_id: entry.public_id,
+          is_public: true,
+          is_message_public: true,
+        },
+        select: { id: true, public_id: true },
+      });
+
+      // Increment entry quick sponsor counts
+      await tx.entry.update({
+        where: { id: entry.id },
+        data: {
+          quick_sponsors_count: { increment: 1 },
+          quick_sponsors_total: { increment: QUICK_SPONSOR_AMOUNT },
+        },
+      });
+
+      return sponsorship;
+    });
+
+    // Notify the entry author
+    this.eventService.trigger<IUserNotificationCreatePayload>({
+      event: EVENTS.NOTIFICATION_CREATE,
+      data: {
+        context: UserNotificationContext.QUICK_SPONSOR,
+        userId: entry.author.id,
+        mentionUserId: userId,
+        sponsorshipType: SponsorshipType.QUICK_SPONSOR,
+        sponsorshipAmount: QUICK_SPONSOR_AMOUNT,
+        sponsorshipCurrency: CurrencyCode.USD,
+      },
+    });
+
+    return {
+      success: true,
+      sponsorshipId: sponsorship.public_id,
+    };
   }
 }

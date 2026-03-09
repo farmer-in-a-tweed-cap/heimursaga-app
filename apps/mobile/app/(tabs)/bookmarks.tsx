@@ -19,14 +19,16 @@ export default function BookmarksScreen() {
   const router = useRouter();
   const { ready } = useRequireAuth();
 
+  const focusOpts = { refetchOnFocus: true };
+
   const { data: expeditionsData, loading: loadingExp } = useApi<{ data: Expedition[] }>(
-    ready ? '/user/bookmarks/expeditions' : null,
+    ready ? '/user/bookmarks/expeditions' : null, focusOpts,
   );
   const { data: entriesData, loading: loadingEnt } = useApi<{ data: Entry[] }>(
-    ready ? '/user/bookmarks' : null,
+    ready ? '/user/bookmarks' : null, focusOpts,
   );
   const { data: explorersData, loading: loadingExpl } = useApi<{ data: ExplorerProfile[] }>(
-    ready ? '/user/bookmarks/explorers' : null,
+    ready ? '/user/bookmarks/explorers' : null, focusOpts,
   );
 
   const expeditions = expeditionsData?.data ?? [];

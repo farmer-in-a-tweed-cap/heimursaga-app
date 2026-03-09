@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, FileText, User, Bookmark, Calendar, Loader2 } from "lucide-react";
+import { MapPin, FileText, User, Bookmark, Calendar, Loader2, DollarSign } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 import { formatDate } from "@/app/utils/dateFormat";
 
@@ -17,6 +17,7 @@ interface EntryCardProps {
   wordCount: number;
   type: string;
   coverImageUrl?: string;
+  quickSponsorsCount?: number;
   isBookmarked?: boolean;
   isBookmarkLoading?: boolean;
   onReadEntry?: () => void;
@@ -35,6 +36,7 @@ export function EntryCard({
   wordCount,
   type,
   coverImageUrl,
+  quickSponsorsCount = 0,
   isBookmarked = false,
   isBookmarkLoading = false,
   onReadEntry,
@@ -128,7 +130,15 @@ export function EntryCard({
       <div className="bg-white dark:bg-[#202020] px-5 py-3">
         <div className="flex items-center justify-between text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
           <span>{wordCount.toLocaleString()} words</span>
-          <span className="uppercase tracking-wide">{type}</span>
+          <div className="flex items-center gap-3">
+            {quickSponsorsCount > 0 && (
+              <span className="flex items-center gap-1 text-[#ac6d46]">
+                <DollarSign className="h-3 w-3" />
+                {quickSponsorsCount}
+              </span>
+            )}
+            <span className="uppercase tracking-wide">{type}</span>
+          </div>
         </div>
       </div>
 

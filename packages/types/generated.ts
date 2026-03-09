@@ -346,6 +346,9 @@ export interface IPostDetail {
   entryNumber?: number;
   // Day of the expedition when this entry was written (calculated from entry date - expedition start date)
   expeditionDay?: number;
+  // Quick sponsor stats
+  quickSponsorsCount?: number;
+  quickSponsorsTotal?: number;
 }
 
 export interface IPostGetAllResponse {

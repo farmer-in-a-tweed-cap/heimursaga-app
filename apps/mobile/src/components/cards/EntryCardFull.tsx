@@ -4,7 +4,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { HCard } from '@/components/ui/HCard';
 import { StatusHeader } from '@/components/ui/StatusHeader';
 import { Avatar } from '@/components/ui/Avatar';
-import { mono, colors as brandColors } from '@/theme/tokens';
+import { mono, heading, colors as brandColors } from '@/theme/tokens';
 import { Svg, Path, Circle } from 'react-native-svg';
 import type { Entry } from '@/types/api';
 
@@ -128,10 +128,10 @@ const styles = StyleSheet.create({
   quoteMark: {
     position: 'absolute',
     left: 14,
-    top: 10,
+    top: 6,
     fontSize: 28,
-    fontFamily: 'Georgia',
-    lineHeight: 28,
+    fontFamily: heading,
+    lineHeight: 36,
   },
   excerpt: {
     fontSize: 14,

@@ -5,10 +5,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
-import { bookmarksApi } from '@/services/api';
+import { bookmarksApi, explorerApi } from '@/services/api';
 import { NavBar } from '@/components/ui/NavBar';
 import { ProfileBanner } from '@/components/profile/ProfileBanner';
-import { ExpeditionCardMini } from '@/components/cards/ExpeditionCardMini';
+import { ExpeditionCardFull } from '@/components/cards/ExpeditionCardFull';
 import { EntryCardFull } from '@/components/cards/EntryCardFull';
 import { StatsBar } from '@/components/ui/StatsBar';
 import { SectionDivider } from '@/components/ui/SectionDivider';
@@ -26,12 +26,16 @@ export default function ExplorerProfileScreen() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
 
+  const [followed, setFollowed] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [headerHeight, setHeaderHeight] = useState(0);
 
+  const focusOpts = { refetchOnFocus: true };
+
   const { data: profile, loading } = useApi<ExplorerProfile>(
-    username ? `/users/${username}` : null,
+    username ? `/users/${username}` : null, focusOpts,
   );
   const { data: tripsData } = useApi<{ data: Expedition[]; results: number }>(
     username ? `/users/${username}/trips` : null,
@@ -44,8 +48,9 @@ export default function ExplorerProfileScreen() {
   const entries = postsData?.data ?? [];
 
   useEffect(() => {
+    if (profile?.followed != null) setFollowed(profile.followed);
     if (profile?.bookmarked != null) setBookmarked(profile.bookmarked);
-  }, [profile?.bookmarked]);
+  }, [profile?.followed, profile?.bookmarked]);
 
   const handleShare = () => {
     Share.share({ url: `https://heimursaga.com/explorer/${username}` });
@@ -61,10 +66,34 @@ export default function ExplorerProfileScreen() {
     setBookmarked(prev => !prev);
     try {
       await bookmarksApi.toggleExplorer(username);
-    } catch {
+    } catch (err: any) {
       setBookmarked(prev => !prev);
+      Alert.alert('Error', err.message ?? 'Failed to update bookmark');
     } finally {
       setBookmarkLoading(false);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!isAuthenticated) {
+      router.push('/(auth)/login');
+      return;
+    }
+    if (followLoading || !username) return;
+    setFollowLoading(true);
+    const wasFollowed = followed;
+    setFollowed(!wasFollowed);
+    try {
+      if (wasFollowed) {
+        await explorerApi.unfollow(username);
+      } else {
+        await explorerApi.follow(username);
+      }
+    } catch (err: any) {
+      setFollowed(wasFollowed);
+      Alert.alert('Error', err.message ?? 'Failed to update follow');
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -132,10 +161,38 @@ export default function ExplorerProfileScreen() {
           />
         </View>
 
+        {/* Followers / Following */}
+        <View style={[styles.followRow, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity
+            style={[styles.followBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}
+            onPress={() => router.push(`/explorer/${username}/followers`)}
+          >
+            <Text style={[styles.followCount, { color: colors.text }]}>
+              {profile.followersCount ?? 0}
+            </Text>
+            <Text style={[styles.followLabel, { color: colors.textTertiary }]}>FOLLOWERS</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.followBtn}
+            onPress={() => router.push(`/explorer/${username}/following`)}
+          >
+            <Text style={[styles.followCount, { color: colors.text }]}>
+              {profile.followingCount ?? 0}
+            </Text>
+            <Text style={[styles.followLabel, { color: colors.textTertiary }]}>FOLLOWING</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Action bar */}
         <View style={[styles.actionBar, { borderBottomColor: colors.border, backgroundColor: colors.card }]}>
-          <TouchableOpacity style={[styles.actionBtn, { borderRightColor: colors.borderThin }]}>
-            <Text style={[styles.actionText, { color: brandColors.blue }]}>FOLLOW</Text>
+          <TouchableOpacity style={[styles.actionBtn, { borderRightColor: colors.borderThin, opacity: followLoading ? 0.5 : 1 }]} onPress={handleFollow} disabled={followLoading}>
+            {followLoading ? (
+              <ActivityIndicator size="small" color={followed ? brandColors.red : brandColors.blue} />
+            ) : (
+              <Text style={[styles.actionText, { color: followed ? brandColors.red : brandColors.blue }]}>
+                {followed ? 'UNFOLLOW' : 'FOLLOW'}
+              </Text>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, { borderRightColor: colors.borderThin }]}
@@ -238,7 +295,7 @@ export default function ExplorerProfileScreen() {
             <SectionDivider title="RECENT EXPEDITIONS" action="VIEW ALL" onAction={() => router.push(`/explorer/${username}/expeditions`)} />
             <View style={styles.sectionContent}>
               {expeditions.slice(0, 2).map((exp) => (
-                <ExpeditionCardMini
+                <ExpeditionCardFull
                   key={exp.id}
                   expedition={exp}
                   onPress={() => router.push(`/expedition/${exp.id}`)}
@@ -341,9 +398,10 @@ export default function ExplorerProfileScreen() {
         <View style={styles.sectionContent}>
           <HCard>
             {[
-              { label: 'Account Type', value: profile.creator ? 'Creator' : 'Explorer' },
+              { label: 'Account Type', value: profile.creator ? 'Explorer Pro' : 'Explorer' },
               { label: 'Member Since', value: memberSince ?? 'Unknown' },
-              ...(profile.isPioneer ? [{ label: 'Status', value: 'Pioneer' }] : []),
+              ...(profile.locationFrom ? [{ label: 'From', value: profile.locationFrom }] : []),
+              ...(profile.locationLives ? [{ label: 'Based In', value: profile.locationLives }] : []),
             ].map((item, i) => (
               <View
                 key={item.label}
@@ -537,6 +595,29 @@ const styles = StyleSheet.create({
     fontFamily: mono,
     fontSize: 11,
     fontWeight: '600',
+  },
+  followRow: {
+    flexDirection: 'row',
+    borderBottomWidth: borders.thick,
+  },
+  followBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+  },
+  followCount: {
+    fontFamily: mono,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  followLabel: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.6,
   },
   spacer: { height: 32 },
 });

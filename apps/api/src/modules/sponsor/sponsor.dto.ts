@@ -92,6 +92,25 @@ export class SponsorCheckoutCompleteDto {
   paymentIntentId: string;
 }
 
+export class QuickSponsorDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  entryPublicId: string;
+}
+
+export class ConfirmQuickSponsorDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  setupIntentId: string;
+
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  entryPublicId: string;
+}
+
 export class SponsorshipRefundDto {
   @ApiProperty({ required: true })
   @IsString()

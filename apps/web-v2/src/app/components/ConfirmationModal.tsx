@@ -6,7 +6,7 @@ interface ConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  icon: ReactNode;
+  icon?: ReactNode;
   headerColor?: string;
   confirmLabel: string;
   confirmColor?: string;

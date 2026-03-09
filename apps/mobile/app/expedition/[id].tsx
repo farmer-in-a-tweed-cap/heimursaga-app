@@ -17,7 +17,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
 import { api, ApiError, bookmarksApi } from '@/services/api';
-import { colors as brandColors, mono, borders } from '@/theme/tokens';
+import { colors as brandColors, mono, heading, borders } from '@/theme/tokens';
 import { Svg, Path, Line, Polyline, Circle, Rect } from 'react-native-svg';
 import { NavBar } from '@/components/ui/NavBar';
 import { StatusHeader } from '@/components/ui/StatusHeader';
@@ -457,6 +457,14 @@ export default function ExpeditionDetailScreen() {
           <Pressable style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}>
             <Text style={[styles.actionText, { color: brandColors.blue }]}>FOLLOW</Text>
           </Pressable>
+          {isOwner && (
+            <Pressable style={styles.iconBtn} onPress={() => router.push(`/expedition/edit/${id}`)}>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
+                <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <Path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </Svg>
+            </Pressable>
+          )}
           <Pressable style={styles.iconBtn} onPress={handleShare}>
             <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
               <Path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
@@ -799,7 +807,7 @@ const styles = StyleSheet.create({
   },
   mapTop: { padding: 14 },
   mapTopRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
-  heroTitle: { fontSize: 20, fontWeight: '700', color: '#ffffff', lineHeight: 24 },
+  heroTitle: { fontFamily: heading, fontSize: 20, fontWeight: '700', color: '#ffffff', lineHeight: 28 },
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -4,7 +4,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { HCard } from '@/components/ui/HCard';
 import { StatusHeader } from '@/components/ui/StatusHeader';
 import { Avatar } from '@/components/ui/Avatar';
-import { mono, colors as brandColors } from '@/theme/tokens';
+import { mono, heading, colors as brandColors } from '@/theme/tokens';
 import { Svg, Path, Circle } from 'react-native-svg';
 import type { Entry } from '@/types/api';
 
@@ -38,7 +38,7 @@ export function EntryCardMini({ entry, onPress, showAuthor = true }: EntryCardMi
 
         {/* Excerpt area with optional cover photo background */}
         {entry.content && (
-          <View style={styles.excerptWrap}>
+          <View style={[styles.excerptWrap, { borderBottomWidth: 1, borderBottomColor: colors.borderThin }]}>
             {coverUrl && (
               <Image source={{ uri: coverUrl }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
             )}
@@ -50,7 +50,7 @@ export function EntryCardMini({ entry, onPress, showAuthor = true }: EntryCardMi
                   : (dark ? '#1a1a1a' : '#f8f7f5'),
               },
             ]} />
-            <Text style={styles.quoteMark}>"</Text>
+            <Text style={styles.quoteMark}>{'\u201C'}</Text>
             <Text
               style={[styles.excerpt, { color: dark ? '#e5e5e5' : '#202020' }]}
               numberOfLines={3}
@@ -95,16 +95,17 @@ export function EntryCardMini({ entry, onPress, showAuthor = true }: EntryCardMi
 const styles = StyleSheet.create({
   excerptWrap: {
     overflow: 'hidden',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    paddingLeft: 36,
   },
   quoteMark: {
     position: 'absolute',
-    top: 2,
-    left: 10,
-    fontSize: 48,
-    fontFamily: 'Georgia',
+    left: 14,
+    top: 6,
+    fontSize: 28,
+    fontFamily: heading,
+    lineHeight: 36,
     color: 'rgba(70,118,172,0.2)',
   },
   excerpt: {

@@ -12,6 +12,7 @@ import {
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
 import Svg, {
   Defs,
   RadialGradient,
@@ -405,7 +406,7 @@ const launchStyles = StyleSheet.create({
   lexEntry: {
     alignItems: 'center',
     marginBottom: 16,
-    opacity: 0.55,
+    opacity: 0.7,
   },
   lexWord: {
     fontFamily: mono,
@@ -420,7 +421,7 @@ const launchStyles = StyleSheet.create({
     fontSize: 9.5,
     letterSpacing: 0.6,
     color: '#c8b89a',
-    opacity: 0.7,
+    opacity: 0.85,
   },
   bottomContent: {
     position: 'absolute',
@@ -482,13 +483,21 @@ function RootNav() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="expedition/[id]" />
         <Stack.Screen name="expedition/create" />
+        <Stack.Screen name="expedition/edit/[id]" />
         <Stack.Screen name="entry/[id]" />
+        <Stack.Screen name="entry/edit/[id]" />
         <Stack.Screen name="explorer/[username]/index" />
         <Stack.Screen name="explorer/[username]/entries" />
         <Stack.Screen name="explorer/[username]/expeditions" />
+        <Stack.Screen name="explorer/[username]/followers" />
+        <Stack.Screen name="explorer/[username]/following" />
         <Stack.Screen name="menu" options={{ presentation: 'modal' }} />
         <Stack.Screen name="settings/index" />
         <Stack.Screen name="settings/profile" />
+        <Stack.Screen name="settings/notifications" />
+        <Stack.Screen name="settings/preferences" />
+        <Stack.Screen name="settings/privacy" />
+        <Stack.Screen name="settings/billing" />
         <Stack.Screen name="messages/index" />
         <Stack.Screen name="messages/[username]" />
         <Stack.Screen name="sponsor/[id]" />
@@ -501,6 +510,18 @@ function RootNav() {
 // ─── Root Layout ─────────────────────────────────────────────────────────────
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    'Jost':              require('../assets/fonts/Jost-Medium.ttf'),
+    'Jost-SemiBold':     require('../assets/fonts/Jost-SemiBold.ttf'),
+    'Jost-Bold':         require('../assets/fonts/Jost-Bold.ttf'),
+    'Jost-MediumItalic': require('../assets/fonts/Jost-MediumItalic.ttf'),
+    'Eczar':             require('../assets/fonts/Eczar-Regular.ttf'),
+    'Eczar-Medium':      require('../assets/fonts/Eczar-Medium.ttf'),
+    'Eczar-Bold':        require('../assets/fonts/Eczar-Bold.ttf'),
+  });
+
+  if (!fontsLoaded) return null; // native splash stays visible
+
   return (
     <ThemeProvider>
       <AuthProvider>

@@ -43,7 +43,7 @@ export default function MenuScreen() {
         {
           label: 'Bookmarks',
           detail: 'Saved items',
-          route: '/bookmarks',
+          route: '/(tabs)/bookmarks',
           icon: <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={1.5}><Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /></Svg>,
         },
         {
@@ -52,6 +52,12 @@ export default function MenuScreen() {
           route: '/messages',
           badge: messageBadge,
           icon: <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={1.5}><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>,
+        },
+        {
+          label: 'Notifications',
+          detail: 'Activity & updates',
+          route: '/notifications',
+          icon: <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={1.5}><Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><Path d="M13.73 21a2 2 0 0 1-3.46 0" /></Svg>,
         },
         {
           label: 'Sponsorships',
@@ -81,7 +87,7 @@ export default function MenuScreen() {
         {
           label: 'Settings',
           detail: 'Notifications, privacy, billing',
-          route: '/settings/index',
+          route: '/settings',
           icon: <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={1.5}><Circle cx={12} cy={12} r={3} /><Path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></Svg>,
         },
       ],
@@ -91,7 +97,7 @@ export default function MenuScreen() {
       items: [
         {
           label: 'About Heimursaga',
-          route: undefined,
+          detail: 'v1.0.0',
           icon: <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={1.5}><Circle cx={12} cy={12} r={10} /><Line x1={12} y1={16} x2={12} y2={12} /><Line x1={12} y1={8} x2={12.01} y2={8} /></Svg>,
         },
         {
@@ -109,7 +115,8 @@ export default function MenuScreen() {
       return;
     }
     if (item.route) {
-      router.replace(item.route as any);
+      router.back();
+      router.push(item.route as any);
     }
   };
 
@@ -123,7 +130,7 @@ export default function MenuScreen() {
           <HCard>
             <TouchableOpacity
               style={styles.userCard}
-              onPress={() => router.replace('/(tabs)/profile')}
+              onPress={() => { router.back(); router.push('/(tabs)/profile' as any); }}
             >
               <Avatar size={48} name={user?.username ?? 'U'} pro={user?.is_pro} />
               <View style={styles.userInfo}>
@@ -225,11 +232,13 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 17,
     fontWeight: '700',
+    lineHeight: 23,
   },
   proBadge: {
     fontFamily: mono,
     fontSize: 12,
     fontWeight: '700',
+    lineHeight: 16,
     letterSpacing: 0.8,
     color: brandColors.copper,
     marginTop: 3,
@@ -242,6 +251,7 @@ const styles = StyleSheet.create({
     fontFamily: mono,
     fontSize: 12,
     fontWeight: '700',
+    lineHeight: 16,
     letterSpacing: 0.8,
   },
   sectionLine: {
@@ -268,9 +278,11 @@ const styles = StyleSheet.create({
   menuLabel: {
     fontSize: 16,
     fontWeight: '600',
+    lineHeight: 22,
   },
   menuDetail: {
     fontSize: 13,
+    lineHeight: 18,
     marginTop: 1,
   },
   biometricRow: {

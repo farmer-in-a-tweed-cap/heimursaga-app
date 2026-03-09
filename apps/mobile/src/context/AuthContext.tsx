@@ -4,9 +4,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
-  useRef,
 } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
 import { api, ApiError } from '@/services/api';
 import {
   setTokens,
@@ -38,7 +36,10 @@ interface AuthContextValue {
   biometricEnabled: boolean;
   biometricAvailable: boolean;
   isAuthenticated: boolean;
+  /** True when a stored token exists but biometric login hasn't been completed yet */
+  hasStoredSession: boolean;
   login: (usernameOrEmail: string, password: string) => Promise<void>;
+  loginWithBiometric: () => Promise<void>;
   register: (email: string, username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
@@ -51,8 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
-  const [locked, setLocked] = useState(false);
-  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const [hasStoredSession, setHasStoredSession] = useState(false);
 
   // On mount, check for stored tokens and validate
   useEffect(() => {
@@ -66,20 +66,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setBiometricEnabledState(bioPref);
 
         const token = await getAccessToken();
-        if (!token) {
-          setLoading(false);
+        if (!token) return;
+
+        // If biometric enabled, don't auto-login — let login screen handle it
+        if (bioPref && bioAvail) {
+          setHasStoredSession(true);
           return;
         }
 
-        // If biometric is enabled, prompt before revealing user
-        if (bioPref && bioAvail) {
-          const authed = await authenticateWithBiometric();
-          if (!authed) {
-            setLoading(false);
-            return;
-          }
-        }
-
+        // No biometric — auto-login with stored token
         const res = await api.get<{ success: boolean; data: User }>(
           '/auth/mobile/user',
         );
@@ -92,32 +87,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
-  // AppState listener: re-prompt biometric on resume from background
-  useEffect(() => {
-    const subscription = AppState.addEventListener(
-      'change',
-      async (nextState: AppStateStatus) => {
-        if (
-          appStateRef.current.match(/inactive|background/) &&
-          nextState === 'active' &&
-          biometricEnabled &&
-          biometricAvailable &&
-          user
-        ) {
-          setLocked(true);
-          const authed = await authenticateWithBiometric();
-          if (!authed) {
-            // Keep locked — user can retry by backgrounding/foregrounding
-            return;
-          }
-          setLocked(false);
-        }
-        appStateRef.current = nextState;
-      },
-    );
-    return () => subscription.remove();
-  }, [biometricEnabled, biometricAvailable, user]);
-
   const login = useCallback(
     async (usernameOrEmail: string, password: string) => {
       const res = await api.post<{
@@ -127,10 +96,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       await setTokens(res.data.token, res.data.refreshToken);
       setUser(res.data.user);
-      setLocked(false);
+      setHasStoredSession(false);
     },
     [],
   );
+
+  const loginWithBiometric = useCallback(async () => {
+    const authed = await authenticateWithBiometric();
+    if (!authed) throw new Error('Biometric authentication failed');
+
+    const res = await api.get<{ success: boolean; data: User }>(
+      '/auth/mobile/user',
+    );
+    setUser(res.data);
+    setHasStoredSession(false);
+  }, []);
 
   const register = useCallback(
     async (email: string, username: string, password: string) => {
@@ -143,7 +123,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await clearTokens();
     setUser(null);
-    setLocked(false);
+    setHasStoredSession(false);
   }, []);
 
   const handleSetBiometricEnabled = useCallback(async (enabled: boolean) => {
@@ -155,8 +135,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setBiometricEnabledState(enabled);
   }, []);
 
-  const isAuthenticated = !!user && !locked;
-
   return (
     <AuthContext.Provider
       value={{
@@ -164,8 +142,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         biometricEnabled,
         biometricAvailable,
-        isAuthenticated,
+        isAuthenticated: !!user,
+        hasStoredSession,
         login,
+        loginWithBiometric,
         register,
         logout,
         setBiometricEnabled: handleSetBiometricEnabled,

@@ -361,6 +361,8 @@ export class ExplorerService {
           username: true,
           role: true,
           is_stripe_account_connected: true,
+          followers_count: true,
+          following_count: true,
           profile: {
             select: {
               name: true,
@@ -506,6 +508,8 @@ export class ExplorerService {
         equipment: (explorer.profile?.equipment as string[]) || [],
         entriesCount: explorer._count.entries,
         expeditionsCount: explorer._count.expeditions,
+        followersCount: explorer.followers_count ?? 0,
+        followingCount: explorer.following_count ?? 0,
         activeExpeditionLocation,
         activeExpeditionOffGrid,
         isPioneer:

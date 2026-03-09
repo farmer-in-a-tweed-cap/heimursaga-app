@@ -7,14 +7,13 @@ import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useApi } from '@/hooks/useApi';
 import { NavBar } from '@/components/ui/NavBar';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { HCard } from '@/components/ui/HCard';
 import { HButton } from '@/components/ui/HButton';
 import { Avatar } from '@/components/ui/Avatar';
 import { StatsBar } from '@/components/ui/StatsBar';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SectionDivider } from '@/components/ui/SectionDivider';
-import { payoutApi, sponsorshipApi } from '@/services/api';
+import { payoutApi } from '@/services/api';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { Sponsorship, SponsorshipTier, Balance, Payout } from '@/types/api';
 
@@ -28,7 +27,7 @@ export default function SponsorshipsScreen() {
 
   const { data: receivedData } = useApi<{ data: Sponsorship[]; results: number }>(ready ? '/sponsorships' : null);
   const { data: givenData } = useApi<{ data: Sponsorship[]; results: number }>(ready && activeTab === 4 ? '/sponsorships/given' : null);
-  const { data: tiersData, refetch: refetchTiers } = useApi<{ data: SponsorshipTier[]; results: number }>(ready && activeTab === 2 ? '/sponsorship-tiers' : null);
+  const { data: tiersData } = useApi<{ data: SponsorshipTier[]; results: number }>(ready && activeTab === 2 ? '/sponsorship-tiers' : null);
   const { data: balance } = useApi<Balance>(ready ? '/balance' : null);
   const { data: payoutsData } = useApi<{ data: Payout[]; results: number }>(ready && activeTab === 3 ? '/payouts' : null);
 
@@ -55,8 +54,15 @@ export default function SponsorshipsScreen() {
     );
   }
 
-  const totalRevenue = received.reduce((s, r) => s + r.amount, 0) / 100;
-  const monthlyRecurring = received.filter((r) => r.type === 'monthly' && r.status === 'active').reduce((s, r) => s + r.amount, 0) / 100;
+  // Amounts from API are already in dollars (converted via integerToDecimal)
+  const totalRevenue = received.reduce((s, r) => s + r.amount, 0);
+  const monthlyRecurring = received
+    .filter((r) => r.type === 'SUBSCRIPTION' && r.status === 'ACTIVE')
+    .reduce((s, r) => s + r.amount, 0);
+
+  function formatType(type: string): string {
+    return type === 'SUBSCRIPTION' ? 'Monthly' : 'One-time';
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -86,9 +92,9 @@ export default function SponsorshipsScreen() {
             <>
               <StatsBar
                 stats={[
-                  { value: `$${totalRevenue.toLocaleString()}`, label: 'REVENUE' },
+                  { value: `$${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`, label: 'REVENUE' },
                   { value: String(received.length), label: 'SPONSORS' },
-                  { value: `$${monthlyRecurring}`, label: 'MRR' },
+                  { value: `$${monthlyRecurring.toFixed(0)}`, label: 'MRR' },
                 ]}
               />
 
@@ -120,7 +126,7 @@ export default function SponsorshipsScreen() {
                 ) : (
                   <HCard>
                     {received.slice(0, 5).map((s, i) => {
-                      const sponsor = s.user || s.sponsor;
+                      const sponsor = s.user;
                       return (
                         <View
                           key={s.id}
@@ -130,11 +136,11 @@ export default function SponsorshipsScreen() {
                           <View style={styles.sponsorInfo}>
                             <Text style={styles.sponsorName}>{sponsor?.username ?? 'Anonymous'}</Text>
                             <Text style={[styles.sponsorMeta, { color: colors.textTertiary }]}>
-                              {s.type === 'monthly' ? 'Monthly' : 'One-time'}
+                              {formatType(s.type)}
                             </Text>
                           </View>
                           <Text style={[styles.sponsorAmount, { color: brandColors.green }]}>
-                            ${(s.amount / 100).toFixed(0)}
+                            ${s.amount.toFixed(0)}
                           </Text>
                         </View>
                       );
@@ -156,8 +162,8 @@ export default function SponsorshipsScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-              {received.map((s, i) => {
-                const sponsor = s.user || s.sponsor;
+              {received.map((s) => {
+                const sponsor = s.user;
                 return (
                   <HCard key={s.id}>
                     <View style={styles.sponsorRow}>
@@ -165,7 +171,7 @@ export default function SponsorshipsScreen() {
                       <View style={styles.sponsorInfo}>
                         <Text style={styles.sponsorName}>{sponsor?.username ?? 'Anonymous'}</Text>
                         <Text style={[styles.sponsorMeta, { color: colors.textTertiary }]}>
-                          {s.tier?.name ?? s.type} · {new Date(s.created_at).toLocaleDateString()}
+                          {s.tier?.title ?? formatType(s.type)} · {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : ''}
                         </Text>
                         {s.message && (
                           <Text style={[styles.sponsorMessage, { color: colors.textSecondary }]} numberOfLines={1}>
@@ -174,7 +180,7 @@ export default function SponsorshipsScreen() {
                         )}
                       </View>
                       <Text style={[styles.sponsorAmount, { color: brandColors.green }]}>
-                        ${(s.amount / 100).toFixed(0)}
+                        ${s.amount.toFixed(0)}
                       </Text>
                     </View>
                   </HCard>
@@ -186,11 +192,11 @@ export default function SponsorshipsScreen() {
           {/* TIERS */}
           {activeTab === 2 && (
             <>
-              {['one_time', 'monthly'].map((tierType) => {
+              {(['ONE_TIME', 'MONTHLY'] as const).map((tierType) => {
                 const filtered = tiers.filter((t) => t.type === tierType);
                 return (
                   <View key={tierType}>
-                    <SectionDivider title={tierType === 'one_time' ? 'ONE-TIME TIERS' : 'MONTHLY TIERS'} />
+                    <SectionDivider title={tierType === 'ONE_TIME' ? 'ONE-TIME TIERS' : 'MONTHLY TIERS'} />
                     <View style={styles.pad}>
                       {filtered.length === 0 ? (
                         <Text style={[styles.empty, { color: colors.textTertiary }]}>No tiers</Text>
@@ -202,20 +208,15 @@ export default function SponsorshipsScreen() {
                               style={[
                                 styles.tierRow,
                                 i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderThin },
-                                !tier.enabled && { opacity: 0.4 },
+                                tier.isAvailable === false && { opacity: 0.4 },
                               ]}
                             >
-                              <View style={[styles.tierDot, { backgroundColor: tier.enabled ? brandColors.green : colors.textTertiary }]} />
+                              <View style={[styles.tierDot, { backgroundColor: tier.isAvailable !== false ? brandColors.green : colors.textTertiary }]} />
                               <View style={styles.tierInfo}>
-                                <Text style={[styles.tierName, { color: colors.text }]}>{tier.name}</Text>
-                                {tier.description && (
-                                  <Text style={[styles.tierDesc, { color: colors.textTertiary }]} numberOfLines={1}>
-                                    {tier.description}
-                                  </Text>
-                                )}
+                                <Text style={[styles.tierName, { color: colors.text }]}>{tier.description || `Tier ${tier.priority ?? ''}`}</Text>
                               </View>
-                              <Text style={[styles.tierAmount, { color: tierType === 'monthly' ? brandColors.blue : brandColors.copper }]}>
-                                ${(tier.amount / 100).toFixed(0)}{tierType === 'monthly' ? '/mo' : ''}
+                              <Text style={[styles.tierAmount, { color: tierType === 'MONTHLY' ? brandColors.blue : brandColors.copper }]}>
+                                ${tier.price.toFixed(0)}{tierType === 'MONTHLY' ? '/mo' : ''}
                               </Text>
                             </View>
                           ))}
@@ -255,9 +256,11 @@ export default function SponsorshipsScreen() {
                         style={[styles.payoutRow, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderThin }]}
                       >
                         <View style={styles.payoutInfo}>
-                          <Text style={[styles.payoutAmount, { color: colors.text }]}>${(p.amount / 100).toFixed(2)}</Text>
+                          <Text style={[styles.payoutAmount, { color: colors.text }]}>
+                            {p.currency?.symbol ?? '$'}{p.amount.toFixed(2)}
+                          </Text>
                           <Text style={[styles.payoutMeta, { color: colors.textTertiary }]}>
-                            {new Date(p.created_at).toLocaleDateString()} · {p.method ?? 'Bank'}
+                            {p.created ? new Date(p.created).toLocaleDateString() : ''}
                           </Text>
                         </View>
                         <Text style={[styles.payoutStatus, { color: p.status === 'completed' ? brandColors.green : brandColors.copper }]}>
@@ -276,18 +279,18 @@ export default function SponsorshipsScreen() {
             <>
               <SectionDivider title="ACTIVE SUBSCRIPTIONS" />
               <View style={styles.pad}>
-                {given.filter((g) => g.type === 'monthly' && g.status === 'active').length === 0 ? (
+                {given.filter((g) => g.type === 'SUBSCRIPTION' && g.status === 'ACTIVE').length === 0 ? (
                   <Text style={[styles.empty, { color: colors.textTertiary }]}>No active subscriptions</Text>
                 ) : (
-                  given.filter((g) => g.type === 'monthly' && g.status === 'active').map((s) => (
+                  given.filter((g) => g.type === 'SUBSCRIPTION' && g.status === 'ACTIVE').map((s) => (
                     <HCard key={s.id}>
                       <View style={styles.outgoingRow}>
                         <View style={styles.outgoingInfo}>
                           <Text style={[styles.outgoingName, { color: colors.text }]}>
-                            {s.trip?.title ?? 'Expedition'}
+                            {s.expedition?.title ?? 'Expedition'}
                           </Text>
                           <Text style={[styles.outgoingMeta, { color: colors.textTertiary }]}>
-                            ${(s.amount / 100).toFixed(0)}/mo · Since {new Date(s.created_at).toLocaleDateString()}
+                            ${s.amount.toFixed(0)}/mo · Since {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : ''}
                           </Text>
                         </View>
                         <HButton variant="copper" outline small onPress={() => {}}>MANAGE</HButton>
@@ -309,13 +312,13 @@ export default function SponsorshipsScreen() {
                         style={[styles.payoutRow, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderThin }]}
                       >
                         <View style={styles.payoutInfo}>
-                          <Text style={[styles.payoutAmount, { color: colors.text }]}>${(s.amount / 100).toFixed(0)}</Text>
+                          <Text style={[styles.payoutAmount, { color: colors.text }]}>${s.amount.toFixed(0)}</Text>
                           <Text style={[styles.payoutMeta, { color: colors.textTertiary }]}>
-                            {s.trip?.title ?? 'Expedition'} · {new Date(s.created_at).toLocaleDateString()}
+                            {s.expedition?.title ?? 'Expedition'} · {s.createdAt ? new Date(s.createdAt).toLocaleDateString() : ''}
                           </Text>
                         </View>
                         <Text style={[styles.payoutStatus, { color: brandColors.copper }]}>
-                          {s.type === 'monthly' ? 'MONTHLY' : 'ONE-TIME'}
+                          {s.type === 'SUBSCRIPTION' ? 'MONTHLY' : 'ONE-TIME'}
                         </Text>
                       </View>
                     ))}

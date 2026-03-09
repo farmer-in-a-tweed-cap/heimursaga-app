@@ -24,6 +24,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSFaceIDUsageDescription: 'Authenticate to unlock Heimursaga',
       NSPhotoLibraryUsageDescription: 'Upload photos to your journal entries',
       NSCameraUsageDescription: 'Take photos for your journal entries',
+      NSLocationWhenInUseUsageDescription: 'Show your location on the Explorer Atlas',
     },
   },
   android: {
@@ -59,6 +60,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         photosPermission: 'Upload photos to your journal entries',
         cameraPermission: 'Take photos for your journal entries',
+      },
+    ],
+    [
+      'expo-location',
+      {
+        locationWhenInUsePermission: 'Show your location on the Explorer Atlas',
       },
     ],
   ],

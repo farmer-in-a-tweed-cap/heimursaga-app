@@ -45,6 +45,8 @@ export interface ExplorerProfile {
   entriesCount?: number;
   postsCount?: number;
   expeditionsCount?: number;
+  followersCount?: number;
+  followingCount?: number;
   followed?: boolean;
   bookmarked?: boolean;
   you?: boolean;
@@ -197,6 +199,7 @@ export interface Notification {
   sponsorshipCurrency?: string;
   expeditionPublicId?: string;
   passportCountryName?: string;
+  passportContinentName?: string;
   passportStampName?: string;
 }
 
@@ -237,40 +240,46 @@ export interface Message {
 // ─── Sponsorship ───
 
 export interface Sponsorship {
-  id: number;
+  id: string;
   amount: number;
-  type: 'one_time' | 'monthly';
+  type: 'ONE_TIME_PAYMENT' | 'SUBSCRIPTION';
   status: string;
+  currency?: string;
   message?: string;
-  show_name: boolean;
-  show_message: boolean;
-  created_at: string;
+  isPublic?: boolean;
+  isMessagePublic?: boolean;
+  createdAt?: string;
   user?: {
     username: string;
-    display_name?: string;
-    avatar_url?: string;
+    name?: string;
+    picture?: string;
   };
-  sponsor?: {
+  creator?: {
     username: string;
-    display_name?: string;
-    avatar_url?: string;
+    name?: string;
+    picture?: string;
   };
-  trip?: {
-    id: number;
+  expedition?: {
+    id: string;
     title: string;
+    status?: string;
   };
-  tier?: SponsorshipTier;
+  tier?: {
+    id: string;
+    title: string;
+    price: number;
+    description?: string;
+  };
 }
 
 export interface SponsorshipTier {
-  id: number;
-  name: string;
-  amount: number;
-  max_amount?: number;
+  id: string;
+  price: number;
   description?: string;
-  type: 'one_time' | 'monthly';
-  members_count?: number;
-  enabled?: boolean;
+  type: 'ONE_TIME' | 'MONTHLY';
+  priority?: number;
+  membersCount?: number;
+  isAvailable?: boolean;
 }
 
 export interface SponsorshipCheckout {
@@ -281,11 +290,12 @@ export interface SponsorshipCheckout {
 // ─── Payout ───
 
 export interface Payout {
-  id: number;
+  id: string;
   amount: number;
   status: string;
-  method?: string;
-  created_at: string;
+  currency?: { code: string; symbol: string };
+  created?: string;
+  arrival?: string;
 }
 
 export interface Balance {
@@ -319,6 +329,7 @@ export interface ProfileSettings {
   picture?: string;
   locationFrom?: string;
   locationLives?: string;
+  locationVisibility?: string;
   website?: string;
   twitter?: string;
   instagram?: string;

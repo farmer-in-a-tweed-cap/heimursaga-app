@@ -170,13 +170,16 @@ model Sponsorship {
   is_public              Boolean?         @default(true)
   is_message_public      Boolean?         @default(true)
   expedition_public_id   String?          @db.VarChar(14)
+  entry_public_id        String?          @db.VarChar(14)
   sponsored_explorer     Explorer         @relation("received_sponsorships", fields: [sponsored_explorer_id], references: [id], onDelete: Cascade)
   tier                   SponsorshipTier? @relation(fields: [tier_id], references: [id], onDelete: Cascade)
   sponsor                Explorer         @relation("given_sponsorships", fields: [sponsor_id], references: [id], onDelete: Cascade)
+  entry                  Entry?           @relation("entry_sponsorships", fields: [entry_public_id], references: [public_id])
 
   @@index([stripe_subscription_id])
   @@index([sponsored_explorer_id])
   @@index([sponsor_id])
+  @@index([entry_public_id])
   @@map("sponsorships")
 }
 
@@ -245,7 +248,7 @@ model Entry {
   country_code          String?                @db.VarChar(2)
   place                 String?                @db.VarChar(250)
   public                Boolean?               @default(false)
-  public_id             String?                @db.VarChar(14)
+  public_id             String?                @unique @db.VarChar(14)
   bookmarks_count       Int?                   @default(0)
   likes_count           Int?                   @default(0)
   comments_count        Int?                   @default(0)
@@ -263,8 +266,11 @@ model Entry {
   is_milestone          Boolean?               @default(false)
   visibility            String?                @default("public") @db.VarChar(20)
   metadata              Json?
+  quick_sponsors_count  Int?                   @default(0)
+  quick_sponsors_total  Int?                   @default(0)
   // Relations
   bookmarks             EntryBookmark[]        @relation("entry_bookmarks")
+  sponsorships          Sponsorship[]          @relation("entry_sponsorships")
   likes                 EntryLike[]            @relation("entry_likes")
   comments              Comment[]
   media                 EntryMedia[]
@@ -277,7 +283,6 @@ model Entry {
   notification_mentions ExplorerNotification[] @relation("entry_notification_mentions")
 
   @@index([author_id, created_at])
-  @@index([public_id])
   @@index([public, deleted_at])
   @@index([entry_type])
   @@index([visibility])
@@ -547,6 +552,7 @@ model Checkout {
   is_public                Boolean?       @default(true)
   is_message_public        Boolean?       @default(true)
   expedition_public_id     String?        @db.VarChar(14)
+  entry_public_id          String?        @db.VarChar(14)
   sponsored_explorer       Explorer?      @relation("sponsored_checkouts", fields: [sponsored_explorer_id], references: [id], onDelete: Cascade)
   payment_method           PaymentMethod? @relation(fields: [payment_method_id], references: [id], onDelete: Cascade)
   plan                     Plan?          @relation(fields: [plan_id], references: [id], onDelete: Cascade)

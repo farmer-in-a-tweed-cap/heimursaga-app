@@ -54,6 +54,7 @@ export enum UserNotificationContext {
   STRIPE_ACTION_REQUIRED = 'stripe_action_required',
   STRIPE_VERIFIED = 'stripe_verified',
   SYSTEM = 'system',
+  QUICK_SPONSOR = 'quick_sponsor',
   // Passport notifications
   PASSPORT_COUNTRY = 'passport_country',
   PASSPORT_CONTINENT = 'passport_continent',
@@ -82,6 +83,7 @@ export enum SponsorshipStatus {
 export enum SponsorshipType {
   ONE_TIME_PAYMENT = 'one_time_payment',
   SUBSCRIPTION = 'subscription',
+  QUICK_SPONSOR = 'quick_sponsor',
 }
 
 export enum SponsorshipBillingPeriod {

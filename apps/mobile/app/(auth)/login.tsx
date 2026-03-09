@@ -24,13 +24,11 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 
 export default function LoginScreen() {
   const { dark, colors } = useTheme();
-  const { login, register } = useAuth();
+  const { login, register, loginWithBiometric, hasStoredSession, biometricAvailable, biometricEnabled } = useAuth();
   const router = useRouter();
 
   const [mode, setMode] = useState<0 | 1>(0); // 0=login, 1=register
   const [submitting, setSubmitting] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
-
   // Login fields
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,7 +44,6 @@ export default function LoginScreen() {
     setSubmitting(true);
     try {
       await login(usernameOrEmail, password);
-      router.replace('/(tabs)');
     } catch (err: any) {
       Alert.alert('Login Failed', err.message || 'Invalid credentials');
     } finally {
@@ -63,7 +60,6 @@ export default function LoginScreen() {
     setSubmitting(true);
     try {
       await register(regEmail, regUsername, regPassword);
-      router.replace('/(tabs)');
     } catch (err: any) {
       Alert.alert('Registration Failed', err.message || 'Could not create account');
     } finally {
@@ -136,46 +132,50 @@ export default function LoginScreen() {
                 secureTextEntry
               />
 
-              {/* Remember me */}
-              <Pressable
-                style={styles.rememberRow}
-                onPress={() => setRememberMe(!rememberMe)}
-              >
-                <View style={[
-                  styles.rememberBox,
-                  {
-                    borderColor: rememberMe ? brandColors.copper : colors.borderThin,
-                    backgroundColor: rememberMe ? brandColors.copper : colors.inputBackground,
-                  }
-                ]}>
-                  {rememberMe && (
-                    <Svg width={8} height={8} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={3}>
-                      <Path d="M20 6L9 17l-5-5" />
-                    </Svg>
-                  )}
-                </View>
-                <Text style={[styles.rememberText, { color: colors.textSecondary }]}>Remember me</Text>
-              </Pressable>
-
               <HButton onPress={handleLogin} disabled={submitting}>
                 {submitting ? 'SIGNING IN...' : 'LOGIN TO ACCOUNT'}
               </HButton>
 
+              {hasStoredSession && biometricAvailable && biometricEnabled && (
+                <HButton
+                  outline
+                  onPress={async () => {
+                    setSubmitting(true);
+                    try {
+                      await loginWithBiometric();
+                    } catch (err: any) {
+                      const msg = err?.status === 401
+                        ? 'Your session has expired. Please log in with your password.'
+                        : 'Biometric login was cancelled or failed.';
+                      Alert.alert('Authentication Failed', msg);
+                    } finally {
+                      setSubmitting(false);
+                    }
+                  }}
+                  disabled={submitting}
+                  style={{ marginTop: 12 }}
+                >
+                  LOGIN WITH BIOMETRICS
+                </HButton>
+              )}
+
               {/* Forgot password */}
-              <HCard style={styles.forgotCard}>
-                <View style={styles.forgotInner}>
-                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
-                    <Circle cx={12} cy={12} r={10} />
-                    <Path d="M12 16v-4M12 8h.01" />
-                  </Svg>
-                  <View>
-                    <Text style={[styles.forgotLabel, { color: colors.textSecondary }]}>
-                      Forgot your password?
-                    </Text>
-                    <Text style={styles.forgotLink}>Reset via email →</Text>
+              <Pressable onPress={() => router.push('/(auth)/forgot-password')}>
+                <HCard style={styles.forgotCard}>
+                  <View style={styles.forgotInner}>
+                    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
+                      <Circle cx={12} cy={12} r={10} />
+                      <Path d="M12 16v-4M12 8h.01" />
+                    </Svg>
+                    <View>
+                      <Text style={[styles.forgotLabel, { color: colors.textSecondary }]}>
+                        Forgot your password?
+                      </Text>
+                      <Text style={styles.forgotLink}>Reset via email →</Text>
+                    </View>
                   </View>
-                </View>
-              </HCard>
+                </HCard>
+              </Pressable>
 
             </>
           ) : (
@@ -270,7 +270,4 @@ const styles = StyleSheet.create({
     color: brandColors.copper,
     fontWeight: '700',
   },
-  rememberRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
-  rememberBox: { width: 14, height: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  rememberText: { fontSize: 15 },
 });

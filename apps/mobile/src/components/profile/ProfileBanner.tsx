@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 import { Avatar } from '@/components/ui/Avatar';
-import { mono, colors as brandColors } from '@/theme/tokens';
+import { mono, heading, colors as brandColors } from '@/theme/tokens';
 import { Svg, Path, Circle, Rect } from 'react-native-svg';
 
 interface ProfileBannerProps {
@@ -163,11 +163,12 @@ const styles = StyleSheet.create({
     color: brandColors.copper,
   },
   displayName: {
+    fontFamily: heading,
     fontSize: 18,
     fontWeight: '700',
     color: '#ffffff',
     marginTop: 4,
-    lineHeight: 19,
+    lineHeight: 26,
   },
   metaRow: {
     flexDirection: 'row',

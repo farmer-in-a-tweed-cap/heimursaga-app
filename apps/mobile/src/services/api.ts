@@ -175,13 +175,13 @@ export const api = {
     return request<T>(endpoint, { ...opts, method: 'GET' });
   },
   post<T>(endpoint: string, body?: unknown, opts?: RequestOptions) {
-    return request<T>(endpoint, { ...opts, method: 'POST', body });
+    return request<T>(endpoint, { ...opts, method: 'POST', body: body ?? {} });
   },
   put<T>(endpoint: string, body?: unknown, opts?: RequestOptions) {
-    return request<T>(endpoint, { ...opts, method: 'PUT', body });
+    return request<T>(endpoint, { ...opts, method: 'PUT', body: body ?? {} });
   },
   patch<T>(endpoint: string, body?: unknown, opts?: RequestOptions) {
-    return request<T>(endpoint, { ...opts, method: 'PATCH', body });
+    return request<T>(endpoint, { ...opts, method: 'PATCH', body: body ?? {} });
   },
   delete<T>(endpoint: string, opts?: RequestOptions) {
     return request<T>(endpoint, { ...opts, method: 'DELETE' });
@@ -211,6 +211,12 @@ import type {
   ProfileSettings,
 } from '@/types/api';
 
+export const authApi = {
+  resetPassword(email: string) {
+    return api.post<ApiResponse<void>>('/auth/reset-password', { email }, { noAuth: true });
+  },
+};
+
 export const searchApi = {
   search(query: string, type?: string) {
     return api.post<ApiResponse<SearchResults>>('/search', { query, type });
@@ -236,10 +242,10 @@ export const messagesApi = {
   getConversation(username: string) {
     return api.get<ApiResponse<Message[]>>(`/messages/conversations/${username}`);
   },
-  send(username: string, body: string) {
-    return api.post<ApiResponse<Message>>('/messages/send', { username, body });
+  send(recipientUsername: string, content: string) {
+    return api.post<ApiResponse<Message>>('/messages/send', { recipientUsername, content });
   },
-  markRead(messageId: number) {
+  markRead(messageId: string) {
     return api.patch<ApiResponse<void>>(`/messages/mark-read/${messageId}`);
   },
   getUnreadCount() {

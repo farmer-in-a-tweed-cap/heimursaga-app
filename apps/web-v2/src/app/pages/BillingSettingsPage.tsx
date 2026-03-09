@@ -420,7 +420,7 @@ export function BillingSettingsPage() {
                         <CreditCard className="w-8 h-8 text-[#616161] dark:text-[#b5bcc4]" />
                         <div>
                           <div className="font-bold text-sm dark:text-[#e5e5e5]">
-                            {method.label || 'Card'} **** {method.last4}
+                            {(method.label || 'Card').replace(` ${method.last4}`, '')} **** {method.last4}
                             {method.isDefault && (
                               <span className="ml-2 px-2 py-0.5 bg-[#4676ac] text-white text-xs font-bold">
                                 DEFAULT

@@ -1,4 +1,4 @@
-import { useState, useEffect, ComponentType } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
+  Alert,
   StyleSheet,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,7 +24,8 @@ import { TopoBackground } from '@/components/ui/TopoBackground';
 import { StatsBar } from '@/components/ui/StatsBar';
 import { Avatar } from '@/components/ui/Avatar';
 import { SectionDivider } from '@/components/ui/SectionDivider';
-import type { HeimuMapProps, WaypointMarker } from '@/components/map/HeimuMap';
+import type { ForwardRefExoticComponent, RefAttributes } from 'react';
+import type { HeimuMapProps, HeimuMapRef, WaypointMarker } from '@/components/map/HeimuMap';
 import { ExpeditionCardFull } from '@/components/cards/ExpeditionCardFull';
 import { ExplorerCardMini } from '@/components/cards/ExplorerCardMini';
 import { EntryCardFull } from '@/components/cards/EntryCardFull';
@@ -45,6 +47,25 @@ export default function HomeScreen() {
   const [selectedAtlasEntry, setSelectedAtlasEntry] = useState<Entry | null>(null);
   const [selectedExplorer, setSelectedExplorer] = useState<ExplorerProfile | null>(null);
   const [badgeCount, setBadgeCount] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const atlasMapRef = useRef<HeimuMapRef>(null);
+
+  const handleGeolocate = useCallback(async () => {
+    try {
+      const Location = await import('expo-location');
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Location Access', 'Location permission is required to use this feature.');
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const coords: [number, number] = [loc.coords.longitude, loc.coords.latitude];
+      atlasMapRef.current?.flyTo(coords, 8);
+      if (!atlasExpanded) setAtlasExpanded(true);
+    } catch {
+      Alert.alert('Location Unavailable', 'Could not determine your location. Please try again.');
+    }
+  }, [atlasExpanded]);
 
   // Poll notification badge count
   const userId = user?.id;
@@ -61,6 +82,7 @@ export default function HomeScreen() {
     return () => { cancelled = true; clearInterval(interval); };
   }, [userId]);
 
+  // Global feed
   const { data, loading, error, refetch } = useApi<TripsResponse>('/trips');
   const allExpeditions = data?.data ?? [];
   const expeditions = allExpeditions.slice(0, 5);
@@ -71,8 +93,20 @@ export default function HomeScreen() {
   const { data: postsData } = useApi<{ data: Entry[]; results: number }>('/posts');
   const entries = (postsData?.data ?? []).slice(0, 2);
 
+  // Following feed
+  const { data: followTrips, loading: followLoading } = useApi<TripsResponse>(
+    user ? '/trips?context=following' : null,
+  );
+  const followExpeditions = (followTrips?.data ?? []).slice(0, 5);
+
+  const { data: followPosts } = useApi<{ data: Entry[]; results: number }>(
+    user ? '/posts?context=following' : null,
+  );
+  const followEntries = (followPosts?.data ?? []).slice(0, 2);
+
   // Defer MapboxGL import so its native module init doesn't block the JS thread
-  const [MapComponent, setMapComponent] = useState<ComponentType<HeimuMapProps> | null>(null);
+  type HeimuMapComponent = ForwardRefExoticComponent<HeimuMapProps & RefAttributes<HeimuMapRef>>;
+  const [MapComponent, setMapComponent] = useState<HeimuMapComponent | null>(null);
   useEffect(() => {
     const timer = setTimeout(() => {
       import('@/components/map/HeimuMap').then((mod) => setMapComponent(() => mod.default));
@@ -136,7 +170,7 @@ export default function HomeScreen() {
 
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={refetch} tintColor={brandColors.copper} />
+          <RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refetch(); setRefreshing(false); }} tintColor={brandColors.copper} />
         }
       >
         {/* Global / Following toggle */}
@@ -145,7 +179,7 @@ export default function HomeScreen() {
             <View style={styles.feedToggle}>
               {[
                 { label: 'GLOBAL', count: String(data?.results ?? 0) },
-                { label: 'FOLLOWING', count: '—' },
+                { label: 'FOLLOWING', count: user ? String(followTrips?.results ?? 0) : '—' },
               ].map((tab, i) => (
                 <Pressable
                   key={tab.label}
@@ -177,6 +211,7 @@ export default function HomeScreen() {
             <View style={[styles.atlasMap, { height: atlasExpanded ? 400 : 200 }]}>
               {MapComponent && (
                 <MapComponent
+                  ref={atlasMapRef}
                   style={StyleSheet.absoluteFillObject}
                   center={[0, 20]}
                   zoom={1.5}
@@ -262,19 +297,28 @@ export default function HomeScreen() {
               )}
               <View style={styles.atlasOverlay} pointerEvents="box-none">
                 <Text style={styles.atlasTitle}>THE EXPLORER ATLAS</Text>
-                <Pressable
-                  style={styles.atlasExpandBtn}
-                  onPress={() => { setAtlasExpanded(v => !v); setSelectedExplorer(null); setSelectedAtlasEntry(null); }}
-                >
-                  <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={2}>
-                    <Path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
-                  </Svg>
-                  <Text style={styles.atlasExpandText}>{atlasExpanded ? 'COLLAPSE' : 'EXPAND'}</Text>
-                </Pressable>
+                <View style={styles.atlasOverlayRight}>
+                  <Pressable style={styles.atlasExpandBtn} onPress={handleGeolocate}>
+                    <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={2}>
+                      <Circle cx={12} cy={12} r={3} />
+                      <Path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+                    </Svg>
+                    <Text style={styles.atlasExpandText}>LOCATE</Text>
+                  </Pressable>
+                  <Pressable
+                    style={styles.atlasExpandBtn}
+                    onPress={() => { setAtlasExpanded(v => !v); setSelectedExplorer(null); setSelectedAtlasEntry(null); }}
+                  >
+                    <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={2}>
+                      <Path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
+                    </Svg>
+                    <Text style={styles.atlasExpandText}>{atlasExpanded ? 'COLLAPSE' : 'EXPAND'}</Text>
+                  </Pressable>
+                </View>
               </View>
             </View>
             {/* Toggle bar */}
-            <View style={[styles.atlasToggleBar, { backgroundColor: dark ? '#0d1a26' : '#b8ccb0', borderTopWidth: borders.thick, borderTopColor: colors.border }]}>
+            <View style={[styles.atlasToggleBar, { backgroundColor: brandColors.darkGray, borderTopWidth: borders.thick, borderTopColor: colors.border }]}>
               <View style={styles.atlasToggleBtnWrap}>
                 {['EXPLORERS', 'ENTRIES'].map((label, i) => (
                   <Pressable
@@ -314,58 +358,69 @@ export default function HomeScreen() {
         </View>
 
         {/* Expeditions */}
-        <SectionDivider title="EXPEDITIONS" action="VIEW ALL" onAction={() => router.push('/discover?tab=0')} />
+        <SectionDivider title="EXPEDITIONS" action={feedTab === 0 ? 'VIEW ALL' : undefined} onAction={feedTab === 0 ? () => router.push('/discover?tab=0') : undefined} />
         <View style={styles.sectionContent}>
-          {loading && expeditions.length === 0 ? (
-            <ActivityIndicator color={brandColors.copper} size="large" style={styles.sectionLoader} />
-          ) : error ? (
-            <View style={styles.centered}>
-              <Text style={[styles.errorText, { color: colors.textTertiary }]}>
-                Could not load expeditions
-              </Text>
-              <Pressable onPress={refetch}>
-                <Text style={styles.retryText}>Retry</Text>
-              </Pressable>
-            </View>
-          ) : expeditions.length === 0 ? (
-            <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
-              No expeditions found
-            </Text>
-          ) : (
-            expeditions.map((item) => (
-              <ExpeditionCardFull
-                key={item.id}
-                expedition={item}
-                onPress={() => router.push(`/expedition/${item.id}`)}
-              />
-            ))
-          )}
+          {(() => {
+            const exps = feedTab === 0 ? expeditions : followExpeditions;
+            const isLoading = feedTab === 0 ? loading : followLoading;
+            if (isLoading && exps.length === 0) {
+              return <ActivityIndicator color={brandColors.copper} size="large" style={styles.sectionLoader} />;
+            }
+            if (feedTab === 0 && error) {
+              return (
+                <View style={styles.centered}>
+                  <Text style={[styles.errorText, { color: colors.textTertiary }]}>Could not load expeditions</Text>
+                  <Pressable onPress={refetch}><Text style={styles.retryText}>Retry</Text></Pressable>
+                </View>
+              );
+            }
+            if (exps.length === 0) {
+              return (
+                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+                  {feedTab === 0 ? 'No expeditions found' : 'No expeditions from explorers you follow'}
+                </Text>
+              );
+            }
+            return exps.map((item) => (
+              <ExpeditionCardFull key={item.id} expedition={item} onPress={() => router.push(`/expedition/${item.id}`)} />
+            ));
+          })()}
         </View>
 
-        {/* Explorers */}
-        <SectionDivider title="EXPLORERS" action="VIEW ALL" onAction={() => router.push('/discover?tab=1')} />
-        <View style={styles.sectionContent}>
-          <View style={styles.explorerGrid}>
-            {explorers.map((explorer) => (
-              <ExplorerCardMini
-                key={explorer.username}
-                explorer={explorer}
-                onPress={() => router.push(`/explorer/${explorer.username}`)}
-              />
-            ))}
-          </View>
-        </View>
+        {/* Explorers — global only */}
+        {feedTab === 0 && (
+          <>
+            <SectionDivider title="EXPLORERS" action="VIEW ALL" onAction={() => router.push('/discover?tab=1')} />
+            <View style={styles.sectionContent}>
+              <View style={styles.explorerGrid}>
+                {explorers.map((explorer) => (
+                  <ExplorerCardMini
+                    key={explorer.username}
+                    explorer={explorer}
+                    onPress={() => router.push(`/explorer/${explorer.username}`)}
+                  />
+                ))}
+              </View>
+            </View>
+          </>
+        )}
 
         {/* Entries */}
-        <SectionDivider title="ENTRIES" action="VIEW ALL" onAction={() => router.push('/discover?tab=2')} />
+        <SectionDivider title="ENTRIES" action={feedTab === 0 ? 'VIEW ALL' : undefined} onAction={feedTab === 0 ? () => router.push('/discover?tab=2') : undefined} />
         <View style={styles.sectionContent}>
-          {entries.map((entry) => (
-            <EntryCardFull
-              key={entry.id}
-              entry={entry}
-              onPress={() => router.push(`/entry/${entry.id}`)}
-            />
-          ))}
+          {(() => {
+            const ents = feedTab === 0 ? entries : followEntries;
+            if (ents.length === 0) {
+              return (
+                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+                  {feedTab === 0 ? 'No entries found' : 'No entries from explorers you follow'}
+                </Text>
+              );
+            }
+            return ents.map((entry) => (
+              <EntryCardFull key={entry.id} entry={entry} onPress={() => router.push(`/entry/${entry.id}`)} />
+            ));
+          })()}
         </View>
 
         <View style={styles.spacer} />
@@ -400,8 +455,9 @@ const styles = StyleSheet.create({
   atlasWrap: { paddingHorizontal: 16, paddingTop: 12 },
   atlasCard: {},
   atlasMap: { position: 'relative' },
-  atlasOverlay: { backgroundColor: 'rgba(32,32,32,0.65)', padding: 8, paddingHorizontal: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  atlasOverlay: { backgroundColor: brandColors.black, padding: 8, paddingHorizontal: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   atlasTitle: { fontSize: 12, fontWeight: '700', letterSpacing: 1, color: '#ffffff', fontFamily: mono },
+  atlasOverlayRight: { flexDirection: 'row', gap: 6 },
   atlasExpandBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', paddingVertical: 3, paddingHorizontal: 8 },
   atlasExpandText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.6, color: 'rgba(255,255,255,0.5)', fontFamily: mono },
   atlasToggleBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5, paddingHorizontal: 14 },

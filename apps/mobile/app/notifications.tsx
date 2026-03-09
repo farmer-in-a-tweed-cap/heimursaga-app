@@ -91,7 +91,7 @@ export default function NotificationsScreen() {
   const { ready } = useRequireAuth();
 
   const { data: rawData, loading, refetch } = useApi<{ success: boolean; data: NotificationsResponse }>(
-    ready ? '/auth/mobile/notifications' : null,
+    ready ? '/auth/mobile/notifications' : null, { refetchOnFocus: true },
   );
 
   const notifications = rawData?.data?.data ?? [];
@@ -116,15 +116,15 @@ export default function NotificationsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <NavBar onBack={() => router.back()} />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>NOTIFICATIONS</Text>
-        <TouchableOpacity onPress={handleMarkAllRead}>
-          <Text style={styles.markRead}>MARK ALL READ</Text>
-        </TouchableOpacity>
-      </View>
+      <NavBar
+        onBack={() => router.back()}
+        title="NOTIFICATIONS"
+        right={
+          <TouchableOpacity onPress={handleMarkAllRead}>
+            <Text style={styles.markRead}>MARK ALL READ</Text>
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView>
         {groups.length === 0 && !loading && (
@@ -169,23 +169,6 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loader: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 3,
-    borderBottomColor: brandColors.copper,
-    backgroundColor: brandColors.black,
-  },
-  headerTitle: {
-    fontFamily: mono,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 2.1,
-    color: '#e5e5e5',
-  },
   markRead: {
     fontFamily: mono,
     fontSize: 12,

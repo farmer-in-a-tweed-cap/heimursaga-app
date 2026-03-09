@@ -141,6 +141,12 @@ export default function CreateScreen() {
             </TouchableOpacity>
             {showExpPicker && (
               <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <TouchableOpacity
+                  style={[styles.pickerItem, { borderBottomColor: colors.borderThin }]}
+                  onPress={() => { setShowExpPicker(false); router.push('/expedition/create'); }}
+                >
+                  <Text style={[styles.pickerItemText, { color: brandColors.copper }]}>+ CREATE NEW EXPEDITION</Text>
+                </TouchableOpacity>
                 {expeditions.map((exp) => (
                   <TouchableOpacity
                     key={exp.id}

@@ -30,10 +30,10 @@ function AppContent({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      <div className="min-h-screen bg-[#404040] dark:bg-[#2a2a2a] topo-bg">
+      <div className="min-h-screen flex flex-col bg-[#404040] dark:bg-[#2a2a2a] topo-bg">
         <ActiveExpeditionBanner />
         <Header />
-        <div className={isHomePage ? '' : 'pt-[15px]'}>
+        <div className={`flex-1 ${isHomePage ? '' : 'pt-[15px]'}`}>
           {children}
         </div>
         <Footer />

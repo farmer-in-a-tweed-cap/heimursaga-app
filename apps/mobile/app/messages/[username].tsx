@@ -1,15 +1,15 @@
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity,
   KeyboardAvoidingView, Platform, ActivityIndicator, Alert,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
 import { NavBar } from '@/components/ui/NavBar';
-import { HCard } from '@/components/ui/HCard';
 import { MessageBubble } from '@/components/ui/MessageBubble';
 import { messagesApi } from '@/services/api';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
@@ -21,11 +21,25 @@ export default function MessageDetailScreen() {
   const router = useRouter();
   const { ready } = useRequireAuth();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [text, setText] = useState('');
 
   const { data: messages, loading, refetch } = useApi<Message[]>(
     ready && username ? `/messages/conversations/${username}` : null,
   );
+
+  // Mark messages as read when conversation opens
+  useEffect(() => {
+    if (!messages?.length) return;
+    const unread = messages.filter(
+      (m) =>
+        (m.senderUsername ?? m.sender_username) !== user?.username &&
+        !(m.isRead ?? m.read),
+    );
+    unread.forEach((m) => {
+      messagesApi.markRead(String(m.id)).catch(() => {});
+    });
+  }, [messages, user?.username]);
 
   const handleSend = useCallback(async () => {
     if (!text.trim() || !username) return;
@@ -76,22 +90,20 @@ export default function MessageDetailScreen() {
           )}
         />
 
-        <View style={styles.inputBarWrap}>
-          <HCard style={{ marginBottom: 0 }}>
-            <View style={styles.inputBar}>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.inputBackground, borderColor: colors.border, color: colors.text }]}
-                placeholder="Write message..."
-                placeholderTextColor={colors.textTertiary}
-                value={text}
-                onChangeText={setText}
-                onSubmitEditing={handleSend}
-              />
-              <TouchableOpacity style={styles.sendBtn} onPress={handleSend}>
-                <Text style={styles.sendText}>SEND</Text>
-              </TouchableOpacity>
-            </View>
-          </HCard>
+        <View style={[styles.inputBarWrap, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+          <View style={[styles.inputBar, { borderColor: colors.border }]}>
+            <TextInput
+              style={[styles.input, { color: colors.text }]}
+              placeholder="Write message..."
+              placeholderTextColor={colors.textTertiary}
+              value={text}
+              onChangeText={setText}
+              onSubmitEditing={handleSend}
+            />
+            <TouchableOpacity style={styles.sendBtn} onPress={handleSend}>
+              <Text style={styles.sendText}>SEND</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </View>
@@ -106,26 +118,25 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   inputBarWrap: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingTop: 10,
   },
   inputBar: {
     flexDirection: 'row',
+    borderWidth: borders.thick,
   },
   input: {
     flex: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
-    borderWidth: borders.thick,
-    borderRightWidth: 0,
     fontSize: 14,
   },
   sendBtn: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     backgroundColor: brandColors.copper,
-    borderWidth: borders.thick,
-    borderColor: brandColors.copper,
+    borderLeftWidth: borders.thick,
+    borderLeftColor: brandColors.copper,
     justifyContent: 'center',
   },
   sendText: {

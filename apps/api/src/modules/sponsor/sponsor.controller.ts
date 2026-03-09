@@ -18,6 +18,8 @@ import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
 import {
+  ConfirmQuickSponsorDto,
+  QuickSponsorDto,
   SponsorCheckoutCompleteDto,
   SponsorCheckoutDto,
   SponsorshipRefundDto,
@@ -42,6 +44,33 @@ export class SponsorController {
       query: {},
       payload: body,
       session,
+    });
+  }
+
+  @Post('quick')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async quickSponsor(
+    @Session() session: ISession,
+    @Body() body: QuickSponsorDto,
+  ) {
+    return await this.sponsorService.quickSponsor({
+      session,
+      entryPublicId: body.entryPublicId,
+    });
+  }
+
+  @Post('quick/confirm')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async confirmQuickSponsor(
+    @Session() session: ISession,
+    @Body() body: ConfirmQuickSponsorDto,
+  ) {
+    return await this.sponsorService.confirmQuickSponsorCard({
+      session,
+      setupIntentId: body.setupIntentId,
+      entryPublicId: body.entryPublicId,
     });
   }
 

@@ -58,6 +58,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 13,
+    lineHeight: 18,
     padding: 0,
   },
 });
