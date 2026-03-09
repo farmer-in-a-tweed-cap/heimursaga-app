@@ -237,7 +237,7 @@ export class EntryService {
         is_draft: false, // Exclude drafts from public views
       } as Prisma.EntryWhereInput;
 
-      const take = 500;
+      const take = 50;
 
       // filter based on role
       switch (explorerRole) {

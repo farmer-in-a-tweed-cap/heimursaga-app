@@ -19,16 +19,21 @@ import {
 } from 'class-validator';
 
 import { ToNumber } from '@/common/decorators';
+import { SanitizeText, SanitizeContent } from '@/lib/sanitizer';
 
 export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   @ApiProperty({ required: true })
+  @SanitizeText()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   title: string;
 
   @ApiProperty({ required: false })
+  @SanitizeContent()
   @IsString()
   @IsOptional()
+  @MaxLength(5000)
   description?: string;
 
   @ApiProperty({ required: false })
@@ -97,8 +102,10 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
 
 export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @ApiProperty({ required: true })
+  @SanitizeText()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   title: string;
 
   @ApiProperty({ required: false })
@@ -112,8 +119,10 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   visibility?: 'public' | 'off-grid' | 'private';
 
   @ApiProperty({ required: false })
+  @SanitizeContent()
   @IsString()
   @IsOptional()
+  @MaxLength(5000)
   description?: string;
 
   @ApiProperty({ required: false })
@@ -223,8 +232,10 @@ export class WaypointCreateDto implements IWaypointCreatePayload {
   lon: number;
 
   @ApiProperty({ required: false })
+  @SanitizeText()
   @IsString()
   @IsOptional()
+  @MaxLength(200)
   title?: string;
 
   @ApiProperty({ required: false })
@@ -233,8 +244,10 @@ export class WaypointCreateDto implements IWaypointCreatePayload {
   date: Date;
 
   @ApiProperty({ required: false })
+  @SanitizeText()
   @IsString()
   @IsOptional()
+  @MaxLength(1000)
   description?: string;
 
   @ApiProperty({ required: false })
@@ -245,8 +258,10 @@ export class WaypointCreateDto implements IWaypointCreatePayload {
 
 export class WaypointUpdateDto implements IWaypointUpdatePayload {
   @ApiProperty({ required: false })
+  @SanitizeText()
   @IsString()
   @IsOptional()
+  @MaxLength(200)
   title?: string;
 
   @ApiProperty({ required: false })
@@ -267,8 +282,10 @@ export class WaypointUpdateDto implements IWaypointUpdatePayload {
   date?: Date;
 
   @ApiProperty({ required: false })
+  @SanitizeText()
   @IsString()
   @IsOptional()
+  @MaxLength(1000)
   description?: string;
 
   @ApiProperty({ required: false })

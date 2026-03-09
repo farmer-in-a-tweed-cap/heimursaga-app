@@ -171,8 +171,9 @@ export function PaymentSuccessPage() {
                   <span className="text-[#ac6d46]">${formatCurrency(explorerReceives)}</span>
                 </div>
               </div>
-              <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#616161] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                Funds are typically transferred to the explorer's account within 2-7 business days, depending on their bank and location.
+              <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#616161] text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1">
+                <div>Funds are typically transferred to the explorer's account within 2-7 business days, depending on their bank and location.</div>
+                <div>Fee breakdown is an estimate. Refer to your Stripe email receipt for the authoritative charge amount.</div>
               </div>
             </div>
 

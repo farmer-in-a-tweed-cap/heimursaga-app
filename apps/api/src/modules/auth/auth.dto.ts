@@ -19,11 +19,13 @@ export class LoginDto implements ILoginPayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   login: string;
 
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   password: string;
 
   @ApiProperty({ required: false })

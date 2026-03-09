@@ -582,11 +582,22 @@ export class ExpeditionService {
       // Allow access for public expeditions, require auth for private expeditions
       const isAuthenticated = !!explorerId;
 
+      // Build visibility-aware where clause to prevent fetching unauthorized data
+      const visibilityFilter: Prisma.ExpeditionWhereInput = isAuthenticated
+        ? {
+            OR: [
+              { visibility: 'public' },
+              { visibility: 'off-grid' },
+              { visibility: 'private', author_id: explorerId },
+              { visibility: null }, // legacy records
+            ],
+          }
+        : { visibility: 'public' };
+
       const where: Prisma.ExpeditionWhereInput = {
         public_id: id,
         deleted_at: null,
-        // If not authenticated, only show public expeditions
-        ...(isAuthenticated ? {} : { visibility: 'public' }),
+        ...visibilityFilter,
       };
 
       // get an expedition
@@ -1015,30 +1026,36 @@ export class ExpeditionService {
               s.type?.toLowerCase() === 'subscription' ||
               s.expedition_public_id === public_id,
           )
-          .map((s) => ({
-            id: s.public_id,
-            type: s.type?.toLowerCase(),
-            amount: integerToDecimal(s.amount),
-            status: s.status?.toLowerCase(),
-            message: s.message,
-            isPublic: s.is_public ?? true,
-            isMessagePublic: s.is_message_public ?? true,
-            createdAt: s.created_at,
-            user: s.sponsor
-              ? {
-                  username: s.sponsor.username,
-                  name: s.sponsor.profile?.name,
-                  picture: getStaticMediaUrl(s.sponsor.profile?.picture),
-                }
-              : undefined,
-            tier: s.tier
-              ? {
-                  id: s.tier.public_id,
-                  description: s.tier.description,
-                  price: integerToDecimal(s.tier.price),
-                }
-              : undefined,
-          })),
+          .map((s) => {
+            const isPublic = s.is_public ?? true;
+            const isMessagePublic = s.is_message_public ?? true;
+            return {
+              id: s.public_id,
+              type: s.type?.toLowerCase(),
+              amount: integerToDecimal(s.amount),
+              status: s.status?.toLowerCase(),
+              message: isMessagePublic ? s.message : null,
+              isPublic,
+              isMessagePublic,
+              createdAt: s.created_at,
+              // Strip identity for anonymous sponsors
+              user:
+                isPublic && s.sponsor
+                  ? {
+                      username: s.sponsor.username,
+                      name: s.sponsor.profile?.name,
+                      picture: getStaticMediaUrl(s.sponsor.profile?.picture),
+                    }
+                  : undefined,
+              tier: s.tier
+                ? {
+                    id: s.tier.public_id,
+                    description: s.tier.description,
+                    price: integerToDecimal(s.tier.price),
+                  }
+                : undefined,
+            };
+          }),
       };
 
       // Apply current location visibility rules

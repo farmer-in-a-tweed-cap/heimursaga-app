@@ -27,7 +27,10 @@ export class ServiceExceptionInterceptor implements NestInterceptor {
 
           throw new HttpException(message, status);
         } else {
-          console.log('service error:', error);
+          // Log non-service errors without exposing internal details
+          const safeMessage =
+            error instanceof Error ? error.message : 'Unknown error';
+          console.error(`Unhandled service error: ${safeMessage}`);
 
           throw error;
         }

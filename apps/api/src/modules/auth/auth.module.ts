@@ -26,7 +26,7 @@ import { AuthService } from './auth.service';
         }
         return process.env.JWT_SECRET;
       })(),
-      signOptions: { expiresIn: '24h' },
+      signOptions: { expiresIn: '1h' },
     }),
   ],
   controllers: [AuthController],

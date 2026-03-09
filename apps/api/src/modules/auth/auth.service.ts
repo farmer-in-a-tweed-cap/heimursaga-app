@@ -277,8 +277,6 @@ export class AuthService {
         email: user.email,
         username: user.username,
         role: user.role,
-        ip,
-        userAgent,
       };
 
       // Generate access token (1 hour expiration)
@@ -861,8 +859,13 @@ export class AuthService {
       const user = await this.prisma.explorer
         .findFirstOrThrow({ where: { email } })
         .catch(() => null);
-      if (!user)
-        throw new ServiceBadRequestException('user with this email not found');
+      if (!user) {
+        // Return silently to prevent user enumeration (same pattern as resetPassword)
+        this.logger.warn(
+          '[EMAIL_VERIFICATION] Requested for non-existent email',
+        );
+        return;
+      }
 
       // generate a token
       const token = generator.verificationToken();
@@ -914,9 +917,7 @@ export class AuthService {
       ).toString();
 
       // send the email
-      this.logger.log(
-        `[EMAIL_VERIFICATION] Triggering email to: ${email}, link: ${link}`,
-      );
+      this.logger.log(`[EMAIL_VERIFICATION] Triggering email verification`);
 
       this.eventService.trigger<IEventSendEmail>({
         event: EVENTS.SEND_EMAIL,
@@ -927,7 +928,7 @@ export class AuthService {
         },
       });
 
-      this.logger.log(`[EMAIL_VERIFICATION] Event triggered for: ${email}`);
+      this.logger.log(`[EMAIL_VERIFICATION] Event triggered`);
     } catch (e) {
       this.logger.error(`[EMAIL_VERIFICATION] Error:`, e);
       if (e.status) throw e;

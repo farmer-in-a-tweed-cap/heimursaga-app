@@ -8,9 +8,11 @@ import {
 } from 'class-validator';
 
 import { ToNumber } from '@/common/decorators';
+import { SanitizeText } from '@/lib/sanitizer';
 
 export class ExpeditionNoteCreateDto {
   @ApiProperty({ required: true })
+  @SanitizeText()
   @IsString()
   @IsNotEmpty()
   @MaxLength(280)
@@ -19,6 +21,7 @@ export class ExpeditionNoteCreateDto {
 
 export class ExpeditionNoteReplyCreateDto {
   @ApiProperty({ required: true })
+  @SanitizeText()
   @IsString()
   @IsNotEmpty()
   @MaxLength(280)

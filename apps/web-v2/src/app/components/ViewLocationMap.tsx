@@ -85,18 +85,21 @@ export function ViewLocationMap({ lat, lng, locationName, elevation, onClose }: 
       .setLngLat([lng, lat])
       .addTo(map);
 
-    // Add popup with location info
+    // Add popup with location info (use DOM API to prevent XSS)
+    const popupContent = document.createElement('div');
+    popupContent.style.cssText = 'font-family: monospace; font-size: 12px; padding: 4px;';
+    const nameDiv = document.createElement('div');
+    nameDiv.style.cssText = 'font-weight: bold; margin-bottom: 4px;';
+    nameDiv.textContent = locationName;
+    const coordsDiv = document.createElement('div');
+    coordsDiv.style.color = '#616161';
+    coordsDiv.textContent = `${lat.toFixed(6)}°, ${lng.toFixed(6)}° — Elevation: ${elevation}m`;
+    popupContent.appendChild(nameDiv);
+    popupContent.appendChild(coordsDiv);
+
     new mapboxgl.Popup({ offset: 25, closeButton: false })
       .setLngLat([lng, lat])
-      .setHTML(`
-        <div style="font-family: monospace; font-size: 12px; padding: 4px;">
-          <div style="font-weight: bold; margin-bottom: 4px;">${locationName}</div>
-          <div style="color: #616161;">
-            ${lat.toFixed(6)}°, ${lng.toFixed(6)}°<br/>
-            Elevation: ${elevation}m
-          </div>
-        </div>
-      `)
+      .setDOMContent(popupContent)
       .addTo(map);
 
     mapRef.current = map;

@@ -5,12 +5,20 @@ import {
   IStripePlatformAccountLinkGeneratePayload,
   StripePlayformAccountLinkMode,
 } from '@repo/types';
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsUrl,
+  MaxLength,
+} from 'class-validator';
 
 export class PayoutMethodCreateDto implements IPayoutMethodCreatePayload {
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
+  @MaxLength(10)
   country: string;
 }
 
@@ -37,5 +45,10 @@ export class StripePlatformAccountLinkGenerateDto
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
+  @IsUrl(
+    { require_tld: true, protocols: ['https'] },
+    { message: 'backUrl must be a valid HTTPS URL' },
+  )
+  @MaxLength(500)
   backUrl: string;
 }

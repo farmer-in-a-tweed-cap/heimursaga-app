@@ -7,6 +7,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 import { Public } from '@/common/decorators';
 
@@ -33,11 +34,16 @@ export class WeatherController {
 
   @Get('region')
   @Public()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @HttpCode(HttpStatus.OK)
   async getRegionReport(@Query('q') query: string) {
     if (!query || !query.trim()) {
       throw new BadRequestException('Query parameter "q" is required');
     }
-    return await this.weatherService.getRegionReport(query.trim());
+    const trimmed = query.trim();
+    if (trimmed.length > 100) {
+      throw new BadRequestException('Query too long');
+    }
+    return await this.weatherService.getRegionReport(trimmed);
   }
 }

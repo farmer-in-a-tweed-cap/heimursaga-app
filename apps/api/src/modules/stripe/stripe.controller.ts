@@ -57,9 +57,23 @@ export class StripeController {
       throw new ForbiddenException('No payout method found');
     }
 
-    return this.stripeService.getAccount({
+    const account = await this.stripeService.getAccount({
       accountId: payoutMethod.stripe_account_id,
     });
+
+    // Return only the fields the frontend needs — strip PII (email, phone, company details)
+    return {
+      verified: account.verified,
+      capabilities: account.capabilities,
+      requirements: account.requirements
+        ? {
+            currently_due: account.requirements.currently_due,
+            eventually_due: account.requirements.eventually_due,
+            disabled_reason: account.requirements.disabled_reason,
+          }
+        : undefined,
+      businessType: account.businessType,
+    };
   }
 
   @Roles(UserRole.CREATOR)

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, ApiError } from '@/app/context/AuthContext';
 import { useRecaptcha } from '@/app/hooks/useRecaptcha';
 import { Loader2, Check } from 'lucide-react';
@@ -17,6 +17,15 @@ export function AuthPage() {
   const { login, signup } = useAuth();
   const { executeRecaptcha, isConfigured: recaptchaConfigured } = useRecaptcha();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const getSafeRedirect = () => {
+    const redirect = searchParams.get('redirect');
+    if (!redirect) return '/';
+    // Only allow relative paths (same-origin)
+    if (redirect.startsWith('/') && !redirect.startsWith('//')) return redirect;
+    return '/';
+  };
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -30,7 +39,7 @@ export function AuthPage() {
 
     try {
       await login(usernameOrEmail, password, remember);
-      router.push('/');
+      router.push(getSafeRedirect());
     } catch (err) {
       if (err instanceof ApiError) {
         setError(err.message);
@@ -83,7 +92,7 @@ export function AuthPage() {
         recaptchaToken = (await executeRecaptcha('signup')) || undefined;
       }
       await signup(email, username, password, recaptchaToken);
-      router.push('/');
+      router.push(getSafeRedirect());
     } catch (err) {
       if (err instanceof ApiError) {
         // Map API error codes to user-friendly messages
@@ -408,9 +417,9 @@ export function AuthPage() {
                       <input type="checkbox" id="terms" name="terms" className="mt-1" required disabled={loading} />
                       <label htmlFor="terms" className="text-xs text-[#202020] dark:text-[#e5e5e5]">
                         <strong className="text-[#ac6d46]">*REQUIRED:</strong> I have read and agree to the{' '}
-                        <a href="#" className="text-[#4676ac] hover:text-[#ac6d46]">Terms of Service</a>
+                        <Link href="/legal/terms" className="text-[#4676ac] hover:text-[#ac6d46]">Terms of Service</Link>
                         {' '}and{' '}
-                        <a href="#" className="text-[#4676ac] hover:text-[#ac6d46]">Privacy Policy</a>
+                        <Link href="/legal/privacy" className="text-[#4676ac] hover:text-[#ac6d46]">Privacy Policy</Link>
                       </label>
                     </div>
 

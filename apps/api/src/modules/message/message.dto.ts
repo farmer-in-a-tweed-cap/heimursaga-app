@@ -1,6 +1,9 @@
 import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
+import { SanitizeContent } from '@/lib/sanitizer';
+
 export class SendMessageDto {
+  @SanitizeContent()
   @IsNotEmpty()
   @IsString()
   @MaxLength(5000, {
@@ -10,6 +13,7 @@ export class SendMessageDto {
 
   @IsNotEmpty()
   @IsString()
+  @MaxLength(100)
   recipientUsername: string;
 }
 

@@ -10,8 +10,9 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { UserRole } from '@repo/types';
 
-import { Session } from '@/common/decorators';
+import { Roles, Session } from '@/common/decorators';
 import { ParamPublicIdDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
@@ -39,6 +40,7 @@ export class FlagController {
   /**
    * Get all flags (admin only)
    */
+  @Roles(UserRole.ADMIN)
   @Get()
   @HttpCode(HttpStatus.OK)
   async getFlags(@Query() query: FlagQueryDto, @Session() session: ISession) {
@@ -52,6 +54,7 @@ export class FlagController {
   /**
    * Get single flag by ID (admin only)
    */
+  @Roles(UserRole.ADMIN)
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getFlagById(
@@ -68,6 +71,7 @@ export class FlagController {
   /**
    * Update flag status (admin only)
    */
+  @Roles(UserRole.ADMIN)
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async updateFlag(

@@ -49,7 +49,7 @@ export class EmailService {
         : `"Heimursaga" <${emailFrom}>`;
 
       this.logger.log(
-        JSON.stringify({ to, from, subject, text, html }, null, 2),
+        JSON.stringify({ to, from, subject }, null, 2),
       );
 
       await this.transporter.sendMail({

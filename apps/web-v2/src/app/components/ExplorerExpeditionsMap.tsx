@@ -268,16 +268,26 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
               diamond.style.boxShadow = `0 0 0 4px ${expedition.color}40`;
             }
 
+            // Build popup with DOM API to prevent XSS
+            const popupEl = document.createElement('div');
+            popupEl.className = 'p-2 text-xs';
+            const titleEl = document.createElement('div');
+            titleEl.className = 'font-bold';
+            titleEl.textContent = expedition.title;
+            const wpLabel = document.createElement('div');
+            wpLabel.className = 'text-gray-600';
+            wpLabel.textContent = `Waypoint ${idx + 1}`;
+            const statusEl = document.createElement('div');
+            statusEl.className = 'text-xs mt-1';
+            statusEl.textContent = `Status: ${wp.status}`;
+            popupEl.appendChild(titleEl);
+            popupEl.appendChild(wpLabel);
+            popupEl.appendChild(statusEl);
+
             new mapboxgl.Marker(wrapper)
               .setLngLat([wp.coords.lng, wp.coords.lat])
               .setPopup(
-                new mapboxgl.Popup({ offset: 25 }).setHTML(`
-                  <div class="p-2 text-xs">
-                    <div class="font-bold">${expedition.title}</div>
-                    <div class="text-gray-600">Waypoint ${idx + 1}</div>
-                    <div class="text-xs mt-1">Status: ${wp.status}</div>
-                  </div>
-                `)
+                new mapboxgl.Popup({ offset: 25 }).setDOMContent(popupEl)
               )
               .addTo(map);
           });

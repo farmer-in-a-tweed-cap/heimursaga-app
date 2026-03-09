@@ -13,7 +13,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { Public, Session } from '@/common/decorators';
+import { Public, Roles, Session } from '@/common/decorators';
+import { UserRole } from '@repo/types';
 import { ParamUsernameDto } from '@/common/dto';
 import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
@@ -59,6 +60,7 @@ export class ExplorerController {
   }
 
   @Post(':username/block')
+  @Roles(UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
   async blockExplorer(
     @Param() param: ParamUsernameDto,

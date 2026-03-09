@@ -249,6 +249,12 @@ export class PayoutService {
           //   break;
         }
 
+        // Validate backUrl against allowed origin to prevent open redirect
+        const allowedOrigin = process.env.APP_BASE_URL;
+        if (allowedOrigin && !backUrl.startsWith(allowedOrigin)) {
+          throw new ServiceBadRequestException('Invalid redirect URL');
+        }
+
         // get a stripe platform account link
         url = await this.stripeService.accountLinks
           .create({
