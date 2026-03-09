@@ -12,8 +12,6 @@ import { toast } from 'sonner';
 interface QuickSponsorButtonProps {
   entryPublicId: string;
   authorUsername: string;
-  quickSponsorsCount: number;
-  quickSponsorsTotal: number;
   isProAuthor: boolean;
   stripeConnected: boolean;
 }
@@ -21,8 +19,6 @@ interface QuickSponsorButtonProps {
 export function QuickSponsorButton({
   entryPublicId,
   authorUsername,
-  quickSponsorsCount: initialCount,
-  quickSponsorsTotal: initialTotal,
   isProAuthor,
   stripeConnected,
 }: QuickSponsorButtonProps) {
@@ -35,9 +31,6 @@ export function QuickSponsorButton({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [cooldown, setCooldown] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [count, setCount] = useState(initialCount);
-  const [total, setTotal] = useState(initialTotal);
   const [savedCard, setSavedCard] = useState<PaymentMethodFull | null>(null);
 
   useEffect(() => {
@@ -88,22 +81,12 @@ export function QuickSponsorButton({
 
   const handleSuccess = () => {
     setShowConfirmModal(false);
-    setShowSuccess(true);
-    setCount((c) => c + 1);
-    setTotal((t) => t + 300);
     setCooldown(true);
     toast.success('Sponsorship sent!');
-    setTimeout(() => setShowSuccess(false), 2000);
     setTimeout(() => setCooldown(false), 30000);
   };
 
-  const label = showSuccess
-    ? 'SPONSORED'
-    : isLoading
-      ? 'SPONSOR — $3'
-      : count > 0
-        ? `SPONSOR — $3 (${count})`
-        : 'SPONSOR — $3';
+  const label = 'SPONSOR — $3';
 
   return (
     <>
@@ -111,10 +94,8 @@ export function QuickSponsorButton({
         onClick={handleClick}
         disabled={cooldown || isLoading}
         className={`px-6 py-3 text-sm font-bold transition-all active:scale-[0.98] whitespace-nowrap flex items-center justify-center ${
-          showSuccess
-            ? 'bg-[#598636] text-white'
-            : cooldown
-              ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#616161] dark:text-[#b5bcc4] cursor-not-allowed'
+          cooldown
+            ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#616161] dark:text-[#b5bcc4] cursor-not-allowed'
               : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
         } disabled:opacity-50`}
       >

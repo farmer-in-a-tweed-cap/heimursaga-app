@@ -1684,7 +1684,7 @@ export interface SponsorshipCheckoutResponse {
 export interface SponsorshipFull {
   id: string;
   status: 'ACTIVE' | 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'EXPIRED';
-  type: 'ONE_TIME_PAYMENT' | 'SUBSCRIPTION';
+  type: 'ONE_TIME_PAYMENT' | 'SUBSCRIPTION' | 'QUICK_SPONSOR';
   amount: number;
   currency: string;
   message?: string;
@@ -1714,6 +1714,10 @@ export interface SponsorshipFull {
     status: string;
     visibility: string;
     coverPhoto?: string;
+  };
+  entry?: {
+    id: string;
+    title: string;
   };
 }
 

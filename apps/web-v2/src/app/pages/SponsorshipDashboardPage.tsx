@@ -571,7 +571,7 @@ export function SponsorshipDashboardPage() {
                               ) : (
                                 <CreditCard className="w-3 h-3" />
                               )}
-                              {payment.type === 'SUBSCRIPTION' ? 'subscription' : 'one-time'}
+                              {payment.type === 'SUBSCRIPTION' ? 'subscription' : payment.type === 'QUICK_SPONSOR' ? 'quick-sponsor' : 'one-time'}
                             </div>
                           </td>
                           <td className="p-4 text-right font-bold text-lg dark:text-[#e5e5e5]">
@@ -632,6 +632,23 @@ export function SponsorshipDashboardPage() {
                                       <span className="text-[#616161] dark:text-[#b5bcc4]">Currency:</span>
                                       <span className="font-bold dark:text-[#e5e5e5]">{payment.currency}</span>
                                     </div>
+                                    {(payment.entry || payment.expedition) && (
+                                      <div className="flex justify-between">
+                                        <span className="text-[#616161] dark:text-[#b5bcc4]">Source:</span>
+                                        <span className="font-bold dark:text-[#e5e5e5]">
+                                          {payment.entry && (
+                                            <Link href={`/entry/${payment.entry.id}`} className="text-[#4676ac] hover:text-[#ac6d46]">
+                                              {payment.entry.title}
+                                            </Link>
+                                          )}
+                                          {payment.expedition && (
+                                            <Link href={`/expedition/${payment.expedition.id}`} className="text-[#4676ac] hover:text-[#ac6d46]">
+                                              {payment.expedition.title}
+                                            </Link>
+                                          )}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
 
@@ -788,8 +805,18 @@ export function SponsorshipDashboardPage() {
                           </span>
                         </div>
                         <div className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-                          {sponsor.type === 'SUBSCRIPTION' ? 'Monthly subscription' : 'One-time sponsorship'}
+                          {sponsor.type === 'SUBSCRIPTION' ? 'Monthly subscription' : sponsor.type === 'QUICK_SPONSOR' ? 'Quick-sponsor' : 'One-time sponsorship'}
                         </div>
+                        {sponsor.entry && (
+                          <Link href={`/entry/${sponsor.entry.id}`} className="text-xs text-[#4676ac] hover:text-[#ac6d46]">
+                            ENTRY: {sponsor.entry.title}
+                          </Link>
+                        )}
+                        {sponsor.expedition && (
+                          <Link href={`/expedition/${sponsor.expedition.id}`} className="text-xs text-[#4676ac] hover:text-[#ac6d46]">
+                            EXPEDITION: {sponsor.expedition.title}
+                          </Link>
+                        )}
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-[#ac6d46]">

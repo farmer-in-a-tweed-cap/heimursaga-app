@@ -411,6 +411,9 @@ export function JournalEntryPage() {
                       : 'STANDARD'}
                   </span>
                   <span className="px-2 py-1 bg-[#616161] dark:bg-[#3a3a3a] text-white text-xs rounded-full">{entry.visibility.toUpperCase()}</span>
+                  {!entry.expeditionId && (
+                    <span className="px-2 py-1 bg-[#3a3a3a] text-white text-xs rounded-full">STANDALONE</span>
+                  )}
                   {entry.sponsored && (
                     <span className="px-2 py-1 bg-[#4676ac] text-white text-xs rounded-full">SPONSORED</span>
                   )}
@@ -942,7 +945,7 @@ export function JournalEntryPage() {
                           <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
                             #{comments.length - index}
                           </span>
-                          {comment.author.creator && (
+                          {comment.author.username === entry?.explorerId && (
                             <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-mono font-bold rounded-full">AUTHOR</span>
                           )}
                         </div>
@@ -1053,6 +1056,9 @@ export function JournalEntryPage() {
                                       <Link href={`/journal/${reply.author.username}`} className="font-bold text-xs hover:text-[#ac6d46] dark:text-[#e5e5e5] font-mono">
                                         {reply.author.username}
                                       </Link>
+                                      {reply.author.username === entry?.explorerId && (
+                                        <span className="px-1.5 py-0.5 bg-[#ac6d46] text-white text-[10px] font-mono font-bold rounded-full leading-none">AUTHOR</span>
+                                      )}
                                       <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
                                         {new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
                                       </span>
@@ -1107,8 +1113,6 @@ export function JournalEntryPage() {
                 <QuickSponsorButton
                   entryPublicId={entry.id}
                   authorUsername={entry.explorerName}
-                  quickSponsorsCount={entry.quickSponsorsCount}
-                  quickSponsorsTotal={entry.quickSponsorsTotal}
                   isProAuthor={entry.explorerIsPro}
                   stripeConnected={entry.stripeAccountConnected}
                 />

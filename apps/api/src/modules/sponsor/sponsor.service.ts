@@ -1519,6 +1519,7 @@ export class SponsorService {
           email_delivery_enabled: true,
           expiry: true,
           expedition_public_id: true,
+          entry_public_id: true,
           sponsored_explorer: {
             select: {
               id: true,
@@ -1559,6 +1560,28 @@ export class SponsorService {
         expeditions.map((exp) => [exp.public_id, exp]),
       );
 
+      // Batch-query entries for quick sponsors
+      const entryPublicIds = [
+        ...new Set(data.map((s) => s.entry_public_id).filter(Boolean)),
+      ] as string[];
+      const entries =
+        entryPublicIds.length > 0
+          ? await this.prisma.entry.findMany({
+              where: {
+                public_id: { in: entryPublicIds },
+                deleted_at: null,
+              },
+              select: {
+                public_id: true,
+                title: true,
+              },
+            })
+          : [];
+
+      const entryByPublicId = new Map(
+        entries.map((e) => [e.public_id, e]),
+      );
+
       const response: ISponsorshipGetAllResponse = {
         results,
         data: data.map(
@@ -1569,6 +1592,7 @@ export class SponsorService {
             status,
             sponsored_explorer,
             expedition_public_id,
+            entry_public_id,
             type,
             message = '',
             email_delivery_enabled,
@@ -1604,6 +1628,14 @@ export class SponsorService {
                       ? getStaticMediaUrl(exp.cover_image)
                       : undefined,
                   }
+                : undefined;
+            })(),
+            entry: (() => {
+              const ent = entry_public_id
+                ? entryByPublicId.get(entry_public_id)
+                : undefined;
+              return ent
+                ? { id: ent.public_id, title: ent.title }
                 : undefined;
             })(),
             createdAt: created_at,
@@ -1664,11 +1696,33 @@ export class SponsorService {
               price: true,
             },
           },
+          entry_public_id: true,
           created_at: true,
         },
         take,
         orderBy: [{ id: 'desc' }],
       });
+
+      // Batch-query entries for quick sponsors
+      const entryPublicIds = [
+        ...new Set(data.map((s) => s.entry_public_id).filter(Boolean)),
+      ] as string[];
+      const entries =
+        entryPublicIds.length > 0
+          ? await this.prisma.entry.findMany({
+              where: {
+                public_id: { in: entryPublicIds },
+                deleted_at: null,
+              },
+              select: {
+                public_id: true,
+                title: true,
+              },
+            })
+          : [];
+      const entryByPublicId = new Map(
+        entries.map((e) => [e.public_id, e]),
+      );
 
       const response: ISponsorshipGetAllResponse = {
         results,
@@ -1681,6 +1735,7 @@ export class SponsorService {
             sponsor,
             type,
             tier,
+            entry_public_id,
             created_at,
             message,
             is_public,
@@ -1709,6 +1764,14 @@ export class SponsorService {
                   price: integerToDecimal(tier.price),
                 }
               : undefined,
+            entry: (() => {
+              const ent = entry_public_id
+                ? entryByPublicId.get(entry_public_id)
+                : undefined;
+              return ent
+                ? { id: ent.public_id, title: ent.title }
+                : undefined;
+            })(),
             createdAt: created_at,
           }),
         ),
@@ -1743,6 +1806,8 @@ export class SponsorService {
       sponsorUsername?: string;
       description?: string;
       sponsorshipType?: string;
+      entry?: { id: string; title: string };
+      expedition?: { id: string; title: string };
     }>;
   }> {
     try {
@@ -1767,6 +1832,8 @@ export class SponsorService {
           confirmed_at: true,
           message: true,
           sponsorship_type: true,
+          entry_public_id: true,
+          expedition_public_id: true,
           explorer: {
             select: {
               id: true,
@@ -1783,6 +1850,30 @@ export class SponsorService {
       if (checkouts.length === 0) {
         return { results: 0, data: [] };
       }
+
+      // Batch-query entries and expeditions for originating content
+      const checkoutEntryIds = [
+        ...new Set(checkouts.map((c) => c.entry_public_id).filter(Boolean)),
+      ] as string[];
+      const checkoutExpeditionIds = [
+        ...new Set(checkouts.map((c) => c.expedition_public_id).filter(Boolean)),
+      ] as string[];
+
+      const checkoutEntries = checkoutEntryIds.length > 0
+        ? await this.prisma.entry.findMany({
+            where: { public_id: { in: checkoutEntryIds }, deleted_at: null },
+            select: { public_id: true, title: true },
+          })
+        : [];
+      const checkoutExpeditions = checkoutExpeditionIds.length > 0
+        ? await this.prisma.expedition.findMany({
+            where: { public_id: { in: checkoutExpeditionIds }, deleted_at: null },
+            select: { public_id: true, title: true },
+          })
+        : [];
+
+      const checkoutEntryMap = new Map(checkoutEntries.map((e) => [e.public_id, e] as const));
+      const checkoutExpeditionMap = new Map(checkoutExpeditions.map((e) => [e.public_id, e] as const));
 
       // Check refund status via Stripe in a single batch
       // Only fetch payment intents that exist (parallel, but scoped to our records)
@@ -1824,6 +1915,18 @@ export class SponsorService {
           sponsorUsername: checkout.explorer?.username || undefined,
           description: checkout.message || undefined,
           sponsorshipType: checkout.sponsorship_type || undefined,
+          entry: checkout.entry_public_id
+            ? (() => {
+                const ent = checkoutEntryMap.get(checkout.entry_public_id);
+                return ent ? { id: ent.public_id, title: ent.title } : undefined;
+              })()
+            : undefined,
+          expedition: checkout.expedition_public_id
+            ? (() => {
+                const exp = checkoutExpeditionMap.get(checkout.expedition_public_id);
+                return exp ? { id: exp.public_id, title: exp.title } : undefined;
+              })()
+            : undefined,
         };
       });
 

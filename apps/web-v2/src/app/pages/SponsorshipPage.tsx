@@ -405,7 +405,7 @@ export function SponsorshipPage() {
                                           ? new Date(sp.createdAt).toLocaleDateString()
                                           : 'N/A'}
                                         {' · '}
-                                        {sp.type?.toUpperCase() === 'SUBSCRIPTION' ? 'Monthly' : 'One-time'}
+                                        {sp.type?.toUpperCase() === 'SUBSCRIPTION' ? 'Monthly' : sp.type?.toUpperCase() === 'QUICK_SPONSOR' ? 'Quick-sponsor' : 'One-time'}
                                       </div>
                                     </div>
                                     <div className="text-right">
@@ -417,7 +417,7 @@ export function SponsorshipPage() {
                                       </div>
                                       <span
                                         className={`px-2 py-0.5 text-xs font-bold ${
-                                          sp.status?.toUpperCase() === 'ACTIVE' ? 'bg-green-600' : 'bg-[#616161]'
+                                          sp.status?.toUpperCase() === 'ACTIVE' ? 'bg-[#598636]' : 'bg-[#616161]'
                                         } text-white`}
                                       >
                                         {sp.status}
@@ -427,15 +427,17 @@ export function SponsorshipPage() {
                                   {sp.expedition && (
                                     <Link
                                       href={`/expedition/${sp.expedition.id}`}
-                                      className="flex items-center gap-2 mt-2 text-xs hover:text-[#4676ac] transition-all dark:text-[#b5bcc4]"
+                                      className="block mt-2 text-xs text-[#4676ac] hover:text-[#ac6d46] truncate"
                                     >
-                                      <Map className="w-3 h-3 text-[#4676ac] flex-shrink-0" />
-                                      <span className="truncate">{sp.expedition.title}</span>
-                                      {sp.expedition.visibility === 'off-grid' && (
-                                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold bg-[#6b5c4e] text-white flex-shrink-0">
-                                          <EyeOff className="h-2.5 w-2.5" /> OFF-GRID
-                                        </span>
-                                      )}
+                                      EXPEDITION: {sp.expedition.title}
+                                    </Link>
+                                  )}
+                                  {sp.entry && (
+                                    <Link
+                                      href={`/entry/${sp.entry.id}`}
+                                      className="block mt-2 text-xs text-[#4676ac] hover:text-[#ac6d46] truncate"
+                                    >
+                                      ENTRY: {sp.entry.title}
                                     </Link>
                                   )}
                                 </div>
@@ -692,8 +694,10 @@ export function SponsorshipPage() {
                                       <td className="px-4 py-3">
                                         <span className="px-2 py-1 text-xs font-mono bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] dark:text-[#e5e5e5]">
                                           {payment.type?.toUpperCase() === 'SUBSCRIPTION'
-                                            ? 'Monthly'
-                                            : 'One-time'}
+                                            ? 'RECURRING'
+                                            : payment.type?.toUpperCase() === 'QUICK_SPONSOR'
+                                              ? 'QUICK-SPONSOR'
+                                              : 'ONE-TIME'}
                                         </span>
                                       </td>
                                       <td className="px-4 py-3 font-bold text-[#4676ac]">
@@ -777,6 +781,25 @@ export function SponsorshipPage() {
                                                     {payment.currency}
                                                   </span>
                                                 </div>
+                                                {(payment.entry || payment.expedition) && (
+                                                  <div className="flex justify-between">
+                                                    <span className="text-[#616161] dark:text-[#b5bcc4]">
+                                                      Source:
+                                                    </span>
+                                                    <span className="font-bold">
+                                                      {payment.entry && (
+                                                        <Link href={`/entry/${payment.entry.id}`} className="text-[#4676ac] hover:text-[#ac6d46]">
+                                                          {payment.entry.title}
+                                                        </Link>
+                                                      )}
+                                                      {payment.expedition && (
+                                                        <Link href={`/expedition/${payment.expedition.id}`} className="text-[#4676ac] hover:text-[#ac6d46]">
+                                                          {payment.expedition.title}
+                                                        </Link>
+                                                      )}
+                                                    </span>
+                                                  </div>
+                                                )}
                                               </div>
                                             </div>
                                             <div>

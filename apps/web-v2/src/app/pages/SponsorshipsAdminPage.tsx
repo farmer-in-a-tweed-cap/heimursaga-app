@@ -17,6 +17,7 @@ import {
   ExternalLink,
   X,
   ChevronDown,
+  ChevronUp,
   Shield,
   Info,
   RefreshCw,
@@ -112,6 +113,8 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
     sponsorUsername?: string;
     description?: string;
     sponsorshipType?: string;
+    entry?: { id: string; title: string };
+    expedition?: { id: string; title: string };
   }>>([]);
   const [balance, setBalance] = useState<PayoutBalance | null>(null);
   const [payoutMethods, setPayoutMethods] = useState<PayoutMethod[]>([]);
@@ -124,6 +127,9 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
   // Country selector modal state
   const [showCountryModal, setShowCountryModal] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState('US');
+
+  // Expanded payment detail state
+  const [expandedPayment, setExpandedPayment] = useState<string | null>(null);
 
   // Refund confirmation modal state
   const [showRefundModal, setShowRefundModal] = useState(false);
@@ -611,7 +617,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 <button
                   onClick={confirmRefund}
                   disabled={isProcessingRefund}
-                  className="flex-1 py-3 bg-red-500 text-white font-bold text-sm hover:bg-red-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-3 bg-[#994040] text-white font-bold text-sm hover:bg-[#7a3333] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isProcessingRefund && <Loader2 className="w-4 h-4 animate-spin" />}
                   ISSUE REFUND
@@ -658,7 +664,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 <button
                   onClick={confirmDeleteTier}
                   disabled={isDeletingTier}
-                  className="flex-1 py-3 bg-red-500 text-white font-bold text-sm hover:bg-red-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-3 bg-[#994040] text-white font-bold text-sm hover:bg-[#7a3333] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isDeletingTier && <Loader2 className="w-4 h-4 animate-spin" />}
                   DELETE TIER
@@ -993,7 +999,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
               {/* Recent Payments from Stripe (Source of Truth) */}
               <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
                 <div className="bg-[#b5bcc4] dark:bg-[#3a3a3a] p-4 border-b-2 border-[#202020] dark:border-[#616161]">
-                  <h3 className="text-sm font-bold dark:text-[#e5e5e5]">RECENT PAYMENTS (FROM STRIPE)</h3>
+                  <h3 className="text-sm font-bold dark:text-[#e5e5e5]">RECENT PAYMENTS</h3>
                 </div>
                 <div className="p-4">
                   {stripePayments.length === 0 && receivedSponsorships.length === 0 ? (
@@ -1030,20 +1036,37 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                                 <span className={`px-1.5 py-0.5 text-[10px] font-bold ${
                                   payment.sponsorshipType === 'subscription'
                                     ? 'bg-[#4676ac] text-white'
-                                    : 'bg-[#616161] text-white'
+                                    : payment.sponsorshipType === 'quick_sponsor'
+                                      ? 'bg-[#ac6d46] text-white'
+                                      : 'bg-[#616161] text-white'
                                 }`}>
-                                  {payment.sponsorshipType === 'subscription' ? 'RECURRING' : 'ONE-TIME'}
+                                  {payment.sponsorshipType === 'subscription' ? 'RECURRING' : payment.sponsorshipType === 'quick_sponsor' ? 'QUICK-SPONSOR' : 'ONE-TIME'}
                                 </span>
                               )}
                             </div>
+                            {(payment.entry || payment.expedition) && (
+                              <div className="text-xs text-[#616161] dark:text-[#b5bcc4] truncate">
+                                SOURCE:{' '}
+                                {payment.entry && (
+                                  <Link href={`/entry/${payment.entry.id}`} className="text-[#4676ac] hover:text-[#ac6d46]">
+                                    {payment.entry.title}
+                                  </Link>
+                                )}
+                                {payment.expedition && (
+                                  <Link href={`/expedition/${payment.expedition.id}`} className="text-[#4676ac] hover:text-[#ac6d46]">
+                                    {payment.expedition.title}
+                                  </Link>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className="text-right">
-                            <div className={`font-bold ${payment.refunded ? 'text-gray-500 line-through' : 'text-[#ac6d46]'}`}>
+                            <div className={`font-bold ${payment.refunded ? 'text-[#616161] line-through' : 'text-[#ac6d46]'}`}>
                               ${formatCurrency(payment.amount)}
                             </div>
                             <div className="text-xs">
                               <span className={`px-2 py-0.5 text-xs font-bold ${
-                                payment.refunded ? 'bg-gray-500' : 'bg-green-600'
+                                payment.refunded ? 'bg-[#616161]' : 'bg-[#598636]'
                               } text-white`}>
                                 {payment.refunded ? 'REFUNDED' : payment.status.toUpperCase()}
                               </span>
@@ -1218,7 +1241,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                           {editingTiers && tier.id && (
                             <button
                               onClick={() => handleDeleteTier(tier.id!)}
-                              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                              className="p-2 text-[#994040] hover:bg-[#994040]/10 transition-all"
                             >
                               <Trash2 className="w-5 h-5" />
                             </button>
@@ -1335,7 +1358,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                           {editingTiers && tier.id && (
                             <button
                               onClick={() => handleDeleteTier(tier.id!)}
-                              className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                              className="p-2 text-[#994040] hover:bg-[#994040]/10 transition-all"
                             >
                               <Trash2 className="w-5 h-5" />
                             </button>
@@ -1373,7 +1396,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             <div>
               <div className="mb-4 flex items-center justify-between">
                 <div className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-                  Showing {stripePayments.length} payments from Stripe
+                  Showing {stripePayments.length} payments
                 </div>
               </div>
 
@@ -1397,6 +1420,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                           <th className="px-4 py-3 text-left text-xs font-bold dark:text-[#e5e5e5]">DATE</th>
                           <th className="px-4 py-3 text-left text-xs font-bold dark:text-[#e5e5e5]">STATUS</th>
                           <th className="px-4 py-3 text-left text-xs font-bold dark:text-[#e5e5e5]">ACTIONS</th>
+                          <th className="px-4 py-3 text-center text-xs font-bold dark:text-[#e5e5e5]">DETAILS</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1420,9 +1444,11 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                               <span className={`px-2 py-0.5 text-xs font-bold ${
                                 payment.sponsorshipType === 'subscription'
                                   ? 'bg-[#4676ac] text-white'
-                                  : 'bg-[#616161] text-white'
+                                  : payment.sponsorshipType === 'quick_sponsor'
+                                    ? 'bg-[#ac6d46] text-white'
+                                    : 'bg-[#616161] text-white'
                               }`}>
-                                {payment.sponsorshipType === 'subscription' ? 'RECURRING' : 'ONE-TIME'}
+                                {payment.sponsorshipType === 'subscription' ? 'RECURRING' : payment.sponsorshipType === 'quick_sponsor' ? 'QUICK-SPONSOR' : 'ONE-TIME'}
                               </span>
                             </td>
                             <td className="px-4 py-3 font-bold text-[#ac6d46]">${formatCurrency(payment.amount)}</td>
@@ -1432,8 +1458,8 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                             <td className="px-4 py-3">
                               <span className={`px-2 py-1 text-xs font-bold ${
                                 payment.refunded
-                                  ? 'bg-gray-500 text-white'
-                                  : 'bg-green-600 text-white'
+                                  ? 'bg-[#616161] text-white'
+                                  : 'bg-[#598636] text-white'
                               }`}>
                                 {payment.refunded ? 'REFUNDED' : payment.status.toUpperCase()}
                               </span>
@@ -1444,19 +1470,69 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                               ) : (
                                 <button
                                   onClick={() => handleRefund(payment.id, payment.amount)}
-                                  className="px-3 py-1 text-xs font-bold border-2 border-red-500 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                                  className="px-3 py-1 text-xs font-bold border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all"
                                 >
                                   REFUND
                                 </button>
                               )}
                             </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => setExpandedPayment(expandedPayment === payment.id ? null : payment.id)}
+                                className="p-1 hover:bg-[#b5bcc4] dark:hover:bg-[#616161] transition-all dark:text-[#e5e5e5]"
+                              >
+                                {expandedPayment === payment.id ? (
+                                  <ChevronUp className="w-5 h-5" />
+                                ) : (
+                                  <ChevronDown className="w-5 h-5" />
+                                )}
+                              </button>
+                            </td>
                           </tr>
-                          {payment.description && (
-                            <tr className="bg-[#f5f5f5] dark:bg-[#1a1a1a]">
-                              <td colSpan={6} className="px-4 py-2">
-                                <span className="text-sm italic text-[#616161] dark:text-[#b5bcc4]">
-                                  "{payment.description}"
-                                </span>
+                          {expandedPayment === payment.id && (
+                            <tr className="bg-[#f0f4f8] dark:bg-[#1a2a3a] border-b-2 border-[#202020] dark:border-[#616161]">
+                              <td colSpan={7} className="p-6">
+                                <div className="space-y-2 text-xs font-mono">
+                                  <div className="flex justify-between">
+                                    <span className="text-[#616161] dark:text-[#b5bcc4]">Transaction ID:</span>
+                                    <span className="font-bold dark:text-[#e5e5e5]">{payment.id}</span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-[#616161] dark:text-[#b5bcc4]">Date & Time:</span>
+                                    <span className="font-bold dark:text-[#e5e5e5]">
+                                      {new Date(payment.created).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-[#616161] dark:text-[#b5bcc4]">Type:</span>
+                                    <span className="font-bold dark:text-[#e5e5e5]">
+                                      {payment.sponsorshipType === 'subscription' ? 'Recurring' : payment.sponsorshipType === 'quick_sponsor' ? 'Quick-sponsor' : 'One-time'}
+                                    </span>
+                                  </div>
+                                  {(payment.entry || payment.expedition) && (
+                                    <div className="flex justify-between">
+                                      <span className="text-[#616161] dark:text-[#b5bcc4]">Source:</span>
+                                      <span className="font-bold">
+                                        {payment.entry && (
+                                          <Link href={`/entry/${payment.entry.id}`} className="text-[#4676ac] hover:text-[#ac6d46]">
+                                            {payment.entry.title}
+                                          </Link>
+                                        )}
+                                        {payment.expedition && (
+                                          <Link href={`/expedition/${payment.expedition.id}`} className="text-[#4676ac] hover:text-[#ac6d46]">
+                                            {payment.expedition.title}
+                                          </Link>
+                                        )}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {payment.description && (
+                                    <div className="flex justify-between">
+                                      <span className="text-[#616161] dark:text-[#b5bcc4]">Message:</span>
+                                      <span className="italic dark:text-[#e5e5e5]">"{payment.description}"</span>
+                                    </div>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           )}

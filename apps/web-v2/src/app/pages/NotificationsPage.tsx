@@ -78,8 +78,14 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
     case 'sponsorship':
       const amount = apiNotif.sponsorshipAmount ? `$${formatCurrency(apiNotif.sponsorshipAmount / 100)}` : '';
       return {
-        title: amount ? `${actor} sponsored ${amount}` : `${actor} sponsored you`,
+        title: amount ? `${actor} sponsored ${amount} (one-time)` : `${actor} sponsored you`,
         message: apiNotif.body || ''
+      };
+    case 'quick_sponsor':
+      const qsAmount = apiNotif.sponsorshipAmount ? `$${formatCurrency(apiNotif.sponsorshipAmount / 100)}` : '$3.00';
+      return {
+        title: `${actor} quick-sponsored ${qsAmount}`,
+        message: 'Quick-sponsor for your entry'
       };
     case 'comment':
       return {
@@ -481,6 +487,7 @@ export function NotificationsPage() {
                 >
                   <option value="all">ALL TYPES</option>
                   <option value="sponsorship">SPONSORSHIP</option>
+                  <option value="quick_sponsor">QUICK SPONSOR</option>
                   <option value="comment">NEW NOTE</option>
                   <option value="comment_reply">NOTE REPLY</option>
                   <option value="follow">NEW FOLLOWER</option>
@@ -574,6 +581,19 @@ export function NotificationsPage() {
               case 'sponsorship':
                 if (notification.actor) {
                   actions.primary = {
+                    label: 'VIEW JOURNAL',
+                    onClick: () => router.push(`/journal/${notification.actor}`)
+                  };
+                }
+                break;
+
+              case 'quick_sponsor':
+                actions.primary = {
+                  label: 'VIEW SPONSORSHIPS',
+                  onClick: () => router.push('/sponsorships/admin')
+                };
+                if (notification.actor) {
+                  actions.secondary = {
                     label: 'VIEW JOURNAL',
                     onClick: () => router.push(`/journal/${notification.actor}`)
                   };
