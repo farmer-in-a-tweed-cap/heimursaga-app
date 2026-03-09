@@ -169,11 +169,11 @@ export function EntriesPage() {
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         {/* Submenu Banner */}
-        <div className="bg-[#616161] px-6 py-3 flex items-center gap-3 border-b-2 border-[#202020] dark:border-[#4a4a4a]">
-          <span className="text-xs text-[#e5e5e5] font-bold">DISCOVER:</span>
+        <div className="bg-[#616161] px-3 md:px-6 py-3 flex items-center gap-2 md:gap-3 border-b-2 border-[#202020] dark:border-[#4a4a4a] overflow-x-auto">
+          <span className="text-xs text-[#e5e5e5] font-bold shrink-0 hidden md:inline">DISCOVER:</span>
           <Link
             href="/explorers"
-            className={`px-4 py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
+            className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/explorers')
                 ? 'bg-[#4676ac] text-white'
                 : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
@@ -183,7 +183,7 @@ export function EntriesPage() {
           </Link>
           <Link
             href="/expeditions"
-            className={`px-4 py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
+            className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/expeditions')
                 ? 'bg-[#4676ac] text-white'
                 : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
@@ -193,7 +193,7 @@ export function EntriesPage() {
           </Link>
           <Link
             href="/entries"
-            className={`px-4 py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
+            className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/entries')
                 ? 'bg-[#4676ac] text-white'
                 : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
