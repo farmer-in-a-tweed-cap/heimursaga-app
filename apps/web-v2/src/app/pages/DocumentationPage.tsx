@@ -219,7 +219,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span>Status lifecycle: Draft → Planned → Active → Completed/Cancelled</span>
+                  <span>Status lifecycle: Planned → Active → Completed/Cancelled</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>

@@ -217,37 +217,29 @@ export function ExpeditionBuilderPage() {
   };
 
   // Handle expedition creation/update
-  const handleCreateExpedition = async (createFirstEntry = false, isDraft = false) => {
+  const handleCreateExpedition = async (createFirstEntry = false) => {
     // --- Form validation (toast notifications) ---
-    if (!isDraft) {
-      const errors: string[] = [];
+    const errors: string[] = [];
 
-      if (!expeditionData.title.trim()) {
-        errors.push('Expedition title is required');
-      }
-      if (!expeditionData.region.trim()) {
-        errors.push('Region / location is required');
-      }
-      if (!expeditionData.description.trim()) {
-        errors.push('Expedition description is required');
-      }
-      if (!expeditionData.startDate) {
-        errors.push('Start date is required');
-      }
-      if (!expeditionData.category) {
-        errors.push('Category is required');
-      }
+    if (!expeditionData.title.trim()) {
+      errors.push('Expedition title is required');
+    }
+    if (!expeditionData.region.trim()) {
+      errors.push('Region / location is required');
+    }
+    if (!expeditionData.description.trim()) {
+      errors.push('Expedition description is required');
+    }
+    if (!expeditionData.startDate) {
+      errors.push('Start date is required');
+    }
+    if (!expeditionData.category) {
+      errors.push('Category is required');
+    }
 
-      if (errors.length > 0) {
-        errors.forEach(msg => toast.error(msg));
-        return;
-      }
-    } else {
-      // Drafts only require title
-      if (!expeditionData.title.trim()) {
-        toast.error('Expedition title is required');
-        return;
-      }
+    if (errors.length > 0) {
+      errors.forEach(msg => toast.error(msg));
+      return;
     }
 
     setIsSubmitting(true);
@@ -258,7 +250,7 @@ export function ExpeditionBuilderPage() {
         title: expeditionData.title,
         description: expeditionData.description,
         visibility: expeditionData.visibility,
-        status: isDraft ? 'planned' : computeStatus(),
+        status: computeStatus(),
         startDate: expeditionData.startDate || undefined,
         endDate: expeditionData.endDate || undefined,
         coverImage: coverPhotoUrl || undefined,
@@ -3042,13 +3034,6 @@ export function ExpeditionBuilderPage() {
       {/* Action Buttons - Bottom */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mt-6 p-4 md:p-6">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <button
-            onClick={() => handleCreateExpedition(false, true)}
-            disabled={isSubmitting}
-            className="px-6 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            SAVE AS DRAFT
-          </button>
           <button
             onClick={() => handleCreateExpedition(false)}
             disabled={isSubmitting}
