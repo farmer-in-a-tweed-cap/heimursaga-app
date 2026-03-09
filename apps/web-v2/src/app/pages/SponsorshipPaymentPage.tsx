@@ -740,8 +740,7 @@ export function SponsorshipPaymentPage() {
                 <div className="mt-6 p-4 bg-[#f0f8ff] dark:bg-[#1a2a3a] border-2 border-[#4676ac]">
                   <div className="font-bold text-sm mb-2 text-[#4676ac]">ALL SPONSORS RECEIVE:</div>
                   <ul className="text-xs space-y-1 text-[#202020] dark:text-[#e5e5e5]">
-                    <li>* Access to sponsor-only journal entries</li>
-                    <li>* Access to sponsor-only Expedition Notes</li>
+                    <li>* Exclusive access to Expedition Notes</li>
                     <li>* Recognition on expedition sponsorship leaderboard</li>
                     <li>* Direct connection with the explorer</li>
                   </ul>
