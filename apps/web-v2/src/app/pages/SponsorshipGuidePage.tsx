@@ -75,7 +75,8 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">How It Works</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                Sponsorships are tied to specific expeditions, not general profiles. When you sponsor an expedition:
+                Sponsorships are tied to specific expeditions, not general profiles. You can choose between
+                <strong>one-time</strong> contributions or <strong>monthly recurring</strong> support. When you sponsor an expedition:
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
                 <li className="flex items-start gap-2">
@@ -84,15 +85,19 @@ export function SponsorshipGuidePage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">•</span>
-                  <span>You become part of that expedition's story</span>
+                  <span>You become part of that expedition's story and appear on the sponsor leaderboard</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">•</span>
-                  <span>Your support helps make meaningful exploration possible</span>
+                  <span>You gain access to exclusive Expedition Notes from the explorer</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">•</span>
-                  <span>You contribute to the global repository of stories</span>
+                  <span>Monthly subscribers can opt into email delivery of new journal entries</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span>You can sponsor anonymously and control message visibility</span>
                 </li>
               </ul>
             </div>
@@ -104,7 +109,7 @@ export function SponsorshipGuidePage() {
                 to support other explorers.
               </p>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                <strong>Receiving Sponsorships:</strong> Only Explorer Pro accounts ($7/month) can enable sponsorships 
+                <strong>Receiving Sponsorships:</strong> Only Explorer Pro accounts ($7/month or $50/year) can enable sponsorships
                 on their expeditions and receive financial support from the community.
               </p>
             </div>
@@ -138,15 +143,19 @@ export function SponsorshipGuidePage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">4.</span>
-                  <span>Choose a sponsorship tier or enter a custom amount</span>
+                  <span>Choose a sponsorship tier or enter a custom amount (one-time or monthly, minimum $5)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">5.</span>
-                  <span>Complete payment securely through Stripe</span>
+                  <span>Optionally add a message (public or private) or choose to sponsor anonymously</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">6.</span>
-                  <span>Receive confirmation and appear in the expedition's sponsor list</span>
+                  <span>Complete payment securely through Stripe</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] font-bold">7.</span>
+                  <span>Receive confirmation and appear in the expedition's sponsor leaderboard</span>
                 </li>
               </ol>
             </div>
@@ -163,28 +172,42 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Sponsorship Tiers</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                Many explorers offer suggested sponsorship tiers with descriptions of impact:
+                Expeditions offer sponsorship tiers in two categories. Explorers can customize the price within each tier's range:
               </p>
-              <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] p-4 text-sm">
-                <div className="space-y-2 text-[#202020] dark:text-[#e5e5e5]">
-                  <div><strong>$25 - Trail Support:</strong> Covers basic supplies for several days</div>
-                  <div><strong>$50 - Camp Sponsor:</strong> Funds campsite fees or local guides</div>
-                  <div><strong>$100 - Equipment Boost:</strong> Helps with gear maintenance or upgrades</div>
-                  <div><strong>$250 - Journey Sustainer:</strong> Significant support for expedition logistics</div>
-                  <div><strong>Custom Amount:</strong> Any amount that feels meaningful to you</div>
+              <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] p-4 text-sm mb-3">
+                <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">One-Time Tiers:</div>
+                <div className="space-y-1 text-[#202020] dark:text-[#e5e5e5]">
+                  <div><strong>Torchbearer:</strong> $5–$15</div>
+                  <div><strong>Trail Guide:</strong> $15–$50</div>
+                  <div><strong>Pathfinder:</strong> $50–$150</div>
+                  <div><strong>Navigator:</strong> $150–$500</div>
+                  <div><strong>Expedition Patron:</strong> $500+</div>
+                </div>
+              </div>
+              <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac] p-4 text-sm">
+                <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">Monthly Tiers:</div>
+                <div className="space-y-1 text-[#202020] dark:text-[#e5e5e5]">
+                  <div><strong>Fellow Traveler:</strong> $5–$15/month</div>
+                  <div><strong>Journey Partner:</strong> $15–$50/month</div>
+                  <div><strong>Expedition Ally:</strong> $50+/month</div>
                 </div>
               </div>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mt-3">
-                Note: Tier names and amounts are set by individual explorers and vary by expedition.
+                Yearly billing is available for monthly tiers at a 10% discount. Sponsors can also enter a custom amount
+                outside of the preset tiers (minimum $5, maximum $10,000).
               </p>
             </div>
 
             <div>
-              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Refund Policy</h3>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Refunds & Cancellations</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Refunds for one-time sponsorships can be issued by the explorer through their Sponsorship Dashboard.
+                When a refund is issued, both the sponsorship amount and the 10% platform fee are returned.
+              </p>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Expedition sponsorships are contributions to support exploration and are generally not refundable. 
-                However, if an expedition is cancelled before it begins, or if there are exceptional circumstances, 
-                contact us to discuss potential refund options.
+                Monthly subscribers can cancel their subscription at any time from their sponsorship settings.
+                The subscription remains active until the end of the current billing period—no partial-month refunds are issued.
+                If an expedition is cancelled, active subscriptions are paused and sponsors are notified.
               </p>
             </div>
           </div>
@@ -205,7 +228,7 @@ export function SponsorshipGuidePage() {
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">•</span>
-                  <span>Have an active Explorer Pro account ($7/month)</span>
+                  <span>Have an active Explorer Pro account ($7/month or $50/year)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] mt-1">•</span>
@@ -239,7 +262,7 @@ export function SponsorshipGuidePage() {
               <ol className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6 mb-3">
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] font-bold">1.</span>
-                  <span>Go to Settings → Billing → Stripe Integration</span>
+                  <span>Go to Settings → Billing → Stripe Connect</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4676ac] font-bold">2.</span>
@@ -342,11 +365,12 @@ export function SponsorshipGuidePage() {
             </div>
 
             <div>
-              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Offering Sponsorship Tiers</h3>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Configuring Sponsorship Tiers</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Create meaningful tier names and descriptions that help sponsors understand the impact of their 
-                contribution. Rather than generic levels, tie tiers to actual expedition needs: "Week of Supplies," 
-                "Mountain Permit," "Local Guide Day," etc.
+                The platform provides preset tier names (Torchbearer, Trail Guide, Pathfinder, etc.) that you can
+                customize by setting the price within each tier's allowed range. You can enable or disable individual
+                tiers to offer the right mix for your expedition. Default tiers are automatically created when you
+                upgrade to Explorer Pro.
               </p>
             </div>
           </div>
@@ -423,9 +447,10 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Regular Updates</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Sponsors support you because they want to follow your journey. Post regular entries even when things 
-                don't go as planned. Authenticity builds trust—sponsors appreciate honest accounts of both successes 
-                and challenges.
+                Sponsors support you because they want to follow your journey. Post regular entries even when things
+                don't go as planned. Use Expedition Notes (280-character sponsor-only updates) to keep sponsors
+                engaged between full journal entries. Authenticity builds trust—sponsors appreciate honest accounts
+                of both successes and challenges.
               </p>
             </div>
 
@@ -457,9 +482,10 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Managing Expectations</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Be clear about what sponsorship does and doesn't guarantee. You're not obligated to provide perks or 
-                rewards beyond your regular content. The value sponsors receive is access to your authentic journey 
-                and contribution to meaningful exploration.
+                Sponsors receive access to your Expedition Notes, leaderboard recognition, and (for monthly subscribers)
+                email delivery of new entries. Beyond these built-in benefits, you're not obligated to provide
+                additional perks. The core value sponsors receive is access to your authentic journey and contribution
+                to meaningful exploration.
               </p>
             </div>
 
@@ -514,7 +540,8 @@ export function SponsorshipGuidePage() {
                 </li>
               </ul>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mt-3">
-                Sponsorship amounts are visible on the expedition sponsor board. Sponsors can choose to anonymize their name and/or message.
+                Sponsorship amounts are always visible on the expedition sponsor leaderboard. Sponsors can independently
+                choose to anonymize their name (displayed as "Anonymous Sponsor") and/or hide their message from public view.
               </p>
             </div>
 
@@ -553,11 +580,11 @@ export function SponsorshipGuidePage() {
                 </p>
                 <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                   This fee covers platform maintenance, hosting, security, and ongoing development.
-                  90% of every sponsorship goes directly to the explorer.
+                  90% of every sponsorship (before Stripe processing fees) goes to the explorer.
                 </p>
               </div>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                <strong>Example:</strong> A $100 sponsorship sends $90 to the explorer and $10 to platform operations.
+                <strong>Example:</strong> A $100 sponsorship sends $90 to the explorer (minus Stripe processing fees) and $10 to platform operations.
               </p>
             </div>
 
@@ -571,11 +598,11 @@ export function SponsorshipGuidePage() {
             </div>
 
             <div>
-              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Payout Schedule</h3>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Payouts</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Funds are transferred to explorers' connected Stripe accounts according to Stripe's payout schedule 
-                (typically 2-7 business days after a sponsorship is received). Explorers can configure their payout 
-                schedule and bank account through their Stripe dashboard.
+                Stripe automatically pays out your available balance to your connected bank account on a daily schedule.
+                Funds from each sponsorship typically become available for payout within 2-7 business days after payment.
+                Explorers can view their balance and payout history from their Sponsorship Dashboard.
               </p>
             </div>
 
