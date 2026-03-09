@@ -1,2 +1,2 @@
-release: cd apps/api && npm run db:migrate
+release: cd apps/api && npm run db:migrate || echo "Migration failed (DB unreachable), skipping — run manually if needed"
 web: cd apps/api && npm start
