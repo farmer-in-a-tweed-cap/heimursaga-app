@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode, Fragment } from 'react';
 import { formatCurrency } from '@/app/utils/formatCurrency';
 import {
   Bell,
@@ -11,6 +11,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { NotificationCard } from '@/app/components/NotificationCard';
 import { ShareAchievementModal } from '@/app/components/ShareAchievementModal';
 import { useAuth } from '@/app/context/AuthContext';
@@ -22,12 +23,12 @@ type NotificationType = `${UserNotificationContext}`;
 interface Notification {
   id: string;
   type: NotificationType;
-  title: string;
+  titleText: string;
+  actor?: string;
   message: string;
   timestamp: string;
   timestampDate: Date;
   isRead: boolean;
-  actor?: string;
   actorPicture?: string;
   metadata?: {
     amount?: number;
@@ -42,10 +43,51 @@ interface Notification {
     continentCode?: string;
     continentName?: string;
     stampName?: string;
-    stampDescription?: string;
-    stampImage?: string;
-    firstEntryDate?: string;
   };
+}
+
+// Render _text_ as italic
+function renderMessage(text: string): ReactNode {
+  const parts = text.split(/_(.*?)_/);
+  if (parts.length === 1) return text;
+  return parts.map((part, i) =>
+    i % 2 === 1 ? <em key={i}>{part}</em> : part
+  );
+}
+
+// Replace a source name in a string with a hyperlink, preserving surrounding text
+function hyperlinkInText(text: string, name: string, href: string, linkClass: string): ReactNode {
+  const idx = text.indexOf(name);
+  if (idx === -1) return renderMessage(text);
+  const before = text.slice(0, idx);
+  const after = text.slice(idx + name.length);
+  return (
+    <>
+      {before && renderMessage(before)}
+      <Link href={href} className={linkClass}>{name}</Link>
+      {after && renderMessage(after)}
+    </>
+  );
+}
+
+// Build message as ReactNode, hyperlinking source references if present
+function buildMessage(
+  message: string,
+  metadata: Notification['metadata'],
+  linkClass: string,
+): ReactNode {
+  if (!message) return null;
+
+  // Try to hyperlink entry title in message
+  if (metadata?.entryTitle && metadata?.postId && message.includes(metadata.entryTitle)) {
+    return hyperlinkInText(message, metadata.entryTitle, `/entry/${metadata.postId}`, linkClass);
+  }
+  // Try to hyperlink expedition name in message
+  if (metadata?.expeditionName && metadata?.expeditionId && message.includes(metadata.expeditionName)) {
+    return hyperlinkInText(message, metadata.expeditionName, `/expedition/${metadata.expeditionId}`, linkClass);
+  }
+
+  return renderMessage(message);
 }
 
 // Helper to format relative time
@@ -64,123 +106,119 @@ function formatRelativeTime(date: Date): string {
   return `${diffWeeks} week${diffWeeks !== 1 ? 's' : ''} ago`;
 }
 
-// Helper to generate notification title and message
-// Title includes actor + action. Message only if there's actual content to show.
-function formatNotification(apiNotif: ApiNotification): { title: string; message: string } {
+// Helper to generate notification title text (without actor) and message
+function formatNotification(apiNotif: ApiNotification): { titleText: string; message: string } {
   const context = apiNotif.context as NotificationType;
-  const actor = apiNotif.mentionUser?.username || 'Someone';
 
   switch (context) {
     case 'follow':
       return {
-        title: `${actor} followed your journal`,
+        titleText: 'followed your journal',
         message: ''
       };
     case 'sponsorship':
     case 'quick_sponsor': {
       const amount = apiNotif.sponsorshipAmount ? `$${formatCurrency(apiNotif.sponsorshipAmount / 100)}` : '';
       const parts: string[] = [];
-      if (apiNotif.postTitle) parts.push(`ENTRY: _${apiNotif.postTitle}_`);
-      else if (apiNotif.expeditionTitle) parts.push(`EXPEDITION: _${apiNotif.expeditionTitle}_`);
       if (apiNotif.body) parts.push(`"${apiNotif.body}"`);
       return {
-        title: amount ? `${actor} sponsored ${amount}` : `${actor} sponsored you`,
+        titleText: amount ? `sponsored ${amount}` : 'sponsored you',
         message: parts.join(' · ')
       };
     }
     case 'comment':
       return {
-        title: apiNotif.postTitle
-          ? `${actor} left a note on "${apiNotif.postTitle}"`
-          : `${actor} left a note`,
+        titleText: apiNotif.postTitle
+          ? `left a note on "${apiNotif.postTitle}"`
+          : 'left a note',
         message: apiNotif.body
           ? `"${apiNotif.body.slice(0, 300)}${apiNotif.body.length > 300 ? '...' : ''}"`
           : ''
       };
     case 'comment_reply':
       return {
-        title: apiNotif.postTitle
-          ? `${actor} replied on "${apiNotif.postTitle}"`
-          : `${actor} replied to your note`,
+        titleText: apiNotif.postTitle
+          ? `replied on "${apiNotif.postTitle}"`
+          : 'replied to your note',
         message: apiNotif.body
           ? `"${apiNotif.body.slice(0, 300)}${apiNotif.body.length > 300 ? '...' : ''}"`
           : ''
       };
     case 'expedition_note_reply':
       return {
-        title: `${actor} replied to your expedition note`,
+        titleText: 'replied to your expedition note',
         message: apiNotif.body
           ? `"${apiNotif.body.slice(0, 300)}${apiNotif.body.length > 300 ? '...' : ''}"`
           : '',
       };
     case 'entry_milestone':
       return {
-        title: 'Entry Milestone',
+        titleText: 'Entry Milestone',
         message: apiNotif.body || ''
       };
     case 'expedition_started':
       return {
-        title: 'Expedition Started',
+        titleText: 'Expedition Started',
         message: apiNotif.body || ''
       };
     case 'expedition_completed':
       return {
-        title: 'Expedition Completed',
+        titleText: 'Expedition Completed',
         message: apiNotif.body || ''
       };
     case 'expedition_off_grid':
       return {
-        title: 'Expedition Off-Grid',
+        titleText: 'Expedition Off-Grid',
         message: apiNotif.body || ''
       };
     case 'sponsorship_milestone':
       return {
-        title: 'Funding Milestone',
+        titleText: 'Funding Milestone',
         message: apiNotif.body || ''
       };
     case 'passport_country':
       return {
-        title: `Visited ${apiNotif.passportCountryName || 'a new country'}`,
+        titleText: `Visited ${apiNotif.passportCountryName || 'a new country'}`,
         message: ''
       };
     case 'passport_continent':
       return {
-        title: `Explored ${apiNotif.passportContinentName || 'a new continent'}`,
+        titleText: `Explored ${apiNotif.passportContinentName || 'a new continent'}`,
         message: ''
       };
     case 'passport_stamp':
       return {
-        title: `Earned "${apiNotif.passportStampName || 'Achievement'}" stamp`,
+        titleText: `Earned "${apiNotif.passportStampName || 'Achievement'}" stamp`,
         message: ''
       };
     case 'stripe_action_required':
       return {
-        title: 'Stripe Action Required',
+        titleText: 'Stripe Action Required',
         message: apiNotif.body || 'Your Stripe account requires attention'
       };
     case 'stripe_verified':
       return {
-        title: 'Stripe Account Verified',
+        titleText: 'Stripe Account Verified',
         message: apiNotif.body || 'You can now receive sponsorships!'
       };
     case 'expedition_cancelled':
       return {
-        title: 'Expedition Cancelled',
+        titleText: 'Expedition Cancelled',
         message: apiNotif.body || ''
       };
     case 'expedition_date_changed':
       return {
-        title: 'Expedition Date Changed',
+        titleText: 'Expedition Date Changed',
         message: apiNotif.body || ''
       };
     case 'system':
       return {
-        title: 'System',
+        titleText: 'System',
         message: apiNotif.body || ''
       };
     default:
       return {
-        title: 'Notification',
+        titleText: 'Notification',
         message: apiNotif.body || ''
       };
   }
@@ -188,13 +226,13 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
 
 // Map API notification to component format
 function mapApiNotification(apiNotif: ApiNotification, index: number): Notification {
-  const { title, message } = formatNotification(apiNotif);
+  const { titleText, message } = formatNotification(apiNotif);
   const date = new Date(apiNotif.date);
 
   return {
     id: `notif-${index}-${apiNotif.date}`,
     type: (apiNotif.context || 'system') as NotificationType,
-    title,
+    titleText,
     message,
     timestamp: formatRelativeTime(date),
     timestampDate: date,
@@ -208,9 +246,19 @@ function mapApiNotification(apiNotif: ApiNotification, index: number): Notificat
       expeditionId: apiNotif.expeditionPublicId,
       expeditionName: apiNotif.expeditionTitle,
       sponsorshipType: apiNotif.sponsorshipType,
+      countryCode: apiNotif.passportCountryCode,
+      countryName: apiNotif.passportCountryName,
+      continentCode: apiNotif.passportContinentCode,
+      continentName: apiNotif.passportContinentName,
+      stampName: apiNotif.passportStampName,
     }
   };
 }
+
+// Types that have an actor link
+const ACTOR_TYPES: NotificationType[] = [
+  'follow', 'sponsorship', 'quick_sponsor', 'comment', 'comment_reply', 'expedition_note_reply'
+];
 
 export function NotificationsPage() {
   const { isAuthenticated, user } = useAuth();
@@ -219,7 +267,6 @@ export function NotificationsPage() {
   const [filterType, setFilterType] = useState<'all' | 'passport' | NotificationType>('all');
   const [filterRead, setFilterRead] = useState<'all' | 'read' | 'unread'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'type'>('newest');
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -232,9 +279,6 @@ export function NotificationsPage() {
     achievementName: string;
     countryCode?: string;
     continentCode?: string;
-    date?: string;
-    description?: string;
-    stampImage?: string;
   } | null>(null);
 
   // Fetch notifications from API
@@ -332,12 +376,6 @@ export function NotificationsPage() {
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const totalCount = notifications.length;
 
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, isRead: true } : n
-    ));
-  };
-
   const markAllAsRead = async () => {
     try {
       await notificationApi.markAllAsRead();
@@ -347,50 +385,89 @@ export function NotificationsPage() {
     }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
-    setSelectedIds(selectedIds.filter(selectedId => selectedId !== id));
-  };
+  // Build sourceLink for a notification
+  const getSourceLink = (notification: Notification): { type: 'entry' | 'expedition'; id: string; title: string } | undefined => {
+    const { type, metadata } = notification;
 
-  const markSelectedAsRead = () => {
-    setNotifications(notifications.map(n =>
-      selectedIds.includes(n.id) ? { ...n, isRead: true } : n
-    ));
-    setSelectedIds([]);
-  };
+    switch (type) {
+      case 'sponsorship':
+      case 'quick_sponsor':
+        if (metadata?.postId && metadata?.entryTitle && !notification.message.includes(metadata.entryTitle)) {
+          return { type: 'entry', id: metadata.postId, title: metadata.entryTitle };
+        }
+        if (metadata?.expeditionId && metadata?.expeditionName && !notification.message.includes(metadata.expeditionName)) {
+          return { type: 'expedition', id: metadata.expeditionId, title: metadata.expeditionName };
+        }
+        return undefined;
 
-  const toggleSelectAll = () => {
-    if (selectedIds.length === filteredNotifications.length) {
-      setSelectedIds([]);
-    } else {
-      setSelectedIds(filteredNotifications.map(n => n.id));
+      case 'comment':
+      case 'comment_reply':
+        // Title already references the post name, no need for a source link
+        return undefined;
+
+      case 'expedition_note_reply':
+        if (metadata?.expeditionId && metadata?.expeditionName) {
+          return { type: 'expedition', id: metadata.expeditionId, title: metadata.expeditionName };
+        }
+        return undefined;
+
+      case 'entry_milestone':
+        if (metadata?.postId && metadata?.entryTitle && !notification.message.includes(metadata.entryTitle)) {
+          return { type: 'entry', id: metadata.postId, title: metadata.entryTitle };
+        }
+        return undefined;
+
+      case 'expedition_started':
+      case 'expedition_completed':
+      case 'expedition_cancelled':
+      case 'expedition_date_changed':
+      case 'sponsorship_milestone':
+        // Only show source link if the message doesn't already mention the expedition name
+        if (metadata?.expeditionId && metadata?.expeditionName && !notification.message.includes(metadata.expeditionName)) {
+          return { type: 'expedition', id: metadata.expeditionId, title: metadata.expeditionName };
+        }
+        return undefined;
+
+      default:
+        return undefined;
     }
   };
 
-  const toggleSelect = (id: string) => {
-    setSelectedIds(prev =>
-      prev.includes(id) ? prev.filter(selectedId => selectedId !== id) : [...prev, id]
-    );
+  // Build shareAction for passport types
+  const getShareAction = (notification: Notification): (() => void) | undefined => {
+    if (notification.type === 'passport_country') {
+      return () => {
+        setShareModalData({
+          type: 'passport_country',
+          achievementName: notification.metadata?.countryName || 'New Country',
+          countryCode: notification.metadata?.countryCode,
+        });
+        setShareModalOpen(true);
+      };
+    }
+    if (notification.type === 'passport_continent') {
+      return () => {
+        setShareModalData({
+          type: 'passport_continent',
+          achievementName: notification.metadata?.continentName || 'New Continent',
+          continentCode: notification.metadata?.continentCode,
+        });
+        setShareModalOpen(true);
+      };
+    }
+    if (notification.type === 'passport_stamp') {
+      return () => {
+        setShareModalData({
+          type: 'passport_stamp',
+          achievementName: notification.metadata?.stampName || 'Achievement',
+        });
+        setShareModalOpen(true);
+      };
+    }
+    return undefined;
   };
 
-  const handleNotificationClick = (notification: Notification) => {
-    if (!notification.isRead) {
-      markAsRead(notification.id);
-    }
-
-    // Navigate based on notification type
-    if (notification.type === 'stripe_action_required' || notification.type === 'stripe_verified') {
-      router.push('/sponsorships/admin');
-    } else if ((notification.type === 'expedition_cancelled' || notification.type === 'expedition_date_changed') && notification.metadata?.expeditionId) {
-      router.push(`/expedition/${notification.metadata.expeditionId}`);
-    } else if (notification.type === 'follow' && notification.actor) {
-      router.push(`/journal/${notification.actor}`);
-    } else if (notification.metadata?.postId) {
-      router.push(`/entry/${notification.metadata.postId}`);
-    } else if (notification.actor) {
-      router.push(`/journal/${notification.actor}`);
-    }
-  };
+  const linkClass = "text-[#4676ac] hover:underline font-bold";
 
   return (
     <div className="max-w-[800px] mx-auto px-6 py-12">
@@ -414,7 +491,7 @@ export function NotificationsPage() {
 
         {/* Statistics Bar */}
         <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] px-6 py-4 border-b-2 border-[#b5bcc4] dark:border-[#3a3a3a]">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <div className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4] mb-1">UNREAD</div>
               <div className="text-2xl font-bold text-[#ac6d46]">{unreadCount}</div>
@@ -427,34 +504,12 @@ export function NotificationsPage() {
               <div className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4] mb-1">FILTERED</div>
               <div className="text-2xl font-bold text-[#202020] dark:text-[#e5e5e5]">{filteredNotifications.length}</div>
             </div>
-            <div>
-              <div className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4] mb-1">SELECTED</div>
-              <div className="text-2xl font-bold text-[#202020] dark:text-[#e5e5e5]">{selectedIds.length}</div>
-            </div>
           </div>
         </div>
 
         {/* Action Bar */}
         <div className="px-6 py-4 flex flex-wrap items-center justify-between gap-3 border-b-2 border-[#b5bcc4] dark:border-[#3a3a3a]">
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={toggleSelectAll}
-              className="px-3 py-2 bg-[#616161] text-white text-xs font-bold hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border-2 border-[#202020] dark:border-[#616161] flex items-center gap-2 whitespace-nowrap"
-            >
-              {selectedIds.length === filteredNotifications.length ? 'DESELECT ALL' : 'SELECT ALL'}
-            </button>
-
-            {selectedIds.length > 0 && (
-              <>
-                <button
-                  onClick={markSelectedAsRead}
-                  className="px-3 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] border-2 border-[#202020] dark:border-[#616161] flex items-center gap-2 whitespace-nowrap"
-                >
-                  MARK AS READ ({selectedIds.length})
-                </button>
-              </>
-            )}
-
             {unreadCount > 0 && (
               <button
                 onClick={markAllAsRead}
@@ -567,246 +622,49 @@ export function NotificationsPage() {
       ) : (
         <div className="space-y-4">
           {filteredNotifications.map((notification) => {
-            // Build action buttons based on notification type
-            const actions: {
-              primary?: { label: string; onClick: () => void };
-              secondary?: { label: string; onClick: () => void };
-            } = {};
+            const hasActor = ACTOR_TYPES.includes(notification.type) && notification.actor;
 
-            switch (notification.type) {
-              case 'follow':
-                if (notification.actor) {
-                  actions.primary = {
-                    label: 'VIEW JOURNAL',
-                    onClick: () => router.push(`/journal/${notification.actor}`)
-                  };
-                }
-                break;
+            // Build title as JSX — hyperlink actor and any source reference in titleText
+            let titleContent: ReactNode = notification.titleText;
 
-              case 'sponsorship':
-              case 'quick_sponsor':
-                if (notification.metadata?.postId) {
-                  actions.primary = {
-                    label: 'VIEW ENTRY',
-                    onClick: () => router.push(`/entry/${notification.metadata?.postId}`)
-                  };
-                  if (notification.actor) {
-                    actions.secondary = {
-                      label: 'VIEW JOURNAL',
-                      onClick: () => router.push(`/journal/${notification.actor}`)
-                    };
-                  }
-                } else if (notification.metadata?.expeditionId) {
-                  actions.primary = {
-                    label: 'VIEW EXPEDITION',
-                    onClick: () => router.push(`/expedition/${notification.metadata?.expeditionId}`)
-                  };
-                  if (notification.actor) {
-                    actions.secondary = {
-                      label: 'VIEW JOURNAL',
-                      onClick: () => router.push(`/journal/${notification.actor}`)
-                    };
-                  }
-                } else if (notification.actor) {
-                  actions.primary = {
-                    label: 'VIEW JOURNAL',
-                    onClick: () => router.push(`/journal/${notification.actor}`)
-                  };
-                }
-                break;
-
-              case 'comment':
-                if (notification.metadata?.postId) {
-                  actions.primary = {
-                    label: 'VIEW ENTRY',
-                    onClick: () => router.push(`/entry/${notification.metadata?.postId}`)
-                  };
-                }
-                if (notification.actor) {
-                  actions.secondary = {
-                    label: 'VIEW JOURNAL',
-                    onClick: () => router.push(`/journal/${notification.actor}`)
-                  };
-                }
-                break;
-
-              case 'comment_reply':
-                if (notification.metadata?.postId) {
-                  actions.primary = {
-                    label: 'VIEW ENTRY',
-                    onClick: () => router.push(`/entry/${notification.metadata?.postId}`)
-                  };
-                }
-                if (notification.actor) {
-                  actions.secondary = {
-                    label: 'VIEW JOURNAL',
-                    onClick: () => router.push(`/journal/${notification.actor}`)
-                  };
-                }
-                break;
-
-              case 'entry_milestone':
-                if (notification.metadata?.postId) {
-                  actions.primary = {
-                    label: 'VIEW ENTRY',
-                    onClick: () => router.push(`/entry/${notification.metadata?.postId}`)
-                  };
-                }
-                break;
-
-              case 'expedition_started':
-              case 'expedition_completed':
-                actions.primary = {
-                  label: 'VIEW EXPEDITION',
-                  onClick: () => router.push(`/expedition/${notification.metadata?.expeditionName?.toLowerCase().replace(/\s+/g, '-') || 'current'}`)
-                };
-                break;
-
-              case 'expedition_note_reply':
-                actions.primary = {
-                  label: 'VIEW EXPEDITION',
-                  onClick: () => {
-                    if (notification.metadata?.expeditionId) {
-                      router.push(`/expedition/${notification.metadata.expeditionId}`);
-                    }
-                  },
-                };
-                if (notification.actor) {
-                  actions.secondary = {
-                    label: 'VIEW JOURNAL',
-                    onClick: () => router.push(`/journal/${notification.actor}`),
-                  };
-                }
-                break;
-
-              case 'expedition_cancelled':
-              case 'expedition_date_changed':
-                actions.primary = {
-                  label: 'VIEW EXPEDITION',
-                  onClick: () => {
-                    if (notification.metadata?.expeditionId) {
-                      router.push(`/expedition/${notification.metadata.expeditionId}`);
-                    }
-                  },
-                };
-                break;
-
-              case 'expedition_off_grid':
-                actions.primary = {
-                  label: 'VIEW SPONSORSHIPS',
-                  onClick: () => router.push('/sponsorship')
-                };
-                break;
-
-              case 'sponsorship_milestone':
-                actions.primary = {
-                  label: 'VIEW EXPEDITION',
-                  onClick: () => router.push(`/expedition/${notification.metadata?.expeditionName?.toLowerCase().replace(/\s+/g, '-') || 'current'}`)
-                };
-                break;
-
-              case 'passport_country':
-                actions.primary = {
-                  label: 'VIEW PASSPORT',
-                  onClick: () => user?.username && router.push(`/journal/${user.username}`)
-                };
-                actions.secondary = {
-                  label: 'SHARE',
-                  onClick: () => {
-                    setShareModalData({
-                      type: 'passport_country',
-                      achievementName: notification.metadata?.countryName || 'New Country',
-                      countryCode: notification.metadata?.countryCode,
-                      date: notification.metadata?.firstEntryDate
-                    });
-                    setShareModalOpen(true);
-                  }
-                };
-                break;
-
-              case 'passport_continent':
-                actions.primary = {
-                  label: 'VIEW PASSPORT',
-                  onClick: () => user?.username && router.push(`/journal/${user.username}`)
-                };
-                actions.secondary = {
-                  label: 'SHARE',
-                  onClick: () => {
-                    setShareModalData({
-                      type: 'passport_continent',
-                      achievementName: notification.metadata?.continentName || 'New Continent',
-                      continentCode: notification.metadata?.continentCode,
-                      date: notification.metadata?.firstEntryDate
-                    });
-                    setShareModalOpen(true);
-                  }
-                };
-                break;
-
-              case 'passport_stamp':
-                actions.primary = {
-                  label: 'VIEW PASSPORT',
-                  onClick: () => user?.username && router.push(`/journal/${user.username}`)
-                };
-                actions.secondary = {
-                  label: 'SHARE',
-                  onClick: () => {
-                    setShareModalData({
-                      type: 'passport_stamp',
-                      achievementName: notification.metadata?.stampName || 'Achievement',
-                      description: notification.metadata?.stampDescription,
-                      stampImage: notification.metadata?.stampImage,
-                      date: notification.metadata?.firstEntryDate
-                    });
-                    setShareModalOpen(true);
-                  }
-                };
-                break;
-
-              case 'stripe_action_required':
-                actions.primary = {
-                  label: 'GO TO STRIPE SETUP',
-                  onClick: () => router.push('/sponsorships/admin')
-                };
-                break;
-
-              case 'stripe_verified':
-                actions.primary = {
-                  label: 'VIEW SPONSORSHIPS',
-                  onClick: () => router.push('/sponsorships/admin')
-                };
-                break;
-
-              case 'system':
-                actions.primary = {
-                  label: 'VIEW SETTINGS',
-                  onClick: () => router.push('/settings')
-                };
-                break;
-
-              default:
-                actions.primary = {
-                  label: 'VIEW',
-                  onClick: () => handleNotificationClick(notification)
-                };
+            // Hyperlink entry title within comment/comment_reply title text
+            if ((notification.type === 'comment' || notification.type === 'comment_reply')
+              && notification.metadata?.postId && notification.metadata?.entryTitle
+              && notification.titleText.includes(notification.metadata.entryTitle)) {
+              titleContent = hyperlinkInText(
+                notification.titleText,
+                notification.metadata.entryTitle,
+                `/entry/${notification.metadata.postId}`,
+                linkClass,
+              );
             }
+
+            const title = (
+              <>
+                {hasActor && (
+                  <Link href={`/journal/${notification.actor}`} className={linkClass}>
+                    {notification.actor}
+                  </Link>
+                )}
+                {hasActor && ' '}
+                {titleContent}
+              </>
+            );
+
+            // Build message with inline hyperlinked source references
+            const message = buildMessage(notification.message, notification.metadata, linkClass);
 
             return (
               <div key={notification.id}>
                 <NotificationCard
-                  id={notification.id}
                   type={notification.type}
-                  title={notification.title}
-                  message={notification.message}
-                  actor={notification.actor}
+                  title={title}
+                  message={message}
                   timestamp={notification.timestamp}
                   isRead={notification.isRead}
                   metadata={notification.metadata}
-                  actions={actions}
-                  onClick={() => handleNotificationClick(notification)}
-                  isSelected={selectedIds.includes(notification.id)}
-                  onSelect={toggleSelect}
-                  onDelete={deleteNotification}
+                  sourceLink={getSourceLink(notification)}
+                  shareAction={getShareAction(notification)}
                 />
               </div>
             );
@@ -827,9 +685,6 @@ export function NotificationsPage() {
           username={user?.username || 'explorer'}
           countryCode={shareModalData.countryCode}
           continentCode={shareModalData.continentCode}
-          date={shareModalData.date}
-          description={shareModalData.description}
-          stampImage={shareModalData.stampImage}
         />
       )}
     </div>

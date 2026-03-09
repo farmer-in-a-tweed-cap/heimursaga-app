@@ -537,70 +537,38 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
           </p>
           
           <div className="space-y-4 max-w-2xl">
-            {/* New Follower - Unread (Simple, no metadata needed) */}
+            {/* New Follower - Unread */}
             <NotificationCard
-              id="notif-1"
               type="follow"
               title="mountain_explorer_93 followed your journal"
               message=""
-              actor="mountain_explorer_93"
               timestamp="2 hours ago"
               isRead={false}
-              actions={{
-                primary: {
-                  label: "VIEW JOURNAL",
-                  onClick: () => {}
-                }
-              }}
-              onClick={() => {}}
             />
 
             {/* New Sponsorship - Unread */}
             <NotificationCard
-              id="notif-2"
               type="sponsorship"
               title="adventure_seeker_42 sponsored $250"
               message=""
-              actor="adventure_seeker_42"
               timestamp="12 min ago"
               isRead={false}
               metadata={{
                 amount: 25000
               }}
-              actions={{
-                primary: {
-                  label: "VIEW JOURNAL",
-                  onClick: () => {}
-                }
-              }}
-              onClick={() => {}}
             />
 
             {/* New Note - Unread */}
             <NotificationCard
-              id="notif-3"
               type="comment"
               title={'seasoned_traveler left a note on "Ice Cave Exploration"'}
               message={'"I explored a similar cave system in Vatnajökull back in 2019. The formations you documented are incredibly rare."'}
-              actor="seasoned_traveler"
               timestamp="3 days ago"
               isRead={false}
-              actions={{
-                primary: {
-                  label: "VIEW ENTRY",
-                  onClick: () => {}
-                },
-                secondary: {
-                  label: "VIEW JOURNAL",
-                  onClick: () => {}
-                }
-              }}
-              onClick={() => {}}
             />
 
             {/* Entry Milestone - Read */}
             <NotificationCard
-              id="notif-4"
               type="entry_milestone"
               title="Summit Day reached 1,000 views"
               message=""
@@ -610,18 +578,10 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
                 viewCount: 1042,
                 commentCount: 34
               }}
-              actions={{
-                primary: {
-                  label: "VIEW ENTRY",
-                  onClick: () => {}
-                }
-              }}
-              onClick={() => {}}
             />
 
             {/* Sponsorship Milestone - Read */}
             <NotificationCard
-              id="notif-5"
               type="sponsorship_milestone"
               title="Antarctic Research reached 75% funding"
               message=""
@@ -630,64 +590,33 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
               metadata={{
                 amount: 6375000
               }}
-              actions={{
-                primary: {
-                  label: "VIEW EXPEDITION",
-                  onClick: () => {}
-                }
-              }}
-              onClick={() => {}}
             />
 
-            {/* Expedition Completed - Read (No metadata needed) */}
+            {/* Expedition Completed - Read */}
             <NotificationCard
-              id="notif-6"
               type="expedition_completed"
               title="Amazon River Traverse completed"
               message=""
               timestamp="1 week ago"
               isRead={true}
-              actions={{
-                primary: {
-                  label: "VIEW EXPEDITION",
-                  onClick: () => {}
-                }
-              }}
-              onClick={() => {}}
             />
 
             {/* Passport - Country Visited */}
             <NotificationCard
-              id="notif-7"
               type="passport_country"
               title="Visited Iceland"
               message=""
               timestamp="4 days ago"
               isRead={false}
-              actions={{
-                primary: {
-                  label: "VIEW PASSPORT",
-                  onClick: () => {}
-                }
-              }}
-              onClick={() => {}}
             />
 
             {/* Passport - Stamp Earned */}
             <NotificationCard
-              id="notif-8"
               type="passport_stamp"
               title={'Earned "World Traveler" stamp'}
               message=""
               timestamp="1 week ago"
               isRead={true}
-              actions={{
-                primary: {
-                  label: "VIEW PASSPORT",
-                  onClick: () => {}
-                }
-              }}
-              onClick={() => {}}
             />
           </div>
         </div>
@@ -722,7 +651,6 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
                   id="compact-1"
                   type="sponsorship"
                   title="adventure_seeker_42 sponsored $250"
-                  message=""
                   timestamp="12m"
                   isRead={false}
                   onClick={() => {}}
@@ -732,7 +660,6 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
                   id="compact-2"
                   type="follow"
                   title="mountain_explorer_93 followed your journal"
-                  message=""
                   timestamp="2h"
                   isRead={false}
                   onClick={() => {}}
@@ -742,7 +669,6 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
                   id="compact-3"
                   type="comment"
                   title={'seasoned_traveler left a note on "Ice Cave Exploration"'}
-                  message={'"Similar formations in Vatnajökull! Consider submitting to International Glaciological Society."'}
                   timestamp="3d"
                   isRead={false}
                   onClick={() => {}}
@@ -752,7 +678,6 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
                   id="compact-4"
                   type="entry_milestone"
                   title="Entry Reached 1,000 Views"
-                  message="Summit Day on Mount Everest surpassed 1,000 views. Trending in Mountain Expeditions with 34 comments, 127 bookmarks."
                   timestamp="5h"
                   isRead={true}
                   onClick={() => {}}
@@ -762,7 +687,6 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
                   id="compact-5"
                   type="sponsorship_milestone"
                   title="Expedition 75% Funded"
-                  message="Antarctic Research reached $63,750/$85,000 (75%). 243 sponsors, averaging $262.35 each. $4,200 in last 7 days."
                   timestamp="1d"
                   isRead={true}
                   onClick={() => {}}
@@ -772,7 +696,6 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
                   id="compact-6"
                   type="expedition_completed"
                   title="Expedition Completed"
-                  message="Amazon River Traverse complete! 28 entries, 34 days, 3,890km, 156 sponsors, $38,000 raised, 45,234 views."
                   timestamp="1w"
                   isRead={true}
                   onClick={() => {}}
@@ -782,7 +705,6 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
                   id="compact-7"
                   type="expedition_started"
                   title="Expedition Started"
-                  message="Cycling the Silk Road began Jan 15. Now public and accepting sponsors. Post first entry within 48h for 3.2x engagement."
                   timestamp="2w"
                   isRead={true}
                   onClick={() => {}}

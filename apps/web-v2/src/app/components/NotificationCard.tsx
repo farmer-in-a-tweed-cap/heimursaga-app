@@ -1,14 +1,14 @@
-import { Bell, User, DollarSign, MessageSquare, FileText, Map, MapPin, Clock, Trash2, Flag, Globe, Award, EyeOff, AlertTriangle, CheckCircle, XCircle, Calendar } from "lucide-react";
+import { Bell, User, DollarSign, MessageSquare, FileText, Map, MapPin, Clock, Flag, Globe, Award, EyeOff, AlertTriangle, CheckCircle, XCircle, Calendar } from "lucide-react";
 import { UserNotificationContext } from "@repo/types";
+import Link from "next/link";
+import { ReactNode } from "react";
 
 type NotificationType = `${UserNotificationContext}`;
 
 interface NotificationCardProps {
-  id: string;
   type: NotificationType;
-  title: string;
-  message: string;
-  actor?: string;
+  title: ReactNode;
+  message: ReactNode;
   timestamp: string;
   isRead: boolean;
   metadata?: {
@@ -20,44 +20,19 @@ interface NotificationCardProps {
     postId?: string;
     sponsorshipType?: string;
   };
-  actions?: {
-    primary?: {
-      label: string;
-      onClick: () => void;
-    };
-    secondary?: {
-      label: string;
-      onClick: () => void;
-    };
-  };
-  onClick?: () => void;
-  isSelected?: boolean;
-  onSelect?: (id: string) => void;
-  onDelete?: (id: string) => void;
-}
-
-// Render _text_ as italic
-function renderMessage(text: string) {
-  const parts = text.split(/_(.*?)_/);
-  if (parts.length === 1) return text;
-  return parts.map((part, i) =>
-    i % 2 === 1 ? <em key={i}>{part}</em> : part
-  );
+  sourceLink?: { type: 'entry' | 'expedition'; id: string; title: string };
+  shareAction?: () => void;
 }
 
 export function NotificationCard({
-  id,
   type,
   title,
   message,
   timestamp,
   isRead,
   metadata,
-  actions,
-  onClick,
-  isSelected,
-  onSelect,
-  onDelete,
+  sourceLink,
+  shareAction,
 }: NotificationCardProps) {
   // Icon based on notification type
   const getNotificationIcon = () => {
@@ -191,14 +166,11 @@ export function NotificationCard({
 
   return (
     <div
-      onClick={onClick}
       className={`border-2 ${
         isRead
           ? 'border-[#b5bcc4] dark:border-[#3a3a3a]'
           : 'border-[#202020] dark:border-[#616161]'
-      } bg-white dark:bg-[#202020] cursor-pointer hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all active:scale-[0.995] ${
-        isSelected ? 'ring-2 ring-[#4676ac] ring-offset-2' : ''
-      }`}
+      } bg-white dark:bg-[#202020]`}
     >
       {/* Header */}
       <div className={`flex items-center justify-between border-b-2 ${
@@ -211,19 +183,6 @@ export function NotificationCard({
           : 'bg-[#b5bcc4] dark:bg-[#3a3a3a]'
       } px-4 py-2.5`}>
         <div className="flex items-center gap-2">
-          {/* Checkbox */}
-          {onSelect && (
-            <input
-              type="checkbox"
-              checked={isSelected || false}
-              onChange={(e) => {
-                e.stopPropagation();
-                onSelect(id);
-              }}
-              onClick={(e) => e.stopPropagation()}
-              className="w-4 h-4 cursor-pointer accent-[#ac6d46]"
-            />
-          )}
           <div className={`h-2.5 w-2.5 ${getStatusColor()}`} />
           <span className="text-xs font-mono font-semibold tracking-wide text-[#202020] dark:text-[#e5e5e5]">
             {getNotificationLabel()}
@@ -234,23 +193,9 @@ export function NotificationCard({
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
-            <Clock className="w-3 h-3" />
-            <span>{timestamp}</span>
-          </div>
-          {onDelete && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(id);
-              }}
-              className="p-1 text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] transition-all active:scale-[0.95] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
-              title="Delete notification"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          )}
+        <div className="flex items-center gap-1.5 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
+          <Clock className="w-3 h-3" />
+          <span>{timestamp}</span>
         </div>
       </div>
 
@@ -277,7 +222,41 @@ export function NotificationCard({
             </div>
             {message && (
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mt-1">
-                {renderMessage(message)}
+                {message}
+              </p>
+            )}
+            {/* Source link */}
+            {sourceLink && (
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-2 font-mono">
+                <span className="font-bold">{sourceLink.type === 'entry' ? 'ENTRY' : 'EXPEDITION'}:</span>{' '}
+                <Link
+                  href={sourceLink.type === 'entry' ? `/entry/${sourceLink.id}` : `/expedition/${sourceLink.id}`}
+                  className="text-[#4676ac] hover:underline font-bold"
+                >
+                  {sourceLink.title}
+                </Link>
+                {shareAction && (
+                  <>
+                    {' · '}
+                    <button
+                      onClick={shareAction}
+                      className="text-[#ac6d46] hover:underline font-bold"
+                    >
+                      SHARE
+                    </button>
+                  </>
+                )}
+              </p>
+            )}
+            {/* Share action without source link (passport types) */}
+            {shareAction && !sourceLink && (
+              <p className="text-xs mt-2 font-mono">
+                <button
+                  onClick={shareAction}
+                  className="text-[#ac6d46] hover:underline font-bold"
+                >
+                  SHARE
+                </button>
               </p>
             )}
           </div>
@@ -309,40 +288,6 @@ export function NotificationCard({
                 <MessageSquare className="w-3.5 h-3.5 text-[#616161] dark:text-[#b5bcc4]" />
                 <span className="font-bold text-[#202020] dark:text-[#e5e5e5]">{metadata.commentCount}</span>
               </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Action Buttons */}
-      {actions && (actions.primary || actions.secondary) && (
-        <div className={`border-t-2 ${
-          isRead
-            ? 'border-[#b5bcc4] dark:border-[#3a3a3a]'
-            : 'border-[#202020] dark:border-[#616161]'
-        } bg-[#f5f5f5] dark:bg-[#1a1a1a] p-3`}>
-          <div className="flex items-center justify-end gap-2">
-            {actions.secondary && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  actions.secondary?.onClick();
-                }}
-                className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] hover:border-[#4676ac] dark:hover:border-[#4676ac] bg-white dark:bg-[#202020] text-[#202020] dark:text-[#e5e5e5] text-xs font-bold tracking-wide transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
-              >
-                {actions.secondary.label}
-              </button>
-            )}
-            {actions.primary && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  actions.primary?.onClick();
-                }}
-                className="px-4 py-2 border-2 border-[#4676ac] hover:border-[#365a87] bg-[#4676ac] hover:bg-[#365a87] text-white text-xs font-bold tracking-wide transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
-              >
-                {actions.primary.label}
-              </button>
             )}
           </div>
         </div>

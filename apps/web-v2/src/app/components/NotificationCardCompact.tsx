@@ -7,27 +7,16 @@ interface NotificationCardCompactProps {
   id: string;
   type: NotificationType;
   title: string;
-  message: string;
   timestamp: string;
   isRead: boolean;
   onClick?: () => void;
   onMarkAsRead?: (id: string) => void;
 }
 
-// Render _text_ as italic
-function renderMessage(text: string) {
-  const parts = text.split(/_(.*?)_/);
-  if (parts.length === 1) return text;
-  return parts.map((part, i) =>
-    i % 2 === 1 ? <em key={i}>{part}</em> : part
-  );
-}
-
 export function NotificationCardCompact({
   id,
   type,
   title,
-  message,
   timestamp,
   isRead,
   onClick,
@@ -39,6 +28,7 @@ export function NotificationCardCompact({
       case "follow":
         return <User className="w-3.5 h-3.5" />;
       case "sponsorship":
+      case "quick_sponsor":
       case "sponsorship_milestone":
         return <DollarSign className="w-3.5 h-3.5" />;
       case "comment":
@@ -77,6 +67,7 @@ export function NotificationCardCompact({
   const getNotificationColor = () => {
     switch (type) {
       case "sponsorship":
+      case "quick_sponsor":
       case "sponsorship_milestone":
         return "text-[#ac6d46]";
       case "follow":
@@ -106,12 +97,9 @@ export function NotificationCardCompact({
   };
 
   const handleClick = () => {
-    // Mark notification as read if it's unread
     if (!isRead && onMarkAsRead) {
       onMarkAsRead(id);
     }
-
-    // Navigate to content
     if (onClick) {
       onClick();
     }
@@ -126,8 +114,7 @@ export function NotificationCardCompact({
           : 'border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020]'
       } px-3 py-2.5 cursor-pointer hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all active:scale-[0.98]`}
     >
-      {/* Header with Icon and Timestamp */}
-      <div className="flex items-start justify-between gap-2 mb-1.5">
+      <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <div className={getNotificationColor()}>
             {getNotificationIcon()}
@@ -141,13 +128,6 @@ export function NotificationCardCompact({
           {timestamp}
         </span>
       </div>
-
-      {/* Message - only show if there's content */}
-      {message && (
-        <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed line-clamp-2">
-          {renderMessage(message)}
-        </p>
-      )}
     </div>
   );
 }

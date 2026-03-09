@@ -14,18 +14,8 @@ interface Notification {
   id: string;
   type: NotificationType;
   title: string;
-  message: string;
   timestamp: string;
   isRead: boolean;
-  actor?: string;
-  actorPicture?: string;
-  metadata?: {
-    amount?: number;
-    expeditionName?: string;
-    expeditionId?: string;
-    entryTitle?: string;
-    postId?: string;
-  };
 }
 
 interface NotificationsDropdownProps {
@@ -49,142 +39,72 @@ function formatRelativeTime(date: string): string {
   return `${diffWeeks}w`;
 }
 
-// Helper to generate notification title and message
-// Title includes actor + action. Message only if there's actual content to show.
-function formatNotification(apiNotif: ApiNotification): { title: string; message: string } {
+// Helper to generate notification title (title only, no message needed for compact cards)
+function formatNotification(apiNotif: ApiNotification): string {
   const context = apiNotif.context as NotificationType;
   const actor = apiNotif.mentionUser?.username || 'Someone';
 
   switch (context) {
     case 'follow':
-      return {
-        title: `${actor} followed your journal`,
-        message: ''
-      };
+      return `${actor} followed your journal`;
     case 'sponsorship':
+    case 'quick_sponsor': {
       const amount = apiNotif.sponsorshipAmount ? `$${formatCurrency(apiNotif.sponsorshipAmount / 100)}` : '';
-      return {
-        title: amount ? `${actor} sponsored ${amount}` : `${actor} sponsored you`,
-        message: ''
-      };
+      return amount ? `${actor} sponsored ${amount}` : `${actor} sponsored you`;
+    }
     case 'comment':
-      return {
-        title: apiNotif.postTitle
-          ? `${actor} left a note on "${apiNotif.postTitle}"`
-          : `${actor} left a note`,
-        message: apiNotif.body
-          ? `"${apiNotif.body.slice(0, 120)}${apiNotif.body.length > 120 ? '...' : ''}"`
-          : ''
-      };
+      return apiNotif.postTitle
+        ? `${actor} left a note on "${apiNotif.postTitle}"`
+        : `${actor} left a note`;
     case 'comment_reply':
-      return {
-        title: apiNotif.postTitle
-          ? `${actor} replied on "${apiNotif.postTitle}"`
-          : `${actor} replied to your note`,
-        message: apiNotif.body
-          ? `"${apiNotif.body.slice(0, 120)}${apiNotif.body.length > 120 ? '...' : ''}"`
-          : ''
-      };
+      return apiNotif.postTitle
+        ? `${actor} replied on "${apiNotif.postTitle}"`
+        : `${actor} replied to your note`;
     case 'expedition_note_reply':
-      return {
-        title: `${actor} replied to your expedition note`,
-        message: '',
-      };
+      return `${actor} replied to your expedition note`;
     case 'entry_milestone':
-      return {
-        title: 'Entry Milestone',
-        message: apiNotif.body || ''
-      };
+      return 'Entry Milestone';
     case 'expedition_started':
-      return {
-        title: 'Expedition Started',
-        message: apiNotif.body || ''
-      };
+      return 'Expedition Started';
     case 'expedition_completed':
-      return {
-        title: 'Expedition Completed',
-        message: apiNotif.body || ''
-      };
+      return 'Expedition Completed';
     case 'expedition_off_grid':
-      return {
-        title: 'Expedition Off-Grid',
-        message: apiNotif.body || ''
-      };
+      return 'Expedition Off-Grid';
     case 'sponsorship_milestone':
-      return {
-        title: 'Funding Milestone',
-        message: apiNotif.body || ''
-      };
+      return 'Funding Milestone';
     case 'passport_country':
-      return {
-        title: `Visited ${apiNotif.passportCountryName || 'a new country'}`,
-        message: ''
-      };
+      return `Visited ${apiNotif.passportCountryName || 'a new country'}`;
     case 'passport_continent':
-      return {
-        title: `Explored ${apiNotif.passportContinentName || 'a new continent'}`,
-        message: ''
-      };
+      return `Explored ${apiNotif.passportContinentName || 'a new continent'}`;
     case 'passport_stamp':
-      return {
-        title: `Earned "${apiNotif.passportStampName || 'Achievement'}" stamp`,
-        message: ''
-      };
+      return `Earned "${apiNotif.passportStampName || 'Achievement'}" stamp`;
     case 'stripe_action_required':
-      return {
-        title: 'Stripe Action Required',
-        message: apiNotif.body || 'Your Stripe account requires attention'
-      };
+      return 'Stripe Action Required';
     case 'stripe_verified':
-      return {
-        title: 'Stripe Account Verified',
-        message: apiNotif.body || 'You can now receive sponsorships!'
-      };
+      return 'Stripe Account Verified';
     case 'expedition_cancelled': {
       const cancelledName = apiNotif.body?.match(/"([^"]+)"/)?.[1];
-      return {
-        title: cancelledName ? `"${cancelledName}" cancelled` : 'Expedition Cancelled',
-        message: ''
-      };
+      return cancelledName ? `"${cancelledName}" cancelled` : 'Expedition Cancelled';
     }
     case 'expedition_date_changed': {
       const changedName = apiNotif.body?.match(/"([^"]+)"/)?.[1];
-      return {
-        title: changedName ? `"${changedName}" dates changed` : 'Expedition Date Changed',
-        message: ''
-      };
+      return changedName ? `"${changedName}" dates changed` : 'Expedition Date Changed';
     }
     case 'system':
-      return {
-        title: 'System',
-        message: apiNotif.body || ''
-      };
+      return 'System';
     default:
-      return {
-        title: 'Notification',
-        message: apiNotif.body || ''
-      };
+      return 'Notification';
   }
 }
 
 // Map API notification to component format
 function mapApiNotification(apiNotif: ApiNotification, index: number): Notification {
-  const { title, message } = formatNotification(apiNotif);
-
   return {
     id: `notif-${index}-${apiNotif.date}`,
     type: (apiNotif.context || 'system') as NotificationType,
-    title,
-    message,
+    title: formatNotification(apiNotif),
     timestamp: formatRelativeTime(apiNotif.date),
     isRead: apiNotif.read || false,
-    actor: apiNotif.mentionUser?.username,
-    actorPicture: apiNotif.mentionUser?.picture,
-    metadata: {
-      amount: apiNotif.sponsorshipAmount,
-      postId: apiNotif.postId,
-      expeditionId: apiNotif.expeditionPublicId,
-    }
   };
 }
 
@@ -216,13 +136,11 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
   const totalCount = notifications.length;
 
   const handleMarkAsRead = async (id: string) => {
-    // Optimistically update UI
     setNotifications(prev =>
       prev.map(notif =>
         notif.id === id ? { ...notif, isRead: true } : notif
       )
     );
-    // Note: Individual mark as read not supported by API, only mark all
   };
 
   const handleMarkAllAsRead = async () => {
@@ -234,33 +152,8 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
-    let target = '';
-
-    if (notification.type === 'follow' && notification.actor) {
-      target = `/journal/${notification.actor}`;
-    } else if ((notification.type === 'sponsorship' || notification.type === 'comment' || notification.type === 'comment_reply') && notification.actor) {
-      if (notification.metadata?.postId) {
-        target = `/entry/${notification.metadata.postId}`;
-      } else {
-        target = `/journal/${notification.actor}`;
-      }
-    } else if (notification.type === 'expedition_note_reply' && notification.metadata?.expeditionId) {
-      target = `/expedition/${notification.metadata.expeditionId}`;
-    } else if ((notification.type === 'expedition_cancelled' || notification.type === 'expedition_date_changed') && notification.metadata?.expeditionId) {
-      target = `/expedition/${notification.metadata.expeditionId}`;
-    } else if (notification.type === 'expedition_off_grid') {
-      target = '/sponsorship';
-    } else if (notification.type === 'stripe_action_required' || notification.type === 'stripe_verified') {
-      target = '/sponsorships/admin';
-    } else if (notification.metadata?.postId) {
-      target = `/entry/${notification.metadata.postId}`;
-    }
-
-    if (target) {
-      router.push(target);
-    }
-
+  const handleNotificationClick = () => {
+    router.push('/notifications');
     onClose();
   };
 
@@ -323,10 +216,9 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
                 id={notification.id}
                 type={notification.type}
                 title={notification.title}
-                message={notification.message}
                 timestamp={notification.timestamp}
                 isRead={notification.isRead}
-                onClick={() => handleNotificationClick(notification)}
+                onClick={handleNotificationClick}
                 onMarkAsRead={handleMarkAsRead}
               />
             ))}

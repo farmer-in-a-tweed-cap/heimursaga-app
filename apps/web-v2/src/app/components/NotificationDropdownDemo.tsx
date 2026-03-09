@@ -136,7 +136,6 @@ export function NotificationDropdownDemo() {
                   id={notification.id}
                   type={notification.type}
                   title={notification.title}
-                  message={notification.message}
                   timestamp={notification.timestamp}
                   isRead={notification.isRead}
                   onClick={() => handleNotificationClick(notification)}
