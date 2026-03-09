@@ -2072,6 +2072,18 @@ export class SessionExplorerService {
         orderBy: [{ created_at: 'desc' }],
       });
 
+      // Batch-resolve expedition titles
+      const expeditionPublicIds = data
+        .map((n) => n.expedition_public_id)
+        .filter((id): id is string => !!id);
+      const expeditions = expeditionPublicIds.length > 0
+        ? await this.prisma.expedition.findMany({
+            where: { public_id: { in: expeditionPublicIds }, deleted_at: null },
+            select: { public_id: true, title: true },
+          })
+        : [];
+      const expeditionMap = new Map(expeditions.map((e) => [e.public_id, e.title] as const));
+
       const response: IUserNotificationGetResponse = {
         results,
         data: data.map(
@@ -2116,6 +2128,7 @@ export class SessionExplorerService {
             passportStampId: passport_stamp_id,
             passportStampName: passport_stamp_name,
             expeditionPublicId: expedition_public_id,
+            expeditionTitle: expedition_public_id ? expeditionMap.get(expedition_public_id) : undefined,
           }),
         ),
         page,

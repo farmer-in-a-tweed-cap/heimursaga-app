@@ -470,26 +470,6 @@ export function SponsorshipDashboardPage() {
                     </button>
                   </div>
 
-                  {/* Expedition Link */}
-                  {sub.expedition && (
-                    <div className="mt-6 pt-4 border-t-2 border-[#202020] dark:border-[#616161]">
-                      <h4 className="font-bold text-sm mb-3 dark:text-[#e5e5e5]">EXPEDITION:</h4>
-                      <Link
-                        href={`/expedition/${sub.expedition.id}`}
-                        className="flex items-center gap-2 p-2 border border-[#202020] dark:border-[#616161] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-sm"
-                      >
-                        <Map className="w-4 h-4 text-[#4676ac] flex-shrink-0" />
-                        <span className="font-bold dark:text-[#e5e5e5] truncate">{sub.expedition.title}</span>
-                        <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] uppercase">{sub.expedition.status}</span>
-                        {sub.expedition.visibility === 'off-grid' && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold bg-[#6b5c4e] text-white ml-auto flex-shrink-0">
-                            <EyeOff className="h-3 w-3" /> OFF-GRID
-                          </span>
-                        )}
-                      </Link>
-                    </div>
-                  )}
-
                   <div className="mt-4 p-3 bg-[#fff8e5] dark:bg-[#2a2a20] border-l-4 border-[#ac6d46] text-xs dark:text-[#b5bcc4]">
                     <strong>Note:</strong> Canceling will end your subscription at the end of the current billing period. No refunds for partial months.
                   </div>
@@ -807,16 +787,6 @@ export function SponsorshipDashboardPage() {
                         <div className="text-sm text-[#616161] dark:text-[#b5bcc4]">
                           {sponsor.type === 'SUBSCRIPTION' ? 'Monthly subscription' : sponsor.type === 'QUICK_SPONSOR' ? 'Quick-sponsor' : 'One-time sponsorship'}
                         </div>
-                        {sponsor.entry && (
-                          <Link href={`/entry/${sponsor.entry.id}`} className="text-xs text-[#4676ac] hover:text-[#ac6d46]">
-                            ENTRY: {sponsor.entry.title}
-                          </Link>
-                        )}
-                        {sponsor.expedition && (
-                          <Link href={`/expedition/${sponsor.expedition.id}`} className="text-xs text-[#4676ac] hover:text-[#ac6d46]">
-                            EXPEDITION: {sponsor.expedition.title}
-                          </Link>
-                        )}
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-[#ac6d46]">

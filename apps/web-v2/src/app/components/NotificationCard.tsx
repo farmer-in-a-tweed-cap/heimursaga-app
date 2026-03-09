@@ -18,6 +18,7 @@ interface NotificationCardProps {
     viewCount?: number;
     commentCount?: number;
     postId?: string;
+    sponsorshipType?: string;
   };
   actions?: {
     primary?: {
@@ -64,6 +65,7 @@ export function NotificationCard({
       case "follow":
         return <User className="w-4 h-4" />;
       case "sponsorship":
+      case "quick_sponsor":
       case "sponsorship_milestone":
         return <DollarSign className="w-4 h-4" />;
       case "comment":
@@ -103,6 +105,7 @@ export function NotificationCard({
   const getStatusColor = () => {
     switch (type) {
       case "sponsorship":
+      case "quick_sponsor":
       case "sponsorship_milestone":
       case "expedition_off_grid":
       case "passport_country":
@@ -133,6 +136,7 @@ export function NotificationCard({
       case "follow":
         return "NEW FOLLOWER";
       case "sponsorship":
+      case "quick_sponsor":
         return "SPONSORSHIP";
       case "sponsorship_milestone":
         return "FUNDING MILESTONE";
@@ -176,8 +180,6 @@ export function NotificationCard({
     if (!metadata) return false;
 
     switch (type) {
-      case "sponsorship":
-        return metadata.amount !== undefined;
       case "sponsorship_milestone":
         return metadata.amount !== undefined || metadata.expeditionName;
       case "entry_milestone":
@@ -259,7 +261,20 @@ export function NotificationCard({
             {getNotificationIcon()}
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm text-[#202020] dark:text-[#e5e5e5]">{title}</h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-bold text-sm text-[#202020] dark:text-[#e5e5e5]">{title}</h3>
+              {metadata?.sponsorshipType && (
+                <span className={`px-1.5 py-0.5 text-[10px] font-bold text-white ${
+                  metadata.sponsorshipType === 'quick_sponsor' ? 'bg-[#ac6d46]'
+                    : metadata.sponsorshipType === 'subscription' ? 'bg-[#4676ac]'
+                    : 'bg-[#616161]'
+                }`}>
+                  {metadata.sponsorshipType === 'quick_sponsor' ? 'QUICK-SPONSOR'
+                    : metadata.sponsorshipType === 'subscription' ? 'RECURRING'
+                    : 'ONE-TIME'}
+                </span>
+              )}
+            </div>
             {message && (
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mt-1">
                 {renderMessage(message)}

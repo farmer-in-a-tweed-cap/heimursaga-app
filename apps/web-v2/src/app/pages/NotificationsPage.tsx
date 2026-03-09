@@ -35,6 +35,7 @@ interface Notification {
     expeditionId?: string;
     entryTitle?: string;
     postId?: string;
+    sponsorshipType?: string;
     // Passport fields
     countryCode?: string;
     countryName?: string;
@@ -76,17 +77,17 @@ function formatNotification(apiNotif: ApiNotification): { title: string; message
         message: ''
       };
     case 'sponsorship':
+    case 'quick_sponsor': {
       const amount = apiNotif.sponsorshipAmount ? `$${formatCurrency(apiNotif.sponsorshipAmount / 100)}` : '';
+      const parts: string[] = [];
+      if (apiNotif.postTitle) parts.push(`ENTRY: _${apiNotif.postTitle}_`);
+      else if (apiNotif.expeditionTitle) parts.push(`EXPEDITION: _${apiNotif.expeditionTitle}_`);
+      if (apiNotif.body) parts.push(`"${apiNotif.body}"`);
       return {
-        title: amount ? `${actor} sponsored ${amount} (one-time)` : `${actor} sponsored you`,
-        message: apiNotif.body || ''
+        title: amount ? `${actor} sponsored ${amount}` : `${actor} sponsored you`,
+        message: parts.join(' · ')
       };
-    case 'quick_sponsor':
-      const qsAmount = apiNotif.sponsorshipAmount ? `$${formatCurrency(apiNotif.sponsorshipAmount / 100)}` : '$3.00';
-      return {
-        title: `${actor} quick-sponsored ${qsAmount}`,
-        message: 'Quick-sponsor for your entry'
-      };
+    }
     case 'comment':
       return {
         title: apiNotif.postTitle
@@ -203,7 +204,10 @@ function mapApiNotification(apiNotif: ApiNotification, index: number): Notificat
     metadata: {
       amount: apiNotif.sponsorshipAmount,
       postId: apiNotif.postId,
+      entryTitle: apiNotif.postTitle,
       expeditionId: apiNotif.expeditionPublicId,
+      expeditionName: apiNotif.expeditionTitle,
+      sponsorshipType: apiNotif.sponsorshipType,
     }
   };
 }
@@ -305,9 +309,11 @@ export function NotificationsPage() {
   const filteredNotifications = notifications
     .filter(n => {
       if (filterType !== 'all') {
-        // Handle "passport" as a group filter
+        // Handle group filters
         if (filterType === 'passport') {
           if (!['passport_country', 'passport_continent', 'passport_stamp'].includes(n.type)) return false;
+        } else if (filterType === 'sponsorship') {
+          if (!['sponsorship', 'quick_sponsor'].includes(n.type)) return false;
         } else if (n.type !== filterType) {
           return false;
         }
@@ -487,7 +493,6 @@ export function NotificationsPage() {
                 >
                   <option value="all">ALL TYPES</option>
                   <option value="sponsorship">SPONSORSHIP</option>
-                  <option value="quick_sponsor">QUICK SPONSOR</option>
                   <option value="comment">NEW NOTE</option>
                   <option value="comment_reply">NOTE REPLY</option>
                   <option value="follow">NEW FOLLOWER</option>
@@ -579,21 +584,31 @@ export function NotificationsPage() {
                 break;
 
               case 'sponsorship':
-                if (notification.actor) {
-                  actions.primary = {
-                    label: 'VIEW JOURNAL',
-                    onClick: () => router.push(`/journal/${notification.actor}`)
-                  };
-                }
-                break;
-
               case 'quick_sponsor':
-                actions.primary = {
-                  label: 'VIEW SPONSORSHIPS',
-                  onClick: () => router.push('/sponsorships/admin')
-                };
-                if (notification.actor) {
-                  actions.secondary = {
+                if (notification.metadata?.postId) {
+                  actions.primary = {
+                    label: 'VIEW ENTRY',
+                    onClick: () => router.push(`/entry/${notification.metadata?.postId}`)
+                  };
+                  if (notification.actor) {
+                    actions.secondary = {
+                      label: 'VIEW JOURNAL',
+                      onClick: () => router.push(`/journal/${notification.actor}`)
+                    };
+                  }
+                } else if (notification.metadata?.expeditionId) {
+                  actions.primary = {
+                    label: 'VIEW EXPEDITION',
+                    onClick: () => router.push(`/expedition/${notification.metadata?.expeditionId}`)
+                  };
+                  if (notification.actor) {
+                    actions.secondary = {
+                      label: 'VIEW JOURNAL',
+                      onClick: () => router.push(`/journal/${notification.actor}`)
+                    };
+                  }
+                } else if (notification.actor) {
+                  actions.primary = {
                     label: 'VIEW JOURNAL',
                     onClick: () => router.push(`/journal/${notification.actor}`)
                   };

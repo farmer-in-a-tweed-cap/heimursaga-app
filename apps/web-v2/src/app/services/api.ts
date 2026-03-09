@@ -1169,6 +1169,7 @@ export interface Notification {
   passportStampId?: string;
   passportStampName?: string;
   expeditionPublicId?: string;
+  expeditionTitle?: string;
 }
 
 export interface NotificationListResponse {

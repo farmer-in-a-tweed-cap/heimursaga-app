@@ -624,6 +624,7 @@ export class SponsorService {
         sponsorship_type: string;
         total: number;
         currency: string;
+        expedition_public_id: string | null;
       };
 
       await this.prisma.$transaction(
@@ -654,6 +655,7 @@ export class SponsorService {
             sponsorship_type: checkout.sponsorship_type,
             total: checkout.total,
             currency: checkout.currency,
+            expedition_public_id: checkout.expedition_public_id,
           };
 
           const expiry = dateformat().add(1, 'month').toDate();
@@ -768,6 +770,7 @@ export class SponsorService {
             sponsorshipType: checkoutData.sponsorship_type,
             sponsorshipAmount: checkoutData.total,
             sponsorshipCurrency: checkoutData.currency,
+            expeditionPublicId: checkoutData.expedition_public_id || undefined,
           },
         });
 
@@ -2755,6 +2758,7 @@ export class SponsorService {
         context: UserNotificationContext.QUICK_SPONSOR,
         userId: entry.author.id,
         mentionUserId: userId,
+        mentionPostId: entry.id,
         sponsorshipType: SponsorshipType.QUICK_SPONSOR,
         sponsorshipAmount: QUICK_SPONSOR_AMOUNT,
         sponsorshipCurrency: CurrencyCode.USD,

@@ -424,22 +424,6 @@ export function SponsorshipPage() {
                                       </span>
                                     </div>
                                   </div>
-                                  {sp.expedition && (
-                                    <Link
-                                      href={`/expedition/${sp.expedition.id}`}
-                                      className="block mt-2 text-xs text-[#4676ac] hover:text-[#ac6d46] truncate"
-                                    >
-                                      EXPEDITION: {sp.expedition.title}
-                                    </Link>
-                                  )}
-                                  {sp.entry && (
-                                    <Link
-                                      href={`/entry/${sp.entry.id}`}
-                                      className="block mt-2 text-xs text-[#4676ac] hover:text-[#ac6d46] truncate"
-                                    >
-                                      ENTRY: {sp.entry.title}
-                                    </Link>
-                                  )}
                                 </div>
                               ))}
                             </div>
@@ -551,26 +535,6 @@ export function SponsorshipPage() {
                                     </div>
                                   )}
                                 </div>
-                                {/* Expedition Link */}
-                                {sub.expedition && (
-                                  <div className="mb-4">
-                                    <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">EXPEDITION:</div>
-                                    <Link
-                                      href={`/expedition/${sub.expedition.id}`}
-                                      className="flex items-center gap-2 p-2 border border-[#b5bcc4] dark:border-[#616161] hover:bg-white dark:hover:bg-[#202020] transition-all text-sm"
-                                    >
-                                      <Map className="w-4 h-4 text-[#4676ac] flex-shrink-0" />
-                                      <span className="font-bold dark:text-[#e5e5e5] truncate">{sub.expedition.title}</span>
-                                      <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] uppercase">{sub.expedition.status}</span>
-                                      {sub.expedition.visibility === 'off-grid' && (
-                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold bg-[#6b5c4e] text-white ml-auto flex-shrink-0">
-                                          <EyeOff className="h-3 w-3" /> OFF-GRID
-                                        </span>
-                                      )}
-                                    </Link>
-                                  </div>
-                                )}
-
                                 <div className="flex flex-wrap gap-3 pt-4 border-t border-[#b5bcc4] dark:border-[#616161]">
                                   <Link
                                     href={`/journal/${sub.sponsoredExplorer?.username}`}

@@ -1044,21 +1044,6 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                                 </span>
                               )}
                             </div>
-                            {(payment.entry || payment.expedition) && (
-                              <div className="text-xs text-[#616161] dark:text-[#b5bcc4] truncate">
-                                SOURCE:{' '}
-                                {payment.entry && (
-                                  <Link href={`/entry/${payment.entry.id}`} className="text-[#4676ac] hover:text-[#ac6d46]">
-                                    {payment.entry.title}
-                                  </Link>
-                                )}
-                                {payment.expedition && (
-                                  <Link href={`/expedition/${payment.expedition.id}`} className="text-[#4676ac] hover:text-[#ac6d46]">
-                                    {payment.expedition.title}
-                                  </Link>
-                                )}
-                              </div>
-                            )}
                           </div>
                           <div className="text-right">
                             <div className={`font-bold ${payment.refunded ? 'text-[#616161] line-through' : 'text-[#ac6d46]'}`}>
