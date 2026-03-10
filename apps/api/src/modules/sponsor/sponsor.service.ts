@@ -2418,6 +2418,12 @@ export class SponsorService {
           id: true,
           public_id: true,
           author_id: true,
+          expedition: {
+            select: {
+              public_id: true,
+              status: true,
+            },
+          },
           author: {
             select: {
               id: true,
@@ -2500,6 +2506,13 @@ export class SponsorService {
         orderBy: { created_at: 'desc' },
       });
 
+      // Link to expedition if entry belongs to a planned/active one
+      const expeditionPublicId =
+        entry.expedition &&
+        ['planned', 'active'].includes(entry.expedition.status || '')
+          ? entry.expedition.public_id
+          : undefined;
+
       if (!savedPm?.stripe_payment_method_id) {
         // No saved PM → create SetupIntent so user can add a card
         const setupIntent = await this.stripeService.setupIntents.create({
@@ -2521,6 +2534,7 @@ export class SponsorService {
           stripeCustomer,
           stripePaymentMethodId: savedPm.stripe_payment_method_id,
           creatorStripeAccountId,
+          expeditionPublicId,
         });
       } catch (chargeError) {
         if (chargeError?.raw?.code === 'resource_missing' && chargeError?.raw?.param === 'payment_method') {
@@ -2595,6 +2609,12 @@ export class SponsorService {
           id: true,
           public_id: true,
           author_id: true,
+          expedition: {
+            select: {
+              public_id: true,
+              status: true,
+            },
+          },
           author: {
             select: {
               id: true,
@@ -2605,6 +2625,13 @@ export class SponsorService {
         },
       });
       if (!entry) throw new ServiceNotFoundException('Entry not found');
+
+      // Link to expedition if entry belongs to a planned/active one
+      const expeditionPublicId =
+        entry.expedition &&
+        ['planned', 'active'].includes(entry.expedition.status || '')
+          ? entry.expedition.public_id
+          : undefined;
 
       // Resolve creator's Stripe account from payout methods
       const payoutMethod = await this.prisma.payoutMethod.findFirst({
@@ -2638,6 +2665,7 @@ export class SponsorService {
         stripeCustomer,
         stripePaymentMethodId,
         creatorStripeAccountId,
+        expeditionPublicId,
       });
     } catch (e) {
       this.logger.error('Confirm quick sponsor error:', e);
@@ -2656,6 +2684,7 @@ export class SponsorService {
     stripeCustomer,
     stripePaymentMethodId,
     creatorStripeAccountId,
+    expeditionPublicId,
   }: {
     userId: number;
     user: { id: number; email: string; username: string };
@@ -2668,6 +2697,7 @@ export class SponsorService {
     stripeCustomer: { id: string };
     stripePaymentMethodId: string;
     creatorStripeAccountId: string;
+    expeditionPublicId?: string;
   }) {
     const QUICK_SPONSOR_AMOUNT = 300; // $3.00 in cents
     const applicationFeeAmount = 30; // 10% of 300
@@ -2683,6 +2713,7 @@ export class SponsorService {
         explorer_id: userId,
         sponsored_explorer_id: entry.author.id,
         entry_public_id: entry.public_id,
+        expedition_public_id: expeditionPublicId || null,
       },
       select: { id: true, public_id: true },
     });
@@ -2733,6 +2764,7 @@ export class SponsorService {
           sponsor_id: userId,
           sponsored_explorer_id: entry.author.id,
           entry_public_id: entry.public_id,
+          expedition_public_id: expeditionPublicId || null,
           is_public: true,
           is_message_public: true,
         },
@@ -2747,6 +2779,16 @@ export class SponsorService {
           quick_sponsors_total: { increment: QUICK_SPONSOR_AMOUNT },
         },
       });
+
+      // Increment expedition raised amount if linked
+      if (expeditionPublicId) {
+        await tx.expedition.updateMany({
+          where: { public_id: expeditionPublicId, deleted_at: null },
+          data: {
+            raised: { increment: QUICK_SPONSOR_AMOUNT },
+          },
+        });
+      }
 
       return sponsorship;
     });

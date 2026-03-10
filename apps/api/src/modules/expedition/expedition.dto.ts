@@ -72,6 +72,11 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   goal?: number;
 
   @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  notesAccessThreshold?: number;
+
+  @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
   category?: string;
@@ -149,6 +154,11 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @IsNumber()
   @IsOptional()
   goal?: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  notesAccessThreshold?: number;
 
   @ApiProperty({ required: false })
   @IsString()

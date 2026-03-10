@@ -380,8 +380,9 @@ model Expedition {
   current_location_type       String?              @db.VarChar(10) // 'waypoint' or 'entry'
   current_location_id         String?              @db.VarChar(20) // waypoint ID or entry public_id
   current_location_visibility String?              @default("public") @db.VarChar(10) // 'public', 'sponsors', or 'private'
-  goal           Int?                 @default(0) // funding goal in cents
-  raised         Int?                 @default(0) // amount raised in cents
+  goal                    Int?                 @default(0) // funding goal in cents
+  raised                  Int?                 @default(0) // amount raised in cents
+  notes_access_threshold  Int?                 @default(0) // minimum cumulative sponsorship (cents) for Expedition Notes access
   sponsors_count  Int?                 @default(0)
   entries_count   Int?                 @default(0)
   bookmarks_count Int?                 @default(0)

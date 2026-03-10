@@ -14,6 +14,8 @@ interface QuickSponsorButtonProps {
   authorUsername: string;
   isProAuthor: boolean;
   stripeConnected: boolean;
+  expeditionId?: string;
+  expeditionTitle?: string;
 }
 
 export function QuickSponsorButton({
@@ -21,6 +23,8 @@ export function QuickSponsorButton({
   authorUsername,
   isProAuthor,
   stripeConnected,
+  expeditionId,
+  expeditionTitle,
 }: QuickSponsorButtonProps) {
   const { isAuthenticated } = useAuth();
   const router = useRouter();
@@ -86,7 +90,7 @@ export function QuickSponsorButton({
     setTimeout(() => setCooldown(false), 30000);
   };
 
-  const label = 'SPONSOR — $3';
+  const label = 'QUICK SPONSOR $3';
 
   return (
     <>
@@ -96,7 +100,7 @@ export function QuickSponsorButton({
         className={`px-6 py-3 text-sm font-bold transition-all active:scale-[0.98] whitespace-nowrap flex items-center justify-center ${
           cooldown
             ? 'bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#616161] dark:text-[#b5bcc4] cursor-not-allowed'
-              : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
+              : 'bg-[#4676ac] text-white hover:bg-[#365d8a]'
         } disabled:opacity-50`}
       >
         {isLoading && <Loader2 size={14} className="animate-spin mr-2" />}
@@ -115,8 +119,13 @@ export function QuickSponsorButton({
       >
         <div className="space-y-4 mb-4">
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5]">
-            You&apos;re about to sponsor <strong>{authorUsername}</strong> $3.00 for this entry.
+            You&apos;re about to sponsor <strong>{authorUsername}</strong> $3.00 as a show of appreciation for this journal entry.
           </p>
+          {expeditionId && expeditionTitle && (
+            <p className="text-xs text-[#4676ac] dark:text-[#7ba3d4]">
+              This sponsorship will count toward <strong>{expeditionTitle}</strong> expedition funding.
+            </p>
+          )}
           <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
             Explorer receives $2.70 after platform and Stripe fees.
           </p>

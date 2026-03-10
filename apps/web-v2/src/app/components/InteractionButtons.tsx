@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Bookmark, Share2, Users, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 
 interface InteractionButtonsProps {
@@ -115,14 +115,8 @@ export function InteractionButtons({
         >
           {isBookmarkLoading ? (
             <Loader2 size={config.icon} className="animate-spin" />
-          ) : (
-            <Bookmark
-              size={config.icon}
-              fill={bookmarked ? 'currentColor' : 'none'}
-              strokeWidth={2}
-            />
-          )}
-          {showLabels && <span>BOOKMARK</span>}
+          ) : null}
+          {showLabels && <span>{bookmarked ? 'BOOKMARKED' : 'BOOKMARK'}</span>}
         </button>
       )}
 
@@ -132,8 +126,7 @@ export function InteractionButtons({
           onClick={handleSponsor}
           className={`${config.button} border-2 font-bold font-mono transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] ${config.gap} flex items-center bg-[#ac6d46] text-white border-[#ac6d46] hover:bg-[#8a5738] hover:border-[#8a5738]`}
         >
-          <Users size={config.icon} strokeWidth={2} />
-          {showLabels && <span>SPONSOR</span>}
+          {showLabels && <span>SPONSOR EXPEDITION</span>}
         </button>
       )}
 
@@ -144,7 +137,6 @@ export function InteractionButtons({
             onClick={handleShare}
             className={`${config.button} border-2 font-bold font-mono transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] dark:focus-visible:ring-[#616161] ${config.gap} flex items-center bg-white dark:bg-[#202020] text-[#202020] dark:text-[#e5e5e5] border-[#202020] dark:border-[#616161] hover:border-[#0a0a0a] hover:bg-[#0a0a0a] dark:hover:border-[#4a4a4a] dark:hover:bg-[#4a4a4a] hover:text-white`}
           >
-            <Share2 size={config.icon} strokeWidth={2} />
             {showLabels && <span>SHARE</span>}
           </button>
 
@@ -206,8 +198,7 @@ export function InteractionButtons({
           onClick={handleSponsor}
           className={`${config.button} border-2 font-bold font-mono transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] dark:focus-visible:ring-[#616161] ${config.gap} flex items-center bg-white dark:bg-[#202020] text-[#202020] dark:text-[#e5e5e5] border-[#202020] dark:border-[#616161] hover:border-[#0a0a0a] hover:bg-[#0a0a0a] dark:hover:border-[#4a4a4a] dark:hover:bg-[#4a4a4a] hover:text-white`}
         >
-          <Users size={config.icon} strokeWidth={2} />
-          {showLabels && <span>SPONSOR</span>}
+          {showLabels && <span>SPONSOR EXPEDITION</span>}
         </button>
       )}
     </div>

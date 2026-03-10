@@ -926,6 +926,8 @@ export interface ITripDetail {
   goal?: number;
   raised?: number;
   sponsorsCount?: number;
+  notesAccessThreshold?: number;
+  viewerCumulativeSponsored?: number;
   recurringStats?: {
     activeSponsors: number;
     monthlyRevenue: number;
@@ -1000,6 +1002,7 @@ export interface ITripCreatePayload {
   endDate?: Date | string;
   coverImage?: string;
   goal?: number;
+  notesAccessThreshold?: number;
   category?: string;
   region?: string;
   tags?: string[];
@@ -1022,6 +1025,7 @@ export interface ITripUpdatePayload {
   endDate?: Date | string;
   coverImage?: string;
   goal?: number;
+  notesAccessThreshold?: number;
   category?: string;
   region?: string;
   tags?: string[];

@@ -138,6 +138,7 @@ export function ExpeditionBuilderPage() {
 
   const [sponsorshipsEnabled, setSponsorshipsEnabled] = useState(false);
   const [sponsorshipGoal, setSponsorshipGoal] = useState<number | ''>('');
+  const [notesAccessThreshold, setNotesAccessThreshold] = useState<number | ''>('');
   const [expectedDuration, setExpectedDuration] = useState('');
   const [currentLocationSource, setCurrentLocationSource] = useState<'waypoint' | 'entry'>('waypoint');
   const [currentLocationId, setCurrentLocationId] = useState('');
@@ -255,6 +256,7 @@ export function ExpeditionBuilderPage() {
         endDate: expeditionData.endDate || undefined,
         coverImage: coverPhotoUrl || undefined,
         goal: sponsorshipsEnabled && sponsorshipGoal ? Number(sponsorshipGoal) : undefined,
+        notesAccessThreshold: sponsorshipsEnabled && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
         isRoundTrip,
         category: expeditionData.category || undefined,
         region: expeditionData.region || undefined,
@@ -666,6 +668,9 @@ export function ExpeditionBuilderPage() {
         if (expedition.goal && expedition.goal > 0) {
           setSponsorshipsEnabled(true);
           setSponsorshipGoal(expedition.goal);
+        }
+        if ((expedition as any).notesAccessThreshold > 0) {
+          setNotesAccessThreshold((expedition as any).notesAccessThreshold);
         }
 
         // Set round trip status
@@ -2932,6 +2937,24 @@ export function ExpeditionBuilderPage() {
                 </div>
               </div>
             )}
+            {sponsorshipsEnabled && isPro && (
+              <div className="mt-4">
+                <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                  EXPEDITION NOTES ACCESS THRESHOLD (USD)
+                </label>
+                <input
+                  type="number"
+                  className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] font-mono"
+                  placeholder="e.g., 15"
+                  min="0"
+                  value={notesAccessThreshold}
+                  onChange={(e) => setNotesAccessThreshold(e.target.value ? Number(e.target.value) : '')}
+                />
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                  Minimum cumulative sponsorship to unlock Expedition Notes • Leave empty or 0 for any sponsor to have access
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Privacy Settings - Radio buttons matching quick entry */}
@@ -3071,7 +3094,7 @@ export function ExpeditionBuilderPage() {
 
       {/* Danger Zone - Only in Edit Mode */}
       {isEditMode && (
-        <div className="bg-white dark:bg-[#202020] border-2 border-[#994040] p-6">
+        <div className="mt-8 bg-white dark:bg-[#202020] border-2 border-[#994040] p-6">
           <h3 className="text-[#994040] font-bold text-sm mb-3">DANGER ZONE</h3>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-4">
             Permanently delete this expedition and all its data. This cannot be undone.

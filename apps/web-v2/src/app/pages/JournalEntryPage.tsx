@@ -1091,34 +1091,22 @@ export function JournalEntryPage() {
             </div>
           )}
 
-          {/* Entry Navigation + Quick Sponsor */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <div className="flex items-stretch justify-center gap-4">
-              {entry.expeditionId ? (
-                <Link
-                  href={`/expedition/${entry.expeditionId}`}
-                  className="px-6 py-3 bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm whitespace-nowrap flex items-center"
-                >
-                  VIEW EXPEDITION
-                </Link>
-              ) : (
-                <Link
-                  href={`/journal/${entry.explorerId}`}
-                  className="px-6 py-3 bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm whitespace-nowrap flex items-center"
-                >
-                  VIEW JOURNAL
-                </Link>
-              )}
-              {!isOwner && entry.explorerIsPro && entry.stripeAccountConnected && (
+          {/* Quick Sponsor CTA */}
+          {!isOwner && entry.explorerIsPro && entry.stripeAccountConnected && (
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
+              <div className="flex flex-col items-center gap-2">
+                <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">Appreciate this entry? Show your support.</p>
                 <QuickSponsorButton
                   entryPublicId={entry.id}
                   authorUsername={entry.explorerName}
                   isProAuthor={entry.explorerIsPro}
                   stripeConnected={entry.stripeAccountConnected}
+                  expeditionId={['planned', 'active'].includes(entry.expeditionStatus) ? entry.expeditionId : undefined}
+                  expeditionTitle={['planned', 'active'].includes(entry.expeditionStatus) ? entry.expeditionTitle : undefined}
                 />
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Right Sidebar */}

@@ -740,10 +740,45 @@ export function SponsorshipPaymentPage() {
                 <div className="mt-6 p-4 bg-[#f0f8ff] dark:bg-[#1a2a3a] border-2 border-[#4676ac]">
                   <div className="font-bold text-sm mb-2 text-[#4676ac]">ALL SPONSORS RECEIVE:</div>
                   <ul className="text-xs space-y-1 text-[#202020] dark:text-[#e5e5e5]">
-                    <li>* Exclusive access to Expedition Notes</li>
                     <li>* Recognition on expedition sponsorship leaderboard</li>
                     <li>* Direct connection with the explorer</li>
                   </ul>
+                  {(() => {
+                    const threshold = expedition?.notesAccessThreshold ?? 0;
+                    const cumulative = expedition?.viewerCumulativeSponsored ?? 0;
+                    const effectiveAmount = selectedAmount || (customAmount ? parseFloat(customAmount) : 0) || 0;
+                    const projectedTotal = cumulative + effectiveAmount;
+
+                    if (threshold > 0) {
+                      const willUnlock = projectedTotal >= threshold;
+                      const alreadyUnlocked = cumulative >= threshold;
+                      return (
+                        <div className="mt-3 pt-3 border-t border-[#4676ac]/30">
+                          <div className="font-bold text-xs mb-1 text-[#4676ac]">EXPEDITION NOTES ACCESS</div>
+                          {alreadyUnlocked ? (
+                            <p className="text-xs text-[#598636]">
+                              You&apos;ve unlocked Expedition Notes for this expedition.
+                            </p>
+                          ) : willUnlock ? (
+                            <p className="text-xs text-[#598636]">
+                              This sponsorship will unlock Expedition Notes access!
+                            </p>
+                          ) : (
+                            <p className="text-xs text-[#202020] dark:text-[#e5e5e5]">
+                              Requires ${threshold.toFixed(2)} cumulative sponsorship.
+                              {cumulative > 0 && ` Your current total: $${cumulative.toFixed(2)}.`}
+                              {effectiveAmount > 0 && ` After this sponsorship: $${projectedTotal.toFixed(2)}.`}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="mt-1">
+                        <li className="text-xs text-[#202020] dark:text-[#e5e5e5]">* Exclusive access to Expedition Notes</li>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

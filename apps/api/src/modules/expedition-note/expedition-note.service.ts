@@ -70,31 +70,53 @@ export class ExpeditionNoteService {
         where: { public_id: expeditionId, deleted_at: null },
         select: {
           id: true,
+          public_id: true,
           author_id: true,
           status: true,
+          notes_access_threshold: true,
         },
       });
 
       if (!expedition)
         throw new ServiceNotFoundException('expedition not found');
 
-      // Check access - must be owner or sponsor
+      // Check access - must be owner or qualifying sponsor
       const isOwner = explorerId === expedition.author_id;
-      let isSponsor = false;
+      let hasAccess = false;
 
       if (explorerId && !isOwner) {
-        // Check if user is sponsoring the expedition owner
-        const sponsorship = await this.prisma.sponsorship.findFirst({
-          where: {
-            sponsor_id: explorerId,
-            sponsored_explorer_id: expedition.author_id,
-            status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
-          },
-        });
-        isSponsor = !!sponsorship;
+        const threshold = expedition.notes_access_threshold ?? 0;
+
+        if (threshold > 0) {
+          // Threshold mode: sum all sponsorships for this specific expedition
+          const sponsorships = await this.prisma.sponsorship.findMany({
+            where: {
+              sponsor_id: explorerId,
+              expedition_public_id: expedition.public_id,
+              deleted_at: null,
+              status: { in: ['active', 'confirmed', 'ACTIVE', 'CONFIRMED'] },
+            },
+            select: { amount: true },
+          });
+          const cumulativeAmount = sponsorships.reduce(
+            (sum, s) => sum + s.amount,
+            0,
+          );
+          hasAccess = cumulativeAmount >= threshold;
+        } else {
+          // No threshold: any sponsorship for this explorer grants access
+          const sponsorship = await this.prisma.sponsorship.findFirst({
+            where: {
+              sponsor_id: explorerId,
+              sponsored_explorer_id: expedition.author_id,
+              status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
+            },
+          });
+          hasAccess = !!sponsorship;
+        }
       }
 
-      if (!isOwner && !isSponsor) {
+      if (!isOwner && !hasAccess) {
         throw new ServiceForbiddenException('access denied');
       }
 
@@ -276,28 +298,52 @@ export class ExpeditionNoteService {
       // Get the expedition
       const expedition = await this.prisma.expedition.findFirst({
         where: { public_id: expeditionId, deleted_at: null },
-        select: { id: true, author_id: true },
+        select: {
+          id: true,
+          public_id: true,
+          author_id: true,
+          notes_access_threshold: true,
+        },
       });
 
       if (!expedition)
         throw new ServiceNotFoundException('expedition not found');
 
-      // Check access - must be owner or sponsor
+      // Check access - must be owner or qualifying sponsor
       const isOwner = explorerId === expedition.author_id;
-      let isSponsor = false;
+      let hasAccess = false;
 
       if (!isOwner) {
-        const sponsorship = await this.prisma.sponsorship.findFirst({
-          where: {
-            sponsor_id: explorerId,
-            sponsored_explorer_id: expedition.author_id,
-            status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
-          },
-        });
-        isSponsor = !!sponsorship;
+        const threshold = expedition.notes_access_threshold ?? 0;
+
+        if (threshold > 0) {
+          const sponsorships = await this.prisma.sponsorship.findMany({
+            where: {
+              sponsor_id: explorerId,
+              expedition_public_id: expedition.public_id,
+              deleted_at: null,
+              status: { in: ['active', 'confirmed', 'ACTIVE', 'CONFIRMED'] },
+            },
+            select: { amount: true },
+          });
+          const cumulativeAmount = sponsorships.reduce(
+            (sum, s) => sum + s.amount,
+            0,
+          );
+          hasAccess = cumulativeAmount >= threshold;
+        } else {
+          const sponsorship = await this.prisma.sponsorship.findFirst({
+            where: {
+              sponsor_id: explorerId,
+              sponsored_explorer_id: expedition.author_id,
+              status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
+            },
+          });
+          hasAccess = !!sponsorship;
+        }
       }
 
-      if (!isOwner && !isSponsor) {
+      if (!isOwner && !hasAccess) {
         throw new ServiceForbiddenException('access denied');
       }
 

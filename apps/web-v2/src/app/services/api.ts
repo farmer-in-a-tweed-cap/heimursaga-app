@@ -705,6 +705,8 @@ export interface Expedition {
   goal?: number;
   raised?: number;
   sponsorsCount?: number;
+  notesAccessThreshold?: number;
+  viewerCumulativeSponsored?: number;
   recurringStats?: {
     activeSponsors: number;
     monthlyRevenue: number;
@@ -768,6 +770,7 @@ export interface ExpeditionCreatePayload {
   startDate?: string;
   endDate?: string;
   goal?: number;
+  notesAccessThreshold?: number;
   coverImage?: string;
   category?: string;
   region?: string;

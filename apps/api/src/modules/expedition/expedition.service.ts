@@ -627,6 +627,7 @@ export class ExpeditionService {
             current_location_visibility: true,
             goal: true,
             raised: true,
+            notes_access_threshold: true,
             entries_count: true,
             cancelled_at: true,
             cancellation_reason: true,
@@ -741,6 +742,7 @@ export class ExpeditionService {
         current_location_visibility,
         goal,
         raised,
+        notes_access_threshold,
         entries_count,
         cancelled_at,
         cancellation_reason,
@@ -903,6 +905,21 @@ export class ExpeditionService {
       for (const s of recurringSponsors) expeditionSponsorIds.add(s.sponsor_id);
       const expeditionSponsorsCount = expeditionSponsorIds.size;
 
+      // Calculate viewer's cumulative sponsorship for this expedition
+      let viewerCumulativeSponsored = 0;
+      if (explorerId && explorerId !== expedition.author_id) {
+        const viewerSponsorships = allSponsorships.filter(
+          (s) =>
+            s.sponsor_id === explorerId &&
+            (s.expedition_public_id === public_id ||
+              s.type?.toLowerCase() === 'subscription'),
+        );
+        viewerCumulativeSponsored = viewerSponsorships.reduce(
+          (sum, s) => sum + s.amount,
+          0,
+        );
+      }
+
       const response: IExpeditionGetByIdResponse = {
         id: public_id,
         title,
@@ -924,6 +941,8 @@ export class ExpeditionService {
         goal: integerToDecimal(goal ?? 0),
         raised: oneTimeTotal,
         sponsorsCount: expeditionSponsorsCount,
+        notesAccessThreshold: integerToDecimal(notes_access_threshold ?? 0),
+        viewerCumulativeSponsored: integerToDecimal(viewerCumulativeSponsored),
         entriesCount: entries.length,
         recurringStats: {
           activeSponsors: activeRecurring.length,
@@ -1121,6 +1140,17 @@ export class ExpeditionService {
         );
       }
 
+      // Notes access threshold requires Explorer Pro
+      if (
+        payload.notesAccessThreshold &&
+        payload.notesAccessThreshold > 0 &&
+        !matchRoles(userRole, [UserRole.CREATOR])
+      ) {
+        throw new ServiceBadRequestException(
+          'Setting a notes access threshold requires Explorer Pro',
+        );
+      }
+
       // create an expedition
       const expedition = await this.prisma.expedition.create({
         data: {
@@ -1145,6 +1175,9 @@ export class ExpeditionService {
             ? JSON.stringify(payload.routeGeometry)
             : null,
           goal: payload.goal ? Math.round(payload.goal * 100) : 0,
+          notes_access_threshold: payload.notesAccessThreshold
+            ? Math.round(payload.notesAccessThreshold * 100)
+            : 0,
           author_id: explorerId,
         },
         select: {
@@ -1295,6 +1328,15 @@ export class ExpeditionService {
           );
         }
         updateData.goal = Math.round(goal * 100);
+      }
+      const notesAccessThreshold = (payload as any).notesAccessThreshold;
+      if (notesAccessThreshold !== undefined) {
+        if (notesAccessThreshold > 0 && !matchRoles(userRole, [UserRole.CREATOR])) {
+          throw new ServiceBadRequestException(
+            'Setting a notes access threshold requires Explorer Pro',
+          );
+        }
+        updateData.notes_access_threshold = Math.round(notesAccessThreshold * 100);
       }
       if (category !== undefined) {
         updateData.category = category;
