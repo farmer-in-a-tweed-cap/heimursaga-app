@@ -290,9 +290,11 @@ export function BookmarksPage() {
                 key={expedition.id}
                 id={expedition.id}
                 title={expedition.title}
+                description={expedition.description || ''}
                 explorerUsername={expedition.explorer?.username || 'Unknown'}
                 imageUrl={expedition.coverPhoto || ''}
                 location=""
+                startDate={expedition.startDate}
                 status={(expedition.status as 'active' | 'completed' | 'planned' | 'paused') || 'active'}
                 daysElapsed={calculateDaysElapsed(expedition.startDate, expedition.endDate, expedition.status)}
                 journalEntries={expedition.entriesCount || 0}

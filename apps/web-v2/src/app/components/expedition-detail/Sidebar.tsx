@@ -173,7 +173,6 @@ export function Sidebar({
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Est. End:</span> {formatDate(expedition.estimatedEndDate)}</div>
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Duration:</span> {expedition.daysActive} / {totalDuration || '?'} days</div>
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Privacy:</span> {expedition.privacy === 'off-grid' ? 'Off-Grid' : expedition.privacy === 'private' ? 'Private' : 'Public'}</div>
-          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Comments:</span> {expedition.commentsEnabled ? 'Enabled' : 'Disabled'}</div>
         </div>
       </div>
 

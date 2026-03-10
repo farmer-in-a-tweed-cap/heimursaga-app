@@ -392,9 +392,11 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
             <ExpeditionCardLandscape
               id="expedition-landscape-1"
               title="Cycling the Silk Road"
+              description="A solo cycling journey through the ancient trade routes of Central Asia"
               explorerUsername="sarah_wanderer"
               imageUrl="https://images.unsplash.com/photo-1662454456011-24874d23c389?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzaWxrJTIwcm9hZCUyMGN5Y2xpbmclMjBhZHZlbnR1cmV8ZW58MXx8fHwxNzY4MzE0MTU4fDA&ixlib=rb-4.1.0&q=80&w=1080"
               location="Central Asia"
+              startDate="2026-01-15"
               status="active"
               daysElapsed={147}
               journalEntries={89}

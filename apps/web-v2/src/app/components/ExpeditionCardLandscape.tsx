@@ -1,5 +1,6 @@
-import { MapPin, FileText, Clock, User, TrendingUp, Bookmark } from "lucide-react";
+import { MapPin, User, Bookmark, Calendar } from "lucide-react";
 import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
+import { formatDate } from "@/app/utils/dateFormat";
 
 interface Waypoint {
   id: string;
@@ -33,6 +34,8 @@ interface ExpeditionCardLandscapeProps {
   status: "active" | "completed" | "planned" | "paused" | "cancelled";
   daysElapsed: number;
   journalEntries: number;
+  startDate?: string;
+  description?: string;
   fundingPercentage: number;
   backers: number;
   /** Whether sponsorships are enabled for this expedition */
@@ -55,6 +58,8 @@ export function ExpeditionCardLandscape({
   waypoints = [],
   journalEntriesData = [],
   status,
+  startDate,
+  description,
   daysElapsed,
   journalEntries,
   fundingPercentage,
@@ -99,7 +104,7 @@ export function ExpeditionCardLandscape({
   };
 
   return (
-    <div 
+    <div
       onClick={onClick}
       className="border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.99]"
     >
@@ -114,29 +119,39 @@ export function ExpeditionCardLandscape({
       </div>
 
       <div className="flex">
-        {/* Image */}
-        <div className="w-40 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] bg-[#b5bcc4] overflow-hidden">
+        {/* Cover Image */}
+        <div className="w-32 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] bg-[#b5bcc4] overflow-hidden relative">
           <ImageWithFallback
             src={imageUrl}
             alt={title}
-            className="w-full h-full object-cover"
-            style={{ objectFit: 'cover' }}
+            className="absolute inset-0 w-full h-full object-cover"
           />
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex flex-col">
+        <div className="flex-1 flex flex-col min-w-0">
           {/* Info */}
           <div className="px-3 py-2 flex-1 border-b-2 border-[#202020] dark:border-[#616161]">
-            <h3 className="font-bold text-sm dark:text-[#e5e5e5] mb-2 line-clamp-2">{title}</h3>
+            <h3 className="font-bold text-sm dark:text-[#e5e5e5] mb-1 line-clamp-1">{title}</h3>
+            {description && (
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1.5 line-clamp-1">{description}</p>
+            )}
             <div className="space-y-1 text-xs font-mono">
               <div className="flex items-center gap-1.5">
                 <User className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
                 <span className="truncate text-[#ac6d46]">{explorerUsername}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-[#616161] dark:text-[#b5bcc4]">
-                <MapPin className="w-3 h-3" />
-                <span className="truncate">{currentLocation}</span>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 text-[#616161] dark:text-[#b5bcc4]">
+                  <MapPin className="w-3 h-3" />
+                  <span className="truncate">{currentLocation}</span>
+                </div>
+                {startDate && (
+                  <div className="flex items-center gap-1.5 text-[#616161] dark:text-[#b5bcc4]">
+                    <Calendar className="w-3 h-3" />
+                    <span className="whitespace-nowrap">{formatDate(startDate)}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -146,23 +161,22 @@ export function ExpeditionCardLandscape({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4 font-mono text-xs">
                 <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
                   <span className="dark:text-[#e5e5e5] font-bold">{daysElapsed}</span>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">days</span>
                 </div>
                 <div className="flex items-center gap-1">
-                  <FileText className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
                   <span className="dark:text-[#e5e5e5] font-bold">{journalEntries}</span>
+                  <span className="text-[#616161] dark:text-[#b5bcc4]">entries</span>
                 </div>
                 {showSponsorshipStats && (
                   <>
                     <div className="flex items-center gap-1">
-                      <TrendingUp className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
                       <span className="text-[#ac6d46] font-bold">{fundingPercentage}%</span>
+                      <span className="text-[#616161] dark:text-[#b5bcc4]">funded</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <User className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
                       <span className="dark:text-[#e5e5e5] font-bold">{backers}</span>
+                      <span className="text-[#616161] dark:text-[#b5bcc4]">sponsors</span>
                     </div>
                   </>
                 )}
