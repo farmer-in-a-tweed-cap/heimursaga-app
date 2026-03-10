@@ -10,37 +10,25 @@ import { toast } from 'sonner';
 
 const DEFAULT_PREFERENCES: Record<string, boolean> = {
   email_sponsorship_received: true,
-  email_monthly_digest: true,
   email_new_entry_from_following: true,
   email_expedition_milestones: true,
-  email_platform_announcements: true,
 };
 
 const PREFERENCE_CONFIG = [
   {
     key: 'email_sponsorship_received',
     label: 'Sponsorship Received',
-    description: 'Get notified when someone sponsors your expedition',
-  },
-  {
-    key: 'email_monthly_digest',
-    label: 'Monthly Digest',
-    description: 'Receive a monthly summary of your activity',
+    description: 'Get notified when someone sponsors your expedition or sends a quick sponsor',
   },
   {
     key: 'email_new_entry_from_following',
     label: 'New Entries from Sponsoring',
-    description: 'Get entry delivery emails from creators you sponsor',
+    description: 'Get full journal entry delivery emails from explorers you sponsor',
   },
   {
     key: 'email_expedition_milestones',
     label: 'Expedition Milestones',
-    description: 'Get notified when your expeditions reach milestones',
-  },
-  {
-    key: 'email_platform_announcements',
-    label: 'Platform Announcements',
-    description: 'Receive important platform updates',
+    description: 'Get notified when your expeditions reach milestones (coming soon)',
   },
 ];
 
@@ -272,9 +260,8 @@ export function NotificationsSettingsPage() {
             <div className="p-4">
               <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">HOW IT WORKS</div>
               <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-2 leading-relaxed">
-                <div>Sponsorship alerts notify you when someone funds your expedition</div>
-                <div>Entry delivery emails go to sponsors of creators you support</div>
-                <div>Monthly digest summarizes your activity and engagement</div>
+                <div>Sponsorship alerts notify you when someone sponsors your expedition or sends a quick sponsor</div>
+                <div>Entry delivery emails send full journal entries from explorers you sponsor</div>
                 <div>Password resets, payment receipts, and verification emails always send</div>
               </div>
             </div>

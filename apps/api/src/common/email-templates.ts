@@ -11,6 +11,7 @@ export const EMAIL_TEMPLATES = {
   EXPEDITION_MILESTONE: 'expedition_milestone',
   MONTHLY_DIGEST: 'monthly_digest',
   SPONSORSHIP_AUTO_CANCELED: 'sponsorship_auto_canceled',
+  QUICK_SPONSOR_RECEIVED: 'quick_sponsor_received',
 };
 
 const APP_BASE_URL =
@@ -1282,6 +1283,76 @@ const templates: {
       return emailWrapper(
         content,
         `Your sponsorship of ${v.explorerName} has been automatically canceled`,
+      );
+    },
+  },
+  {
+    key: EMAIL_TEMPLATES.QUICK_SPONSOR_RECEIVED,
+    subject: (v: { sponsorUsername: string }) =>
+      `${v.sponsorUsername} sent you a $3 quick sponsor`,
+    html: (v: {
+      recipientUsername: string;
+      sponsorUsername: string;
+      entryTitle: string;
+      entryId: string;
+      expeditionName?: string;
+      expeditionId?: string;
+      netAmount: string;
+    }) => {
+      const content = `
+        ${emailSection(
+          `
+          <div style="font-size: 12px; font-weight: bold; color: #4676ac; margin-bottom: 8px; letter-spacing: 0.5px;">
+            QUICK SPONSOR RECEIVED
+          </div>
+          ${emailHeading(`$3.00 FROM ${v.sponsorUsername.toUpperCase()}`, 1)}
+        `,
+          '#f0f4f8',
+        )}
+
+        ${emailSection(`
+          <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            Hello <strong>${v.recipientUsername}</strong>,
+          </p>
+
+          <p style="margin: 0 0 16px 0; line-height: 1.6;">
+            <strong>${v.sponsorUsername}</strong> sent you a $3.00 quick sponsor for your journal entry <strong>${v.entryTitle}</strong>.
+          </p>
+
+          ${emailDataTable([
+            { label: 'SPONSOR', value: v.sponsorUsername },
+            { label: 'ENTRY', value: v.entryTitle },
+            { label: 'AMOUNT', value: '$3.00' },
+            { label: 'YOU RECEIVE', value: v.netAmount },
+            ...(v.expeditionName
+              ? [{ label: 'EXPEDITION', value: v.expeditionName }]
+              : []),
+            { label: 'DATE', value: new Date().toLocaleDateString() },
+          ])}
+
+          ${
+            v.expeditionName && v.expeditionId
+              ? emailInfoBox(
+                  `
+            This quick sponsor has been credited toward your expedition <strong>${v.expeditionName}</strong>.
+          `,
+                  'info',
+                )
+              : ''
+          }
+
+          ${emailButton(`${APP_BASE_URL}/entries/${v.entryId}`, 'VIEW ENTRY', 'primary')}
+          ${emailButton(`${APP_BASE_URL}/dashboard/sponsorships`, 'SPONSORSHIP DASHBOARD', 'secondary')}
+
+          <div style="font-size: 12px; color: #616161; margin-top: 24px; padding: 12px; background-color: #f5f5f5; border: 1px solid #b5bcc4; line-height: 1.6;">
+            <strong style="display: block; margin-bottom: 4px; color: #202020;">PAYOUT INFORMATION</strong>
+            Funds will be transferred to your connected payout method within 3-5 business days. View payout status in your <a href="${APP_BASE_URL}/settings/billing" style="color: #4676ac;">billing settings</a>.
+          </div>
+        `)}
+      `;
+      return emailWrapper(
+        content,
+        `${v.sponsorUsername} sent you a $3 quick sponsor`,
       );
     },
   },

@@ -68,7 +68,7 @@ export class EmailService {
   // Map email template keys to notification preference keys
   private readonly templatePreferenceMap: Record<string, string> = {
     [EMAIL_TEMPLATES.SPONSORSHIP_RECEIVED]: 'email_sponsorship_received',
-    [EMAIL_TEMPLATES.MONTHLY_DIGEST]: 'email_monthly_digest',
+    [EMAIL_TEMPLATES.QUICK_SPONSOR_RECEIVED]: 'email_sponsorship_received',
     [EMAIL_TEMPLATES.EXPEDITION_MILESTONE]: 'email_expedition_milestones',
   };
 

@@ -2417,10 +2417,12 @@ export class SponsorService {
         select: {
           id: true,
           public_id: true,
+          title: true,
           author_id: true,
           expedition: {
             select: {
               public_id: true,
+              title: true,
               status: true,
             },
           },
@@ -2429,6 +2431,8 @@ export class SponsorService {
               id: true,
               role: true,
               username: true,
+              email: true,
+              is_email_verified: true,
             },
           },
         },
@@ -2608,10 +2612,12 @@ export class SponsorService {
         select: {
           id: true,
           public_id: true,
+          title: true,
           author_id: true,
           expedition: {
             select: {
               public_id: true,
+              title: true,
               status: true,
             },
           },
@@ -2620,6 +2626,8 @@ export class SponsorService {
               id: true,
               role: true,
               username: true,
+              email: true,
+              is_email_verified: true,
             },
           },
         },
@@ -2691,8 +2699,10 @@ export class SponsorService {
     entry: {
       id: number;
       public_id: string;
+      title: string | null;
       author_id: number;
-      author: { id: number; username: string; role: string };
+      author: { id: number; username: string; role: string; email: string; is_email_verified: boolean };
+      expedition: { public_id: string; title: string | null; status: string | null } | null;
     };
     stripeCustomer: { id: string };
     stripePaymentMethodId: string;
@@ -2793,7 +2803,7 @@ export class SponsorService {
       return sponsorship;
     });
 
-    // Notify the entry author
+    // Notify the entry author (in-app)
     this.eventService.trigger<IUserNotificationCreatePayload>({
       event: EVENTS.NOTIFICATION_CREATE,
       data: {
@@ -2806,6 +2816,26 @@ export class SponsorService {
         sponsorshipCurrency: CurrencyCode.USD,
       },
     });
+
+    // Notify the entry author (email)
+    if (entry.author.is_email_verified) {
+      this.eventService.trigger<IEventSendEmail>({
+        event: EVENTS.SEND_EMAIL,
+        data: {
+          to: entry.author.email,
+          template: EMAIL_TEMPLATES.QUICK_SPONSOR_RECEIVED,
+          vars: {
+            recipientUsername: entry.author.username,
+            sponsorUsername: user.username,
+            entryTitle: entry.title || 'Untitled Entry',
+            entryId: entry.public_id,
+            expeditionName: expeditionPublicId ? entry.expedition?.title || undefined : undefined,
+            expeditionId: expeditionPublicId || undefined,
+            netAmount: '$2.70',
+          },
+        },
+      });
+    }
 
     return {
       success: true,
