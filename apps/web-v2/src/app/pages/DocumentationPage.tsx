@@ -361,11 +361,12 @@ export function DocumentationPage() {
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 Sponsorships are financial contributions that help fund explorer expeditions. All transactions are processed securely
                 through Stripe. Explorer Pro accounts can enable sponsorships on their expeditions, while all accounts can send sponsorships.
-                Sponsorships can be <strong>one-time</strong> or <strong>monthly recurring</strong>.
+                There are three ways to sponsor: <strong>one-time</strong> contributions, <strong>monthly recurring</strong> support,
+                and <strong>quick sponsors</strong> ($3 micro-sponsorships on individual journal entries).
               </p>
             </div>
             <div>
-              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Sending Sponsorships</h3>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Expedition Sponsorships</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
                 To sponsor an expedition:
               </p>
@@ -376,11 +377,11 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">2.</span>
-                  <span>Click "SPONSOR THIS EXPEDITION" on the expedition page</span>
+                  <span>Click &quot;SPONSOR EXPEDITION&quot; on the expedition or entry page</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">3.</span>
-                  <span>Choose a custom sponsorship tier or enter a custom amount (one-time or monthly)</span>
+                  <span>Choose a sponsorship tier or enter a custom amount (one-time or monthly, minimum $5)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">4.</span>
@@ -392,24 +393,49 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">6.</span>
-                  <span>Receive confirmation and appear in expedition sponsor leaderboard</span>
+                  <span>Receive confirmation and appear in the expedition sponsor leaderboard</span>
                 </li>
               </ol>
+            </div>
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Quick Sponsor</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Quick Sponsor is a $3 micro-sponsorship to show appreciation for a specific journal entry. Click
+                &quot;QUICK SPONSOR $3&quot; at the bottom of any entry by an Explorer Pro with Stripe connected.
+              </p>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac]">•</span>
+                  <span>Fixed amount of $3.00 (explorer receives $2.70 after fees)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac]">•</span>
+                  <span>If the entry belongs to a planned or active expedition, the $3 counts toward that expedition&apos;s funding</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac]">•</span>
+                  <span>Quick sponsors appear on the expedition sponsor leaderboard</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac]">•</span>
+                  <span>Your card is saved securely for future quick sponsors</span>
+                </li>
+              </ul>
             </div>
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Sponsor Benefits</h3>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span>Access to Expedition Notes (sponsor-only updates from the explorer)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-[#ac6d46]">•</span>
-                  <span>Leaderboard recognition on the expedition page</span>
+                  <span>Leaderboard recognition on the expedition page (all sponsors)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
                   <span>Direct connection with the explorer via sponsorship messages</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Access to Expedition Notes — explorers may set a minimum cumulative sponsorship threshold for Notes access. Check the sponsorship checkout page to see the threshold and your progress toward it</span>
                 </li>
               </ul>
             </div>
@@ -770,7 +796,7 @@ export function DocumentationPage() {
                 </div>
                 <div className="flex items-center gap-3 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <span className="text-[#ac6d46] font-bold w-32">SPONSOR-ONLY</span>
-                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible only to sponsors of the expedition (used for Expedition Notes, Pro only)</span>
+                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible only to qualifying sponsors who meet the expedition&apos;s cumulative sponsorship threshold (used for Expedition Notes, Pro only)</span>
                 </div>
                 <div className="flex items-center gap-3 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <span className="text-[#ac6d46] font-bold w-32">PRIVATE</span>

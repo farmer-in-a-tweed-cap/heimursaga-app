@@ -30,6 +30,9 @@ export function SponsorshipGuidePage() {
           <a href="#sending-sponsorships" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Sending Sponsorships
           </a>
+          <a href="#quick-sponsor" className="text-xs text-[#4676ac] hover:text-[#ac6d46] font-mono">
+            → Quick Sponsor
+          </a>
           <a href="#receiving-sponsorships" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Receiving Sponsorships
           </a>
@@ -75,8 +78,24 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">How It Works</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                Sponsorships are tied to specific expeditions, not general profiles. You can choose between
-                <strong>one-time</strong> contributions or <strong>monthly recurring</strong> support. When you sponsor an expedition:
+                There are three ways to support explorers on Heimursaga:
+              </p>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6 mb-3">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span><strong>One-time sponsorships</strong> — a single contribution to a specific expedition ($5+)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span><strong>Monthly recurring</strong> — ongoing monthly support for the explorer ($5+/month)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac] mt-1">•</span>
+                  <span><strong>Quick Sponsor</strong> — a $3 micro-sponsorship to show appreciation for a specific journal entry</span>
+                </li>
+              </ul>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                When you sponsor an expedition:
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
                 <li className="flex items-start gap-2">
@@ -85,11 +104,11 @@ export function SponsorshipGuidePage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">•</span>
-                  <span>You become part of that expedition's story and appear on the sponsor leaderboard</span>
+                  <span>You become part of that expedition&apos;s story and appear on the sponsor leaderboard</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">•</span>
-                  <span>You gain access to exclusive Expedition Notes from the explorer</span>
+                  <span>You may gain access to exclusive Expedition Notes once you meet the explorer&apos;s cumulative sponsorship threshold</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">•</span>
@@ -161,10 +180,40 @@ export function SponsorshipGuidePage() {
             </div>
 
             <div>
+              <h3 id="quick-sponsor" className="font-bold mb-2 text-[#202020] dark:text-white">Quick Sponsor</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Quick Sponsor is a fast, lightweight way to show appreciation for a specific journal entry. Look for
+                the &quot;QUICK SPONSOR $3&quot; button at the bottom of any entry by an Explorer Pro.
+              </p>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac] mt-1">•</span>
+                  <span><strong>Fixed $3.00 amount</strong> — the explorer receives $2.70 after platform and Stripe fees</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac] mt-1">•</span>
+                  <span><strong>Counts toward expedition funding</strong> — if the entry belongs to a planned or active expedition, the $3 is added to that expedition&apos;s raised total</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac] mt-1">•</span>
+                  <span><strong>Cumulative</strong> — multiple quick sponsors on the same expedition add up toward the Expedition Notes access threshold</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac] mt-1">•</span>
+                  <span><strong>Card saved for convenience</strong> — your payment method is saved securely via Stripe for future quick sponsors</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#4676ac] mt-1">•</span>
+                  <span><strong>Leaderboard inclusion</strong> — quick sponsors appear on the expedition sponsor leaderboard alongside one-time and recurring sponsors</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Payment Processing</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                All payments are processed through Stripe, a secure payment platform. Heimursaga never stores your 
-                credit card information. You can pay with major credit cards, debit cards, or other payment methods 
+                All payments are processed through Stripe, a secure payment platform. Heimursaga never stores your
+                credit card information. You can pay with major credit cards, debit cards, or other payment methods
                 supported by Stripe in your region.
               </p>
             </div>
@@ -368,10 +417,37 @@ export function SponsorshipGuidePage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Configuring Sponsorship Tiers</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 The platform provides preset tier names (Torchbearer, Trail Guide, Pathfinder, etc.) that you can
-                customize by setting the price within each tier's allowed range. You can enable or disable individual
+                customize by setting the price within each tier&apos;s allowed range. You can enable or disable individual
                 tiers to offer the right mix for your expedition. Default tiers are automatically created when you
                 upgrade to Explorer Pro.
               </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Setting an Expedition Notes Access Threshold</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Explorer Pro accounts can set a minimum cumulative sponsorship amount required for sponsors to access
+                Expedition Notes on each expedition. This allows you to keep Notes exclusive for more committed sponsors
+                while still welcoming all contributions on the leaderboard.
+              </p>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span>Set the threshold in the expedition builder under &quot;Expedition Notes Access Threshold&quot;</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span>The threshold is cumulative per expedition — multiple sponsorships (including quick sponsors) add up</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span>Leave it at $0 to grant Notes access to any sponsor regardless of amount</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span>Sponsors can see the threshold and their progress toward it on the sponsorship checkout page</span>
+                </li>
+              </ul>
             </div>
           </div>
         </section>
@@ -482,10 +558,11 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Managing Expectations</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Sponsors receive access to your Expedition Notes, leaderboard recognition, and (for monthly subscribers)
-                email delivery of new entries. Beyond these built-in benefits, you're not obligated to provide
-                additional perks. The core value sponsors receive is access to your authentic journey and contribution
-                to meaningful exploration.
+                All sponsors receive leaderboard recognition and (for monthly subscribers) email delivery of new entries.
+                Access to Expedition Notes is determined by the cumulative sponsorship threshold you set — sponsors who
+                meet the threshold unlock Notes for that expedition. Beyond these built-in benefits, you&apos;re not obligated
+                to provide additional perks. The core value sponsors receive is access to your authentic journey and
+                contribution to meaningful exploration.
               </p>
             </div>
 
