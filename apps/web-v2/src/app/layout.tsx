@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
-import { Eczar, Jost } from 'next/font/google';
+import { Lora, Jost } from 'next/font/google';
 import { ClientProviders } from './client-providers';
 import '@/styles/index.css';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
-const eczar = Eczar({
+const lora = Lora({
   subsets: ['latin'],
   weight: ['400', '500', '600', '700'],
-  variable: '--font-eczar',
+  variable: '--font-lora',
   display: 'swap',
 });
 
@@ -75,7 +75,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${eczar.variable} ${jost.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${lora.variable} ${jost.variable}`}>
       <head>
         <link rel="preconnect" href="https://api.mapbox.com" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
