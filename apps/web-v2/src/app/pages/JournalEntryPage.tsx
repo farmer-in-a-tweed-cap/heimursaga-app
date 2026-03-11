@@ -420,7 +420,7 @@ export function JournalEntryPage() {
                 </div>
 
                 {/* Title */}
-                <h1 className="text-2xl lg:text-3xl font-bold mb-4 drop-shadow-lg">{entry.title}</h1>
+                <h1 className="font-serif text-2xl lg:text-3xl font-normal mb-4 drop-shadow-lg" style={{ lineHeight: 1.15 }}>{entry.title}</h1>
 
                 {/* Avatar and Metadata Row */}
                 <div className="flex gap-4 items-center">
@@ -667,7 +667,7 @@ export function JournalEntryPage() {
               )}
               <div className="prose prose-sm max-w-none">
                 {entry.content.split('\n\n').map((paragraph, idx) => (
-                  <p key={idx} className="text-sm lg:text-base leading-relaxed text-[#202020] dark:text-[#e5e5e5] mb-4">
+                  <p key={idx} className="font-serif font-normal text-[15px] lg:text-base text-[#202020] dark:text-[#e5e5e5] mb-4" style={{ lineHeight: 1.85 }}>
                     {paragraph}
                   </p>
                 ))}

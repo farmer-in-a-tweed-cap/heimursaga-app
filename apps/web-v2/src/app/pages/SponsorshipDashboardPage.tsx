@@ -211,7 +211,7 @@ export function SponsorshipDashboardPage() {
                 <DollarSign className="w-5 h-5" />
               </div>
               <div className="p-6">
-                <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">${formatCurrency(totalSponsored)}</div>
+                <div className="text-3xl font-medium mb-2 dark:text-[#e5e5e5]">${formatCurrency(totalSponsored)}</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">All-time contributions</div>
               </div>
             </div>
@@ -222,7 +222,7 @@ export function SponsorshipDashboardPage() {
                 <RefreshCw className="w-5 h-5" />
               </div>
               <div className="p-6">
-                <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">{activeSubscriptions.length}</div>
+                <div className="text-3xl font-medium mb-2 dark:text-[#e5e5e5]">{activeSubscriptions.length}</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
                   ${formatCurrency(totalActiveSubscriptions)}/month recurring
                 </div>
@@ -235,7 +235,7 @@ export function SponsorshipDashboardPage() {
                 <Users className="w-5 h-5" />
               </div>
               <div className="p-6">
-                <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">{totalExpeditionsSupported}</div>
+                <div className="text-3xl font-medium mb-2 dark:text-[#e5e5e5]">{totalExpeditionsSupported}</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">Unique explorers</div>
               </div>
             </div>
@@ -246,7 +246,7 @@ export function SponsorshipDashboardPage() {
                 <CreditCard className="w-5 h-5" />
               </div>
               <div className="p-6">
-                <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">{allPaymentHistory.length}</div>
+                <div className="text-3xl font-medium mb-2 dark:text-[#e5e5e5]">{allPaymentHistory.length}</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">Total payments</div>
               </div>
             </div>
@@ -385,7 +385,7 @@ export function SponsorshipDashboardPage() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-4xl font-bold text-[#ac6d46] mb-1">
+                      <div className="text-4xl font-medium text-[#ac6d46] mb-1">
                         ${formatCurrency(sub.amount)}<span className="text-xl">/mo</span>
                       </div>
                       <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">Monthly subscription</div>
@@ -713,7 +713,7 @@ export function SponsorshipDashboardPage() {
                   <h4 className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4]">AVAILABLE BALANCE</h4>
                   <DollarSign className="w-5 h-5 text-[#ac6d46]" />
                 </div>
-                <div className="text-3xl font-bold text-[#ac6d46]">
+                <div className="text-3xl font-medium text-[#ac6d46]">
                   {balance.available.symbol}
                   {formatCurrency(balance.available.amount)}
                 </div>
@@ -725,7 +725,7 @@ export function SponsorshipDashboardPage() {
                   <h4 className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4]">PENDING</h4>
                   <TrendingUp className="w-5 h-5 text-[#4676ac]" />
                 </div>
-                <div className="text-3xl font-bold dark:text-[#e5e5e5]">
+                <div className="text-3xl font-medium dark:text-[#e5e5e5]">
                   {balance.pending.symbol}
                   {formatCurrency(balance.pending.amount)}
                 </div>
@@ -737,7 +737,7 @@ export function SponsorshipDashboardPage() {
                   <h4 className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4]">TOTAL SPONSORS</h4>
                   <Users className="w-5 h-5 text-[#616161] dark:text-[#b5bcc4]" />
                 </div>
-                <div className="text-3xl font-bold dark:text-[#e5e5e5]">{receivedSponsorships.length}</div>
+                <div className="text-3xl font-medium dark:text-[#e5e5e5]">{receivedSponsorships.length}</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">All time</div>
               </div>
             </div>
@@ -789,7 +789,7 @@ export function SponsorshipDashboardPage() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-[#ac6d46]">
+                        <div className="text-2xl font-medium text-[#ac6d46]">
                           ${formatCurrency(sponsor.amount)}
                           {sponsor.type === 'SUBSCRIPTION' && <span className="text-sm">/mo</span>}
                         </div>

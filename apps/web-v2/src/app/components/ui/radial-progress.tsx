@@ -54,7 +54,7 @@ export function RadialProgress({
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         {centerContent || (
           showValue && (
-            <span className="text-xl font-bold font-mono text-[#4676ac]">
+            <span className="text-xl font-medium font-mono text-[#4676ac]">
               {Math.round(value)}%
             </span>
           )

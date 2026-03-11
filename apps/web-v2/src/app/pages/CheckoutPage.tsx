@@ -502,7 +502,7 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
           )}
           <div className="border-t-2 border-[#b5bcc4] dark:border-[#616161] pt-3 flex justify-between items-center">
             <span className="font-bold dark:text-[#e5e5e5]">Total due today</span>
-            <span className="text-3xl font-bold text-[#ac6d46]">${formatCurrency(price)}</span>
+            <span className="text-3xl font-medium text-[#ac6d46]">${formatCurrency(price)}</span>
           </div>
         </div>
       </div>
@@ -648,13 +648,13 @@ export function CheckoutPage() {
               <div className="flex items-baseline gap-2 mb-6 pb-6 border-b-2 border-[#b5bcc4] dark:border-[#616161]">
                 {promoApplied ? (
                   <>
-                    <div className="text-4xl font-bold text-[#ac6d46]">
+                    <div className="text-4xl font-medium text-[#ac6d46]">
                       ${formatCurrency(effectivePrice)}
                     </div>
                     <div className="text-lg line-through text-[#b5bcc4]">${basePrice}</div>
                   </>
                 ) : (
-                  <div className="text-4xl font-bold text-[#ac6d46]">
+                  <div className="text-4xl font-medium text-[#ac6d46]">
                     ${basePrice}
                   </div>
                 )}

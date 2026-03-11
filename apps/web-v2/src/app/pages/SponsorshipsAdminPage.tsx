@@ -803,7 +803,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             <DollarSign className="w-5 h-5 text-[#ac6d46]" />
             <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">TOTAL REVENUE</div>
           </div>
-          <div className="text-3xl font-bold text-[#ac6d46]">${formatCurrency(totalRevenue)}</div>
+          <div className="text-3xl font-medium text-[#ac6d46]">${formatCurrency(totalRevenue)}</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">All-time</div>
         </div>
 
@@ -812,7 +812,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             <TrendingUp className="w-5 h-5 text-[#616161]" />
             <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">MONTHLY RECURRING</div>
           </div>
-          <div className="text-3xl font-bold dark:text-[#e5e5e5]">${formatCurrency(monthlyRecurring)}</div>
+          <div className="text-3xl font-medium dark:text-[#e5e5e5]">${formatCurrency(monthlyRecurring)}</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">{activeSubscribers} subscribers</div>
         </div>
 
@@ -821,7 +821,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             <Users className="w-5 h-5 text-[#616161]" />
             <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">TOTAL SPONSORS</div>
           </div>
-          <div className="text-3xl font-bold dark:text-[#e5e5e5]">{totalSponsors}</div>
+          <div className="text-3xl font-medium dark:text-[#e5e5e5]">{totalSponsors}</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">Lifetime</div>
         </div>
 
@@ -830,7 +830,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
             <Calendar className="w-5 h-5 text-[#616161]" />
             <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">AVAILABLE</div>
           </div>
-          <div className="text-2xl font-bold dark:text-[#e5e5e5]">
+          <div className="text-2xl font-medium dark:text-[#e5e5e5]">
             {balance?.available.symbol}
             {formatCurrency(balance?.available.amount || 0)}
           </div>
@@ -1555,7 +1555,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6">
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Available Balance</div>
-                    <div className="text-3xl font-bold text-[#ac6d46]">
+                    <div className="text-3xl font-medium text-[#ac6d46]">
                       {balance.available.symbol}
                       {formatCurrency(balance.available.amount)}
                     </div>
@@ -1563,7 +1563,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   </div>
                   <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6">
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Pending</div>
-                    <div className="text-3xl font-bold dark:text-[#e5e5e5]">
+                    <div className="text-3xl font-medium dark:text-[#e5e5e5]">
                       {balance.pending.symbol}
                       {formatCurrency(balance.pending.amount)}
                     </div>

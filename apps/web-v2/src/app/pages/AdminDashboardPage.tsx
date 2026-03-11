@@ -422,15 +422,15 @@ export function AdminDashboardPage() {
             <div className="grid grid-cols-3 gap-4">
               <div className="border-2 border-[#202020] dark:border-[#616161] p-4 bg-white dark:bg-[#2a2a2a]">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1 font-bold">PENDING REVIEW</div>
-                <div className="text-3xl font-bold text-[#ac6d46]">{stats?.pendingFlags ?? 0}</div>
+                <div className="text-3xl font-medium text-[#ac6d46]">{stats?.pendingFlags ?? 0}</div>
               </div>
               <div className="border-2 border-[#202020] dark:border-[#616161] p-4 bg-white dark:bg-[#2a2a2a]">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1 font-bold">TOTAL ENTRIES</div>
-                <div className="text-3xl font-bold text-[#4676ac]">{stats?.entries ?? 0}</div>
+                <div className="text-3xl font-medium text-[#4676ac]">{stats?.entries ?? 0}</div>
               </div>
               <div className="border-2 border-[#202020] dark:border-[#616161] p-4 bg-white dark:bg-[#2a2a2a]">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1 font-bold">BLOCKED EXPLORERS</div>
-                <div className="text-3xl font-bold text-[#616161] dark:text-[#b5bcc4]">{stats?.blockedExplorers ?? 0}</div>
+                <div className="text-3xl font-medium text-[#616161] dark:text-[#b5bcc4]">{stats?.blockedExplorers ?? 0}</div>
               </div>
             </div>
 

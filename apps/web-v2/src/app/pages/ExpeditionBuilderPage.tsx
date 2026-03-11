@@ -1876,16 +1876,16 @@ export function ExpeditionBuilderPage() {
           {/* Statistics - Responsive */}
           <div className="flex items-center gap-4 md:gap-6">
             <div className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-[#ac6d46]">{waypointCount}</div>
+              <div className="text-xl md:text-2xl font-medium text-[#ac6d46]">{waypointCount}</div>
               <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Waypoints</div>
             </div>
             <div className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{formatDistance(totalDistance, 1)}</div>
+              <div className="text-xl md:text-2xl font-medium text-[#4676ac]">{formatDistance(totalDistance, 1)}</div>
               <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Total Distance</div>
             </div>
             {totalTravelTime > 0 && routeMode !== 'straight' && (
               <div className="text-center">
-                <div className="text-xl md:text-2xl font-bold text-[#616161] dark:text-[#e5e5e5]">{formatTravelTime(totalTravelTime)}</div>
+                <div className="text-xl md:text-2xl font-medium text-[#616161] dark:text-[#e5e5e5]">{formatTravelTime(totalTravelTime)}</div>
                 <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Travel Time</div>
               </div>
             )}
@@ -1950,7 +1950,7 @@ export function ExpeditionBuilderPage() {
           <div>
             <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
               END DATE <span className="text-[#ac6d46]">*</span>
-              <span className="text-[#616161] dark:text-[#b5bcc4] ml-2 font-normal">or duration in days</span>
+              <span className="text-[#616161] dark:text-[#b5bcc4] ml-2 font-medium">or duration in days</span>
             </label>
             <div className="grid grid-cols-[1fr_auto_80px] gap-2 items-center">
               <DatePicker

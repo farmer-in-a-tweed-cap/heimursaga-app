@@ -77,7 +77,7 @@ function StatTile({
       <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1 font-mono">
         {label}
       </div>
-      <div className="text-2xl font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">
+      <div className="text-2xl font-medium text-[#202020] dark:text-[#e5e5e5] mb-1">
         {value}
       </div>
       <div className="text-xs text-[#616161] dark:text-[#b5bcc4] border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">

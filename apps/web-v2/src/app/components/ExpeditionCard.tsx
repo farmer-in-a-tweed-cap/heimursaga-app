@@ -208,7 +208,7 @@ export function ExpeditionCard({
 
       {/* Section: Title & Explorer */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] px-4 py-4 bg-white dark:bg-[#202020]">
-        <h3 className="font-bold leading-tight dark:text-[#e5e5e5] mb-2 line-clamp-2">{title}</h3>
+        <h3 className="font-serif font-semibold text-lg leading-tight dark:text-[#e5e5e5] mb-2 line-clamp-2">{title}</h3>
         <p className="text-sm font-mono mb-3">
           <span className="text-[#616161] dark:text-[#b5bcc4]">Explorer: </span>
           <button
@@ -218,7 +218,7 @@ export function ExpeditionCard({
             {explorer}
           </button>
         </p>
-        <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed line-clamp-3">{description}</p>
+        <p className="text-sm font-serif text-[#202020] dark:text-[#e5e5e5] line-clamp-3" style={{ lineHeight: 1.75 }}>{description}</p>
       </div>
 
       {/* Section: Key Stats Grid */}

@@ -670,7 +670,7 @@ export function ExplorerProfilePage() {
                       <div className="absolute top-full right-0 mt-1 hidden group-hover:block z-10">
                         <div className="bg-[#202020] text-white text-xs px-2 py-1 whitespace-nowrap border border-[#616161]">
                           <div className="font-bold">{stamp.name}</div>
-                          <div className="font-normal text-[#b5bcc4]">{stamp.description}</div>
+                          <div className="font-medium text-[#b5bcc4]">{stamp.description}</div>
                           <div className="font-mono text-[#616161]">{stamp.earnedDate}</div>
                         </div>
                       </div>
@@ -734,30 +734,30 @@ export function ExplorerProfilePage() {
         {/* Stats Bar */}
         <div className={`grid ${profile.creator ? 'grid-cols-3 md:grid-cols-6' : 'grid-cols-3 md:grid-cols-5'} border-t-2 border-b-2 border-[#202020] dark:border-[#616161]`}>
           <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-            <div className="text-lg md:text-2xl font-bold text-[#ac6d46]">{explorer.stats.totalExpeditions}</div>
+            <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">{explorer.stats.totalExpeditions}</div>
             <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Expeditions</div>
           </div>
           <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-            <div className="text-lg md:text-2xl font-bold dark:text-[#e5e5e5]">{explorer.stats.totalEntries}</div>
+            <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.totalEntries}</div>
             <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Entries</div>
           </div>
           {/* Sponsors stat - only show for Explorer Pro accounts */}
           {profile.creator && (
             <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-              <div className="text-lg md:text-2xl font-bold text-[#ac6d46]">{explorer.stats.totalSponsors}</div>
+              <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">{explorer.stats.totalSponsors}</div>
               <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Sponsors</div>
             </div>
           )}
           <div className="p-2 md:p-4 border-r border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-            <div className="text-lg md:text-2xl font-bold dark:text-[#e5e5e5]">{explorer.stats.followers}</div>
+            <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.followers}</div>
             <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Followers</div>
           </div>
           <div className="p-2 md:p-4 border-r border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-            <div className="text-lg md:text-2xl font-bold dark:text-[#e5e5e5]">{explorer.stats.countriesVisited}</div>
+            <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.countriesVisited}</div>
             <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Countries</div>
           </div>
           <div className="p-2 md:p-4 flex flex-col items-center justify-center">
-            <div className="text-lg md:text-2xl font-bold dark:text-[#e5e5e5]">{passportData.continents.length}</div>
+            <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{passportData.continents.length}</div>
             <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Continents</div>
           </div>
         </div>
@@ -1004,7 +1004,7 @@ export function ExplorerProfilePage() {
           {explorer.bio && (
             <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
               <h3 className="text-xs font-bold mb-2 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">BIOGRAPHY</h3>
-              <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed">{explorer.bio}</p>
+              <p className="text-sm font-serif text-[#202020] dark:text-[#e5e5e5]" style={{ lineHeight: 1.75 }}>{explorer.bio}</p>
             </div>
           )}
 
@@ -1262,7 +1262,7 @@ export function ExplorerProfilePage() {
             <div className="space-y-2">
               {explorer.completedExpeditions.map((expedition) => (
                 <div key={expedition.id} className="text-xs border border-[#b5bcc4] dark:border-[#3a3a3a] p-2">
-                  <div className="font-bold mb-1 dark:text-[#e5e5e5]">{expedition.title}</div>
+                  <div className="font-serif font-medium mb-1 dark:text-[#e5e5e5]">{expedition.title}</div>
                   <div className="text-[#616161] dark:text-[#b5bcc4] font-mono space-y-1">
                     <div>Completed: {expedition.completedDate}</div>
                     <div>Duration: {expedition.duration} days</div>

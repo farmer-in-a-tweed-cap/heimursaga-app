@@ -7,14 +7,16 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 
 const lora = Lora({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['400', '500', '600'],
+  style: ['normal', 'italic'],
   variable: '--font-lora',
   display: 'swap',
 });
 
 const jost = Jost({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['300', '400', '500', '600'],
+  style: ['normal', 'italic'],
   variable: '--font-jost',
   display: 'swap',
 });

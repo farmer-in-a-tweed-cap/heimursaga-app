@@ -50,7 +50,7 @@ export function SimplifiedEntryCard({
       <div className="flex-1 flex flex-col">
         {/* Title + Location */}
         <div className="border-b border-[#202020] dark:border-[#616161] px-4 py-3">
-          <h3 className="font-bold leading-tight mb-2 dark:text-[#e5e5e5]">
+          <h3 className="font-serif font-semibold leading-tight mb-2 dark:text-[#e5e5e5]">
             {title}
           </h3>
           <div className="flex items-center gap-2 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
@@ -63,7 +63,7 @@ export function SimplifiedEntryCard({
 
         {/* Excerpt */}
         <div className="px-4 py-3 flex-1 border-b border-[#202020] dark:border-[#616161]">
-          <p className="text-sm dark:text-[#e5e5e5] leading-relaxed">{excerpt}</p>
+          <p className="font-serif text-sm dark:text-[#e5e5e5]" style={{ lineHeight: 1.75 }}>{excerpt}</p>
         </div>
 
         {/* Stats + Actions Combined */}

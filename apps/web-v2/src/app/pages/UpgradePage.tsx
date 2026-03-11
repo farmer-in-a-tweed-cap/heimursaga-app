@@ -172,7 +172,7 @@ export function UpgradePage() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-4xl font-bold text-[#ac6d46]">
+                  <div className="text-4xl font-medium text-[#ac6d46]">
                     ${billingPeriod === 'monthly' ? monthlyPrice : annualPrice}
                   </div>
                   <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">

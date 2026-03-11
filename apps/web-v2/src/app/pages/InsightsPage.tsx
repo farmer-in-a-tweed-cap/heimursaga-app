@@ -78,7 +78,7 @@ function StatCard({
         <Icon className="w-4 h-4 text-[#616161] dark:text-[#b5bcc4]" />
         <div className="text-xs text-[#616161] dark:text-[#b5bcc4] uppercase">{label}</div>
       </div>
-      <div className={`text-2xl font-bold ${valueColor}`}>{value}</div>
+      <div className={`text-2xl font-medium ${valueColor}`}>{value}</div>
       {trend && (
         <div className="flex items-center justify-center gap-1 mt-1 text-xs">
           {trend === 'up' && <ArrowUpRight className="w-3 h-3 text-green-600" />}
@@ -669,7 +669,7 @@ export function InsightsPage() {
                     <div className="space-y-4">
                       <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-4 border border-[#b5bcc4] dark:border-[#3a3a3a]">
                         <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1">Available Balance</div>
-                        <div className="text-2xl font-bold text-[#ac6d46]">{formattedBalance}</div>
+                        <div className="text-2xl font-medium text-[#ac6d46]">{formattedBalance}</div>
                         {data.balance?.pending && data.balance.pending.amount > 0 && (
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
                             + {data.balance.pending.symbol}{formatCurrency(data.balance.pending.amount)} pending

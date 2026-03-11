@@ -105,7 +105,7 @@ export function HeroBanner({
         <div className="flex items-start justify-between gap-6">
           <div className="flex-1">
             <div className="mb-3">
-              <h1 className="text-2xl md:text-4xl font-bold">{expedition.title}</h1>
+              <h1 className="text-2xl md:text-4xl font-serif font-medium" style={{ lineHeight: 1.15 }}>{expedition.title}</h1>
               {(expedition.category || expedition.region) && (
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   {expedition.category && (
@@ -127,7 +127,7 @@ export function HeroBanner({
               <span>{formatDate(expedition.startDate)} to {formatDate(expedition.estimatedEndDate)}</span>
             </div>
 
-            <p className="text-sm text-white/90 max-w-4xl leading-relaxed line-clamp-3 md:line-clamp-none">{expedition.description}</p>
+            <p className="text-sm font-serif text-white/90 max-w-4xl line-clamp-3 md:line-clamp-none" style={{ lineHeight: 1.75 }}>{expedition.description}</p>
           </div>
 
           {/* Explorer Info Card - hidden on mobile to prevent overlap */}

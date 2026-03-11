@@ -15,7 +15,7 @@ function StatTile({ label, value, detail }: { label: string; value: React.ReactN
   return (
     <div className="border-2 border-[#b5bcc4] dark:border-[#3a3a3a] p-4 hover:border-[#ac6d46] dark:hover:border-[#ac6d46] transition-all">
       <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-1 font-mono">{label}</div>
-      <div className="text-2xl font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">{value}</div>
+      <div className="text-2xl font-medium text-[#202020] dark:text-[#e5e5e5] mb-1">{value}</div>
       <div className="text-xs text-[#616161] dark:text-[#b5bcc4] border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
         {detail}
       </div>

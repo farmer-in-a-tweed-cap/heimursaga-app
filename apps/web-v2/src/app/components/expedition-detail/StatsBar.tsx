@@ -28,13 +28,13 @@ export function StatsBar({
           const daysUntilStart = Math.max(0, Math.ceil((new Date(expedition.startDate).getTime() - now) / (1000 * 60 * 60 * 24)));
           return (
             <>
-              <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{daysUntilStart}</div>
+              <div className="text-xl md:text-2xl font-medium text-[#4676ac]">{daysUntilStart}</div>
               <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Days to Start</div>
             </>
           );
         })() : (
           <>
-            <div className="text-xl md:text-2xl font-bold dark:text-[#e5e5e5]">{expedition.daysActive}</div>
+            <div className="text-xl md:text-2xl font-medium dark:text-[#e5e5e5]">{expedition.daysActive}</div>
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Days Active</div>
           </>
         )}
@@ -42,7 +42,7 @@ export function StatsBar({
       {/* Raised - only show if sponsorships enabled */}
       {showSponsorshipSection && (
         <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-          <div className="text-xl md:text-2xl font-bold dark:text-[#e5e5e5]">
+          <div className="text-xl md:text-2xl font-medium dark:text-[#e5e5e5]">
             ${totalRaised >= 1000 ? `${(totalRaised / 1000).toFixed(1)}k` : totalRaised.toFixed(0)}
           </div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
@@ -53,20 +53,20 @@ export function StatsBar({
       {/* Sponsors - only show if sponsorships enabled */}
       {showSponsorshipSection && (
         <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-          <div className="text-xl md:text-2xl font-bold text-[#ac6d46]">{expedition.sponsors}</div>
+          <div className="text-xl md:text-2xl font-medium text-[#ac6d46]">{expedition.sponsors}</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Sponsors</div>
         </div>
       )}
       <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-        <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{expedition.totalWaypoints}</div>
+        <div className="text-xl md:text-2xl font-medium text-[#4676ac]">{expedition.totalWaypoints}</div>
         <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Waypoints</div>
       </div>
       <div className="p-2 md:p-4 border-r-2 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-        <div className="text-xl md:text-2xl font-bold text-[#ac6d46]">{expedition.totalEntries}</div>
+        <div className="text-xl md:text-2xl font-medium text-[#ac6d46]">{expedition.totalEntries}</div>
         <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Entries</div>
       </div>
       <div className="p-2 md:p-4 border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center">
-        <div className="text-xl md:text-2xl font-bold text-[#4676ac]">{formatDistance(totalRouteDistance, 1)}</div>
+        <div className="text-xl md:text-2xl font-medium text-[#4676ac]">{formatDistance(totalRouteDistance, 1)}</div>
         <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
           {(() => {
             const mode = apiExpedition?.routeMode;
