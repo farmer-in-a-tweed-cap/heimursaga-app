@@ -164,6 +164,27 @@ export class PayoutService {
           }
         : { enabled: false, schedule: { interval: 'manual' as const } };
 
+      // Fetch bank account details (only available with live keys)
+      let bankAccount: { bankName?: string; last4?: string; routingNumber?: string } | undefined;
+      if (payoutMethod?.stripe_account_id) {
+        try {
+          const externalAccounts = await this.stripeService.accounts.listExternalAccounts(
+            payoutMethod.stripe_account_id,
+            { limit: 1 },
+          );
+          const bank = externalAccounts.data.find((a) => a.object === 'bank_account') as any;
+          if (bank) {
+            bankAccount = {
+              bankName: bank.bank_name,
+              last4: bank.last4,
+              routingNumber: bank.routing_number,
+            };
+          }
+        } catch {
+          // Test mode keys cannot access external accounts — expected in development
+        }
+      }
+
       const response: IPayoutMethodGetResponse = {
         results,
         data: payoutMethod
@@ -184,6 +205,7 @@ export class PayoutService {
               currency,
               country,
               automaticPayouts,
+              bankAccount,
             }))
           : [],
       };
@@ -414,50 +436,45 @@ export class PayoutService {
         !!userId && matchRoles(userRole, [UserRole.CREATOR, UserRole.ADMIN]);
       if (!access) throw new ServiceForbiddenException();
 
-      const where = {
-        explorer_id: userId,
-        deleted_at: null,
-      } as Prisma.PayoutWhereInput;
-
-      // get payouts
-      const results = await this.prisma.payout.count({ where });
-      const data = await this.prisma.payout.findMany({
-        where,
+      // Query confirmed checkouts from our database (reliable, no Stripe API dependency)
+      const checkouts = await this.prisma.checkout.findMany({
+        where: {
+          sponsored_explorer_id: userId,
+          confirmed_at: { not: null },
+          deleted_at: null,
+        },
         select: {
           public_id: true,
-          status: true,
-          amount: true,
+          total: true,
           currency: true,
-          created_at: true,
-          arrival_date: true,
+          confirmed_at: true,
+          status: true,
         },
+        orderBy: { confirmed_at: 'desc' },
+        take: 50,
       });
 
-      const response: IPayoutGetResponse = {
-        results,
-        data: data.map(
-          ({
-            public_id: id,
-            amount,
-            created_at: createdAt,
-            currency,
-            status,
-            arrival_date,
-          }) => ({
-            id,
-            amount: integerToDecimal(amount),
-            status,
-            currency: {
-              code: currency,
-              symbol: CURRENCIES[currency]?.symbol || '$',
-            },
-            created: createdAt,
-            arrival: arrival_date,
-          }),
-        ),
-      };
+      const data = checkouts.map((c) => {
+        const currencyKey = c.currency || 'usd';
+        const curr = CURRENCIES[currencyKey] || { code: currencyKey.toUpperCase(), symbol: '$' };
 
-      return response;
+        return {
+          id: c.public_id,
+          amount: integerToDecimal(c.total),
+          status: c.status === 'refunded' ? 'REFUNDED' : 'COMPLETED',
+          currency: {
+            code: curr.code,
+            symbol: curr.symbol,
+          },
+          created: c.confirmed_at,
+          arrival: undefined,
+        };
+      });
+
+      return {
+        results: data.length,
+        data,
+      };
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

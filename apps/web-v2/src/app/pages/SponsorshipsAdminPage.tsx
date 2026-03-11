@@ -1535,6 +1535,21 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
           {/* PAYOUTS Tab */}
           {selectedView === 'payouts' && (
             <div className="space-y-6">
+              {/* Bank Account Reference */}
+              {payoutMethods.length > 0 && (
+                <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">PAYOUT ACCOUNT</div>
+                    <div className="text-sm font-bold dark:text-[#e5e5e5]">
+                      {payoutMethods[0].bankAccount?.last4
+                        ? `${payoutMethods[0].bankAccount.bankName || 'Bank'} ••••${payoutMethods[0].bankAccount.last4}`
+                        : payoutMethods[0].businessName || payoutMethods[0].email || 'Stripe Connect'}
+                    </div>
+                  </div>
+                  <span className={`inline-block w-2 h-2 ${payoutMethods[0].isVerified ? 'bg-[#598636]' : 'bg-[#ac6d46]'}`} />
+                </div>
+              )}
+
               {/* Balance */}
               {balance && (
                 <div className="grid grid-cols-2 gap-4">
@@ -1557,14 +1572,14 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 </div>
               )}
 
-              {/* Payout History */}
+              {/* Transfer History */}
               <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
                 <div className="bg-[#b5bcc4] dark:bg-[#3a3a3a] p-4 border-b-2 border-[#202020] dark:border-[#616161]">
-                  <h3 className="text-sm font-bold dark:text-[#e5e5e5]">PAYOUT HISTORY</h3>
+                  <h3 className="text-sm font-bold dark:text-[#e5e5e5]">TRANSFER HISTORY</h3>
                 </div>
                 <div className="p-4">
                   {payouts.length === 0 ? (
-                    <div className="text-center py-8 text-[#616161] dark:text-[#b5bcc4]">No payouts yet.</div>
+                    <div className="text-center py-8 text-[#616161] dark:text-[#b5bcc4]">No transfers yet.</div>
                   ) : (
                     <div className="space-y-3">
                       {payouts.map((payout) => (
@@ -1579,16 +1594,15 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                             </div>
                             <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
                               {new Date(payout.created).toLocaleDateString()}
-                              {payout.arrival && ` - Arrives ${new Date(payout.arrival).toLocaleDateString()}`}
                             </div>
                           </div>
                           <div>
                             <span
                               className={`px-2 py-1 text-xs font-bold ${
-                                payout.status === 'paid' ? 'bg-[#4676ac] text-white' : 'bg-[#ac6d46] text-white'
+                                payout.status === 'COMPLETED' ? 'bg-[#598636] text-white' : payout.status === 'REFUNDED' ? 'bg-[#994040] text-white' : 'bg-[#ac6d46] text-white'
                               }`}
                             >
-                              {payout.status.toUpperCase()}
+                              {payout.status}
                             </span>
                           </div>
                         </div>

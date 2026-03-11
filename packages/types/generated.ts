@@ -761,6 +761,11 @@ export interface IPayoutMethodBaseDetail {
       delayDays?: number;
     };
   };
+  bankAccount?: {
+    bankName?: string;
+    last4?: string;
+    routingNumber?: string;
+  };
 }
 
 export interface IPayoutMethodGetResponse {

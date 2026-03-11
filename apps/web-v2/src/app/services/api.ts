@@ -1406,6 +1406,10 @@ export interface PayoutMethod {
       delayDays?: number;
     };
   };
+  bankAccount?: {
+    bankName?: string;
+    last4?: string;
+  };
 }
 
 export interface PayoutMethodsResponse {
