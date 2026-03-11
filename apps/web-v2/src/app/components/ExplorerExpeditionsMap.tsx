@@ -633,42 +633,58 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
               ))}
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-2.5 text-xs mt-4 pt-3 border-t border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4]">
-              <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
-                  <span className="text-white text-[7px] font-bold -rotate-45">S</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 flex items-center justify-center shrink-0">
+                  <div className="w-[18px] h-[18px] rounded-full bg-[#ac6d46] border-2 border-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+                </div>
+                <span>Journal Entry</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 flex items-center justify-center shrink-0">
+                  <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+                    <span className="text-white text-[7px] font-bold -rotate-45">S</span>
+                  </div>
                 </div>
                 <span>Start</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 bg-[#4676ac] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
-                  <span className="text-white text-[7px] font-bold -rotate-45">E</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 flex items-center justify-center shrink-0">
+                  <div className="w-3.5 h-3.5 bg-[#4676ac] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+                    <span className="text-white text-[7px] font-bold -rotate-45">E</span>
+                  </div>
                 </div>
                 <span>End</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-[#4676ac] rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
-                  <span className="text-white text-[7px] font-bold -rotate-45">S</span>
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 flex items-center justify-center shrink-0">
+                  <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-[#4676ac] rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+                    <span className="text-white text-[7px] font-bold -rotate-45">S</span>
+                  </div>
                 </div>
                 <span>Round Trip Start</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-[#616161] border-2 border-white rotate-45" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 flex items-center justify-center shrink-0">
+                  <div className="w-3 h-3 bg-[#616161] border-2 border-white rotate-45" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+                </div>
                 <span>Waypoint</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#ac6d46] border-2 border-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
-                <span>Journal Entry</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-[#616161] border-2 border-white rotate-45 animate-[legend-pulse_2s_ease-out_infinite]" />
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 flex items-center justify-center shrink-0">
+                  <div className="w-3 h-3 bg-[#616161] border-2 border-white rotate-45 animate-[legend-pulse_2s_ease-out_infinite]" />
+                </div>
                 <span>Current Location</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-0.5 bg-[#ac6d46]" />
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 flex items-center justify-center shrink-0">
+                  <div className="w-5 h-0.5 bg-[#ac6d46]" />
+                </div>
                 <span>Completed Route</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-5 h-0.5 bg-[#202020] dark:bg-[#4676ac]" />
+              <div className="flex items-center gap-1.5">
+                <div className="w-5 flex items-center justify-center shrink-0">
+                  <div className="w-5 h-0.5 bg-[#202020] dark:bg-[#4676ac]" />
+                </div>
                 <span>Planned Route</span>
               </div>
             </div>

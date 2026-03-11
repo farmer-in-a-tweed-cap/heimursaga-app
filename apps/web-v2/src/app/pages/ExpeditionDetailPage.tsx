@@ -423,7 +423,7 @@ export function ExpeditionDetailPage() {
         } else if (entryIds.length === 1) {
           // Single-entry circle marker
           Object.assign(wrapper.style, {
-            width: '24px', height: '24px', borderRadius: '50%',
+            width: '22px', height: '22px', borderRadius: '50%',
             backgroundColor: '#ac6d46', border: '2px solid white',
             boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',

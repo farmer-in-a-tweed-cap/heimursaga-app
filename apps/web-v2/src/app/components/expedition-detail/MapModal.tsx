@@ -138,41 +138,57 @@ export function MapModal({
             <div className="font-bold mb-2 dark:text-[#e5e5e5]">MAP LEGEND:</div>
             <div className="space-y-2.5 dark:text-[#e5e5e5]">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#ac6d46] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
-                  <span className="text-white text-[8px] font-bold -rotate-45">S</span>
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-[18px] h-[18px] bg-[#ac6d46] border-2 border-white rounded-full" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}></div>
+                </div>
+                <span>Journal Entry</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-4 h-4 bg-[#ac6d46] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                    <span className="text-white text-[8px] font-bold -rotate-45">S</span>
+                  </div>
                 </div>
                 <span>Start</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#4676ac] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
-                  <span className="text-white text-[8px] font-bold -rotate-45">E</span>
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-4 h-4 bg-[#4676ac] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                    <span className="text-white text-[8px] font-bold -rotate-45">E</span>
+                  </div>
                 </div>
                 <span>End</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-[#ac6d46] border-2 border-[#4676ac] rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
-                  <span className="text-white text-[8px] font-bold -rotate-45">S</span>
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-4 h-4 bg-[#ac6d46] border-2 border-[#4676ac] rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                    <span className="text-white text-[8px] font-bold -rotate-45">S</span>
+                  </div>
                 </div>
                 <span>Round Trip Start</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 bg-[#616161] border-2 border-white rotate-45" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}></div>
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-3.5 h-3.5 bg-[#616161] border-2 border-white rotate-45" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}></div>
+                </div>
                 <span>Waypoint</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-white rounded-full" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}></div>
-                <span>Journal Entry</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 bg-[#616161] border-2 border-white rotate-45 animate-[legend-pulse_2s_ease-out_infinite]"></div>
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-3.5 h-3.5 bg-[#616161] border-2 border-white rotate-45 animate-[legend-pulse_2s_ease-out_infinite]"></div>
+                </div>
                 <span>Current Location</span>
               </div>
               <div className="flex items-center gap-2 mt-1 pt-1.5 border-t border-[#b5bcc4] dark:border-[#3a3a3a]">
-                <div className="w-6 h-0.5 bg-[#ac6d46]"></div>
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-6 h-0.5 bg-[#ac6d46]"></div>
+                </div>
                 <span>Completed Route</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-0.5 bg-[#202020] dark:bg-[#4676ac]"></div>
+                <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-6 h-0.5 bg-[#202020] dark:bg-[#4676ac]"></div>
+                </div>
                 <span>Planned Route</span>
               </div>
             </div>

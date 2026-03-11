@@ -290,8 +290,8 @@ export function addEntryMarkerDots(
       const el = document.createElement('div');
       el.className = 'banner-entry-marker';
       Object.assign(el.style, {
-        width: '16px',
-        height: '16px',
+        width: '22px',
+        height: '22px',
         borderRadius: '50%',
         backgroundColor: '#ac6d46',
         border: '2px solid white',

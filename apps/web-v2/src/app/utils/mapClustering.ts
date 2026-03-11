@@ -123,12 +123,12 @@ export function createSingleEntryMarker(
     container.style.justifyContent = 'center';
     container.style.color = 'white';
     container.style.fontWeight = 'bold';
-    container.style.fontSize = '10px';
+    container.style.fontSize = '11px';
     container.style.lineHeight = '1';
     container.textContent = String(position);
   } else {
-    container.style.width = '20px';
-    container.style.height = '20px';
+    container.style.width = '22px';
+    container.style.height = '22px';
     container.style.border = '2px solid white';
   }
 
