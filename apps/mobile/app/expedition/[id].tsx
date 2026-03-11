@@ -132,7 +132,7 @@ export default function ExpeditionDetailScreen() {
     return () => clearTimeout(timer);
   }, []);
 
-  const { data: expedition, loading, error } = useApi<ExpeditionDetail>(`/trips/${id}`);
+  const { data: expedition, loading, error } = useApi<ExpeditionDetail>(`/trips/${id}`, { refetchOnFocus: true });
 
   useEffect(() => {
     if (expedition?.bookmarked != null) setBookmarked(expedition.bookmarked);
@@ -404,13 +404,13 @@ export default function ExpeditionDetailScreen() {
                 onPress={() => router.push(`/explorer/${expedition.author!.username}`)}
                 style={styles.explorerRow}
               >
-                <Avatar size={28} name={expedition.author.username} imageUrl={expedition.author.picture} />
-                <View>
+                <Avatar size={32} name={expedition.author.username} imageUrl={expedition.author.picture} />
+                <View style={styles.explorerTextWrap}>
                   <Text style={styles.explorerName}>
-                    {expedition.author.name || expedition.author.username}
+                    {expedition.author.username}
                   </Text>
                   {expedition.description && (
-                    <Text style={styles.explorerBio} numberOfLines={1}>
+                    <Text style={styles.explorerBio} numberOfLines={2}>
                       {expedition.description}
                     </Text>
                   )}
@@ -451,11 +451,8 @@ export default function ExpeditionDetailScreen() {
 
         {/* Action bar */}
         <View style={[styles.actionBar, { borderBottomColor: colors.border, backgroundColor: colors.card }]}>
-          <Pressable style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}>
+          <Pressable style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]} onPress={() => router.push(`/sponsor/${id}`)}>
             <Text style={[styles.actionText, { color: brandColors.copper }]}>SPONSOR</Text>
-          </Pressable>
-          <Pressable style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}>
-            <Text style={[styles.actionText, { color: brandColors.blue }]}>FOLLOW</Text>
           </Pressable>
           {isOwner && (
             <Pressable style={styles.iconBtn} onPress={() => router.push(`/expedition/edit/${id}`)}>
@@ -725,7 +722,7 @@ export default function ExpeditionDetailScreen() {
                   <View style={styles.sponsorInfo}>
                     <Text style={[styles.sponsorName, { color: colors.text }]}>
                       {sponsor.isPublic && sponsor.user
-                        ? sponsor.user.name || sponsor.user.username
+                        ? sponsor.user.username
                         : 'Anonymous'}
                     </Text>
                     <View style={styles.sponsorMeta}>
@@ -815,17 +812,20 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   dateText: { fontSize: 12, fontFamily: mono, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
-  dateArrow: { color: brandColors.copper, fontSize: 11 },
+  dateArrow: { color: '#ffffff', fontSize: 11 },
   dayCount: { color: brandColors.copper, fontSize: 11, fontFamily: mono, fontWeight: '700', marginLeft: 'auto' },
   explorerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    paddingHorizontal: 14,
-    paddingBottom: 10,
+    marginHorizontal: 14,
+    marginBottom: 10,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    padding: 10,
   },
-  explorerName: { fontSize: 12, color: brandColors.copper, fontWeight: '700' },
-  explorerBio: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginTop: 1 },
+  explorerTextWrap: { flex: 1 },
+  explorerName: { fontFamily: mono, fontSize: 13, color: brandColors.copper, fontWeight: '700' },
+  explorerBio: { fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 2, lineHeight: 17 },
   statsWrapper: { borderTopWidth: borders.thick, borderBottomWidth: borders.thick },
   actionBar: {
     flexDirection: 'row',

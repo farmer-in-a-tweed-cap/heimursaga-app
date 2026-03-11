@@ -1,7 +1,16 @@
-import { createMockEventService, MockEventService } from '@/test/mocks/event.mock';
-import { createMockLogger, MockLogger } from '@/test/mocks/logger.mock';
-import { createMockPrismaService, MockPrismaService } from '@/test/mocks/prisma.mock';
-import { createMockStripeService, MockStripeService } from '@/test/mocks/stripe.mock';
+import {
+  MockEventService,
+  createMockEventService,
+} from '@/test/mocks/event.mock';
+import { MockLogger, createMockLogger } from '@/test/mocks/logger.mock';
+import {
+  MockPrismaService,
+  createMockPrismaService,
+} from '@/test/mocks/prisma.mock';
+import {
+  MockStripeService,
+  createMockStripeService,
+} from '@/test/mocks/stripe.mock';
 
 import { SponsorService } from './sponsor.service';
 
@@ -30,13 +39,15 @@ describe('SponsorService', () => {
 
   afterEach(() => jest.clearAllMocks());
 
-  function setupCheckoutMocks(overrides: {
-    selfSponsor?: boolean;
-    creatorRole?: string;
-    chargesEnabled?: boolean;
-    payoutsEnabled?: boolean;
-    currentlyDue?: string[];
-  } = {}) {
+  function setupCheckoutMocks(
+    overrides: {
+      selfSponsor?: boolean;
+      creatorRole?: string;
+      chargesEnabled?: boolean;
+      payoutsEnabled?: boolean;
+      currentlyDue?: string[];
+    } = {},
+  ) {
     const userId = 10;
     const creatorDbId = overrides.selfSponsor ? userId : 20;
     const creatorRole = overrides.creatorRole ?? 'creator';
@@ -364,13 +375,19 @@ describe('SponsorService', () => {
       prisma.$transaction.mockImplementation(async (cb: any) => {
         return cb({
           checkout: {
-            findFirstOrThrow: jest.fn().mockRejectedValue(new Error('not found')),
+            findFirstOrThrow: jest
+              .fn()
+              .mockRejectedValue(new Error('not found')),
           },
         });
       });
 
       await expect(
-        service.completeCheckout({ checkoutId: 100, userId: 10, creatorId: 20 }),
+        service.completeCheckout({
+          checkoutId: 100,
+          userId: 10,
+          creatorId: 20,
+        }),
       ).rejects.toThrow();
     });
   });

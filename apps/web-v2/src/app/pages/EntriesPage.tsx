@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { EntryCard } from '@/app/components/EntryCard';
-import { FileText } from 'lucide-react';
+import { FileText, Loader2 } from 'lucide-react';
 import { entryApi, type Entry } from '@/app/services/api';
 import { useAuth } from '@/app/context/AuthContext';
 import { EntryCardSkeleton, SKELETON_COUNT } from '@/app/components/skeletons/CardSkeletons';
@@ -20,6 +20,12 @@ export function EntriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bookmarkedEntries, setBookmarkedEntries] = useState<Set<string>>(new Set());
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [totalResults, setTotalResults] = useState(0);
 
   // Filter & search state
   const [activeFilter, setActiveFilter] = useState('all');
@@ -65,15 +71,42 @@ export function EntriesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setPage(1);
     try {
-      const data = await entryApi.getAll();
+      const data = await entryApi.getAll({ page: 1, limit: 20 });
       setApiEntries(data.data || []);
+      setTotalResults(data.results || 0);
+      setHasMore((data.data || []).length < (data.results || 0));
     } catch {
       setError('Failed to load entries. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Load more entries
+  const handleLoadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const data = await entryApi.getAll({ page: nextPage, limit: 20 });
+      const newEntries = data.data || [];
+      setApiEntries(prev => [...prev, ...newEntries]);
+      setPage(nextPage);
+      setHasMore(newEntries.length > 0 && (apiEntries.length + newEntries.length) < (data.results || 0));
+
+      // Update bookmark state for new entries
+      const newBookmarked = newEntries.filter(e => e.bookmarked).map(e => e.id);
+      if (newBookmarked.length > 0) {
+        setBookmarkedEntries(prev => new Set([...prev, ...newBookmarked]));
+      }
+    } catch (err) {
+      console.error('Error loading more entries:', err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMore, page, apiEntries.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -82,9 +115,20 @@ export function EntriesPage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await entryApi.getAll();
+        const data = await entryApi.getAll({ page: 1, limit: 20 });
         if (!cancelled) {
           setApiEntries(data.data || []);
+          setTotalResults(data.results || 0);
+          setHasMore((data.data || []).length < (data.results || 0));
+
+          // Initialize bookmark state from API data
+          const bookmarkedSet = new Set<string>();
+          (data.data || []).forEach(entry => {
+            if (entry.bookmarked) {
+              bookmarkedSet.add(entry.id);
+            }
+          });
+          setBookmarkedEntries(bookmarkedSet);
         }
       } catch {
         if (!cancelled) {
@@ -138,9 +182,7 @@ export function EntriesPage() {
     let result = transformedEntries;
 
     // Apply filter
-    if (activeFilter === 'most-viewed') {
-      result = [...result].sort((a, b) => b.views - a.views);
-    } else if (activeFilter === 'standard') {
+    if (activeFilter === 'standard') {
       result = result.filter(e => e.type === 'standard');
     } else if (activeFilter === 'photo-essay') {
       result = result.filter(e => e.type === 'photo-essay');
@@ -176,7 +218,7 @@ export function EntriesPage() {
             className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/explorers')
                 ? 'bg-[#4676ac] text-white'
-                : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
+                : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
             EXPLORERS
@@ -186,7 +228,7 @@ export function EntriesPage() {
             className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/expeditions')
                 ? 'bg-[#4676ac] text-white'
-                : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
+                : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
             EXPEDITIONS
@@ -196,7 +238,7 @@ export function EntriesPage() {
             className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/entries')
                 ? 'bg-[#4676ac] text-white'
-                : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
+                : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
             ENTRIES
@@ -233,7 +275,6 @@ export function EntriesPage() {
           <div className="flex flex-wrap gap-2 text-xs mt-4">
             {[
               { key: 'all', label: 'ALL' },
-              { key: 'most-viewed', label: 'MOST VIEWED' },
               { key: 'standard', label: 'STANDARD' },
               { key: 'photo-essay', label: 'PHOTO ESSAY' },
               { key: 'data-log', label: 'DATA LOG' },
@@ -241,7 +282,7 @@ export function EntriesPage() {
               <button
                 key={key}
                 onClick={() => setActiveFilter(key)}
-                className={`px-3 py-1.5 whitespace-nowrap transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                className={`px-3 py-1.5 whitespace-nowrap font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
                   activeFilter === key
                     ? 'bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
                     : 'border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] focus-visible:ring-[#616161]'
@@ -320,11 +361,15 @@ export function EntriesPage() {
         </div>
       )}
 
-      {/* Load More - TODO: Implement pagination */}
-      {!loading && !error && entries.length > 0 && (
+      {!loading && !error && entries.length > 0 && hasMore && (
         <div className="mt-6 text-center">
-          <button className="px-6 py-3 bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold">
-            LOAD MORE ENTRIES
+          <button
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+            className="px-6 py-3 bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+          >
+            {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isLoadingMore ? 'LOADING...' : 'LOAD MORE ENTRIES'}
           </button>
         </div>
       )}

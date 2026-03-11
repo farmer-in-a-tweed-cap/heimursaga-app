@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ExpeditionCard } from '@/app/components/ExpeditionCard';
-import { Compass } from 'lucide-react';
+import { Compass, Loader2 } from 'lucide-react';
 import { expeditionApi, type Expedition } from '@/app/services/api';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
 import { useAuth } from '@/app/context/AuthContext';
@@ -21,6 +21,12 @@ export function ExpeditionsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [bookmarkedExpeditions, setBookmarkedExpeditions] = useState<Set<string>>(new Set());
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [totalResults, setTotalResults] = useState(0);
 
   // Filter & search state
   const [activeFilter, setActiveFilter] = useState('all');
@@ -66,15 +72,42 @@ export function ExpeditionsPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setPage(1);
     try {
-      const data = await expeditionApi.getAll();
+      const data = await expeditionApi.getAll({ page: 1, limit: 20 });
       setApiExpeditions(data.data || []);
+      setTotalResults(data.results || 0);
+      setHasMore((data.data || []).length < (data.results || 0));
     } catch {
       setError('Failed to load expeditions. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
   }, []);
+
+  // Load more expeditions
+  const handleLoadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const data = await expeditionApi.getAll({ page: nextPage, limit: 20 });
+      const newExpeditions = data.data || [];
+      setApiExpeditions(prev => [...prev, ...newExpeditions]);
+      setPage(nextPage);
+      setHasMore(newExpeditions.length > 0 && (apiExpeditions.length + newExpeditions.length) < (data.results || 0));
+
+      // Update bookmark state for new expeditions
+      const newBookmarked = newExpeditions.filter(e => e.bookmarked && e.id).map(e => e.id!);
+      if (newBookmarked.length > 0) {
+        setBookmarkedExpeditions(prev => new Set([...prev, ...newBookmarked]));
+      }
+    } catch (err) {
+      console.error('Error loading more expeditions:', err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMore, page, apiExpeditions.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -83,9 +116,20 @@ export function ExpeditionsPage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await expeditionApi.getAll();
+        const data = await expeditionApi.getAll({ page: 1, limit: 20 });
         if (!cancelled) {
           setApiExpeditions(data.data || []);
+          setTotalResults(data.results || 0);
+          setHasMore((data.data || []).length < (data.results || 0));
+
+          // Initialize bookmark state from API data
+          const bookmarkedSet = new Set<string>();
+          (data.data || []).forEach(exp => {
+            if (exp.bookmarked && exp.id) {
+              bookmarkedSet.add(exp.id);
+            }
+          });
+          setBookmarkedExpeditions(bookmarkedSet);
         }
       } catch {
         if (!cancelled) {
@@ -156,7 +200,7 @@ export function ExpeditionsPage() {
     } else if (activeFilter === 'completed') {
       result = result.filter(e => e.status === 'completed');
     } else if (activeFilter === 'sponsored') {
-      result = result.filter(e => e.goal > 0);
+      result = result.filter(e => e.sponsorshipsEnabled && e.explorerIsPro && e.stripeConnected && e.raised < e.goal);
     }
 
     // Apply search
@@ -189,7 +233,7 @@ export function ExpeditionsPage() {
             className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/explorers')
                 ? 'bg-[#4676ac] text-white'
-                : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
+                : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
             EXPLORERS
@@ -199,7 +243,7 @@ export function ExpeditionsPage() {
             className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/expeditions')
                 ? 'bg-[#4676ac] text-white'
-                : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
+                : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
             EXPEDITIONS
@@ -209,7 +253,7 @@ export function ExpeditionsPage() {
             className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/entries')
                 ? 'bg-[#4676ac] text-white'
-                : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
+                : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
             ENTRIES
@@ -249,12 +293,12 @@ export function ExpeditionsPage() {
               { key: 'active', label: 'ACTIVE' },
               { key: 'planned', label: 'PLANNED' },
               { key: 'completed', label: 'COMPLETED' },
-              { key: 'sponsored', label: 'SPONSORED' },
+              { key: 'sponsored', label: 'SEEKING SPONSORS' },
             ].map(({ key, label }) => (
               <button
                 key={key}
                 onClick={() => setActiveFilter(key)}
-                className={`px-3 py-1.5 whitespace-nowrap transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                className={`px-3 py-1.5 whitespace-nowrap font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
                   activeFilter === key
                     ? 'bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
                     : 'border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] focus-visible:ring-[#616161]'
@@ -349,11 +393,15 @@ export function ExpeditionsPage() {
         </div>
       )}
 
-      {/* Load More - TODO: Implement pagination */}
-      {!loading && !error && expeditions.length > 0 && (
+      {!loading && !error && expeditions.length > 0 && hasMore && (
         <div className="mt-6 text-center">
-          <button className="px-6 py-3 bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold">
-            LOAD MORE EXPEDITIONS
+          <button
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+            className="px-6 py-3 bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+          >
+            {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isLoadingMore ? 'LOADING...' : 'LOAD MORE EXPEDITIONS'}
           </button>
         </div>
       )}

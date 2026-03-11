@@ -227,17 +227,25 @@ export class EntryService {
   async getEntries({
     query,
     session,
-  }: ISessionQuery<{ context?: string }>): Promise<IEntryGetAllResponse> {
+  }: ISessionQuery<{
+    context?: string;
+    page?: string;
+    limit?: string;
+  }>): Promise<IEntryGetAllResponse> {
     try {
       const { context } = query;
       const { explorerId, explorerRole } = session;
+
+      const parsedPage = Math.max(1, parseInt(query.page, 10) || 1);
+      const parsedLimit = Math.min(
+        50,
+        Math.max(1, parseInt(query.limit, 10) || 20),
+      );
 
       let where = {
         public_id: { not: null },
         is_draft: false, // Exclude drafts from public views
       } as Prisma.EntryWhereInput;
-
-      const take = 50;
 
       // filter based on role
       switch (explorerRole) {
@@ -292,7 +300,14 @@ export class EntryService {
           select: { followee_id: true },
         });
         const followedIds = follows.map((f) => f.followee_id);
-        if (followedIds.length === 0) return { data: [], results: 0 };
+        if (followedIds.length === 0)
+          return {
+            data: [],
+            results: 0,
+            page: parsedPage,
+            limit: parsedLimit,
+            totalPages: 0,
+          };
         where = { ...where, author_id: { in: followedIds } };
       }
 
@@ -379,7 +394,8 @@ export class EntryService {
           },
           created_at: true,
         },
-        take,
+        skip: (parsedPage - 1) * parsedLimit,
+        take: parsedLimit,
         orderBy:
           context === 'following'
             ? [{ updated_at: 'desc' }]
@@ -453,7 +469,10 @@ export class EntryService {
 
       const response: IEntryGetAllResponse = {
         data: responseData,
-        results: data.length,
+        results,
+        page: parsedPage,
+        limit: parsedLimit,
+        totalPages: Math.ceil(results / parsedLimit),
       };
 
       return response;

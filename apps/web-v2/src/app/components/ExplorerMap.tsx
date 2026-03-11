@@ -189,8 +189,8 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
       setLoading(true);
       try {
         const [entriesResponse, explorersResponse] = await Promise.all([
-          entryApi.getAll(context).catch(() => ({ data: [], results: 0 })),
-          explorerApi.getAll(context).catch(() => ({ data: [], results: 0 })),
+          entryApi.getAll(context ? { context } : undefined).catch(() => ({ data: [], results: 0 })),
+          explorerApi.getAll(context ? { context } : undefined).catch(() => ({ data: [], results: 0 })),
         ]);
 
         // Transform entries with coordinates
@@ -783,7 +783,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
                   {clickedExplorer.activeExpeditionLocation && (
                     <button
                       onClick={() => window.open(`/expedition/${clickedExplorer.activeExpeditionLocation!.expeditionId}`, '_blank')}
-                      className="flex-1 bg-[#4676ac] text-white py-2 px-3 hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-xs font-bold text-center whitespace-nowrap"
+                      className="flex-1 bg-[#ac6d46] text-white py-2 px-3 hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold text-center whitespace-nowrap"
                     >
                       VIEW EXPEDITION
                     </button>

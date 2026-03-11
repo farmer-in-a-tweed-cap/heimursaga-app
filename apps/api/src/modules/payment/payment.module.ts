@@ -14,11 +14,7 @@ import { PaymentService } from './payment.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule, StripeModule, EventModule],
-  controllers: [
-    PaymentMethodController,
-    PlanController,
-    PlansController,
-  ],
+  controllers: [PaymentMethodController, PlanController, PlansController],
   providers: [PaymentService],
   exports: [PaymentService],
 })

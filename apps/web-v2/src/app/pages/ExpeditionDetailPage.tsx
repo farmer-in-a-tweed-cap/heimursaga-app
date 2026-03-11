@@ -12,6 +12,7 @@ import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
 import { expeditionApi, explorerApi, type ExplorerProfile } from '@/app/services/api';
+import { ReportModal } from '@/app/components/ReportModal';
 import { formatDate } from '@/app/utils/dateFormat';
 import { formatCoords } from '@/app/utils/formatCoords';
 import { renderClusteredMarkers, computePopupPosition, type EntryCluster } from '@/app/utils/mapClustering';
@@ -105,6 +106,7 @@ export function ExpeditionDetailPage() {
   const [modalMapReady, setModalMapReady] = useState(false);
   const [pendingFlyTo, setPendingFlyTo] = useState<{ lat: number; lng: number } | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Mapbox map reference (modal)
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -947,6 +949,7 @@ export function ExpeditionDetailPage() {
             setIsMapModalOpen(true);
           }}
           explorerProfile={explorerProfile}
+          onReport={() => setReportOpen(true)}
         />
         <StatsBar
           expedition={expedition}
@@ -1077,6 +1080,15 @@ export function ExpeditionDetailPage() {
         onBookmarkEntry={handleBookmarkEntry}
         clusteredRef={clusteredRef}
       />
+
+      {expeditionId && (
+        <ReportModal
+          isOpen={reportOpen}
+          onClose={() => setReportOpen(false)}
+          contentType="expedition"
+          contentId={expeditionId}
+        />
+      )}
     </div>
   );
 }

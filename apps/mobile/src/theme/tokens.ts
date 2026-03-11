@@ -64,7 +64,7 @@ export const surfaces: Record<ThemeMode, SurfaceColors> = {
 
 // ─── Typography ───
 export const sans = 'Jost';
-export const heading = 'Eczar';
+export const heading = 'Lora';
 export const serif = heading;
 
 // Backward-compatible alias — all existing import sites continue working

@@ -111,7 +111,7 @@ export default function MenuScreen() {
 
   const handleItemPress = (item: MenuItem) => {
     if (item.label === 'Log Out') {
-      logout().then(() => router.replace('/(auth)/login'));
+      logout().then(() => router.replace('/(auth)/login')).catch(() => {});
       return;
     }
     if (item.route) {
@@ -132,7 +132,7 @@ export default function MenuScreen() {
               style={styles.userCard}
               onPress={() => { router.back(); router.push('/(tabs)/profile' as any); }}
             >
-              <Avatar size={48} name={user?.username ?? 'U'} pro={user?.is_pro} />
+              <Avatar size={48} name={user?.username ?? 'U'} pro={user?.is_pro} imageUrl={user?.avatar_url || user?.picture} />
               <View style={styles.userInfo}>
                 <Text style={[styles.userName, { color: colors.text }]}>
                   {user?.display_name ?? user?.username ?? 'Explorer'}
@@ -197,7 +197,7 @@ export default function MenuScreen() {
           <View style={styles.sectionContent}>
             <TouchableOpacity
               style={[styles.biometricRow, { borderColor: colors.border, backgroundColor: colors.card }]}
-              onPress={() => setBiometricEnabled(!biometricEnabled)}
+              onPress={() => { setBiometricEnabled(!biometricEnabled).catch(() => {}); }}
             >
               <Text style={[styles.menuLabel, { color: colors.text }]}>
                 Face ID / Touch ID Lock

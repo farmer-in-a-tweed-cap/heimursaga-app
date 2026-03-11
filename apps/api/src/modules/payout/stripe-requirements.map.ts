@@ -21,7 +21,8 @@ const REQUIREMENTS_MAP: Record<string, string> = {
   'individual.address.country': 'Home address',
 
   // Verification documents
-  'individual.verification.document': 'Identity document (e.g., passport or driver\'s license)',
+  'individual.verification.document':
+    "Identity document (e.g., passport or driver's license)",
   'individual.verification.additional_document': 'Additional identity document',
 
   // Business info
@@ -40,7 +41,7 @@ const REQUIREMENTS_MAP: Record<string, string> = {
   'company.verification.document': 'Business verification document',
 
   // Banking
-  'external_account': 'Bank account or debit card for payouts',
+  external_account: 'Bank account or debit card for payouts',
 
   // Terms of service
   'tos_acceptance.date': 'Terms of service acceptance',
@@ -58,7 +59,8 @@ const REQUIREMENTS_MAP: Record<string, string> = {
   'representative.address.state': 'Company representative address',
   'representative.address.postal_code': 'Company representative address',
   'representative.address.country': 'Company representative address',
-  'representative.verification.document': 'Company representative identity document',
+  'representative.verification.document':
+    'Company representative identity document',
 
   // Owners
   'owners.first_name': 'Business owner details',

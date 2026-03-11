@@ -22,8 +22,8 @@ import { config } from '@/config';
 import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { IUserNotificationCreatePayload } from '@/modules/notification';
-import { PrismaService } from '@/modules/prisma';
 import { mapRequirementsToFriendly } from '@/modules/payout/stripe-requirements.map';
+import { PrismaService } from '@/modules/prisma';
 import { IOnSponsorCheckoutCompleteEvent } from '@/modules/sponsor';
 
 import {
@@ -648,9 +648,7 @@ export class StripeService {
       where: { stripe_payout_id: stripePayoutId },
       data: {
         status: 'COMPLETED',
-        arrival_date: arrival_date
-          ? new Date(arrival_date * 1000)
-          : undefined,
+        arrival_date: arrival_date ? new Date(arrival_date * 1000) : undefined,
       },
     });
 
@@ -838,9 +836,7 @@ export class StripeService {
     const { id: chargeId, payment_intent, refunded, amount_refunded } = event;
 
     const paymentIntentId =
-      typeof payment_intent === 'string'
-        ? payment_intent
-        : payment_intent?.id;
+      typeof payment_intent === 'string' ? payment_intent : payment_intent?.id;
 
     this.logger.log(
       `Charge ${chargeId} refunded: ${amount_refunded} cents (full refund: ${refunded})`,
@@ -887,7 +883,10 @@ export class StripeService {
 
         if (targetExpedition) {
           // Clamp to 0 minimum to prevent negative values
-          const newRaised = Math.max(0, targetExpedition.raised - amountDollars);
+          const newRaised = Math.max(
+            0,
+            targetExpedition.raised - amountDollars,
+          );
           await this.prisma.expedition.update({
             where: { id: targetExpedition.id },
             data: { raised: newRaised },

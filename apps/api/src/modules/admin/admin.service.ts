@@ -6,7 +6,6 @@ import {
   IAdminExpeditionListResponse,
   IAdminExplorerListResponse,
   IAdminStats,
-  UserRole,
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
@@ -33,7 +32,14 @@ export class AdminService {
   ) {}
 
   private async assertAdmin(session: ISession) {
-    if (!session?.userId || session.userRole !== UserRole.ADMIN) {
+    if (!session?.userId) {
+      throw new ServiceForbiddenException('Admin access required');
+    }
+    const explorer = await this.prisma.explorer.findUnique({
+      where: { id: session.userId },
+      select: { admin: true },
+    });
+    if (!explorer?.admin) {
       throw new ServiceForbiddenException('Admin access required');
     }
   }
@@ -277,6 +283,7 @@ export class AdminService {
             username: true,
             email: true,
             role: true,
+            admin: true,
             blocked: true,
             created_at: true,
             profile: { select: { picture: true } },
@@ -292,6 +299,7 @@ export class AdminService {
           username: e.username,
           email: e.email,
           role: e.role,
+          admin: e.admin,
           blocked: e.blocked,
           createdAt: e.created_at,
           picture: e.profile?.picture

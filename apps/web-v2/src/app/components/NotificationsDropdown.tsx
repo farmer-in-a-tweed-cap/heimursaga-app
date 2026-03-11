@@ -171,7 +171,7 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAllAsRead}
-              className="px-2 py-0.5 bg-[#ac6d46] hover:bg-[#8a5738] text-white text-xs font-bold rounded-full transition-colors"
+              className="px-2 py-0.5 bg-[#616161] hover:bg-[#4a4a4a] text-white text-xs font-bold rounded-full transition-colors"
             >
               MARK ALL READ
             </button>

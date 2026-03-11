@@ -44,6 +44,16 @@ export class FlagCreateDto {
   @IsString()
   @IsOptional()
   flaggedCommentId?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  flaggedExpeditionId?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  flaggedExplorerId?: string;
 }
 
 export class FlagUpdateDto {

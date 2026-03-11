@@ -48,9 +48,7 @@ export class EmailService {
         ? emailFrom
         : `"Heimursaga" <${emailFrom}>`;
 
-      this.logger.log(
-        JSON.stringify({ to, from, subject }, null, 2),
-      );
+      this.logger.log(JSON.stringify({ to, from, subject }, null, 2));
 
       await this.transporter.sendMail({
         to,

@@ -362,8 +362,24 @@ export const expeditionApi = {
 };
 
 export const sponsorshipApi = {
-  checkout(data: { trip_id?: number; username?: string; amount: number; type: string; message?: string; show_name?: boolean; show_message?: boolean }) {
-    return api.post<ApiResponse<SponsorshipCheckout>>('/sponsor/checkout', data);
+  checkout(data: {
+    sponsorshipType: string;
+    creatorId: string;
+    sponsorshipTierId: string;
+    paymentMethodId?: string;
+    stripePaymentMethodId?: string;
+    oneTimePaymentAmount?: number;
+    customAmount?: number;
+    billingPeriod?: string;
+    message?: string;
+    isPublic?: boolean;
+    isMessagePublic?: boolean;
+    expeditionId?: string;
+  }) {
+    return api.post<SponsorshipCheckout>('/sponsor/checkout', data);
+  },
+  completeCheckout(paymentIntentId: string) {
+    return api.post<{ success: boolean }>('/sponsor/checkout/complete', { paymentIntentId });
   },
   getReceived() {
     return api.get<ApiResponse<Sponsorship[]>>('/sponsorships');
@@ -385,6 +401,37 @@ export const sponsorshipApi = {
   },
   deleteTier(id: number) {
     return api.delete<ApiResponse<void>>(`/sponsorship-tiers/${id}`);
+  },
+  quickSponsor(entryPublicId: string) {
+    return api.post<{ success?: boolean; sponsorshipId?: string; requiresPaymentMethod?: boolean; clientSecret?: string }>('/sponsor/quick', { entryPublicId });
+  },
+  confirmQuickSponsor(setupIntentId: string, entryPublicId: string) {
+    return api.post<{ success: boolean; sponsorshipId: string }>('/sponsor/quick/confirm', { setupIntentId, entryPublicId });
+  },
+};
+
+export interface PaymentMethodInfo {
+  id: string;
+  label: string;
+  last4: string;
+  isDefault?: boolean;
+}
+
+export const paymentMethodApi = {
+  getAll() {
+    return api.get<{ results: number; data: PaymentMethodInfo[] }>('/payment-methods');
+  },
+  createSetupIntent() {
+    return api.post<{ clientSecret: string }>('/payment-methods/setup-intent');
+  },
+  create(stripePaymentMethodId: string) {
+    return api.post<{ id: string }>('/payment-methods', { stripePaymentMethodId });
+  },
+  setDefault(paymentMethodId: string) {
+    return api.post<{ success: boolean }>(`/payment-methods/${paymentMethodId}/default`);
+  },
+  remove(paymentMethodId: string) {
+    return api.delete<{ success: boolean }>(`/payment-methods/${paymentMethodId}`);
   },
 };
 

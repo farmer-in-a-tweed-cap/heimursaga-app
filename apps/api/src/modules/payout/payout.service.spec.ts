@@ -1,6 +1,12 @@
-import { createMockLogger, MockLogger } from '@/test/mocks/logger.mock';
-import { createMockPrismaService, MockPrismaService } from '@/test/mocks/prisma.mock';
-import { createMockStripeService, MockStripeService } from '@/test/mocks/stripe.mock';
+import { MockLogger, createMockLogger } from '@/test/mocks/logger.mock';
+import {
+  MockPrismaService,
+  createMockPrismaService,
+} from '@/test/mocks/prisma.mock';
+import {
+  MockStripeService,
+  createMockStripeService,
+} from '@/test/mocks/stripe.mock';
 
 import { PayoutService } from './payout.service';
 
@@ -10,7 +16,11 @@ describe('PayoutService', () => {
   let stripe: MockStripeService;
   let logger: MockLogger;
 
-  const creatorSession = { userId: 1, userRole: 'creator', sid: 'test-sid' } as any;
+  const creatorSession = {
+    userId: 1,
+    userRole: 'creator',
+    sid: 'test-sid',
+  } as any;
   const userSession = { userId: 1, userRole: 'user', sid: 'test-sid' } as any;
 
   beforeEach(() => {
@@ -39,13 +49,19 @@ describe('PayoutService', () => {
         details_submitted: true,
         default_currency: 'usd',
         country: 'US',
-        requirements: { currently_due: [], past_due: [], pending_verification: [] },
+        requirements: {
+          currently_due: [],
+          past_due: [],
+          pending_verification: [],
+        },
         settings: { payouts: { schedule: { interval: 'manual' } } },
         business_profile: { name: 'Test Business' },
         individual: { email: 'test@example.com', phone: '+1234567890' },
       });
 
-      const result = await service.getPayoutMethods({ session: creatorSession } as any);
+      const result = await service.getPayoutMethods({
+        session: creatorSession,
+      } as any);
 
       expect(result.results).toBe(1);
       expect(result.data[0]).toEqual(
@@ -65,7 +81,9 @@ describe('PayoutService', () => {
     it('should return empty data', async () => {
       prisma.payoutMethod.findFirst.mockResolvedValue(null);
 
-      const result = await service.getPayoutMethods({ session: creatorSession } as any);
+      const result = await service.getPayoutMethods({
+        session: creatorSession,
+      } as any);
 
       expect(result.results).toBe(0);
       expect(result.data).toEqual([]);
@@ -83,7 +101,9 @@ describe('PayoutService', () => {
 
       stripe.accounts.retrieve.mockRejectedValue(new Error('Stripe error'));
 
-      const result = await service.getPayoutMethods({ session: creatorSession } as any);
+      const result = await service.getPayoutMethods({
+        session: creatorSession,
+      } as any);
 
       expect(result.results).toBe(1);
       expect(result.data[0].accountStatus).toBe('not_connected');
@@ -104,7 +124,9 @@ describe('PayoutService', () => {
         pending: [{ amount: 2500, currency: 'usd' }],
       });
 
-      const result = await service.getBalance({ session: creatorSession } as any);
+      const result = await service.getBalance({
+        session: creatorSession,
+      } as any);
 
       expect(result.available.amount).toBe(50);
       expect(result.pending.amount).toBe(25);
@@ -117,7 +139,9 @@ describe('PayoutService', () => {
     it('should return zero balance', async () => {
       prisma.payoutMethod.findFirst.mockResolvedValue(null);
 
-      const result = await service.getBalance({ session: creatorSession } as any);
+      const result = await service.getBalance({
+        session: creatorSession,
+      } as any);
 
       expect(result.available.amount).toBe(0);
       expect(result.pending.amount).toBe(0);
@@ -127,7 +151,9 @@ describe('PayoutService', () => {
   // ─── F1: getBalance — non-Creator → 403 ───
   describe('getBalance — F1: non-Creator throws 403', () => {
     it('should throw forbidden for USER role', async () => {
-      await expect(service.getBalance({ session: userSession } as any)).rejects.toThrow();
+      await expect(
+        service.getBalance({ session: userSession } as any),
+      ).rejects.toThrow();
     });
   });
 
@@ -279,7 +305,9 @@ describe('PayoutService', () => {
         },
       ]);
 
-      const result = await service.getPayouts({ session: creatorSession } as any);
+      const result = await service.getPayouts({
+        session: creatorSession,
+      } as any);
 
       expect(result.results).toBe(1);
       expect(result.data[0]).toEqual(
@@ -305,7 +333,10 @@ describe('PayoutService', () => {
       } as any);
 
       expect(result.payoutMethodId).toBe('pm_new');
-      expect(stripe.createAccount).toHaveBeenCalledWith({ country: 'US', userId: 1 });
+      expect(stripe.createAccount).toHaveBeenCalledWith({
+        country: 'US',
+        userId: 1,
+      });
     });
   });
 

@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ExternalLink, Globe, Twitter, Instagram, Youtube, Linkedin, Camera, AlertTriangle, Loader2 } from 'lucide-react';
+import { ExternalLink, Globe, Twitter, Instagram, Youtube, Linkedin, Camera, AlertTriangle, Loader2, ShieldAlert } from 'lucide-react';
+import { ReportModal } from '@/app/components/ReportModal';
 import { ExplorerExpeditionsMap } from '@/app/components/ExplorerExpeditionsMap';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { ExpeditionCard } from '@/app/components/ExpeditionCard';
@@ -81,6 +82,9 @@ export function ExplorerProfilePage() {
   const [explorerBookmarkLoading, setExplorerBookmarkLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [showAllExpeditions, setShowAllExpeditions] = useState(false);
+  const [showAllEntries, setShowAllEntries] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Handle bookmark explorer profile
   const handleBookmarkExplorer = async () => {
@@ -215,6 +219,19 @@ export function ExplorerProfilePage() {
         setEntries(entriesData.data || []);
         setExpeditions(expeditionsData.data || []);
         setFollowers(followersData.data || []);
+
+        // Initialize bookmark state from API data
+        const entryBookmarks = new Set<string>();
+        (entriesData.data || []).forEach(entry => {
+          if (entry.bookmarked) entryBookmarks.add(entry.id);
+        });
+        setBookmarkedEntries(entryBookmarks);
+
+        const expBookmarks = new Set<string>();
+        (expeditionsData.data || []).forEach(exp => {
+          if (exp.bookmarked) expBookmarks.add(exp.id);
+        });
+        setBookmarkedExpeditions(expBookmarks);
       } catch {
         if (!cancelled) {
           setError('Failed to load profile');
@@ -387,8 +404,8 @@ export function ExplorerProfilePage() {
         lastEntry: '',
       })),
 
-    // Recent expeditions (all statuses, limited to 5)
-    recentExpeditions: expeditions.slice(0, 5).map(e => ({
+    // Recent expeditions (all statuses, limited to 5 unless expanded)
+    recentExpeditions: (showAllExpeditions ? expeditions : expeditions.slice(0, 5)).map(e => ({
         id: (e as any).id || e.publicId,
         title: e.title,
         description: e.description || '',
@@ -416,8 +433,8 @@ export function ExplorerProfilePage() {
         entries: e.entriesCount || 0,
       })),
 
-    // Entries from API
-    recentEntries: entries.slice(0, 5).map(e => ({
+    // Entries from API (limited to 5 unless expanded)
+    recentEntries: (showAllEntries ? entries : entries.slice(0, 5)).map(e => ({
       id: e.id || e.publicId || '',
       title: e.title,
       expedition: e.expedition?.title || '',
@@ -789,7 +806,7 @@ export function ExplorerProfilePage() {
               className={`px-2 py-1.5 md:px-3 md:py-2 border-2 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:active:scale-100 text-xs md:text-sm font-bold font-mono gap-1.5 md:gap-2 flex items-center ${
                 isFollowing
                   ? 'bg-[#4676ac] border-[#4676ac] text-white hover:bg-[#365a87] hover:border-[#365a87] focus-visible:ring-[#4676ac]'
-                  : 'border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#4676ac] hover:border-[#4676ac] hover:text-white focus-visible:ring-[#4676ac]'
+                  : 'border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#616161] hover:border-[#616161] hover:text-white focus-visible:ring-[#616161]'
               }`}
             >
               {followLoading && <Loader2 size={14} className="md:w-4 md:h-4 animate-spin" />}
@@ -820,6 +837,16 @@ export function ExplorerProfilePage() {
               size="md"
               showLabels={true}
             />
+          )}
+          {/* Report button - non-own profiles only */}
+          {!isOwnProfile && (
+            <button
+              onClick={() => setReportOpen(true)}
+              className="p-2 text-[#b5bcc4] hover:text-[#994040] transition-colors"
+              title="Report this profile"
+            >
+              <ShieldAlert size={14} />
+            </button>
           )}
         </div>
 
@@ -953,9 +980,14 @@ export function ExplorerProfilePage() {
                 </div>
               )}
             </div>
-            <button className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm">
-              VIEW ALL EXPEDITIONS ({explorer.stats.totalExpeditions})
-            </button>
+            {explorer.stats.totalExpeditions > 5 && (
+              <button
+                onClick={() => setShowAllExpeditions(prev => !prev)}
+                className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
+              >
+                {showAllExpeditions ? 'SHOW FEWER' : `VIEW ALL EXPEDITIONS (${explorer.stats.totalExpeditions})`}
+              </button>
+            )}
           </div>
 
           {/* Recent Journal Entries */}
@@ -992,9 +1024,14 @@ export function ExplorerProfilePage() {
                 </div>
               )}
             </div>
-            <button className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm">
-              VIEW ALL ENTRIES ({explorer.stats.totalEntries})
-            </button>
+            {explorer.stats.totalEntries > 5 && (
+              <button
+                onClick={() => setShowAllEntries(prev => !prev)}
+                className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
+              >
+                {showAllEntries ? 'SHOW FEWER' : `VIEW ALL ENTRIES (${explorer.stats.totalEntries})`}
+              </button>
+            )}
           </div>
         </div>
 
@@ -1296,6 +1333,15 @@ export function ExplorerProfilePage() {
           </div>
         </div>
       </div>
+
+      {username && (
+        <ReportModal
+          isOpen={reportOpen}
+          onClose={() => setReportOpen(false)}
+          contentType="explorer"
+          contentId={username}
+        />
+      )}
     </div>
   );
 }

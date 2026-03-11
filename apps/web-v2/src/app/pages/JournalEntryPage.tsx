@@ -8,7 +8,8 @@ import { useAuth } from '@/app/context/AuthContext';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { InlineLocationMap } from '@/app/components/InlineLocationMap';
 import { QuickSponsorButton } from '@/app/components/QuickSponsorButton';
-import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, Share2 } from 'lucide-react';
+import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, Share2, ShieldAlert } from 'lucide-react';
+import { ReportModal } from '@/app/components/ReportModal';
 import { toast } from 'sonner';
 import { entryApi, commentApi, explorerApi, type Entry, type Comment } from '@/app/services/api';
 
@@ -47,6 +48,9 @@ export function JournalEntryPage() {
 
   // Bookmark state
   const [entryBookmarkLoading, setEntryBookmarkLoading] = useState(false);
+
+  // Report state
+  const [reportOpen, setReportOpen] = useState(false);
 
   // Handle bookmark entry
   const handleBookmarkEntry = async () => {
@@ -527,22 +531,31 @@ export function JournalEntryPage() {
                   </button>
                 </div>
               ) : (
-                <InteractionButtons
-                  type="entry"
-                  itemId={entry.id}
-                  expeditionId={entry.expeditionId}
-                  expeditionStatus={entry.expeditionStatus}
-                  sponsorshipsEnabled={entry.expeditionSponsorshipsEnabled}
-                  explorerIsPro={entry.explorerIsPro}
-                  stripeConnected={entry.stripeAccountConnected}
-                  initialBookmarks={entry.reactions.bookmark}
-                  isBookmarked={entry.bookmarked || false}
-                  isBookmarkLoading={entryBookmarkLoading}
-                  size="md"
-                  showLabels={true}
-                  onBookmark={handleBookmarkEntry}
-                  onSponsor={() => entry.expeditionId ? router.push(`/sponsor/${entry.expeditionId}`) : undefined}
-                />
+                <div className="flex items-center gap-2">
+                  <InteractionButtons
+                    type="entry"
+                    itemId={entry.id}
+                    expeditionId={entry.expeditionId}
+                    expeditionStatus={entry.expeditionStatus}
+                    sponsorshipsEnabled={entry.expeditionSponsorshipsEnabled}
+                    explorerIsPro={entry.explorerIsPro}
+                    stripeConnected={entry.stripeAccountConnected}
+                    initialBookmarks={entry.reactions.bookmark}
+                    isBookmarked={entry.bookmarked || false}
+                    isBookmarkLoading={entryBookmarkLoading}
+                    size="md"
+                    showLabels={true}
+                    onBookmark={handleBookmarkEntry}
+                    onSponsor={() => entry.expeditionId ? router.push(`/sponsor/${entry.expeditionId}`) : undefined}
+                  />
+                  <button
+                    onClick={() => setReportOpen(true)}
+                    className="p-2 text-[#b5bcc4] hover:text-[#994040] transition-colors"
+                    title="Report this entry"
+                  >
+                    <ShieldAlert size={14} />
+                  </button>
+                </div>
               )}
               <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
                 {entry.views.toLocaleString()} views
@@ -1196,7 +1209,7 @@ export function JournalEntryPage() {
               <div className="flex gap-2">
                 <Link
                   href={`/journal/${entry.explorerId}`}
-                  className="flex-1 py-2.5 bg-[#4676ac] text-white text-center hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-xs font-bold whitespace-nowrap"
+                  className="flex-1 py-2.5 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap"
                 >
                   VIEW JOURNAL
                 </Link>
@@ -1206,7 +1219,7 @@ export function JournalEntryPage() {
                   className={`px-4 py-2.5 border-2 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:active:scale-100 text-xs font-bold whitespace-nowrap flex items-center gap-2 ${
                     isFollowingExplorer
                       ? 'border-[#4676ac] bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
-                      : 'border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#ac6d46] hover:border-[#ac6d46] hover:text-white focus-visible:ring-[#ac6d46]'
+                      : 'border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#616161] hover:border-[#616161] hover:text-white focus-visible:ring-[#616161]'
                   }`}
                 >
                   {followLoading ? (
@@ -1363,6 +1376,15 @@ export function JournalEntryPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {apiEntry && (
+        <ReportModal
+          isOpen={reportOpen}
+          onClose={() => setReportOpen(false)}
+          contentType="entry"
+          contentId={apiEntry.id}
+        />
       )}
 
     </div>

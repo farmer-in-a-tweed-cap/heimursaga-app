@@ -245,7 +245,7 @@ export function ExpeditionManagementModal({
                 </div>
                 <button
                   onClick={() => router.push(`/expedition-builder/${expedition.id}`)}
-                  className="w-full px-4 py-3 bg-[#4676ac] text-white text-sm font-bold hover:bg-[#3a5f8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] flex items-center justify-center gap-2"
+                  className="w-full px-4 py-3 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-2"
                 >
                   EDIT DETAILS & WAYPOINTS
                 </button>

@@ -1,8 +1,14 @@
 import { PaymentTransactionType, StripeMetadataKey } from '@/common/enums';
 import { EVENTS } from '@/modules/event';
-import { createMockEventService, MockEventService } from '@/test/mocks/event.mock';
-import { createMockLogger, MockLogger } from '@/test/mocks/logger.mock';
-import { createMockPrismaService, MockPrismaService } from '@/test/mocks/prisma.mock';
+import {
+  MockEventService,
+  createMockEventService,
+} from '@/test/mocks/event.mock';
+import { MockLogger, createMockLogger } from '@/test/mocks/logger.mock';
+import {
+  MockPrismaService,
+  createMockPrismaService,
+} from '@/test/mocks/prisma.mock';
 
 import { StripeService } from './stripe.service';
 
@@ -35,7 +41,8 @@ describe('StripeService', () => {
         data: {
           object: {
             metadata: {
-              [StripeMetadataKey.TRANSACTION]: PaymentTransactionType.SPONSORSHIP,
+              [StripeMetadataKey.TRANSACTION]:
+                PaymentTransactionType.SPONSORSHIP,
               [StripeMetadataKey.CHECKOUT_ID]: '1',
               [StripeMetadataKey.USER_ID]: '10',
               [StripeMetadataKey.CREATOR_ID]: '20',
@@ -249,7 +256,8 @@ describe('StripeService', () => {
           retrieve: jest.fn().mockResolvedValue({
             metadata: {
               [StripeMetadataKey.CHECKOUT_ID]: '10',
-              [StripeMetadataKey.TRANSACTION]: PaymentTransactionType.SPONSORSHIP,
+              [StripeMetadataKey.TRANSACTION]:
+                PaymentTransactionType.SPONSORSHIP,
               [StripeMetadataKey.CREATOR_ID]: '20',
               [StripeMetadataKey.USER_ID]: '10',
             },
@@ -258,7 +266,9 @@ describe('StripeService', () => {
       };
 
       // Checkout has expedition_public_id
-      prisma.checkout.findFirst.mockResolvedValue({ expedition_public_id: 'exp_abc123' });
+      prisma.checkout.findFirst.mockResolvedValue({
+        expedition_public_id: 'exp_abc123',
+      });
       // First findFirst call: find expedition by public_id
       prisma.expedition.findFirst.mockResolvedValue({ id: 100 });
       prisma.expedition.update.mockResolvedValue({});
@@ -290,7 +300,8 @@ describe('StripeService', () => {
           retrieve: jest.fn().mockResolvedValue({
             metadata: {
               [StripeMetadataKey.CHECKOUT_ID]: '10',
-              [StripeMetadataKey.TRANSACTION]: PaymentTransactionType.SPONSORSHIP,
+              [StripeMetadataKey.TRANSACTION]:
+                PaymentTransactionType.SPONSORSHIP,
               [StripeMetadataKey.CREATOR_ID]: '20',
               [StripeMetadataKey.USER_ID]: '10',
             },
@@ -298,7 +309,9 @@ describe('StripeService', () => {
         },
       };
 
-      prisma.checkout.findFirst.mockResolvedValue({ expedition_public_id: null });
+      prisma.checkout.findFirst.mockResolvedValue({
+        expedition_public_id: null,
+      });
       prisma.expedition.findFirst.mockResolvedValue({ id: 100 });
       prisma.expedition.update.mockResolvedValue({});
 
@@ -331,7 +344,8 @@ describe('StripeService', () => {
           retrieve: jest.fn().mockResolvedValue({
             metadata: {
               [StripeMetadataKey.CHECKOUT_ID]: '10',
-              [StripeMetadataKey.TRANSACTION]: PaymentTransactionType.SPONSORSHIP,
+              [StripeMetadataKey.TRANSACTION]:
+                PaymentTransactionType.SPONSORSHIP,
               [StripeMetadataKey.CREATOR_ID]: '20',
               [StripeMetadataKey.USER_ID]: '10',
             },

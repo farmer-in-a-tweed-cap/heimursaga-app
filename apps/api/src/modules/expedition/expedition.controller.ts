@@ -38,9 +38,11 @@ export class ExpeditionController {
   async getExpeditions(
     @Session() session: ISession,
     @Query('context') context?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     return await this.expeditionService.getExpeditions({
-      query: { context },
+      query: { context, page, limit },
       session,
     });
   }

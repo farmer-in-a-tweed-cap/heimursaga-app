@@ -12,9 +12,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { UserRole } from '@repo/types';
 
 import { Public, Roles, Session } from '@/common/decorators';
-import { UserRole } from '@repo/types';
 import { ParamUsernameDto } from '@/common/dto';
 import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
@@ -39,9 +39,11 @@ export class ExplorerController {
   async getExplorers(
     @Session() session: ISession,
     @Query('context') context?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     return await this.explorerService.getExplorers({
-      query: { context },
+      query: { context, page, limit },
       session,
     });
   }

@@ -15,6 +15,7 @@ import { PUBLIC_ROUTE_KEY, ROLES_KEY } from '@/common/decorators';
 import { ServiceUnauthorizedException } from '@/common/exceptions';
 import { IRequest } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
+import { PrismaService } from '@/modules/prisma';
 
 import { AuthService } from './auth.service';
 
@@ -94,9 +95,12 @@ export class AuthGuard implements CanActivate {
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private prisma: PrismaService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
       const req: IRequest = context.switchToHttp().getRequest();
 
@@ -116,7 +120,19 @@ export class RolesGuard implements CanActivate {
         return true;
       }
 
-      // Read role from session (set by AuthGuard)
+      // For admin role, check the admin boolean field on the explorer
+      if (requiredRoles.includes(UserRole.ADMIN)) {
+        const userId = req.session.get(SESSION_KEYS.USER_ID);
+        if (!userId) throw new ForbiddenException();
+        const explorer = await this.prisma.explorer.findUnique({
+          where: { id: userId },
+          select: { admin: true },
+        });
+        if (!explorer?.admin) throw new ForbiddenException();
+        return true;
+      }
+
+      // For non-admin roles, check session role as before
       const userRole = req.session.get(SESSION_KEYS.USER_ROLE);
       const isAccess = requiredRoles.some((role) => userRole === role);
       if (!isAccess) throw new ForbiddenException();

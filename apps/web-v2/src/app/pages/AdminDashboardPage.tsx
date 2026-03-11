@@ -86,8 +86,24 @@ export function AdminDashboardPage() {
   const [explorersOffset, setExplorersOffset] = useState(0);
   const [explorersLoading, setExplorersLoading] = useState(false);
 
-  // Auth guard — only admin role can access
-  const isAdmin = !!user && user.role === 'admin';
+  // Confirmation modal
+  const [confirmModal, setConfirmModal] = useState<{
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  const showConfirm = (message: string, onConfirm: () => void) => {
+    setConfirmModal({ message, onConfirm });
+  };
+
+  // Bulk selection
+  const [selectedEntries, setSelectedEntries] = useState<Set<string>>(new Set());
+  const [selectedExpeditions, setSelectedExpeditions] = useState<Set<string>>(new Set());
+  const [selectedExplorers, setSelectedExplorers] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+
+  // Auth guard — only admins can access
+  const isAdmin = !!user && user.admin === true;
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -197,63 +213,155 @@ export function AdminDashboardPage() {
   }, [debouncedSearch]);
 
   // Actions
-  const handleReviewFlag = async (flagId: string, action: 'approve' | 'dismiss') => {
-    if (!confirm(`Are you sure you want to ${action === 'approve' ? 'approve and take action on' : 'dismiss'} this flag?`)) return;
-    try {
-      if (action === 'approve') {
-        await adminApi.updateFlag(flagId, { status: 'action_taken', actionTaken: 'content_deleted' });
-      } else {
-        await adminApi.updateFlag(flagId, { status: 'dismissed' });
+  const handleReviewFlag = (flagId: string, action: 'approve' | 'dismiss') => {
+    showConfirm(
+      `Are you sure you want to ${action === 'approve' ? 'approve and take action on' : 'dismiss'} this flag?`,
+      async () => {
+        try {
+          if (action === 'approve') {
+            await adminApi.updateFlag(flagId, { status: 'action_taken', actionTaken: 'content_deleted' });
+          } else {
+            await adminApi.updateFlag(flagId, { status: 'dismissed' });
+          }
+          loadFlags();
+          adminApi.getStats().then(setStats).catch(console.error);
+        } catch (e) {
+          console.error('Failed to update flag', e);
+        }
+      },
+    );
+  };
+
+  const handleDeleteEntry = (id: string) => {
+    showConfirm('Are you sure you want to delete this entry? This action soft-deletes the entry.', async () => {
+      try {
+        await adminApi.deleteEntry(id);
+        loadEntries();
+        adminApi.getStats().then(setStats).catch(console.error);
+      } catch (e) {
+        console.error('Failed to delete entry', e);
       }
-      loadFlags();
-      adminApi.getStats().then(setStats).catch(console.error);
-    } catch (e) {
-      console.error('Failed to update flag', e);
-    }
+    });
   };
 
-  const handleDeleteEntry = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this entry? This action soft-deletes the entry.')) return;
-    try {
-      await adminApi.deleteEntry(id);
-      loadEntries();
-      adminApi.getStats().then(setStats).catch(console.error);
-    } catch (e) {
-      console.error('Failed to delete entry', e);
-    }
+  const handleDeleteExpedition = (id: string) => {
+    showConfirm('Are you sure you want to delete this expedition? This action soft-deletes the expedition.', async () => {
+      try {
+        await adminApi.deleteExpedition(id);
+        loadExpeditions();
+        adminApi.getStats().then(setStats).catch(console.error);
+      } catch (e) {
+        console.error('Failed to delete expedition', e);
+      }
+    });
   };
 
-  const handleDeleteExpedition = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this expedition? This action soft-deletes the expedition.')) return;
-    try {
-      await adminApi.deleteExpedition(id);
-      loadExpeditions();
-      adminApi.getStats().then(setStats).catch(console.error);
-    } catch (e) {
-      console.error('Failed to delete expedition', e);
-    }
+  const handleBlockExplorer = (username: string) => {
+    showConfirm(`Are you sure you want to block ${username}? This will also soft-delete their entries and expeditions.`, async () => {
+      try {
+        await adminApi.blockExplorer(username);
+        loadExplorers();
+        adminApi.getStats().then(setStats).catch(console.error);
+      } catch (e) {
+        console.error('Failed to block explorer', e);
+      }
+    });
   };
 
-  const handleBlockExplorer = async (username: string) => {
-    if (!confirm(`Are you sure you want to block ${username}? This will also soft-delete their entries and expeditions.`)) return;
-    try {
-      await adminApi.blockExplorer(username);
-      loadExplorers();
-      adminApi.getStats().then(setStats).catch(console.error);
-    } catch (e) {
-      console.error('Failed to block explorer', e);
-    }
+  const handleUnblockExplorer = (username: string) => {
+    showConfirm(`Are you sure you want to unblock ${username}?`, async () => {
+      try {
+        await adminApi.unblockExplorer(username);
+        loadExplorers();
+        adminApi.getStats().then(setStats).catch(console.error);
+      } catch (e) {
+        console.error('Failed to unblock explorer', e);
+      }
+    });
   };
 
-  const handleUnblockExplorer = async (username: string) => {
-    if (!confirm(`Are you sure you want to unblock ${username}?`)) return;
-    try {
-      await adminApi.unblockExplorer(username);
-      loadExplorers();
-      adminApi.getStats().then(setStats).catch(console.error);
-    } catch (e) {
-      console.error('Failed to unblock explorer', e);
-    }
+  // Clear selections when switching views or reloading
+  useEffect(() => {
+    setSelectedEntries(new Set());
+    setSelectedExpeditions(new Set());
+    setSelectedExplorers(new Set());
+  }, [viewMode, debouncedSearch]);
+
+  // Bulk actions
+  const handleBulkDeleteEntries = () => {
+    if (selectedEntries.size === 0) return;
+    showConfirm(`Are you sure you want to delete ${selectedEntries.size} entries?`, async () => {
+      setBulkActionLoading(true);
+      try {
+        await Promise.all([...selectedEntries].map(id => adminApi.deleteEntry(id)));
+        setSelectedEntries(new Set());
+        loadEntries();
+        adminApi.getStats().then(setStats).catch(console.error);
+      } catch (e) {
+        console.error('Failed to bulk delete entries', e);
+      } finally {
+        setBulkActionLoading(false);
+      }
+    });
+  };
+
+  const handleBulkDeleteExpeditions = () => {
+    if (selectedExpeditions.size === 0) return;
+    showConfirm(`Are you sure you want to delete ${selectedExpeditions.size} expeditions?`, async () => {
+      setBulkActionLoading(true);
+      try {
+        await Promise.all([...selectedExpeditions].map(id => adminApi.deleteExpedition(id)));
+        setSelectedExpeditions(new Set());
+        loadExpeditions();
+        adminApi.getStats().then(setStats).catch(console.error);
+      } catch (e) {
+        console.error('Failed to bulk delete expeditions', e);
+      } finally {
+        setBulkActionLoading(false);
+      }
+    });
+  };
+
+  const handleBulkBlockExplorers = () => {
+    if (selectedExplorers.size === 0) return;
+    showConfirm(`Are you sure you want to block ${selectedExplorers.size} explorers?`, async () => {
+      setBulkActionLoading(true);
+      try {
+        await Promise.all([...selectedExplorers].map(username => adminApi.blockExplorer(username)));
+        setSelectedExplorers(new Set());
+        loadExplorers();
+        adminApi.getStats().then(setStats).catch(console.error);
+      } catch (e) {
+        console.error('Failed to bulk block explorers', e);
+      } finally {
+        setBulkActionLoading(false);
+      }
+    });
+  };
+
+  // Toggle helpers
+  const toggleEntry = (id: string) => {
+    setSelectedEntries(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleExpedition = (id: string) => {
+    setSelectedExpeditions(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleExplorer = (username: string) => {
+    setSelectedExplorers(prev => {
+      const next = new Set(prev);
+      next.has(username) ? next.delete(username) : next.add(username);
+      return next;
+    });
   };
 
   // Pagination helper
@@ -300,30 +408,27 @@ export function AdminDashboardPage() {
   const pendingFlagsCount = stats?.pendingFlags ?? 0;
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5] dark:bg-[#1a1a1a]">
+    <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Header */}
-      <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-[#202020] text-white">
-        <div className="max-w-[1600px] mx-auto px-6 py-12">
-          <div className="flex items-center gap-3 mb-4">
-            <Shield size={32} strokeWidth={2.5} className="text-[#ac6d46]" />
-            <h1 className="text-2xl font-bold">ADMIN DASHBOARD</h1>
-          </div>
+      <div className="bg-[#202020] text-white border-2 border-[#202020] dark:border-[#616161] mb-6 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Shield size={32} strokeWidth={2.5} className="text-[#ac6d46]" />
+          <h1 className="text-2xl font-bold">ADMIN DASHBOARD</h1>
+        </div>
 
-          <div className="text-xs text-[#b5bcc4] font-mono space-y-1">
-            <div>SYSTEM STATUS: OPERATIONAL • TIMESTAMP: {new Date().toISOString()}</div>
-            <div>
-              PENDING FLAGS: {pendingFlagsCount} •
-              TOTAL ENTRIES: {stats?.entries ?? '...'} •
-              TOTAL EXPEDITIONS: {stats?.expeditions ?? '...'} •
-              TOTAL EXPLORERS: {stats?.explorers ?? '...'}
-            </div>
+        <div className="text-xs text-[#b5bcc4] font-mono space-y-1">
+          <div>SYSTEM STATUS: OPERATIONAL • TIMESTAMP: {new Date().toISOString()}</div>
+          <div>
+            PENDING FLAGS: {pendingFlagsCount} •
+            TOTAL ENTRIES: {stats?.entries ?? '...'} •
+            TOTAL EXPEDITIONS: {stats?.expeditions ?? '...'} •
+            TOTAL EXPLORERS: {stats?.explorers ?? '...'}
           </div>
         </div>
       </div>
 
       {/* Navigation Tabs */}
-      <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a]">
-        <div className="max-w-[1600px] mx-auto px-6">
+      <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#2a2a2a] mb-6">
           <div className="flex gap-1">
             {([
               { key: 'flags' as const, icon: Flag, label: 'FLAGS & REPORTS', badge: pendingFlagsCount },
@@ -352,12 +457,10 @@ export function AdminDashboardPage() {
               </button>
             ))}
           </div>
-        </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020]">
-        <div className="max-w-[1600px] mx-auto px-6 py-4">
+      <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6 p-4">
           <div className="flex gap-3 items-center">
             <div className="flex-1 relative">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#616161]" strokeWidth={2.5} />
@@ -396,11 +499,10 @@ export function AdminDashboardPage() {
               ))}
             </div>
           )}
-        </div>
       </div>
 
       {/* Content Area */}
-      <div className="max-w-[1600px] mx-auto px-6 py-6">
+      <div>
         {/* FLAGS VIEW */}
         {viewMode === 'flags' && (
           <div className="space-y-4">
@@ -445,7 +547,10 @@ export function AdminDashboardPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {flags.map((flag) => (
+                {[...flags].sort((a, b) => {
+                  const order: Record<string, number> = { pending: 0, reviewed: 1, dismissed: 2, action_taken: 3 };
+                  return (order[a.status] ?? 9) - (order[b.status] ?? 9);
+                }).map((flag) => (
                   <div
                     key={flag.id}
                     className={`border-2 ${
@@ -477,7 +582,7 @@ export function AdminDashboardPage() {
                           <div className="mb-2">
                             <span className="text-xs text-[#616161] dark:text-[#b5bcc4]">TARGET: </span>
                             <span className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5]">
-                              {flag.flaggedContent.type.toUpperCase()} • {flag.flaggedContent.preview}
+                              {(flag.flaggedContent.type === 'post' ? 'ENTRY' : flag.flaggedContent.type.toUpperCase())} • {flag.flaggedContent.preview}
                             </span>
                           </div>
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono mb-2">
@@ -516,11 +621,17 @@ export function AdminDashboardPage() {
 
                           <div className="flex gap-2">
                             <Link
-                              href={`/${flag.flaggedContent.type === 'post' ? 'entry' : 'entry'}/${flag.flaggedContent.id}`}
+                              href={
+                                flag.flaggedContent.type === 'expedition'
+                                  ? `/expedition/${flag.flaggedContent.id}`
+                                  : flag.flaggedContent.type === 'explorer'
+                                  ? `/journal/${flag.flaggedContent.id}`
+                                  : `/entry/${flag.flaggedContent.id}`
+                              }
                               className="px-4 py-2 bg-[#4676ac] text-white hover:bg-[#365a8a] transition-colors text-xs font-bold flex items-center gap-2"
                             >
                               <Eye size={14} strokeWidth={2.5} />
-                              VIEW CONTENT
+                              VIEW {flag.flaggedContent.type.toUpperCase()}
                             </Link>
                             {flag.status === 'pending' && (
                               <>
@@ -565,10 +676,44 @@ export function AdminDashboardPage() {
                 NO ENTRIES FOUND
               </div>
             ) : (
-              <div className="overflow-x-auto border-2 border-[#202020] dark:border-[#616161]">
+              <>
+                {selectedEntries.size > 0 && (
+                  <div className="flex items-center gap-3 mb-3 px-4 py-3 bg-[#4676ac] text-white border-2 border-[#202020]">
+                    <span className="text-xs font-bold">{selectedEntries.size} SELECTED</span>
+                    <button
+                      onClick={handleBulkDeleteEntries}
+                      disabled={bulkActionLoading}
+                      className="px-3 py-1.5 bg-[#994040] text-white text-xs font-bold hover:bg-[#7a3333] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {bulkActionLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                      DELETE
+                    </button>
+                    <button
+                      onClick={() => setSelectedEntries(new Set())}
+                      className="px-3 py-1.5 bg-white/20 text-white text-xs font-bold hover:bg-white/30 transition-colors"
+                    >
+                      CLEAR
+                    </button>
+                  </div>
+                )}
+                <div className="overflow-x-auto border-2 border-[#202020] dark:border-[#616161]">
                 <table className="w-full bg-white dark:bg-[#2a2a2a]">
                   <thead>
                     <tr className="bg-[#202020] text-white">
+                      <th className="w-10 px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={entries.filter(e => !e.deletedAt).length > 0 && entries.filter(e => !e.deletedAt).every(e => selectedEntries.has(e.id))}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedEntries(new Set(entries.filter(en => !en.deletedAt).map(en => en.id)));
+                            } else {
+                              setSelectedEntries(new Set());
+                            }
+                          }}
+                          className="accent-[#4676ac]"
+                        />
+                      </th>
                       <th className="text-left px-4 py-3 text-xs font-bold">ENTRY ID</th>
                       <th className="text-left px-4 py-3 text-xs font-bold">TITLE</th>
                       <th className="text-left px-4 py-3 text-xs font-bold">EXPLORER</th>
@@ -582,13 +727,25 @@ export function AdminDashboardPage() {
                       <tr
                         key={entry.id}
                         className={`border-t-2 border-[#202020] dark:border-[#616161] ${
-                          index % 2 === 0 ? 'bg-white dark:bg-[#2a2a2a]' : 'bg-[#f5f5f5] dark:bg-[#1a1a1a]'
+                          entry.deletedAt
+                            ? 'opacity-40'
+                            : index % 2 === 0 ? 'bg-white dark:bg-[#2a2a2a]' : 'bg-[#f5f5f5] dark:bg-[#1a1a1a]'
                         }`}
                       >
+                        <td className="px-4 py-3">
+                          {!entry.deletedAt && (
+                            <input
+                              type="checkbox"
+                              checked={selectedEntries.has(entry.id)}
+                              onChange={() => toggleEntry(entry.id)}
+                              className="accent-[#4676ac]"
+                            />
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
                           {entry.id.slice(0, 8)}...
                         </td>
-                        <td className="px-4 py-3 text-sm font-bold text-[#202020] dark:text-[#e5e5e5]">
+                        <td className="px-4 py-3 text-sm font-bold text-[#202020] dark:text-[#e5e5e5] line-through decoration-1" style={entry.deletedAt ? {} : { textDecoration: 'none' }}>
                           {entry.title}
                         </td>
                         <td className="px-4 py-3 text-xs text-[#202020] dark:text-[#e5e5e5]">
@@ -608,21 +765,23 @@ export function AdminDashboardPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2 justify-center">
-                            <Link
-                              href={`/entry/${entry.id}`}
-                              className="p-2 bg-[#4676ac] text-white hover:bg-[#365a8a] transition-colors"
-                              title="View Entry"
-                            >
-                              <Eye size={14} strokeWidth={2.5} />
-                            </Link>
                             {!entry.deletedAt && (
-                              <button
-                                onClick={() => handleDeleteEntry(entry.id)}
-                                className="p-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-colors"
-                                title="Delete Entry"
-                              >
-                                <Trash2 size={14} strokeWidth={2.5} />
-                              </button>
+                              <>
+                                <Link
+                                  href={`/entry/${entry.id}`}
+                                  className="p-2 bg-[#4676ac] text-white hover:bg-[#365a8a] transition-colors"
+                                  title="View Entry"
+                                >
+                                  <Eye size={14} strokeWidth={2.5} />
+                                </Link>
+                                <button
+                                  onClick={() => handleDeleteEntry(entry.id)}
+                                  className="p-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-colors"
+                                  title="Delete Entry"
+                                >
+                                  <Trash2 size={14} strokeWidth={2.5} />
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -631,6 +790,7 @@ export function AdminDashboardPage() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
 
             <Pagination total={entriesTotal} offset={entriesOffset} setOffset={setEntriesOffset} loading={entriesLoading} />
@@ -649,10 +809,44 @@ export function AdminDashboardPage() {
                 NO EXPEDITIONS FOUND
               </div>
             ) : (
-              <div className="overflow-x-auto border-2 border-[#202020] dark:border-[#616161]">
+              <>
+                {selectedExpeditions.size > 0 && (
+                  <div className="flex items-center gap-3 mb-3 px-4 py-3 bg-[#4676ac] text-white border-2 border-[#202020]">
+                    <span className="text-xs font-bold">{selectedExpeditions.size} SELECTED</span>
+                    <button
+                      onClick={handleBulkDeleteExpeditions}
+                      disabled={bulkActionLoading}
+                      className="px-3 py-1.5 bg-[#994040] text-white text-xs font-bold hover:bg-[#7a3333] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {bulkActionLoading ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                      DELETE
+                    </button>
+                    <button
+                      onClick={() => setSelectedExpeditions(new Set())}
+                      className="px-3 py-1.5 bg-white/20 text-white text-xs font-bold hover:bg-white/30 transition-colors"
+                    >
+                      CLEAR
+                    </button>
+                  </div>
+                )}
+                <div className="overflow-x-auto border-2 border-[#202020] dark:border-[#616161]">
                 <table className="w-full bg-white dark:bg-[#2a2a2a]">
                   <thead>
                     <tr className="bg-[#202020] text-white">
+                      <th className="w-10 px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={expeditions.filter(e => !e.deletedAt).length > 0 && expeditions.filter(e => !e.deletedAt).every(e => selectedExpeditions.has(e.id))}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedExpeditions(new Set(expeditions.filter(ex => !ex.deletedAt).map(ex => ex.id)));
+                            } else {
+                              setSelectedExpeditions(new Set());
+                            }
+                          }}
+                          className="accent-[#4676ac]"
+                        />
+                      </th>
                       <th className="text-left px-4 py-3 text-xs font-bold">EXPEDITION ID</th>
                       <th className="text-left px-4 py-3 text-xs font-bold">TITLE</th>
                       <th className="text-left px-4 py-3 text-xs font-bold">EXPLORER</th>
@@ -667,13 +861,25 @@ export function AdminDashboardPage() {
                       <tr
                         key={expedition.id}
                         className={`border-t-2 border-[#202020] dark:border-[#616161] ${
-                          index % 2 === 0 ? 'bg-white dark:bg-[#2a2a2a]' : 'bg-[#f5f5f5] dark:bg-[#1a1a1a]'
+                          expedition.deletedAt
+                            ? 'opacity-40'
+                            : index % 2 === 0 ? 'bg-white dark:bg-[#2a2a2a]' : 'bg-[#f5f5f5] dark:bg-[#1a1a1a]'
                         }`}
                       >
+                        <td className="px-4 py-3">
+                          {!expedition.deletedAt && (
+                            <input
+                              type="checkbox"
+                              checked={selectedExpeditions.has(expedition.id)}
+                              onChange={() => toggleExpedition(expedition.id)}
+                              className="accent-[#4676ac]"
+                            />
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
                           {expedition.id.slice(0, 8)}...
                         </td>
-                        <td className="px-4 py-3 text-sm font-bold text-[#202020] dark:text-[#e5e5e5]">
+                        <td className="px-4 py-3 text-sm font-bold text-[#202020] dark:text-[#e5e5e5] line-through decoration-1" style={expedition.deletedAt ? {} : { textDecoration: 'none' }}>
                           {expedition.title}
                         </td>
                         <td className="px-4 py-3 text-xs text-[#202020] dark:text-[#e5e5e5]">
@@ -704,21 +910,23 @@ export function AdminDashboardPage() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex gap-2 justify-center">
-                            <Link
-                              href={`/expedition/${expedition.id}`}
-                              className="p-2 bg-[#4676ac] text-white hover:bg-[#365a8a] transition-colors"
-                              title="View Expedition"
-                            >
-                              <Eye size={14} strokeWidth={2.5} />
-                            </Link>
                             {!expedition.deletedAt && (
-                              <button
-                                onClick={() => handleDeleteExpedition(expedition.id)}
-                                className="p-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-colors"
-                                title="Delete Expedition"
-                              >
-                                <Trash2 size={14} strokeWidth={2.5} />
-                              </button>
+                              <>
+                                <Link
+                                  href={`/expedition/${expedition.id}`}
+                                  className="p-2 bg-[#4676ac] text-white hover:bg-[#365a8a] transition-colors"
+                                  title="View Expedition"
+                                >
+                                  <Eye size={14} strokeWidth={2.5} />
+                                </Link>
+                                <button
+                                  onClick={() => handleDeleteExpedition(expedition.id)}
+                                  className="p-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-colors"
+                                  title="Delete Expedition"
+                                >
+                                  <Trash2 size={14} strokeWidth={2.5} />
+                                </button>
+                              </>
                             )}
                           </div>
                         </td>
@@ -727,6 +935,7 @@ export function AdminDashboardPage() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
 
             <Pagination total={expeditionsTotal} offset={expeditionsOffset} setOffset={setExpeditionsOffset} loading={expeditionsLoading} />
@@ -745,10 +954,44 @@ export function AdminDashboardPage() {
                 NO EXPLORERS FOUND
               </div>
             ) : (
-              <div className="overflow-x-auto border-2 border-[#202020] dark:border-[#616161]">
+              <>
+                {selectedExplorers.size > 0 && (
+                  <div className="flex items-center gap-3 mb-3 px-4 py-3 bg-[#4676ac] text-white border-2 border-[#202020]">
+                    <span className="text-xs font-bold">{selectedExplorers.size} SELECTED</span>
+                    <button
+                      onClick={handleBulkBlockExplorers}
+                      disabled={bulkActionLoading}
+                      className="px-3 py-1.5 bg-[#994040] text-white text-xs font-bold hover:bg-[#7a3333] transition-colors disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {bulkActionLoading ? <Loader2 size={12} className="animate-spin" /> : <UserX size={12} />}
+                      BLOCK
+                    </button>
+                    <button
+                      onClick={() => setSelectedExplorers(new Set())}
+                      className="px-3 py-1.5 bg-white/20 text-white text-xs font-bold hover:bg-white/30 transition-colors"
+                    >
+                      CLEAR
+                    </button>
+                  </div>
+                )}
+                <div className="overflow-x-auto border-2 border-[#202020] dark:border-[#616161]">
                 <table className="w-full bg-white dark:bg-[#2a2a2a]">
                   <thead>
                     <tr className="bg-[#202020] text-white">
+                      <th className="w-10 px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={explorers.filter(e => !e.blocked && !e.admin).length > 0 && explorers.filter(e => !e.blocked && !e.admin).every(e => selectedExplorers.has(e.username))}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedExplorers(new Set(explorers.filter(ex => !ex.blocked && !ex.admin).map(ex => ex.username)));
+                            } else {
+                              setSelectedExplorers(new Set());
+                            }
+                          }}
+                          className="accent-[#4676ac]"
+                        />
+                      </th>
                       <th className="text-left px-4 py-3 text-xs font-bold">USERNAME</th>
                       <th className="text-left px-4 py-3 text-xs font-bold">EMAIL</th>
                       <th className="text-left px-4 py-3 text-xs font-bold">ROLE</th>
@@ -762,9 +1005,21 @@ export function AdminDashboardPage() {
                       <tr
                         key={explorer.username}
                         className={`border-t-2 border-[#202020] dark:border-[#616161] ${
-                          index % 2 === 0 ? 'bg-white dark:bg-[#2a2a2a]' : 'bg-[#f5f5f5] dark:bg-[#1a1a1a]'
+                          explorer.blocked
+                            ? 'opacity-40'
+                            : index % 2 === 0 ? 'bg-white dark:bg-[#2a2a2a]' : 'bg-[#f5f5f5] dark:bg-[#1a1a1a]'
                         }`}
                       >
+                        <td className="px-4 py-3">
+                          {!explorer.blocked && !explorer.admin && (
+                            <input
+                              type="checkbox"
+                              checked={selectedExplorers.has(explorer.username)}
+                              onChange={() => toggleExplorer(explorer.username)}
+                              className="accent-[#4676ac]"
+                            />
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-sm font-bold text-[#202020] dark:text-[#e5e5e5]">
                           <Link href={`/journal/${explorer.username}`} className="text-[#4676ac] hover:underline">
                             {explorer.username}
@@ -775,13 +1030,13 @@ export function AdminDashboardPage() {
                         </td>
                         <td className="px-4 py-3">
                           <span className={`text-xs font-bold px-2 py-1 ${
-                            explorer.role === 'admin'
+                            explorer.admin
                               ? 'bg-[#ac6d46] text-white'
                               : explorer.role === 'creator'
                               ? 'bg-[#4676ac] text-white'
                               : 'bg-[#b5bcc4] text-[#202020] dark:bg-[#616161] dark:text-[#e5e5e5]'
                           }`}>
-                            {explorer.role === 'creator' ? 'EXPLORER PRO' : explorer.role.toUpperCase()}
+                            {explorer.admin ? 'ADMIN' : explorer.role === 'creator' ? 'EXPLORER PRO' : explorer.role.toUpperCase()}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
@@ -812,7 +1067,7 @@ export function AdminDashboardPage() {
                                 <UserCheck size={14} strokeWidth={2.5} />
                               </button>
                             ) : (
-                              explorer.role !== 'admin' && (
+                              !explorer.admin && (
                                 <button
                                   onClick={() => handleBlockExplorer(explorer.username)}
                                   className="p-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-colors"
@@ -829,12 +1084,43 @@ export function AdminDashboardPage() {
                   </tbody>
                 </table>
               </div>
+              </>
             )}
 
             <Pagination total={explorersTotal} offset={explorersOffset} setOffset={setExplorersOffset} loading={explorersLoading} />
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle size={20} className="text-[#ac6d46] shrink-0" />
+              <h3 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5]">CONFIRM ACTION</h3>
+            </div>
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-6">{confirmModal.message}</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] text-xs font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-colors"
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={() => {
+                  confirmModal.onConfirm();
+                  setConfirmModal(null);
+                }}
+                className="px-4 py-2 bg-[#994040] text-white text-xs font-bold hover:bg-[#7a3333] transition-colors"
+              >
+                CONFIRM
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

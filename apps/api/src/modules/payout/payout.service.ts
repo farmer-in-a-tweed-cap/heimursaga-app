@@ -18,8 +18,6 @@ import {
   UserRole,
 } from '@repo/types';
 
-import { mapRequirementsToFriendly } from './stripe-requirements.map';
-
 import { decimalToInteger, integerToDecimal } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
 import { matchRoles } from '@/lib/utils';
@@ -40,6 +38,8 @@ import {
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
 import { StripeService } from '@/modules/stripe';
+
+import { mapRequirementsToFriendly } from './stripe-requirements.map';
 
 @Injectable()
 export class PayoutService {
@@ -165,14 +165,19 @@ export class PayoutService {
         : { enabled: false, schedule: { interval: 'manual' as const } };
 
       // Fetch bank account details (only available with live keys)
-      let bankAccount: { bankName?: string; last4?: string; routingNumber?: string } | undefined;
+      let bankAccount:
+        | { bankName?: string; last4?: string; routingNumber?: string }
+        | undefined;
       if (payoutMethod?.stripe_account_id) {
         try {
-          const externalAccounts = await this.stripeService.accounts.listExternalAccounts(
-            payoutMethod.stripe_account_id,
-            { limit: 1 },
-          );
-          const bank = externalAccounts.data.find((a) => a.object === 'bank_account') as any;
+          const externalAccounts =
+            await this.stripeService.accounts.listExternalAccounts(
+              payoutMethod.stripe_account_id,
+              { limit: 1 },
+            );
+          const bank = externalAccounts.data.find(
+            (a) => a.object === 'bank_account',
+          ) as any;
           if (bank) {
             bankAccount = {
               bankName: bank.bank_name,
@@ -431,9 +436,15 @@ export class PayoutService {
     try {
       const { userId, userRole } = session;
 
-      // check access
+      // check access — creators and admins
+      if (!userId) throw new ServiceForbiddenException();
+      const explorer = await this.prisma.explorer.findUnique({
+        where: { id: userId },
+        select: { admin: true, role: true },
+      });
       const access =
-        !!userId && matchRoles(userRole, [UserRole.CREATOR, UserRole.ADMIN]);
+        explorer?.admin ||
+        matchRoles(explorer?.role as UserRole, [UserRole.CREATOR]);
       if (!access) throw new ServiceForbiddenException();
 
       // Query confirmed checkouts from our database (reliable, no Stripe API dependency)
@@ -456,7 +467,10 @@ export class PayoutService {
 
       const data = checkouts.map((c) => {
         const currencyKey = c.currency || 'usd';
-        const curr = CURRENCIES[currencyKey] || { code: currencyKey.toUpperCase(), symbol: '$' };
+        const curr = CURRENCIES[currencyKey] || {
+          code: currencyKey.toUpperCase(),
+          symbol: '$',
+        };
 
         return {
           id: c.public_id,

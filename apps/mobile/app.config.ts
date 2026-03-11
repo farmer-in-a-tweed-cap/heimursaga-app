@@ -48,6 +48,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-router',
+    [
+      '@stripe/stripe-react-native',
+      {
+        enableApplePay: false,
+        enableGooglePay: false,
+      },
+    ],
     'expo-secure-store',
     [
       'expo-local-authentication',

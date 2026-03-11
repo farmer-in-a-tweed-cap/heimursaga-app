@@ -134,17 +134,23 @@ export class ExpeditionService {
     session,
   }: IQueryWithSession<{
     context?: string;
+    page?: string;
+    limit?: string;
   }>): Promise<IExpeditionGetAllResponse> {
     try {
       const { context } = query;
       const { explorerId, explorerRole } = session;
 
+      const parsedPage = Math.max(1, parseInt(query.page, 10) || 1);
+      const parsedLimit = Math.min(
+        50,
+        Math.max(1, parseInt(query.limit, 10) || 20),
+      );
+
       let where: Prisma.ExpeditionWhereInput = {
         deleted_at: null,
         status: { not: 'cancelled' },
       };
-
-      const take = 50;
 
       // query based on the explorer role (or public access for unauthenticated users)
       if (!explorerId) {
@@ -184,7 +190,14 @@ export class ExpeditionService {
           select: { followee_id: true },
         });
         const followedIds = follows.map((f) => f.followee_id);
-        if (followedIds.length === 0) return { data: [], results: 0 };
+        if (followedIds.length === 0)
+          return {
+            data: [],
+            results: 0,
+            page: parsedPage,
+            limit: parsedLimit,
+            totalPages: 0,
+          };
         where = { ...where, author_id: { in: followedIds } };
       }
 
@@ -239,8 +252,16 @@ export class ExpeditionService {
               },
             },
           },
+          // check if the session explorer has bookmarked this expedition
+          bookmarks: explorerId
+            ? {
+                where: { explorer_id: explorerId },
+                select: { expedition_id: true },
+              }
+            : undefined,
         },
-        take,
+        skip: (parsedPage - 1) * parsedLimit,
+        take: parsedLimit,
         orderBy:
           context === 'following' ? [{ updated_at: 'desc' }] : [{ id: 'desc' }],
       });
@@ -251,6 +272,9 @@ export class ExpeditionService {
 
       const response: IExpeditionGetAllResponse = {
         results,
+        page: parsedPage,
+        limit: parsedLimit,
+        totalPages: Math.ceil(results / parsedLimit),
         data: data.map(
           ({
             id: _id,
@@ -270,6 +294,7 @@ export class ExpeditionService {
             goal,
             raised,
             entries_count,
+            bookmarks: expeditionBookmarks,
             ...expedition
           }) => {
             // Waypoints already ordered by sequence from query
@@ -330,6 +355,9 @@ export class ExpeditionService {
               tags: tags ? JSON.parse(tags) : [],
               waypointsCount: waypoints.length,
               waypoints: [],
+              bookmarked: explorerId
+                ? (expeditionBookmarks?.length ?? 0) > 0
+                : false,
             };
           },
         ),
@@ -424,6 +452,13 @@ export class ExpeditionService {
               profile: { select: { picture: true, name: true } },
             },
           },
+          // check if the session explorer has bookmarked this expedition
+          bookmarks: explorerId
+            ? {
+                where: { explorer_id: explorerId },
+                select: { expedition_id: true },
+              }
+            : undefined,
         },
         take,
         orderBy: [{ id: 'desc' }],
@@ -474,6 +509,7 @@ export class ExpeditionService {
             current_location_id,
             current_location_visibility,
             author,
+            bookmarks: expeditionBookmarks,
             ...expedition
           }) => {
             // Waypoints already ordered by sequence from query
@@ -556,6 +592,9 @@ export class ExpeditionService {
                       author?.is_stripe_account_connected === true,
                   }
                 : undefined,
+              bookmarked: explorerId
+                ? (expeditionBookmarks?.length ?? 0) > 0
+                : false,
             };
           },
         ),
@@ -1331,12 +1370,17 @@ export class ExpeditionService {
       }
       const notesAccessThreshold = (payload as any).notesAccessThreshold;
       if (notesAccessThreshold !== undefined) {
-        if (notesAccessThreshold > 0 && !matchRoles(userRole, [UserRole.CREATOR])) {
+        if (
+          notesAccessThreshold > 0 &&
+          !matchRoles(userRole, [UserRole.CREATOR])
+        ) {
           throw new ServiceBadRequestException(
             'Setting a notes access threshold requires Explorer Pro',
           );
         }
-        updateData.notes_access_threshold = Math.round(notesAccessThreshold * 100);
+        updateData.notes_access_threshold = Math.round(
+          notesAccessThreshold * 100,
+        );
       }
       if (category !== undefined) {
         updateData.category = category;

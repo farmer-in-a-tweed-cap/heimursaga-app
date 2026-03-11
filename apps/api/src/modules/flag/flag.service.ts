@@ -9,7 +9,6 @@ import {
   IFlagDetail,
   IFlagListResponse,
   IFlagUpdatePayload,
-  UserRole,
 } from '@repo/types';
 
 import { generator } from '@/lib/generator';
@@ -45,6 +44,14 @@ export class FlagService {
     private prisma: PrismaService,
   ) {}
 
+  private async isAdmin(userId: number): Promise<boolean> {
+    const explorer = await this.prisma.explorer.findUnique({
+      where: { id: userId },
+      select: { admin: true },
+    });
+    return explorer?.admin === true;
+  }
+
   /**
    * Create a new flag
    */
@@ -57,8 +64,14 @@ export class FlagService {
   >): Promise<IFlagCreateResponse> {
     try {
       const { userId } = session;
-      const { category, description, flaggedPostId, flaggedCommentId } =
-        payload;
+      const {
+        category,
+        description,
+        flaggedPostId,
+        flaggedCommentId,
+        flaggedExpeditionId,
+        flaggedExplorerId,
+      } = payload;
 
       // Check authentication
       if (!userId) {
@@ -68,12 +81,15 @@ export class FlagService {
       }
 
       // Validate exactly one content type is flagged
-      if (
-        (!flaggedPostId && !flaggedCommentId) ||
-        (flaggedPostId && flaggedCommentId)
-      ) {
+      const contentIds = [
+        flaggedPostId,
+        flaggedCommentId,
+        flaggedExpeditionId,
+        flaggedExplorerId,
+      ].filter(Boolean);
+      if (contentIds.length !== 1) {
         throw new ServiceBadRequestException(
-          'You must flag either a post or a comment, not both',
+          'You must flag exactly one piece of content',
         );
       }
 
@@ -95,70 +111,97 @@ export class FlagService {
       // Get the content being flagged and validate it exists
       let flaggedPostDbId: number | null = null;
       let flaggedCommentDbId: number | null = null;
+      let flaggedExpeditionDbId: number | null = null;
+      let flaggedExplorerDbId: number | null = null;
 
       if (flaggedPostId) {
         const post = await this.prisma.entry.findFirst({
-          where: {
-            public_id: flaggedPostId,
-            deleted_at: null,
-          },
+          where: { public_id: flaggedPostId, deleted_at: null },
           select: { id: true },
         });
-
-        if (!post) {
-          throw new ServiceNotFoundException('Post not found');
-        }
-
+        if (!post) throw new ServiceNotFoundException('Entry not found');
         flaggedPostDbId = post.id;
 
-        // Check if user already flagged this post
-        const existingFlag = await this.prisma.flag.findFirst({
-          where: {
-            reporter_id: userId,
-            flagged_entry_id: flaggedPostDbId,
-          },
+        const existing = await this.prisma.flag.findFirst({
+          where: { reporter_id: userId, flagged_entry_id: flaggedPostDbId },
         });
-
-        if (existingFlag) {
+        if (existing) {
           throw new ServiceBadRequestException(
-            'You have already reported this post',
+            'You have already reported this entry',
           );
         }
       }
 
       if (flaggedCommentId) {
         const comment = await this.prisma.comment.findFirst({
-          where: {
-            public_id: flaggedCommentId,
-            deleted_at: null,
-          },
+          where: { public_id: flaggedCommentId, deleted_at: null },
           select: { id: true },
         });
-
-        if (!comment) {
-          throw new ServiceNotFoundException('Comment not found');
-        }
-
+        if (!comment) throw new ServiceNotFoundException('Comment not found');
         flaggedCommentDbId = comment.id;
 
-        // Check if user already flagged this comment
-        const existingFlag = await this.prisma.flag.findFirst({
+        const existing = await this.prisma.flag.findFirst({
           where: {
             reporter_id: userId,
             flagged_comment_id: flaggedCommentDbId,
           },
         });
-
-        if (existingFlag) {
+        if (existing) {
           throw new ServiceBadRequestException(
             'You have already reported this comment',
           );
         }
       }
 
+      if (flaggedExpeditionId) {
+        const expedition = await this.prisma.expedition.findFirst({
+          where: { public_id: flaggedExpeditionId, deleted_at: null },
+          select: { id: true },
+        });
+        if (!expedition)
+          throw new ServiceNotFoundException('Expedition not found');
+        flaggedExpeditionDbId = expedition.id;
+
+        const existing = await this.prisma.flag.findFirst({
+          where: {
+            reporter_id: userId,
+            flagged_expedition_id: flaggedExpeditionDbId,
+          },
+        });
+        if (existing) {
+          throw new ServiceBadRequestException(
+            'You have already reported this expedition',
+          );
+        }
+      }
+
+      if (flaggedExplorerId) {
+        const explorer = await this.prisma.explorer.findFirst({
+          where: { username: flaggedExplorerId, blocked: false },
+          select: { id: true },
+        });
+        if (!explorer) throw new ServiceNotFoundException('Explorer not found');
+        flaggedExplorerDbId = explorer.id;
+
+        if (explorer.id === userId) {
+          throw new ServiceBadRequestException('You cannot report yourself');
+        }
+
+        const existing = await this.prisma.flag.findFirst({
+          where: {
+            reporter_id: userId,
+            flagged_explorer_id: flaggedExplorerDbId,
+          },
+        });
+        if (existing) {
+          throw new ServiceBadRequestException(
+            'You have already reported this explorer',
+          );
+        }
+      }
+
       // Create flag and increment counter in a transaction
       const result = await this.prisma.$transaction(async (tx) => {
-        // Create the flag
         const flag = await tx.flag.create({
           data: {
             public_id: generator.publicId(),
@@ -168,13 +211,12 @@ export class FlagService {
             reporter_id: userId,
             flagged_entry_id: flaggedPostDbId,
             flagged_comment_id: flaggedCommentDbId,
+            flagged_expedition_id: flaggedExpeditionDbId,
+            flagged_explorer_id: flaggedExplorerDbId,
           },
-          select: {
-            public_id: true,
-          },
+          select: { public_id: true },
         });
 
-        // Increment flags_count on the flagged content
         if (flaggedPostDbId) {
           await tx.entry.update({
             where: { id: flaggedPostDbId },
@@ -210,12 +252,11 @@ export class FlagService {
     query,
   }: ISessionQueryWithPayload<IFlagQuery, {}>): Promise<IFlagListResponse> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
       const { status, limit = DEFAULT_FLAGS_PER_PAGE, offset = 0 } = query;
 
       // Check authorization - admin only
-      const isAdmin = userRole === UserRole.ADMIN;
-      if (!isAdmin) {
+      if (!userId || !(await this.isAdmin(userId))) {
         throw new ServiceForbiddenException('Only admins can view flags');
       }
 
@@ -286,6 +327,34 @@ export class FlagService {
                 },
               },
             },
+            flagged_expedition: {
+              select: {
+                public_id: true,
+                title: true,
+                description: true,
+                author: {
+                  select: {
+                    username: true,
+                    profile: {
+                      select: {
+                        picture: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            flagged_explorer: {
+              select: {
+                username: true,
+                profile: {
+                  select: {
+                    name: true,
+                    picture: true,
+                  },
+                },
+              },
+            },
           },
           take: Math.min(limit, MAX_FLAGS_PER_PAGE),
           skip: offset,
@@ -294,8 +363,65 @@ export class FlagService {
       ]);
 
       const flags: IFlagDetail[] = flagsData.map((flag) => {
-        const isPost = !!flag.flagged_entry;
-        const content = isPost ? flag.flagged_entry : flag.flagged_comment;
+        let type: 'post' | 'comment' | 'expedition' | 'explorer';
+        let id: string;
+        let preview: string;
+        let authorUsername: string;
+        let authorPicture: string | undefined;
+
+        if (flag.flagged_entry) {
+          type = 'post';
+          id = flag.flagged_entry.public_id!;
+          preview =
+            flag.flagged_entry.title ||
+            flag.flagged_entry.content.slice(0, CONTENT_PREVIEW_LENGTH);
+          authorUsername = flag.flagged_entry.author.username;
+          authorPicture = flag.flagged_entry.author.profile?.picture
+            ? getStaticMediaUrl(flag.flagged_entry.author.profile.picture)
+            : undefined;
+        } else if (flag.flagged_comment) {
+          type = 'comment';
+          id = flag.flagged_comment.public_id!;
+          preview = flag.flagged_comment.content.slice(
+            0,
+            CONTENT_PREVIEW_LENGTH,
+          );
+          authorUsername = flag.flagged_comment.author.username;
+          authorPicture = flag.flagged_comment.author.profile?.picture
+            ? getStaticMediaUrl(flag.flagged_comment.author.profile.picture)
+            : undefined;
+        } else if (flag.flagged_expedition) {
+          type = 'expedition';
+          id = flag.flagged_expedition.public_id!;
+          preview =
+            flag.flagged_expedition.title ||
+            flag.flagged_expedition.description?.slice(
+              0,
+              CONTENT_PREVIEW_LENGTH,
+            ) ||
+            'Untitled expedition';
+          authorUsername = flag.flagged_expedition.author.username;
+          authorPicture = flag.flagged_expedition.author.profile?.picture
+            ? getStaticMediaUrl(flag.flagged_expedition.author.profile.picture)
+            : undefined;
+        } else if (flag.flagged_explorer) {
+          type = 'explorer';
+          id = flag.flagged_explorer.username;
+          preview =
+            flag.flagged_explorer.profile?.name ||
+            flag.flagged_explorer.username;
+          authorUsername = flag.flagged_explorer.username;
+          authorPicture = flag.flagged_explorer.profile?.picture
+            ? getStaticMediaUrl(flag.flagged_explorer.profile.picture)
+            : undefined;
+        } else {
+          // Orphaned flag — content was deleted
+          type = 'post';
+          id = 'unknown';
+          preview = '[Content deleted]';
+          authorUsername = 'unknown';
+          authorPicture = undefined;
+        }
 
         return {
           id: flag.public_id,
@@ -318,17 +444,12 @@ export class FlagService {
               }
             : undefined,
           flaggedContent: {
-            type: isPost ? 'post' : 'comment',
-            id: content!.public_id!,
-            preview: isPost
-              ? flag.flagged_entry!.title ||
-                flag.flagged_entry!.content.slice(0, CONTENT_PREVIEW_LENGTH)
-              : flag.flagged_comment!.content.slice(0, CONTENT_PREVIEW_LENGTH),
+            type,
+            id,
+            preview,
             author: {
-              username: content!.author.username,
-              picture: content!.author.profile?.picture
-                ? getStaticMediaUrl(content.author.profile.picture)
-                : undefined,
+              username: authorUsername,
+              picture: authorPicture,
             },
           },
         };
@@ -353,11 +474,10 @@ export class FlagService {
     flagId,
   }: ISessionQuery & { flagId: string }): Promise<IFlagDetail> {
     try {
-      const { userRole } = session;
+      const { userId } = session;
 
       // Check authorization - admin only
-      const isAdmin = userRole === UserRole.ADMIN;
-      if (!isAdmin) {
+      if (!userId || !(await this.isAdmin(userId))) {
         throw new ServiceForbiddenException(
           'Only admins can view flag details',
         );
@@ -422,6 +542,34 @@ export class FlagService {
               },
             },
           },
+          flagged_expedition: {
+            select: {
+              public_id: true,
+              title: true,
+              description: true,
+              author: {
+                select: {
+                  username: true,
+                  profile: {
+                    select: {
+                      picture: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          flagged_explorer: {
+            select: {
+              username: true,
+              profile: {
+                select: {
+                  name: true,
+                  picture: true,
+                },
+              },
+            },
+          },
         },
       });
 
@@ -429,8 +577,56 @@ export class FlagService {
         throw new ServiceNotFoundException('Flag not found');
       }
 
-      const isPost = !!flag.flagged_entry;
-      const content = isPost ? flag.flagged_entry : flag.flagged_comment;
+      let type: 'post' | 'comment' | 'expedition' | 'explorer';
+      let id: string;
+      let preview: string;
+      let authorUsername: string;
+      let authorPicture: string | undefined;
+
+      if (flag.flagged_entry) {
+        type = 'post';
+        id = flag.flagged_entry.public_id!;
+        preview =
+          flag.flagged_entry.title || flag.flagged_entry.content.slice(0, 500);
+        authorUsername = flag.flagged_entry.author.username;
+        authorPicture = flag.flagged_entry.author.profile?.picture
+          ? getStaticMediaUrl(flag.flagged_entry.author.profile.picture)
+          : undefined;
+      } else if (flag.flagged_comment) {
+        type = 'comment';
+        id = flag.flagged_comment.public_id!;
+        preview = flag.flagged_comment.content.slice(0, 500);
+        authorUsername = flag.flagged_comment.author.username;
+        authorPicture = flag.flagged_comment.author.profile?.picture
+          ? getStaticMediaUrl(flag.flagged_comment.author.profile.picture)
+          : undefined;
+      } else if (flag.flagged_expedition) {
+        type = 'expedition';
+        id = flag.flagged_expedition.public_id!;
+        preview =
+          flag.flagged_expedition.title ||
+          flag.flagged_expedition.description?.slice(0, 500) ||
+          'Untitled expedition';
+        authorUsername = flag.flagged_expedition.author.username;
+        authorPicture = flag.flagged_expedition.author.profile?.picture
+          ? getStaticMediaUrl(flag.flagged_expedition.author.profile.picture)
+          : undefined;
+      } else if (flag.flagged_explorer) {
+        type = 'explorer';
+        id = flag.flagged_explorer.username;
+        preview =
+          flag.flagged_explorer.profile?.name || flag.flagged_explorer.username;
+        authorUsername = flag.flagged_explorer.username;
+        authorPicture = flag.flagged_explorer.profile?.picture
+          ? getStaticMediaUrl(flag.flagged_explorer.profile.picture)
+          : undefined;
+      } else {
+        type = 'post';
+        id = 'unknown';
+        preview = '[Content deleted]';
+        authorUsername = 'unknown';
+        authorPicture = undefined;
+      }
 
       return {
         id: flag.public_id,
@@ -453,17 +649,12 @@ export class FlagService {
             }
           : undefined,
         flaggedContent: {
-          type: isPost ? 'post' : 'comment',
-          id: content!.public_id!,
-          preview: isPost
-            ? flag.flagged_entry!.title ||
-              flag.flagged_entry!.content.slice(0, 500)
-            : flag.flagged_comment!.content.slice(0, 500),
+          type,
+          id,
+          preview,
           author: {
-            username: content!.author.username,
-            picture: content!.author.profile?.picture
-              ? getStaticMediaUrl(content.author.profile.picture)
-              : undefined,
+            username: authorUsername,
+            picture: authorPicture,
           },
         },
       };
@@ -486,12 +677,11 @@ export class FlagService {
     payload: IFlagUpdatePayload;
   }): Promise<void> {
     try {
-      const { userId, userRole } = session;
+      const { userId } = session;
       const { status, actionTaken, adminNotes } = payload;
 
       // Check authorization - admin only
-      const isAdmin = userRole === UserRole.ADMIN;
-      if (!isAdmin) {
+      if (!userId || !(await this.isAdmin(userId))) {
         throw new ServiceForbiddenException('Only admins can update flags');
       }
 

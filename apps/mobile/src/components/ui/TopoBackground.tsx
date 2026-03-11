@@ -118,7 +118,7 @@ interface ContourLevel {
   strokeWidth: number;
 }
 
-function buildContourPaths(W: number, H: number): ContourLevel[] {
+function buildContourPaths(W: number, H: number, isDark: boolean): ContourLevel[] {
   const elevGrid = buildElevationGrid();
   const land = elevGrid.filter(v => v > 2);
   if (land.length === 0) return [];
@@ -143,7 +143,9 @@ function buildContourPaths(W: number, H: number): ContourLevel[] {
   return levels.map((threshold, i) => {
     const t = i / Math.max(1, nLevels - 1);
     const isIndex = (Math.round((threshold - firstLevel) / interval) % 5 === 0);
-    const opacity = isIndex ? 0.32 + t * 0.28 : 0.10 + t * 0.20;
+    const baseOpacity = isIndex ? 0.32 + t * 0.28 : 0.10 + t * 0.20;
+    // Dark mode: scale down to ~18% max to match web's subtle copper look
+    const opacity = isDark ? baseOpacity * 0.5 : baseOpacity;
     const sw = isIndex ? 0.80 + t * 0.30 : 0.22 + t * 0.28;
 
     const segs = marchingSquares(elevGrid, COLS, ROWS, threshold);
@@ -175,11 +177,11 @@ export function TopoBackground({ topOffset = 0 }: TopoBackgroundProps) {
 
   const drawHeight = height - topOffset;
   const contours = useMemo(
-    () => buildContourPaths(width, drawHeight),
-    [width, drawHeight],
+    () => buildContourPaths(width, drawHeight, dark),
+    [width, drawHeight, dark],
   );
 
-  const strokeColor = dark ? '#616161' : '#b5bcc4';
+  const strokeColor = dark ? '#ac6d46' : '#b5bcc4';
 
   return (
     <View

@@ -1,7 +1,7 @@
 import type { Ref } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle } from 'lucide-react';
+import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import type { TransformedExpedition, CurrentLocationData } from '@/app/components/expedition-detail/types';
 import type { Expedition, ExplorerProfile } from '@/app/services/api';
@@ -29,6 +29,7 @@ interface HeroBannerProps {
   onShare: () => void;
   onCurrentLocationClick: (coords: { lat: number; lng: number }) => void;
   explorerProfile: ExplorerProfile | null;
+  onReport?: () => void;
 }
 
 export function HeroBanner({
@@ -54,6 +55,7 @@ export function HeroBanner({
   onShare,
   onCurrentLocationClick,
   explorerProfile,
+  onReport,
 }: HeroBannerProps) {
   return (
     <div
@@ -174,7 +176,7 @@ export function HeroBanner({
             <div className="mt-4 space-y-2">
               <Link
                 href={`/journal/${expedition.explorerId}`}
-                className="block w-full py-2 bg-[#4676ac] text-white text-center hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] font-bold"
+                className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] font-bold"
               >
                 VIEW JOURNAL
               </Link>
@@ -184,8 +186,8 @@ export function HeroBanner({
                   disabled={followLoading}
                   className={`w-full py-1.5 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none text-xs font-bold ${
                     isFollowingExplorer
-                      ? 'border-2 border-[#616161] text-white hover:bg-[#616161]/30 focus-visible:ring-[#616161]'
-                      : 'bg-[#ac6d46] text-white hover:bg-[#8a5738] focus-visible:ring-[#ac6d46]'
+                      ? 'bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
+                      : 'border-2 border-[#616161] text-white hover:bg-[#616161]/30 focus-visible:ring-[#616161]'
                   }`}
                 >
                   {followLoading ? 'LOADING...' : isFollowingExplorer ? 'FOLLOWING' : 'FOLLOW'}
@@ -300,7 +302,7 @@ export function HeroBanner({
                   disabled={bookmarkLoading}
                   className={`px-4 py-2 border-2 transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2 ${
                     isBookmarked
-                      ? 'border-[#ac6d46] bg-[#ac6d46] text-white hover:bg-[#8a5738]'
+                      ? 'border-[#4676ac] bg-[#4676ac] text-white hover:bg-[#365a87]'
                       : 'border-white/30 text-white hover:bg-white/10'
                   }`}
                 >
@@ -315,6 +317,16 @@ export function HeroBanner({
               >
                 {shareCopied ? 'COPIED' : 'SHARE'}
               </button>
+              {/* Report button - non-owners only */}
+              {!isOwner && onReport && (
+                <button
+                  onClick={onReport}
+                  className="p-2 text-white/40 hover:text-[#994040] transition-colors"
+                  title="Report this expedition"
+                >
+                  <ShieldAlert size={14} />
+                </button>
+              )}
             </div>
           </div>
         </div>

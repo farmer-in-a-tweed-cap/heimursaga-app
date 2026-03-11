@@ -1,7 +1,16 @@
-import { createMockEventService, MockEventService } from '@/test/mocks/event.mock';
-import { createMockLogger, MockLogger } from '@/test/mocks/logger.mock';
-import { createMockPrismaService, MockPrismaService } from '@/test/mocks/prisma.mock';
-import { createMockStripeService, MockStripeService } from '@/test/mocks/stripe.mock';
+import {
+  MockEventService,
+  createMockEventService,
+} from '@/test/mocks/event.mock';
+import { MockLogger, createMockLogger } from '@/test/mocks/logger.mock';
+import {
+  MockPrismaService,
+  createMockPrismaService,
+} from '@/test/mocks/prisma.mock';
+import {
+  MockStripeService,
+  createMockStripeService,
+} from '@/test/mocks/stripe.mock';
 
 import { PaymentService } from './payment.service';
 
@@ -80,7 +89,11 @@ describe('PaymentService', () => {
 
       const result = await service.checkoutSubscriptionPlanUpgrade({
         session: userSession,
-        payload: { planId: 'explorer-pro', period: 'year', promoCode: 'FREE100' },
+        payload: {
+          planId: 'explorer-pro',
+          period: 'year',
+          promoCode: 'FREE100',
+        },
       } as any);
 
       expect(result.isFreeSubscription).toBe(true);
@@ -229,7 +242,9 @@ describe('PaymentService', () => {
   // ─── K4: completeSubscriptionPlanUpgrade — already non-PENDING → skips ───
   describe('completeSubscriptionPlanUpgrade — K4: non-PENDING checkout throws', () => {
     it('should throw when checkout is not PENDING', async () => {
-      prisma.checkout.findFirstOrThrow.mockRejectedValue(new Error('not found'));
+      prisma.checkout.findFirstOrThrow.mockRejectedValue(
+        new Error('not found'),
+      );
 
       await expect(
         service.completeSubscriptionPlanUpgrade({ checkoutId: 999 } as any),
@@ -250,9 +265,12 @@ describe('PaymentService', () => {
 
       await service.downgradeSubscriptionPlan({ session: userSession } as any);
 
-      expect(stripe.subscriptions.update).toHaveBeenCalledWith('sub_downgrade', {
-        cancel_at_period_end: true,
-      });
+      expect(stripe.subscriptions.update).toHaveBeenCalledWith(
+        'sub_downgrade',
+        {
+          cancel_at_period_end: true,
+        },
+      );
     });
   });
 
@@ -270,9 +288,12 @@ describe('PaymentService', () => {
 
       await service.reactivateSubscription({ session: userSession } as any);
 
-      expect(stripe.subscriptions.update).toHaveBeenCalledWith('sub_reactivate', {
-        cancel_at_period_end: false,
-      });
+      expect(stripe.subscriptions.update).toHaveBeenCalledWith(
+        'sub_reactivate',
+        {
+          cancel_at_period_end: false,
+        },
+      );
     });
   });
 
@@ -309,7 +330,11 @@ describe('PaymentService', () => {
 
       const result = await service.validatePromoCode({
         session: userSession,
-        payload: { promoCode: 'HALF50', planId: 'explorer-pro', period: 'year' },
+        payload: {
+          promoCode: 'HALF50',
+          planId: 'explorer-pro',
+          period: 'year',
+        },
       });
 
       expect(result.success).toBe(true);
@@ -335,7 +360,11 @@ describe('PaymentService', () => {
 
       const result = await service.validatePromoCode({
         session: userSession,
-        payload: { promoCode: 'INVALID', planId: 'explorer-pro', period: 'year' },
+        payload: {
+          promoCode: 'INVALID',
+          planId: 'explorer-pro',
+          period: 'year',
+        },
       });
 
       expect(result.success).toBe(false);
@@ -444,7 +473,9 @@ describe('PaymentService', () => {
         card: { brand: 'visa', last4: '4242' },
       });
       stripe.getOrCreateCustomer.mockResolvedValue({ id: 'cus_1' });
-      stripe.paymentMethods.attach.mockRejectedValue(new Error('Stripe attach failed'));
+      stripe.paymentMethods.attach.mockRejectedValue(
+        new Error('Stripe attach failed'),
+      );
       prisma.paymentMethod.updateMany.mockResolvedValue({});
 
       await expect(
@@ -509,7 +540,9 @@ describe('PaymentService', () => {
       } as any);
 
       // Stripe detach should be called before DB soft-delete
-      expect(stripe.paymentMethods.detach).toHaveBeenCalledWith('pm_stripe_del');
+      expect(stripe.paymentMethods.detach).toHaveBeenCalledWith(
+        'pm_stripe_del',
+      );
       expect(prisma.paymentMethod.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
@@ -525,7 +558,9 @@ describe('PaymentService', () => {
         stripe_payment_method_id: 'pm_stripe_gone',
       });
       prisma.paymentMethod.updateMany.mockResolvedValue({});
-      stripe.paymentMethods.detach.mockRejectedValue({ code: 'resource_missing' });
+      stripe.paymentMethods.detach.mockRejectedValue({
+        code: 'resource_missing',
+      });
 
       await service.deletePaymentMethod({
         query: { publicId: 'pm_local_gone' },
@@ -546,7 +581,10 @@ describe('PaymentService', () => {
         id: 1,
         stripe_payment_method_id: 'pm_stripe_err',
       });
-      stripe.paymentMethods.detach.mockRejectedValue({ code: 'api_error', message: 'Something went wrong' });
+      stripe.paymentMethods.detach.mockRejectedValue({
+        code: 'api_error',
+        message: 'Something went wrong',
+      });
 
       await expect(
         service.deletePaymentMethod({

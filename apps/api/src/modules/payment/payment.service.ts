@@ -244,8 +244,7 @@ export class PaymentService {
             data: {
               public_id: paymentMethodId,
               stripe_payment_method_id: stripePaymentMethodId,
-              label:
-                stripePaymentMethod.card.brand.toUpperCase(),
+              label: stripePaymentMethod.card.brand.toUpperCase(),
               last4: stripePaymentMethod.card.last4,
               explorer_id: userId,
             },
@@ -259,7 +258,10 @@ export class PaymentService {
             },
           });
 
-          return { user, isFirstPaymentMethod: existingPaymentMethodsCount === 1 };
+          return {
+            user,
+            isFirstPaymentMethod: existingPaymentMethodsCount === 1,
+          };
         },
       );
 

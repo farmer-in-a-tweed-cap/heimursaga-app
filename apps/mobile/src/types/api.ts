@@ -153,6 +153,7 @@ export interface Entry {
     picture?: string;
     creator?: boolean;
     createdAt?: string;
+    stripeAccountConnected?: boolean;
   };
   coverImage?: string;
   mediaCount?: number;
@@ -161,6 +162,8 @@ export interface Entry {
   createdAt?: string;
   entryNumber?: number;
   expeditionDay?: number;
+  quickSponsorsCount?: number;
+  quickSponsorsTotal?: number;
 }
 
 // ─── Comment ───
@@ -242,7 +245,7 @@ export interface Message {
 export interface Sponsorship {
   id: string;
   amount: number;
-  type: 'ONE_TIME_PAYMENT' | 'SUBSCRIPTION';
+  type: 'one_time_payment' | 'subscription' | 'quick_sponsor';
   status: string;
   currency?: string;
   message?: string;
@@ -283,8 +286,8 @@ export interface SponsorshipTier {
 }
 
 export interface SponsorshipCheckout {
-  url: string;
-  checkout_id: string;
+  clientSecret: string;
+  paymentMethodId: string;
 }
 
 // ─── Payout ───

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
+import { useAuth } from '@/context/AuthContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useApi } from '@/hooks/useApi';
 import { NavBar } from '@/components/ui/NavBar';
@@ -18,30 +19,40 @@ import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { Sponsorship, SponsorshipTier, Balance, Payout } from '@/types/api';
 
 const TABS = ['OVERVIEW', 'SPONSORS', 'TIERS', 'PAYOUTS', 'OUTGOING'];
+const PRO_TABS = new Set(['OVERVIEW', 'SPONSORS', 'TIERS', 'PAYOUTS']);
 
 export default function SponsorshipsScreen() {
   const { dark, colors } = useTheme();
   const router = useRouter();
   const { ready } = useRequireAuth();
+  const { user } = useAuth();
+  const isPro = !!user?.is_pro;
   const [activeTab, setActiveTab] = useState(0);
+  const activeTabName = TABS[activeTab];
+  const needsUpgrade = !isPro && PRO_TABS.has(activeTabName);
 
-  const { data: receivedData } = useApi<{ data: Sponsorship[]; results: number }>(ready ? '/sponsorships' : null);
-  const { data: givenData } = useApi<{ data: Sponsorship[]; results: number }>(ready && activeTab === 4 ? '/sponsorships/given' : null);
-  const { data: tiersData } = useApi<{ data: SponsorshipTier[]; results: number }>(ready && activeTab === 2 ? '/sponsorship-tiers' : null);
-  const { data: balance } = useApi<Balance>(ready ? '/balance' : null);
-  const { data: payoutsData } = useApi<{ data: Payout[]; results: number }>(ready && activeTab === 3 ? '/payouts' : null);
+  const { data: receivedData } = useApi<{ data: Sponsorship[]; results: number }>(ready && isPro ? '/sponsorships' : null);
+  const { data: givenData } = useApi<{ data: Sponsorship[]; results: number }>(ready && activeTabName === 'OUTGOING' ? '/sponsorships/given' : null);
+  const { data: tiersData } = useApi<{ data: SponsorshipTier[]; results: number }>(ready && activeTabName === 'TIERS' ? '/sponsorship-tiers' : null);
+  const { data: balance } = useApi<Balance>(ready && isPro ? '/balance' : null);
+  const { data: payoutsData } = useApi<{ data: Payout[]; results: number }>(ready && activeTabName === 'PAYOUTS' ? '/payouts' : null);
 
   const received = receivedData?.data ?? [];
   const given = givenData?.data ?? [];
   const tiers = tiersData?.data ?? [];
   const payouts = payoutsData?.data ?? [];
 
+  const [payoutLoading, setPayoutLoading] = useState(false);
   const handleRequestPayout = async () => {
+    if (payoutLoading) return;
+    setPayoutLoading(true);
     try {
       await payoutApi.requestPayout();
       Alert.alert('Payout requested', 'Your payout is being processed.');
     } catch (err: any) {
       Alert.alert('Error', err.message ?? 'Failed to request payout');
+    } finally {
+      setPayoutLoading(false);
     }
   };
 
@@ -57,11 +68,14 @@ export default function SponsorshipsScreen() {
   // Amounts from API are already in dollars (converted via integerToDecimal)
   const totalRevenue = received.reduce((s, r) => s + r.amount, 0);
   const monthlyRecurring = received
-    .filter((r) => r.type === 'SUBSCRIPTION' && r.status === 'ACTIVE')
+    .filter((r) => r.type === 'subscription' && r.status === 'active')
     .reduce((s, r) => s + r.amount, 0);
 
   function formatType(type: string): string {
-    return type === 'SUBSCRIPTION' ? 'Monthly' : 'One-time';
+    const t = type.toLowerCase();
+    if (t === 'subscription') return 'Monthly';
+    if (t === 'quick_sponsor') return 'Quick-sponsor';
+    return 'One-time';
   }
 
   return (
@@ -69,7 +83,7 @@ export default function SponsorshipsScreen() {
       <NavBar onBack={() => router.back()} title="SPONSORSHIPS" />
 
       {/* Tabs — scrollable */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabScrollContent}>
         <View style={styles.tabRow}>
           {TABS.map((tab, i) => (
             <TouchableOpacity
@@ -87,8 +101,23 @@ export default function SponsorshipsScreen() {
 
       <ScrollView>
         <View style={styles.content}>
+          {/* Upgrade prompt for free users on Pro tabs */}
+          {needsUpgrade && (
+            <View style={styles.upgradeWrap}>
+              <View style={[styles.upgradeCard, { backgroundColor: colors.card, borderColor: brandColors.copper }]}>
+                <Text style={[styles.upgradeTitle, { color: colors.text }]}>Explorer Pro</Text>
+                <Text style={[styles.upgradeDesc, { color: colors.textSecondary }]}>
+                  Upgrade to Explorer Pro to receive sponsorships, manage tiers, view analytics, and request payouts.
+                </Text>
+                <HButton variant="copper" onPress={() => Linking.openURL('https://heimursaga.com/upgrade')}>
+                  UPGRADE ON WEB
+                </HButton>
+              </View>
+            </View>
+          )}
+
           {/* OVERVIEW */}
-          {activeTab === 0 && (
+          {!needsUpgrade && activeTabName === 'OVERVIEW' && (
             <>
               <StatsBar
                 stats={[
@@ -111,7 +140,7 @@ export default function SponsorshipsScreen() {
                           {balance.pending.symbol}{balance.pending.amount.toFixed(2)} pending
                         </Text>
                         <View style={styles.payoutBtn}>
-                          <HButton variant="copper" small onPress={handleRequestPayout}>REQUEST PAYOUT</HButton>
+                          <HButton variant="copper" small onPress={handleRequestPayout} disabled={payoutLoading}>{payoutLoading ? 'REQUESTING...' : 'REQUEST PAYOUT'}</HButton>
                         </View>
                       </View>
                     </HCard>
@@ -152,7 +181,7 @@ export default function SponsorshipsScreen() {
           )}
 
           {/* SPONSORS */}
-          {activeTab === 1 && (
+          {!needsUpgrade && activeTabName === 'SPONSORS' && (
             <>
               <SearchBar placeholder="Search sponsors..." />
               <View style={styles.filterRow}>
@@ -190,7 +219,7 @@ export default function SponsorshipsScreen() {
           )}
 
           {/* TIERS */}
-          {activeTab === 2 && (
+          {!needsUpgrade && activeTabName === 'TIERS' && (
             <>
               {(['ONE_TIME', 'MONTHLY'] as const).map((tierType) => {
                 const filtered = tiers.filter((t) => t.type === tierType);
@@ -230,7 +259,7 @@ export default function SponsorshipsScreen() {
           )}
 
           {/* PAYOUTS */}
-          {activeTab === 3 && (
+          {!needsUpgrade && activeTabName === 'PAYOUTS' && (
             <>
               {balance && (
                 <StatsBar
@@ -241,7 +270,7 @@ export default function SponsorshipsScreen() {
                 />
               )}
               <View style={styles.payoutBtnRow}>
-                <HButton variant="copper" small onPress={handleRequestPayout}>REQUEST PAYOUT</HButton>
+                <HButton variant="copper" small onPress={handleRequestPayout} disabled={payoutLoading}>{payoutLoading ? 'REQUESTING...' : 'REQUEST PAYOUT'}</HButton>
               </View>
 
               <SectionDivider title="PAYOUT HISTORY" />
@@ -275,14 +304,14 @@ export default function SponsorshipsScreen() {
           )}
 
           {/* OUTGOING */}
-          {activeTab === 4 && (
+          {activeTabName === 'OUTGOING' && (
             <>
               <SectionDivider title="ACTIVE SUBSCRIPTIONS" />
               <View style={styles.pad}>
-                {given.filter((g) => g.type === 'SUBSCRIPTION' && g.status === 'ACTIVE').length === 0 ? (
+                {given.filter((g) => g.type === 'subscription' && g.status === 'active').length === 0 ? (
                   <Text style={[styles.empty, { color: colors.textTertiary }]}>No active subscriptions</Text>
                 ) : (
-                  given.filter((g) => g.type === 'SUBSCRIPTION' && g.status === 'ACTIVE').map((s) => (
+                  given.filter((g) => g.type === 'subscription' && g.status === 'active').map((s) => (
                     <HCard key={s.id}>
                       <View style={styles.outgoingRow}>
                         <View style={styles.outgoingInfo}>
@@ -318,7 +347,7 @@ export default function SponsorshipsScreen() {
                           </Text>
                         </View>
                         <Text style={[styles.payoutStatus, { color: brandColors.copper }]}>
-                          {s.type === 'SUBSCRIPTION' ? 'MONTHLY' : 'ONE-TIME'}
+                          {formatType(s.type).toUpperCase()}
                         </Text>
                       </View>
                     ))}
@@ -338,17 +367,24 @@ export default function SponsorshipsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   loader: { flex: 1 },
-  tabScroll: { flexGrow: 0 },
-  tabRow: { flexDirection: 'row', paddingHorizontal: 8 },
+  tabScroll: { flexGrow: 0, minHeight: 46 },
+  tabScrollContent: { flexGrow: 1, justifyContent: 'center' },
+  tabRow: { flexDirection: 'row' },
   tabItem: {
-    paddingVertical: 10,
+    paddingTop: 12,
+    paddingBottom: 10,
     paddingHorizontal: 12,
+    marginBottom: 3,
     borderBottomWidth: 3,
     borderBottomColor: 'transparent',
   },
   tabItemActive: { borderBottomColor: brandColors.copper },
-  tabLabel: { fontFamily: mono, fontSize: 11, fontWeight: '700', letterSpacing: 0.54 },
+  tabLabel: { fontFamily: mono, fontSize: 10, fontWeight: '700', letterSpacing: 0.4 },
   content: { padding: 16 },
+  upgradeWrap: { paddingVertical: 24 },
+  upgradeCard: { borderWidth: borders.thick, padding: 20, gap: 14 },
+  upgradeTitle: { fontFamily: mono, fontSize: 16, fontWeight: '700', letterSpacing: 0.4 },
+  upgradeDesc: { fontFamily: mono, fontSize: 12, lineHeight: 18 },
   pad: { paddingHorizontal: 0 },
   empty: { fontFamily: mono, fontSize: 12, fontWeight: '600', textAlign: 'center', paddingVertical: 24 },
   balanceCard: { padding: 16, alignItems: 'center' },

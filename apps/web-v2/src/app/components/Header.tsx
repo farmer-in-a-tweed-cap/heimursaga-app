@@ -295,7 +295,7 @@ export function Header() {
                 >
                   LOG ENTRY
                 </Link>
-                {user.username === 'explorer1' && (
+                {user.admin && (
                   <Link
                     href="/admin"
                     className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold relative ${
@@ -590,7 +590,7 @@ export function Header() {
                     >
                       LOG ENTRY
                     </Link>
-                    {user.username === 'explorer1' && (
+                    {user.admin && (
                       <Link
                         href="/admin"
                         className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${

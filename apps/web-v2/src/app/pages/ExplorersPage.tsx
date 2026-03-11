@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ExplorerCard } from '@/app/components/ExplorerCard';
-import { Users } from 'lucide-react';
+import { Users, Loader2 } from 'lucide-react';
 import { explorerApi, type ExplorerListItem } from '@/app/services/api';
 import { useAuth } from '@/app/context/AuthContext';
 import { ExplorerCardSkeleton, SKELETON_COUNT } from '@/app/components/skeletons/CardSkeletons';
@@ -22,6 +22,12 @@ export function ExplorersPage() {
   const [error, setError] = useState<string | null>(null);
   const [followedExplorers, setFollowedExplorers] = useState<Set<string>>(new Set());
   const [bookmarkedExplorers, setBookmarkedExplorers] = useState<Set<string>>(new Set());
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [totalResults, setTotalResults] = useState(0);
 
   // Filter & search state
   const [activeFilter, setActiveFilter] = useState('all');
@@ -103,9 +109,12 @@ export function ExplorersPage() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setPage(1);
     try {
-      const data = await explorerApi.getAll();
+      const data = await explorerApi.getAll({ page: 1, limit: 20 });
       setApiExplorers(data.data || []);
+      setTotalResults(data.results || 0);
+      setHasMore((data.data || []).length < (data.results || 0));
 
       // Initialize followed state from API data
       const followedSet = new Set<string>();
@@ -122,6 +131,41 @@ export function ExplorersPage() {
     }
   }, []);
 
+  // Load more explorers
+  const handleLoadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const data = await explorerApi.getAll({ page: nextPage, limit: 20 });
+      const newExplorers = data.data || [];
+      setApiExplorers(prev => [...prev, ...newExplorers]);
+      setPage(nextPage);
+      setHasMore(newExplorers.length > 0 && (apiExplorers.length + newExplorers.length) < (data.results || 0));
+
+      // Update followed state for new explorers
+      const newFollowed = new Set<string>();
+      newExplorers.forEach(exp => {
+        if (exp.followed) {
+          newFollowed.add(exp.username);
+        }
+      });
+      if (newFollowed.size > 0) {
+        setFollowedExplorers(prev => new Set([...prev, ...newFollowed]));
+      }
+
+      // Update bookmark state for new explorers
+      const newBookmarked = newExplorers.filter(e => e.bookmarked).map(e => e.username);
+      if (newBookmarked.length > 0) {
+        setBookmarkedExplorers(prev => new Set([...prev, ...newBookmarked]));
+      }
+    } catch (err) {
+      console.error('Error loading more explorers:', err);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMore, page, apiExplorers.length]);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -129,9 +173,11 @@ export function ExplorersPage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await explorerApi.getAll();
+        const data = await explorerApi.getAll({ page: 1, limit: 20 });
         if (!cancelled) {
           setApiExplorers(data.data || []);
+          setTotalResults(data.results || 0);
+          setHasMore((data.data || []).length < (data.results || 0));
 
           // Initialize followed state from API data
           const followedSet = new Set<string>();
@@ -141,6 +187,15 @@ export function ExplorersPage() {
             }
           });
           setFollowedExplorers(followedSet);
+
+          // Initialize bookmark state from API data
+          const bookmarkedSet = new Set<string>();
+          (data.data || []).forEach(exp => {
+            if (exp.bookmarked) {
+              bookmarkedSet.add(exp.username);
+            }
+          });
+          setBookmarkedExplorers(bookmarkedSet);
         }
       } catch {
         if (!cancelled) {
@@ -231,7 +286,7 @@ export function ExplorersPage() {
             className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/explorers')
                 ? 'bg-[#4676ac] text-white'
-                : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
+                : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
             EXPLORERS
@@ -241,7 +296,7 @@ export function ExplorersPage() {
             className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/expeditions')
                 ? 'bg-[#4676ac] text-white'
-                : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
+                : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
             EXPEDITIONS
@@ -251,7 +306,7 @@ export function ExplorersPage() {
             className={`px-3 md:px-4 py-2 text-xs font-bold shrink-0 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${
               isActive('/entries')
                 ? 'bg-[#4676ac] text-white'
-                : 'bg-[#2a2a2a] text-white hover:bg-[#ac6d46]'
+                : 'bg-[#2a2a2a] text-white hover:scale-105'
             }`}
           >
             ENTRIES
@@ -294,7 +349,7 @@ export function ExplorersPage() {
               <button
                 key={key}
                 onClick={() => setActiveFilter(key)}
-                className={`px-3 py-1.5 whitespace-nowrap transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                className={`px-3 py-1.5 whitespace-nowrap font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
                   activeFilter === key
                     ? 'bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
                     : 'border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] focus-visible:ring-[#616161]'
@@ -384,11 +439,15 @@ export function ExplorersPage() {
         </div>
       )}
 
-      {/* Load More - TODO: Implement pagination */}
-      {!loading && !error && explorers.length > 0 && (
+      {!loading && !error && explorers.length > 0 && hasMore && (
         <div className="mt-6 text-center">
-          <button className="px-6 py-3 bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold">
-            LOAD MORE EXPLORERS
+          <button
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+            className="px-6 py-3 bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
+          >
+            {isLoadingMore && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isLoadingMore ? 'LOADING...' : 'LOAD MORE EXPLORERS'}
           </button>
         </div>
       )}

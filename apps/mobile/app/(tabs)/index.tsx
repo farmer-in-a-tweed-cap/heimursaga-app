@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import * as SecureStore from 'expo-secure-store';
 import {
   View,
   Text,
@@ -41,7 +42,17 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const router = useRouter();
-  const [feedTab, setFeedTab] = useState(0);
+  const [feedTab, setFeedTabRaw] = useState(0);
+  const setFeedTab = useCallback((tab: number) => {
+    setFeedTabRaw(tab);
+    SecureStore.setItemAsync('heimursaga_feed_tab', String(tab)).catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (!user) return;
+    SecureStore.getItemAsync('heimursaga_feed_tab').then((val) => {
+      if (val === '1') setFeedTabRaw(1);
+    }).catch(() => {});
+  }, [user]);
   const [atlasTab, setAtlasTab] = useState(0); // 0 = EXPLORERS, 1 = ENTRIES
   const [atlasExpanded, setAtlasExpanded] = useState(false);
   const [selectedAtlasEntry, setSelectedAtlasEntry] = useState<Entry | null>(null);
@@ -94,12 +105,17 @@ export default function HomeScreen() {
   const entries = (postsData?.data ?? []).slice(0, 2);
 
   // Following feed
-  const { data: followTrips, loading: followLoading } = useApi<TripsResponse>(
+  const { data: followTrips, loading: followLoading, refetch: refetchFollowTrips } = useApi<TripsResponse>(
     user ? '/trips?context=following' : null,
   );
   const followExpeditions = (followTrips?.data ?? []).slice(0, 5);
 
-  const { data: followPosts } = useApi<{ data: Entry[]; results: number }>(
+  const { data: followUsers, refetch: refetchFollowUsers } = useApi<{ data: ExplorerProfile[]; results: number }>(
+    user ? '/users?context=following' : null,
+  );
+  const followExplorers = (followUsers?.data ?? []).slice(0, 4);
+
+  const { data: followPosts, refetch: refetchFollowPosts } = useApi<{ data: Entry[]; results: number }>(
     user ? '/posts?context=following' : null,
   );
   const followEntries = (followPosts?.data ?? []).slice(0, 2);
@@ -170,37 +186,60 @@ export default function HomeScreen() {
 
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await refetch(); setRefreshing(false); }} tintColor={brandColors.copper} />
+          <RefreshControl refreshing={refreshing} onRefresh={async () => {
+            setRefreshing(true);
+            if (feedTab === 0) {
+              await refetch();
+            } else {
+              await Promise.all([refetchFollowTrips(), refetchFollowUsers(), refetchFollowPosts()]);
+            }
+            setRefreshing(false);
+          }} tintColor={brandColors.copper} />
         }
       >
         {/* Global / Following toggle */}
         <View style={styles.feedToggleWrap}>
           <HCard>
             <View style={styles.feedToggle}>
-              {[
-                { label: 'GLOBAL', count: String(data?.results ?? 0) },
-                { label: 'FOLLOWING', count: user ? String(followTrips?.results ?? 0) : '—' },
-              ].map((tab, i) => (
-                <Pressable
-                  key={tab.label}
-                  onPress={() => setFeedTab(i)}
-                  style={[
-                    styles.feedToggleBtn,
-                    {
-                      backgroundColor: feedTab === i ? brandColors.copper : 'transparent',
-                      borderLeftWidth: i > 0 ? 1 : 0,
-                      borderLeftColor: colors.borderThin,
-                    },
-                  ]}
-                >
-                  <Text style={[styles.feedToggleLabel, { color: feedTab === i ? '#fff' : colors.textTertiary }]}>
-                    {tab.label}
-                  </Text>
-                  <Text style={[styles.feedToggleCount, { color: feedTab === i ? '#fff' : colors.textTertiary }]}>
-                    {tab.count}
-                  </Text>
-                </Pressable>
-              ))}
+              <Pressable
+                onPress={() => setFeedTab(0)}
+                style={[
+                  styles.feedToggleBtn,
+                  { backgroundColor: feedTab === 0 ? brandColors.copper : 'transparent' },
+                ]}
+              >
+                <Text style={[styles.feedToggleLabel, { color: feedTab === 0 ? '#fff' : colors.textTertiary }]}>
+                  GLOBAL
+                </Text>
+                <Text style={[styles.feedToggleCount, { color: feedTab === 0 ? '#fff' : colors.textTertiary }]}>
+                  {String(data?.results ?? 0)}
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={() => {
+                  if (!user) {
+                    router.push('/(auth)/login');
+                    return;
+                  }
+                  setFeedTab(1);
+                }}
+                style={[
+                  styles.feedToggleBtn,
+                  {
+                    backgroundColor: feedTab === 1 ? brandColors.blue : 'transparent',
+                    borderLeftWidth: 1,
+                    borderLeftColor: colors.borderThin,
+                    opacity: !user ? 0.5 : 1,
+                  },
+                ]}
+              >
+                <Text style={[styles.feedToggleLabel, { color: feedTab === 1 ? '#fff' : colors.textTertiary }]}>
+                  FOLLOWING
+                </Text>
+                <Text style={[styles.feedToggleCount, { color: feedTab === 1 ? '#fff' : colors.textTertiary }]}>
+                  {user ? String(followUsers?.results ?? 0) : '—'}
+                </Text>
+              </Pressable>
             </View>
           </HCard>
         </View>
@@ -357,6 +396,31 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Following empty state */}
+        {feedTab === 1 && !followLoading && followExpeditions.length === 0 && followEntries.length === 0 && followExplorers.length === 0 && (
+          <View style={styles.sectionContent}>
+            <HCard>
+              <View style={styles.followingEmpty}>
+                <Svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke={brandColors.blue} strokeWidth={1.5}>
+                  <Path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <Circle cx={9} cy={7} r={4} />
+                  <Path d="M19 8v6M22 11h-6" />
+                </Svg>
+                <Text style={[styles.followingEmptyTitle, { color: colors.text }]}>No Explorers Followed Yet</Text>
+                <Text style={[styles.followingEmptyDesc, { color: colors.textTertiary }]}>
+                  Follow explorers to see their expeditions, entries, and updates here.
+                </Text>
+                <Pressable
+                  style={[styles.followingEmptyBtn, { backgroundColor: brandColors.blue }]}
+                  onPress={() => { setFeedTab(0); }}
+                >
+                  <Text style={styles.followingEmptyBtnText}>BROWSE GLOBAL</Text>
+                </Pressable>
+              </View>
+            </HCard>
+          </View>
+        )}
+
         {/* Expeditions */}
         <SectionDivider title="EXPEDITIONS" action={feedTab === 0 ? 'VIEW ALL' : undefined} onAction={feedTab === 0 ? () => router.push('/discover?tab=0') : undefined} />
         <View style={styles.sectionContent}>
@@ -387,8 +451,8 @@ export default function HomeScreen() {
           })()}
         </View>
 
-        {/* Explorers — global only */}
-        {feedTab === 0 && (
+        {/* Explorers */}
+        {feedTab === 0 ? (
           <>
             <SectionDivider title="EXPLORERS" action="VIEW ALL" onAction={() => router.push('/discover?tab=1')} />
             <View style={styles.sectionContent}>
@@ -401,6 +465,27 @@ export default function HomeScreen() {
                   />
                 ))}
               </View>
+            </View>
+          </>
+        ) : (
+          <>
+            <SectionDivider title="FOLLOWED EXPLORERS" />
+            <View style={styles.sectionContent}>
+              {followExplorers.length === 0 ? (
+                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
+                  No followed explorers yet
+                </Text>
+              ) : (
+                <View style={styles.explorerGrid}>
+                  {followExplorers.map((explorer) => (
+                    <ExplorerCardMini
+                      key={explorer.username}
+                      explorer={explorer}
+                      onPress={() => router.push(`/explorer/${explorer.username}`)}
+                    />
+                  ))}
+                </View>
+              )}
             </View>
           </>
         )}
@@ -484,6 +569,12 @@ const styles = StyleSheet.create({
   centered: { alignItems: 'center', justifyContent: 'center', padding: 40 },
   errorText: { fontSize: 14, textAlign: 'center' },
   retryText: { color: brandColors.copper, fontWeight: '700', marginTop: 12, fontSize: 14 },
-  emptyText: { fontSize: 14, textAlign: 'center' },
+  emptyText: { fontSize: 14, textAlign: 'center', paddingVertical: 12 },
+  // Following empty state
+  followingEmpty: { alignItems: 'center', padding: 24 },
+  followingEmptyTitle: { fontFamily: mono, fontSize: 14, fontWeight: '700', marginTop: 12 },
+  followingEmptyDesc: { fontFamily: mono, fontSize: 12, textAlign: 'center', marginTop: 6, lineHeight: 18 },
+  followingEmptyBtn: { marginTop: 16, paddingVertical: 10, paddingHorizontal: 20 },
+  followingEmptyBtnText: { fontFamily: mono, fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.6 },
   spacer: { height: 32 },
 });

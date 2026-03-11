@@ -45,7 +45,11 @@ import {
   ServiceInternalException,
   ServiceNotFoundException,
 } from '@/common/exceptions';
-import { ISession, ISessionQuery, ISessionQueryWithPayload } from '@/common/interfaces';
+import {
+  ISession,
+  ISessionQuery,
+  ISessionQueryWithPayload,
+} from '@/common/interfaces';
 import { APPLICATION_FEE, config } from '@/config';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
@@ -798,9 +802,10 @@ export class SponsorService {
 
           if (creator && creator.is_email_verified && sponsor) {
             const amount = integerToDecimal(checkoutData.total);
-            const processingFee = Math.round(
-              calculateFee({ amount, percent: APPLICATION_FEE }) * 100,
-            ) / 100;
+            const processingFee =
+              Math.round(
+                calculateFee({ amount, percent: APPLICATION_FEE }) * 100,
+              ) / 100;
             const netAmount = Math.round((amount - processingFee) * 100) / 100;
             const expedition = creator.expeditions[0];
 
@@ -1581,9 +1586,7 @@ export class SponsorService {
             })
           : [];
 
-      const entryByPublicId = new Map(
-        entries.map((e) => [e.public_id, e]),
-      );
+      const entryByPublicId = new Map(entries.map((e) => [e.public_id, e]));
 
       const response: ISponsorshipGetAllResponse = {
         results,
@@ -1637,9 +1640,7 @@ export class SponsorService {
               const ent = entry_public_id
                 ? entryByPublicId.get(entry_public_id)
                 : undefined;
-              return ent
-                ? { id: ent.public_id, title: ent.title }
-                : undefined;
+              return ent ? { id: ent.public_id, title: ent.title } : undefined;
             })(),
             createdAt: created_at,
           }),
@@ -1723,9 +1724,7 @@ export class SponsorService {
               },
             })
           : [];
-      const entryByPublicId = new Map(
-        entries.map((e) => [e.public_id, e]),
-      );
+      const entryByPublicId = new Map(entries.map((e) => [e.public_id, e]));
 
       const response: ISponsorshipGetAllResponse = {
         results,
@@ -1771,9 +1770,7 @@ export class SponsorService {
               const ent = entry_public_id
                 ? entryByPublicId.get(entry_public_id)
                 : undefined;
-              return ent
-                ? { id: ent.public_id, title: ent.title }
-                : undefined;
+              return ent ? { id: ent.public_id, title: ent.title } : undefined;
             })(),
             createdAt: created_at,
           }),
@@ -1859,24 +1856,35 @@ export class SponsorService {
         ...new Set(checkouts.map((c) => c.entry_public_id).filter(Boolean)),
       ] as string[];
       const checkoutExpeditionIds = [
-        ...new Set(checkouts.map((c) => c.expedition_public_id).filter(Boolean)),
+        ...new Set(
+          checkouts.map((c) => c.expedition_public_id).filter(Boolean),
+        ),
       ] as string[];
 
-      const checkoutEntries = checkoutEntryIds.length > 0
-        ? await this.prisma.entry.findMany({
-            where: { public_id: { in: checkoutEntryIds }, deleted_at: null },
-            select: { public_id: true, title: true },
-          })
-        : [];
-      const checkoutExpeditions = checkoutExpeditionIds.length > 0
-        ? await this.prisma.expedition.findMany({
-            where: { public_id: { in: checkoutExpeditionIds }, deleted_at: null },
-            select: { public_id: true, title: true },
-          })
-        : [];
+      const checkoutEntries =
+        checkoutEntryIds.length > 0
+          ? await this.prisma.entry.findMany({
+              where: { public_id: { in: checkoutEntryIds }, deleted_at: null },
+              select: { public_id: true, title: true },
+            })
+          : [];
+      const checkoutExpeditions =
+        checkoutExpeditionIds.length > 0
+          ? await this.prisma.expedition.findMany({
+              where: {
+                public_id: { in: checkoutExpeditionIds },
+                deleted_at: null,
+              },
+              select: { public_id: true, title: true },
+            })
+          : [];
 
-      const checkoutEntryMap = new Map(checkoutEntries.map((e) => [e.public_id, e] as const));
-      const checkoutExpeditionMap = new Map(checkoutExpeditions.map((e) => [e.public_id, e] as const));
+      const checkoutEntryMap = new Map(
+        checkoutEntries.map((e) => [e.public_id, e] as const),
+      );
+      const checkoutExpeditionMap = new Map(
+        checkoutExpeditions.map((e) => [e.public_id, e] as const),
+      );
 
       // Check refund status via Stripe in a single batch
       // Only fetch payment intents that exist (parallel, but scoped to our records)
@@ -1921,13 +1929,19 @@ export class SponsorService {
           entry: checkout.entry_public_id
             ? (() => {
                 const ent = checkoutEntryMap.get(checkout.entry_public_id);
-                return ent ? { id: ent.public_id, title: ent.title } : undefined;
+                return ent
+                  ? { id: ent.public_id, title: ent.title }
+                  : undefined;
               })()
             : undefined,
           expedition: checkout.expedition_public_id
             ? (() => {
-                const exp = checkoutExpeditionMap.get(checkout.expedition_public_id);
-                return exp ? { id: exp.public_id, title: exp.title } : undefined;
+                const exp = checkoutExpeditionMap.get(
+                  checkout.expedition_public_id,
+                );
+                return exp
+                  ? { id: exp.public_id, title: exp.title }
+                  : undefined;
               })()
             : undefined,
         };
@@ -2496,7 +2510,12 @@ export class SponsorService {
       // Get or create Stripe customer for the sponsor
       const user = await this.prisma.explorer.findFirstOrThrow({
         where: { id: userId },
-        select: { id: true, email: true, username: true, stripe_customer_id: true },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          stripe_customer_id: true,
+        },
       });
       const stripeCustomer = await this.stripeService.getOrCreateCustomer({
         email: user.email,
@@ -2541,8 +2560,13 @@ export class SponsorService {
           expeditionPublicId,
         });
       } catch (chargeError) {
-        if (chargeError?.raw?.code === 'resource_missing' && chargeError?.raw?.param === 'payment_method') {
-          this.logger.warn('Saved payment method invalid, falling back to SetupIntent');
+        if (
+          chargeError?.raw?.code === 'resource_missing' &&
+          chargeError?.raw?.param === 'payment_method'
+        ) {
+          this.logger.warn(
+            'Saved payment method invalid, falling back to SetupIntent',
+          );
           const setupIntent = await this.stripeService.setupIntents.create({
             customer: stripeCustomer.id,
             usage: 'off_session',
@@ -2594,8 +2618,9 @@ export class SponsorService {
       }
 
       // Save the payment method locally
-      const stripePm =
-        await this.stripeService.paymentMethods.retrieve(stripePaymentMethodId);
+      const stripePm = await this.stripeService.paymentMethods.retrieve(
+        stripePaymentMethodId,
+      );
       await this.prisma.paymentMethod.create({
         data: {
           public_id: generator.publicId(),
@@ -2659,7 +2684,12 @@ export class SponsorService {
 
       const user = await this.prisma.explorer.findFirstOrThrow({
         where: { id: userId },
-        select: { id: true, email: true, username: true, stripe_customer_id: true },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          stripe_customer_id: true,
+        },
       });
       const stripeCustomer = await this.stripeService.getOrCreateCustomer({
         email: user.email,
@@ -2701,8 +2731,18 @@ export class SponsorService {
       public_id: string;
       title: string | null;
       author_id: number;
-      author: { id: number; username: string; role: string; email: string; is_email_verified: boolean };
-      expedition: { public_id: string; title: string | null; status: string | null } | null;
+      author: {
+        id: number;
+        username: string;
+        role: string;
+        email: string;
+        is_email_verified: boolean;
+      };
+      expedition: {
+        public_id: string;
+        title: string | null;
+        status: string | null;
+      } | null;
     };
     stripeCustomer: { id: string };
     stripePaymentMethodId: string;
@@ -2829,7 +2869,9 @@ export class SponsorService {
             sponsorUsername: user.username,
             entryTitle: entry.title || 'Untitled Entry',
             entryId: entry.public_id,
-            expeditionName: expeditionPublicId ? entry.expedition?.title || undefined : undefined,
+            expeditionName: expeditionPublicId
+              ? entry.expedition?.title || undefined
+              : undefined,
             expeditionId: expeditionPublicId || undefined,
             netAmount: '$2.70',
           },

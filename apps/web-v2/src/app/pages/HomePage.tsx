@@ -258,6 +258,23 @@ export function HomePage() {
             }
           });
           setFollowedExplorers(followedSet);
+
+          // Initialize bookmark state from API data
+          const bookmarkedExpSet = new Set<string>();
+          (expeditionsData.data || []).forEach(exp => {
+            if (exp.bookmarked && exp.id) {
+              bookmarkedExpSet.add(exp.id);
+            }
+          });
+          setBookmarkedExpeditions(bookmarkedExpSet);
+
+          const bookmarkedExplSet = new Set<string>();
+          (explorersData.data || []).forEach(exp => {
+            if (exp.bookmarked) {
+              bookmarkedExplSet.add(exp.username);
+            }
+          });
+          setBookmarkedExplorers(bookmarkedExplSet);
         }
       } catch (err) {
         if (!cancelled) {
@@ -286,9 +303,9 @@ export function HomePage() {
       setFollowingLoading(true);
       try {
         const [expeditionsData, explorersData, entriesData] = await Promise.all([
-          expeditionApi.getAll('following').catch(() => ({ data: [], results: 0 })),
-          explorerApi.getAll('following').catch(() => ({ data: [], results: 0 })),
-          entryApi.getAll('following').catch(() => ({ data: [], results: 0 })),
+          expeditionApi.getAll({ context: 'following' }).catch(() => ({ data: [], results: 0 })),
+          explorerApi.getAll({ context: 'following' }).catch(() => ({ data: [], results: 0 })),
+          entryApi.getAll({ context: 'following' }).catch(() => ({ data: [], results: 0 })),
         ]);
         if (!cancelled) {
           setFollowingExpeditions(expeditionsData.data || []);
@@ -524,7 +541,7 @@ export function HomePage() {
                     <h3 className="text-sm font-bold dark:text-[#e5e5e5]">FEATURED EXPEDITIONS</h3>
                     <button
                       onClick={() => router.push('/expeditions')}
-                      className="text-xs text-[#4676ac] hover:text-[#365a87] font-mono"
+                      className="text-xs text-[#ac6d46] hover:text-[#8a5738] font-mono font-bold"
                     >
                       VIEW ALL →
                     </button>
@@ -555,7 +572,7 @@ export function HomePage() {
                     <h3 className="text-sm font-bold dark:text-[#e5e5e5]">FEATURED EXPLORERS</h3>
                     <button
                       onClick={() => router.push('/explorers')}
-                      className="text-xs text-[#4676ac] hover:text-[#365a87] font-mono"
+                      className="text-xs text-[#ac6d46] hover:text-[#8a5738] font-mono font-bold"
                     >
                       VIEW ALL →
                     </button>

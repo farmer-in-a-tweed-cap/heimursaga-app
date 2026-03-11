@@ -7,8 +7,9 @@ import {
   MaxLength,
 } from 'class-validator';
 
-import { ToNumber } from '@/common/decorators';
 import { SanitizeText } from '@/lib/sanitizer';
+
+import { ToNumber } from '@/common/decorators';
 
 export class ExpeditionNoteCreateDto {
   @ApiProperty({ required: true })

@@ -26,6 +26,7 @@ model Explorer {
   stripe_customer_id          String?               @db.VarChar(40)
   is_stripe_account_connected Boolean?              @default(false)
   stripe_account_id           String?               @db.VarChar(40)
+  admin                       Boolean               @default(false)
   blocked                     Boolean?              @default(false)
   resting_since               DateTime?
   sponsored_checkouts         Checkout[]            @relation("sponsored_checkouts")
@@ -58,6 +59,7 @@ model Explorer {
   comments                    Comment[]
   flags_created               Flag[]                @relation("explorer_flags_created")
   flags_reviewed              Flag[]                @relation("explorer_flags_reviewed")
+  flags_target                Flag[]                @relation("explorer_flags_target")
   expedition_notes            ExpeditionNote[]      @relation("explorer_expedition_notes")
   expedition_note_replies     ExpeditionNoteReply[] @relation("explorer_expedition_note_replies")
   entry_views                 EntryView[]           @relation("explorer_views")
@@ -391,6 +393,7 @@ model Expedition {
   bookmarks       ExpeditionBookmark[] @relation("expedition_bookmarks")
   notes           ExpeditionNote[]     @relation("expedition_notes")
   author          Explorer             @relation(fields: [author_id], references: [id], onDelete: Cascade)
+  flags           Flag[]               @relation("expedition_flags")
 
   @@index([public_id])
   @@index([author_id])
@@ -671,30 +674,36 @@ model Message {
 }
 
 model Flag {
-  id                 Int       @id @default(autoincrement())
-  public_id          String    @unique @db.VarChar(14)
-  flagged_entry_id   Int?      @map("flagged_post_id")
-  flagged_comment_id Int?
-  category           String    @db.VarChar(50)
-  description        String?   @db.VarChar(1000)
-  status             String    @default("pending") @db.VarChar(20)
-  reporter_id        Int
-  reviewed_by_id     Int?
-  reviewed_at        DateTime?
-  admin_notes        String?   @db.VarChar(1000)
-  action_taken       String?   @db.VarChar(50)
-  created_at         DateTime  @default(now())
-  updated_at         DateTime  @updatedAt
+  id                    Int       @id @default(autoincrement())
+  public_id             String    @unique @db.VarChar(14)
+  flagged_entry_id      Int?      @map("flagged_post_id")
+  flagged_comment_id    Int?
+  flagged_expedition_id Int?
+  flagged_explorer_id   Int?
+  category              String    @db.VarChar(50)
+  description           String?   @db.VarChar(1000)
+  status                String    @default("pending") @db.VarChar(20)
+  reporter_id           Int
+  reviewed_by_id        Int?
+  reviewed_at           DateTime?
+  admin_notes           String?   @db.VarChar(1000)
+  action_taken          String?   @db.VarChar(50)
+  created_at            DateTime  @default(now())
+  updated_at            DateTime  @updatedAt
 
-  reporter        Explorer @relation("explorer_flags_created", fields: [reporter_id], references: [id], onDelete: Cascade)
-  reviewed_by     Explorer? @relation("explorer_flags_reviewed", fields: [reviewed_by_id], references: [id], onDelete: SetNull)
-  flagged_entry   Entry?    @relation("entry_flags", fields: [flagged_entry_id], references: [id], onDelete: Cascade)
-  flagged_comment Comment?  @relation("comment_flags", fields: [flagged_comment_id], references: [id], onDelete: Cascade)
+  reporter           Explorer    @relation("explorer_flags_created", fields: [reporter_id], references: [id], onDelete: Cascade)
+  reviewed_by        Explorer?   @relation("explorer_flags_reviewed", fields: [reviewed_by_id], references: [id], onDelete: SetNull)
+  flagged_entry      Entry?      @relation("entry_flags", fields: [flagged_entry_id], references: [id], onDelete: SetNull)
+  flagged_comment    Comment?    @relation("comment_flags", fields: [flagged_comment_id], references: [id], onDelete: SetNull)
+  flagged_expedition Expedition? @relation("expedition_flags", fields: [flagged_expedition_id], references: [id], onDelete: SetNull)
+  flagged_explorer   Explorer?   @relation("explorer_flags_target", fields: [flagged_explorer_id], references: [id], onDelete: SetNull)
 
   @@index([status, created_at])
   @@index([reporter_id])
   @@index([flagged_entry_id])
   @@index([flagged_comment_id])
+  @@index([flagged_expedition_id])
+  @@index([flagged_explorer_id])
   @@map("flags")
 }
 

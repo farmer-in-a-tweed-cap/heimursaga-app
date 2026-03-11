@@ -29,7 +29,6 @@ import { getCoordinatesFromLocation } from '@/lib/geocoding';
 import { toGeoJson } from '@/lib/geojson';
 import { resolveExpeditionLocations } from '@/lib/resolve-expedition-location';
 import { getStaticMediaUrl } from '@/lib/upload';
-import { matchRoles } from '@/lib/utils';
 
 import {
   ServiceBadRequestException,
@@ -57,17 +56,34 @@ export class ExplorerService {
     private eventService: EventService,
   ) {}
 
+  private async isAdmin(explorerId: number): Promise<boolean> {
+    const explorer = await this.prisma.explorer.findUnique({
+      where: { id: explorerId },
+      select: { admin: true },
+    });
+    return explorer?.admin === true;
+  }
+
   async getExplorers({
     query,
     session,
-  }: ISessionQuery<{ context?: string }>): Promise<IUserGetAllResponse> {
+  }: ISessionQuery<{
+    context?: string;
+    page?: string;
+    limit?: string;
+  }>): Promise<IUserGetAllResponse> {
     try {
       const { context } = query;
       const { explorerId, explorerRole } = session;
 
+      const parsedPage = Math.max(1, parseInt(query.page, 10) || 1);
+      const parsedLimit = Math.min(
+        50,
+        Math.max(1, parseInt(query.limit, 10) || 20),
+      );
+
       // Admin gets all explorers, public/users get only non-blocked explorers
-      const isAdmin =
-        !!explorerId && matchRoles(explorerRole, [UserRole.ADMIN]);
+      const isAdmin = !!explorerId && (await this.isAdmin(explorerId));
 
       let where: Prisma.ExplorerWhereInput = isAdmin ? {} : { blocked: false };
 
@@ -79,7 +95,14 @@ export class ExplorerService {
           select: { followee_id: true },
         });
         const followedIds = follows.map((f) => f.followee_id);
-        if (followedIds.length === 0) return { data: [], results: 0 };
+        if (followedIds.length === 0)
+          return {
+            data: [],
+            results: 0,
+            page: parsedPage,
+            limit: parsedLimit,
+            totalPages: 0,
+          };
         where = { ...where, id: { in: followedIds } };
       }
 
@@ -148,7 +171,8 @@ export class ExplorerService {
         where,
         select,
         orderBy: [{ id: 'desc' }],
-        take: 100, // Limit for public access
+        skip: (parsedPage - 1) * parsedLimit,
+        take: parsedLimit,
       });
 
       // Resolve active expedition locations in batch
@@ -298,6 +322,9 @@ export class ExplorerService {
       const response: IUserGetAllResponse = {
         data: mappedData,
         results,
+        page: parsedPage,
+        limit: parsedLimit,
+        totalPages: Math.ceil(results / parsedLimit),
       };
 
       return response;
@@ -320,29 +347,10 @@ export class ExplorerService {
 
       let where = { username } as Prisma.ExplorerWhereInput;
 
-      // filter based on explorer role
-      switch (explorerRole) {
-        case UserRole.ADMIN:
-          where = { ...where };
-          break;
-        case UserRole.CREATOR:
-          where = {
-            ...where,
-            blocked: false,
-          };
-          break;
-        case UserRole.USER:
-          where = {
-            ...where,
-            blocked: false,
-          };
-          break;
-        default:
-          where = {
-            ...where,
-            blocked: false,
-          };
-          break;
+      // Admins can see all explorers, others only see non-blocked
+      const isAdmin = !!explorerId && (await this.isAdmin(explorerId));
+      if (!isAdmin) {
+        where = { ...where, blocked: false };
       }
 
       // Check if the viewing explorer is the profile owner (for bypassing visibility filters)
@@ -537,8 +545,8 @@ export class ExplorerService {
 
       if (!username) throw new ServiceNotFoundException('explorer not found');
 
-      // check access
-      const access = !!explorerId && matchRoles(explorerRole, [UserRole.ADMIN]);
+      // check access — admin only
+      const access = !!explorerId && (await this.isAdmin(explorerId));
       if (!access) throw new ServiceForbiddenException();
 
       // get the explorer
@@ -2076,13 +2084,19 @@ export class SessionExplorerService {
       const expeditionPublicIds = data
         .map((n) => n.expedition_public_id)
         .filter((id): id is string => !!id);
-      const expeditions = expeditionPublicIds.length > 0
-        ? await this.prisma.expedition.findMany({
-            where: { public_id: { in: expeditionPublicIds }, deleted_at: null },
-            select: { public_id: true, title: true },
-          })
-        : [];
-      const expeditionMap = new Map(expeditions.map((e) => [e.public_id, e.title] as const));
+      const expeditions =
+        expeditionPublicIds.length > 0
+          ? await this.prisma.expedition.findMany({
+              where: {
+                public_id: { in: expeditionPublicIds },
+                deleted_at: null,
+              },
+              select: { public_id: true, title: true },
+            })
+          : [];
+      const expeditionMap = new Map(
+        expeditions.map((e) => [e.public_id, e.title] as const),
+      );
 
       const response: IUserNotificationGetResponse = {
         results,
@@ -2128,7 +2142,9 @@ export class SessionExplorerService {
             passportStampId: passport_stamp_id,
             passportStampName: passport_stamp_name,
             expeditionPublicId: expedition_public_id,
-            expeditionTitle: expedition_public_id ? expeditionMap.get(expedition_public_id) : undefined,
+            expeditionTitle: expedition_public_id
+              ? expeditionMap.get(expedition_public_id)
+              : undefined,
           }),
         ),
         page,

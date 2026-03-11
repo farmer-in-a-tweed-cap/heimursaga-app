@@ -43,6 +43,7 @@ export interface ISitemapGetResponse {
 export interface ISessionUser {
   id: number;
   role: string;
+  admin: boolean;
   username: string;
   email: string;
   picture?: string;
@@ -115,6 +116,9 @@ export interface IUserDetail {
 export interface IUserGetAllResponse {
   data: IUserDetail[];
   results: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
 }
 
 export interface IUserGetByUsernameResponse extends IUserDetail {
@@ -354,6 +358,9 @@ export interface IPostDetail {
 export interface IPostGetAllResponse {
   data: IPostDetail[];
   results: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
 }
 
 export interface IPostQueryResponse {
@@ -993,6 +1000,9 @@ export interface ITripDetail {
 export interface ITripGetAllResponse {
   results: number;
   data: ITripDetail[];
+  page?: number;
+  limit?: number;
+  totalPages?: number;
 }
 
 export interface ITripGetByIdResponse extends ITripDetail {}
@@ -1102,6 +1112,8 @@ export interface IFlagCreatePayload {
   description?: string;
   flaggedPostId?: string;
   flaggedCommentId?: string;
+  flaggedExpeditionId?: string;
+  flaggedExplorerId?: string;
 }
 
 export interface IFlagUpdatePayload {
@@ -1127,7 +1139,7 @@ export interface IFlagDetail {
     username: string;
   };
   flaggedContent: {
-    type: 'post' | 'comment';
+    type: 'post' | 'comment' | 'expedition' | 'explorer';
     id: string;
     preview: string;
     author: {
@@ -1239,6 +1251,7 @@ export interface IAdminExplorerListItem {
   username: string;
   email: string;
   role: string;
+  admin: boolean;
   blocked: boolean;
   createdAt: Date;
   picture?: string;

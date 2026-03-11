@@ -22,6 +22,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { ThemeProvider, useTheme } from '@/theme/ThemeContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { mono, colors as brandColors } from '@/theme/tokens';
@@ -515,18 +516,23 @@ export default function RootLayout() {
     'Jost-SemiBold':     require('../assets/fonts/Jost-SemiBold.ttf'),
     'Jost-Bold':         require('../assets/fonts/Jost-Bold.ttf'),
     'Jost-MediumItalic': require('../assets/fonts/Jost-MediumItalic.ttf'),
-    'Eczar':             require('../assets/fonts/Eczar-Regular.ttf'),
-    'Eczar-Medium':      require('../assets/fonts/Eczar-Medium.ttf'),
-    'Eczar-Bold':        require('../assets/fonts/Eczar-Bold.ttf'),
+    'Lora':              require('../assets/fonts/Lora-Regular.ttf'),
+    'Lora-Medium':       require('../assets/fonts/Lora-Medium.ttf'),
+    'Lora-Bold':         require('../assets/fonts/Lora-Bold.ttf'),
   });
 
   if (!fontsLoaded) return null; // native splash stays visible
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <RootNav />
-      </AuthProvider>
-    </ThemeProvider>
+    <StripeProvider
+      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
+      urlScheme="heimursaga"
+    >
+      <ThemeProvider>
+        <AuthProvider>
+          <RootNav />
+        </AuthProvider>
+      </ThemeProvider>
+    </StripeProvider>
   );
 }

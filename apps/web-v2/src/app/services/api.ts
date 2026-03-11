@@ -175,6 +175,7 @@ export const api = {
 export interface SessionUser {
   id: number;
   role: string;
+  admin: boolean;
   username: string;
   email: string;
   picture?: string;
@@ -328,6 +329,7 @@ export interface ExplorerListItem {
   creator?: boolean;
   blocked?: boolean;
   followed?: boolean;
+  bookmarked?: boolean;
   // Expedition data for status calculation
   recentExpeditions?: Array<{
     id: string;
@@ -410,6 +412,7 @@ export interface ExplorerExpedition {
     picture?: string;
     stripeAccountConnected?: boolean;
   };
+  bookmarked?: boolean;
 }
 
 export interface ExplorerFollower {
@@ -425,8 +428,14 @@ export const explorerApi = {
   /**
    * Get all explorers
    */
-  getAll: (context?: string) =>
-    api.get<{ data: ExplorerListItem[]; results: number }>(`/users${context ? `?context=${context}` : ''}`),
+  getAll: (params?: { page?: number; limit?: number; context?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.context) searchParams.set('context', params.context);
+    const qs = searchParams.toString();
+    return api.get<{ data: ExplorerListItem[]; results: number; page?: number; limit?: number; totalPages?: number }>(`/users${qs ? `?${qs}` : ''}`);
+  },
 
   /**
    * Get explorer profile by username
@@ -813,8 +822,14 @@ export const expeditionApi = {
   /**
    * Get all expeditions
    */
-  getAll: (context?: string) =>
-    api.get<{ data: Expedition[]; results: number }>(`/trips${context ? `?context=${context}` : ''}`),
+  getAll: (params?: { page?: number; limit?: number; context?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.context) searchParams.set('context', params.context);
+    const qs = searchParams.toString();
+    return api.get<{ data: Expedition[]; results: number; page?: number; limit?: number; totalPages?: number }>(`/trips${qs ? `?${qs}` : ''}`);
+  },
 
   /**
    * Get expedition by ID
@@ -1045,8 +1060,14 @@ export const entryApi = {
   /**
    * Get all entries
    */
-  getAll: (context?: string) =>
-    api.get<{ data: Entry[]; results: number }>(`/posts${context ? `?context=${context}` : ''}`),
+  getAll: (params?: { page?: number; limit?: number; context?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.context) searchParams.set('context', params.context);
+    const qs = searchParams.toString();
+    return api.get<{ data: Entry[]; results: number; page?: number; limit?: number; totalPages?: number }>(`/posts${qs ? `?${qs}` : ''}`);
+  },
 
   /**
    * Get entry by ID
@@ -2006,6 +2027,7 @@ export interface AdminExplorerListItem {
   username: string;
   email: string;
   role: string;
+  admin: boolean;
   blocked: boolean;
   createdAt: string;
   picture?: string;
@@ -2028,7 +2050,7 @@ export interface AdminFlag {
     username: string;
   };
   flaggedContent: {
-    type: 'post' | 'comment';
+    type: 'post' | 'comment' | 'expedition' | 'explorer';
     id: string;
     preview: string;
     author: {
@@ -2037,6 +2059,18 @@ export interface AdminFlag {
     };
   };
 }
+
+// Flag / Report API
+export const flagApi = {
+  create: (payload: {
+    category: string;
+    description?: string;
+    flaggedPostId?: string;
+    flaggedCommentId?: string;
+    flaggedExpeditionId?: string;
+    flaggedExplorerId?: string;
+  }) => api.post<{ id: string }>('/flags', payload),
+};
 
 export const adminApi = {
   getStats: () =>

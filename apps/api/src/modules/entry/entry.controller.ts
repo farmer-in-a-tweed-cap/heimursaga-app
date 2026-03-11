@@ -37,8 +37,13 @@ export class EntryController {
   async getEntries(
     @Session() session: ISession,
     @Query('context') context?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    return await this.entryService.getEntries({ query: { context }, session });
+    return await this.entryService.getEntries({
+      query: { context, page, limit },
+      session,
+    });
   }
 
   @Public()

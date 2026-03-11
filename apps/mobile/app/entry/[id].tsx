@@ -13,6 +13,7 @@ import { MetadataGrid } from '@/components/ui/MetadataGrid';
 import { SectionDivider } from '@/components/ui/SectionDivider';
 import { commentsApi, bookmarksApi } from '@/services/api';
 import { Svg, Path } from 'react-native-svg';
+import { QuickSponsorButton } from '@/components/ui/QuickSponsorButton';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import { mono, heading, colors as brandColors, borders } from '@/theme/tokens';
 import type { Entry, Comment } from '@/types/api';
@@ -26,7 +27,7 @@ export default function EntryDetailScreen() {
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
-  const { data: entry, loading } = useApi<Entry>(
+  const { data: entry, loading, refetch: refetchEntry } = useApi<Entry>(
     id ? `/posts/${id}` : null,
   );
   const { data: commentsData, refetch: refetchComments } = useApi<{ data: Comment[]; count: number }>(
@@ -210,6 +211,17 @@ export default function EntryDetailScreen() {
             })
           )}
         </View>
+
+        {/* Quick Sponsor */}
+        {entry.author?.creator && entry.author?.stripeAccountConnected && user?.username !== entry.author.username && (
+          <View style={styles.quickSponsorWrap}>
+            <QuickSponsorButton
+              entryId={entry.id}
+              authorUsername={entry.author.username}
+              onSuccess={refetchEntry}
+            />
+          </View>
+        )}
 
         {/* Comments */}
         <View style={styles.contentWrap}>
@@ -477,6 +489,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#ffffff',
   },
+  quickSponsorWrap: { paddingHorizontal: 16, paddingBottom: 8 },
   spacer: { height: 32 },
   photoCaption: { fontSize: 12, fontStyle: 'italic', textAlign: 'center', marginBottom: 20 },
   relatedWrap: { padding: 16, paddingTop: 20 },

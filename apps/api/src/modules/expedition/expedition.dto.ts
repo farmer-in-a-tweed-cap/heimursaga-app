@@ -18,8 +18,9 @@ import {
   Min,
 } from 'class-validator';
 
+import { SanitizeContent, SanitizeText } from '@/lib/sanitizer';
+
 import { ToNumber } from '@/common/decorators';
-import { SanitizeText, SanitizeContent } from '@/lib/sanitizer';
 
 export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   @ApiProperty({ required: true })

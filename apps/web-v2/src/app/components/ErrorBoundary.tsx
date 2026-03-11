@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               </button>
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-[#4676ac] text-white font-bold hover:bg-[#365a87] transition-all active:scale-[0.98] text-sm"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] text-sm"
               >
                 HOME
               </Link>
