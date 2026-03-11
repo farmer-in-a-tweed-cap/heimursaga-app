@@ -6,19 +6,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { 
-  Check, 
-  Lock, 
-  Shield, 
-  Zap,
-  BarChart3,
-  MessageSquare,
-  DollarSign,
-  Eye,
-  HelpCircle,
-  FileText,
-  Sparkles
-} from 'lucide-react';
+import { Check } from 'lucide-react';
 
 export function UpgradePage() {
   const { user } = useAuth();
@@ -81,12 +69,12 @@ export function UpgradePage() {
   const annualSavings = (monthlyPrice * 12) - annualPrice; // $34 savings
 
   const coreFeatures = [
-    { icon: DollarSign, title: 'Receive Sponsorships', desc: 'Accept one-time contributions and monthly subscriptions from supporters who want to fund your expeditions' },
-    { icon: MessageSquare, title: 'Private Messages', desc: 'Direct messaging with your sponsors and other explorers for deeper connections and coordination' },
-    { icon: FileText, title: 'Additional Entry Types', desc: 'Unlock sponsor-only entries and Expedition Notes (280-char daily updates) to keep supporters engaged' },
-    { icon: Sparkles, title: 'More Photos Per Entry', desc: 'Upload up to 10 photos per journal entry instead of the standard 2 for free accounts' },
-    { icon: BarChart3, title: 'Expedition Insights', desc: 'Track entry views, engagement metrics, sponsor activity, and understand your audience better' },
-    { icon: Eye, title: 'Sponsor-Only Content', desc: 'Create exclusive journal entries and updates visible only to your paying supporters' }
+    { title: 'Receive Sponsorships', desc: 'Accept one-time contributions and monthly subscriptions from supporters who want to fund your expeditions' },
+    { title: 'Private Messages', desc: 'Direct messaging with your sponsors and other explorers for deeper connections and coordination' },
+    { title: 'Additional Entry Types', desc: 'Unlock sponsor-only entries and Expedition Notes (280-char daily updates) to keep supporters engaged' },
+    { title: 'More Photos Per Entry', desc: 'Upload up to 10 photos per journal entry instead of the standard 2 for free accounts' },
+    { title: 'Expedition Insights', desc: 'Track entry views, engagement metrics, sponsor activity, and understand your audience better' },
+    { title: 'Sponsor-Only Content', desc: 'Create exclusive journal entries and updates visible only to your paying supporters' }
   ];
 
   const includedFeatures = [
@@ -107,7 +95,6 @@ export function UpgradePage() {
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="p-6">
           <div className="flex items-center justify-center gap-3 mb-3">
-            <Zap className="w-8 h-8 text-[#ac6d46]" />
             <h1 className="text-3xl font-bold dark:text-[#e5e5e5]">
               EXPLORER PRO
             </h1>
@@ -124,7 +111,6 @@ export function UpgradePage() {
         <div className="bg-[#ac6d46] text-white px-6 py-4 border-b-2 border-[#202020] dark:border-[#616161]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Zap className="w-5 h-5" />
               <span className="font-bold text-xl">PRICING & CHECKOUT</span>
             </div>
             <div className="text-xs font-mono">
@@ -206,13 +192,11 @@ export function UpgradePage() {
                   : 'bg-[#ac6d46] border-[#ac6d46] hover:bg-[#8a5738] hover:border-[#8a5738] text-white'
               }`}
             >
-              <Lock className="w-5 h-5" />
-              {isProcessing ? 'PROCESSING...' : 'PROCEED TO SECURE CHECKOUT'}
+              {isProcessing ? 'PROCESSING...' : 'PROCEED TO CHECKOUT'}
             </button>
 
-            <div className="mt-3 text-center text-xs text-[#616161] dark:text-[#b5bcc4] flex items-center justify-center gap-2">
-              <Shield className="w-4 h-4" />
-              <span>Secure payment processing powered by Stripe</span>
+            <div className="mt-3 text-center text-xs text-[#616161] dark:text-[#b5bcc4]">
+              Secure payment processing powered by Stripe
             </div>
           </div>
         </div>
@@ -224,14 +208,11 @@ export function UpgradePage() {
           <div className="font-bold text-xl">CORE FEATURES</div>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {coreFeatures.map((feature, idx) => {
-            const Icon = feature.icon;
-            return (
-              <div 
+          {coreFeatures.map((feature, idx) => (
+              <div
                 key={idx}
-                className="border-2 border-[#b5bcc4] dark:border-[#616161] p-4 hover:border-[#ac6d46] dark:hover:border-[#ac6d46] transition-all active:scale-[0.98]"
+                className="border-2 border-[#b5bcc4] dark:border-[#616161] p-4"
               >
-                <Icon className="w-8 h-8 text-[#ac6d46] mb-3" />
                 <div className="font-bold text-sm mb-2 dark:text-[#e5e5e5]">
                   {feature.title}
                 </div>
@@ -239,8 +220,7 @@ export function UpgradePage() {
                   {feature.desc}
                 </div>
               </div>
-            );
-          })}
+          ))}
         </div>
       </div>
 
@@ -261,38 +241,10 @@ export function UpgradePage() {
         </div>
       </div>
 
-      {/* Trust Indicators */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 text-center">
-          <Shield className="w-10 h-10 text-[#4676ac] mx-auto mb-3" />
-          <div className="text-sm font-bold mb-2 dark:text-[#e5e5e5]">SECURE PAYMENTS</div>
-          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-            All payments processed securely via Stripe
-          </div>
-        </div>
-        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 text-center">
-          <DollarSign className="w-10 h-10 text-[#ac6d46] mx-auto mb-3" />
-          <div className="text-3xl font-bold mb-2 dark:text-[#e5e5e5]">10%</div>
-          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-            Platform fee on sponsorships received
-          </div>
-        </div>
-        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 text-center">
-          <Lock className="w-10 h-10 text-[#4676ac] mx-auto mb-3" />
-          <div className="text-sm font-bold mb-2 dark:text-[#e5e5e5]">CANCEL ANYTIME</div>
-          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-            No commitments, keep access until period ends
-          </div>
-        </div>
-      </div>
-
       {/* FAQ Section */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white px-6 py-4 border-b-2 border-[#202020] dark:border-[#616161]">
-          <div className="flex items-center gap-2">
-            <HelpCircle className="w-5 h-5" />
-            <span className="font-bold text-xl">FREQUENTLY ASKED QUESTIONS</span>
-          </div>
+          <div className="font-bold text-xl">FREQUENTLY ASKED QUESTIONS</div>
         </div>
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
