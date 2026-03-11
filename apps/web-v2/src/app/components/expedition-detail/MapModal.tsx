@@ -196,7 +196,7 @@ export function MapModal({
               {/* Header */}
               <div className="flex items-start justify-between gap-2 mb-2">
                 <div className="flex-1 min-w-0">
-                  <div className="font-serif font-semibold text-base dark:text-[#e5e5e5] truncate">{clickedEntry.title}</div>
+                  <div className="font-serif font-bold text-base dark:text-[#e5e5e5] truncate">{clickedEntry.title}</div>
                   <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-0.5">
                     {clickedEntry.location && <span>{clickedEntry.location}</span>}
                     {clickedEntry.location && clickedEntry.date && <span> • </span>}
@@ -286,7 +286,7 @@ export function MapModal({
 
               <div className="p-3 text-xs font-mono">
                 {/* Title */}
-                <div className="font-serif font-semibold text-base dark:text-[#e5e5e5] mb-1">{stop.title}</div>
+                <div className="font-serif font-bold text-base dark:text-[#e5e5e5] mb-1">{stop.title}</div>
 
                 {/* Location & Date */}
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-3">

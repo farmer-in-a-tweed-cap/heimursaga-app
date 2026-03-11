@@ -624,7 +624,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
                     </span>
                   </div>
                   <div className="text-xs">
-                    <div className="font-serif font-medium dark:text-[#e5e5e5]">{expedition.title}</div>
+                    <div className="font-serif font-bold dark:text-[#e5e5e5]">{expedition.title}</div>
                     <div className="text-[#616161] dark:text-[#b5bcc4]">
                       {expedition.waypoints.length} waypoints • {expedition.entries.length} entries
                     </div>

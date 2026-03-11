@@ -51,7 +51,7 @@ export function EntryCardPortrait({
 
       {/* Title & Attribution */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] px-3 py-3 bg-white dark:bg-[#202020]">
-        <h3 className="font-serif font-semibold text-sm dark:text-[#e5e5e5] mb-2 line-clamp-2 min-h-[2.5rem]" style={{ lineHeight: 1.3 }}>{title}</h3>
+        <h3 className="font-serif font-bold text-sm dark:text-[#e5e5e5] mb-2 line-clamp-2 min-h-[2.5rem]" style={{ lineHeight: 1.3 }}>{title}</h3>
         <div className="space-y-1 text-xs font-mono">
           <div className="flex items-center gap-1.5">
             <User className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />

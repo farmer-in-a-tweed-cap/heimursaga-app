@@ -92,7 +92,7 @@ export function EntryCard({
 
       {/* Section: Title */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] px-5 py-4 bg-white dark:bg-[#202020]">
-        <h3 className="font-serif font-semibold text-lg dark:text-[#e5e5e5] line-clamp-2" style={{ lineHeight: 1.3 }}>{title}</h3>
+        <h3 className="font-serif font-bold text-lg dark:text-[#e5e5e5] line-clamp-2" style={{ lineHeight: 1.3 }}>{title}</h3>
       </div>
 
       {/* Section: Attribution */}

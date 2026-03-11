@@ -420,7 +420,7 @@ export function JournalEntryPage() {
                 </div>
 
                 {/* Title */}
-                <h1 className="font-serif text-2xl lg:text-3xl font-normal mb-4 drop-shadow-lg" style={{ lineHeight: 1.15 }}>{entry.title}</h1>
+                <h1 className="font-serif text-2xl lg:text-3xl font-bold mb-4 drop-shadow-lg" style={{ lineHeight: 1.15 }}>{entry.title}</h1>
 
                 {/* Avatar and Metadata Row */}
                 <div className="flex gap-4 items-center">

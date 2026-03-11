@@ -132,7 +132,7 @@ export function ExpeditionCardLandscape({
         <div className="flex-1 flex flex-col min-w-0">
           {/* Info */}
           <div className="px-3 py-2 flex-1 border-b-2 border-[#202020] dark:border-[#616161]">
-            <h3 className="font-serif font-semibold text-sm dark:text-[#e5e5e5] mb-1 line-clamp-1">{title}</h3>
+            <h3 className="font-serif font-bold text-sm dark:text-[#e5e5e5] mb-1 line-clamp-1">{title}</h3>
             {description && (
               <p className="text-xs font-serif text-[#616161] dark:text-[#b5bcc4] mb-1.5 line-clamp-1" style={{ lineHeight: 1.75 }}>{description}</p>
             )}

@@ -836,7 +836,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
               )}
               <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] pb-2 mb-2">
                 <div className="flex-1">
-                  <div className="font-serif font-semibold text-base mb-1 dark:text-[#e5e5e5]">{clickedEntry.title}</div>
+                  <div className="font-serif font-bold text-base mb-1 dark:text-[#e5e5e5]">{clickedEntry.title}</div>
                   <div className="text-[#616161] dark:text-[#b5bcc4] text-xs">
                     <button
                       onClick={() => window.open(`/journal/${clickedEntry.explorerUsername}`, '_blank')}

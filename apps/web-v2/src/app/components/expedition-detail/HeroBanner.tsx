@@ -105,7 +105,7 @@ export function HeroBanner({
         <div className="flex items-start justify-between gap-6">
           <div className="flex-1">
             <div className="mb-3">
-              <h1 className="text-2xl md:text-4xl font-serif font-medium" style={{ lineHeight: 1.15 }}>{expedition.title}</h1>
+              <h1 className="text-2xl md:text-4xl font-serif font-bold" style={{ lineHeight: 1.15 }}>{expedition.title}</h1>
               {(expedition.category || expedition.region) && (
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   {expedition.category && (

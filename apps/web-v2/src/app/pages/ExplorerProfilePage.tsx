@@ -1262,7 +1262,7 @@ export function ExplorerProfilePage() {
             <div className="space-y-2">
               {explorer.completedExpeditions.map((expedition) => (
                 <div key={expedition.id} className="text-xs border border-[#b5bcc4] dark:border-[#3a3a3a] p-2">
-                  <div className="font-serif font-medium mb-1 dark:text-[#e5e5e5]">{expedition.title}</div>
+                  <div className="font-serif font-bold mb-1 dark:text-[#e5e5e5]">{expedition.title}</div>
                   <div className="text-[#616161] dark:text-[#b5bcc4] font-mono space-y-1">
                     <div>Completed: {expedition.completedDate}</div>
                     <div>Duration: {expedition.duration} days</div>

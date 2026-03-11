@@ -267,7 +267,7 @@ export function SelectExpeditionPage() {
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                              <h3 className="font-serif font-medium text-base dark:text-[#e5e5e5]">{expedition.title}</h3>
+                              <h3 className="font-serif font-bold text-base dark:text-[#e5e5e5]">{expedition.title}</h3>
                               <span className="text-xs bg-[#616161] text-white px-2 py-1">
                                 COMPLETED
                               </span>
