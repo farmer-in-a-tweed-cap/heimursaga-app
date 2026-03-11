@@ -120,36 +120,60 @@ export function MapModal({
       <div className="absolute top-14 left-0 right-0 bottom-0 bg-[#e8e8e8] overflow-hidden">
         <div ref={mapContainerRef as React.RefObject<HTMLDivElement>} style={{ width: '100%', height: '100%' }} />
 
+        {/* FIT button (bottom-right) */}
+        {!isDebriefMode && (
+          <button
+            onClick={onFitBounds}
+            className="absolute bottom-4 right-4 z-10 px-3 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center gap-1.5 border-2 border-[#202020]"
+            title="Fit all markers in view"
+          >
+            <Maximize2 size={14} />
+            <span className="text-xs font-bold">FIT</span>
+          </button>
+        )}
+
         {/* Map Legend (bottom-left) */}
         {!isDebriefMode && (
           <div className="absolute bottom-4 left-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 text-xs z-10">
-            <div className="flex items-center justify-between mb-2">
-              <div className="font-bold dark:text-[#e5e5e5]">MAP LEGEND:</div>
-              <button
-                onClick={onFitBounds}
-                className="px-2 py-1 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center gap-1"
-                title="Fit all markers in view"
-              >
-                <Maximize2 size={12} />
-                <span className="text-xs font-bold">FIT</span>
-              </button>
-            </div>
-            <div className="space-y-1 dark:text-[#e5e5e5]">
+            <div className="font-bold mb-2 dark:text-[#e5e5e5]">MAP LEGEND:</div>
+            <div className="space-y-2.5 dark:text-[#e5e5e5]">
               <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-[#202020] rotate-45"></div>
-                <span>Completed Waypoint</span>
+                <div className="w-4 h-4 bg-[#ac6d46] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                  <span className="text-white text-[8px] font-bold -rotate-45">S</span>
+                </div>
+                <span>Start</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 bg-[#4676ac] border-2 border-[#202020] rotate-45"></div>
+                <div className="w-4 h-4 bg-[#4676ac] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                  <span className="text-white text-[8px] font-bold -rotate-45">E</span>
+                </div>
+                <span>End</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-[#ac6d46] border-2 border-[#4676ac] rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
+                  <span className="text-white text-[8px] font-bold -rotate-45">S</span>
+                </div>
+                <span>Round Trip Start</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3.5 h-3.5 bg-[#616161] border-2 border-white rotate-45" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}></div>
+                <span>Waypoint</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-white rounded-full" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}></div>
+                <span>Journal Entry</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3.5 h-3.5 bg-[#616161] border-2 border-white rotate-45 animate-[legend-pulse_2s_ease-out_infinite]"></div>
                 <span>Current Location</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 bg-[#b5bcc4] border-2 border-[#202020] rotate-45"></div>
-                <span>Planned Waypoint</span>
+              <div className="flex items-center gap-2 mt-1 pt-1.5 border-t border-[#b5bcc4] dark:border-[#3a3a3a]">
+                <div className="w-6 h-0.5 bg-[#ac6d46]"></div>
+                <span>Completed Route</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-[#202020] rounded-full"></div>
-                <span>Journal Entry</span>
+                <div className="w-6 h-0.5 bg-[#202020] dark:bg-[#4676ac]"></div>
+                <span>Planned Route</span>
               </div>
             </div>
           </div>

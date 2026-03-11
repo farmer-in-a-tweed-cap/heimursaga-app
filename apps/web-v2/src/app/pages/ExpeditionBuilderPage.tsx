@@ -1168,80 +1168,133 @@ export function ExpeditionBuilderPage() {
     clusteredEntryRef.current = null;
     entryMarkersRef.current = [];
 
-    // Add waypoint markers — first = start, last = end
+    // Group nearby waypoints into clusters for rendering
+    const CLUSTER_THRESHOLD = 0.002; // ~200m — waypoints closer than this merge visually
+    const clustered: { waypoints: { wp: typeof waypoints[0]; idx: number }[]; lat: number; lng: number }[] = [];
     waypoints.forEach((waypoint, wpIdx) => {
-      const el = document.createElement('div');
-      el.className = 'waypoint-marker';
-      el.style.cssText = 'cursor: pointer;';
-
-      const isStart = wpIdx === 0;
-      const isEnd = wpIdx === waypoints.length - 1 && !isRoundTrip && waypoints.length > 1;
-      const isStartEnd = isStart || isEnd;
-      const positionNumber = wpIdx + 1;
-      const isConverted = waypoint.entryIds.length > 0;
-
-      if (isConverted) {
-        // Converted waypoint — circle marker (brown), shows entry count
-        const entryCount = waypoint.entryIds.length;
-        if (entryCount > 1) {
-          // Multi-entry cluster badge
-          el.style.cssText += ` width: 30px; height: 30px; border-radius: 50%; background: #8a5738; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;`;
-          el.innerHTML = `<span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${entryCount}</span>`;
-        } else {
-          // Single-entry circle
-          el.style.cssText += ` width: 26px; height: 26px; border-radius: 50%; background: #ac6d46; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;`;
-          el.innerHTML = `<span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${positionNumber}</span>`;
-        }
-      } else if (isStartEnd) {
-        // Start/End markers — larger diamond with letter label
-        const fillColor = (isStart && isRoundTrip) ? '#ac6d46' : isStart ? '#ac6d46' : '#4676ac';
-        const borderStyle = (isStart && isRoundTrip) ? '3px solid #4676ac' : '3px solid white';
-        const label = isStart ? 'S' : 'E';
-        el.style.cssText += ` width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;`;
-        el.innerHTML = `
-          <div style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); background: ${fillColor}; border: ${borderStyle}; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
-            <span style="transform: rotate(-45deg); color: white; font-size: 14px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${label}</span>
-          </div>
-        `;
+      const existing = clustered.find(c =>
+        Math.abs(c.lat - waypoint.coordinates.lat) < CLUSTER_THRESHOLD &&
+        Math.abs(c.lng - waypoint.coordinates.lng) < CLUSTER_THRESHOLD
+      );
+      if (existing) {
+        existing.waypoints.push({ wp: waypoint, idx: wpIdx });
+        // Update center to average
+        existing.lat = existing.waypoints.reduce((s, w) => s + w.wp.coordinates.lat, 0) / existing.waypoints.length;
+        existing.lng = existing.waypoints.reduce((s, w) => s + w.wp.coordinates.lng, 0) / existing.waypoints.length;
       } else {
-        // Standard waypoint markers — gray numbered diamond
-        el.style.cssText += ` width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;`;
-        el.innerHTML = `
-          <div style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); background: #616161; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2);">
-            <span style="transform: rotate(-45deg); color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${positionNumber}</span>
-          </div>
-        `;
-      }
-
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        setSelectedWaypoint(waypoint.id);
-      });
-
-      const marker = new mapboxgl.Marker({
-        element: el,
-        anchor: 'center',
-        draggable: !isConverted, // Converted waypoints cannot be dragged
-      })
-        .setLngLat([waypoint.coordinates.lng, waypoint.coordinates.lat])
-        .addTo(map.current!);
-
-      // Handle marker drag end to update waypoint coordinates (only for non-converted)
-      if (!isConverted) {
-        marker.on('dragend', () => {
-          const lngLat = marker.getLngLat();
-          setWaypoints(prev => {
-            const updated = prev.map(w =>
-              w.id === waypoint.id
-                ? { ...w, coordinates: { lat: lngLat.lat, lng: lngLat.lng } }
-                : w
-            );
-            return updateDistances(updated);
-          });
+        clustered.push({
+          waypoints: [{ wp: waypoint, idx: wpIdx }],
+          lat: waypoint.coordinates.lat,
+          lng: waypoint.coordinates.lng,
         });
       }
+    });
 
-      markers.current.push(marker);
+    // Add waypoint markers — first = start, last = end, nearby waypoints clustered
+    clustered.forEach((cluster) => {
+      const isSingle = cluster.waypoints.length === 1;
+      const firstWp = cluster.waypoints[0];
+      const { wp: waypoint, idx: wpIdx } = firstWp;
+
+      if (isSingle) {
+        // Single waypoint — render normally
+        const el = document.createElement('div');
+        el.className = 'waypoint-marker';
+        el.style.cssText = 'cursor: pointer;';
+
+        const isStart = wpIdx === 0;
+        const isEnd = wpIdx === waypoints.length - 1 && !isRoundTrip && waypoints.length > 1;
+        const isStartEnd = isStart || isEnd;
+        const positionNumber = wpIdx + 1;
+        const isConverted = waypoint.entryIds.length > 0;
+
+        if (isConverted) {
+          const entryCount = waypoint.entryIds.length;
+          if (entryCount > 1) {
+            el.style.cssText += ` width: 30px; height: 30px; border-radius: 50%; background: #8a5738; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;`;
+            el.innerHTML = `<span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${entryCount}</span>`;
+          } else {
+            el.style.cssText += ` width: 26px; height: 26px; border-radius: 50%; background: #ac6d46; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;`;
+            el.innerHTML = `<span style="color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${positionNumber}</span>`;
+          }
+        } else if (isStartEnd) {
+          const fillColor = (isStart && isRoundTrip) ? '#ac6d46' : isStart ? '#ac6d46' : '#4676ac';
+          const borderStyle = (isStart && isRoundTrip) ? '3px solid #4676ac' : '3px solid white';
+          const label = isStart ? 'S' : 'E';
+          el.style.cssText += ` width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;`;
+          el.innerHTML = `
+            <div style="width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); background: ${fillColor}; border: ${borderStyle}; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+              <span style="transform: rotate(-45deg); color: white; font-size: 14px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${label}</span>
+            </div>
+          `;
+        } else {
+          el.style.cssText += ` width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;`;
+          el.innerHTML = `
+            <div style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); background: #616161; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2);">
+              <span style="transform: rotate(-45deg); color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${positionNumber}</span>
+            </div>
+          `;
+        }
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setSelectedWaypoint(waypoint.id);
+        });
+
+        const marker = new mapboxgl.Marker({
+          element: el,
+          anchor: 'center',
+          draggable: !isConverted,
+        })
+          .setLngLat([waypoint.coordinates.lng, waypoint.coordinates.lat])
+          .addTo(map.current!);
+
+        if (!isConverted) {
+          marker.on('dragend', () => {
+            const lngLat = marker.getLngLat();
+            setWaypoints(prev => {
+              const updated = prev.map(w =>
+                w.id === waypoint.id
+                  ? { ...w, coordinates: { lat: lngLat.lat, lng: lngLat.lng } }
+                  : w
+              );
+              return updateDistances(updated);
+            });
+          });
+        }
+
+        markers.current.push(marker);
+      } else {
+        // Clustered waypoints — render as single marker with range label
+        const positions = cluster.waypoints.map(w => w.idx + 1).sort((a, b) => a - b);
+        const label = `${positions[0]}-${positions[positions.length - 1]}`;
+        const totalEntries = cluster.waypoints.reduce((sum, w) => sum + w.wp.entryIds.length, 0);
+        const hasConverted = totalEntries > 0;
+
+        const el = document.createElement('div');
+        el.className = 'waypoint-marker';
+        el.style.cssText = 'cursor: pointer;';
+
+        const bg = hasConverted ? '#8a5738' : '#616161';
+        el.style.cssText += ` height: 24px; padding: 0 8px; border-radius: 12px; background: ${bg}; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; white-space: nowrap;`;
+        el.innerHTML = `<span style="color: white; font-size: 11px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${label}</span>`;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Select first waypoint in cluster
+          setSelectedWaypoint(firstWp.wp.id);
+        });
+
+        const marker = new mapboxgl.Marker({
+          element: el,
+          anchor: 'center',
+          draggable: false, // Clustered markers are not draggable
+        })
+          .setLngLat([cluster.lng, cluster.lat])
+          .addTo(map.current!);
+
+        markers.current.push(marker);
+      }
     });
 
     // Add entry markers with clustering — only for legacy entries not linked to any waypoint

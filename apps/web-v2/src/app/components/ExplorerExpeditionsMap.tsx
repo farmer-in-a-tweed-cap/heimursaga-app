@@ -632,22 +632,44 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
                 </div>
               ))}
             </div>
-            <div className="flex gap-6 text-xs mt-4 pt-3 border-t border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4]">
+            <div className="flex flex-wrap gap-x-6 gap-y-2.5 text-xs mt-4 pt-3 border-t border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4]">
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#ac6d46] border border-[#202020]" />
-                <span>Completed Waypoint</span>
+                <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+                  <span className="text-white text-[7px] font-bold -rotate-45">S</span>
+                </div>
+                <span>Start</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#4676ac] border border-[#202020]" />
+                <div className="w-3.5 h-3.5 bg-[#4676ac] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+                  <span className="text-white text-[7px] font-bold -rotate-45">E</span>
+                </div>
+                <span>End</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3.5 h-3.5 bg-[#ac6d46] border-2 border-[#4676ac] rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+                  <span className="text-white text-[7px] font-bold -rotate-45">S</span>
+                </div>
+                <span>Round Trip Start</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-[#616161] border-2 border-white rotate-45" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+                <span>Waypoint</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-[#ac6d46] border-2 border-white" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }} />
+                <span>Journal Entry</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-[#616161] border-2 border-white rotate-45 animate-[legend-pulse_2s_ease-out_infinite]" />
                 <span>Current Location</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-[#b5bcc4] border border-[#202020]" />
-                <span>Planned Waypoint</span>
+                <div className="w-5 h-0.5 bg-[#ac6d46]" />
+                <span>Completed Route</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-[#ac6d46] border border-white text-white text-xs flex items-center justify-center">E</div>
-                <span>Journal Entry</span>
+                <div className="w-5 h-0.5 bg-[#202020] dark:bg-[#4676ac]" />
+                <span>Planned Route</span>
               </div>
             </div>
           </>

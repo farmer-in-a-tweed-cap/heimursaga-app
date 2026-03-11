@@ -10,3 +10,9 @@
     cursor: pointer;
   }
 }
+
+/* Map legend current-location pulse — scaled-down version of wp-pulse from map markers */
+@keyframes legend-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
+  100% { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
+}

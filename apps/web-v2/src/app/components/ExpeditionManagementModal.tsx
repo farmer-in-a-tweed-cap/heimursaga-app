@@ -231,9 +231,9 @@ export function ExpeditionManagementModal({
           <div className="space-y-4">
             {/* Edit Details & Waypoints - Always available for non-cancelled */}
             {!isCancelled && (
-              <div className="border-2 border-[#4676ac] p-4">
+              <div className="border-2 border-[#ac6d46] p-4">
                 <div className="flex items-start gap-3 mb-4">
-                  <Edit size={20} className="text-[#4676ac] mt-0.5" strokeWidth={2} />
+                  <Edit size={20} className="text-[#ac6d46] mt-0.5" strokeWidth={2} />
                   <div className="flex-1">
                     <h4 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
                       EDIT EXPEDITION DETAILS
@@ -278,9 +278,9 @@ export function ExpeditionManagementModal({
 
             {/* Complete Expedition */}
             {canComplete && !confirmComplete && (
-              <div className="border-2 border-[#ac6d46] p-4">
+              <div className="border-2 border-[#4676ac] p-4">
                 <div className="flex items-start gap-3 mb-4">
-                  <CheckCircle2 size={20} className="text-[#ac6d46] mt-0.5" strokeWidth={2} />
+                  <CheckCircle2 size={20} className="text-[#4676ac] mt-0.5" strokeWidth={2} />
                   <div className="flex-1">
                     <h4 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
                       MARK EXPEDITION AS COMPLETE
@@ -289,8 +289,8 @@ export function ExpeditionManagementModal({
                       Mark this expedition as complete when you have finished your journey. This will close sponsorships for new supporters but you can continue adding retrospective journal entries. Your journal and all entries will remain publicly visible.
                     </p>
                     {isPastEstimatedEnd && (
-                      <div className="flex items-start gap-2 p-3 bg-[#fff8e1] dark:bg-[#3a3320] border-l-2 border-[#ac6d46] mb-3">
-                        <AlertTriangle size={14} className="text-[#ac6d46] mt-0.5" strokeWidth={2} />
+                      <div className="flex items-start gap-2 p-3 bg-[#fff8e1] dark:bg-[#3a3320] border-l-2 border-[#4676ac] mb-3">
+                        <AlertTriangle size={14} className="text-[#4676ac] mt-0.5" strokeWidth={2} />
                         <span className="text-xs text-[#616161] dark:text-[#b5bcc4]">
                           This expedition is past its estimated end date ({formatDate(expedition.estimatedEndDate)}). You may want to mark it as complete.
                         </span>
@@ -300,7 +300,7 @@ export function ExpeditionManagementModal({
                 </div>
                 <button
                   onClick={() => setConfirmComplete(true)}
-                  className="w-full px-4 py-3 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
+                  className="w-full px-4 py-3 bg-[#4676ac] text-white text-sm font-bold hover:bg-[#365a87] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
                 >
                   COMPLETE EXPEDITION
                 </button>

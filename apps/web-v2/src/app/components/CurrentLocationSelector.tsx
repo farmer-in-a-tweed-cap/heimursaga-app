@@ -174,13 +174,13 @@ export function CurrentLocationSelector({
           {selectedSource === 'waypoint' ? (
             waypoints.map((wp) => (
               <option key={wp.id} value={wp.id}>
-                {wp.title} • {wp.location} • {wp.date} • {wp.status?.toUpperCase() || ''}
+                {[wp.title, wp.location, wp.date, wp.status?.toUpperCase()].filter(Boolean).join(' • ')}
               </option>
             ))
           ) : (
             journalEntries.map((entry) => (
               <option key={entry.id} value={entry.id}>
-                {entry.title} • {entry.location} • {entry.date} • {entry.type?.toUpperCase() || ''}
+                {[entry.title, entry.location, entry.date, entry.type?.toUpperCase()].filter(Boolean).join(' • ')}
               </option>
             ))
           )}
