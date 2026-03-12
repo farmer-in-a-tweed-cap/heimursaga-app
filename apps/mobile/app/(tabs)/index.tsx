@@ -252,7 +252,7 @@ export default function HomeScreen() {
                 <MapComponent
                   ref={atlasMapRef}
                   style={StyleSheet.absoluteFillObject}
-                  center={[0, 20]}
+                  center={[-98, 40]}
                   zoom={1.5}
                   waypoints={atlasMarkers}
                   interactive={atlasExpanded}

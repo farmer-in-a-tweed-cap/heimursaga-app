@@ -19,7 +19,7 @@ export function EntryListItem({ entry, showAuthor = false }: EntryListItemProps)
   const router = useRouter();
 
   const dateStr = entry.createdAt
-    ? new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
+    ? new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()
     : '';
 
   const expeditionRef = entry.trip ?? entry.expedition;
@@ -48,7 +48,7 @@ export function EntryListItem({ entry, showAuthor = false }: EntryListItemProps)
           <View style={[styles.footer, { borderTopColor: colors.borderThin }]}>
             {showAuthor && (
               <View style={styles.authorRow}>
-                <Avatar size={18} name={entry.author.username} />
+                <Avatar size={18} name={entry.author.username} imageUrl={entry.author.picture} pro={entry.author.creator} />
                 <Text style={styles.authorName}>{entry.author.username}</Text>
                 {expeditionRef && (
                   <Text style={[styles.expeditionName, { color: colors.textTertiary }]}>

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, forwardRef } from 'react';
-import { View, ViewStyle, StyleSheet } from 'react-native';
+import { View, ViewStyle, StyleSheet, Animated, Easing } from 'react-native';
 import MapboxGL from '@rnmapbox/maps';
 import { useTheme } from '@/theme/ThemeContext';
 import { getMapStyle, MAPBOX_TOKEN } from '@/services/mapConfig';
@@ -29,19 +29,28 @@ MapboxGL.setAccessToken(MAPBOX_TOKEN)
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export type WaypointType = 'origin' | 'waypoint' | 'destination';
+export type WaypointType = 'origin' | 'waypoint' | 'destination' | 'entry' | 'current' | 'poi';
 
 export interface WaypointMarker {
   /** [longitude, latitude] */
   coordinates: [number, number];
   type: WaypointType;
+  /** Descriptive label (e.g. place name) */
   label?: string;
+  /** Short text rendered inside the marker (e.g. "S", "1", "E") */
+  text?: string;
+  /** When true, this marker is the current location and gets a pulse ring */
+  isCurrent?: boolean;
+  /** Entry IDs linked to this marker — used for tap-to-open behaviour */
+  entryIds?: string[];
+  /** Override the default white stroke color (e.g. blue border for round-trip start) */
+  strokeColor?: string;
 }
 
 export interface HeimuMapProps {
   /** Outer container style */
   style?: ViewStyle;
-  /** [longitude, latitude] map centre — defaults to [0, 20] */
+  /** [longitude, latitude] map centre — defaults to North America [-98, 40] */
   center?: [number, number];
   /** Initial zoom level — defaults to 2 */
   zoom?: number;
@@ -57,31 +66,104 @@ export interface HeimuMapProps {
   onMapPress?: (coords: [number, number]) => void;
   /** Called with the waypoint index when a marker is tapped */
   onWaypointPress?: (index: number) => void;
+  /** Called with the current zoom level when the camera changes */
+  onZoomChange?: (zoom: number) => void;
 }
 
 export interface HeimuMapRef {
   flyTo: (coords: [number, number], zoom?: number) => void;
 }
 
+// ─── Zoom-sensitive marker clustering ────────────────────────────────────────
+
+/** Cluster markers that overlap at the given zoom level (~30px threshold). */
+export function clusterMarkers(markers: WaypointMarker[], zoom: number): WaypointMarker[] {
+  if (markers.length <= 1) return markers;
+  // ~30 screen-pixels worth of degrees at this zoom
+  const thresholdDeg = 30 * 360 / (256 * Math.pow(2, zoom));
+  const thresholdSq = thresholdDeg * thresholdDeg;
+
+  const clusters: WaypointMarker[][] = [];
+  for (const m of markers) {
+    let merged = false;
+    for (const cluster of clusters) {
+      const c = cluster[0].coordinates;
+      const dLng = m.coordinates[0] - c[0];
+      const dLat = m.coordinates[1] - c[1];
+      if (dLng * dLng + dLat * dLat < thresholdSq) {
+        cluster.push(m);
+        merged = true;
+        break;
+      }
+    }
+    if (!merged) clusters.push([m]);
+  }
+
+  return clusters.map(group => {
+    if (group.length === 1) return group[0];
+    const base = group[0];
+    const texts = group.map(m => m.text ?? '').filter(Boolean);
+    const nums = texts.map(Number).filter(n => !isNaN(n));
+    const specials = texts.filter(t => isNaN(Number(t)));
+    let mergedText: string;
+    if (specials.length > 0) {
+      mergedText = specials[0]; // "S" or "E" takes priority
+    } else if (nums.length >= 2) {
+      const min = Math.min(...nums);
+      const max = Math.max(...nums);
+      mergedText = min === max ? String(min) : `${min}-${max}`;
+    } else {
+      mergedText = texts[0] ?? '';
+    }
+    return {
+      ...base,
+      text: mergedText,
+      isCurrent: group.some(m => m.isCurrent),
+      entryIds: group.flatMap(m => m.entryIds ?? []),
+    };
+  });
+}
+
 // ─── Marker colors ───────────────────────────────────────────────────────────
 
+// Matches web app legend: start=copper, end=blue, waypoint=gray, entry=copper
 const MARKER_COLOR: Record<WaypointType, string> = {
-  origin: brandColors.blue,
-  waypoint: brandColors.copper,
-  destination: brandColors.green,
+  origin: brandColors.copper,     // Start (web: 26px copper diamond "S")
+  waypoint: '#616161',            // Waypoint (web: 22px gray diamond with number)
+  destination: brandColors.blue,  // End (web: 26px blue diamond "E")
+  entry: brandColors.copper,      // Journal entry (web: 22px copper circle with number)
+  current: '#616161',             // Current location (web: gray diamond with pulse)
+  poi: brandColors.blue,           // POI search result (blue dot)
 };
 
+// Circle radii — approximate web marker sizes (web uses CSS px for diameter)
 const MARKER_RADIUS: Record<WaypointType, number> = {
-  origin: 8,
-  waypoint: 6,
-  destination: 8,
+  origin: 11,      // web: 26px → ~13px radius
+  waypoint: 9,     // web: 22px → ~11px radius
+  destination: 11,  // web: 26px → ~13px radius
+  entry: 9,        // web: 22px → ~11px radius
+  current: 9,      // web: 22px
+  poi: 6,           // small blue dot for search results
 };
+
+const MARKER_STROKE_WIDTH: Record<WaypointType, number> = {
+  origin: 3,
+  waypoint: 2,
+  destination: 3,
+  entry: 2,
+  current: 3,
+  poi: 2,
+};
+
+// ─── Stable empty GeoJSON (module-scope to avoid identity changes) ──────────
+const EMPTY_LINE: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
+const EMPTY_POINTS: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
   style,
-  center = [0, 20],
+  center = [-98, 40],
   zoom = 2,
   bounds,
   routeCoords,
@@ -89,6 +171,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
   interactive = true,
   onMapPress,
   onWaypointPress,
+  onZoomChange,
 }, ref) {
   const { mode } = useTheme();
   const [useFallbackStyle, setUseFallbackStyle] = useState(false);
@@ -122,19 +205,55 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
     if (!useFallbackStyle) setUseFallbackStyle(true);
   }, [useFallbackStyle]);
 
-  // ── Route GeoJSON ──────────────────────────────────────────────────────────
-  const routeGeoJSON = useMemo<GeoJSON.Feature<GeoJSON.LineString> | null>(() => {
-    if (!routeCoords || routeCoords.length < 2) return null;
+  // ── Pulse animation for current location ───────────────────────────────────
+  const currentWaypoint = useMemo(
+    () => waypoints?.find(wp => wp.isCurrent),
+    [waypoints],
+  );
+
+  const pulseAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!currentWaypoint) return;
+    pulseAnim.setValue(0);
+    const loop = Animated.loop(
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 2000,
+        easing: Easing.out(Easing.quad),
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [currentWaypoint, pulseAnim]);
+
+  const pulseScale = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.5, 2],
+  });
+  const pulseOpacity = pulseAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.8, 0],
+  });
+
+  // ── Route GeoJSON (always valid — empty when no route) ─────────────────────
+
+  const routeGeoJSON = useMemo<GeoJSON.FeatureCollection>(() => {
+    if (!routeCoords || routeCoords.length < 2) return EMPTY_LINE;
     return {
-      type: 'Feature',
-      geometry: { type: 'LineString', coordinates: routeCoords },
-      properties: {},
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature',
+        geometry: { type: 'LineString', coordinates: routeCoords },
+        properties: {},
+      }],
     };
   }, [routeCoords]);
 
-  // ── Waypoint GeoJSON (native CircleLayer — no React views / no reactTag) ──
-  const waypointGeoJSON = useMemo<GeoJSON.FeatureCollection | null>(() => {
-    if (!waypoints?.length) return null;
+  // ── Waypoint GeoJSON (always valid — empty when no markers) ───────────────
+  const waypointGeoJSON = useMemo<GeoJSON.FeatureCollection>(() => {
+    if (!waypoints?.length) return EMPTY_POINTS;
     return {
       type: 'FeatureCollection',
       features: waypoints.map((wp, i) => ({
@@ -144,9 +263,10 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
           type: wp.type,
           color: MARKER_COLOR[wp.type],
           radius: MARKER_RADIUS[wp.type],
-          strokeWidth: wp.type === 'destination' ? 2 : 0,
-          strokeColor: MARKER_COLOR[wp.type],
+          strokeWidth: MARKER_STROKE_WIDTH[wp.type],
+          strokeColor: wp.strokeColor ?? '#ffffff',
           index: i,
+          text: wp.text ?? '',
         },
       })),
     };
@@ -164,12 +284,26 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
     [onWaypointPress],
   );
 
+  // ── Zoom change handler (skip initial camera settling) ─────────────────────
+  const mountTimeRef = useRef(Date.now());
+  const handleCameraChanged = useCallback(
+    (event: any) => {
+      if (!onZoomChange) return;
+      // Skip events in the first second while the camera settles to bounds
+      if (Date.now() - mountTimeRef.current < 1000) return;
+      const z = event?.properties?.zoom;
+      if (z != null) onZoomChange(z);
+    },
+    [onZoomChange],
+  );
+
   // ── Map press handler ──────────────────────────────────────────────────────
   const handlePress = useCallback(
     (event: any) => {
       if (!onMapPress) return;
-      const [lng, lat] = event.geometry.coordinates as [number, number];
-      onMapPress([lng, lat]);
+      const coords = event?.geometry?.coordinates as [number, number] | undefined;
+      if (!coords) return;
+      onMapPress(coords);
     },
     [onMapPress],
   );
@@ -190,6 +324,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
         attributionEnabled={false}
         logoEnabled={false}
         onPress={onMapPress ? handlePress : undefined}
+        onCameraChanged={onZoomChange ? handleCameraChanged : undefined}
         onMapLoadingError={handleMapLoadError}
       >
         <MapboxGL.Camera
@@ -207,50 +342,67 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
           )}
         />
 
-        {/* ── Route polyline ────────────────────────────────────────────── */}
-        {routeGeoJSON && (
-          <MapboxGL.ShapeSource id="heimu-route-source" shape={routeGeoJSON}>
-            <MapboxGL.LineLayer
-              id="heimu-route-line"
-              style={{
-                lineColor: brandColors.copper,
-                lineWidth: 3,
-                lineCap: 'round',
-                lineJoin: 'round',
-              }}
-            />
-          </MapboxGL.ShapeSource>
-        )}
+        {/* ── Route polyline (always mounted, below waypoints) ──────── */}
+        <MapboxGL.ShapeSource id="heimu-route-source" shape={routeGeoJSON}>
+          <MapboxGL.LineLayer
+            id="heimu-route-line"
+            style={{
+              lineColor: brandColors.copper,
+              lineWidth: 3,
+              lineCap: 'round',
+              lineJoin: 'round',
+            }}
+          />
+        </MapboxGL.ShapeSource>
 
-        {/* ── Waypoint markers (native CircleLayer — New Arch safe) ───── */}
-        {waypointGeoJSON && (
-          <MapboxGL.ShapeSource
-            id="heimu-waypoints-source"
-            shape={waypointGeoJSON}
-            onPress={onWaypointPress ? handleWaypointPress : undefined}
-            hitbox={{ width: 24, height: 24 }}
+        {/* ── Waypoint markers (always mounted, on top of route) ──────── */}
+        <MapboxGL.ShapeSource
+          id="heimu-waypoints-source"
+          shape={waypointGeoJSON}
+          onPress={onWaypointPress ? handleWaypointPress : undefined}
+          hitbox={{ width: 16, height: 16 }}
+        >
+          <MapboxGL.CircleLayer
+            id="heimu-waypoints-fill"
+            style={{
+              circleRadius: ['get', 'radius'],
+              circleColor: ['get', 'color'],
+              circleStrokeWidth: ['get', 'strokeWidth'],
+              circleStrokeColor: ['get', 'strokeColor'],
+            }}
+          />
+          <MapboxGL.SymbolLayer
+            id="heimu-waypoints-text"
+            style={{
+              textField: ['get', 'text'],
+              textSize: 11,
+              textColor: '#ffffff',
+              textFont: ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+              textAllowOverlap: true,
+              textIgnorePlacement: true,
+            }}
+          />
+        </MapboxGL.ShapeSource>
+
+        {/* ── Current location pulse ring (MarkerView + Animated) ──── */}
+        {currentWaypoint && (
+          <MapboxGL.MarkerView
+            coordinate={currentWaypoint.coordinates}
+            anchor={{ x: 0.5, y: 0.5 }}
+            allowOverlap
           >
-            {/* Outer stroke ring for destination markers */}
-            <MapboxGL.CircleLayer
-              id="heimu-waypoints-stroke"
+            <Animated.View
               style={{
-                circleRadius: ['get', 'radius'],
-                circleColor: 'transparent',
-                circleStrokeWidth: ['get', 'strokeWidth'],
-                circleStrokeColor: ['get', 'strokeColor'],
-                circleStrokeOpacity: 0.5,
-              }}
-              filter={['==', ['get', 'type'], 'destination']}
-            />
-            {/* Filled circle for all markers */}
-            <MapboxGL.CircleLayer
-              id="heimu-waypoints-fill"
-              style={{
-                circleRadius: ['get', 'radius'],
-                circleColor: ['get', 'color'],
+                width: 30,
+                height: 30,
+                borderRadius: 15,
+                borderWidth: 2,
+                borderColor: '#ffffff',
+                opacity: pulseOpacity,
+                transform: [{ scale: pulseScale }],
               }}
             />
-          </MapboxGL.ShapeSource>
+          </MapboxGL.MarkerView>
         )}
       </MapboxGL.MapView>
     </View>

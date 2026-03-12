@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, ComponentType } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, ComponentType } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   StyleSheet,
   Share,
   Alert,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -26,7 +27,8 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { HCard } from '@/components/ui/HCard';
 import { Avatar } from '@/components/ui/Avatar';
 import { EntryCardMini } from '@/components/cards/EntryCardMini';
-import type { HeimuMapProps, WaypointMarker } from '@/components/map/HeimuMap';
+import type { HeimuMapProps, WaypointMarker, WaypointType } from '@/components/map/HeimuMap';
+import { clusterMarkers } from '@/components/map/HeimuMap';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import type { Entry as ApiEntry } from '@/types/api';
 
@@ -84,11 +86,12 @@ interface ExpeditionDetail {
   title: string;
   status: 'active' | 'planned' | 'completed' | 'cancelled';
   type?: string;
+  category?: string;
   region?: string;
   description?: string;
   startDate?: string;
   endDate?: string;
-  author?: { username: string; name?: string; picture?: string };
+  author?: { username: string; name?: string; picture?: string; creator?: boolean };
   raised?: number;
   goal?: number;
   sponsorsCount?: number;
@@ -98,6 +101,9 @@ interface ExpeditionDetail {
   sponsors?: ExpeditionSponsor[];
   waypoints?: ExpeditionWaypoint[];
   bookmarked?: boolean;
+  currentLocationSource?: 'waypoint' | 'entry';
+  currentLocationId?: string;
+  currentLocationVisibility?: 'public' | 'sponsors' | 'private';
 }
 
 export default function ExpeditionDetailScreen() {
@@ -121,7 +127,15 @@ export default function ExpeditionDetailScreen() {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [noteSubmitting, setNoteSubmitting] = useState(false);
+  const [replySubmitting, setReplySubmitting] = useState(false);
+
+  const [mapZoom, setMapZoom] = useState(10); // conservative default — camera events will refine
+  const mapZoomTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleZoomChange = useCallback((z: number) => {
+    if (mapZoomTimerRef.current) clearTimeout(mapZoomTimerRef.current);
+    mapZoomTimerRef.current = setTimeout(() => setMapZoom(z), 200);
+  }, []);
 
   // Defer MapboxGL import to avoid blocking the JS thread
   const [MapComponent, setMapComponent] = useState<ComponentType<HeimuMapProps> | null>(null);
@@ -132,7 +146,7 @@ export default function ExpeditionDetailScreen() {
     return () => clearTimeout(timer);
   }, []);
 
-  const { data: expedition, loading, error } = useApi<ExpeditionDetail>(`/trips/${id}`, { refetchOnFocus: true });
+  const { data: expedition, loading, error, refetch } = useApi<ExpeditionDetail>(`/trips/${id}`, { refetchOnFocus: true });
 
   useEffect(() => {
     if (expedition?.bookmarked != null) setBookmarked(expedition.bookmarked);
@@ -188,33 +202,154 @@ export default function ExpeditionDetailScreen() {
 
   const isOwner = !!(user && expedition?.author && user.username === expedition.author.username);
 
+  // Update location modal
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const [locSource, setLocSource] = useState<'waypoint' | 'entry'>('entry');
+  const [locSelectedId, setLocSelectedId] = useState('');
+  const [locVisibility, setLocVisibility] = useState<'public' | 'sponsors' | 'private'>('public');
+  const [locSaving, setLocSaving] = useState(false);
+
+  const openLocationModal = useCallback(() => {
+    if (!expedition) return;
+    setLocSource(expedition.currentLocationSource || 'entry');
+    setLocSelectedId(expedition.currentLocationId || '');
+    setLocVisibility(expedition.currentLocationVisibility || 'public');
+    setLocationModalVisible(true);
+  }, [expedition]);
+
+  const handleSaveLocation = useCallback(async () => {
+    if (!locSelectedId || !id) return;
+    setLocSaving(true);
+    try {
+      await api.patch(`/trips/${id}/location`, {
+        source: locSource,
+        locationId: locSelectedId,
+        visibility: locVisibility,
+      });
+      setLocationModalVisible(false);
+      await refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update location';
+      Alert.alert('Error', msg);
+    } finally {
+      setLocSaving(false);
+    }
+  }, [id, locSource, locSelectedId, locVisibility, refetch]);
+
+  // Build location picker items
+  const geoWaypoints = (expedition?.waypoints ?? []).filter(w => w.lat != null && w.lon != null);
+  const geoEntriesForPicker = (expedition?.entries ?? []).filter(e => e.lat != null && e.lon != null);
+
   const handlePostNote = async () => {
-    if (!noteText.trim() || submitting) return;
-    setSubmitting(true);
+    if (!noteText.trim() || noteSubmitting) return;
+    setNoteSubmitting(true);
     try {
       await api.post(`/trips/${id}/notes`, { text: noteText.trim() });
       setNoteText('');
       setShowNoteForm(false);
       await fetchNotes();
-    } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to post note');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to post note';
+      Alert.alert('Error', msg);
+    } finally {
+      setNoteSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const handlePostReply = async (noteId: number) => {
-    if (!replyText.trim() || submitting) return;
-    setSubmitting(true);
+    if (!replyText.trim() || replySubmitting) return;
+    setReplySubmitting(true);
     try {
       await api.post(`/trips/${id}/notes/${noteId}/replies`, { text: replyText.trim() });
       setReplyText('');
       setReplyingTo(null);
       await fetchNotes();
-    } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to post reply');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to post reply';
+      Alert.alert('Error', msg);
+    } finally {
+      setReplySubmitting(false);
     }
-    setSubmitting(false);
   };
+
+  // Merge all markers — must run before early returns to satisfy rules of hooks
+  const allMarkers = useMemo<WaypointMarker[]>(() => {
+    if (!expedition) return [];
+
+    const sortedWps = [...(expedition.waypoints ?? [])]
+      .filter(w => w.lat != null && w.lon != null)
+      .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+    const geoEntrs = (expedition.entries ?? []).filter(e => e.lat != null && e.lon != null);
+
+    const linkedIds = new Set<string>();
+    sortedWps.forEach(w => (w.entryIds ?? []).forEach(eid => linkedIds.add(eid)));
+
+    const wpMarkers: WaypointMarker[] = sortedWps.map((w, i, arr) => {
+      const isStart = i === 0;
+      const isEnd = i === arr.length - 1 && arr.length > 1;
+      const hasEntries = (w.entryIds ?? []).length > 0;
+      const entryCount = (w.entryIds ?? []).length;
+      let type: WaypointType;
+      if (isStart) type = 'origin';
+      else if (isEnd) type = 'destination';
+      else type = hasEntries ? 'entry' : 'waypoint';
+      return {
+        coordinates: [w.lon, w.lat] as [number, number],
+        type,
+        label: w.title ?? undefined,
+        text: isStart ? 'S' : isEnd ? 'E' : entryCount > 1 ? String(entryCount) : String(i + 1),
+        entryIds: w.entryIds ?? [],
+      };
+    });
+
+    const legEntries = geoEntrs.filter(e => !linkedIds.has(e.id));
+    const entMarkers: WaypointMarker[] = legEntries.map((e, i) => ({
+      coordinates: [e.lon!, e.lat!] as [number, number],
+      type: 'entry' as WaypointType,
+      label: e.place,
+      text: String(i + 1),
+      entryIds: [e.id],
+    }));
+
+    let markers: WaypointMarker[];
+    if (wpMarkers.length > 0) {
+      markers = [...wpMarkers, ...entMarkers];
+    } else {
+      markers = entMarkers.map((m, i, arr) => ({
+        ...m,
+        type: (i === 0 ? 'origin' : i === arr.length - 1 ? 'destination' : 'entry') as WaypointType,
+        text: i === 0 ? 'S' : i === arr.length - 1 && arr.length > 1 ? 'E' : String(i + 1),
+      }));
+    }
+
+    const src = expedition.currentLocationSource;
+    const locId = expedition.currentLocationId;
+    let curCoords: [number, number] | null = null;
+    if (src === 'waypoint' && locId) {
+      const wp = (expedition.waypoints ?? []).find(w => String(w.id) === locId);
+      if (wp) curCoords = [wp.lon, wp.lat];
+    }
+    if (!curCoords && src === 'entry' && locId) {
+      const entry = (expedition.entries ?? []).find(e => e.id === locId);
+      if (entry?.lat != null) curCoords = [entry.lon!, entry.lat];
+    }
+
+    if (curCoords) {
+      let matched = false;
+      markers = markers.map(m => {
+        if (!matched && m.coordinates[0] === curCoords![0] && m.coordinates[1] === curCoords![1]) {
+          matched = true;
+          return { ...m, isCurrent: true };
+        }
+        return m;
+      });
+      if (!matched) {
+        markers.push({ coordinates: curCoords, type: 'current', label: 'Current Location', isCurrent: true });
+      }
+    }
+
+    return clusterMarkers(markers, mapZoom);
+  }, [expedition, mapZoom]);
 
   if (loading) {
     return (
@@ -241,32 +376,55 @@ export default function ExpeditionDetailScreen() {
   }
 
   const statusLabel = `${expedition.status.toUpperCase()} EXPEDITION`;
-  const typeRegion = [expedition.type?.toUpperCase(), expedition.region?.toUpperCase()]
-    .filter(Boolean)
-    .join(' / ');
+  const statusRight = expedition.category?.toUpperCase();
 
-  // Geo entries and markers for the map
+  // ── Map data ──────────────────────────────────────────────────────────────
+  // Waypoints form the route; entries are additional markers
+  const sortedWaypoints = [...(expedition.waypoints ?? [])]
+    .filter(w => w.lat != null && w.lon != null)
+    .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
   const geoEntries = (expedition.entries ?? []).filter(e => e.lat != null && e.lon != null);
-  const routeCoords: [number, number][] = geoEntries.map(e => [e.lon!, e.lat!]);
-  const waypoints: WaypointMarker[] = geoEntries.map((e, i, arr) => ({
-    coordinates: [e.lon!, e.lat!],
-    type: i === 0 ? 'origin' : i === arr.length - 1 ? 'destination' : 'waypoint',
-    label: e.place,
-  }));
 
-  // Compute bounds that contain all entry markers
-  const mapBounds = geoEntries.length > 0
+  // Route polyline follows waypoints; fall back to entries if no waypoints
+  const routeCoords: [number, number][] = sortedWaypoints.length > 0
+    ? sortedWaypoints.map(w => [w.lon, w.lat])
+    : geoEntries.map(e => [e.lon!, e.lat!]);
+
+  // Bounds include both waypoints and entries
+  const allCoords = [
+    ...sortedWaypoints.map(w => ({ lon: w.lon, lat: w.lat })),
+    ...geoEntries.map(e => ({ lon: e.lon!, lat: e.lat! })),
+  ];
+  const mapBounds = allCoords.length > 0
     ? {
         ne: [
-          Math.max(...geoEntries.map(e => e.lon!)),
-          Math.max(...geoEntries.map(e => e.lat!)),
+          Math.max(...allCoords.map(c => c.lon)),
+          Math.max(...allCoords.map(c => c.lat)),
         ] as [number, number],
         sw: [
-          Math.min(...geoEntries.map(e => e.lon!)),
-          Math.min(...geoEntries.map(e => e.lat!)),
+          Math.min(...allCoords.map(c => c.lon)),
+          Math.min(...allCoords.map(c => c.lat)),
         ] as [number, number],
       }
     : undefined;
+
+  // ── Current location ────────────────────────────────────────────────────
+  const currentLoc = (() => {
+    const src = expedition.currentLocationSource;
+    const locId = expedition.currentLocationId;
+    if (src === 'waypoint' && locId) {
+      const wp = (expedition.waypoints ?? []).find(w => String(w.id) === locId);
+      if (wp) return { place: wp.title ?? 'Current Location', lat: wp.lat, lon: wp.lon };
+    }
+    if (src === 'entry' && locId) {
+      const entry = (expedition.entries ?? []).find(e => e.id === locId);
+      if (entry) return { place: entry.place ?? entry.title, lat: entry.lat, lon: entry.lon };
+    }
+    // Fallback: most recent entry
+    const latest = geoEntries[0];
+    if (latest) return { place: latest.place ?? 'En Route', lat: latest.lat, lon: latest.lon };
+    return null;
+  })();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -278,12 +436,19 @@ export default function ExpeditionDetailScreen() {
             <MapComponent
               style={StyleSheet.absoluteFillObject}
               bounds={mapBounds}
-              center={[0, 20]}
+              center={[-98, 40]}
               zoom={2}
               routeCoords={routeCoords.length > 1 ? routeCoords : undefined}
-              waypoints={waypoints}
+              waypoints={allMarkers}
               interactive
-              onWaypointPress={(i) => setSelectedEntry(geoEntries[i])}
+              onZoomChange={handleZoomChange}
+              onWaypointPress={(i) => {
+                const marker = allMarkers[i];
+                if (!marker?.entryIds?.length) return;
+                const eid = marker.entryIds[0];
+                const entry = (expedition.entries ?? []).find(e => e.id === eid);
+                if (entry) setSelectedEntry(entry);
+              }}
             />
           )}
           {/* Top bar: title + close */}
@@ -327,6 +492,61 @@ export default function ExpeditionDetailScreen() {
               </View>
             </SafeAreaView>
           )}
+          {/* Map legend */}
+          <View style={[styles.mapLegend, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.mapLegendTitle, { color: colors.text }]}>MAP LEGEND</Text>
+            <View style={styles.mapLegendItems}>
+              <View style={styles.mapLegendItem}>
+                <View style={styles.mapLegendDotWrap}>
+                  <View style={[styles.mapLegendDot, { backgroundColor: brandColors.copper, width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#fff' }]}>
+                    <Text style={styles.mapLegendDotText}>S</Text>
+                  </View>
+                </View>
+                <Text style={[styles.mapLegendText, { color: colors.textSecondary }]}>Start</Text>
+              </View>
+              <View style={styles.mapLegendItem}>
+                <View style={styles.mapLegendDotWrap}>
+                  <View style={[styles.mapLegendDot, { backgroundColor: brandColors.blue, width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: '#fff' }]}>
+                    <Text style={styles.mapLegendDotText}>E</Text>
+                  </View>
+                </View>
+                <Text style={[styles.mapLegendText, { color: colors.textSecondary }]}>End</Text>
+              </View>
+              <View style={styles.mapLegendItem}>
+                <View style={styles.mapLegendDotWrap}>
+                  <View style={[styles.mapLegendDot, { backgroundColor: '#616161', width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: '#fff' }]}>
+                    <Text style={[styles.mapLegendDotText, { fontSize: 8 }]}>1</Text>
+                  </View>
+                </View>
+                <Text style={[styles.mapLegendText, { color: colors.textSecondary }]}>Waypoint</Text>
+              </View>
+              <View style={styles.mapLegendItem}>
+                <View style={styles.mapLegendDotWrap}>
+                  <View style={[styles.mapLegendDot, { backgroundColor: brandColors.copper, width: 14, height: 14, borderRadius: 7, borderWidth: 2, borderColor: '#fff' }]}>
+                    <Text style={[styles.mapLegendDotText, { fontSize: 8 }]}>1</Text>
+                  </View>
+                </View>
+                <Text style={[styles.mapLegendText, { color: colors.textSecondary }]}>Journal Entry</Text>
+              </View>
+              <View style={styles.mapLegendItem}>
+                <View style={styles.mapLegendDotWrap}>
+                  <View style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{ position: 'absolute', width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.4)' }} />
+                    <View style={[styles.mapLegendDot, { backgroundColor: '#616161', width: 14, height: 14, borderRadius: 7, borderWidth: 3, borderColor: '#fff' }]} />
+                  </View>
+                </View>
+                <Text style={[styles.mapLegendText, { color: colors.textSecondary }]}>Current Location</Text>
+              </View>
+              <View style={[styles.mapLegendSep, { borderTopColor: colors.borderThin }]} />
+              <View style={styles.mapLegendItem}>
+                <View style={styles.mapLegendDotWrap}>
+                  <View style={{ width: 18, height: 3, backgroundColor: brandColors.copper, borderRadius: 1 }} />
+                </View>
+                <Text style={[styles.mapLegendText, { color: colors.textSecondary }]}>Route</Text>
+              </View>
+            </View>
+          </View>
+
           {/* Bottom: current location bar */}
           <SafeAreaView style={styles.fullMapBottom} edges={['bottom']}>
             <View style={styles.currentLocRow}>
@@ -336,10 +556,10 @@ export default function ExpeditionDetailScreen() {
                   <Circle cx={12} cy={10} r={3} />
                 </Svg>
                 <Text style={styles.currentlyLabel}>CURRENTLY</Text>
-                <Text style={styles.currentlyCity}>{expedition.entries?.[0]?.place ?? 'En Route'}</Text>
+                <Text style={styles.currentlyCity}>{currentLoc?.place ?? 'En Route'}</Text>
               </View>
               <Text style={styles.currentlyCoords}>
-                {expedition.entries?.[0]?.lat != null ? `${Math.abs(expedition.entries[0].lat).toFixed(2)}${expedition.entries[0].lat >= 0 ? 'N' : 'S'} / ${Math.abs(expedition.entries[0].lon!).toFixed(2)}${expedition.entries[0].lon! >= 0 ? 'E' : 'W'}` : ''}
+                {currentLoc?.lat != null ? `${Math.abs(currentLoc.lat).toFixed(2)}${currentLoc.lat >= 0 ? 'N' : 'S'} / ${Math.abs(currentLoc.lon!).toFixed(2)}${currentLoc.lon! >= 0 ? 'E' : 'W'}` : ''}
               </Text>
             </View>
           </SafeAreaView>
@@ -350,7 +570,7 @@ export default function ExpeditionDetailScreen() {
         <NavBar onBack={() => router.back()} />
 
         {/* Status */}
-        <StatusHeader status={expedition.status} label={statusLabel} right={typeRegion} />
+        <StatusHeader status={expedition.status} label={statusLabel} right={statusRight} variant="detail" />
 
         {/* Map hero area (banner) */}
         <View style={styles.mapArea}>
@@ -358,10 +578,10 @@ export default function ExpeditionDetailScreen() {
             <MapComponent
               style={StyleSheet.absoluteFillObject}
               bounds={mapBounds ? { ...mapBounds, padding: 40 } : undefined}
-              center={[0, 20]}
+              center={[-98, 40]}
               zoom={2}
               routeCoords={routeCoords.length > 1 ? routeCoords : undefined}
-              waypoints={waypoints}
+              waypoints={allMarkers}
               interactive={false}
             />
           )}
@@ -393,6 +613,11 @@ export default function ExpeditionDetailScreen() {
                   </Text>
                 </View>
               )}
+              {expedition.region && (
+                <Text style={styles.heroMeta}>
+                  {expedition.region.toUpperCase()}
+                </Text>
+              )}
             </View>
 
             {/* Spacer pushes bottom content down */}
@@ -404,7 +629,7 @@ export default function ExpeditionDetailScreen() {
                 onPress={() => router.push(`/explorer/${expedition.author!.username}`)}
                 style={styles.explorerRow}
               >
-                <Avatar size={32} name={expedition.author.username} imageUrl={expedition.author.picture} />
+                <Avatar size={32} name={expedition.author.username} imageUrl={expedition.author.picture} pro={expedition.author.creator} />
                 <View style={styles.explorerTextWrap}>
                   <Text style={styles.explorerName}>
                     {expedition.author.username}
@@ -419,19 +644,22 @@ export default function ExpeditionDetailScreen() {
             )}
 
             {/* Current location */}
-            <View style={styles.currentLocRow}>
+            <Pressable
+              style={styles.currentLocRow}
+              onPress={isOwner ? openLocationModal : undefined}
+            >
               <View style={styles.currentLocLeft}>
                 <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={3}>
                   <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                   <Circle cx={12} cy={10} r={3} />
                 </Svg>
                 <Text style={styles.currentlyLabel}>CURRENTLY</Text>
-                <Text style={styles.currentlyCity}>{expedition.entries?.[0]?.place ?? 'En Route'}</Text>
+                <Text style={styles.currentlyCity}>{currentLoc?.place ?? 'En Route'}</Text>
               </View>
               <Text style={styles.currentlyCoords}>
-                {expedition.entries?.[0]?.lat != null ? `${Math.abs(expedition.entries[0].lat).toFixed(2)}${expedition.entries[0].lat >= 0 ? 'N' : 'S'} / ${Math.abs(expedition.entries[0].lon!).toFixed(2)}${expedition.entries[0].lon! >= 0 ? 'E' : 'W'}` : ''}
+                {currentLoc?.lat != null ? `${Math.abs(currentLoc.lat).toFixed(2)}${currentLoc.lat >= 0 ? 'N' : 'S'} / ${Math.abs(currentLoc.lon!).toFixed(2)}${currentLoc.lon! >= 0 ? 'E' : 'W'}` : ''}
               </Text>
-            </View>
+            </Pressable>
           </View>
         </View>
 
@@ -451,8 +679,14 @@ export default function ExpeditionDetailScreen() {
 
         {/* Action bar */}
         <View style={[styles.actionBar, { borderBottomColor: colors.border, backgroundColor: colors.card }]}>
-          <Pressable style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]} onPress={() => router.push(`/sponsor/${id}`)}>
-            <Text style={[styles.actionText, { color: brandColors.copper }]}>SPONSOR</Text>
+          <Pressable
+            style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}
+            onPress={() => isOwner
+              ? router.navigate({ pathname: '/(tabs)/create', params: { expeditionId: id } })
+              : router.push(`/sponsor/${id}`)
+            }
+          >
+            <Text style={[styles.actionText, { color: brandColors.copper }]}>{isOwner ? 'LOG ENTRY' : 'SPONSOR'}</Text>
           </Pressable>
           {isOwner && (
             <Pressable style={styles.iconBtn} onPress={() => router.push(`/expedition/edit/${id}`)}>
@@ -585,10 +819,10 @@ export default function ExpeditionDetailScreen() {
                       <TouchableOpacity
                         style={[styles.noteFormSubmit, { opacity: noteText.trim() ? 1 : 0.5 }]}
                         onPress={handlePostNote}
-                        disabled={!noteText.trim() || submitting}
+                        disabled={!noteText.trim() || noteSubmitting}
                       >
                         <Text style={styles.noteFormSubmitText}>
-                          {submitting ? 'POSTING...' : 'LOG NOTE'}
+                          {noteSubmitting ? 'POSTING...' : 'LOG NOTE'}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -656,10 +890,10 @@ export default function ExpeditionDetailScreen() {
                             <TouchableOpacity
                               style={[styles.noteFormSubmit, { opacity: replyText.trim() ? 1 : 0.5 }]}
                               onPress={() => handlePostReply(note.id)}
-                              disabled={!replyText.trim() || submitting}
+                              disabled={!replyText.trim() || replySubmitting}
                             >
                               <Text style={styles.noteFormSubmitText}>
-                                {submitting ? 'POSTING...' : 'LOG RESPONSE'}
+                                {replySubmitting ? 'POSTING...' : 'LOG RESPONSE'}
                               </Text>
                             </TouchableOpacity>
                           </View>
@@ -788,6 +1022,174 @@ export default function ExpeditionDetailScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* Update Location Modal */}
+      <Modal visible={locationModalVisible} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          {/* Header */}
+          <View style={styles.modalHeader}>
+            <View style={styles.modalHeaderLeft}>
+              <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={2.5}>
+                <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <Circle cx={12} cy={10} r={3} />
+              </Svg>
+              <View>
+                <Text style={styles.modalTitle}>UPDATE LOCATION</Text>
+                <Text style={styles.modalSubtitle} numberOfLines={1}>{expedition.title}</Text>
+              </View>
+            </View>
+            <Pressable onPress={() => setLocationModalVisible(false)} style={styles.modalCloseBtn}>
+              <Text style={styles.modalCloseText}>CLOSE</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView style={styles.modalScroll} keyboardShouldPersistTaps="handled">
+            <View style={styles.modalBody}>
+              {/* Info */}
+              <View style={[styles.locInfoBox, { borderLeftColor: brandColors.blue }]}>
+                <Text style={[styles.locInfoTitle, { color: colors.text }]}>QUICK LOCATION UPDATE</Text>
+                <Text style={[styles.locInfoDesc, { color: colors.textSecondary }]}>
+                  Select a waypoint or journal entry to set as your current location on the map.
+                </Text>
+              </View>
+
+              {/* Source toggle */}
+              <Text style={[styles.locSectionLabel, { color: colors.text }]}>SELECT SOURCE</Text>
+              <View style={styles.locSourceRow}>
+                <Pressable
+                  style={[
+                    styles.locSourceBtn,
+                    {
+                      borderColor: locSource === 'entry' ? brandColors.copper : colors.border,
+                      backgroundColor: locSource === 'entry' ? `${brandColors.copper}18` : colors.card,
+                    },
+                  ]}
+                  onPress={() => { setLocSource('entry'); setLocSelectedId(''); }}
+                >
+                  <Text style={[styles.locSourceLabel, { color: locSource === 'entry' ? brandColors.copper : colors.text }]}>
+                    ENTRIES
+                  </Text>
+                  <Text style={[styles.locSourceCount, { color: colors.textTertiary }]}>
+                    {geoEntriesForPicker.length}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.locSourceBtn,
+                    {
+                      borderColor: locSource === 'waypoint' ? brandColors.blue : colors.border,
+                      backgroundColor: locSource === 'waypoint' ? `${brandColors.blue}18` : colors.card,
+                    },
+                  ]}
+                  onPress={() => { setLocSource('waypoint'); setLocSelectedId(''); }}
+                >
+                  <Text style={[styles.locSourceLabel, { color: locSource === 'waypoint' ? brandColors.blue : colors.text }]}>
+                    WAYPOINTS
+                  </Text>
+                  <Text style={[styles.locSourceCount, { color: colors.textTertiary }]}>
+                    {geoWaypoints.length}
+                  </Text>
+                </Pressable>
+              </View>
+
+              {/* Location list */}
+              <Text style={[styles.locSectionLabel, { color: colors.text, marginTop: 16 }]}>
+                {locSource === 'entry' ? 'SELECT ENTRY' : 'SELECT WAYPOINT'}
+              </Text>
+              {(locSource === 'entry' ? geoEntriesForPicker : []).map((entry) => (
+                <Pressable
+                  key={entry.id}
+                  style={[
+                    styles.locItem,
+                    {
+                      borderColor: locSelectedId === entry.id ? brandColors.copper : colors.border,
+                      backgroundColor: locSelectedId === entry.id ? `${brandColors.copper}10` : colors.card,
+                    },
+                  ]}
+                  onPress={() => setLocSelectedId(entry.id)}
+                >
+                  <Text style={[styles.locItemTitle, { color: colors.text }]} numberOfLines={1}>
+                    {entry.title}
+                  </Text>
+                  <Text style={[styles.locItemMeta, { color: colors.textTertiary }]}>
+                    {[entry.place, entry.date ? new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null].filter(Boolean).join(' · ')}
+                  </Text>
+                  {entry.lat != null && (
+                    <Text style={[styles.locItemCoords, { color: colors.textTertiary }]}>
+                      {Math.abs(entry.lat).toFixed(2)}{entry.lat >= 0 ? 'N' : 'S'} / {Math.abs(entry.lon!).toFixed(2)}{entry.lon! >= 0 ? 'E' : 'W'}
+                    </Text>
+                  )}
+                </Pressable>
+              ))}
+              {(locSource === 'waypoint' ? geoWaypoints : []).map((wp) => (
+                <Pressable
+                  key={wp.id}
+                  style={[
+                    styles.locItem,
+                    {
+                      borderColor: locSelectedId === String(wp.id) ? brandColors.blue : colors.border,
+                      backgroundColor: locSelectedId === String(wp.id) ? `${brandColors.blue}10` : colors.card,
+                    },
+                  ]}
+                  onPress={() => setLocSelectedId(String(wp.id))}
+                >
+                  <Text style={[styles.locItemTitle, { color: colors.text }]} numberOfLines={1}>
+                    {wp.title || `Waypoint ${wp.sequence ?? wp.id}`}
+                  </Text>
+                  <Text style={[styles.locItemMeta, { color: colors.textTertiary }]}>
+                    {[wp.description, wp.date ? new Date(wp.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null].filter(Boolean).join(' · ')}
+                  </Text>
+                  <Text style={[styles.locItemCoords, { color: colors.textTertiary }]}>
+                    {Math.abs(wp.lat).toFixed(2)}{wp.lat >= 0 ? 'N' : 'S'} / {Math.abs(wp.lon).toFixed(2)}{wp.lon >= 0 ? 'E' : 'W'}
+                  </Text>
+                </Pressable>
+              ))}
+
+              {/* Visibility */}
+              <Text style={[styles.locSectionLabel, { color: colors.text, marginTop: 16 }]}>LOCATION PRIVACY</Text>
+              {([
+                { value: 'public' as const, label: 'PUBLIC', desc: 'Visible to everyone' },
+                { value: 'sponsors' as const, label: 'SPONSORS ONLY', desc: 'Only your sponsors can see' },
+                { value: 'private' as const, label: 'PRIVATE', desc: 'Only visible to you' },
+              ]).map((opt) => (
+                <Pressable
+                  key={opt.value}
+                  style={[
+                    styles.locVisItem,
+                    {
+                      borderColor: locVisibility === opt.value ? brandColors.copper : colors.border,
+                      backgroundColor: locVisibility === opt.value ? `${brandColors.copper}10` : colors.card,
+                    },
+                  ]}
+                  onPress={() => setLocVisibility(opt.value)}
+                >
+                  <Text style={[styles.locVisLabel, { color: locVisibility === opt.value ? brandColors.copper : colors.text }]}>
+                    {opt.label}
+                  </Text>
+                  <Text style={[styles.locVisDesc, { color: colors.textTertiary }]}>{opt.desc}</Text>
+                </Pressable>
+              ))}
+            </View>
+          </ScrollView>
+
+          {/* Footer */}
+          <View style={[styles.modalFooter, { borderTopColor: colors.border, backgroundColor: colors.card }]}>
+            <Pressable
+              style={[styles.modalCancelBtn, { borderColor: colors.border }]}
+              onPress={() => setLocationModalVisible(false)}
+            >
+              <Text style={[styles.modalCancelText, { color: colors.text }]}>CANCEL</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.modalSaveBtn, { opacity: !locSelectedId || locSaving ? 0.5 : 1 }]}
+              onPress={handleSaveLocation}
+              disabled={!locSelectedId || locSaving}
+            >
+              <Text style={styles.modalSaveText}>{locSaving ? 'SAVING...' : 'SAVE LOCATION'}</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      </Modal>
     </View>
   );
 }
@@ -813,6 +1215,7 @@ const styles = StyleSheet.create({
   },
   dateText: { fontSize: 12, fontFamily: mono, fontWeight: '600', color: 'rgba(255,255,255,0.6)' },
   dateArrow: { color: '#ffffff', fontSize: 11 },
+  heroMeta: { fontFamily: mono, fontSize: 11, fontWeight: '600', letterSpacing: 1, color: 'rgba(255,255,255,0.85)', marginTop: 4 },
   dayCount: { color: brandColors.copper, fontSize: 11, fontFamily: mono, fontWeight: '700', marginLeft: 'auto' },
   explorerRow: {
     flexDirection: 'row',
@@ -903,7 +1306,7 @@ const styles = StyleSheet.create({
   waypointDesc: { fontSize: 13, marginTop: 4, lineHeight: 18 },
   viewMapBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', paddingVertical: 5, paddingHorizontal: 8, alignSelf: 'flex-start' },
   viewMapText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.6, color: 'rgba(255,255,255,0.5)', fontFamily: mono },
-  currentLocRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, backgroundColor: brandColors.copper },
+  currentLocRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, backgroundColor: brandColors.blue },
   currentLocLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   currentlyLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.6, color: 'rgba(255,255,255,0.7)', fontFamily: mono },
   currentlyCity: { fontSize: 12, fontWeight: '700', color: '#ffffff' },
@@ -923,5 +1326,44 @@ const styles = StyleSheet.create({
   fullMapTitle: { fontFamily: mono, fontSize: 14, fontWeight: '700', color: '#ffffff', letterSpacing: 0.6, flex: 1 },
   fullMapCloseBtn: { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', paddingVertical: 8, paddingHorizontal: 14 },
   fullMapCloseText: { fontFamily: mono, fontSize: 11, fontWeight: '700', color: '#ffffff', letterSpacing: 0.6 },
-  fullMapBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: brandColors.copper, zIndex: 10 },
+  fullMapBottom: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: brandColors.blue, zIndex: 10 },
+  mapLegend: { position: 'absolute', bottom: 100, left: 10, zIndex: 10, borderWidth: borders.thick, padding: 10 },
+  mapLegendTitle: { fontFamily: mono, fontSize: 10, fontWeight: '700', letterSpacing: 0.5, marginBottom: 8 },
+  mapLegendItems: { gap: 6 },
+  mapLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  mapLegendDotWrap: { width: 22, alignItems: 'center', justifyContent: 'center' },
+  mapLegendDot: { alignItems: 'center', justifyContent: 'center' },
+  mapLegendDotText: { color: '#fff', fontSize: 9, fontWeight: '700', fontFamily: mono },
+  mapLegendText: { fontSize: 11, fontWeight: '600' },
+  mapLegendSep: { borderTopWidth: 1, marginVertical: 2 },
+  // Update Location Modal
+  modalContainer: { flex: 1 },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: brandColors.blue, paddingHorizontal: 14, paddingVertical: 12 },
+  modalHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  modalTitle: { fontFamily: mono, fontSize: 14, fontWeight: '700', color: '#fff', letterSpacing: 0.6 },
+  modalSubtitle: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 1 },
+  modalCloseBtn: { backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', paddingVertical: 6, paddingHorizontal: 12 },
+  modalCloseText: { fontFamily: mono, fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
+  modalScroll: { flex: 1 },
+  modalBody: { padding: 16 },
+  locInfoBox: { borderLeftWidth: 4, paddingLeft: 12, paddingVertical: 8, marginBottom: 20 },
+  locInfoTitle: { fontFamily: mono, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 4 },
+  locInfoDesc: { fontSize: 13, lineHeight: 18 },
+  locSectionLabel: { fontFamily: mono, fontSize: 11, fontWeight: '700', letterSpacing: 0.5, marginBottom: 8 },
+  locSourceRow: { flexDirection: 'row', gap: 8 },
+  locSourceBtn: { flex: 1, borderWidth: borders.thick, paddingVertical: 12, paddingHorizontal: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  locSourceLabel: { fontFamily: mono, fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
+  locSourceCount: { fontFamily: mono, fontSize: 12, fontWeight: '600' },
+  locItem: { borderWidth: borders.thick, padding: 12, marginBottom: 8 },
+  locItemTitle: { fontSize: 14, fontWeight: '700' },
+  locItemMeta: { fontFamily: mono, fontSize: 11, fontWeight: '600', marginTop: 3 },
+  locItemCoords: { fontFamily: mono, fontSize: 11, fontWeight: '600', marginTop: 2 },
+  locVisItem: { borderWidth: borders.thick, padding: 12, marginBottom: 8 },
+  locVisLabel: { fontFamily: mono, fontSize: 12, fontWeight: '700', letterSpacing: 0.4 },
+  locVisDesc: { fontSize: 12, marginTop: 2 },
+  modalFooter: { flexDirection: 'row', gap: 8, paddingHorizontal: 16, paddingVertical: 12, borderTopWidth: borders.thick },
+  modalCancelBtn: { flex: 1, borderWidth: borders.thick, paddingVertical: 12, alignItems: 'center' },
+  modalCancelText: { fontFamily: mono, fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
+  modalSaveBtn: { flex: 2, backgroundColor: brandColors.copper, paddingVertical: 12, alignItems: 'center' },
+  modalSaveText: { fontFamily: mono, fontSize: 12, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
 });

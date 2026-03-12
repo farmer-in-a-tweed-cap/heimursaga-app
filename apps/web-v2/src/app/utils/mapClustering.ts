@@ -8,6 +8,7 @@ export interface ClusterableEntry {
   title: string;
   date: string;
   coords: { lat: number; lng: number };
+  isMilestone?: boolean;
   timelinePosition?: number;
 }
 
@@ -105,31 +106,30 @@ export function computePopupPosition(
 export function createSingleEntryMarker(
   color = '#ac6d46',
   position?: number,
+  isMilestone = false,
 ): MarkerElements {
   const container = document.createElement('div');
   container.className = 'entry-marker';
   container.style.cursor = 'pointer';
   container.style.borderRadius = '50%';
   container.style.backgroundColor = color;
-  container.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+  container.style.boxShadow = isMilestone
+    ? '0 0 0 3px #ac6d46, 0 2px 6px rgba(0,0,0,0.4)'
+    : '0 2px 4px rgba(0,0,0,0.3)';
   container.style.transition = 'box-shadow 0.2s ease, border 0.2s ease';
+  container.style.width = isMilestone ? '26px' : '22px';
+  container.style.height = isMilestone ? '26px' : '22px';
+  container.style.border = '2px solid white';
+  container.style.display = 'flex';
+  container.style.alignItems = 'center';
+  container.style.justifyContent = 'center';
 
   if (position != null) {
-    container.style.width = '22px';
-    container.style.height = '22px';
-    container.style.border = '2px solid white';
-    container.style.display = 'flex';
-    container.style.alignItems = 'center';
-    container.style.justifyContent = 'center';
     container.style.color = 'white';
     container.style.fontWeight = 'bold';
-    container.style.fontSize = '11px';
+    container.style.fontSize = isMilestone ? '12px' : '11px';
     container.style.lineHeight = '1';
     container.textContent = String(position);
-  } else {
-    container.style.width = '22px';
-    container.style.height = '22px';
-    container.style.border = '2px solid white';
   }
 
   const applyHighlight = () => {
@@ -139,7 +139,9 @@ export function createSingleEntryMarker(
     container.style.zIndex = '1000';
   };
   const removeHighlight = () => {
-    container.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+    container.style.boxShadow = isMilestone
+      ? '0 0 0 3px #ac6d46, 0 2px 6px rgba(0,0,0,0.4)'
+      : '0 2px 4px rgba(0,0,0,0.3)';
     container.style.border = '2px solid white';
     container.style.zIndex = 'auto';
   };
@@ -255,6 +257,7 @@ export function renderClusteredMarkers<T extends ClusterableEntry>(
         const { container, pin, applyHighlight } = createSingleEntryMarker(
           options.color,
           entry.timelinePosition,
+          entry.isMilestone,
         );
 
         if (options.highlightEntryId === entry.id) {

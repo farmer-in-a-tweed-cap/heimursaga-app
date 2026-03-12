@@ -146,6 +146,7 @@ export function ContentTabs({
                     excerpt={entry.excerpt}
                     type={entry.type}
                     visibility={entry.visibility}
+                    isMilestone={entry.isMilestone}
                     isCurrent={expedition.currentLocationSource === 'entry' && expedition.currentLocationId === entry.id}
                     onClick={() => router.push(`/entry/${entry.id}`)}
                   />

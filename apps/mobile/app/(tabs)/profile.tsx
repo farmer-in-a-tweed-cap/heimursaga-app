@@ -7,6 +7,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useApi } from '@/hooks/useApi';
 import { explorerApi } from '@/services/api';
 import { ProfileBanner } from '@/components/profile/ProfileBanner';
+import { StatusHeader } from '@/components/ui/StatusHeader';
 import { StatsBar } from '@/components/ui/StatsBar';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { HButton } from '@/components/ui/HButton';
@@ -17,6 +18,7 @@ import { TopoBackground } from '@/components/ui/TopoBackground';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { HeimuMapProps, WaypointMarker } from '@/components/map/HeimuMap';
 import type { Expedition, Entry, ExplorerProfile } from '@/types/api';
+import { getExplorerStatus, explorerStatusConfig } from '@/utils/explorerStatus';
 
 const TABS = ['EXPEDITIONS', 'ENTRIES', 'FOLLOWS'];
 const FOLLOW_TABS = ['FOLLOWING', 'FOLLOWERS'];
@@ -60,6 +62,8 @@ export default function ProfileScreen() {
     ready && user ? `/users/${user.username}/followers` : null, focusOpts,
   );
 
+  const [loadingFollow, setLoadingFollow] = useState<Record<string, boolean>>({});
+
   if (!ready) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
@@ -74,15 +78,15 @@ export default function ProfileScreen() {
   const followers = followersData?.data ?? [];
 
   const followingUsernames = new Set(following.map((f) => f.username));
-  const [loadingFollow, setLoadingFollow] = useState<Record<string, boolean>>({});
 
   const handleFollow = useCallback(async (targetUsername: string) => {
     setLoadingFollow((prev) => ({ ...prev, [targetUsername]: true }));
     try {
       await explorerApi.follow(targetUsername);
       await Promise.all([refetchFollowing(), refetchFollowers()]);
-    } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to follow');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to follow';
+      Alert.alert('Error', msg);
     } finally {
       setLoadingFollow((prev) => ({ ...prev, [targetUsername]: false }));
     }
@@ -93,8 +97,9 @@ export default function ProfileScreen() {
     try {
       await explorerApi.unfollow(targetUsername);
       await Promise.all([refetchFollowing(), refetchFollowers()]);
-    } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to unfollow');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to unfollow';
+      Alert.alert('Error', msg);
     } finally {
       setLoadingFollow((prev) => ({ ...prev, [targetUsername]: false }));
     }
@@ -104,6 +109,19 @@ export default function ProfileScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       <TopoBackground topOffset={bannerHeight} />
       <ScrollView>
+        {(() => {
+          const status = getExplorerStatus(expeditions, profile?.activeExpeditionOffGrid);
+          const cfg = explorerStatusConfig[status];
+          return (
+            <StatusHeader
+              status="active"
+              label={cfg.label}
+              dotColor={cfg.color}
+              right={profile?.activeExpeditionLocation?.expeditionTitle}
+              variant="detail"
+            />
+          );
+        })()}
         <View onLayout={(e) => setBannerHeight(e.nativeEvent.layout.height)}>
         <ProfileBanner
           username={user!.username}
@@ -114,7 +132,6 @@ export default function ProfileScreen() {
           isPro={profile?.creator ?? user!.is_pro}
           avatarUrl={profile?.picture ?? user!.avatar_url}
           coverPhotoUrl={profile?.coverPhoto}
-          activeExpedition={profile?.activeExpeditionLocation?.expeditionTitle}
         />
         </View>
 

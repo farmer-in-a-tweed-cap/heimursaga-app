@@ -104,11 +104,19 @@ export interface Expedition {
 
 export interface Waypoint {
   id: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-  order: number;
+  /** API returns `title`; legacy code may use `name` */
+  title?: string;
+  name?: string;
+  lat?: number;
+  lon?: number;
+  /** Legacy field names from creation DTO */
+  latitude?: number;
+  longitude?: number;
+  sequence?: number;
+  order?: number;
   type?: 'origin' | 'waypoint' | 'destination';
+  entryId?: string;
+  entryIds?: string[];
 }
 
 // ─── Entry / Post ───

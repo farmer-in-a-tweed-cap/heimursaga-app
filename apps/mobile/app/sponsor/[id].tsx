@@ -27,7 +27,7 @@ export default function SponsorScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { ready } = useRequireAuth();
-  const { createPaymentMethod, confirmPayment } = useStripe();
+  const { createPaymentMethod, confirmPayment, confirmSetupIntent } = useStripe();
 
   const { data: expedition, loading } = useApi<Expedition>(
     id ? `/trips/${id}` : null,
@@ -66,7 +66,7 @@ export default function SponsorScreen() {
     if (currentTiers.length > 0 && !selectedTier) {
       setSelectedTier(currentTiers[0]);
     }
-  }, [currentTiers.length, paymentType]);
+  }, [currentTiers, paymentType]);
 
   // Reset tier selection when switching payment type
   const handleTypeChange = useCallback((idx: number) => {
@@ -130,23 +130,34 @@ export default function SponsorScreen() {
         expeditionId: Array.isArray(id) ? id[0] : id,
       });
 
-      // Step 3: Confirm the payment using the client secret
-      const { error: confirmError, paymentIntent } = await confirmPayment(
-        checkout.clientSecret,
-        { paymentMethodType: 'Card' },
-      );
-
-      if (confirmError) {
-        Alert.alert('Payment Failed', confirmError.message);
-        return;
-      }
-
-      // Step 4: Complete checkout on backend (webhook fallback)
-      if (paymentIntent?.id) {
-        try {
-          await sponsorshipApi.completeCheckout(paymentIntent.id);
-        } catch {
-          // Non-critical — webhook will handle it
+      // Step 3: Confirm payment — subscriptions use SetupIntent, one-time uses PaymentIntent
+      if (paymentType === 1) {
+        // Subscription: confirm SetupIntent to attach payment method for recurring billing
+        const { error: confirmError } = await confirmSetupIntent(
+          checkout.clientSecret,
+          { paymentMethodType: 'Card' },
+        );
+        if (confirmError) {
+          Alert.alert('Payment Failed', confirmError.message);
+          return;
+        }
+      } else {
+        // One-time: confirm PaymentIntent for immediate charge
+        const { error: confirmError, paymentIntent } = await confirmPayment(
+          checkout.clientSecret,
+          { paymentMethodType: 'Card' },
+        );
+        if (confirmError) {
+          Alert.alert('Payment Failed', confirmError.message);
+          return;
+        }
+        // Complete checkout on backend (webhook fallback)
+        if (paymentIntent?.id) {
+          try {
+            await sponsorshipApi.completeCheckout(paymentIntent.id);
+          } catch {
+            // Non-critical — webhook will handle it
+          }
         }
       }
 
@@ -156,12 +167,13 @@ export default function SponsorScreen() {
         `Thank you for sponsoring ${expedition.author.username}!`,
         [{ text: 'OK', onPress: () => router.back() }],
       );
-    } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to process sponsorship.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to process sponsorship.';
+      Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
     }
-  }, [id, expedition, selectedTier, currentTiers, paymentType, activeAmount, cardComplete, message, isPublic, isMessagePublic, createPaymentMethod, confirmPayment, router]);
+  }, [id, expedition, selectedTier, currentTiers, paymentType, activeAmount, cardComplete, message, isPublic, isMessagePublic, createPaymentMethod, confirmPayment, confirmSetupIntent, router]);
 
   if (!ready || loading || !expedition) {
     return (

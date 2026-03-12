@@ -179,11 +179,11 @@ export function SelectExpeditionPage() {
                         </span>
                       </div>
                       <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                        Expedition ID: {currentExpedition.publicId} • Day {calculateDaysActive(currentExpedition.startDate)}
+                        Expedition ID: {currentExpedition.id} • Day {calculateDaysActive(currentExpedition.startDate)}
                       </div>
                     </div>
                     <Link
-                      href={`/log-entry/${currentExpedition.publicId}`}
+                      href={`/log-entry/${currentExpedition.id}`}
                       className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
                     >
                       SELECT & LOG ENTRY
@@ -261,7 +261,7 @@ export function SelectExpeditionPage() {
                       : 0;
                     return (
                       <div
-                        key={expedition.publicId}
+                        key={expedition.id}
                         className="border-2 border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#616161] transition-all p-4"
                       >
                         <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
@@ -273,11 +273,11 @@ export function SelectExpeditionPage() {
                               </span>
                             </div>
                             <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                              Expedition ID: {expedition.publicId} • {duration} days • {formatDate(expedition.startDate)} to {formatDate(expedition.endDate)}
+                              Expedition ID: {expedition.id} • {duration} days • {formatDate(expedition.startDate)} to {formatDate(expedition.endDate)}
                             </div>
                           </div>
                           <Link
-                            href={`/log-entry/${expedition.publicId}`}
+                            href={`/log-entry/${expedition.id}`}
                             className="px-5 py-2 bg-[#616161] text-white font-bold hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
                           >
                             ADD ENTRY

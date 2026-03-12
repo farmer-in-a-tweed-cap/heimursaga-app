@@ -8,26 +8,30 @@ interface StatusHeaderProps {
   label: string;
   right?: string;
   dotColor?: string;
+  /** 'card' (default): gray bar with colored dot. 'detail': full status-colored bar, white text, no dot. */
+  variant?: 'card' | 'detail';
 }
 
-export function StatusHeader({ status, label, right, dotColor }: StatusHeaderProps) {
+export function StatusHeader({ status, label, right, dotColor, variant = 'card' }: StatusHeaderProps) {
   const { dark, colors } = useTheme();
+  const isDetail = variant === 'detail';
+  const barColor = dotColor ?? statusColors[status];
 
   return (
     <View
       style={[
         styles.container,
-        { backgroundColor: colors.statusBar },
+        { backgroundColor: isDetail ? barColor : colors.statusBar },
       ]}
     >
       <View style={styles.left}>
-        <View
-          style={[styles.dot, { backgroundColor: dotColor ?? statusColors[status] }]}
-        />
-        <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+        {!isDetail && (
+          <View style={[styles.dot, { backgroundColor: barColor }]} />
+        )}
+        <Text style={[styles.label, { color: isDetail ? '#ffffff' : colors.text }]}>{label}</Text>
       </View>
       {right ? (
-        <Text style={[styles.right, { color: colors.textTertiary }]}>
+        <Text style={[styles.right, { color: isDetail ? 'rgba(255,255,255,0.7)' : colors.textTertiary }]}>
           {right}
         </Text>
       ) : null}

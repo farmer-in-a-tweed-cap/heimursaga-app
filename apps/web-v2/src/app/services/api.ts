@@ -688,6 +688,7 @@ export interface ExpeditionEntry {
   title: string;
   content?: string;
   visibility?: 'public' | 'off-grid' | 'private';
+  isMilestone?: boolean;
   date?: string;
   place?: string;
   lat?: number;

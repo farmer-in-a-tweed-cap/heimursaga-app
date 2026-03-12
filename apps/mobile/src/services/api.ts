@@ -67,7 +67,8 @@ async function tryRefreshToken(): Promise<boolean> {
       clearTimeout(refreshTimeout);
 
       if (!res.ok) {
-        await clearTokens();
+        // Only clear tokens on auth failures, not server errors
+        if (res.status < 500) await clearTokens();
         return false;
       }
 
@@ -75,7 +76,7 @@ async function tryRefreshToken(): Promise<boolean> {
       await setTokens(data.data.accessToken, data.data.refreshToken);
       return true;
     } catch {
-      await clearTokens();
+      // Network error (offline, timeout) — don't clear tokens
       return false;
     } finally {
       refreshPromise = null;
@@ -323,7 +324,7 @@ export const entryApi = {
   createEntry(data: Record<string, unknown>) {
     return api.post<ApiResponse<Entry>>('/posts', data);
   },
-  updateEntry(id: number, data: Partial<Entry>) {
+  updateEntry(id: string | number, data: Partial<Entry>) {
     return api.put<ApiResponse<Entry>>(`/posts/${id}`, data);
   },
   deleteEntry(id: number) {
@@ -344,14 +345,14 @@ export const expeditionApi = {
   createExpedition(data: Record<string, unknown>) {
     return api.post<ApiResponse<Expedition>>('/trips', data);
   },
-  updateExpedition(id: number, data: Partial<Expedition>) {
+  updateExpedition(id: string | number, data: Partial<Expedition>) {
     return api.put<ApiResponse<Expedition>>(`/trips/${id}`, data);
   },
   deleteExpedition(id: number) {
     return api.delete<ApiResponse<void>>(`/trips/${id}`);
   },
-  createWaypoint(tripId: number, data: Partial<import('@/types/api').Waypoint>) {
-    return api.post<ApiResponse<import('@/types/api').Waypoint>>(`/trips/${tripId}/waypoints`, data);
+  createWaypoint(expeditionId: string | number, data: { title?: string; lat: number; lon: number; date?: string; sequence?: number }) {
+    return api.post<{ waypointId: number }>(`/trips/${expeditionId}/waypoints`, data);
   },
   deleteWaypoint(tripId: number, waypointId: number) {
     return api.delete<ApiResponse<void>>(`/trips/${tripId}/waypoints/${waypointId}`);
@@ -456,19 +457,31 @@ export const settingsApi = {
   },
 };
 
+export interface UploadResult {
+  uploadId: string;
+  original: string;
+  thumbnail: string;
+}
+
 export const uploadApi = {
-  async upload(uri: string, type: string = 'image/jpeg'): Promise<ApiResponse<{ url: string }>> {
+  async upload(uri: string, type: string = 'image/jpeg'): Promise<UploadResult> {
     const formData = new FormData();
     const filename = uri.split('/').pop() || 'upload.jpg';
     formData.append('file', { uri, name: filename, type } as unknown as Blob);
 
     const token = await getAccessToken();
-    const res = await fetch(`${API_BASE_URL}/upload`, {
-      method: 'POST',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-      body: formData,
-    });
-
-    return handleResponse<ApiResponse<{ url: string }>>(res);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout for uploads
+    try {
+      const res = await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData,
+        signal: controller.signal,
+      });
+      return handleResponse<UploadResult>(res);
+    } finally {
+      clearTimeout(timeout);
+    }
   },
 };

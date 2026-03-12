@@ -20,6 +20,13 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
     ? Math.max(1, Math.ceil((Date.now() - new Date(expedition.startDate).getTime()) / 86400000))
     : undefined;
 
+  const fmtDate = (d?: string) =>
+    d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase() : '';
+
+  const dateRange = expedition.startDate
+    ? `${fmtDate(expedition.startDate)} \u2192 ${expedition.endDate ? fmtDate(expedition.endDate) : 'ONGOING'}`
+    : '';
+
   const sponsorable =
     expedition.author?.creator &&
     expedition.author?.stripeAccountConnected &&
@@ -40,7 +47,7 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
         />
         <View style={styles.body}>
           <View style={styles.imageWrap}>
-            <CoverImage uri={expedition.coverImage} height={96} />
+            <CoverImage uri={expedition.coverImage} height="100%" />
           </View>
           <View style={styles.info}>
             <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
@@ -51,10 +58,11 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
                 {expedition.author.username}
               </Text>
             )}
-            <Text style={[styles.meta, { color: colors.textTertiary }]} numberOfLines={1}>
-              {expedition.category?.toUpperCase()}
-              {expedition.region ? ` \u00B7 ${expedition.region.toUpperCase()}` : ''}
-            </Text>
+            {dateRange !== '' && (
+              <Text style={[styles.meta, { color: colors.textTertiary }]} numberOfLines={1}>
+                {dateRange}
+              </Text>
+            )}
             <View style={styles.statsRow}>
               <Text style={[styles.stat, { color: brandColors.blue }]}>
                 {expedition.entriesCount ?? 0} entries
@@ -81,6 +89,7 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
 const styles = StyleSheet.create({
   body: {
     flexDirection: 'row',
+    height: 110,
   },
   imageWrap: {
     width: 90,

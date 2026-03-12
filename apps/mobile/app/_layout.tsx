@@ -316,7 +316,6 @@ function LaunchScreen() {
 
   useEffect(() => {
     // Hide the native splash now that our custom launch screen is mounted.
-    // The badge is identical so the transition is seamless.
     SplashScreen.hideAsync();
 
     Animated.timing(riseAnim, {
@@ -446,6 +445,11 @@ const launchStyles = StyleSheet.create({
 
 // ─── Root Navigator ──────────────────────────────────────────────────────────
 
+// Start on (auth) so logged-out users never see the home screen
+export const unstable_settings = {
+  initialRouteName: '(auth)',
+};
+
 function RootNav() {
   const { dark } = useTheme();
   const { user, loading } = useAuth();
@@ -453,13 +457,13 @@ function RootNav() {
   const segments = useSegments();
   const router = useRouter();
 
-  // Enforce minimum 4-second splash duration
+  // Enforce minimum 1.5-second splash duration
   useEffect(() => {
     const timer = setTimeout(() => setMinSplashDone(true), 1500);
     return () => clearTimeout(timer);
   }, []);
 
-  // Auth redirect: fires once both auth check and splash timer have resolved
+  // Auth redirect: fires once both auth check and splash timer have resolved.
   useEffect(() => {
     if (loading || !minSplashDone) return;
 

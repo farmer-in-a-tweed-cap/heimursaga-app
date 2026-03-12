@@ -268,6 +268,7 @@ export function useExpeditionData(
         mediaCount: entry.mediaCount || 0,
         views: 0,
         visibility: (entry.visibility || 'public') as 'public' | 'off-grid' | 'private',
+        isMilestone: entry.isMilestone || false,
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [apiExpedition?.entries]);

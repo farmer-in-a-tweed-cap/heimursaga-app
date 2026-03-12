@@ -7,6 +7,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
 import { bookmarksApi, explorerApi } from '@/services/api';
 import { NavBar } from '@/components/ui/NavBar';
+import { StatusHeader } from '@/components/ui/StatusHeader';
 import { ProfileBanner } from '@/components/profile/ProfileBanner';
 import { ExpeditionCardFull } from '@/components/cards/ExpeditionCardFull';
 import { EntryCardFull } from '@/components/cards/EntryCardFull';
@@ -137,6 +138,14 @@ export default function ExplorerProfileScreen() {
       </View>
 
       <ScrollView>
+        <StatusHeader
+          status="active"
+          label={statusCfg.label}
+          dotColor={statusCfg.color}
+          right={profile.activeExpeditionLocation?.expeditionTitle}
+          variant="detail"
+        />
+
         <ProfileBanner
           username={profile.username}
           displayName={profile.name}
@@ -146,9 +155,6 @@ export default function ExplorerProfileScreen() {
           isPro={profile.creator}
           avatarUrl={profile.picture}
           coverPhotoUrl={profile.coverPhoto}
-          activeExpedition={profile.activeExpeditionLocation?.expeditionTitle}
-          statusLabel={statusCfg.label}
-          statusColor={statusCfg.color}
         />
 
         {/* Stats bar */}

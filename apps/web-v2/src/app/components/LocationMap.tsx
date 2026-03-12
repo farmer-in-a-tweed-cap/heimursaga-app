@@ -9,7 +9,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { buildMergedRouteCoords } from '@/app/utils/routeSnapping';
-import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
+import { createPOIGeocoder, retrievePOI } from '@/app/utils/poiGeocoder';
 import { toast } from 'sonner';
 
 // Mapbox configuration - token loaded from environment variable
@@ -436,9 +436,21 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     };
 
     // Handle geocoder result
-    geocoder.on('result', (e: any) => {
-      const { center } = e.result;
-      const [lng, lat] = center;
+    geocoder.on('result', async (e: any) => {
+      // POI results have placeholder [0,0] coords — resolve via retrievePOI
+      const mapboxId = e.result?.properties?.mapbox_id;
+      let lng: number, lat: number;
+      if (mapboxId) {
+        const poi = await retrievePOI(mapboxId);
+        if (!poi) return;
+        lng = poi.lng;
+        lat = poi.lat;
+        map.flyTo({ center: [lng, lat], zoom: 14 });
+      } else {
+        const { center } = e.result;
+        [lng, lat] = center;
+      }
+
       setPosition({ lat, lng });
       onLocationSelect(lat, lng);
 

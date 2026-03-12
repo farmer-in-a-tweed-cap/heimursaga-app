@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+// force recompile
 import {
   ExplorerRole,
   IExpeditionBookmarkResponse,
@@ -487,33 +488,33 @@ export class ExpeditionService {
 
       const response: IExpeditionGetAllResponse = {
         results,
-        data: data.map(
-          ({
-            public_id,
-            title,
-            description,
-            cover_image,
-            status,
-            visibility,
-            category,
-            region,
-            tags,
-            is_round_trip,
-            goal,
-            raised,
-            entries_count,
-            author_id,
-            start_date,
-            end_date,
-            current_location_type,
-            current_location_id,
-            current_location_visibility,
-            author,
-            bookmarks: expeditionBookmarks,
-            ...expedition
-          }) => {
+        data: data.map((row) => {
+            const {
+              public_id,
+              title,
+              description,
+              cover_image,
+              status,
+              visibility,
+              tags,
+              is_round_trip,
+              goal,
+              raised,
+              entries_count,
+              author_id,
+              start_date,
+              end_date,
+              current_location_type,
+              current_location_id,
+              current_location_visibility,
+              author,
+              bookmarks: expeditionBookmarks,
+            } = row;
+            // Access category/region directly to avoid destructuring issues
+            const category = (row as any).category;
+            const region = (row as any).region;
             // Waypoints already ordered by sequence from query
-            const waypoints = expedition.waypoints.map(
+            const waypoints = row.waypoints.map(
               ({ sequence, waypoint }) => ({
                 ...waypoint,
                 sequence,
@@ -701,6 +702,7 @@ export class ExpeditionService {
                 place: true,
                 lat: true,
                 lon: true,
+                is_milestone: true,
                 author: {
                   select: {
                     username: true,
@@ -747,7 +749,7 @@ export class ExpeditionService {
                     date: true,
                     description: true,
                     entries: {
-                      where: { deleted_at: null },
+                      where: { deleted_at: null, is_draft: { not: true } },
                       select: { public_id: true },
                       orderBy: { date: 'desc' },
                     },
@@ -1036,6 +1038,7 @@ export class ExpeditionService {
                 title: entry.title,
                 content: fullContent,
                 visibility: effectiveVisibility,
+                isMilestone: entry.is_milestone || false,
                 date: entry.date,
                 place: entry.place,
                 lat: entry.lat,

@@ -6,6 +6,7 @@ import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
 import { NavBar } from '@/components/ui/NavBar';
+import { StatusHeader } from '@/components/ui/StatusHeader';
 import { HCard } from '@/components/ui/HCard';
 import { Avatar } from '@/components/ui/Avatar';
 import { ImagePlaceholder } from '@/components/ui/ImagePlaceholder';
@@ -30,13 +31,14 @@ export default function EntryDetailScreen() {
   const { data: entry, loading, refetch: refetchEntry } = useApi<Entry>(
     id ? `/posts/${id}` : null,
   );
+  const commentsEnabled = entry?.commentsEnabled !== false;
   const { data: commentsData, refetch: refetchComments } = useApi<{ data: Comment[]; count: number }>(
-    id ? `/posts/${id}/comments` : null,
+    id && commentsEnabled ? `/posts/${id}/comments` : null,
   );
 
   // Fetch sibling entries from the same expedition
   const tripId = entry?.trip?.id;
-  const { data: expeditionData } = useApi<{ entries?: { id: string; title?: string; place?: string; expeditionDay?: number }[] }>(
+  const { data: expeditionData } = useApi<{ title?: string; status?: string; startDate?: string; endDate?: string; description?: string; coverImage?: string; entries?: { id: string; title?: string; place?: string; expeditionDay?: number }[] }>(
     tripId ? `/trips/${tripId}` : null,
   );
   const siblingEntries = (expeditionData?.entries ?? [])
@@ -96,8 +98,6 @@ export default function EntryDetailScreen() {
     ...(entry.lat != null && entry.lon != null
       ? [{ label: 'COORDINATES', value: `${Math.abs(entry.lat).toFixed(2)}${entry.lat >= 0 ? 'N' : 'S'} / ${Math.abs(entry.lon).toFixed(2)}${entry.lon >= 0 ? 'E' : 'W'}` }]
       : []),
-    ...(entry.entryNumber != null ? [{ label: 'ENTRY #', value: String(entry.entryNumber) }] : []),
-    ...(entry.expeditionDay != null ? [{ label: 'DAY', value: String(entry.expeditionDay) }] : []),
   ];
 
   return (
@@ -106,6 +106,13 @@ export default function EntryDetailScreen() {
       <NavBar onBack={() => router.back()} />
 
       <ScrollView>
+        <StatusHeader
+          status={(entry.trip?.status as any) ?? 'active'}
+          label={`JOURNAL ENTRY${entry.entryNumber != null ? ` #${entry.entryNumber}` : ''}`}
+          right={entry.expeditionDay != null ? `DAY ${entry.expeditionDay}` : undefined}
+          variant="detail"
+        />
+
         {/* Hero image with overlay */}
         <View style={styles.heroWrap}>
           {entry.media?.[0] ? (
@@ -119,14 +126,14 @@ export default function EntryDetailScreen() {
           )}
           <View style={styles.heroOverlay}>
             <Text style={styles.heroType}>
-              JOURNAL ENTRY{entry.expeditionDay ? ` · DAY ${entry.expeditionDay}` : ''}
+              JOURNAL ENTRY{entry.entryNumber != null ? ` #${entry.entryNumber}` : ''}{entry.expeditionDay != null ? ` · DAY ${entry.expeditionDay}` : ''}
             </Text>
             <Text style={styles.heroTitle}>{entry.title}</Text>
             <TouchableOpacity
               style={styles.heroAuthor}
               onPress={() => router.push(`/explorer/${entry.author.username}`)}
             >
-              <Avatar size={20} name={entry.author.username} />
+              <Avatar size={20} name={entry.author.username} imageUrl={entry.author.picture} pro={entry.author.creator} />
               <Text style={styles.heroAuthorText}>
                 {entry.author.username}
                 {entry.trip ? ` · ${entry.trip.title}` : ''}
@@ -137,11 +144,18 @@ export default function EntryDetailScreen() {
 
         {/* Action bar */}
         <View style={[styles.actionBar, { borderTopColor: colors.border, borderBottomColor: colors.border, backgroundColor: colors.card }]}>
-          <TouchableOpacity style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}>
+          <View style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}>
             <Text style={[styles.actionText, { color: colors.textTertiary }]}>
-              {comments.length} NOTES
+              {entry.content ? entry.content.trim().split(/\s+/).length : 0} WORDS
             </Text>
-          </TouchableOpacity>
+          </View>
+          {entry.commentsEnabled !== false && (
+            <TouchableOpacity style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}>
+              <Text style={[styles.actionText, { color: colors.textTertiary }]}>
+                {comments.length} NOTES
+              </Text>
+            </TouchableOpacity>
+          )}
           {user && entry.author && user.username === entry.author.username && (
             <TouchableOpacity
               style={[styles.iconBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}
@@ -224,68 +238,70 @@ export default function EntryDetailScreen() {
         )}
 
         {/* Comments */}
-        <View style={styles.contentWrap}>
-          <View style={styles.commentsHeader}>
-            <Text style={[styles.commentsTitle, { color: colors.text }]}>
-              NOTES ({comments.length})
-            </Text>
-            <View style={[styles.commentsLine, { backgroundColor: colors.border }]} />
-          </View>
+        {entry.commentsEnabled !== false && (
+          <View style={styles.contentWrap}>
+            <View style={styles.commentsHeader}>
+              <Text style={[styles.commentsTitle, { color: colors.text }]}>
+                NOTES ({comments.length})
+              </Text>
+              <View style={[styles.commentsLine, { backgroundColor: colors.border }]} />
+            </View>
 
-          {comments.map((comment) => (
-            <HCard key={comment.id}>
-              <View style={styles.commentCard}>
-                <View style={styles.commentTop}>
-                  <View style={styles.commentAuthor}>
-                    <Avatar size={22} name={comment.author?.username ?? '?'} imageUrl={comment.author?.picture} />
-                    <Text style={styles.commentUsername}>{comment.author?.username ?? 'Unknown'}</Text>
+            {comments.map((comment) => (
+              <HCard key={comment.id}>
+                <View style={styles.commentCard}>
+                  <View style={styles.commentTop}>
+                    <View style={styles.commentAuthor}>
+                      <Avatar size={22} name={comment.author?.username ?? '?'} imageUrl={comment.author?.picture} />
+                      <Text style={styles.commentUsername}>{comment.author?.username ?? 'Unknown'}</Text>
+                    </View>
+                    <Text style={[styles.commentTime, { color: colors.textTertiary }]}>
+                      {new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </Text>
                   </View>
-                  <Text style={[styles.commentTime, { color: colors.textTertiary }]}>
-                    {new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  <Text style={[styles.commentBody, { color: colors.text }]}>
+                    {comment.content}
                   </Text>
-                </View>
-                <Text style={[styles.commentBody, { color: colors.text }]}>
-                  {comment.content}
-                </Text>
-                {(comment.replies?.length ?? 0) > 0 && (
-                  comment.replies!.map((reply) => (
-                    <View key={reply.id} style={styles.replyCard}>
-                      <View style={styles.commentTop}>
-                        <View style={styles.commentAuthor}>
-                          <Avatar size={18} name={reply.author?.username ?? '?'} imageUrl={reply.author?.picture} />
-                          <Text style={styles.commentUsername}>{reply.author?.username ?? 'Unknown'}</Text>
+                  {(comment.replies?.length ?? 0) > 0 && (
+                    comment.replies!.map((reply) => (
+                      <View key={reply.id} style={styles.replyCard}>
+                        <View style={styles.commentTop}>
+                          <View style={styles.commentAuthor}>
+                            <Avatar size={18} name={reply.author?.username ?? '?'} imageUrl={reply.author?.picture} />
+                            <Text style={styles.commentUsername}>{reply.author?.username ?? 'Unknown'}</Text>
+                          </View>
+                          <Text style={[styles.commentTime, { color: colors.textTertiary }]}>
+                            {new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </Text>
                         </View>
-                        <Text style={[styles.commentTime, { color: colors.textTertiary }]}>
-                          {new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        <Text style={[styles.commentBody, { color: colors.text }]}>
+                          {reply.content}
                         </Text>
                       </View>
-                      <Text style={[styles.commentBody, { color: colors.text }]}>
-                        {reply.content}
-                      </Text>
-                    </View>
-                  ))
-                )}
-                <View style={styles.commentActions}>
-                  <Text style={styles.replyBtn}>Reply</Text>
+                    ))
+                  )}
+                  <View style={styles.commentActions}>
+                    <Text style={styles.replyBtn}>Reply</Text>
+                  </View>
                 </View>
-              </View>
-            </HCard>
-          ))}
+              </HCard>
+            ))}
 
-          {/* Comment input */}
-          <View style={[styles.inputRow, { borderColor: colors.border }]}>
-            <TextInput
-              style={[styles.commentInput, { color: colors.text }]}
-              placeholder="Write a note..."
-              placeholderTextColor={colors.textTertiary}
-              value={commentText}
-              onChangeText={setCommentText}
-            />
-            <TouchableOpacity style={styles.postBtn} onPress={handlePostComment}>
-              <Text style={styles.postBtnText}>POST</Text>
-            </TouchableOpacity>
+            {/* Comment input */}
+            <View style={[styles.inputRow, { borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.commentInput, { color: colors.text }]}
+                placeholder="Write a note..."
+                placeholderTextColor={colors.textTertiary}
+                value={commentText}
+                onChangeText={setCommentText}
+              />
+              <TouchableOpacity style={styles.postBtn} onPress={handlePostComment}>
+                <Text style={styles.postBtnText}>POST</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Related entries */}
         {entry.trip && siblingEntries.length > 0 && (
@@ -314,6 +330,49 @@ export default function EntryDetailScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+          </View>
+        )}
+
+        {/* Expedition context */}
+        {entry.trip && (
+          <View style={styles.expeditionContextWrap}>
+            <View style={styles.relatedHeader}>
+              <Text style={[styles.relatedTitle, { color: colors.text }]}>EXPEDITION CONTEXT</Text>
+              <View style={[styles.relatedLine, { backgroundColor: colors.border }]} />
+            </View>
+            <HCard>
+              <View style={styles.expContextCard}>
+                <Text style={[styles.expContextName, { color: colors.text }]}>{entry.trip.title}</Text>
+
+                <View style={styles.expContextRows}>
+                  {entry.expeditionDay != null && (
+                    <View style={styles.expContextRow}>
+                      <Text style={[styles.expContextLabel, { color: colors.textTertiary }]}>Expedition Day</Text>
+                      <Text style={[styles.expContextValue, { color: colors.text }]}>{entry.expeditionDay}</Text>
+                    </View>
+                  )}
+                  {entry.trip.entriesCount != null && (
+                    <View style={styles.expContextRow}>
+                      <Text style={[styles.expContextLabel, { color: colors.textTertiary }]}>Total Entries</Text>
+                      <Text style={[styles.expContextValue, { color: colors.text }]}>{entry.trip.entriesCount}</Text>
+                    </View>
+                  )}
+                  {entry.entryNumber != null && (
+                    <View style={styles.expContextRow}>
+                      <Text style={[styles.expContextLabel, { color: colors.textTertiary }]}>This Entry</Text>
+                      <Text style={[styles.expContextValue, { color: brandColors.blue }]}>#{entry.entryNumber}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.expContextBtn}
+                  onPress={() => router.push(`/expedition/${entry.trip!.id}`)}
+                >
+                  <Text style={styles.expContextBtnText}>VIEW EXPEDITION</Text>
+                </TouchableOpacity>
+              </View>
+            </HCard>
           </View>
         )}
 
@@ -407,6 +466,7 @@ const styles = StyleSheet.create({
     height: 220,
   },
   bodyText: {
+    fontFamily: heading,
     fontSize: 15,
     lineHeight: 28,
     marginTop: 16,
@@ -501,4 +561,43 @@ const styles = StyleSheet.create({
   relatedDay: { fontFamily: mono, fontSize: 12, fontWeight: '700', color: brandColors.copper },
   relatedLoc: { fontSize: 11, fontWeight: '600', marginTop: 2 },
   replyCard: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e5e5e5' },
+  expeditionContextWrap: { padding: 16, paddingTop: 4 },
+  expContextCard: { padding: 14 },
+  expContextName: {
+    fontFamily: heading,
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  expContextRows: { gap: 6 },
+  expContextRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  expContextLabel: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  expContextValue: {
+    fontFamily: mono,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  expContextBtn: {
+    backgroundColor: brandColors.copper,
+    paddingVertical: 11,
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  expContextBtnText: {
+    fontFamily: mono,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 0.6,
+  },
 });

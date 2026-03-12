@@ -63,8 +63,8 @@ export function useApi<T>(endpoint: string | null, options?: UseApiOptions): Use
         if (!cancelled) {
           setLoading(false);
           hasFetchedRef.current = true;
+          resolversRef.current.splice(0).forEach((r) => r());
         }
-        resolversRef.current.splice(0).forEach((r) => r());
       });
 
     return () => {

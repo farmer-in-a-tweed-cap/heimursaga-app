@@ -55,8 +55,8 @@ export function ProfileBanner({
           styles.banner,
           {
             backgroundColor: dark
-              ? 'rgba(26,42,58,0.9)'
-              : 'rgba(200,196,180,0.9)',
+              ? 'rgba(20,20,20,0.92)'
+              : 'rgba(120,120,120,0.35)',
           },
         ]}
       >

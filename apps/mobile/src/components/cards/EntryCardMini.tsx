@@ -18,6 +18,9 @@ export function EntryCardMini({ entry, onPress, showAuthor = true }: EntryCardMi
   const { dark, colors } = useTheme();
 
   const expeditionRef = entry.trip ?? entry.expedition;
+  const dateStr = entry.createdAt
+    ? new Date(entry.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()
+    : '';
   const coverUrl = entry.coverImage || entry.media?.[0]?.thumbnail || entry.media?.[0]?.original || entry.media?.[0]?.url;
 
   const rightLabel = entry.expeditionDay != null
@@ -86,6 +89,11 @@ export function EntryCardMini({ entry, onPress, showAuthor = true }: EntryCardMi
               </Text>
             </View>
           )}
+          {dateStr !== '' && (
+            <Text style={[styles.date, { color: colors.textTertiary }]}>
+              {dateStr}
+            </Text>
+          )}
         </View>
       </HCard>
     </Pressable>
@@ -146,5 +154,11 @@ const styles = StyleSheet.create({
     fontFamily: mono,
     fontSize: 12,
     fontWeight: '600',
+  },
+  date: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 6,
   },
 });

@@ -75,5 +75,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         locationWhenInUsePermission: 'Show your location on the Explorer Atlas',
       },
     ],
+    '@react-native-community/datetimepicker',
   ],
 });

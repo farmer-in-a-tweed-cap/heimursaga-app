@@ -9,7 +9,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { projectToSegment } from '@/app/utils/routeSnapping';
-import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
+import { createPOIGeocoder, retrievePOI } from '@/app/utils/poiGeocoder';
 
 // ---------------------------------------------------------------------------
 // Mapbox token
@@ -49,6 +49,34 @@ interface PendingNewWaypoint {
 }
 
 // ---------------------------------------------------------------------------
+// Route insertion helper
+// ---------------------------------------------------------------------------
+
+/** Find the closest segment on a route and insert a point at that position */
+function insertPointIntoRoute(routeCoords: number[][], point: [number, number]): number[][] {
+  if (routeCoords.length < 2) return routeCoords;
+
+  let bestSegIdx = 0;
+  let bestDist = Infinity;
+
+  for (let i = 0; i < routeCoords.length - 1; i++) {
+    const [ax, ay] = routeCoords[i];
+    const [bx, by] = routeCoords[i + 1];
+    const dx = bx - ax, dy = by - ay;
+    const lenSq = dx * dx + dy * dy;
+    let t = lenSq === 0 ? 0 : ((point[0] - ax) * dx + (point[1] - ay) * dy) / lenSq;
+    t = Math.max(0, Math.min(1, t));
+    const px = ax + t * dx, py = ay + t * dy;
+    const d = Math.pow(point[0] - px, 2) + Math.pow(point[1] - py, 2);
+    if (d < bestDist) { bestDist = d; bestSegIdx = i; }
+  }
+
+  const result = [...routeCoords];
+  result.splice(bestSegIdx + 1, 0, point);
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // Marker element factories
 // ---------------------------------------------------------------------------
 
@@ -83,8 +111,8 @@ function createNewWaypointMarkerEl(): HTMLDivElement {
   const el = document.createElement('div');
   el.className = 'waypoint-selector-new-pin';
   el.style.cssText =
-    'width:20px;height:20px;border-radius:50%;background:#4676ac;border:3px dashed white;' +
-    'box-shadow:0 0 0 3px rgba(70,118,172,0.4);cursor:default;' +
+    'width:20px;height:20px;border-radius:50%;background:#ac6d46;border:3px solid white;' +
+    'box-shadow:0 0 0 3px rgba(172,109,70,0.4);cursor:default;' +
     'animation:waypointSelectorPulse 1.5s ease-in-out infinite;';
   return el;
 }
@@ -148,6 +176,12 @@ export function WaypointSelectorMap({
 
   const [mapReady, setMapReady] = useState(false);
   const [pendingWaypoint, setPendingWaypoint] = useState<PendingNewWaypoint | null>(null);
+  const [pendingExisting, setPendingExisting] = useState<{
+    waypointId: string;
+    coords: { lat: number; lng: number };
+    title: string;
+    entryCount: number;
+  } | null>(null);
   const [existingEntryNotice, setExistingEntryNotice] = useState<{
     waypointId: string;
     entryCount: number;
@@ -157,6 +191,7 @@ export function WaypointSelectorMap({
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const waypointMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const newPinMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const originalRouteCoordsRef = useRef<number[][]>([]);
 
   // Keep latest prop values in refs so map event closures stay current
   const waypointsRef = useRef(expeditionWaypoints);
@@ -181,6 +216,18 @@ export function WaypointSelectorMap({
       newPinMarkerRef.current = null;
     }
     setPendingWaypoint(null);
+    // Reset route line to original
+    const original = originalRouteCoordsRef.current;
+    if (original.length >= 2 && mapRef.current) {
+      const source = mapRef.current.getSource('ws-route') as mapboxgl.GeoJSONSource | undefined;
+      if (source) {
+        source.setData({
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: original },
+        });
+      }
+    }
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -230,6 +277,7 @@ export function WaypointSelectorMap({
       // Draw route line
       // -----------------------------------------------------------------------
       if (routeCoords.length >= 2) {
+        originalRouteCoordsRef.current = routeCoords;
         const hasDirections = !!routeGeom && routeGeom.length >= 2;
 
         map.addSource('ws-route', {
@@ -288,7 +336,13 @@ export function WaypointSelectorMap({
             setExistingEntryNotice(null);
           }
 
-          onSelectExisting(wp.id, { lat: wp.lat, lng: wp.lng });
+          // Stage the selection — user must confirm before the modal closes
+          setPendingExisting({
+            waypointId: wp.id,
+            coords: { lat: wp.lat, lng: wp.lng },
+            title: wp.title,
+            entryCount: wp.entryIds.length,
+          });
         });
 
         const marker = new mapboxgl.Marker({ element: el })
@@ -323,7 +377,8 @@ export function WaypointSelectorMap({
         newPinMarkerRef.current = null;
       }
 
-      // Dismiss any existing-entry notice when starting a new placement
+      // Dismiss any existing waypoint selection when starting a new placement
+      setPendingExisting(null);
       setExistingEntryNotice(null);
 
       const pinEl = createNewWaypointMarkerEl();
@@ -333,6 +388,20 @@ export function WaypointSelectorMap({
 
       newPinMarkerRef.current = pin;
       setPendingWaypoint({ lat, lng, sequence });
+
+      // Update route line to pass through the new waypoint
+      const original = originalRouteCoordsRef.current;
+      if (original.length >= 2) {
+        const source = map.getSource('ws-route') as mapboxgl.GeoJSONSource | undefined;
+        if (source) {
+          const updated = insertPointIntoRoute(original, [lng, lat]);
+          source.setData({
+            type: 'Feature',
+            properties: {},
+            geometry: { type: 'LineString', coordinates: updated },
+          });
+        }
+      }
     });
 
     // Suppress non-critical Mapbox internal style warnings
@@ -357,6 +426,18 @@ export function WaypointSelectorMap({
       externalGeocoder: createPOIGeocoder(map),
     } as any);
     map.addControl(geocoder as any, 'top-left');
+
+    // Resolve POI coordinates on selection (POI results have [0,0] placeholders)
+    geocoder.on('result', async (e: any) => {
+      const mapboxId = e.result?.properties?.mapbox_id;
+      if (!mapboxId) return; // Standard geocoder result — coordinates are already valid
+
+      const poi = await retrievePOI(mapboxId);
+      if (!poi) return;
+
+      // Fly to the resolved coordinates
+      map.flyTo({ center: [poi.lng, poi.lat], zoom: 14 });
+    });
 
     // Manually manage proximity bias at all zoom levels
     const updateGeocoderProximity = () => {
@@ -409,8 +490,14 @@ export function WaypointSelectorMap({
     );
   };
 
-  const handleCancelNew = () => {
+  const handleConfirmExisting = () => {
+    if (!pendingExisting) return;
+    onSelectExisting(pendingExisting.waypointId, pendingExisting.coords);
+  };
+
+  const handleCancelSelection = () => {
     clearNewPin();
+    setPendingExisting(null);
     setExistingEntryNotice(null);
   };
 
@@ -422,8 +509,8 @@ export function WaypointSelectorMap({
       {/* Keyframe animation injected once into the document head */}
       <style>{`
         @keyframes waypointSelectorPulse {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.25); opacity: 0.75; }
+          0%, 100% { box-shadow: 0 0 0 3px rgba(172,109,70,0.4); }
+          50% { box-shadow: 0 0 0 6px rgba(172,109,70,0.6), 0 0 12px rgba(172,109,70,0.3); }
         }
       `}</style>
 
@@ -498,9 +585,9 @@ export function WaypointSelectorMap({
                     width: 12,
                     height: 12,
                     borderRadius: '50%',
-                    background: '#4676ac',
-                    border: '2px dashed white',
-                    boxShadow: '0 0 0 2px rgba(70,118,172,0.4)',
+                    background: '#ac6d46',
+                    border: '2px solid white',
+                    boxShadow: '0 0 0 2px rgba(172,109,70,0.4)',
                   }}
                 />
                 <span className="text-xs text-[#616161] dark:text-[#b5bcc4]">
@@ -564,13 +651,43 @@ export function WaypointSelectorMap({
                 </div>
                 <div className="flex gap-3">
                   <button
-                    onClick={handleCancelNew}
+                    onClick={handleCancelSelection}
                     className="px-5 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a] transition-all text-xs font-bold"
                   >
                     CANCEL
                   </button>
                   <button
                     onClick={handleConfirmNew}
+                    className="px-5 py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a87] transition-all text-xs"
+                  >
+                    CONFIRM
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : pendingExisting ? (
+            <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] p-4">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div>
+                  <div className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] mb-0.5">
+                    SELECTED WAYPOINT
+                  </div>
+                  <div className="text-sm font-bold text-[#ac6d46]">
+                    {pendingExisting.title}
+                  </div>
+                  <div className="font-mono text-xs text-[#616161] dark:text-[#b5bcc4] mt-0.5">
+                    {pendingExisting.coords.lat.toFixed(6)}, {pendingExisting.coords.lng.toFixed(6)}
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleCancelSelection}
+                    className="px-5 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a] transition-all text-xs font-bold"
+                  >
+                    CANCEL
+                  </button>
+                  <button
+                    onClick={handleConfirmExisting}
                     className="px-5 py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a87] transition-all text-xs"
                   >
                     CONFIRM

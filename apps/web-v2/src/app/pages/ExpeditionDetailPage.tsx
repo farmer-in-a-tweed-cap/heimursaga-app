@@ -422,12 +422,14 @@ export function ExpeditionDetailPage() {
           wrapper.textContent = String(entryIds.length);
         } else if (entryIds.length === 1) {
           // Single-entry circle marker
+          const linkedEntry = journalEntries.find(e => e.id === entryIds[0]);
+          const milestone = linkedEntry?.isMilestone || false;
           Object.assign(wrapper.style, {
-            width: '22px', height: '22px', borderRadius: '50%',
+            width: milestone ? '26px' : '22px', height: milestone ? '26px' : '22px', borderRadius: '50%',
             backgroundColor: '#ac6d46', border: '2px solid white',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            boxShadow: milestone ? '0 0 0 3px #ac6d46, 0 2px 6px rgba(0,0,0,0.4)' : '0 2px 4px rgba(0,0,0,0.3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '11px', color: 'white', fontWeight: 'bold',
+            fontSize: milestone ? '12px' : '11px', color: 'white', fontWeight: 'bold',
             fontFamily: 'Jost, system-ui, sans-serif',
           });
           wrapper.textContent = String(idx + 1);
@@ -468,10 +470,11 @@ export function ExpeditionDetailPage() {
         .forEach((entry) => {
           const el = document.createElement('div');
           el.className = 'banner-entry-marker';
+          const milestone = entry.isMilestone || false;
           Object.assign(el.style, {
-            width: '24px', height: '24px', borderRadius: '50%',
+            width: milestone ? '26px' : '24px', height: milestone ? '26px' : '24px', borderRadius: '50%',
             backgroundColor: '#ac6d46', border: '2px solid white',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            boxShadow: milestone ? '0 0 0 3px #ac6d46, 0 2px 6px rgba(0,0,0,0.4)' : '0 2px 4px rgba(0,0,0,0.3)',
           });
 
           if (curSrc === 'entry' && curId === entry.id) {
@@ -722,20 +725,22 @@ export function ExpeditionDetailPage() {
           });
         } else if (entryIds.length === 1) {
           // Single-entry circle marker
+          const linkedEntry = journalEntries.find(e => e.id === entryIds[0]);
+          const milestone = linkedEntry?.isMilestone || false;
           Object.assign(wrapper.style, {
-            width: '22px', height: '22px', borderRadius: '50%',
+            width: milestone ? '26px' : '22px', height: milestone ? '26px' : '22px', borderRadius: '50%',
             backgroundColor: '#ac6d46', border: '2px solid white',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+            boxShadow: milestone ? '0 0 0 3px #ac6d46, 0 2px 6px rgba(0,0,0,0.4)' : '0 2px 4px rgba(0,0,0,0.3)',
             cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: '11px', color: 'white', fontWeight: 'bold',
+            fontSize: milestone ? '12px' : '11px', color: 'white', fontWeight: 'bold',
             fontFamily: 'Jost, system-ui, sans-serif',
           });
           wrapper.textContent = String(idx + 1);
 
           wrapper.addEventListener('click', () => {
             markerClickedRef.current = true;
-            const entry = journalEntries.find(e => e.id === entryIds[0]);
+            const entry = linkedEntry || journalEntries.find(e => e.id === entryIds[0]);
             if (entry) {
               setClickedCluster(null);
               setSourceCluster(null);

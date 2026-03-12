@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -21,19 +21,28 @@ export default function BookmarksScreen() {
 
   const focusOpts = { refetchOnFocus: true };
 
-  const { data: expeditionsData, loading: loadingExp } = useApi<{ data: Expedition[] }>(
+  const { data: expeditionsRaw, loading: loadingExp, error: errorExp } = useApi<{ data: any[] }>(
     ready ? '/user/bookmarks/expeditions' : null, focusOpts,
   );
-  const { data: entriesData, loading: loadingEnt } = useApi<{ data: Entry[] }>(
+  const { data: entriesData, loading: loadingEnt, error: errorEnt } = useApi<{ data: Entry[] }>(
     ready ? '/user/bookmarks' : null, focusOpts,
   );
-  const { data: explorersData, loading: loadingExpl } = useApi<{ data: ExplorerProfile[] }>(
+  const { data: explorersRaw, loading: loadingExpl, error: errorExpl } = useApi<{ data: any[] }>(
     ready ? '/user/bookmarks/explorers' : null, focusOpts,
   );
 
-  const expeditions = expeditionsData?.data ?? [];
+  // Normalize API response: bookmarks endpoint returns coverPhoto/explorer instead of coverImage/author
+  const expeditions: Expedition[] = (expeditionsRaw?.data ?? []).map((e: any) => ({
+    ...e,
+    coverImage: e.coverImage ?? e.coverPhoto,
+    author: e.author ?? (e.explorer ? { ...e.explorer, creator: e.stripeAccountConnected } : undefined),
+  }));
   const entries = entriesData?.data ?? [];
-  const explorers = explorersData?.data ?? [];
+  // Normalize: bookmarked explorers API returns isPremium instead of creator
+  const explorers: ExplorerProfile[] = (explorersRaw?.data ?? []).map((e: any) => ({
+    ...e,
+    creator: e.creator ?? e.isPremium,
+  }));
   const loading = loadingExp || loadingEnt || loadingExpl;
   const isEmpty = expeditions.length === 0 && entries.length === 0 && explorers.length === 0;
 

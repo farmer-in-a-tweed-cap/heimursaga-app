@@ -1,13 +1,12 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 import { HCard } from '@/components/ui/HCard';
 import { StatusHeader } from '@/components/ui/StatusHeader';
-import { CoverImage } from '@/components/ui/CoverImage';
 import { Avatar } from '@/components/ui/Avatar';
 import { StatsBar } from '@/components/ui/StatsBar';
 import { FundingBar } from '@/components/ui/FundingBar';
-import { colors as brandColors, borders } from '@/theme/tokens';
+import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { Expedition } from '@/types/api';
 
 interface ExpeditionCardFullProps {
@@ -27,6 +26,13 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
     expedition.author?.stripeAccountConnected &&
     (expedition.goal ?? 0) > 0;
 
+  const fmtDate = (d?: string) =>
+    d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase() : '';
+
+  const dateRange = expedition.startDate
+    ? `${fmtDate(expedition.startDate)} \u2192 ${expedition.endDate ? fmtDate(expedition.endDate) : 'ONGOING'}`
+    : '';
+
   const rightLabel =
     expedition.visibility && expedition.visibility !== 'public'
       ? expedition.visibility.toUpperCase()
@@ -41,23 +47,40 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
           dotColor={expedition.status === 'active' ? brandColors.copper : undefined}
           right={rightLabel}
         />
-        <CoverImage uri={expedition.coverImage} height={160} label="COVER IMAGE" />
-        <View style={styles.body}>
-          <Text style={[styles.title, { color: colors.text }]} numberOfLines={2}>
-            {expedition.title}
-          </Text>
-          {expedition.description && (
-            <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={3}>
-              {expedition.description}
-            </Text>
+        <View style={styles.heroWrap}>
+          {expedition.coverImage ? (
+            <Image source={{ uri: expedition.coverImage }} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+          ) : (
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#1a2332' }]} />
           )}
+          <View style={styles.heroOverlay} />
+          <View style={styles.heroContent}>
+            <Text style={styles.heroTitle} numberOfLines={2}>
+              {expedition.title}
+            </Text>
+            {dateRange !== '' && (
+              <Text style={styles.heroDate}>{dateRange}</Text>
+            )}
+            {(expedition.region || expedition.category) && (
+              <Text style={styles.heroRegion}>
+                {[expedition.region, expedition.category].filter(Boolean).join(' \u00B7 ').toUpperCase()}
+              </Text>
+            )}
+          </View>
+        </View>
+        <View style={styles.body}>
           {expedition.author && (
             <View style={styles.authorRow}>
               <Avatar size={20} name={expedition.author.username} imageUrl={expedition.author.picture} pro={expedition.author.creator} />
               <Text style={styles.authorName}>
-                {expedition.author.name || expedition.author.username}
+                {expedition.author.username}
               </Text>
             </View>
+          )}
+          {expedition.description && (
+            <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={3}>
+              {expedition.description}
+            </Text>
           )}
         </View>
 
@@ -92,11 +115,44 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
 }
 
 const styles = StyleSheet.create({
+  heroWrap: {
+    height: 190,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  heroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.52)',
+  },
+  heroContent: {
+    padding: 14,
+    paddingBottom: 16,
+  },
+  heroTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    lineHeight: 22,
+    color: '#fff',
+  },
+  heroDate: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.92)',
+    marginTop: 6,
+  },
+  heroRegion: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1,
+    color: 'rgba(255,255,255,0.85)',
+    marginTop: 4,
+  },
   body: { padding: 14 },
-  title: { fontSize: 17, fontWeight: '700', lineHeight: 21 },
-  description: { fontSize: 13, lineHeight: 18, marginTop: 6 },
-  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
+  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   authorName: { fontSize: 12, color: brandColors.copper, fontWeight: '600' },
+  description: { fontSize: 13, lineHeight: 18, marginTop: 8 },
   statsWrap: { borderTopWidth: borders.thick },
   fundingWrap: { paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: borders.thin },
 });

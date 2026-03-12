@@ -22,6 +22,7 @@ export type JournalEntryType = {
   mediaCount: number;
   views: number;
   visibility: 'public' | 'off-grid' | 'private';
+  isMilestone: boolean;
   timelinePosition?: number;
 };
 

@@ -277,6 +277,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@react-native-community/datetimepicker':
+        specifier: 8.6.0
+        version: 8.6.0(expo@55.0.4)(react-native@0.83.2)(react@19.2.0)
       '@repo/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -8662,6 +8665,25 @@ packages:
 
   /@react-dnd/shallowequal@4.0.2:
     resolution: {integrity: sha512-/RVXdLvJxLg4QKvMoM5WlwNR9ViO9z8B/qPcc+C0Sa/teJY7QG7kJ441DwzOjMYEY7GmU4dj5EcGHIkKZiQZCA==}
+    dev: false
+
+  /@react-native-community/datetimepicker@8.6.0(expo@55.0.4)(react-native@0.83.2)(react@19.2.0):
+    resolution: {integrity: sha512-yxPSqNfxgpGaqHQIpatqe6ykeBdU/1pdsk/G3x01mY2bpTflLpmVTLqFSJYd3MiZzxNZcMs/j1dQakUczSjcYA==}
+    peerDependencies:
+      expo: '>=52.0.0'
+      react: '*'
+      react-native: '*'
+      react-native-windows: '*'
+    peerDependenciesMeta:
+      expo:
+        optional: true
+      react-native-windows:
+        optional: true
+    dependencies:
+      expo: 55.0.4(@babel/core@7.28.3)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.3)(react-dom@18.3.1)(react-native@0.83.2)(react@19.2.0)(typescript@5.9.2)
+      invariant: 2.2.4
+      react: 19.2.0
+      react-native: 0.83.2(@babel/core@7.28.3)(@types/react@19.2.10)(react@19.2.0)
     dev: false
 
   /@react-native/assets-registry@0.83.2:

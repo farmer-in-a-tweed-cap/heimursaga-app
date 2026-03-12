@@ -13,13 +13,11 @@ import { HButton } from '@/components/ui/HButton';
 import { HCard } from '@/components/ui/HCard';
 import { RadioOption } from '@/components/ui/RadioOption';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
+import { GEO_REGION_GROUPS, EXPEDITION_CATEGORIES } from '@/constants/geoRegions';
 import type { Expedition } from '@/types/api';
-
-const CATEGORIES = ['OVERLAND', 'TRAIL', 'CYCLING', 'SAILING', 'PADDLING', 'FLIGHT'];
-const CONTINENTS = ['AFRICA', 'ASIA', 'EUROPE', 'N. AMERICA', 'S. AMERICA', 'OCEANIA', 'ANTARCTICA'];
 const VISIBILITY_OPTIONS = [
   { label: 'PUBLIC', desc: 'Visible to all explorers' },
-  { label: 'UNLISTED', desc: 'Only accessible via direct link' },
+  { label: 'OFF-GRID', desc: 'Only accessible via direct link' },
   { label: 'PRIVATE', desc: 'Only you can see this' },
 ];
 
@@ -35,8 +33,8 @@ export default function EditExpeditionScreen() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedCat, setSelectedCat] = useState(-1);
-  const [selectedRegion, setSelectedRegion] = useState(-1);
+  const [selectedCat, setSelectedCat] = useState('');
+  const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [visibility, setVisibility] = useState(0);
@@ -47,13 +45,9 @@ export default function EditExpeditionScreen() {
     if (!expedition) return;
     setTitle(expedition.title);
     setDescription(expedition.description ?? '');
-    if (expedition.category) {
-      const catIdx = CATEGORIES.findIndex(c => c.toLowerCase() === expedition.category!.toLowerCase());
-      if (catIdx >= 0) setSelectedCat(catIdx);
-    }
+    if (expedition.category) setSelectedCat(expedition.category);
     if (expedition.region) {
-      const regIdx = CONTINENTS.findIndex(c => c.toLowerCase() === expedition.region!.toLowerCase());
-      if (regIdx >= 0) setSelectedRegion(regIdx);
+      setSelectedRegions(expedition.region.split(',').map((r: string) => r.trim()).filter(Boolean));
     }
     if (expedition.startDate) setStartDate(expedition.startDate.split('T')[0]);
     if (expedition.endDate) setEndDate(expedition.endDate.split('T')[0]);
@@ -71,11 +65,11 @@ export default function EditExpeditionScreen() {
     }
     setSubmitting(true);
     try {
-      await expeditionApi.updateExpedition(Number(id), {
+      await expeditionApi.updateExpedition(id!, {
         title: title.trim(),
         description: description.trim() || undefined,
-        category: selectedCat >= 0 ? CATEGORIES[selectedCat].toLowerCase() : undefined,
-        region: selectedRegion >= 0 ? CONTINENTS[selectedRegion].toLowerCase() : undefined,
+        category: selectedCat || undefined,
+        region: selectedRegions.length > 0 ? selectedRegions.join(', ') : undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         visibility: VISIBILITY_OPTIONS[visibility].label.toLowerCase() as Expedition['visibility'],
@@ -84,8 +78,9 @@ export default function EditExpeditionScreen() {
       Alert.alert('Saved', 'Expedition updated successfully.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
-    } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to update expedition');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update expedition';
+      Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
     }
@@ -111,7 +106,6 @@ export default function EditExpeditionScreen() {
               <HTextField label="TITLE" placeholder="Expedition name" value={title} onChangeText={setTitle} />
 
               <View style={styles.fieldGroup}>
-                <Text style={[styles.label, { color: colors.textSecondary }]}>DESCRIPTION</Text>
                 <HTextField
                   label="DESCRIPTION"
                   placeholder="Describe your expedition"
@@ -124,22 +118,22 @@ export default function EditExpeditionScreen() {
               <View style={styles.fieldGroup}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>CATEGORY</Text>
                 <View style={styles.chipRow}>
-                  {CATEGORIES.map((cat, i) => (
+                  {EXPEDITION_CATEGORIES.map((cat) => (
                     <View
                       key={cat}
                       style={[
                         styles.chip,
                         {
-                          borderColor: selectedCat === i ? brandColors.copper : colors.border,
-                          backgroundColor: selectedCat === i ? brandColors.copper : colors.inputBackground,
+                          borderColor: selectedCat === cat ? brandColors.copper : colors.border,
+                          backgroundColor: selectedCat === cat ? brandColors.copper : colors.inputBackground,
                         },
                       ]}
                     >
                       <Text
-                        style={[styles.chipText, { color: selectedCat === i ? '#fff' : colors.textSecondary }]}
-                        onPress={() => setSelectedCat(selectedCat === i ? -1 : i)}
+                        style={[styles.chipText, { color: selectedCat === cat ? '#fff' : colors.textSecondary }]}
+                        onPress={() => setSelectedCat(selectedCat === cat ? '' : cat)}
                       >
-                        {cat}
+                        {cat.toUpperCase()}
                       </Text>
                     </View>
                   ))}
@@ -148,27 +142,41 @@ export default function EditExpeditionScreen() {
 
               <View style={styles.fieldGroup}>
                 <Text style={[styles.label, { color: colors.textSecondary }]}>REGION</Text>
-                <View style={styles.chipRow}>
-                  {CONTINENTS.map((cont, i) => (
-                    <View
-                      key={cont}
-                      style={[
-                        styles.chip,
-                        {
-                          borderColor: selectedRegion === i ? brandColors.copper : colors.border,
-                          backgroundColor: selectedRegion === i ? brandColors.copper : colors.inputBackground,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[styles.chipText, { color: selectedRegion === i ? '#fff' : colors.textSecondary }]}
-                        onPress={() => setSelectedRegion(selectedRegion === i ? -1 : i)}
-                      >
-                        {cont}
-                      </Text>
+                {GEO_REGION_GROUPS.map((group) => (
+                  <View key={group.label} style={styles.regionGroup}>
+                    <Text style={[styles.regionGroupLabel, { color: colors.textTertiary }]}>
+                      {group.label.toUpperCase()}
+                    </Text>
+                    <View style={styles.chipRow}>
+                      {group.regions.map((r) => {
+                        const selected = selectedRegions.includes(r);
+                        return (
+                          <View
+                            key={r}
+                            style={[
+                              styles.chip,
+                              {
+                                borderColor: selected ? brandColors.blue : colors.border,
+                                backgroundColor: selected ? brandColors.blue : colors.inputBackground,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[styles.chipText, { color: selected ? '#fff' : colors.textSecondary }]}
+                              onPress={() =>
+                                setSelectedRegions((prev) =>
+                                  selected ? prev.filter((v) => v !== r) : [...prev, r],
+                                )
+                              }
+                            >
+                              {r.toUpperCase()}
+                            </Text>
+                          </View>
+                        );
+                      })}
                     </View>
-                  ))}
-                </View>
+                  </View>
+                ))}
               </View>
 
               <View style={styles.dateRow}>
@@ -234,6 +242,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 6,
+  },
+  regionGroup: {
+    marginBottom: 12,
+  },
+  regionGroupLabel: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 6,
   },
   chip: {
     paddingVertical: 6,

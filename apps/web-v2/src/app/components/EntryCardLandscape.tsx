@@ -11,6 +11,7 @@ interface EntryCardLandscapeProps {
   excerpt: string;
   type: string;
   visibility?: 'public' | 'off-grid' | 'private';
+  isMilestone?: boolean;
   isCurrent?: boolean;
   onClick?: () => void;
   onUnbookmark?: () => void;
@@ -25,6 +26,7 @@ export function EntryCardLandscape({
   excerpt,
   type,
   visibility,
+  isMilestone = false,
   isCurrent = false,
   onClick,
   onUnbookmark,
@@ -32,15 +34,15 @@ export function EntryCardLandscape({
   return (
     <div
       onClick={onClick}
-      className={`border-2 bg-white dark:bg-[#202020] cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.99] ${isCurrent ? 'border-[#ac6d46] ring-2 ring-[#ac6d46]/30' : 'border-[#202020] dark:border-[#616161]'}`}
+      className={`bg-white dark:bg-[#202020] cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.99] ${isMilestone && !isCurrent ? 'border-l-4 border-l-[#ac6d46] border-2 border-[#202020] dark:border-[#616161]' : isCurrent ? 'border-2 border-[#ac6d46] ring-2 ring-[#ac6d46]/30' : 'border-2 border-[#202020] dark:border-[#616161]'}`}
     >
       {/* Header */}
       <div className={`flex items-center justify-between border-b-2 px-3 py-1.5 ${isCurrent ? 'bg-[#ac6d46] border-[#ac6d46]' : 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#202020] dark:border-[#616161]'}`}>
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 ${isCurrent ? 'bg-white' : 'bg-[#4676ac]'}`} />
+          <div className={`h-2 w-2 ${isCurrent ? 'bg-white' : isMilestone ? 'bg-[#ac6d46]' : 'bg-[#4676ac]'}`} />
           <div className="flex items-baseline gap-2">
             <span className={`text-xs font-mono font-semibold tracking-wide ${isCurrent ? 'text-white' : 'text-[#202020] dark:text-[#e5e5e5]'}`}>
-              {isCurrent ? 'CURRENT LOCATION' : 'ENTRY'}
+              {isCurrent ? 'CURRENT LOCATION' : isMilestone ? 'MILESTONE' : 'ENTRY'}
             </span>
             {type && (
               <span className={`text-xs font-mono ${isCurrent ? 'text-white/70' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>

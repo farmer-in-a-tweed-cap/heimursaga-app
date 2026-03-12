@@ -5,7 +5,7 @@ import { mono } from '@/theme/tokens';
 
 interface CoverImageProps {
   uri?: string;
-  height?: number;
+  height?: number | '100%';
   label?: string;
 }
 
