@@ -10,6 +10,7 @@ import { Upload, ArrowLeft, Lock, Loader2 } from 'lucide-react';
 import { DatePicker } from '@/app/components/DatePicker';
 import { expeditionApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
+import { GEO_REGION_GROUPS } from '@/app/utils/geoRegions';
 
 export function ExpeditionQuickEntryPage() {
   const { isAuthenticated, user } = useAuth();
@@ -18,7 +19,7 @@ export function ExpeditionQuickEntryPage() {
   const pathname = usePathname();
   // Form state
   const [title, setTitle] = useState('');
-  const [region, setRegion] = useState('');
+  const [regions, setRegions] = useState<string[]>([]);
   const [category, setCategory] = useState('');
   const [description, setDescription] = useState('');
   const [tags, setTags] = useState('');
@@ -133,7 +134,7 @@ export function ExpeditionQuickEntryPage() {
         visibility: expeditionVisibility,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
-        region: region.trim() || undefined,
+        region: regions.length > 0 ? regions.join(', ') : undefined,
         category: category || undefined,
         tags: parsedTags.length > 0 ? parsedTags : undefined,
         goal: sponsorshipsEnabled && sponsorshipGoal ? parseInt(sponsorshipGoal) : undefined,
@@ -259,18 +260,39 @@ export function ExpeditionQuickEntryPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                    EXPEDITION REGION/LOCATION
+                    EXPEDITION REGION
                     <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
                   </label>
-                  <input
-                    type="text"
-                    value={region}
-                    onChange={(e) => setRegion(e.target.value)}
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value && !regions.includes(e.target.value)) {
+                        setRegions(prev => [...prev, e.target.value]);
+                      }
+                    }}
                     className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                    placeholder="e.g., Central Asia, Uzbekistan Region"
-                  />
+                  >
+                    <option value="">{regions.length > 0 ? '+ Add another region' : '-- Select region --'}</option>
+                    {GEO_REGION_GROUPS.map(group => (
+                      <optgroup key={group.label} label={group.label}>
+                        {group.regions.filter(r => !regions.includes(r)).map(r => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                  {regions.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {regions.map(r => (
+                        <span key={r} className="inline-flex items-center gap-1 px-2 py-1 bg-[#ac6d46] text-white text-xs font-bold">
+                          {r}
+                          <button type="button" onClick={() => setRegions(prev => prev.filter(v => v !== r))} className="hover:text-white/70">×</button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                    Approximate geographic region (for safety, avoid exact locations)
+                    UN geographic sub-region • Select multiple for cross-region expeditions
                   </div>
                 </div>
 

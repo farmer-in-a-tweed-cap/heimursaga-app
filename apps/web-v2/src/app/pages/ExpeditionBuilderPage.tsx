@@ -17,6 +17,7 @@ import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelecto
 import { toast } from 'sonner';
 import { expeditionApi, uploadApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
+import { GEO_REGION_GROUPS } from '@/app/utils/geoRegions';
 import { haversineFromLatLng } from '@/app/utils/haversine';
 import { buildWaypointPayload } from '@/app/utils/waypointPayload';
 import { projectToSegment } from '@/app/utils/routeSnapping';
@@ -49,7 +50,7 @@ interface Waypoint {
 
 interface ExpeditionData {
   title: string;
-  region: string;
+  regions: string[];
   description: string;
   category: string;
   startDate: string;
@@ -128,7 +129,7 @@ export function ExpeditionBuilderPage() {
 
   const [expeditionData, setExpeditionData] = useState<ExpeditionData>({
     title: '',
-    region: '',
+    regions: [],
     description: '',
     category: '',
     startDate: '',
@@ -225,8 +226,8 @@ export function ExpeditionBuilderPage() {
     if (!expeditionData.title.trim()) {
       errors.push('Expedition title is required');
     }
-    if (!expeditionData.region.trim()) {
-      errors.push('Region / location is required');
+    if (expeditionData.regions.length === 0) {
+      errors.push('At least one region is required');
     }
     if (!expeditionData.description.trim()) {
       errors.push('Expedition description is required');
@@ -259,7 +260,7 @@ export function ExpeditionBuilderPage() {
         notesAccessThreshold: sponsorshipsEnabled && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
         isRoundTrip,
         category: expeditionData.category || undefined,
-        region: expeditionData.region || undefined,
+        region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
         routeMode: routeMode !== 'straight' ? routeMode : null,
         routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
@@ -645,7 +646,7 @@ export function ExpeditionBuilderPage() {
 
         setExpeditionData({
           title: expedition.title || '',
-          region: expedition.region || '',
+          regions: expedition.region ? expedition.region.split(', ').map((r: string) => r.trim()).filter(Boolean) : [],
           description: expedition.description || '',
           category: expedition.category || '',
           startDate: expedition.startDate ? new Date(expedition.startDate).toISOString().split('T')[0] : '',
@@ -1969,19 +1970,38 @@ export function ExpeditionBuilderPage() {
           {/* Region */}
           <div>
             <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
-              REGION / LOCATION <span className="text-[#ac6d46]">*REQUIRED</span>
-              {/* isEditMode && <span className="ml-2 text-xs text-[#616161] dark:text-[#b5bcc4]">(LOCKED)</span> - DISABLED FOR TESTING */}
+              REGION <span className="text-[#ac6d46]">*REQUIRED</span>
             </label>
-            <input
-              type="text"
-              value={expeditionData.region}
-              onChange={(e) => setExpeditionData({ ...expeditionData, region: e.target.value })}
-              placeholder="e.g., Russia, Eastern Europe to Pacific Coast"
-              className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161]"
-              /* disabled={isEditMode} - DISABLED FOR TESTING */
-            />
+            <select
+              value=""
+              onChange={(e) => {
+                if (e.target.value && !expeditionData.regions.includes(e.target.value)) {
+                  setExpeditionData(prev => ({ ...prev, regions: [...prev.regions, e.target.value] }));
+                }
+              }}
+              className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
+            >
+              <option value="">{expeditionData.regions.length > 0 ? '+ Add another region' : '-- Select region --'}</option>
+              {GEO_REGION_GROUPS.map(group => (
+                <optgroup key={group.label} label={group.label}>
+                  {group.regions.filter(r => !expeditionData.regions.includes(r)).map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {expeditionData.regions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {expeditionData.regions.map(r => (
+                  <span key={r} className="inline-flex items-center gap-1 px-2 py-1 bg-[#ac6d46] text-white text-xs font-bold">
+                    {r}
+                    <button type="button" onClick={() => setExpeditionData(prev => ({ ...prev, regions: prev.regions.filter(v => v !== r) }))} className="hover:text-white/70">×</button>
+                  </span>
+                ))}
+              </div>
+            )}
             <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-              Geographic region or location identifier • Be as specific or broad as needed
+              UN geographic sub-region • Select multiple for cross-region expeditions
             </p>
           </div>
 

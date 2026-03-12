@@ -27,6 +27,7 @@ interface ExpeditionCardLandscapeProps {
   explorerUsername: string;
   imageUrl: string;
   location?: string; // Deprecated
+  region?: string;
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   waypoints?: Waypoint[];
@@ -53,6 +54,7 @@ export function ExpeditionCardLandscape({
   explorerUsername,
   imageUrl,
   location,
+  region,
   currentLocationSource,
   currentLocationId,
   waypoints = [],
@@ -83,7 +85,7 @@ export function ExpeditionCardLandscape({
         if (entry) return entry.location;
       }
     }
-    return location || 'Location not set';
+    return location || region || 'Location not set';
   };
 
   const currentLocation = getCurrentLocation();

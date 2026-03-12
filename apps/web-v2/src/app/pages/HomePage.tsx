@@ -39,6 +39,7 @@ function transformExpedition(exp: Expedition) {
     backers: exp.sponsorsCount || 0,
     distance: 0,
     status: (exp.status === 'active' ? 'active' : exp.status === 'completed' ? 'completed' : 'planned') as 'active' | 'completed' | 'planned',
+    region: exp.region || '',
     terrain: '',
     averageSpeed: 0,
     visibility: (exp.visibility || 'public') as 'public' | 'off-grid' | 'private',

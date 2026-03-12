@@ -52,6 +52,7 @@ interface ExpeditionCardProps {
   backers: number;
   distance: number;
   status: "active" | "completed" | "planned" | "cancelled";
+  region?: string;
   terrain: string;
   averageSpeed: number;
   visibility?: 'public' | 'off-grid' | 'private';
@@ -91,6 +92,7 @@ export function ExpeditionCard({
   backers,
   distance,
   status,
+  region,
   visibility,
   sponsorshipsEnabled = true,
   explorerIsPro = false,
@@ -133,7 +135,7 @@ export function ExpeditionCard({
     
     // Fallback to legacy props
     return {
-      location: location || 'Location not set',
+      location: location || region || 'Location not set',
       coordinates: coordinates || '',
     };
   };

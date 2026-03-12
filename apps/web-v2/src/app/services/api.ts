@@ -404,6 +404,7 @@ export interface ExplorerExpedition {
   goal?: number;
   raised?: number;
   sponsorsCount?: number;
+  region?: string;
   currentLocation?: { lat: number; lon: number; name: string; source: string };
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
   author?: {

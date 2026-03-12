@@ -1,6 +1,6 @@
 interface ExpeditionData {
   title: string;
-  region: string;
+  regions: string[];
   description: string;
   category: string;
   startDate: string;

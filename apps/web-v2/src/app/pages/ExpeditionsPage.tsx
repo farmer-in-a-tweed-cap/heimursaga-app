@@ -376,6 +376,7 @@ export function ExpeditionsPage() {
                 backers={expedition.sponsors}
                 distance={expedition.distance}
                 status={expedition.status}
+                region={expedition.region}
                 visibility={expedition.visibility}
                 terrain={expedition.terrain}
                 averageSpeed={expedition.averageSpeed}

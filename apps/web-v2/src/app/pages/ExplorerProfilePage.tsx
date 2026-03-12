@@ -420,6 +420,7 @@ export function ExplorerProfilePage() {
         raised: e.raised || 0,
         sponsorsCount: e.sponsorsCount || 0,
         entriesCount: e.entriesCount || 0,
+        region: e.region || '',
       })),
 
     completedExpeditions: expeditions
@@ -949,6 +950,7 @@ export function ExplorerProfilePage() {
                     description={expedition.description || ''}
                     imageUrl={expedition.coverImage || ''}
                     location={expedition.currentLocation || ''}
+                    region={expedition.region}
                     coordinates=""
                     startDate={expedition.startDate}
                     endDate={expedition.endDate || null}

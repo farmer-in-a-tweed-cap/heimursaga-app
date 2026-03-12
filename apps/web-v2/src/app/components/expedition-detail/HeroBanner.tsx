@@ -110,14 +110,14 @@ export function HeroBanner({
               <h1 className="text-2xl md:text-4xl font-serif font-bold" style={{ lineHeight: 1.15 }}>{expedition.title}</h1>
               {(expedition.category || expedition.region) && (
                 <div className="flex flex-wrap items-center gap-2 mt-2">
-                  {expedition.category && (
-                    <span className="px-3 py-1 bg-[#4676ac] text-white text-xs font-semibold whitespace-nowrap rounded-full">
-                      {expedition.category.toUpperCase()}
+                  {expedition.region && expedition.region.split(', ').map(r => (
+                    <span key={r} className="px-3 py-1 bg-[#4676ac] text-white text-xs font-semibold whitespace-nowrap rounded-full">
+                      {r.toUpperCase()}
                     </span>
-                  )}
-                  {expedition.region && (
+                  ))}
+                  {expedition.category && (
                     <span className="px-3 py-1 bg-[#616161] text-white text-xs font-semibold whitespace-nowrap rounded-full">
-                      {expedition.region.toUpperCase()}
+                      {expedition.category.toUpperCase()}
                     </span>
                   )}
                 </div>
@@ -230,7 +230,7 @@ export function HeroBanner({
                   onCurrentLocationClick(currentLocationData.coords);
                 }
               }}
-              className="w-full bg-[#ac6d46] px-6 py-3 flex items-center justify-center gap-4 hover:bg-[#8a5738] transition-all cursor-pointer pointer-events-auto"
+              className="w-full bg-[#4676ac] px-6 py-3 flex items-center justify-center gap-4 hover:bg-[#365a87] transition-all cursor-pointer pointer-events-auto"
             >
               <div className="relative flex items-center justify-center">
                 <div className="absolute w-3 h-3 bg-white rounded-full animate-ping opacity-75" />

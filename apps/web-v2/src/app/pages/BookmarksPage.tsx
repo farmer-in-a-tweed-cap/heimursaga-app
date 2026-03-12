@@ -19,6 +19,7 @@ interface BookmarkedExpedition {
   startDate?: string;
   endDate?: string;
   coverPhoto?: string;
+  region?: string;
   goal?: number;
   raised?: number;
   sponsorsCount?: number;
@@ -294,6 +295,7 @@ export function BookmarksPage() {
                 explorerUsername={expedition.explorer?.username || 'Unknown'}
                 imageUrl={expedition.coverPhoto || ''}
                 location=""
+                region={expedition.region || ''}
                 startDate={expedition.startDate}
                 status={(expedition.status as 'active' | 'completed' | 'planned' | 'paused') || 'active'}
                 daysElapsed={calculateDaysElapsed(expedition.startDate, expedition.endDate, expedition.status)}
