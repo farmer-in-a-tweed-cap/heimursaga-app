@@ -34,15 +34,16 @@ export function EntryCardLandscape({
   return (
     <div
       onClick={onClick}
-      className={`bg-white dark:bg-[#202020] cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.99] ${isMilestone && !isCurrent ? 'border-l-4 border-l-[#ac6d46] border-2 border-[#202020] dark:border-[#616161]' : isCurrent ? 'border-2 border-[#ac6d46] ring-2 ring-[#ac6d46]/30' : 'border-2 border-[#202020] dark:border-[#616161]'}`}
+      className={`bg-white dark:bg-[#202020] cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.99] ${isCurrent ? 'border-2 border-[#ac6d46] ring-2 ring-[#ac6d46]/30' : 'border-2 border-[#202020] dark:border-[#616161]'}`}
+      style={isMilestone && !isCurrent ? { borderLeftWidth: '4px', borderLeftColor: '#ac6d46' } : undefined}
     >
       {/* Header */}
       <div className={`flex items-center justify-between border-b-2 px-3 py-1.5 ${isCurrent ? 'bg-[#ac6d46] border-[#ac6d46]' : 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#202020] dark:border-[#616161]'}`}>
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 ${isCurrent ? 'bg-white' : isMilestone ? 'bg-[#ac6d46]' : 'bg-[#4676ac]'}`} />
+          <div className={`h-2 w-2 ${isCurrent ? 'bg-white' : 'bg-[#4676ac]'}`} />
           <div className="flex items-baseline gap-2">
             <span className={`text-xs font-mono font-semibold tracking-wide ${isCurrent ? 'text-white' : 'text-[#202020] dark:text-[#e5e5e5]'}`}>
-              {isCurrent ? 'CURRENT LOCATION' : isMilestone ? 'MILESTONE' : 'ENTRY'}
+              {isCurrent ? 'CURRENT LOCATION' : 'ENTRY'}
             </span>
             {type && (
               <span className={`text-xs font-mono ${isCurrent ? 'text-white/70' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
@@ -71,7 +72,14 @@ export function EntryCardLandscape({
         <div className="flex-1 flex flex-col">
           {/* Title & Attribution */}
           <div className="border-b-2 border-[#202020] dark:border-[#616161] px-3 py-3 bg-white dark:bg-[#202020]">
-            <h3 className="font-serif font-bold text-sm dark:text-[#e5e5e5] mb-2 line-clamp-2" style={{ lineHeight: 1.3 }}>{title}</h3>
+            <div className="flex items-baseline gap-2 mb-2">
+              <h3 className="font-serif font-bold text-sm dark:text-[#e5e5e5] line-clamp-2" style={{ lineHeight: 1.3 }}>{title}</h3>
+              {isMilestone && (
+                <span className="shrink-0 px-2 py-0.5 bg-[#ac6d46] text-white text-[10px] font-bold font-mono rounded-full leading-none">
+                  MILESTONE
+                </span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-mono">
               <div className="flex items-center gap-1.5">
                 <User className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />

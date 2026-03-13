@@ -145,6 +145,12 @@ export function MapModal({
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-6 flex items-center justify-center shrink-0">
+                  <div className="w-[22px] h-[22px] bg-[#ac6d46] border-2 border-white rounded-full" style={{ boxShadow: '0 0 0 3px #ac6d46, 0 2px 6px rgba(0,0,0,0.4)' }}></div>
+                </div>
+                <span>Milestone Entry</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-6 flex items-center justify-center shrink-0">
                   <div className="w-4 h-4 bg-[#ac6d46] border-2 border-white rotate-45 flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }}>
                     <span className="text-white text-[8px] font-bold -rotate-45">S</span>
                   </div>

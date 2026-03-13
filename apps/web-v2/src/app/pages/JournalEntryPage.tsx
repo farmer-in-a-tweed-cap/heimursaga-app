@@ -313,6 +313,7 @@ export function JournalEntryPage() {
       bookmarked: api.bookmarked,
       createdByMe: api.createdByMe,
       sponsored: api.sponsored,
+      isMilestone: api.isMilestone || false,
 
       // Quick sponsor
       quickSponsorsCount: api.quickSponsorsCount || 0,
@@ -402,12 +403,15 @@ export function JournalEntryPage() {
 
                 {/* Badges */}
                 <div className="flex items-center gap-2 mb-4 flex-wrap">
+                  {entry.isMilestone && (
+                    <span className="px-2 py-1 bg-[#ac6d46] text-white text-xs font-bold rounded-full">MILESTONE</span>
+                  )}
                   <span
                     className="px-2 py-1 text-white text-xs rounded-full"
                     style={{
                       backgroundColor: entry.entryType === 'photo-essay' ? '#4676ac'
                         : entry.entryType === 'data-log' ? '#616161'
-                        : '#ac6d46'
+                        : '#4676ac'
                     }}
                   >
                     {entry.entryType === 'photo-essay' ? 'PHOTO ESSAY'

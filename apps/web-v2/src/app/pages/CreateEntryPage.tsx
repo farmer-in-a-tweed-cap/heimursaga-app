@@ -12,7 +12,7 @@ import { WaypointSelectorMap } from '@/app/components/WaypointSelectorMap';
 import { DatePicker } from '@/app/components/DatePicker';
 import { X, Image as ImageIcon, Lock, Camera, Loader2, Clock, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { entryApi, expeditionApi, uploadApi, type Expedition, type Entry, type StandardMetadata, type DataLogMetadata } from '@/app/services/api';
+import { entryApi, expeditionApi, uploadApi, type Expedition, type Entry } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 import { useContentValidation } from '@/app/hooks/useContentValidation';
 import { checkImageExif, type ExifResult } from '@/app/utils/exifCheck';
@@ -65,11 +65,11 @@ export function CreateEntryPage() {
   const [dataLogContent, setDataLogContent] = useState('');
   const [entryTitle, setEntryTitle] = useState('');
 
-  // Standard metadata state
-  const [stdWeather, setStdWeather] = useState('');
-  const [stdDistanceTraveled, setStdDistanceTraveled] = useState('');
-  const [stdMood, setStdMood] = useState('');
-  const [stdExpenses, setStdExpenses] = useState('');
+  // Standard metadata state — commented out until display is implemented
+  // const [stdWeather, setStdWeather] = useState('');
+  // const [stdDistanceTraveled, setStdDistanceTraveled] = useState('');
+  // const [stdMood, setStdMood] = useState('');
+  // const [stdExpenses, setStdExpenses] = useState('');
 
   // Data-log metadata state
   const [dlTemperature, setDlTemperature] = useState('');
@@ -194,12 +194,14 @@ export function CreateEntryPage() {
     // Load metadata if present
     if (draft.metadata) {
       const meta = draft.metadata as Record<string, unknown>;
-      if (draftType === 'standard') {
-        setStdWeather(String(meta.weather || ''));
-        setStdDistanceTraveled(meta.distanceTraveled != null ? String(meta.distanceTraveled) : '');
-        setStdMood(String(meta.mood || ''));
-        setStdExpenses(meta.expenses != null ? String(meta.expenses) : '');
-      } else if (draftType === 'data-log') {
+      // Standard metadata draft loading — commented out until display is implemented
+      // if (draftType === 'standard') {
+      //   setStdWeather(String(meta.weather || ''));
+      //   setStdDistanceTraveled(meta.distanceTraveled != null ? String(meta.distanceTraveled) : '');
+      //   setStdMood(String(meta.mood || ''));
+      //   setStdExpenses(meta.expenses != null ? String(meta.expenses) : '');
+      // } else
+      if (draftType === 'data-log') {
         setDlTemperature(meta.temperature != null ? String(meta.temperature) : '');
         setDlHumidity(meta.humidity != null ? String(meta.humidity) : '');
         setDlWindSpeed(meta.windSpeed != null ? String(meta.windSpeed) : '');
@@ -269,14 +271,15 @@ export function CreateEntryPage() {
 
   // Build metadata for current entry type
   const buildMetadata = useCallback(() => {
-    if (entryType === 'standard') {
-      const meta: Record<string, unknown> = {};
-      if (stdWeather) meta.weather = stdWeather;
-      if (stdDistanceTraveled) meta.distanceTraveled = parseFloat(stdDistanceTraveled);
-      if (stdMood && stdMood !== 'Not specified') meta.mood = stdMood;
-      if (stdExpenses) meta.expenses = parseFloat(stdExpenses);
-      return Object.keys(meta).length > 0 ? meta : undefined;
-    }
+    // Standard metadata — commented out until display is implemented
+    // if (entryType === 'standard') {
+    //   const meta: Record<string, unknown> = {};
+    //   if (stdWeather) meta.weather = stdWeather;
+    //   if (stdDistanceTraveled) meta.distanceTraveled = parseFloat(stdDistanceTraveled);
+    //   if (stdMood && stdMood !== 'Not specified') meta.mood = stdMood;
+    //   if (stdExpenses) meta.expenses = parseFloat(stdExpenses);
+    //   return Object.keys(meta).length > 0 ? meta : undefined;
+    // }
     if (entryType === 'data-log') {
       const meta: Record<string, unknown> = {};
       if (dlTemperature) meta.temperature = parseFloat(dlTemperature);
@@ -290,7 +293,7 @@ export function CreateEntryPage() {
       return Object.keys(meta).length > 0 ? meta : undefined;
     }
     return undefined;
-  }, [entryType, stdWeather, stdDistanceTraveled, stdMood, stdExpenses, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
+  }, [entryType, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
 
   // Build payload for saving
   const buildSavePayload = useCallback((isDraft: boolean) => {
@@ -989,6 +992,7 @@ export function CreateEntryPage() {
                       </p>
                     )}
                   </div>
+                  {/* Time input — commented out (dead code, no state wired up)
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                       TIME
@@ -1000,6 +1004,7 @@ export function CreateEntryPage() {
                       placeholder="--:--"
                     />
                   </div>
+                  */}
                 </div>
                 {entryDate && new Date(entryDate) < new Date(new Date().toISOString().split('T')[0]) && (
                   <div className="mt-2 px-2 py-1 bg-[#4676ac]/10 border-l-2 border-[#4676ac] text-xs text-[#4676ac] inline-block">
@@ -1076,7 +1081,7 @@ export function CreateEntryPage() {
                 </div>
               </div>
 
-              {/* Location Details - Only for data-log and standard */}
+              {/* Location Details (elevation/accuracy/timezone) — commented out (dead code, no state wired up)
               {(entryType === 'data-log' || entryType === 'standard') && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -1114,6 +1119,7 @@ export function CreateEntryPage() {
                   </div>
                 </div>
               )}
+              */}
               
 
 
@@ -1764,8 +1770,7 @@ Include:
                 </>
               )}
 
-              {/* WAYPOINT FIELDS */}
-              {/* Tags - ALL TYPES */}
+              {/* Tags — commented out (no backend support for entry tags)
               <div>
                 <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                   TAGS
@@ -1780,8 +1785,9 @@ Include:
                   Comma-separated • Helps readers find your content
                 </div>
               </div>
+              */}
 
-              {/* Metadata - Only for standard */}
+              {/* Standard metadata (weather/distance/mood/expenses) — commented out until display is implemented on entry detail page
               {entryType === 'standard' && (
                 <div className="border-2 border-[#4676ac] p-4 dark:bg-[#2a2a2a]">
                   <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">ADDITIONAL METADATA (OPTIONAL):</div>
@@ -1834,9 +1840,11 @@ Include:
                   </div>
                 </div>
               )}
+              */}
 
-              {/* Sponsor Update */}
+              {/* Entry Options */}
               <div className="border-2 border-[#ac6d46] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                {/* Sponsor notification — commented out (no state wired up)
                 <div className="flex items-start gap-2 mb-3">
                   <input type="checkbox" id="sponsor-update" className="mt-1" />
                   <label htmlFor="sponsor-update" className="text-xs">
@@ -1846,6 +1854,7 @@ Include:
                     </span>
                   </label>
                 </div>
+                */}
                 <div className="flex items-start gap-2">
                   <input
                     type="checkbox"
