@@ -531,6 +531,7 @@ export class EntryService {
       const entry = await this.prisma.entry.findFirst({
         where,
         select: {
+          id: true, // Internal ID for entry number calculation
           public_id: true,
           title: true,
           content: true,
@@ -577,6 +578,7 @@ export class EntryService {
           },
           // Include expedition relationship
           expedition_id: true, // Need internal ID for entry number calculation
+          waypoint_id: true, // Need for route-position tiebreaker in entry numbering
           expedition: {
             select: {
               public_id: true,
@@ -669,20 +671,62 @@ export class EntryService {
       }
 
       // Calculate entry number within expedition (if entry belongs to one)
-      // Uses entry.date (the expedition date) to determine chronological order
+      // Sorted by date asc, with waypoint route position as tiebreaker for same-date entries
       let entryNumber: number | undefined;
       if (entry.expedition_id && entry.date) {
-        const earlierEntriesCount = await this.prisma.entry.count({
+        // Get all published entries in this expedition with their waypoint sequence
+        const siblingEntries = await this.prisma.entry.findMany({
           where: {
             expedition_id: entry.expedition_id,
             deleted_at: null,
             is_draft: false,
-            date: {
-              lt: entry.date,
-            },
+          },
+          select: {
+            id: true,
+            date: true,
+            waypoint_id: true,
+            created_at: true,
           },
         });
-        entryNumber = earlierEntriesCount + 1;
+
+        // Get waypoint sequences for route-position tiebreaker
+        const waypointIds = siblingEntries
+          .map((e) => e.waypoint_id)
+          .filter((id): id is number => id !== null);
+        const waypointSequences =
+          waypointIds.length > 0
+            ? await this.prisma.expeditionWaypoint.findMany({
+                where: {
+                  expedition_id: entry.expedition_id,
+                  waypoint_id: { in: waypointIds },
+                },
+                select: { waypoint_id: true, sequence: true },
+              })
+            : [];
+        const seqMap = new Map(
+          waypointSequences.map((ws) => [ws.waypoint_id, ws.sequence]),
+        );
+
+        // Sort by date asc, then route position, then creation time as final tiebreaker
+        siblingEntries.sort((a, b) => {
+          const da = a.date ? new Date(a.date).getTime() : 0;
+          const db = b.date ? new Date(b.date).getTime() : 0;
+          if (da !== db) return da - db;
+          const sa =
+            a.waypoint_id !== null
+              ? seqMap.get(a.waypoint_id) ?? Infinity
+              : Infinity;
+          const sb =
+            b.waypoint_id !== null
+              ? seqMap.get(b.waypoint_id) ?? Infinity
+              : Infinity;
+          if (sa !== sb) return sa - sb;
+          const ca = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const cb = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return ca - cb;
+        });
+
+        entryNumber = siblingEntries.findIndex((e) => e.id === entry.id) + 1;
       }
 
       // Calculate expedition day (days since expedition start when entry was written)
@@ -965,6 +1009,7 @@ export class EntryService {
 
       // Look up expedition if provided
       let expeditionDbId: number | undefined;
+      let expeditionStatus: string | undefined;
       if (expeditionId) {
         const expedition = await this.prisma.expedition.findFirst({
           where: {
@@ -972,10 +1017,16 @@ export class EntryService {
             author_id: explorerId,
             deleted_at: null,
           },
-          select: { id: true },
+          select: { id: true, status: true },
         });
         if (expedition) {
+          if (expedition.status === 'cancelled') {
+            throw new ServiceBadRequestException(
+              'Cannot create entries for a cancelled expedition',
+            );
+          }
           expeditionDbId = expedition.id;
+          expeditionStatus = expedition.status;
         }
       }
 
@@ -1072,11 +1123,20 @@ export class EntryService {
             entry_type: entryType || 'standard',
             is_milestone: isMilestone || false,
             visibility: visibility || 'public',
-            metadata:
-              (sanitizeEntryMetadata(
+            metadata: (() => {
+              const sanitized = sanitizeEntryMetadata(
                 entryType,
                 metadata,
-              ) as Prisma.InputJsonValue) ?? Prisma.DbNull,
+              ) as Record<string, any> | null;
+              // Flag entries published while expedition is in planning phase
+              if (expeditionStatus === 'planned' && !isDraft) {
+                return {
+                  ...(sanitized || {}),
+                  loggedDuringPlanning: true,
+                } as Prisma.InputJsonValue;
+              }
+              return (sanitized as Prisma.InputJsonValue) ?? Prisma.DbNull;
+            })(),
             author: { connect: { id: explorerId } },
             // Connect to waypoint if provided (waypoint-to-entry conversion)
             waypoint: waypointId ? { connect: { id: waypointId } } : undefined,
@@ -1174,6 +1234,7 @@ export class EntryService {
         isMilestone,
         visibility,
         metadata,
+        waypointId,
       } = payload;
 
       this.logger.log('entry_update');
@@ -1196,6 +1257,7 @@ export class EntryService {
             id: true,
             public_id: true,
             waypoint_id: true,
+            expedition_id: true,
             public: true,
             is_draft: true,
             email_sent: true,
@@ -1204,6 +1266,10 @@ export class EntryService {
             place: true,
             date: true,
             comments_enabled: true,
+            metadata: true,
+            expedition: {
+              select: { status: true },
+            },
             media: {
               select: {
                 upload: {
@@ -1217,6 +1283,13 @@ export class EntryService {
           throw new ServiceNotFoundException('entry not found');
         });
       const { waypoint } = payload;
+
+      // Block updates on cancelled expeditions
+      if (entry.expedition?.status === 'cancelled') {
+        throw new ServiceBadRequestException(
+          'Cannot update entries for a cancelled expedition',
+        );
+      }
 
       // Validate entryType if provided
       const validEntryTypes = [
@@ -1323,18 +1396,39 @@ export class EntryService {
             entry_type: entryType,
             is_milestone: isMilestone,
             visibility: visibility,
-            metadata:
-              metadata !== undefined
-                ? (sanitizeEntryMetadata(
-                    entryType || 'standard',
-                    metadata,
-                  ) as Prisma.InputJsonValue) ?? Prisma.DbNull
-                : undefined,
+            metadata: (() => {
+              const sanitized =
+                metadata !== undefined
+                  ? (sanitizeEntryMetadata(
+                      entryType || 'standard',
+                      metadata,
+                    ) as Record<string, any> | null)
+                  : (entry.metadata as Record<string, any> | null);
+              // Flag entries published while expedition is in planning phase
+              if (
+                isBecomingPublished &&
+                entry.expedition?.status === 'planned'
+              ) {
+                return {
+                  ...(sanitized || {}),
+                  loggedDuringPlanning: true,
+                } as Prisma.InputJsonValue;
+              }
+              if (metadata !== undefined) {
+                return (sanitized as Prisma.InputJsonValue) ?? Prisma.DbNull;
+              }
+              return undefined; // don't touch metadata if not provided
+            })(),
             cover_upload:
               coverUploadDbId !== undefined
                 ? coverUploadDbId === null
                   ? { disconnect: true }
                   : { connect: { id: coverUploadDbId } }
+                : undefined,
+            // Connect to waypoint if provided (waypoint-to-entry conversion)
+            waypoint:
+              waypointId && !entry.waypoint_id
+                ? { connect: { id: waypointId } }
                 : undefined,
           },
         });

@@ -140,6 +140,7 @@ export function ExpeditionBuilderPage() {
   const [sponsorshipsEnabled, setSponsorshipsEnabled] = useState(false);
   const [sponsorshipGoal, setSponsorshipGoal] = useState<number | ''>('');
   const [notesAccessThreshold, setNotesAccessThreshold] = useState<number | ''>('');
+  const [notesVisibility, setNotesVisibility] = useState<'public' | 'sponsor'>('public');
   const [expectedDuration, setExpectedDuration] = useState('');
   const [currentLocationSource, setCurrentLocationSource] = useState<'waypoint' | 'entry'>('waypoint');
   const [currentLocationId, setCurrentLocationId] = useState('');
@@ -238,6 +239,9 @@ export function ExpeditionBuilderPage() {
     if (!expeditionData.category) {
       errors.push('Category is required');
     }
+    if (!coverPhotoUrl && !isEditMode) {
+      errors.push('Cover photo is required');
+    }
 
     if (errors.length > 0) {
       errors.forEach(msg => toast.error(msg));
@@ -257,7 +261,8 @@ export function ExpeditionBuilderPage() {
         endDate: expeditionData.endDate || undefined,
         coverImage: coverPhotoUrl || undefined,
         goal: sponsorshipsEnabled && sponsorshipGoal ? Number(sponsorshipGoal) : undefined,
-        notesAccessThreshold: sponsorshipsEnabled && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
+        notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
+        notesVisibility,
         isRoundTrip,
         category: expeditionData.category || undefined,
         region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
@@ -327,11 +332,12 @@ export function ExpeditionBuilderPage() {
 
   // Auto-compute status based on dates
   const computeStatus = () => {
-    const today = new Date().toISOString().split('T')[0];
-    
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
     if (!expeditionData.startDate) return 'planned';
     
-    if (expeditionData.endDate && expeditionData.endDate < today) {
+    if (expeditionData.endDate && expeditionData.endDate <= today) {
       return 'completed';
     }
     
@@ -343,6 +349,13 @@ export function ExpeditionBuilderPage() {
   };
 
   const status = computeStatus();
+
+  // Disable sponsorships when status changes to completed
+  useEffect(() => {
+    if (status === 'completed') {
+      setSponsorshipsEnabled(false);
+    }
+  }, [status]);
 
   const { handleStartDateChange, handleEndDateChange, handleDurationChange } =
     useBuilderDateHandlers(expeditionData, setExpeditionData, expectedDuration, setExpectedDuration);
@@ -672,6 +685,9 @@ export function ExpeditionBuilderPage() {
         }
         if ((expedition as any).notesAccessThreshold > 0) {
           setNotesAccessThreshold((expedition as any).notesAccessThreshold);
+        }
+        if ((expedition as any).notesVisibility) {
+          setNotesVisibility((expedition as any).notesVisibility);
         }
 
         // Set round trip status
@@ -2014,6 +2030,7 @@ export function ExpeditionBuilderPage() {
             <DatePicker
               value={expeditionData.startDate}
               onChange={handleStartDateChange}
+              max={expeditionData.endDate || undefined}
               className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
               disabled={isEditMode}
             />
@@ -2227,8 +2244,8 @@ export function ExpeditionBuilderPage() {
 
                 {/* Edit Panel - Landscape Layout */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95%] max-w-[900px] bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] z-30 max-h-[85vh] overflow-y-auto">
-                  <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center justify-between">
-                    <h3 className="text-sm font-bold">EDIT WAYPOINT</h3>
+                  <div className={`${selectedWaypointData.entryIds.length > 0 ? 'bg-[#ac6d46]' : 'bg-[#616161] dark:bg-[#3a3a3a]'} text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center justify-between`}>
+                    <h3 className="text-sm font-bold">{selectedWaypointData.entryIds.length > 0 ? 'ENTRY WAYPOINT' : 'EDIT WAYPOINT'}</h3>
                     <button
                       onClick={() => { setSelectedWaypoint(null); setConfirmingDelete(null); }}
                       className="text-white hover:text-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
@@ -2252,36 +2269,52 @@ export function ExpeditionBuilderPage() {
                         {/* Name */}
                         <div>
                           <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">
-                            NAME <span className="text-[#616161] dark:text-[#b5bcc4] font-mono">({(selectedWaypointData.name || '').length}/100)</span>
+                            NAME {selectedWaypointData.entryIds.length === 0 && <span className="text-[#616161] dark:text-[#b5bcc4] font-mono">({(selectedWaypointData.name || '').length}/100)</span>}
                           </label>
-                          <input
-                            type="text"
-                            value={selectedWaypointData.name || ''}
-                            onChange={(e) => handleUpdateWaypoint(selectedWaypoint!, { name: e.target.value })}
-                            maxLength={100}
-                            className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
-                            placeholder="e.g., Mountain Pass Summit"
-                          />
+                          {selectedWaypointData.entryIds.length > 0 ? (
+                            <div className="bg-[#f5f5f5] dark:bg-[#1a1a1a] border border-[#b5bcc4] dark:border-[#616161] px-3 py-2 text-sm dark:text-[#e5e5e5]">
+                              {selectedWaypointData.name || '—'}
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              value={selectedWaypointData.name || ''}
+                              onChange={(e) => handleUpdateWaypoint(selectedWaypoint!, { name: e.target.value })}
+                              maxLength={100}
+                              className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
+                              placeholder="e.g., Mountain Pass Summit"
+                            />
+                          )}
                           <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                            Min 3 • Max 100 characters
+                            {selectedWaypointData.entryIds.length > 0
+                              ? 'Edit this entry to change its details'
+                              : 'Min 3 • Max 100 characters'}
                           </p>
                         </div>
 
                         {/* Location */}
                         <div>
                           <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">
-                            LOCATION <span className="text-[#616161] dark:text-[#b5bcc4]">(Optional)</span> <span className="text-[#616161] dark:text-[#b5bcc4] font-mono">({(selectedWaypointData.location || '').length}/150)</span>
+                            LOCATION {selectedWaypointData.entryIds.length === 0 && <><span className="text-[#616161] dark:text-[#b5bcc4]">(Optional)</span> <span className="text-[#616161] dark:text-[#b5bcc4] font-mono">({(selectedWaypointData.location || '').length}/150)</span></>}
                           </label>
-                          <input
-                            type="text"
-                            value={selectedWaypointData.location || ''}
-                            onChange={(e) => handleUpdateWaypoint(selectedWaypoint!, { location: e.target.value })}
-                            maxLength={150}
-                            className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
-                            placeholder="e.g., Near Almaty, Kazakhstan"
-                          />
+                          {selectedWaypointData.entryIds.length > 0 ? (
+                            <div className="bg-[#f5f5f5] dark:bg-[#1a1a1a] border border-[#b5bcc4] dark:border-[#616161] px-3 py-2 text-sm dark:text-[#e5e5e5]">
+                              {selectedWaypointData.location || '—'}
+                            </div>
+                          ) : (
+                            <input
+                              type="text"
+                              value={selectedWaypointData.location || ''}
+                              onChange={(e) => handleUpdateWaypoint(selectedWaypoint!, { location: e.target.value })}
+                              maxLength={150}
+                              className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
+                              placeholder="e.g., Near Almaty, Kazakhstan"
+                            />
+                          )}
                           <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                            Max 150 characters • City, region, or landmark name
+                            {selectedWaypointData.entryIds.length > 0
+                              ? 'Locked — edit this entry to change location'
+                              : 'Max 150 characters • City, region, or landmark name'}
                           </p>
                         </div>
 
@@ -2290,7 +2323,12 @@ export function ExpeditionBuilderPage() {
                           <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">
                             DATE
                           </label>
-                          <div className="relative">
+                          {selectedWaypointData.entryIds.length > 0 ? (
+                            <div className="bg-[#f5f5f5] dark:bg-[#1a1a1a] border border-[#b5bcc4] dark:border-[#616161] px-3 py-2 text-sm dark:text-[#e5e5e5]">
+                              {selectedWaypointData.date || '—'}
+                            </div>
+                          ) : (
+                            <div className="relative">
                             {(() => {
                               // Compute min/max from neighboring waypoint dates
                               const wpIdx = waypoints.findIndex(w => w.id === selectedWaypoint);
@@ -2315,11 +2353,14 @@ export function ExpeditionBuilderPage() {
                                 />
                               );
                             })()}
-                                        </div>
+                            </div>
+                          )}
                           <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                            {expeditionData.startDate && expeditionData.endDate
-                              ? `Must be between ${expeditionData.startDate} and ${expeditionData.endDate}`
-                              : 'Waypoints are automatically ordered by date'}
+                            {selectedWaypointData.entryIds.length > 0
+                              ? 'Locked — edit this entry to change date'
+                              : expeditionData.startDate && expeditionData.endDate
+                                ? `Must be between ${expeditionData.startDate} and ${expeditionData.endDate}`
+                                : 'Waypoints are automatically ordered by date'}
                           </p>
                         </div>
 
@@ -2344,18 +2385,26 @@ export function ExpeditionBuilderPage() {
                         {/* Description */}
                         <div>
                           <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">
-                            DESCRIPTION <span className="text-[#616161] dark:text-[#b5bcc4]">(Optional)</span> <span className="text-[#616161] dark:text-[#b5bcc4] font-mono">({(selectedWaypointData.description || '').length}/500)</span>
+                            DESCRIPTION {selectedWaypointData.entryIds.length === 0 && <><span className="text-[#616161] dark:text-[#b5bcc4]">(Optional)</span> <span className="text-[#616161] dark:text-[#b5bcc4] font-mono">({(selectedWaypointData.description || '').length}/500)</span></>}
                           </label>
-                          <textarea
-                            value={selectedWaypointData.description || ''}
-                            onChange={(e) => handleUpdateWaypoint(selectedWaypoint!, { description: e.target.value })}
-                            maxLength={500}
-                            className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
-                            rows={8}
-                            placeholder="Add notes about this waypoint..."
-                          />
+                          {selectedWaypointData.entryIds.length > 0 ? (
+                            <div className="bg-[#f5f5f5] dark:bg-[#1a1a1a] border border-[#b5bcc4] dark:border-[#616161] px-3 py-2 text-sm dark:text-[#e5e5e5] min-h-[120px]">
+                              {selectedWaypointData.description || '—'}
+                            </div>
+                          ) : (
+                            <textarea
+                              value={selectedWaypointData.description || ''}
+                              onChange={(e) => handleUpdateWaypoint(selectedWaypoint!, { description: e.target.value })}
+                              maxLength={500}
+                              className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
+                              rows={8}
+                              placeholder="Add notes about this waypoint..."
+                            />
+                          )}
                           <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                            Max 500 characters • Add notes, observations, or details
+                            {selectedWaypointData.entryIds.length > 0
+                              ? 'Locked — edit this entry to change description'
+                              : 'Max 500 characters • Add notes, observations, or details'}
                           </p>
                         </div>
 
@@ -2402,7 +2451,9 @@ export function ExpeditionBuilderPage() {
                     <div className="mt-4 pt-4 border-t-2 border-[#b5bcc4] dark:border-[#616161]">
                       {/* Auto-save indicator */}
                       <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3 text-center font-mono">
-                        All changes are saved automatically as you edit
+                        {selectedWaypointData.entryIds.length > 0
+                          ? 'This waypoint has linked entries — edit entries to change details'
+                          : 'All changes are saved automatically as you edit'}
                       </div>
                       
                       <div className="flex gap-3">
@@ -2646,8 +2697,8 @@ export function ExpeditionBuilderPage() {
                             }`}
                           >
                             <div className="flex items-start gap-2">
-                              {/* Move buttons */}
-                              {waypoints.length > 1 && (
+                              {/* Move buttons — hidden for entry-linked waypoints (sequence is date-driven) */}
+                              {waypoints.length > 1 && waypoint.entryIds.length === 0 && (
                                 <div className="flex flex-col items-center flex-shrink-0 pt-1">
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleMoveWaypoint(waypoint.id, 'up'); }}
@@ -2968,13 +3019,18 @@ export function ExpeditionBuilderPage() {
                 checked={sponsorshipsEnabled}
                 onChange={(e) => {
                   setSponsorshipsEnabled(e.target.checked);
-                  if (e.target.checked && expeditionData.visibility === 'private') {
-                    setExpeditionData({ ...expeditionData, visibility: 'public' });
+                  if (e.target.checked) {
+                    setNotesVisibility('sponsor');
+                    if (expeditionData.visibility === 'private') {
+                      setExpeditionData({ ...expeditionData, visibility: 'public' });
+                    }
+                  } else {
+                    setNotesVisibility('public');
                   }
                 }}
-                disabled={!isPro || !user?.stripeAccountConnected}
+                disabled={!isPro || !user?.stripeAccountConnected || status === 'completed'}
               />
-              <label htmlFor="enable-sponsorships" className={`text-xs ${!isPro || !user?.stripeAccountConnected ? 'text-[#b5bcc4] dark:text-[#616161]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+              <label htmlFor="enable-sponsorships" className={`text-xs ${!isPro || !user?.stripeAccountConnected || status === 'completed' ? 'text-[#b5bcc4] dark:text-[#616161]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                 Allow others to financially support this expedition through the platform
               </label>
             </div>
@@ -2984,10 +3040,15 @@ export function ExpeditionBuilderPage() {
                 <Link href="/settings/billing" className="text-[#4676ac] hover:underline ml-1">Upgrade to Pro</Link>
               </div>
             )}
-            {isPro && !user?.stripeAccountConnected && (
+            {isPro && !user?.stripeAccountConnected && status !== 'completed' && (
               <div className="mb-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
                 <strong className="text-[#ac6d46]">STRIPE CONNECT REQUIRED:</strong> Complete your Stripe onboarding before enabling sponsorships.
                 <Link href="/sponsorship" className="text-[#4676ac] hover:underline ml-1">Complete setup</Link>
+              </div>
+            )}
+            {status === 'completed' && (
+              <div className="mb-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#616161] text-xs text-[#616161] dark:text-[#b5bcc4]">
+                <strong>COMPLETED EXPEDITION:</strong> Sponsorships are not available for completed expeditions.
               </div>
             )}
             {sponsorshipsEnabled && isPro && (
@@ -3029,6 +3090,54 @@ export function ExpeditionBuilderPage() {
               </div>
             )}
           </div>
+
+          {/* Expedition Notes Visibility - Pro only */}
+          {isPro && expeditionData.visibility !== 'private' && <div className="mt-6 border-2 border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+            <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">EXPEDITION NOTES VISIBILITY</div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <input
+                  type="radio"
+                  id="notes-public"
+                  name="notesVisibility"
+                  className="mt-1"
+                  checked={notesVisibility === 'public'}
+                  onChange={() => setNotesVisibility('public')}
+                />
+                <label htmlFor="notes-public" className="text-xs">
+                  <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">PUBLIC</div>
+                  <div className="text-[#616161] dark:text-[#b5bcc4] mt-0.5">
+                    Anyone can read expedition notes.
+                  </div>
+                </label>
+              </div>
+              <div className="flex items-start gap-2">
+                <input
+                  type="radio"
+                  id="notes-sponsor"
+                  name="notesVisibility"
+                  className="mt-1"
+                  checked={notesVisibility === 'sponsor'}
+                  onChange={() => {
+                    setNotesVisibility('sponsor');
+                    if (isPro && user?.stripeAccountConnected && status !== 'completed') {
+                      setSponsorshipsEnabled(true);
+                    }
+                  }}
+                  disabled={!isPro || !user?.stripeAccountConnected || status === 'completed'}
+                />
+                <label htmlFor="notes-sponsor" className={`text-xs ${!isPro || !user?.stripeAccountConnected || status === 'completed' ? 'text-[#b5bcc4] dark:text-[#616161]' : ''}`}>
+                  <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">SPONSOR EXCLUSIVE</div>
+                  <div className="text-[#616161] dark:text-[#b5bcc4] mt-0.5">
+                    Only sponsors meeting the access threshold can read expedition notes.
+                    {(!isPro || !user?.stripeAccountConnected) && (
+                      <span className="text-[#ac6d46] ml-1">Requires Explorer Pro with Stripe Connect.</span>
+                    )}
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>}
 
           {/* Privacy Settings - Radio buttons matching quick entry */}
           <div className="mt-6 border-2 border-[#4676ac] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
@@ -3079,7 +3188,10 @@ export function ExpeditionBuilderPage() {
                   name="visibility"
                   className="mt-1"
                   checked={expeditionData.visibility === 'private'}
-                  onChange={() => setExpeditionData({ ...expeditionData, visibility: 'private' })}
+                  onChange={() => {
+                    setExpeditionData({ ...expeditionData, visibility: 'private' });
+                    setNotesVisibility('public');
+                  }}
                   disabled={sponsorshipsEnabled || (isEditMode && expeditionData.visibility !== 'private')}
                 />
                 <label htmlFor="visibility-private" className={`text-xs ${sponsorshipsEnabled || (isEditMode && expeditionData.visibility !== 'private') ? 'opacity-50' : ''}`}>
@@ -3132,7 +3244,7 @@ export function ExpeditionBuilderPage() {
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <button
             onClick={() => handleCreateExpedition(false)}
-            disabled={isSubmitting}
+            disabled={isSubmitting || uploadingCover}
             className="px-6 py-3 bg-[#4676ac] text-white hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isSubmitting && <Loader2 size={18} className="animate-spin" />}
@@ -3141,7 +3253,7 @@ export function ExpeditionBuilderPage() {
           {!isEditMode && (
             <button
               onClick={() => handleCreateExpedition(true)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || uploadingCover}
               className="px-6 py-3 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
             >
               <span>SAVE AND LOG FIRST ENTRY</span>

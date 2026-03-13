@@ -22,7 +22,8 @@ interface ExpeditionManagementModalProps {
     backers?: number;
   };
   onStatusChange?: (newStatus: 'active' | 'completed') => void;
-  onCancel?: (reason: string) => void;
+  onComplete?: (actualEndDate: string) => Promise<void>;
+  onCancel?: (reason: string) => Promise<void>;
 }
 
 export function ExpeditionManagementModal({
@@ -30,6 +31,7 @@ export function ExpeditionManagementModal({
   onClose,
   expedition,
   onStatusChange,
+  onComplete,
   onCancel,
 }: ExpeditionManagementModalProps) {
   const router = useRouter();
@@ -37,6 +39,7 @@ export function ExpeditionManagementModal({
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [cancellationReason, setCancellationReason] = useState('');
   const [cancelError, setCancelError] = useState('');
+  const [completeError, setCompleteError] = useState('');
   const [actualEndDate, setActualEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -69,17 +72,17 @@ export function ExpeditionManagementModal({
 
   const handleComplete = async () => {
     setIsSubmitting(true);
+    setCompleteError('');
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-
-      if (onStatusChange) {
-        onStatusChange('completed');
+      if (onComplete) {
+        await onComplete(actualEndDate);
       }
-
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to complete expedition:', error);
+      const message = error?.response?.data?.message || error?.message || 'Failed to complete expedition. Please try again.';
+      setCompleteError(message);
     } finally {
       setIsSubmitting(false);
       setConfirmComplete(false);
@@ -337,13 +340,16 @@ export function ExpeditionManagementModal({
                     </div>
                     <ul className="space-y-1 text-xs text-[#616161] dark:text-[#b5bcc4]">
                       <li>• Status changes from {expedition.status.toUpperCase()} to COMPLETED</li>
-                      <li>• Sponsorships will be closed (no new sponsors accepted)</li>
+                      <li>• New sponsorships will no longer be accepted</li>
                       <li>• All journal entries and expedition content remain public</li>
                       <li>• You can still add retrospective journal entries after completion</li>
                       <li>• You can create a new expedition after completing this one</li>
-                      <li>• Final statistics will be calculated and archived</li>
                     </ul>
                   </div>
+
+                  {completeError && (
+                    <div className="text-xs text-[#994040] mb-4">{completeError}</div>
+                  )}
 
                   <div className="p-3 bg-white dark:bg-[#202020] border-2 border-[#616161] mb-4">
                     <div className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
@@ -403,7 +409,7 @@ export function ExpeditionManagementModal({
                       CANCEL EXPEDITION
                     </h4>
                     <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
-                      Permanently cancel this expedition. Recurring sponsorships will be paused and all sponsors will be notified with the reason you provide.
+                      Permanently cancel this expedition. All entries will be locked — no new entries can be logged and existing entries cannot be edited. Recurring sponsorships will be paused and all sponsors will be notified with the reason you provide.
                     </p>
                   </div>
                 </div>
@@ -457,6 +463,7 @@ export function ExpeditionManagementModal({
                       WHAT HAPPENS WHEN YOU CANCEL:
                     </div>
                     <ul className="space-y-1 text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      <li>• All entries will be locked — no new entries or edits allowed</li>
                       <li>• Recurring sponsorships will be paused (they resume if you start a new expedition)</li>
                       <li>• One-time sponsorships are retained as support already given</li>
                       <li>• All sponsors will be notified with your cancellation reason</li>
@@ -532,7 +539,7 @@ export function ExpeditionManagementModal({
                       EXPEDITION CANCELLED
                     </h4>
                     <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      This expedition has been cancelled. Recurring sponsorships have been paused and all sponsors have been notified. The expedition is hidden from public listings but remains accessible via direct link.
+                      This expedition has been cancelled. All entries are locked — no new entries can be logged and existing entries cannot be edited. Recurring sponsorships have been paused and all sponsors have been notified. The expedition is hidden from public listings but remains accessible via direct link.
                     </p>
                   </div>
                 </div>

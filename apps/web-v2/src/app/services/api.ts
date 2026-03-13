@@ -858,6 +858,18 @@ export const expeditionApi = {
     api.delete<void>(`/trips/${id}`),
 
   /**
+   * Complete an expedition (requires auth)
+   */
+  complete: (id: string, actualEndDate: string) =>
+    api.patch<void>(`/trips/${id}/complete`, { actualEndDate }),
+
+  /**
+   * Activate a planned expedition early (requires auth)
+   */
+  activate: (id: string) =>
+    api.put<Expedition>(`/trips/${id}`, { status: 'active' }),
+
+  /**
    * Cancel an expedition (requires auth)
    */
   cancel: (id: string, cancellationReason: string) =>

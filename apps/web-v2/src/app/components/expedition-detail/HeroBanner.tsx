@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
+import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
 import type { TransformedExpedition, CurrentLocationData } from '@/app/components/expedition-detail/types';
 import type { Expedition, ExplorerProfile } from '@/app/services/api';
 
@@ -69,16 +70,22 @@ export function HeroBanner({
       <div ref={bannerMapContainerRef} className="absolute inset-0 w-full h-full z-0" />
 
       {/* Fallback cover image when no map data */}
-      {!hasMapData && (
+      {!hasMapData && expedition.imageUrl && (
         <ImageWithFallback
           src={expedition.imageUrl}
           alt={expedition.title}
           className="absolute inset-0 h-full w-full object-cover z-0"
         />
       )}
+      {/* No cover & no map = topo pattern fallback */}
+      {!hasMapData && !expedition.imageUrl && (
+        <CoverPhotoFallback className="absolute inset-0 h-full w-full z-0" />
+      )}
 
-      {/* Dark gradient overlay for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90 pointer-events-none z-[1]" />
+      {/* Dark gradient overlay for text readability (only when cover image or map) */}
+      {(hasMapData || expedition.imageUrl) && (
+        <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90 pointer-events-none z-[1]" />
+      )}
 
       {/* Expedition Status Banner - Top Border */}
       <div className={`absolute top-0 left-0 right-0 py-2 px-6 ${

@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { formatCurrency } from '@/app/utils/formatCurrency';
-import { Users } from 'lucide-react';
+import { useState } from 'react';
+import { Users, ArrowDown, ArrowUp } from 'lucide-react';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
 import { WaypointCardLandscape } from '@/app/components/WaypointCardLandscape';
 import { ExpeditionNotes } from '@/app/components/ExpeditionNotes';
@@ -21,6 +22,7 @@ interface ContentTabsProps {
   expeditionNotes: ExpeditionNote[];
   noteCount: number;
   isSponsoring: boolean;
+  isPublicNotes: boolean;
   isOwner: boolean;
   isAuthenticated: boolean;
   notesSectionRef: Ref<HTMLDivElement>;
@@ -41,6 +43,7 @@ export function ContentTabs({
   expeditionNotes,
   noteCount,
   isSponsoring,
+  isPublicNotes,
   isOwner,
   isAuthenticated,
   notesSectionRef,
@@ -49,6 +52,10 @@ export function ContentTabs({
   onWaypointClick,
   router,
 }: ContentTabsProps) {
+  // 'asc' = earliest first (route order), 'desc' = latest first
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const showSortToggle = selectedView === 'entries' || selectedView === 'waypoints';
+
   return (
     <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
       {/* Tab Navigation */}
@@ -63,8 +70,7 @@ export function ContentTabs({
         >
           JOURNAL ENTRIES ({expedition.totalEntries})
         </button>
-        {/* Expedition Notes tab - TEMPORARILY VISIBLE FOR TESTING (normally only shows if sponsorships enabled) */}
-        {/* {showSponsorshipSection && ( */}
+        {expedition.explorerIsPro && expedition.privacy !== 'private' && (
           <button
             onClick={() => onSelectView('notes')}
             className={`flex-1 py-3 text-sm font-bold ${
@@ -75,7 +81,7 @@ export function ContentTabs({
           >
             EXPEDITION NOTES
           </button>
-        {/* )} */}
+        )}
         <button
           onClick={() => onSelectView('waypoints')}
           className={`flex-1 py-3 text-sm font-bold ${
@@ -103,8 +109,24 @@ export function ContentTabs({
 
       {/* Tab Content */}
       <div className="p-6">
-        {/* Expedition Notes View - TEMPORARILY VISIBLE FOR TESTING (normally only shows if sponsorships enabled) */}
-        {selectedView === 'notes' && /* showSponsorshipSection && */ (
+        {/* Sort toggle for entries/waypoints */}
+        {showSortToggle && (
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={() => setSortDirection(d => d === 'asc' ? 'desc' : 'asc')}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold tracking-wider text-[#616161] dark:text-[#b5bcc4] hover:text-[#202020] dark:hover:text-[#e5e5e5] transition-colors"
+              title={sortDirection === 'asc' ? 'Showing earliest first' : 'Showing latest first'}
+            >
+              {sortDirection === 'asc' ? (
+                <><ArrowDown className="w-3 h-3" />EARLIEST FIRST</>
+              ) : (
+                <><ArrowUp className="w-3 h-3" />LATEST FIRST</>
+              )}
+            </button>
+          </div>
+        )}
+
+        {selectedView === 'notes' && expedition.explorerIsPro && expedition.privacy !== 'private' && (
           <div ref={notesSectionRef}>
             <ExpeditionNotes
               expeditionId={expedition.id}
@@ -113,6 +135,8 @@ export function ContentTabs({
               explorerPicture={expedition.explorerPicture}
               isOwner={isOwner}
               isSponsoring={isSponsoring}
+              isPublicNotes={isPublicNotes}
+              expeditionStatus={expedition.status}
               notes={expeditionNotes.map(note => ({
                 ...note,
                 id: String(note.id),
@@ -130,11 +154,26 @@ export function ContentTabs({
         )}
 
         {/* Journal Entries View */}
-        {selectedView === 'entries' && (
+        {selectedView === 'entries' && (() => {
+          // Entry numbers: date asc, route position as tiebreaker for same-date entries
+          const entryRoutePosition = new Map<string, number>();
+          waypoints.forEach((wp, wpIdx) => {
+            (wp.entryIds || []).forEach((eid: string) => entryRoutePosition.set(eid, wpIdx));
+          });
+          const sortedAsc = [...journalEntries].sort((a, b) => {
+            const da = new Date(a.date).getTime(), db = new Date(b.date).getTime();
+            if (da !== db) return da - db;
+            const ra = entryRoutePosition.get(a.id) ?? Infinity, rb = entryRoutePosition.get(b.id) ?? Infinity;
+            if (ra !== rb) return ra - rb;
+            return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+          });
+          const entryNumberMap = new Map(sortedAsc.map((e, i) => [e.id, i + 1]));
+          const displayEntries = sortDirection === 'asc' ? sortedAsc : [...sortedAsc].reverse();
+          return (
           <div className="space-y-4">
-            {journalEntries.length > 0 ? (
+            {displayEntries.length > 0 ? (
               <>
-                {journalEntries.map((entry) => (
+                {displayEntries.map((entry) => (
                   <EntryCardLandscape
                     key={entry.id}
                     id={entry.id}
@@ -145,6 +184,7 @@ export function ContentTabs({
                     date={entry.date}
                     excerpt={entry.excerpt}
                     type={entry.type}
+                    entryNumber={entryNumberMap.get(entry.id) ?? 0}
                     visibility={entry.visibility}
                     isMilestone={entry.isMilestone}
                     isCurrent={expedition.currentLocationSource === 'entry' && expedition.currentLocationId === entry.id}
@@ -163,34 +203,48 @@ export function ContentTabs({
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
-        {/* Waypoints View */}
-        {selectedView === 'waypoints' && (
-            <div className="space-y-4">
-              {waypoints.map((wp, idx) => (
-                <WaypointCardLandscape
-                  key={wp.id}
-                  id={wp.id}
-                  title={wp.title}
-                  explorerUsername={expedition.explorerName}
-                  expeditionName={expedition.title}
-                  location={wp.location}
-                  description={wp.description}
-                  date={wp.date}
-                  latitude={wp.coords.lat}
-                  longitude={wp.coords.lng}
-                  elevation={undefined}
-                  views={0}
-                  markerNumber={idx + 1}
-                  isStart={idx === 0}
-                  isEnd={idx === waypoints.length - 1}
-                  isCurrent={expedition.currentLocationSource === 'waypoint' && expedition.currentLocationId === wp.id}
-                  onClick={() => onWaypointClick(wp.coords)}
-                />
-              ))}
-            </div>
-        )}
+        {/* Waypoints View — only unconverted waypoints (entries replace their waypoints) */}
+        {selectedView === 'waypoints' && (() => {
+            const unconvertedWaypoints = waypoints
+              .filter((wp) => !(wp.entryIds && wp.entryIds.length > 0));
+            // Number in route order, then optionally reverse for display
+            const numbered = unconvertedWaypoints.map((wp, i) => ({ wp, num: i + 1 }));
+            const displayWaypoints = sortDirection === 'asc' ? numbered : [...numbered].reverse();
+            return (
+              <div className="space-y-4">
+                {displayWaypoints.length > 0 ? displayWaypoints.map(({ wp, num }) => (
+                  <WaypointCardLandscape
+                    key={wp.id}
+                    id={wp.id}
+                    title={wp.title}
+                    explorerUsername={expedition.explorerName}
+                    expeditionName={expedition.title}
+                    location={wp.location}
+                    description={wp.description}
+                    date={wp.date}
+                    latitude={wp.coords.lat}
+                    longitude={wp.coords.lng}
+                    elevation={undefined}
+                    views={0}
+                    markerNumber={num}
+                    isStart={num === 1}
+                    isEnd={num === unconvertedWaypoints.length}
+                    isCurrent={expedition.currentLocationSource === 'waypoint' && expedition.currentLocationId === wp.id}
+                    onClick={() => onWaypointClick(wp.coords)}
+                  />
+                )) : (
+                  <div className="p-8 text-center">
+                    <div className="text-xs text-[#b5bcc4] dark:text-[#616161]">
+                      No standalone waypoints. All route points have been converted to journal entries.
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+        })()}
 
         {/* Sponsors Leaderboard - only show if sponsorships enabled */}
         {selectedView === 'sponsors' && showSponsorshipSection && (

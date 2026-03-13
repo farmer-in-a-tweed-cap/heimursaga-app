@@ -127,7 +127,8 @@ export default function ProfileScreen() {
           username={user!.username}
           displayName={profile?.name ?? user!.display_name}
           bio={profile?.bio}
-          location={profile?.locationFrom || profile?.locationLives}
+          locationFrom={profile?.locationFrom}
+          locationLives={profile?.locationLives}
           memberSince={profile?.memberDate ? new Date(profile.memberDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : undefined}
           isPro={profile?.creator ?? user!.is_pro}
           avatarUrl={profile?.picture ?? user!.avatar_url}

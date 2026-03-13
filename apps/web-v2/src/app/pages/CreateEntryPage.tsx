@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
@@ -39,7 +39,8 @@ export function CreateEntryPage() {
   const [newWaypointSequence, setNewWaypointSequence] = useState<number>(0);
   const [showWaypointSelector, setShowWaypointSelector] = useState(false);
   const shouldAutoCreateWaypoint = !isStandalone && !isPro;
-  const [entryDate, setEntryDate] = useState(new Date().toISOString().split('T')[0]);
+  const [entryDate, setEntryDate] = useState('');
+  const [entryTime, setEntryTime] = useState('');
   const [entryLocation, setEntryLocation] = useState('');
   const [markerOnCompletedSegment, setMarkerOnCompletedSegment] = useState(false);
 
@@ -86,6 +87,26 @@ export function CreateEntryPage() {
   const [expeditionLoading, setExpeditionLoading] = useState(!isStandalone);
   const [expeditionError, setExpeditionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPlanningModal, setShowPlanningModal] = useState(false);
+  const pendingSubmitRef = useRef<React.FormEvent | null>(null);
+
+  // Date range for the date picker
+  // Past expeditions (both start & end in the past): startDate → endDate
+  // Otherwise: publishDate → min(today, endDate)
+  const { dateMin, dateMax } = useMemo(() => {
+    const d = new Date();
+    const todayLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const start = expedition?.startDate ? expedition.startDate.slice(0, 10) : undefined;
+    const end = expedition?.endDate ? expedition.endDate.slice(0, 10) : undefined;
+    // Both dates exist and are in the past — use the expedition's actual timeframe
+    if (start && end && start <= todayLocal && end <= todayLocal) {
+      return { dateMin: start, dateMax: end };
+    }
+    const min = expedition?.createdAt ? expedition.createdAt.slice(0, 10) : undefined;
+    let max = todayLocal;
+    if (end && end < todayLocal) max = end;
+    return { dateMin: min, dateMax: max };
+  }, [expedition?.createdAt, expedition?.startDate, expedition?.endDate]);
 
   // Auto-save state
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -314,7 +335,7 @@ export function CreateEntryPage() {
       expeditionId: isStandalone ? undefined : (expedition?.publicId || expeditionId),
       lat: coordinates?.lat,
       lon: coordinates?.lng,
-      date: entryDate,
+      date: entryDate ? `${entryDate}T${entryTime || '00:00'}:00.000Z` : undefined,
       place: entryLocation,
       public: visibility === 'public',
       isDraft,
@@ -523,9 +544,51 @@ export function CreateEntryPage() {
     );
   }
 
+  // Handle confirming publish to a planned expedition
+  const handlePlanningActivate = async () => {
+    setShowPlanningModal(false);
+    try {
+      const expId = expedition?.publicId || expeditionId;
+      await expeditionApi.activate(expId);
+      // Refresh expedition state
+      const refreshed = await expeditionApi.getById(expId);
+      setExpedition(refreshed);
+      toast.success('Expedition activated');
+    } catch {
+      toast.error('Failed to activate expedition');
+      return;
+    }
+    // Continue with the original publish
+    if (pendingSubmitRef.current) {
+      await doSubmit(pendingSubmitRef.current, false);
+      pendingSubmitRef.current = null;
+    }
+  };
+
+  const handlePlanningKeep = async () => {
+    setShowPlanningModal(false);
+    // Continue with publish — backend will flag with loggedDuringPlanning
+    if (pendingSubmitRef.current) {
+      await doSubmit(pendingSubmitRef.current, false);
+      pendingSubmitRef.current = null;
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent, isDraft = false) => {
     e.preventDefault();
+
+    // If publishing to a planned expedition, show confirmation modal first
+    if (!isDraft && expedition?.status === 'planned') {
+      pendingSubmitRef.current = e;
+      setShowPlanningModal(true);
+      return;
+    }
+
+    await doSubmit(e, isDraft);
+  };
+
+  const doSubmit = async (e: React.FormEvent, isDraft = false) => {
     setSubmitError(null);
 
     // --- Form validation (toast notifications) ---
@@ -699,6 +762,25 @@ export function CreateEntryPage() {
             className="inline-block px-6 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
           >
             Back to Expeditions
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Block new entries on cancelled expeditions
+  if (!isStandalone && expedition?.status === 'cancelled') {
+    return (
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#994040] p-8 text-center">
+          <X className="w-12 h-12 text-[#994040] mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2 dark:text-white">Expedition Cancelled</h2>
+          <p className="text-[#616161] dark:text-[#b5bcc4] mb-4">This expedition has been cancelled. No new entries can be logged and existing entries cannot be edited.</p>
+          <Link
+            href={`/expedition/${expeditionId}`}
+            className="inline-block px-6 py-2 bg-[#994040] text-white font-bold hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
+          >
+            Back to Expedition
           </Link>
         </div>
       </div>
@@ -983,16 +1065,15 @@ export function CreateEntryPage() {
                       className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                       value={entryDate}
                       onChange={setEntryDate}
-                      min={expedition?.startDate ? new Date(expedition.startDate).toISOString().split('T')[0] : undefined}
-                      max={expedition?.endDate ? new Date(expedition.endDate).toISOString().split('T')[0] : undefined}
+                      min={dateMin}
+                      max={dateMax}
                     />
-                    {expedition?.startDate && expedition?.endDate && (
+                    {dateMin && (
                       <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
-                        {new Date(expedition.startDate).toISOString().split('T')[0]} — {new Date(expedition.endDate).toISOString().split('T')[0]}
+                        {dateMin} — {dateMax}
                       </p>
                     )}
                   </div>
-                  {/* Time input — commented out (dead code, no state wired up)
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                       TIME
@@ -1001,21 +1082,15 @@ export function CreateEntryPage() {
                     <input
                       type="time"
                       className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                      placeholder="--:--"
+                      value={entryTime}
+                      onChange={(e) => setEntryTime(e.target.value)}
                     />
                   </div>
-                  */}
                 </div>
-                {entryDate && new Date(entryDate) < new Date(new Date().toISOString().split('T')[0]) && (
+                {entryDate && entryDate < dateMax && (
                   <div className="mt-2 px-2 py-1 bg-[#4676ac]/10 border-l-2 border-[#4676ac] text-xs text-[#4676ac] inline-block">
                     <Clock size={12} className="inline mr-1" />
                     Retrospective entry
-                  </div>
-                )}
-                {markerOnCompletedSegment && entryDate && new Date(entryDate) > new Date(new Date().toISOString().split('T')[0]) && (
-                  <div className="mt-2 px-2 py-1 bg-[#ac6d46]/10 border-l-2 border-[#ac6d46] text-xs text-[#ac6d46] inline-block">
-                    <AlertTriangle size={12} className="inline mr-1" />
-                    Location is on the completed route — entry date should be today or earlier
                   </div>
                 )}
               </div>
@@ -2259,6 +2334,50 @@ Include:
                   className="flex-1 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
                 >
                   SAVE PHOTO INFO
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Planning Phase Confirmation Modal */}
+      {showPlanningModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] max-w-md w-full">
+            <div className="bg-[#4676ac] px-4 py-3 border-b-2 border-[#202020] dark:border-[#616161]">
+              <h3 className="text-white font-bold text-sm tracking-wider" style={{ fontFamily: 'Jost, system-ui, sans-serif' }}>
+                EXPEDITION IN PLANNING
+              </h3>
+            </div>
+            <div className="p-5 space-y-4">
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5]" style={{ fontFamily: 'Jost, system-ui, sans-serif', lineHeight: 1.6 }}>
+                This expedition is still in the planning phase. Would you like to activate the expedition, or keep it in planning? Entries logged during planning will be marked accordingly.
+              </p>
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={handlePlanningActivate}
+                  className="w-full py-2.5 bg-[#ac6d46] text-white font-bold text-sm hover:bg-[#8a5738] transition-all active:scale-[0.98]"
+                  style={{ fontFamily: 'Jost, system-ui, sans-serif', letterSpacing: '0.14em' }}
+                >
+                  ACTIVATE EXPEDITION
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePlanningKeep}
+                  className="w-full py-2.5 bg-[#4676ac] text-white font-bold text-sm hover:bg-[#3a6290] transition-all active:scale-[0.98]"
+                  style={{ fontFamily: 'Jost, system-ui, sans-serif', letterSpacing: '0.14em' }}
+                >
+                  KEEP IN PLANNING
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowPlanningModal(false); pendingSubmitRef.current = null; }}
+                  className="w-full py-2.5 text-[#616161] dark:text-[#b5bcc4] font-bold text-sm hover:text-[#202020] dark:hover:text-[#e5e5e5] transition-all"
+                  style={{ fontFamily: 'Jost, system-ui, sans-serif', letterSpacing: '0.14em' }}
+                >
+                  CANCEL
                 </button>
               </div>
             </div>

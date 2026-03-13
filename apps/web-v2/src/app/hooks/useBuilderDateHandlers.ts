@@ -29,6 +29,9 @@ export function useBuilderDateHandlers(
   };
 
   const handleEndDateChange = (date: string) => {
+    // Don't allow end date before start date
+    if (date && expeditionData.startDate && date < expeditionData.startDate) return;
+
     setExpeditionData({ ...expeditionData, endDate: date });
 
     if (date && expeditionData.startDate) {
@@ -43,8 +46,6 @@ export function useBuilderDateHandlers(
   };
 
   const handleStartDateChange = (date: string) => {
-    setExpeditionData({ ...expeditionData, startDate: date });
-
     if (expectedDuration && date) {
       const start = new Date(date);
       const durationNum = parseInt(expectedDuration);
@@ -52,8 +53,20 @@ export function useBuilderDateHandlers(
         const end = new Date(start);
         end.setDate(end.getDate() + durationNum);
         setExpeditionData({ ...expeditionData, startDate: date, endDate: end.toISOString().split('T')[0] });
+        return;
       }
-    } else if (expeditionData.endDate && date) {
+    }
+
+    // If new start date is after current end date, clear end date and duration
+    if (expeditionData.endDate && date && date > expeditionData.endDate) {
+      setExpeditionData({ ...expeditionData, startDate: date, endDate: '' });
+      setExpectedDuration('');
+      return;
+    }
+
+    setExpeditionData({ ...expeditionData, startDate: date });
+
+    if (expeditionData.endDate && date) {
       const start = new Date(date);
       const end = new Date(expeditionData.endDate);
       const diffTime = end.getTime() - start.getTime();

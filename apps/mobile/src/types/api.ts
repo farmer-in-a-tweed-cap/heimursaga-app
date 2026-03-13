@@ -32,7 +32,11 @@ export interface ExplorerProfile {
   coverPhoto?: string;
   bio?: string;
   locationFrom?: string;
+  locationFromLat?: number;
+  locationFromLon?: number;
   locationLives?: string;
+  locationLivesLat?: number;
+  locationLivesLon?: number;
   locationVisibility?: string;
   website?: string;
   twitter?: string;

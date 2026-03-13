@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -29,9 +29,20 @@ export default function DiscoverScreen() {
   const { data: usersData, refetch: refetchUsers } = useApi<{ data: ExplorerProfile[] }>('/users');
   const { data: postsData, refetch: refetchPosts } = useApi<{ data: Entry[] }>('/posts');
 
-  const trending = tripsData?.data ?? [];
-  const explorers = usersData?.data ?? [];
-  const entries = postsData?.data ?? [];
+  const allExpeditions = tripsData?.data ?? [];
+  const allExplorers = usersData?.data ?? [];
+  const allEntries = postsData?.data ?? [];
+
+  const q = query.toLowerCase().trim();
+  const trending = useMemo(() => q
+    ? allExpeditions.filter(e => e.title.toLowerCase().includes(q) || e.region?.toLowerCase().includes(q) || e.category?.toLowerCase().includes(q) || e.author?.username.toLowerCase().includes(q))
+    : allExpeditions, [allExpeditions, q]);
+  const explorers = useMemo(() => q
+    ? allExplorers.filter(e => e.username.toLowerCase().includes(q) || e.name?.toLowerCase().includes(q) || e.locationLives?.toLowerCase().includes(q) || e.locationFrom?.toLowerCase().includes(q))
+    : allExplorers, [allExplorers, q]);
+  const entries = useMemo(() => q
+    ? allEntries.filter(e => e.title?.toLowerCase().includes(q) || e.place?.toLowerCase().includes(q) || e.author?.username.toLowerCase().includes(q))
+    : allEntries, [allEntries, q]);
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {

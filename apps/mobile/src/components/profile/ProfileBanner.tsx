@@ -10,6 +10,8 @@ interface ProfileBannerProps {
   displayName?: string;
   bio?: string;
   location?: string;
+  locationFrom?: string;
+  locationLives?: string;
   memberSince?: string;
   isPro?: boolean;
   avatarUrl?: string;
@@ -24,6 +26,8 @@ export function ProfileBanner({
   displayName,
   bio,
   location,
+  locationFrom,
+  locationLives,
   memberSince,
   isPro,
   avatarUrl,
@@ -76,15 +80,15 @@ export function ProfileBanner({
                 <Text style={styles.displayName}>{displayName}</Text>
               )}
               <View style={styles.metaRow}>
-                {location && (
+                {(locationLives || location) ? (
                   <View style={styles.metaItem}>
                     <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={2.5}>
                       <Path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
                       <Circle cx={12} cy={10} r={3} />
                     </Svg>
-                    <Text style={styles.metaText}>{location}</Text>
+                    <Text style={styles.metaText}>{locationLives || location}</Text>
                   </View>
-                )}
+                ) : null}
                 {memberSince && (
                   <View style={styles.metaItem}>
                     <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={2.5}>

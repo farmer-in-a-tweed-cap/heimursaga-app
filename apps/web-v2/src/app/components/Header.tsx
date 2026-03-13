@@ -5,7 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
-import { Bell, Settings } from 'lucide-react';
+import { Bell, Settings, Sun, Moon } from 'lucide-react';
+import { useTheme } from '@/app/context/ThemeContext';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { NotificationsDropdown } from '@/app/components/NotificationsDropdown';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
@@ -14,6 +15,7 @@ import { notificationApi, messageApi } from '@/app/services/api';
 export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const { isPro } = useProFeatures();
+  const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
   const [overflowMenuOpen, setOverflowMenuOpen] = useState(false);
@@ -381,6 +383,17 @@ export function Header() {
                 >
                   <Settings className="w-4 h-4" />
                 </Link>
+
+                {/* Dev-only theme toggle */}
+                {process.env.NODE_ENV === 'development' && (
+                  <button
+                    onClick={toggleTheme}
+                    className="w-[31px] h-[31px] flex items-center justify-center bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] border border-[#202020]"
+                    title={`Theme: ${theme}`}
+                  >
+                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                  </button>
+                )}
               </div>
             )}
             

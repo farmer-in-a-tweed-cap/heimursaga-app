@@ -939,6 +939,7 @@ export interface ITripDetail {
   raised?: number;
   sponsorsCount?: number;
   notesAccessThreshold?: number;
+  notesVisibility?: 'public' | 'sponsor';
   viewerCumulativeSponsored?: number;
   recurringStats?: {
     activeSponsors: number;
@@ -1018,6 +1019,7 @@ export interface ITripCreatePayload {
   coverImage?: string;
   goal?: number;
   notesAccessThreshold?: number;
+  notesVisibility?: 'public' | 'sponsor';
   category?: string;
   region?: string;
   tags?: string[];
@@ -1041,6 +1043,7 @@ export interface ITripUpdatePayload {
   coverImage?: string;
   goal?: number;
   notesAccessThreshold?: number;
+  notesVisibility?: 'public' | 'sponsor';
   category?: string;
   region?: string;
   tags?: string[];

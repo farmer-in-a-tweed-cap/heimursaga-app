@@ -190,6 +190,7 @@ export function WaypointSelectorMap({
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const waypointMarkersRef = useRef<mapboxgl.Marker[]>([]);
+  const waypointMarkerMapRef = useRef<Map<string, { marker: mapboxgl.Marker; isConverted: boolean; originalEl: HTMLDivElement }>>(new Map());
   const newPinMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const originalRouteCoordsRef = useRef<number[][]>([]);
 
@@ -316,6 +317,7 @@ export function WaypointSelectorMap({
       // -----------------------------------------------------------------------
       // Add waypoint markers
       // -----------------------------------------------------------------------
+      waypointMarkerMapRef.current.clear();
       wps.forEach(wp => {
         if (wp.lat === 0 && wp.lng === 0) return;
 
@@ -336,6 +338,38 @@ export function WaypointSelectorMap({
             setExistingEntryNotice(null);
           }
 
+          // Reset all markers to their original appearance
+          waypointMarkerMapRef.current.forEach((info) => {
+            const markerEl = info.marker.getElement().firstChild as HTMLElement;
+            if (!markerEl) return;
+            if (info.isConverted) {
+              // Reset to brown circle
+              markerEl.style.cssText =
+                'width:16px;height:16px;border-radius:50%;background:#ac6d46;border:2px solid white;' +
+                'box-shadow:0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
+            } else {
+              // Reset to blue diamond (the wrapper's child)
+              const diamond = markerEl as HTMLElement;
+              diamond.style.cssText =
+                'width:14px;height:14px;transform:rotate(45deg);background:#4676ac;border:2px solid white;' +
+                'box-shadow:0 2px 4px rgba(0,0,0,0.3);';
+            }
+          });
+
+          // Highlight the clicked marker as a copper circle
+          if (!isConverted) {
+            // Transform diamond into copper circle
+            const diamond = el.firstChild as HTMLElement;
+            if (diamond) {
+              diamond.style.cssText =
+                'width:18px;height:18px;transform:none;border-radius:50%;background:#ac6d46;border:2px solid white;' +
+                'box-shadow:0 0 0 3px rgba(172,109,70,0.4),0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
+            }
+          } else {
+            // Add highlight ring to already-copper circle
+            el.style.boxShadow = '0 0 0 3px rgba(172,109,70,0.4),0 2px 4px rgba(0,0,0,0.3)';
+          }
+
           // Stage the selection — user must confirm before the modal closes
           setPendingExisting({
             waypointId: wp.id,
@@ -350,6 +384,7 @@ export function WaypointSelectorMap({
           .addTo(map);
 
         waypointMarkersRef.current.push(marker);
+        waypointMarkerMapRef.current.set(wp.id, { marker, isConverted, originalEl: el });
       });
 
       // -----------------------------------------------------------------------
@@ -378,6 +413,20 @@ export function WaypointSelectorMap({
       }
 
       // Dismiss any existing waypoint selection when starting a new placement
+      // Reset marker styles for previously selected waypoint
+      waypointMarkerMapRef.current.forEach((info) => {
+        const el = info.originalEl;
+        if (info.isConverted) {
+          el.style.boxShadow = '';
+        } else {
+          const diamond = el.firstChild as HTMLElement;
+          if (diamond) {
+            diamond.style.cssText =
+              'width:14px;height:14px;transform:rotate(45deg);background:#4676ac;border:2px solid white;' +
+              'box-shadow:0 2px 4px rgba(0,0,0,0.3);';
+          }
+        }
+      });
       setPendingExisting(null);
       setExistingEntryNotice(null);
 
@@ -495,8 +544,25 @@ export function WaypointSelectorMap({
     onSelectExisting(pendingExisting.waypointId, pendingExisting.coords);
   };
 
+  const resetMarkerStyles = useCallback(() => {
+    waypointMarkerMapRef.current.forEach((info) => {
+      const el = info.originalEl;
+      if (info.isConverted) {
+        el.style.boxShadow = '';
+      } else {
+        const diamond = el.firstChild as HTMLElement;
+        if (diamond) {
+          diamond.style.cssText =
+            'width:14px;height:14px;transform:rotate(45deg);background:#4676ac;border:2px solid white;' +
+            'box-shadow:0 2px 4px rgba(0,0,0,0.3);';
+        }
+      }
+    });
+  }, []);
+
   const handleCancelSelection = () => {
     clearNewPin();
+    resetMarkerStyles();
     setPendingExisting(null);
     setExistingEntryNotice(null);
   };

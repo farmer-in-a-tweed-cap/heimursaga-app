@@ -11,7 +11,7 @@ import { DatePicker } from '@/app/components/DatePicker';
 import { X, Image as ImageIcon, Clock, Lock, Camera, Loader2, AlertCircle, AlertTriangle, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate, formatDateTime } from '@/app/utils/dateFormat';
-import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
+
 import { entryApi, expeditionApi, uploadApi, Entry, type Expedition } from '@/app/services/api';
 import { useContentValidation } from '@/app/hooks/useContentValidation';
 import { checkImageExif, type ExifResult } from '@/app/utils/exifCheck';
@@ -19,7 +19,7 @@ import { checkImageExif, type ExifResult } from '@/app/utils/exifCheck';
 export function EditEntryPage() {
   const { user, isAuthenticated } = useAuth();
   const { isPro } = useProFeatures();
-  const { distanceLabel, speedLabel } = useDistanceUnit();
+
   const { entryId } = useParams<{ entryId: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -57,21 +57,6 @@ export function EditEntryPage() {
   const [locationName, setLocationName] = useState('');
   const [entryDate, setEntryDate] = useState('');
 
-  // Standard metadata state
-  const [stdWeather, setStdWeather] = useState('');
-  const [stdDistanceTraveled, setStdDistanceTraveled] = useState('');
-  const [stdMood, setStdMood] = useState('');
-  const [stdExpenses, setStdExpenses] = useState('');
-
-  // Data-log metadata state
-  const [dlTemperature, setDlTemperature] = useState('');
-  const [dlHumidity, setDlHumidity] = useState('');
-  const [dlWindSpeed, setDlWindSpeed] = useState('');
-  const [dlPressure, setDlPressure] = useState('');
-  const [dlDistanceCovered, setDlDistanceCovered] = useState('');
-  const [dlElevationGain, setDlElevationGain] = useState('');
-  const [dlDuration, setDlDuration] = useState('');
-  const [dlAvgSpeed, setDlAvgSpeed] = useState('');
   const [entryTime, setEntryTime] = useState('');
   const [commentsEnabled, setCommentsEnabled] = useState(true);
 
@@ -89,6 +74,24 @@ export function EditEntryPage() {
   // Full expedition data for LocationMap context
   const [fullExpedition, setFullExpedition] = useState<Expedition | null>(null);
   const [markerOnCompletedSegment, setMarkerOnCompletedSegment] = useState(false);
+
+  // Date range for the date picker
+  // Past expeditions (both start & end in the past): startDate → endDate
+  // Otherwise: publishDate → min(today, endDate)
+  const { dateMin, dateMax } = useMemo(() => {
+    const d = new Date();
+    const todayLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const start = fullExpedition?.startDate ? fullExpedition.startDate.slice(0, 10) : undefined;
+    const end = fullExpedition?.endDate ? fullExpedition.endDate.slice(0, 10) : undefined;
+    // Both dates exist and are in the past — use the expedition's actual timeframe
+    if (start && end && start <= todayLocal && end <= todayLocal) {
+      return { dateMin: start, dateMax: end };
+    }
+    const min = fullExpedition?.createdAt ? fullExpedition.createdAt.slice(0, 10) : undefined;
+    let max = todayLocal;
+    if (end && end < todayLocal) max = end;
+    return { dateMin: min, dateMax: max };
+  }, [fullExpedition?.createdAt, fullExpedition?.startDate, fullExpedition?.endDate]);
 
   // Allowed image types for upload
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -195,11 +198,13 @@ export function EditEntryPage() {
           setCoordinates({ lat: entry.lat, lng: entry.lon });
         }
 
-        // Parse date and time from entry
+        // Parse date and time from entry (stay in UTC to avoid timezone drift)
         if (entry.date) {
-          const dateObj = new Date(entry.date);
-          setEntryDate(dateObj.toISOString().split('T')[0]);
-          setEntryTime(dateObj.toTimeString().slice(0, 5));
+          const iso = typeof entry.date === 'string' ? entry.date : new Date(entry.date).toISOString();
+          setEntryDate(iso.slice(0, 10));
+          const time = iso.slice(11, 16);
+          // Only populate time if it was explicitly set (not midnight default)
+          if (time !== '00:00') setEntryTime(time);
         }
 
         // Load existing media
@@ -237,27 +242,6 @@ export function EditEntryPage() {
             if (coverMedia) {
               setCoverPhotoId(coverMedia.id || 'media-0');
             }
-          }
-        }
-
-        // Load metadata if present
-        if (entry.metadata) {
-          const meta = entry.metadata as Record<string, unknown>;
-          const type = entry.entryType || 'standard';
-          if (type === 'standard') {
-            setStdWeather(String(meta.weather || ''));
-            setStdDistanceTraveled(meta.distanceTraveled != null ? String(meta.distanceTraveled) : '');
-            setStdMood(String(meta.mood || ''));
-            setStdExpenses(meta.expenses != null ? String(meta.expenses) : '');
-          } else if (type === 'data-log') {
-            setDlTemperature(meta.temperature != null ? String(meta.temperature) : '');
-            setDlHumidity(meta.humidity != null ? String(meta.humidity) : '');
-            setDlWindSpeed(meta.windSpeed != null ? String(meta.windSpeed) : '');
-            setDlPressure(meta.pressure != null ? String(meta.pressure) : '');
-            setDlDistanceCovered(meta.distanceCovered != null ? String(meta.distanceCovered) : '');
-            setDlElevationGain(meta.elevationGain != null ? String(meta.elevationGain) : '');
-            setDlDuration(meta.duration != null ? String(meta.duration) : '');
-            setDlAvgSpeed(meta.avgSpeed != null ? String(meta.avgSpeed) : '');
           }
         }
 
@@ -327,31 +311,6 @@ export function EditEntryPage() {
     );
   }, [fullExpedition?.waypoints, apiEntry?.id]);
 
-  // Build metadata for current entry type
-  const buildMetadata = useCallback(() => {
-    if (entryType === 'standard') {
-      const meta: Record<string, unknown> = {};
-      if (stdWeather) meta.weather = stdWeather;
-      if (stdDistanceTraveled) meta.distanceTraveled = parseFloat(stdDistanceTraveled);
-      if (stdMood && stdMood !== 'Not specified') meta.mood = stdMood;
-      if (stdExpenses) meta.expenses = parseFloat(stdExpenses);
-      return Object.keys(meta).length > 0 ? meta : undefined;
-    }
-    if (entryType === 'data-log') {
-      const meta: Record<string, unknown> = {};
-      if (dlTemperature) meta.temperature = parseFloat(dlTemperature);
-      if (dlHumidity) meta.humidity = parseFloat(dlHumidity);
-      if (dlWindSpeed) meta.windSpeed = parseFloat(dlWindSpeed);
-      if (dlPressure) meta.pressure = parseFloat(dlPressure);
-      if (dlDistanceCovered) meta.distanceCovered = parseFloat(dlDistanceCovered);
-      if (dlElevationGain) meta.elevationGain = parseFloat(dlElevationGain);
-      if (dlDuration) meta.duration = parseFloat(dlDuration);
-      if (dlAvgSpeed) meta.avgSpeed = parseFloat(dlAvgSpeed);
-      return Object.keys(meta).length > 0 ? meta : undefined;
-    }
-    return undefined;
-  }, [entryType, stdWeather, stdDistanceTraveled, stdMood, stdExpenses, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
-
   // Build payload for saving
   const buildSavePayload = useCallback(() => {
     return {
@@ -360,7 +319,7 @@ export function EditEntryPage() {
       place: locationName,
       lat: coordinates?.lat,
       lon: coordinates?.lng,
-      date: entryDate ? new Date(entryDate + (entryTime ? `T${entryTime}:00` : 'T00:00:00')).toISOString() : undefined,
+      date: entryDate ? `${entryDate}T${entryTime || '00:00'}:00.000Z` : undefined,
       entryType,
       uploads: uploadedMedia.map(m => m.id),
       uploadCaptions: Object.fromEntries(
@@ -374,19 +333,17 @@ export function EditEntryPage() {
       ),
       coverUploadId: coverPhotoId || undefined,
       commentsEnabled,
-      metadata: buildMetadata(),
     };
-  }, [entryTitle, standardContent, photoEssayContent, dataLogContent, locationName, coordinates, entryDate, entryTime, entryType, uploadedMedia, mediaMetadata, coverPhotoId, commentsEnabled, buildMetadata]);
+  }, [entryTitle, standardContent, photoEssayContent, dataLogContent, locationName, coordinates, entryDate, entryTime, entryType, uploadedMedia, mediaMetadata, coverPhotoId, commentsEnabled]);
 
   // Auto-save function
   const performAutoSave = useCallback(async () => {
     if (!entryId || !apiEntry) return;
 
     const content = standardContent || photoEssayContent || dataLogContent;
-    const metadataStr = JSON.stringify(buildMetadata() || '');
     const mediaIds = uploadedMedia.map(m => m.id).join(',');
     const captionsStr = JSON.stringify(mediaMetadata);
-    const contentSignature = `${entryTitle}|${content}|${locationName}|${coordinates?.lat}|${coordinates?.lng}|${metadataStr}|${entryType}|${mediaIds}|${captionsStr}|${coverPhotoId}`;
+    const contentSignature = `${entryTitle}|${content}|${locationName}|${coordinates?.lat}|${coordinates?.lng}|${entryType}|${mediaIds}|${captionsStr}|${coverPhotoId}`;
 
     // Skip if no changes
     if (contentSignature === lastSavedContentRef.current) return;
@@ -405,7 +362,7 @@ export function EditEntryPage() {
       setIsAutoSaving(false);
       isAutoSavingRef.current = false;
     }
-  }, [entryId, apiEntry, entryTitle, standardContent, photoEssayContent, dataLogContent, locationName, coordinates, buildSavePayload, buildMetadata, uploadedMedia, mediaMetadata, coverPhotoId, entryType]);
+  }, [entryId, apiEntry, entryTitle, standardContent, photoEssayContent, dataLogContent, locationName, coordinates, buildSavePayload, uploadedMedia, mediaMetadata, coverPhotoId, entryType]);
 
   // Auto-save interval (every 30 seconds)
   useEffect(() => {
@@ -574,6 +531,26 @@ export function EditEntryPage() {
     );
   }
 
+  // Block editing entries on cancelled expeditions
+  if (fullExpedition?.status === 'cancelled') {
+    const expId = fullExpedition.id || fullExpedition.publicId;
+    return (
+      <div className="max-w-[1600px] mx-auto px-6 py-12">
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#994040] p-8 text-center">
+          <X className="w-12 h-12 text-[#994040] mx-auto mb-4" />
+          <h2 className="text-xl font-bold mb-2 dark:text-white">Expedition Cancelled</h2>
+          <p className="text-[#616161] dark:text-[#b5bcc4] mb-4">This expedition has been cancelled. No new entries can be logged and existing entries cannot be edited.</p>
+          <Link
+            href={expId ? `/expedition/${expId}` : '/'}
+            className="inline-block px-6 py-2 bg-[#994040] text-white font-bold hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
+          >
+            Back to Expedition
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-[1600px] mx-auto px-6 py-12">
       {/* Page Header */}
@@ -653,26 +630,30 @@ export function EditEntryPage() {
               
               {/* Date & Time - ALL TYPES */}
               <div>
-                <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                  ENTRY DATE & TIME
-                  <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
-                </label>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
+                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                      ENTRY DATE
+                      <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+                    </label>
                     <DatePicker
                       className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                       value={entryDate}
                       onChange={setEntryDate}
-                      min={fullExpedition?.startDate ? new Date(fullExpedition.startDate).toISOString().split('T')[0] : undefined}
-                      max={fullExpedition?.endDate ? new Date(fullExpedition.endDate).toISOString().split('T')[0] : undefined}
+                      min={dateMin}
+                      max={dateMax}
                     />
-                    {fullExpedition?.startDate && fullExpedition?.endDate && (
+                    {dateMin && (
                       <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
-                        {new Date(fullExpedition.startDate).toISOString().split('T')[0]} — {new Date(fullExpedition.endDate).toISOString().split('T')[0]}
+                        {dateMin} — {dateMax}
                       </p>
                     )}
                   </div>
                   <div>
+                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                      TIME
+                      <span className="text-[#616161] dark:text-[#b5bcc4] ml-1 font-normal">(optional)</span>
+                    </label>
                     <input
                       type="time"
                       className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
@@ -681,16 +662,10 @@ export function EditEntryPage() {
                     />
                   </div>
                 </div>
-                {entryDate && new Date(entryDate) < new Date(new Date().toISOString().split('T')[0]) && (
+                {entryDate && entryDate < dateMax && (
                   <div className="mt-2 px-2 py-1 bg-[#4676ac]/10 border-l-2 border-[#4676ac] text-xs text-[#4676ac] inline-block">
                     <Clock size={12} className="inline mr-1" />
                     Retrospective entry
-                  </div>
-                )}
-                {markerOnCompletedSegment && entryDate && new Date(entryDate) > new Date(new Date().toISOString().split('T')[0]) && (
-                  <div className="mt-2 px-2 py-1 bg-[#ac6d46]/10 border-l-2 border-[#ac6d46] text-xs text-[#ac6d46] inline-block">
-                    <AlertTriangle size={12} className="inline mr-1" />
-                    Location is on the completed route — entry date should be today or earlier
                   </div>
                 )}
               </div>
@@ -1126,162 +1101,6 @@ Remember: Your sponsors and followers are reading this to understand your journe
                   </div>
                 )}
               </div>
-
-              {/* Standard Metadata */}
-              {entryType === 'standard' && (
-                <div className="border-2 border-[#4676ac] p-4 dark:bg-[#2a2a2a]">
-                  <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">ADDITIONAL METADATA (OPTIONAL):</div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Weather</label>
-                      <input
-                        type="text"
-                        className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs dark:bg-[#202020] dark:text-[#e5e5e5]"
-                        placeholder="e.g., Sunny, 28°C"
-                        value={stdWeather}
-                        onChange={(e) => setStdWeather(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Distance Traveled ({distanceLabel})</label>
-                      <input
-                        type="number"
-                        className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
-                        placeholder="e.g., 87"
-                        value={stdDistanceTraveled}
-                        onChange={(e) => setStdDistanceTraveled(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Mood/Energy Level</label>
-                      <select
-                        className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs dark:bg-[#202020] dark:text-[#e5e5e5]"
-                        value={stdMood}
-                        onChange={(e) => setStdMood(e.target.value)}
-                      >
-                        <option value="">Not specified</option>
-                        <option value="High Energy">High Energy</option>
-                        <option value="Good">Good</option>
-                        <option value="Moderate">Moderate</option>
-                        <option value="Low">Low</option>
-                        <option value="Exhausted">Exhausted</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Expenses (USD)</label>
-                      <input
-                        type="number"
-                        className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
-                        placeholder="e.g., 45.50"
-                        value={stdExpenses}
-                        onChange={(e) => setStdExpenses(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Data-Log Metadata */}
-              {entryType === 'data-log' && (
-                <>
-                  <div className="border-2 border-[#4676ac] p-4 dark:bg-[#2a2a2a]">
-                    <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">ENVIRONMENTAL DATA:</div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Temperature (°C)</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
-                          placeholder="e.g., 28.5"
-                          value={dlTemperature}
-                          onChange={(e) => setDlTemperature(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Humidity (%)</label>
-                        <input
-                          type="number"
-                          className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
-                          placeholder="e.g., 65"
-                          value={dlHumidity}
-                          onChange={(e) => setDlHumidity(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Wind Speed ({speedLabel})</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
-                          placeholder="e.g., 12.5"
-                          value={dlWindSpeed}
-                          onChange={(e) => setDlWindSpeed(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Pressure (hPa)</label>
-                        <input
-                          type="number"
-                          className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
-                          placeholder="e.g., 1013"
-                          value={dlPressure}
-                          onChange={(e) => setDlPressure(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-2 border-[#ac6d46] p-4 dark:bg-[#2a2a2a]">
-                    <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">ACTIVITY METRICS:</div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Distance Covered ({distanceLabel})</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
-                          placeholder="e.g., 87.3"
-                          value={dlDistanceCovered}
-                          onChange={(e) => setDlDistanceCovered(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Elevation Gain (m)</label>
-                        <input
-                          type="number"
-                          className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
-                          placeholder="e.g., 450"
-                          value={dlElevationGain}
-                          onChange={(e) => setDlElevationGain(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Duration (hours)</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
-                          placeholder="e.g., 6.5"
-                          value={dlDuration}
-                          onChange={(e) => setDlDuration(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Average Speed ({speedLabel})</label>
-                        <input
-                          type="number"
-                          step="0.1"
-                          className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]"
-                          placeholder="e.g., 13.4"
-                          value={dlAvgSpeed}
-                          onChange={(e) => setDlAvgSpeed(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
 
               {/* Entry Notes Settings */}
               <div className="border-2 border-[#202020] dark:border-[#616161] p-4 dark:bg-[#2a2a2a]">

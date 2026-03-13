@@ -33,10 +33,10 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
     ? `${fmtDate(expedition.startDate)} \u2192 ${expedition.endDate ? fmtDate(expedition.endDate) : 'ONGOING'}`
     : '';
 
-  const rightLabel =
-    expedition.visibility && expedition.visibility !== 'public'
+  const rightLabel = expedition.category?.toUpperCase()
+    || (expedition.visibility && expedition.visibility !== 'public'
       ? expedition.visibility.toUpperCase()
-      : expedition.category?.toUpperCase();
+      : undefined);
 
   return (
     <Pressable onPress={onPress} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
@@ -61,9 +61,9 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
             {dateRange !== '' && (
               <Text style={styles.heroDate}>{dateRange}</Text>
             )}
-            {(expedition.region || expedition.category) && (
+            {expedition.region && (
               <Text style={styles.heroRegion}>
-                {[expedition.region, expedition.category].filter(Boolean).join(' \u00B7 ').toUpperCase()}
+                {expedition.region.toUpperCase()}
               </Text>
             )}
           </View>

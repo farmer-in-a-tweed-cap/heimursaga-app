@@ -249,6 +249,7 @@ export class ExpeditionService {
                   lon: true,
                   date: true,
                   description: true,
+                  _count: { select: { entries: true } },
                 },
               },
             },
@@ -325,6 +326,9 @@ export class ExpeditionService {
                 ? datedWaypoints[datedWaypoints.length - 1]?.date
                 : undefined);
 
+            const category = (expedition as any).category;
+            const region = (expedition as any).region;
+
             return {
               id: public_id,
               title,
@@ -336,6 +340,8 @@ export class ExpeditionService {
                 | 'off-grid'
                 | 'private',
               status,
+              category,
+              region,
               startDate,
               endDate,
               coverImage: getStaticMediaUrl(cover_image),
@@ -354,7 +360,9 @@ export class ExpeditionService {
                   }
                 : undefined,
               tags: tags ? JSON.parse(tags) : [],
-              waypointsCount: waypoints.length,
+              waypointsCount: expedition.waypoints.filter(
+                (w) => (w.waypoint as any)._count?.entries === 0,
+              ).length,
               waypoints: [],
               bookmarked: explorerId
                 ? (expeditionBookmarks?.length ?? 0) > 0
@@ -442,6 +450,7 @@ export class ExpeditionService {
                   lon: true,
                   date: true,
                   description: true,
+                  _count: { select: { entries: true } },
                 },
               },
             },
@@ -489,116 +498,113 @@ export class ExpeditionService {
       const response: IExpeditionGetAllResponse = {
         results,
         data: data.map((row) => {
-            const {
-              public_id,
-              title,
-              description,
-              cover_image,
-              status,
-              visibility,
-              tags,
-              is_round_trip,
-              goal,
-              raised,
-              entries_count,
-              author_id,
-              start_date,
-              end_date,
-              current_location_type,
-              current_location_id,
-              current_location_visibility,
-              author,
-              bookmarks: expeditionBookmarks,
-            } = row;
-            // Access category/region directly to avoid destructuring issues
-            const category = (row as any).category;
-            const region = (row as any).region;
-            // Waypoints already ordered by sequence from query
-            const waypoints = row.waypoints.map(
-              ({ sequence, waypoint }) => ({
-                ...waypoint,
-                sequence,
-              }),
-            ) as IWaypointDetail[];
-            // For date fallback, find earliest/latest dated waypoints
-            const datedWaypoints = waypoints
-              .filter((w) => w.date)
-              .sort(
-                (a, b) =>
-                  new Date(a.date!).getTime() - new Date(b.date!).getTime(),
-              );
+          const {
+            public_id,
+            title,
+            description,
+            cover_image,
+            status,
+            visibility,
+            tags,
+            is_round_trip,
+            goal,
+            raised,
+            entries_count,
+            author_id,
+            start_date,
+            end_date,
+            current_location_type,
+            current_location_id,
+            current_location_visibility,
+            author,
+            bookmarks: expeditionBookmarks,
+          } = row;
+          // Access category/region directly to avoid destructuring issues
+          const category = (row as any).category;
+          const region = (row as any).region;
+          // Waypoints already ordered by sequence from query
+          const waypoints = row.waypoints.map(({ sequence, waypoint }) => ({
+            ...waypoint,
+            sequence,
+          })) as IWaypointDetail[];
+          // For date fallback, find earliest/latest dated waypoints
+          const datedWaypoints = waypoints
+            .filter((w) => w.date)
+            .sort(
+              (a, b) =>
+                new Date(a.date!).getTime() - new Date(b.date!).getTime(),
+            );
 
-            // Use expedition dates if available, otherwise fall back to earliest/latest waypoint dates
-            const startDate =
-              start_date ||
-              (datedWaypoints.length >= 1
-                ? datedWaypoints[0]?.date
-                : undefined);
-            const endDate =
-              end_date ||
-              (datedWaypoints.length >= 1
-                ? datedWaypoints[datedWaypoints.length - 1]?.date
-                : undefined);
+          // Use expedition dates if available, otherwise fall back to earliest/latest waypoint dates
+          const startDate =
+            start_date ||
+            (datedWaypoints.length >= 1 ? datedWaypoints[0]?.date : undefined);
+          const endDate =
+            end_date ||
+            (datedWaypoints.length >= 1
+              ? datedWaypoints[datedWaypoints.length - 1]?.date
+              : undefined);
 
-            // Resolve current location if public
-            const locKey =
-              current_location_type && current_location_id
-                ? `${current_location_type}:${current_location_id}`
-                : null;
-            const resolvedLoc = locKey
-              ? resolvedLocations.get(locKey)
-              : undefined;
-            const isPublicLoc =
-              (current_location_visibility || 'public') === 'public';
+          // Resolve current location if public
+          const locKey =
+            current_location_type && current_location_id
+              ? `${current_location_type}:${current_location_id}`
+              : null;
+          const resolvedLoc = locKey
+            ? resolvedLocations.get(locKey)
+            : undefined;
+          const isPublicLoc =
+            (current_location_visibility || 'public') === 'public';
 
-            return {
-              id: public_id,
-              title,
-              description,
-              coverImage: getStaticMediaUrl(cover_image),
-              status,
-              visibility: (visibility || 'public') as
-                | 'public'
-                | 'off-grid'
-                | 'private',
-              category,
-              region,
-              tags: tags ? JSON.parse(tags) : [],
-              isRoundTrip: is_round_trip ?? false,
-              startDate,
-              endDate,
-              goal: integerToDecimal(goal ?? 0),
-              raised: raised ?? 0,
-              sponsorsCount: sponsorCounts.get(author_id) ?? 0,
-              entriesCount: entries_count,
-              waypointsCount: waypoints.length,
-              waypoints: [],
-              currentLocation:
-                resolvedLoc && isPublicLoc
-                  ? {
-                      lat: resolvedLoc.lat,
-                      lon: resolvedLoc.lon,
-                      name: resolvedLoc.name,
-                      source: current_location_type,
-                    }
-                  : undefined,
-              currentLocationVisibility: (current_location_visibility ||
-                'public') as 'public' | 'sponsors' | 'private',
-              author: author
+          return {
+            id: public_id,
+            title,
+            description,
+            coverImage: getStaticMediaUrl(cover_image),
+            status,
+            visibility: (visibility || 'public') as
+              | 'public'
+              | 'off-grid'
+              | 'private',
+            category,
+            region,
+            tags: tags ? JSON.parse(tags) : [],
+            isRoundTrip: is_round_trip ?? false,
+            startDate,
+            endDate,
+            goal: integerToDecimal(goal ?? 0),
+            raised: raised ?? 0,
+            sponsorsCount: sponsorCounts.get(author_id) ?? 0,
+            entriesCount: entries_count,
+            waypointsCount: row.waypoints.filter(
+              (w) => (w.waypoint as any)._count?.entries === 0,
+            ).length,
+            waypoints: [],
+            currentLocation:
+              resolvedLoc && isPublicLoc
                 ? {
-                    username: author.username,
-                    picture: getStaticMediaUrl(author.profile.picture),
-                    name: author.profile.name,
-                    stripeAccountConnected:
-                      author?.is_stripe_account_connected === true,
+                    lat: resolvedLoc.lat,
+                    lon: resolvedLoc.lon,
+                    name: resolvedLoc.name,
+                    source: current_location_type,
                   }
                 : undefined,
-              bookmarked: explorerId
-                ? (expeditionBookmarks?.length ?? 0) > 0
-                : false,
-            };
-          },
-        ),
+            currentLocationVisibility: (current_location_visibility ||
+              'public') as 'public' | 'sponsors' | 'private',
+            author: author
+              ? {
+                  username: author.username,
+                  picture: getStaticMediaUrl(author.profile.picture),
+                  name: author.profile.name,
+                  stripeAccountConnected:
+                    author?.is_stripe_account_connected === true,
+                }
+              : undefined,
+            bookmarked: explorerId
+              ? (expeditionBookmarks?.length ?? 0) > 0
+              : false,
+          };
+        }),
       };
 
       return response;
@@ -668,6 +674,7 @@ export class ExpeditionService {
             goal: true,
             raised: true,
             notes_access_threshold: true,
+            notes_visibility: true,
             entries_count: true,
             cancelled_at: true,
             cancellation_reason: true,
@@ -703,6 +710,8 @@ export class ExpeditionService {
                 lat: true,
                 lon: true,
                 is_milestone: true,
+                metadata: true,
+                created_at: true,
                 author: {
                   select: {
                     username: true,
@@ -784,6 +793,7 @@ export class ExpeditionService {
         goal,
         raised,
         notes_access_threshold,
+        notes_visibility,
         entries_count,
         cancelled_at,
         cancellation_reason,
@@ -983,6 +993,7 @@ export class ExpeditionService {
         raised: oneTimeTotal,
         sponsorsCount: expeditionSponsorsCount,
         notesAccessThreshold: integerToDecimal(notes_access_threshold ?? 0),
+        notesVisibility: (notes_visibility as 'public' | 'sponsor') || 'public',
         viewerCumulativeSponsored: integerToDecimal(viewerCumulativeSponsored),
         entriesCount: entries.length,
         recurringStats: {
@@ -1039,6 +1050,8 @@ export class ExpeditionService {
                 content: fullContent,
                 visibility: effectiveVisibility,
                 isMilestone: entry.is_milestone || false,
+                metadata: entry.metadata || null,
+                createdAt: entry.created_at,
                 date: entry.date,
                 place: entry.place,
                 lat: entry.lat,
@@ -1220,6 +1233,7 @@ export class ExpeditionService {
           notes_access_threshold: payload.notesAccessThreshold
             ? Math.round(payload.notesAccessThreshold * 100)
             : 0,
+          notes_visibility: payload.notesVisibility || 'public',
           author_id: explorerId,
         },
         select: {
@@ -1385,6 +1399,10 @@ export class ExpeditionService {
           notesAccessThreshold * 100,
         );
       }
+      const notesVisibility = (payload as any).notesVisibility;
+      if (notesVisibility !== undefined) {
+        updateData.notes_visibility = notesVisibility;
+      }
       if (category !== undefined) {
         updateData.category = category;
       }
@@ -1509,6 +1527,80 @@ export class ExpeditionService {
       await this.prisma.expedition.update({
         where: { id: expedition.id },
         data: { deleted_at: dateformat().toDate() },
+      });
+
+      await this.checkAndUpdateRestingStatus(explorerId);
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async completeExpedition({
+    session,
+    query,
+    payload,
+  }: ISessionQueryWithPayload<
+    { id: string },
+    { actualEndDate: string }
+  >): Promise<void> {
+    try {
+      const { id } = query;
+      const { explorerId } = session;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+      if (!id) throw new ServiceNotFoundException('expedition not found');
+
+      // Get expedition and verify ownership
+      const expedition = await this.prisma.expedition.findFirstOrThrow({
+        where: { public_id: id, author_id: explorerId, deleted_at: null },
+        select: {
+          id: true,
+          public_id: true,
+          title: true,
+          status: true,
+          author_id: true,
+          start_date: true,
+        },
+      });
+
+      // Can only complete active or planned expeditions
+      const allowedStatuses = ['planned', 'active'];
+      if (!allowedStatuses.includes(expedition.status || '')) {
+        throw new ServiceBadRequestException(
+          'Only planned or active expeditions can be completed',
+        );
+      }
+
+      // Validate actual end date
+      const endDate = new Date(payload.actualEndDate);
+      if (isNaN(endDate.getTime())) {
+        throw new ServiceBadRequestException('Invalid end date');
+      }
+      if (expedition.start_date && endDate < expedition.start_date) {
+        throw new ServiceBadRequestException(
+          'End date cannot be before start date',
+        );
+      }
+
+      // Update expedition
+      await this.prisma.expedition.update({
+        where: { id: expedition.id },
+        data: {
+          status: 'completed',
+          end_date: endDate,
+        },
+      });
+
+      // Emit completion event for sponsor notifications
+      this.eventService.trigger({
+        event: EVENTS.EXPEDITION_COMPLETED,
+        data: {
+          expeditionPublicId: expedition.public_id,
+          expeditionTitle: expedition.title,
+          explorerId: expedition.author_id,
+        },
       });
 
       await this.checkAndUpdateRestingStatus(explorerId);

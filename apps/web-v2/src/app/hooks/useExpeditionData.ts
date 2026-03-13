@@ -156,11 +156,13 @@ export function useExpeditionData(
       followers: 0,
       totalViews: 0,
       totalEntries: api.entriesCount || 0,
-      totalWaypoints: api.waypointsCount || api.waypoints?.length || 0,
+      totalWaypoints: api.waypoints
+        ? api.waypoints.filter((wp: any) => !(wp.entryIds?.length > 0 || wp.entryId)).length
+        : api.waypointsCount || 0,
       tags: api.tags || [],
       privacy: api.visibility || (api.public !== false ? 'public' : 'private'),
       commentsEnabled: true,
-      imageUrl: api.coverImage || 'https://images.unsplash.com/photo-1503806837798-ea0ce2e6402e?w=800',
+      imageUrl: api.coverImage || '',
     };
   }, [apiExpedition, expeditionId]);
 
@@ -269,6 +271,8 @@ export function useExpeditionData(
         views: 0,
         visibility: (entry.visibility || 'public') as 'public' | 'off-grid' | 'private',
         isMilestone: entry.isMilestone || false,
+        loggedDuringPlanning: (entry as any).metadata?.loggedDuringPlanning === true,
+        createdAt: (entry as any).createdAt || '',
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [apiExpedition?.entries]);

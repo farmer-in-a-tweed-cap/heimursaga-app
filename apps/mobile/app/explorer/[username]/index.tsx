@@ -150,7 +150,8 @@ export default function ExplorerProfileScreen() {
           username={profile.username}
           displayName={profile.name}
           bio={profile.bio}
-          location={profile.locationFrom || profile.locationLives}
+          locationFrom={profile.locationFrom}
+          locationLives={profile.locationLives}
           memberSince={memberSince}
           isPro={profile.creator}
           avatarUrl={profile.picture}

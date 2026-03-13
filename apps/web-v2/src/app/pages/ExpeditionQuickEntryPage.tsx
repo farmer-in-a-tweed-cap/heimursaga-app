@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
@@ -8,7 +8,7 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { Upload, ArrowLeft, Lock, Loader2 } from 'lucide-react';
 import { DatePicker } from '@/app/components/DatePicker';
-import { expeditionApi } from '@/app/services/api';
+import { expeditionApi, uploadApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 import { GEO_REGION_GROUPS } from '@/app/utils/geoRegions';
 
@@ -25,13 +25,16 @@ export function ExpeditionQuickEntryPage() {
   const [tags, setTags] = useState('');
   const [sponsorshipGoal, setSponsorshipGoal] = useState('');
   const [sponsorshipsEnabled, setSponsorshipsEnabled] = useState(false);
+  const [notesVisibility, setNotesVisibility] = useState<'public' | 'sponsor'>('public');
+  const [notesAccessThreshold, setNotesAccessThreshold] = useState('');
   const [expeditionVisibility, setExpeditionVisibility] = useState<'public' | 'off-grid' | 'private'>('public');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [expectedDuration, setExpectedDuration] = useState('');
   const [currentLocation, setCurrentLocation] = useState('');
-  const [, setCoverPhotoFile] = useState<File | null>(null);
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
+  const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,11 +42,12 @@ export function ExpeditionQuickEntryPage() {
 
   // Auto-compute status based on dates
   const computeStatus = () => {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
     if (!startDate) return 'planned';
     
-    if (endDate && endDate < today) {
+    if (endDate && endDate <= today) {
       return 'completed';
     }
     
@@ -55,6 +59,13 @@ export function ExpeditionQuickEntryPage() {
   };
 
   const status = computeStatus();
+
+  // Disable sponsorships when status changes to completed
+  useEffect(() => {
+    if (status === 'completed') {
+      setSponsorshipsEnabled(false);
+    }
+  }, [status]);
 
   // Calculate end date from start date + duration
   const handleDurationChange = (days: string) => {
@@ -73,8 +84,11 @@ export function ExpeditionQuickEntryPage() {
 
   // Calculate duration from start and end dates
   const handleEndDateChange = (date: string) => {
+    // Don't allow end date before start date
+    if (date && startDate && date < startDate) return;
+
     setEndDate(date);
-    
+
     if (date && startDate) {
       const start = new Date(startDate);
       const end = new Date(date);
@@ -88,8 +102,6 @@ export function ExpeditionQuickEntryPage() {
 
   // Update duration when start date changes
   const handleStartDateChange = (date: string) => {
-    setStartDate(date);
-    
     // Recalculate end date if duration is set
     if (expectedDuration && date) {
       const start = new Date(date);
@@ -97,9 +109,23 @@ export function ExpeditionQuickEntryPage() {
       if (!isNaN(durationNum) && durationNum > 0) {
         const end = new Date(start);
         end.setDate(end.getDate() + durationNum);
+        setStartDate(date);
         setEndDate(end.toISOString().split('T')[0]);
+        return;
       }
-    } else if (endDate && date) {
+    }
+
+    // If new start date is after current end date, clear end date and duration
+    if (endDate && date && date > endDate) {
+      setStartDate(date);
+      setEndDate('');
+      setExpectedDuration('');
+      return;
+    }
+
+    setStartDate(date);
+
+    if (endDate && date) {
       // Recalculate duration if end date is set
       const start = new Date(date);
       const end = new Date(endDate);
@@ -122,6 +148,18 @@ export function ExpeditionQuickEntryPage() {
       setSubmitError('Category is required');
       return;
     }
+    if (!startDate) {
+      setSubmitError('Start date is required');
+      return;
+    }
+    if (!endDate) {
+      setSubmitError('End date or duration is required');
+      return;
+    }
+    if (!coverPhotoUrl) {
+      setSubmitError('Cover photo is required');
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -138,6 +176,10 @@ export function ExpeditionQuickEntryPage() {
         category: category || undefined,
         tags: parsedTags.length > 0 ? parsedTags : undefined,
         goal: sponsorshipsEnabled && sponsorshipGoal ? parseInt(sponsorshipGoal) : undefined,
+        notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
+        notesVisibility,
+        coverImage: coverPhotoUrl || undefined,
+        status,
       };
 
       const result = await expeditionApi.create(payload);
@@ -152,16 +194,42 @@ export function ExpeditionQuickEntryPage() {
     }
   };
 
-  // Handle cover photo selection
-  const handleCoverPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle cover photo selection and upload
+  const handleCoverPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setCoverPhotoFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setCoverPhotoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+    const MAX_COVER_SIZE = 10 * 1024 * 1024;
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setSubmitError('Invalid file type. Please use JPG, PNG, or WEBP');
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_COVER_SIZE) {
+      setSubmitError('Cover photo must be less than 10MB');
+      e.target.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCoverPhotoPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    setUploadingCover(true);
+    setSubmitError(null);
+    try {
+      const response = await uploadApi.upload(file);
+      setCoverPhotoUrl(response.original);
+    } catch {
+      setSubmitError('Failed to upload cover photo');
+      setCoverPhotoPreview(null);
+      setCoverPhotoUrl(null);
+    } finally {
+      setUploadingCover(false);
     }
   };
 
@@ -306,13 +374,13 @@ export function ExpeditionQuickEntryPage() {
                     className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                   >
                     <option value="">Select category...</option>
-                    <option value="culture-photography">Culture & Photography</option>
-                    <option value="scientific-research">Scientific Research</option>
-                    <option value="documentary">Documentary</option>
-                    <option value="adventure-exploration">Adventure & Exploration</option>
-                    <option value="environmental">Environmental</option>
-                    <option value="historical">Historical Documentation</option>
-                    <option value="other">Other</option>
+                    <option>Culture & Photography</option>
+                    <option>Scientific Research</option>
+                    <option>Documentary</option>
+                    <option>Adventure & Exploration</option>
+                    <option>Environmental</option>
+                    <option>Historical Documentation</option>
+                    <option>Other</option>
                   </select>
                 </div>
               </div>
@@ -328,6 +396,7 @@ export function ExpeditionQuickEntryPage() {
                     className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                     value={startDate}
                     onChange={handleStartDateChange}
+                    max={endDate || undefined}
                   />
                 </div>
 
@@ -356,6 +425,7 @@ export function ExpeditionQuickEntryPage() {
                       className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                       value={endDate}
                       onChange={handleEndDateChange}
+                      min={startDate || undefined}
                     />
                   </div>
                   <div>
@@ -419,7 +489,7 @@ export function ExpeditionQuickEntryPage() {
               <div>
                 <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                   COVER PHOTO
-                  <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
+                  <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
                 </label>
                 <label className="block border-2 border-dashed border-[#ac6d46] p-8 text-center hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] cursor-pointer transition-all">
                   <input
@@ -431,7 +501,14 @@ export function ExpeditionQuickEntryPage() {
                   {coverPhotoPreview ? (
                     <div className="relative">
                       <Image src={coverPhotoPreview} alt="Cover preview" className="max-h-32 mx-auto object-cover" width={0} height={0} sizes="100vw" style={{ width: 'auto', height: 'auto', maxHeight: '8rem' }} />
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-2">Click to change</div>
+                      {uploadingCover && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <Loader2 className="w-8 h-8 text-white animate-spin" />
+                        </div>
+                      )}
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-2">
+                        {uploadingCover ? 'Uploading...' : coverPhotoUrl ? 'Uploaded successfully • Click to change' : 'Click to change'}
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -440,7 +517,7 @@ export function ExpeditionQuickEntryPage() {
                         UPLOAD COVER PHOTO
                       </div>
                       <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                        Click or drag file here • JPG, PNG • Max 5MB • Recommended: 1200x600px
+                        Click or drag file here • JPG, PNG, WEBP • Max 10MB • Recommended: 1200x600px
                       </div>
                     </>
                   )}
@@ -480,13 +557,18 @@ export function ExpeditionQuickEntryPage() {
                     checked={sponsorshipsEnabled}
                     onChange={(e) => {
                       setSponsorshipsEnabled(e.target.checked);
-                      if (e.target.checked && expeditionVisibility === 'private') {
-                        setExpeditionVisibility('public');
+                      if (e.target.checked) {
+                        setNotesVisibility('sponsor');
+                        if (expeditionVisibility === 'private') {
+                          setExpeditionVisibility('public');
+                        }
+                      } else {
+                        setNotesVisibility('public');
                       }
                     }}
-                    disabled={!isPro || !user?.stripeAccountConnected}
+                    disabled={!isPro || !user?.stripeAccountConnected || status === 'completed'}
                   />
-                  <label htmlFor="enable-sponsorships" className={`text-xs ${!isPro || !user?.stripeAccountConnected ? 'text-[#b5bcc4] dark:text-[#616161]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                  <label htmlFor="enable-sponsorships" className={`text-xs ${!isPro || !user?.stripeAccountConnected || status === 'completed' ? 'text-[#b5bcc4] dark:text-[#616161]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                     Allow others to financially support this expedition through the platform
                   </label>
                 </div>
@@ -496,10 +578,15 @@ export function ExpeditionQuickEntryPage() {
                     <Link href="/settings/billing" className="text-[#4676ac] hover:underline ml-1">Upgrade to Pro</Link>
                   </div>
                 )}
-                {isPro && !user?.stripeAccountConnected && (
+                {isPro && !user?.stripeAccountConnected && status !== 'completed' && (
                   <div className="mb-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4]">
                     <strong className="text-[#ac6d46]">STRIPE CONNECT REQUIRED:</strong> Complete your Stripe onboarding before enabling sponsorships.
                     <Link href="/sponsorship" className="text-[#4676ac] hover:underline ml-1">Complete setup</Link>
+                  </div>
+                )}
+                {status === 'completed' && (
+                  <div className="mb-3 p-3 bg-white dark:bg-[#202020] border-l-2 border-[#616161] text-xs text-[#616161] dark:text-[#b5bcc4]">
+                    <strong>COMPLETED EXPEDITION:</strong> Sponsorships are not available for completed expeditions.
                   </div>
                 )}
                 {sponsorshipsEnabled && isPro && (
@@ -522,6 +609,72 @@ export function ExpeditionQuickEntryPage() {
                   </div>
                 )}
               </div>
+
+              {/* Expedition Notes Visibility - Pro only, not for private expeditions */}
+              {isPro && expeditionVisibility !== 'private' && <div className="border-2 border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">EXPEDITION NOTES VISIBILITY</div>
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="radio"
+                      id="notes-public"
+                      name="notesVisibility"
+                      className="mt-1"
+                      checked={notesVisibility === 'public'}
+                      onChange={() => setNotesVisibility('public')}
+                    />
+                    <label htmlFor="notes-public" className="text-xs">
+                      <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">PUBLIC</div>
+                      <div className="text-[#616161] dark:text-[#b5bcc4] mt-0.5">
+                        Anyone can read expedition notes.
+                      </div>
+                    </label>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <input
+                      type="radio"
+                      id="notes-sponsor"
+                      name="notesVisibility"
+                      className="mt-1"
+                      checked={notesVisibility === 'sponsor'}
+                      onChange={() => {
+                        setNotesVisibility('sponsor');
+                        if (isPro && user?.stripeAccountConnected && status !== 'completed') {
+                          setSponsorshipsEnabled(true);
+                        }
+                      }}
+                      disabled={!isPro || !user?.stripeAccountConnected || status === 'completed'}
+                    />
+                    <label htmlFor="notes-sponsor" className={`text-xs ${!isPro || !user?.stripeAccountConnected || status === 'completed' ? 'text-[#b5bcc4] dark:text-[#616161]' : ''}`}>
+                      <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">SPONSOR EXCLUSIVE</div>
+                      <div className="text-[#616161] dark:text-[#b5bcc4] mt-0.5">
+                        Only sponsors meeting the access threshold can read expedition notes.
+                        {(!isPro || !user?.stripeAccountConnected) && (
+                          <span className="text-[#ac6d46] ml-1">Requires Explorer Pro with Stripe Connect.</span>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                {notesVisibility === 'sponsor' && (
+                  <div className="mt-3">
+                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                      NOTES ACCESS THRESHOLD (USD)
+                    </label>
+                    <input
+                      type="number"
+                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                      placeholder="e.g., 15"
+                      min="0"
+                      value={notesAccessThreshold}
+                      onChange={(e) => setNotesAccessThreshold(e.target.value)}
+                    />
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                      Minimum cumulative sponsorship to unlock notes • 0 = any sponsor has access
+                    </div>
+                  </div>
+                )}
+              </div>}
 
               {/* Privacy Settings */}
               <div className="border-2 border-[#4676ac] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
@@ -567,7 +720,10 @@ export function ExpeditionQuickEntryPage() {
                       name="visibility"
                       className="mt-1"
                       checked={expeditionVisibility === 'private'}
-                      onChange={() => setExpeditionVisibility('private')}
+                      onChange={() => {
+                        setExpeditionVisibility('private');
+                        setNotesVisibility('public');
+                      }}
                       disabled={sponsorshipsEnabled}
                     />
                     <label htmlFor="visibility-private" className={`text-xs ${sponsorshipsEnabled ? 'opacity-50' : ''}`}>
@@ -597,11 +753,11 @@ export function ExpeditionQuickEntryPage() {
               <div className="flex gap-3 pt-4 border-t-2 border-[#202020] dark:border-[#616161]">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || uploadingCover}
                   className="flex-1 py-4 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
                 >
-                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isSubmitting ? 'CREATING...' : 'CREATE EXPEDITION & LOG FIRST ENTRY'}
+                  {(isSubmitting || uploadingCover) && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSubmitting ? 'CREATING...' : uploadingCover ? 'UPLOADING COVER...' : 'CREATE EXPEDITION & LOG FIRST ENTRY'}
                 </button>
                 <Link
                   href="/select-expedition"
@@ -633,10 +789,6 @@ export function ExpeditionQuickEntryPage() {
               <div className="flex items-start gap-2">
                 <span className="text-[#ac6d46]">•</span>
                 <span>Status is automatically computed from dates</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="text-[#ac6d46]">•</span>
-                <span>Use approximate regions for safety</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-[#ac6d46]">•</span>

@@ -32,6 +32,8 @@ interface ExpeditionNotesProps {
   explorerPicture?: string;
   isOwner: boolean;
   isSponsoring: boolean;
+  isPublicNotes: boolean;
+  expeditionStatus?: string;
   notes: ExpeditionNote[];
   noteCount?: number; // For locked state display when notes aren't accessible
   onPostNote?: (text: string) => Promise<void>;
@@ -43,6 +45,8 @@ export function ExpeditionNotes({
   explorerName,
   isOwner,
   isSponsoring,
+  isPublicNotes,
+  expeditionStatus,
   notes,
   noteCount,
   onPostNote,
@@ -57,8 +61,8 @@ export function ExpeditionNotes({
   const [isPostingReply, setIsPostingReply] = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
 
-  // Check if user can post today
-  const canPostToday = isOwner && dailyLimit.used < dailyLimit.max;
+  // Check if user can post today (not for cancelled expeditions)
+  const canPostToday = isOwner && dailyLimit.used < dailyLimit.max && expeditionStatus !== 'cancelled';
   const remainingPosts = dailyLimit.max - dailyLimit.used;
 
   const handlePostNote = async () => {
@@ -106,8 +110,8 @@ export function ExpeditionNotes({
     }
   };
 
-  // Non-sponsor view (locked state)
-  if (!isSponsoring && !isOwner) {
+  // Non-sponsor view (locked state) — only for sponsor-gated notes
+  if (!isPublicNotes && !isSponsoring && !isOwner) {
     return (
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
         <div className="bg-[#616161] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161]">
@@ -146,7 +150,7 @@ export function ExpeditionNotes({
         <div>
           <h2 className="text-sm font-bold font-mono tracking-wide">EXPEDITION NOTES</h2>
           <div className="text-xs font-mono text-white/70 mt-0.5">
-            {notes.length} {notes.length === 1 ? 'NOTE' : 'NOTES'} LOGGED • SPONSOR EXCLUSIVE
+            {notes.length} {notes.length === 1 ? 'NOTE' : 'NOTES'} LOGGED{!isPublicNotes ? ' • SPONSOR EXCLUSIVE' : ''}
           </div>
         </div>
         {isOwner && canPostToday && (

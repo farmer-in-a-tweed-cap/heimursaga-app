@@ -12,6 +12,7 @@ import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, Shar
 import { ReportModal } from '@/app/components/ReportModal';
 import { toast } from 'sonner';
 import { entryApi, commentApi, explorerApi, type Entry, type Comment } from '@/app/services/api';
+import { formatDateWithOptionalTime, formatDateTime } from '@/app/utils/dateFormat';
 
 export function JournalEntryPage() {
   const { entryId } = useParams<{ entryId: string }>();
@@ -254,8 +255,8 @@ export function JournalEntryPage() {
       entryNumber: api.entryNumber || 1,
       title: api.title,
       date: api.date || api.createdAt || '',
+      publishedAt: api.createdAt || '',
       lastModified: api.createdAt || '',
-      publishedTime: api.createdAt ? new Date(api.createdAt).toLocaleTimeString() : '',
 
       explorerId: author?.username || '',
       explorerName: author?.username || 'Unknown', // Use username for display
@@ -467,12 +468,14 @@ export function JournalEntryPage() {
             <div className="p-4 flex flex-wrap gap-3 items-center justify-between border-b-2 border-[#202020] dark:border-[#616161]">
               {isOwner ? (
                 <div className="flex flex-wrap gap-2">
-                  <Link
-                    href={`/edit-entry/${entry.id}`}
-                    className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold"
-                  >
-                    EDIT ENTRY
-                  </Link>
+                  {entry.expeditionStatus !== 'cancelled' && (
+                    <Link
+                      href={`/edit-entry/${entry.id}`}
+                      className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold"
+                    >
+                      EDIT ENTRY
+                    </Link>
+                  )}
                   <div className="relative">
                     <button
                       onClick={() => setShareMenuOpen(!shareMenuOpen)}
@@ -676,6 +679,11 @@ export function JournalEntryPage() {
 
             {/* Entry Content */}
             <div className="p-6 lg:p-8">
+              {!!(entry.metadata as Record<string, unknown>)?.loggedDuringPlanning && (
+                <div className="flex items-center gap-2 mb-5 px-3 py-2 border-l-4 border-[#4676ac] bg-[#f5f7fa] dark:bg-[#1a1e24]">
+                  <span className="text-[10px] font-bold font-mono tracking-wider text-[#4676ac]">LOGGED DURING EXPEDITION PLANNING</span>
+                </div>
+              )}
               {entry.entryType === 'data-log' && (
                 <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">TECHNICAL NOTES</div>
               )}
@@ -1247,15 +1255,15 @@ export function JournalEntryPage() {
             <div className="space-y-3 text-xs font-mono">
               <div>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Entry Date:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">{entry.date}</div>
+                <div className="font-bold dark:text-[#e5e5e5]">{formatDateWithOptionalTime(entry.date)}</div>
               </div>
               <div>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Published:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">{entry.date} {entry.publishedTime}</div>
+                <div className="font-bold dark:text-[#e5e5e5]">{formatDateTime(entry.publishedAt)}</div>
               </div>
               <div>
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Last Modified:</div>
-                <div className="font-bold dark:text-[#e5e5e5]">{entry.lastModified}</div>
+                <div className="font-bold dark:text-[#e5e5e5]">{formatDateTime(entry.lastModified)}</div>
               </div>
               {entry.expeditionId && (
                 <div>
@@ -1315,11 +1323,11 @@ export function JournalEntryPage() {
               </div>
               <div>
                 <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Published:</span>
-                <div>{entry.date} {entry.publishedTime}</div>
+                <div>{formatDateTime(entry.publishedAt)}</div>
               </div>
               <div>
                 <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Last Modified:</span>
-                <div>{entry.lastModified}</div>
+                <div>{formatDateTime(entry.lastModified)}</div>
               </div>
               <div>
                 <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Media Storage:</span>

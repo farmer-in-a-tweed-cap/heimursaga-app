@@ -73,18 +73,30 @@ export class ExpeditionNoteService {
           public_id: true,
           author_id: true,
           status: true,
+          visibility: true,
           notes_access_threshold: true,
+          notes_visibility: true,
         },
       });
 
       if (!expedition)
         throw new ServiceNotFoundException('expedition not found');
 
-      // Check access - must be owner or qualifying sponsor
-      const isOwner = explorerId === expedition.author_id;
-      let hasAccess = false;
+      // Private expeditions have notes completely disabled
+      if (expedition.visibility === 'private') {
+        throw new ServiceForbiddenException(
+          'Notes are not available for private expeditions',
+        );
+      }
 
-      if (explorerId && !isOwner) {
+      // Check access - public notes are accessible to everyone,
+      // sponsor-gated notes require owner or qualifying sponsor
+      const isOwner = explorerId === expedition.author_id;
+      const isPublicNotes =
+        (expedition.notes_visibility || 'public') === 'public';
+      let hasAccess = isPublicNotes;
+
+      if (!isPublicNotes && explorerId && !isOwner) {
         const threshold = expedition.notes_access_threshold ?? 0;
 
         if (threshold > 0) {
@@ -227,11 +239,25 @@ export class ExpeditionNoteService {
       // Get the expedition
       const expedition = await this.prisma.expedition.findFirst({
         where: { public_id: expeditionId, deleted_at: null },
-        select: { id: true, author_id: true },
+        select: { id: true, author_id: true, status: true, visibility: true },
       });
 
       if (!expedition)
         throw new ServiceNotFoundException('expedition not found');
+
+      // Block note creation for private expeditions
+      if (expedition.visibility === 'private') {
+        throw new ServiceForbiddenException(
+          'Notes are not available for private expeditions',
+        );
+      }
+
+      // Block note creation for cancelled expeditions
+      if (expedition.status === 'cancelled') {
+        throw new ServiceForbiddenException(
+          'Cannot create notes for a cancelled expedition',
+        );
+      }
 
       // Only owner can create notes
       if (explorerId !== expedition.author_id) {
@@ -302,18 +328,29 @@ export class ExpeditionNoteService {
           id: true,
           public_id: true,
           author_id: true,
+          visibility: true,
           notes_access_threshold: true,
+          notes_visibility: true,
         },
       });
 
       if (!expedition)
         throw new ServiceNotFoundException('expedition not found');
 
-      // Check access - must be owner or qualifying sponsor
-      const isOwner = explorerId === expedition.author_id;
-      let hasAccess = false;
+      // Private expeditions have notes completely disabled
+      if (expedition.visibility === 'private') {
+        throw new ServiceForbiddenException(
+          'Notes are not available for private expeditions',
+        );
+      }
 
-      if (!isOwner) {
+      // Check access - public notes allow anyone, sponsor-gated requires sponsor
+      const isOwner = explorerId === expedition.author_id;
+      const isPublicNotes =
+        (expedition.notes_visibility || 'public') === 'public';
+      let hasAccess = isPublicNotes;
+
+      if (!isPublicNotes && !isOwner) {
         const threshold = expedition.notes_access_threshold ?? 0;
 
         if (threshold > 0) {

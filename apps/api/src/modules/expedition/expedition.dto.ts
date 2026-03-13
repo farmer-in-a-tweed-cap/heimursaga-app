@@ -12,6 +12,7 @@ import {
   IsNotEmpty,
   IsNumber,
   IsOptional,
+  IsIn,
   IsString,
   Max,
   MaxLength,
@@ -76,6 +77,11 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   @IsNumber()
   @IsOptional()
   notesAccessThreshold?: number;
+
+  @ApiProperty({ required: false })
+  @IsIn(['public', 'sponsor'])
+  @IsOptional()
+  notesVisibility?: 'public' | 'sponsor';
 
   @ApiProperty({ required: false })
   @IsString()
@@ -162,6 +168,11 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   notesAccessThreshold?: number;
 
   @ApiProperty({ required: false })
+  @IsIn(['public', 'sponsor'])
+  @IsOptional()
+  notesVisibility?: 'public' | 'sponsor';
+
+  @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
   category?: string;
@@ -188,6 +199,13 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @ApiProperty({ required: false })
   @IsOptional()
   routeGeometry?: number[][];
+}
+
+export class ExpeditionCompleteDto {
+  @ApiProperty({ required: true })
+  @IsDateString()
+  @IsNotEmpty()
+  actualEndDate: string;
 }
 
 export class ExpeditionCancelDto {

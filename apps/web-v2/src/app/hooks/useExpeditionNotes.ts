@@ -5,10 +5,13 @@ export function useExpeditionNotes(
   expeditionId: string | undefined,
   isAuthenticated: boolean,
   isOwner: boolean,
+  notesVisibility: 'public' | 'sponsor' = 'public',
 ) {
   const [expeditionNotes, setExpeditionNotes] = useState<ExpeditionNote[]>([]);
   const [noteCount, setNoteCount] = useState(0);
   const [isSponsoring, setIsSponsoring] = useState(false);
+
+  const isPublicNotes = notesVisibility === 'public';
 
   useEffect(() => {
     let cancelled = false;
@@ -28,15 +31,16 @@ export function useExpeditionNotes(
         }
       }
 
-      // Only fetch full notes if authenticated (owner or sponsor will have access)
-      if (!isAuthenticated) return;
+      // Public notes: fetch for everyone (auth not required on API)
+      // Sponsor-gated notes: only fetch if authenticated
+      if (!isPublicNotes && !isAuthenticated) return;
 
       try {
         const notesData = await expeditionApi.getNotes(expeditionId);
         if (!cancelled) {
           setExpeditionNotes(notesData.notes);
-          // If we got notes, user has access (either owner or sponsor)
-          if (!isOwner) {
+          // If we got sponsor-gated notes, user has access (either owner or sponsor)
+          if (!isPublicNotes && !isOwner) {
             setIsSponsoring(true);
           }
         }
@@ -57,7 +61,7 @@ export function useExpeditionNotes(
     return () => {
       cancelled = true;
     };
-  }, [expeditionId, isAuthenticated, isOwner]);
+  }, [expeditionId, isAuthenticated, isOwner, isPublicNotes]);
 
   const handlePostNote = async (text: string) => {
     if (!expeditionId) return;
@@ -82,5 +86,5 @@ export function useExpeditionNotes(
     }
   };
 
-  return { expeditionNotes, noteCount, isSponsoring, handlePostNote, handlePostReply };
+  return { expeditionNotes, noteCount, isSponsoring, isPublicNotes, handlePostNote, handlePostReply };
 }

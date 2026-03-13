@@ -20,8 +20,7 @@ MapboxGL.setAccessToken(MAPBOX_TOKEN)
     _tokenReady = true;
     _tokenReadyCallbacks.splice(0).forEach((cb) => cb());
   })
-  .catch((err) => {
-    console.warn('Mapbox token init failed:', err);
+  .catch(() => {
     // Still mark ready so the map renders (will use fallback style)
     _tokenReady = true;
     _tokenReadyCallbacks.splice(0).forEach((cb) => cb());
@@ -45,6 +44,10 @@ export interface WaypointMarker {
   entryIds?: string[];
   /** Override the default white stroke color (e.g. blue border for round-trip start) */
   strokeColor?: string;
+  /** Number of markers merged into this cluster (1 = single marker) */
+  clusterSize?: number;
+  /** All coordinates within this cluster — used to compute expansion zoom */
+  clusterCoords?: [number, number][];
 }
 
 export interface HeimuMapProps {
@@ -72,6 +75,7 @@ export interface HeimuMapProps {
 
 export interface HeimuMapRef {
   flyTo: (coords: [number, number], zoom?: number) => void;
+  fitBounds: (coords: [number, number][], padding?: number) => void;
 }
 
 // ─── Zoom-sensitive marker clustering ────────────────────────────────────────
@@ -112,6 +116,9 @@ export function clusterMarkers(markers: WaypointMarker[], zoom: number): Waypoin
       const min = Math.min(...nums);
       const max = Math.max(...nums);
       mergedText = min === max ? String(min) : `${min}-${max}`;
+    } else if (texts.length === 0) {
+      // No text on any marker — show cluster count
+      mergedText = String(group.length);
     } else {
       mergedText = texts[0] ?? '';
     }
@@ -120,8 +127,79 @@ export function clusterMarkers(markers: WaypointMarker[], zoom: number): Waypoin
       text: mergedText,
       isCurrent: group.some(m => m.isCurrent),
       entryIds: group.flatMap(m => m.entryIds ?? []),
+      clusterSize: group.length,
+      clusterCoords: group.map(m => m.coordinates),
     };
   });
+}
+
+/** Spread markers that are at or near the same coordinates into a small ring. */
+export function spreadCoincidentMarkers(markers: WaypointMarker[]): WaypointMarker[] {
+  if (markers.length <= 1) return markers;
+  // Group markers that are within ~0.001° of each other (~100m)
+  const NEAR_THRESHOLD = 0.001;
+  const groups: number[][] = [];
+  const assigned = new Set<number>();
+
+  for (let i = 0; i < markers.length; i++) {
+    if (assigned.has(i)) continue;
+    const group = [i];
+    assigned.add(i);
+    for (let j = i + 1; j < markers.length; j++) {
+      if (assigned.has(j)) continue;
+      const dLng = Math.abs(markers[i].coordinates[0] - markers[j].coordinates[0]);
+      const dLat = Math.abs(markers[i].coordinates[1] - markers[j].coordinates[1]);
+      if (dLng < NEAR_THRESHOLD && dLat < NEAR_THRESHOLD) {
+        group.push(j);
+        assigned.add(j);
+      }
+    }
+    groups.push(group);
+  }
+
+  const result = markers.map(m => ({ ...m }));
+  // Offset radius ~0.002° ≈ 200m, separates around zoom 14
+  const RADIUS = 0.002;
+  for (const group of groups) {
+    if (group.length < 2) continue;
+    const center: [number, number] = [
+      markers[group[0]].coordinates[0],
+      markers[group[0]].coordinates[1],
+    ];
+    const n = group.length;
+    group.forEach((idx, j) => {
+      const angle = (2 * Math.PI * j) / n;
+      result[idx] = {
+        ...result[idx],
+        coordinates: [
+          center[0] + RADIUS * Math.cos(angle),
+          center[1] + RADIUS * Math.sin(angle),
+        ],
+      };
+    });
+  }
+  return result;
+}
+
+/** Compute the minimum zoom level at which all points in `coords` would no longer cluster. */
+export function getClusterExpansionZoom(coords: [number, number][]): number {
+  if (coords.length < 2) return 20;
+  // Find the minimum pairwise distance
+  let minDistSq = Infinity;
+  for (let i = 0; i < coords.length; i++) {
+    for (let j = i + 1; j < coords.length; j++) {
+      const dLng = coords[i][0] - coords[j][0];
+      const dLat = coords[i][1] - coords[j][1];
+      const dSq = dLng * dLng + dLat * dLat;
+      if (dSq < minDistSq) minDistSq = dSq;
+    }
+  }
+  const minDist = Math.sqrt(minDistSq);
+  if (minDist === 0) return 20; // identical points
+  // Threshold formula: thresholdDeg = 30 * 360 / (256 * 2^zoom)
+  // Solve for zoom: 2^zoom = 30 * 360 / (256 * minDist)
+  const zoom = Math.log2((30 * 360) / (256 * minDist));
+  return Math.min(Math.ceil(zoom) + 1, 20); // +1 to ensure full separation, cap at 20
 }
 
 // ─── Marker colors ───────────────────────────────────────────────────────────
@@ -182,6 +260,27 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
       cameraRef.current?.setCamera({
         centerCoordinate: coords,
         zoomLevel: zoomLevel ?? 10,
+        animationDuration: 1000,
+      });
+    },
+    fitBounds: (coords: [number, number][], padding = 80) => {
+      if (coords.length === 0) return;
+      let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+      for (const [lng, lat] of coords) {
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+      }
+      cameraRef.current?.setCamera({
+        bounds: {
+          ne: [maxLng, maxLat],
+          sw: [minLng, minLat],
+          paddingTop: padding,
+          paddingBottom: padding,
+          paddingLeft: padding,
+          paddingRight: padding,
+        },
         animationDuration: 1000,
       });
     },

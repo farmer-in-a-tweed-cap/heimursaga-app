@@ -18,6 +18,7 @@ import { ISession } from '@/common/interfaces';
 
 import {
   ExpeditionCancelDto,
+  ExpeditionCompleteDto,
   ExpeditionCreateDto,
   ExpeditionParamDto,
   ExpeditionUpdateLocationDto,
@@ -114,6 +115,20 @@ export class ExpeditionController {
   ) {
     return await this.expeditionService.deleteExpedition({
       query: { id: param.trip_id },
+      session,
+    });
+  }
+
+  @Patch(':trip_id/complete')
+  @HttpCode(HttpStatus.OK)
+  async completeExpedition(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+    @Body() body: ExpeditionCompleteDto,
+  ) {
+    return await this.expeditionService.completeExpedition({
+      query: { id: param.trip_id },
+      payload: body,
       session,
     });
   }

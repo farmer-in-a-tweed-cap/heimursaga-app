@@ -186,7 +186,7 @@ export function ExpeditionCard({
       </div>
 
       {/* Section: Hero Image */}
-      <div className="relative h-56 overflow-hidden bg-gray-200 border-b-2 border-[#202020] dark:border-[#616161]">
+      <div className="relative h-56 overflow-hidden border-b-2 border-[#202020] dark:border-[#616161]">
         <ImageWithFallback
           src={imageUrl}
           alt={title}

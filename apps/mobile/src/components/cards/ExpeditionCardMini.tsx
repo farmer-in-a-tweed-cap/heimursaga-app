@@ -58,11 +58,9 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
                 {expedition.author.username}
               </Text>
             )}
-            {dateRange !== '' && (
-              <Text style={[styles.meta, { color: colors.textTertiary }]} numberOfLines={1}>
-                {dateRange}
-              </Text>
-            )}
+            <Text style={[styles.meta, { color: colors.textTertiary }]} numberOfLines={1}>
+              {expedition.region?.toUpperCase() || dateRange || ''}
+            </Text>
             <View style={styles.statsRow}>
               <Text style={[styles.stat, { color: brandColors.blue }]}>
                 {expedition.entriesCount ?? 0} entries

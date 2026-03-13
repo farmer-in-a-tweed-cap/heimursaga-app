@@ -49,7 +49,7 @@ export function WaypointCardLandscape({
       {/* Header */}
       <div className={`flex items-center justify-between border-b-2 px-3 py-1.5 ${isCurrent ? 'bg-[#ac6d46] border-[#ac6d46]' : 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#202020] dark:border-[#616161]'}`}>
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 ${isCurrent ? 'bg-white' : getMarkerColor()}`} />
+          <div className={`h-2 w-2 rotate-45 ${isCurrent ? 'bg-white' : getMarkerColor()}`} />
           <span className={`text-xs font-mono font-semibold tracking-wide ${isCurrent ? 'text-white' : 'text-[#202020] dark:text-[#e5e5e5]'}`}>
             {isCurrent ? 'CURRENT LOCATION' : 'WAYPOINT'}
           </span>
@@ -66,8 +66,10 @@ export function WaypointCardLandscape({
           <div className="border-b-2 border-[#202020] dark:border-[#616161] px-3 py-2.5 bg-white dark:bg-[#202020]">
             <div className="flex items-center gap-3">
               {markerNumber !== undefined && (
-                <div className={`${getMarkerColor()} w-8 h-8 rounded-full border-2 border-[#202020] dark:border-[#616161] flex items-center justify-center flex-shrink-0`}>
-                  <span className="text-white font-bold text-sm">{markerNumber}</span>
+                <div className={`${getMarkerColor()} w-7 h-7 rotate-45 border-2 border-white flex items-center justify-center flex-shrink-0`} style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }}>
+                  <span className="-rotate-45 text-white font-bold text-xs" style={{ fontFamily: 'Jost, system-ui, sans-serif' }}>
+                    {isStart ? 'S' : isEnd ? 'E' : markerNumber}
+                  </span>
                 </div>
               )}
               <h3 className="font-bold text-sm dark:text-[#e5e5e5]">{title}</h3>

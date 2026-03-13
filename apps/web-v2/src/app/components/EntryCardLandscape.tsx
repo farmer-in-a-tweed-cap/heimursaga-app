@@ -10,6 +10,7 @@ interface EntryCardLandscapeProps {
   date: string;
   excerpt: string;
   type: string;
+  entryNumber?: number;
   visibility?: 'public' | 'off-grid' | 'private';
   isMilestone?: boolean;
   isCurrent?: boolean;
@@ -25,6 +26,7 @@ export function EntryCardLandscape({
   date,
   excerpt,
   type,
+  entryNumber,
   visibility,
   isMilestone = false,
   isCurrent = false,
@@ -40,7 +42,13 @@ export function EntryCardLandscape({
       {/* Header */}
       <div className={`flex items-center justify-between border-b-2 px-3 py-1.5 ${isCurrent ? 'bg-[#ac6d46] border-[#ac6d46]' : 'bg-[#b5bcc4] dark:bg-[#3a3a3a] border-[#202020] dark:border-[#616161]'}`}>
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 ${isCurrent ? 'bg-white' : 'bg-[#4676ac]'}`} />
+          {entryNumber ? (
+            <div className="w-5 h-5 rounded-full bg-[#ac6d46] border border-white flex items-center justify-center text-white text-[10px] font-bold" style={{ fontFamily: 'Jost, system-ui, sans-serif' }}>
+              {entryNumber}
+            </div>
+          ) : (
+            <div className={`h-2 w-2 ${isCurrent ? 'bg-white' : 'bg-[#4676ac]'}`} />
+          )}
           <div className="flex items-baseline gap-2">
             <span className={`text-xs font-mono font-semibold tracking-wide ${isCurrent ? 'text-white' : 'text-[#202020] dark:text-[#e5e5e5]'}`}>
               {isCurrent ? 'CURRENT LOCATION' : 'ENTRY'}

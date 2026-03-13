@@ -122,7 +122,7 @@ export function ExpeditionCardLandscape({
 
       <div className="flex">
         {/* Cover Image */}
-        <div className="w-32 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] bg-[#b5bcc4] overflow-hidden relative">
+        <div className="w-32 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] overflow-hidden relative">
           <ImageWithFallback
             src={imageUrl}
             alt={title}

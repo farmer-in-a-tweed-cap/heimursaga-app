@@ -27,6 +27,8 @@ import { Avatar } from '@/components/ui/Avatar';
 import { SectionDivider } from '@/components/ui/SectionDivider';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
 import type { HeimuMapProps, HeimuMapRef, WaypointMarker } from '@/components/map/HeimuMap';
+import { clusterMarkers, getClusterExpansionZoom, spreadCoincidentMarkers } from '@/components/map/HeimuMap';
+import { getExplorerStatus, explorerStatusConfig } from '@/utils/explorerStatus';
 import { ExpeditionCardFull } from '@/components/cards/ExpeditionCardFull';
 import { ExplorerCardMini } from '@/components/cards/ExplorerCardMini';
 import { EntryCardFull } from '@/components/cards/EntryCardFull';
@@ -57,6 +59,7 @@ export default function HomeScreen() {
   const [atlasExpanded, setAtlasExpanded] = useState(false);
   const [selectedAtlasEntry, setSelectedAtlasEntry] = useState<Entry | null>(null);
   const [selectedExplorer, setSelectedExplorer] = useState<ExplorerProfile | null>(null);
+  const [atlasZoom, setAtlasZoom] = useState(1.5);
   const [badgeCount, setBadgeCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const atlasMapRef = useRef<HeimuMapRef>(null);
@@ -133,13 +136,23 @@ export default function HomeScreen() {
   // Count active expeditions for atlas stats
   const activeExpeditions = allExpeditions.filter((e) => e.status === 'active').length;
 
-  // Explorer markers — only explorers with activeExpeditionLocation
-  const geoExplorers = (usersData?.data ?? []).filter(e => e.activeExpeditionLocation);
-  const explorerMarkers: WaypointMarker[] = geoExplorers.map(e => ({
-    coordinates: [e.activeExpeditionLocation!.lon, e.activeExpeditionLocation!.lat],
-    type: 'origin' as const,
-    label: e.username,
-  }));
+  // Explorer markers — activeExpeditionLocation → locationLives → locationFrom
+  const geoExplorers: ExplorerProfile[] = [];
+  const explorerMarkers: WaypointMarker[] = [];
+  for (const e of usersData?.data ?? []) {
+    let coords: [number, number] | null = null;
+    if (e.activeExpeditionLocation) {
+      coords = [e.activeExpeditionLocation.lon, e.activeExpeditionLocation.lat];
+    } else if (e.locationLivesLat != null && e.locationLivesLon != null) {
+      coords = [e.locationLivesLon, e.locationLivesLat];
+    } else if (e.locationFromLat != null && e.locationFromLon != null) {
+      coords = [e.locationFromLon, e.locationFromLat];
+    }
+    if (coords) {
+      geoExplorers.push(e);
+      explorerMarkers.push({ coordinates: coords, type: 'origin' as const, label: e.username });
+    }
+  }
 
   // Entry markers — only entries with coordinates
   const geoEntries = (postsData?.data ?? []).filter(e => e.lat != null && e.lon != null);
@@ -149,7 +162,9 @@ export default function HomeScreen() {
     label: e.place,
   }));
 
-  const atlasMarkers = atlasTab === 0 ? explorerMarkers : entryMarkers;
+  const rawAtlasMarkers = atlasTab === 0 ? explorerMarkers : entryMarkers;
+  const spreadMarkers = useMemo(() => spreadCoincidentMarkers(rawAtlasMarkers), [rawAtlasMarkers]);
+  const atlasMarkers = useMemo(() => clusterMarkers(spreadMarkers, atlasZoom), [spreadMarkers, atlasZoom]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -256,14 +271,24 @@ export default function HomeScreen() {
                   zoom={1.5}
                   waypoints={atlasMarkers}
                   interactive={atlasExpanded}
+                  onZoomChange={setAtlasZoom}
                   onWaypointPress={atlasExpanded ? (i) => {
+                    const marker = atlasMarkers[i];
+                    if (!marker) return;
+                    // Cluster tap — zoom to the level where markers separate
+                    if (marker.clusterSize && marker.clusterSize > 1 && marker.clusterCoords) {
+                      const expansionZoom = getClusterExpansionZoom(marker.clusterCoords);
+                      setAtlasZoom(expansionZoom);
+                      atlasMapRef.current?.fitBounds(marker.clusterCoords);
+                      return;
+                    }
                     if (atlasTab === 0) {
-                      const explorer = geoExplorers[i];
+                      const explorer = geoExplorers.find(e => e.username === marker.label);
                       if (!explorer) return;
                       setSelectedExplorer(explorer);
                       setSelectedAtlasEntry(null);
                     } else {
-                      const entry = geoEntries[i];
+                      const entry = geoEntries.find(e => e.place === marker.label);
                       if (!entry) return;
                       setSelectedAtlasEntry(entry);
                       setSelectedExplorer(null);
@@ -275,21 +300,36 @@ export default function HomeScreen() {
               {selectedExplorer && atlasExpanded && (
                 <View style={[styles.popupWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.popupHeader}>
-                    <Text style={[styles.popupTitle, { color: colors.text }]} numberOfLines={1}>
-                      {selectedExplorer.username}
-                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+                      <Avatar size={32} name={selectedExplorer.username} imageUrl={selectedExplorer.picture} pro={selectedExplorer.creator} />
+                      <View style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={[styles.popupTitle, { color: colors.text }]} numberOfLines={1}>
+                          {selectedExplorer.username}
+                        </Text>
+                        {selectedExplorer.name && (
+                          <Text style={[styles.popupPlace, { color: colors.textSecondary, marginTop: 1 }]} numberOfLines={1}>
+                            {selectedExplorer.name}
+                          </Text>
+                        )}
+                      </View>
+                    </View>
                     <TouchableOpacity onPress={() => setSelectedExplorer(null)} hitSlop={8}>
                       <Text style={[styles.popupClose, { color: colors.textTertiary }]}>✕</Text>
                     </TouchableOpacity>
                   </View>
-                  {selectedExplorer.name && (
-                    <Text style={[styles.popupPlace, { color: colors.textSecondary }]} numberOfLines={1}>
-                      {selectedExplorer.name}
-                    </Text>
-                  )}
+                  {(() => {
+                    const st = getExplorerStatus(selectedExplorer.recentExpeditions ?? [], selectedExplorer.activeExpeditionOffGrid);
+                    const cfg = explorerStatusConfig[st];
+                    return (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: cfg.color }} />
+                        <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: cfg.color, fontFamily: mono }}>{cfg.label}</Text>
+                      </View>
+                    );
+                  })()}
                   {selectedExplorer.activeExpeditionLocation && (
                     <>
-                      <Text style={[styles.popupPlace, { color: colors.textSecondary }]} numberOfLines={1}>
+                      <Text style={[styles.popupPlace, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={1}>
                         {selectedExplorer.activeExpeditionLocation.expeditionTitle}
                       </Text>
                       <Text style={[styles.popupDate, { color: colors.textTertiary }]}>
@@ -301,7 +341,7 @@ export default function HomeScreen() {
                     style={styles.popupBtn}
                     onPress={() => { setSelectedExplorer(null); router.push(`/explorer/${selectedExplorer.username}`); }}
                   >
-                    <Text style={styles.popupBtnText}>VIEW PROFILE</Text>
+                    <Text style={styles.popupBtnText}>VIEW JOURNAL</Text>
                   </TouchableOpacity>
                 </View>
               )}

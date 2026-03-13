@@ -543,7 +543,7 @@ export default function CreateScreen() {
                 </Svg>
               </TouchableOpacity>
               {showWaypointPicker && (
-                <ScrollView style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border }]} nestedScrollEnabled>
+                <View style={[styles.pickerDropdown, { backgroundColor: colors.card, borderColor: colors.border, overflow: 'hidden' }]}>
                   {expeditionWaypoints.length === 0 ? (
                     <View style={styles.pickerItem}>
                       <Text style={[styles.pickerItemText, { color: colors.textTertiary }]}>
@@ -575,7 +575,7 @@ export default function CreateScreen() {
                       );
                     })
                   )}
-                </ScrollView>
+                </View>
               )}
               {selectedWaypointId && lat != null && lon != null && (
                 <View style={[styles.waypointLocked, { borderColor: colors.border }]}>

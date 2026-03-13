@@ -26,4 +26,5 @@ export const EVENTS = {
   ADMIN_DISPUTE_CREATED: 'admin_dispute_created',
   EXPLORER_EXITED_RESTING: 'explorer_exited_resting',
   EXPEDITION_CANCELLED: 'expedition_cancelled',
+  EXPEDITION_COMPLETED: 'expedition_completed',
 };

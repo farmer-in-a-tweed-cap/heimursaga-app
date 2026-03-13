@@ -23,6 +23,8 @@ export type JournalEntryType = {
   views: number;
   visibility: 'public' | 'off-grid' | 'private';
   isMilestone: boolean;
+  loggedDuringPlanning?: boolean;
+  createdAt?: string;
   timelinePosition?: number;
 };
 

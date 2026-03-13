@@ -28,10 +28,17 @@ export function StatusHeader({ status, label, right, dotColor, variant = 'card' 
         {!isDetail && (
           <View style={[styles.dot, { backgroundColor: barColor }]} />
         )}
-        <Text style={[styles.label, { color: isDetail ? '#ffffff' : colors.text }]}>{label}</Text>
+        <Text style={[styles.label, { color: isDetail ? '#ffffff' : colors.text }]} numberOfLines={1}>{label}</Text>
       </View>
       {right ? (
-        <Text style={[styles.right, { color: isDetail ? 'rgba(255,255,255,0.7)' : colors.textTertiary }]}>
+        <Text
+          style={[
+            styles.right,
+            !isDetail && styles.rightCard,
+            { color: isDetail ? 'rgba(255,255,255,0.7)' : colors.textSecondary },
+          ]}
+          numberOfLines={1}
+        >
           {right}
         </Text>
       ) : null}
@@ -51,6 +58,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flex: 1,
+    minWidth: 0,
   },
   dot: {
     width: 8,
@@ -61,10 +70,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.8,
     fontFamily: mono,
+    flexShrink: 1,
   },
   right: {
     fontSize: 12,
     fontWeight: '600',
     fontFamily: mono,
+  },
+  rightCard: {
+    fontSize: 10,
+    flexShrink: 0,
+    marginLeft: 8,
   },
 });

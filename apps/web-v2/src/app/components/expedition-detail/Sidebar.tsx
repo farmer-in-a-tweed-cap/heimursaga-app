@@ -117,27 +117,35 @@ export function Sidebar({
             QUICK ACTIONS
           </h3>
           <div className="space-y-2">
-            <Link
-              href={`/log-entry/${expedition.id}`}
-              className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
-            >
-              LOG NEW ENTRY
-            </Link>
-            <Link
-              href={expedition.explorerIsPro ? `/expedition-builder/${expedition.id}` : `/log-entry/${expedition.id}?type=waypoint`}
-              className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
-            >
-              LOG WAYPOINT
-            </Link>
+            {expedition.status === 'cancelled' ? (
+              <div className="py-2 bg-[#994040]/10 border-2 border-[#994040] text-center text-xs font-bold text-[#994040]">
+                EXPEDITION CANCELLED — ENTRIES LOCKED
+              </div>
+            ) : (
+              <>
+                <Link
+                  href={`/log-entry/${expedition.id}`}
+                  className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
+                >
+                  LOG NEW ENTRY
+                </Link>
+                <Link
+                  href={expedition.explorerIsPro ? `/expedition-builder/${expedition.id}` : `/log-entry/${expedition.id}?type=waypoint`}
+                  className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
+                >
+                  LOG WAYPOINT
+                </Link>
+              </>
+            )}
             <button
               onClick={onShowUpdateLocationModal}
-              disabled={expedition.status === 'completed'}
+              disabled={expedition.status === 'completed' || expedition.status === 'cancelled'}
               className={`w-full py-2 border-2 border-[#202020] dark:border-[#616161] transition-all text-sm font-bold ${
-                expedition.status === 'completed'
+                expedition.status === 'completed' || expedition.status === 'cancelled'
                   ? 'opacity-50 cursor-not-allowed text-[#616161] dark:text-[#616161]'
                   : 'dark:text-[#e5e5e5] hover:bg-[#4a4a4a] hover:text-white dark:hover:bg-[#4a4a4a] active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]'
               }`}
-              title={expedition.status === 'completed' ? 'Cannot update location on completed expeditions' : undefined}
+              title={expedition.status === 'completed' ? 'Cannot update location on completed expeditions' : expedition.status === 'cancelled' ? 'Cannot update location on cancelled expeditions' : undefined}
             >
               UPDATE LOCATION
             </button>

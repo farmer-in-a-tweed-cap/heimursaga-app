@@ -385,6 +385,7 @@ model Expedition {
   goal                    Int?                 @default(0) // funding goal in cents
   raised                  Int?                 @default(0) // amount raised in cents
   notes_access_threshold  Int?                 @default(0) // minimum cumulative sponsorship (cents) for Expedition Notes access
+  notes_visibility        String?              @default("public") @db.VarChar(10) // "public" or "sponsor"
   sponsors_count  Int?                 @default(0)
   entries_count   Int?                 @default(0)
   bookmarks_count Int?                 @default(0)

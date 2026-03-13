@@ -79,8 +79,9 @@ export function ExpeditionDetailPage() {
   // Derived data hooks
   const { sponsors, fundingStats } = useExpeditionSponsors(apiExpedition);
   const { weatherCondition, weatherLocalTime } = useWeatherConditions(apiExpedition, expeditionId);
-  const { expeditionNotes, noteCount, isSponsoring, handlePostNote, handlePostReply } =
-    useExpeditionNotes(expeditionId, isAuthenticated, isOwner);
+  const notesVisibility = (apiExpedition as any)?.notesVisibility || 'public';
+  const { expeditionNotes, noteCount, isSponsoring, isPublicNotes, handlePostNote, handlePostReply } =
+    useExpeditionNotes(expeditionId, isAuthenticated, isOwner, notesVisibility);
 
   // Explorer profile data (for global stats in HeroBanner)
   const [explorerProfile, setExplorerProfile] = useState<ExplorerProfile | null>(null);
@@ -170,21 +171,12 @@ export function ExpeditionDetailPage() {
     setApiExpedition(updated);
   };
 
-  // Handler for changing expedition status
-  const handleStatusChange = async (_newStatus: 'active' | 'completed') => {
-    // ============================================================
-    // 🔴 BACKEND API CALL NEEDED
-    // ============================================================
-    // Endpoint: PATCH /api/expeditions/:expeditionId/status
-    // Body: { status: newStatus }
-    // Description: Update expedition status
-    // Response: Updated expedition with new status
-    // Note: This should also handle updating "one active expedition" rule
-    // ============================================================
-
-    // In production, this would update the expedition state and trigger a re-fetch
-    // For now, just close the modal - user would need to refresh to see changes
-    setShowManagementModal(false);
+  // Handler for completing an expedition
+  const handleComplete = async (actualEndDate: string) => {
+    if (!expedition?.id) return;
+    await expeditionApi.complete(expedition.id, actualEndDate);
+    const refreshed = await expeditionApi.getById(expedition.id);
+    setApiExpedition(refreshed);
   };
 
   // Handler to fit map to all expedition markers
@@ -401,6 +393,30 @@ export function ExpeditionDetailPage() {
         (wp.entryIds || []).forEach(eid => linkedEntryIds.add(eid));
       });
 
+      // Entry numbers: sorted by date asc, route position as tiebreaker for same-date entries
+      const entryRoutePosition = new Map<string, number>();
+      waypoints.forEach((wp, wpIdx) => {
+        (wp.entryIds || []).forEach(eid => entryRoutePosition.set(eid, wpIdx));
+      });
+      const sortedEntriesForNumbering = [...journalEntries].sort((a, b) => {
+        const da = new Date(a.date).getTime(), db = new Date(b.date).getTime();
+        if (da !== db) return da - db;
+        const ra = entryRoutePosition.get(a.id) ?? Infinity, rb = entryRoutePosition.get(b.id) ?? Infinity;
+        if (ra !== rb) return ra - rb;
+        return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      });
+      const entryNumberMap = new Map(sortedEntriesForNumbering.map((e, i) => [e.id, i + 1]));
+
+      // Waypoint numbers: independent sequence counting only unconverted waypoints in route order
+      const waypointNumberMap = new Map<string, number>();
+      let wpNum = 0;
+      waypoints.forEach((wp) => {
+        if (!(wp.entryIds && wp.entryIds.length > 0)) {
+          wpNum++;
+          waypointNumberMap.set(wp.id, wpNum);
+        }
+      });
+
       waypoints.forEach((wp, idx) => {
         const isStart = idx === 0;
         const isEnd = !isRoundTrip && idx === waypoints.length - 1 && waypoints.length > 1;
@@ -432,7 +448,7 @@ export function ExpeditionDetailPage() {
             fontSize: milestone ? '12px' : '11px', color: 'white', fontWeight: 'bold',
             fontFamily: 'Jost, system-ui, sans-serif',
           });
-          wrapper.textContent = String(idx + 1);
+          wrapper.textContent = String(entryNumberMap.get(entryIds[0]) ?? idx + 1);
         } else {
           // Unconverted — diamond marker
           const diamond = document.createElement('div');
@@ -449,7 +465,7 @@ export function ExpeditionDetailPage() {
             label.style.fontSize = '13px'; label.textContent = isStart ? 'S' : 'E';
           } else {
             Object.assign(diamond.style, { width: '24px', height: '24px', backgroundColor: '#616161', border: '2px solid white', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' });
-            label.style.fontSize = '11px'; label.textContent = String(idx + 1);
+            label.style.fontSize = '11px'; label.textContent = String(waypointNumberMap.get(wp.id) ?? idx + 1);
           }
 
           diamond.appendChild(label);
@@ -684,6 +700,30 @@ export function ExpeditionDetailPage() {
         (wp.entryIds || []).forEach(eid => linkedEntryIds.add(eid));
       });
 
+      // Entry numbers: sorted by date asc, route position as tiebreaker for same-date entries
+      const entryRoutePosition = new Map<string, number>();
+      waypoints.forEach((wp, wpIdx) => {
+        (wp.entryIds || []).forEach(eid => entryRoutePosition.set(eid, wpIdx));
+      });
+      const sortedEntriesForNumbering = [...journalEntries].sort((a, b) => {
+        const da = new Date(a.date).getTime(), db = new Date(b.date).getTime();
+        if (da !== db) return da - db;
+        const ra = entryRoutePosition.get(a.id) ?? Infinity, rb = entryRoutePosition.get(b.id) ?? Infinity;
+        if (ra !== rb) return ra - rb;
+        return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+      });
+      const entryNumberMap = new Map(sortedEntriesForNumbering.map((e, i) => [e.id, i + 1]));
+
+      // Waypoint numbers: independent sequence counting only unconverted waypoints in route order
+      const waypointNumberMap = new Map<string, number>();
+      let wpNum = 0;
+      waypoints.forEach((wp) => {
+        if (!(wp.entryIds && wp.entryIds.length > 0)) {
+          wpNum++;
+          waypointNumberMap.set(wp.id, wpNum);
+        }
+      });
+
       waypoints.forEach((wp, idx) => {
         const isStart = idx === 0;
         const isEnd = !isRoundTrip && idx === waypoints.length - 1 && waypoints.length > 1;
@@ -736,7 +776,7 @@ export function ExpeditionDetailPage() {
             fontSize: milestone ? '12px' : '11px', color: 'white', fontWeight: 'bold',
             fontFamily: 'Jost, system-ui, sans-serif',
           });
-          wrapper.textContent = String(idx + 1);
+          wrapper.textContent = String(entryNumberMap.get(entryIds[0]) ?? idx + 1);
 
           wrapper.addEventListener('click', () => {
             markerClickedRef.current = true;
@@ -777,7 +817,7 @@ export function ExpeditionDetailPage() {
             diamond.style.width = '22px'; diamond.style.height = '22px';
             diamond.style.backgroundColor = '#616161'; diamond.style.border = '2px solid white';
             diamond.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
-            label.style.fontSize = '12px'; label.textContent = String(idx + 1);
+            label.style.fontSize = '12px'; label.textContent = String(waypointNumberMap.get(wp.id) ?? idx + 1);
           }
 
           diamond.appendChild(label);
@@ -982,6 +1022,7 @@ export function ExpeditionDetailPage() {
             expeditionNotes={expeditionNotes}
             noteCount={noteCount}
             isSponsoring={isSponsoring}
+            isPublicNotes={isPublicNotes}
             isOwner={isOwner}
             isAuthenticated={isAuthenticated}
             notesSectionRef={notesSectionRef}
@@ -1045,7 +1086,7 @@ export function ExpeditionDetailPage() {
           totalFunding: expedition.raised,
           backers: expedition.sponsors,
         }}
-        onStatusChange={handleStatusChange}
+        onComplete={handleComplete}
         onCancel={async (reason) => {
           await expeditionApi.cancel(expedition.id, reason);
           const refreshed = await expeditionApi.getById(expedition.id);
