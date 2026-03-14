@@ -155,7 +155,7 @@ export function DocumentationPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#4676ac] mt-1">●</span>
-                    <span><strong>Expedition Notes:</strong> 280-character sponsor-only updates</span>
+                    <span><strong>Expedition Notes:</strong> 280-character updates (public or sponsor-exclusive)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#4676ac] mt-1">●</span>
@@ -241,9 +241,27 @@ export function DocumentationPage() {
             </div>
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Creating Expeditions</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                There are two ways to create an expedition:
+              </p>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4 mb-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span><strong>Expedition Builder:</strong> Full-featured form with route planning, waypoints, and map integration</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span><strong>Quick Entry:</strong> Streamlined form for logging completed or simple expeditions quickly</span>
+                </li>
+              </ul>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Both forms require a cover photo, title, category, region, start date, and description. You can manage
+                visibility settings, configure sponsorship options, and set expedition notes visibility for each
+                expedition individually.
+              </p>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Navigate to your journal profile to create new expeditions. You can manage visibility settings,
-                enable entry notes, and configure sponsorship options for each expedition individually.
+                Expeditions created with both start and end dates in the past are automatically marked as completed.
+                Completed expeditions cannot have sponsorships enabled. Private expeditions disable expedition notes entirely.
               </p>
             </div>
           </div>
@@ -305,7 +323,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span><strong>Expedition Note</strong> (Pro): 280-character sponsor-only updates</span>
+                  <span><strong>Expedition Note</strong> (Pro): 280-character updates (visibility controlled per expedition — public or sponsor-exclusive)</span>
                 </li>
               </ul>
             </div>
@@ -435,7 +453,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span>Access to Expedition Notes — explorers may set a minimum cumulative sponsorship threshold for Notes access. Check the sponsorship checkout page to see the threshold and your progress toward it</span>
+                  <span>Access to Expedition Notes — explorers control whether notes are public or sponsor-exclusive. For sponsor-exclusive notes, access is unlocked by meeting the explorer&apos;s cumulative sponsorship threshold</span>
                 </li>
               </ul>
             </div>
@@ -800,11 +818,12 @@ export function DocumentationPage() {
                 </div>
                 <div className="flex items-center gap-3 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <span className="text-[#ac6d46] font-bold w-32">PRIVATE</span>
-                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible only to you</span>
+                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible only to you. All entries locked to private. Expedition notes and sponsorships are completely disabled. Cannot be changed after creation.</span>
                 </div>
               </div>
               <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mt-2">
                 Entry visibility is inherited from the parent expedition. You can also set visibility per-entry when needed.
+                Private visibility is permanent and cannot be changed after expedition creation.
               </p>
             </div>
             <div>

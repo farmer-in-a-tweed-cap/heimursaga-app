@@ -108,7 +108,7 @@ export function SponsorshipGuidePage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">•</span>
-                  <span>You may gain access to exclusive Expedition Notes once you meet the explorer&apos;s cumulative sponsorship threshold</span>
+                  <span>You may gain access to Expedition Notes — explorers control whether notes are public or sponsor-exclusive. For sponsor-exclusive notes, access is unlocked once you meet the explorer&apos;s cumulative sponsorship threshold</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">•</span>
@@ -296,10 +296,14 @@ export function SponsorshipGuidePage() {
 
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Enabling Sponsorships on Expeditions</h3>
-              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Sponsorships are enabled at the expedition level, not your entire account. This allows you to choose 
-                which journeys you want to seek support for. You can enable/disable sponsorships for individual 
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Sponsorships are enabled at the expedition level, not your entire account. This allows you to choose
+                which journeys you want to seek support for. You can enable/disable sponsorships for individual
                 expeditions through your expedition settings.
+              </p>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                <strong>Note:</strong> Sponsorships can only be enabled on planned or active expeditions. Completed expeditions
+                automatically lock the sponsorship option. Private expeditions cannot have sponsorships enabled.
               </p>
             </div>
 
@@ -424,16 +428,36 @@ export function SponsorshipGuidePage() {
             </div>
 
             <div>
-              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Setting an Expedition Notes Access Threshold</h3>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Expedition Notes Visibility</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                Explorer Pro accounts can set a minimum cumulative sponsorship amount required for sponsors to access
-                Expedition Notes on each expedition. This allows you to keep Notes exclusive for more committed sponsors
-                while still welcoming all contributions on the leaderboard.
+                Explorer Pro accounts can control who can read their Expedition Notes. When creating or editing an expedition,
+                you can set notes visibility to:
+              </p>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6 mb-3">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span><strong>Public:</strong> Anyone can read your expedition notes</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span><strong>Sponsor Exclusive:</strong> Only sponsors who meet the access threshold can read notes. Selecting this option automatically enables sponsorships on the expedition</span>
+                </li>
+              </ul>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Notes visibility defaults to Public. Enabling sponsorships automatically sets visibility to Sponsor Exclusive,
+                but you can change it back to Public at any time. Notes are completely disabled for private expeditions.
+              </p>
+
+              <h3 className="font-bold mb-2 mt-4 text-[#202020] dark:text-white">Setting a Notes Access Threshold</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                When notes are set to Sponsor Exclusive, you can set a minimum cumulative sponsorship amount required to
+                unlock access. This allows you to keep Notes exclusive for more committed sponsors while still welcoming
+                all contributions on the leaderboard.
               </p>
               <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6">
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">•</span>
-                  <span>Set the threshold in the expedition builder under &quot;Expedition Notes Access Threshold&quot;</span>
+                  <span>Set the threshold in the expedition builder or quick entry form under &quot;Notes Access Threshold&quot;</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">•</span>
@@ -524,8 +548,9 @@ export function SponsorshipGuidePage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Regular Updates</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 Sponsors support you because they want to follow your journey. Post regular entries even when things
-                don't go as planned. Use Expedition Notes (280-character sponsor-only updates) to keep sponsors
-                engaged between full journal entries. Authenticity builds trust—sponsors appreciate honest accounts
+                don't go as planned. Use Expedition Notes (280-character updates) to keep your audience
+                engaged between full journal entries — you can make notes public for all readers or sponsor-exclusive
+                for your supporters. Authenticity builds trust — sponsors appreciate honest accounts
                 of both successes and challenges.
               </p>
             </div>
@@ -559,10 +584,10 @@ export function SponsorshipGuidePage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Managing Expectations</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 All sponsors receive leaderboard recognition and (for monthly subscribers) email delivery of new entries.
-                Access to Expedition Notes is determined by the cumulative sponsorship threshold you set — sponsors who
-                meet the threshold unlock Notes for that expedition. Beyond these built-in benefits, you&apos;re not obligated
-                to provide additional perks. The core value sponsors receive is access to your authentic journey and
-                contribution to meaningful exploration.
+                Expedition Notes can be set to public (visible to everyone) or sponsor-exclusive — for sponsor-exclusive notes,
+                access is determined by the cumulative sponsorship threshold you set. Beyond these built-in benefits, you&apos;re
+                not obligated to provide additional perks. The core value sponsors receive is access to your authentic journey
+                and contribution to meaningful exploration.
               </p>
             </div>
 
