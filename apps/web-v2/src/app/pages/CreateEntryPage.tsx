@@ -984,7 +984,6 @@ export function CreateEntryPage() {
                 <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">STANDALONE ENTRY LIMITATIONS:</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1">
                   <div>• This entry will NOT be associated with any expedition</div>
-                  <div>• Cannot receive sponsorships or contributions</div>
                   <div>• Will not contribute to expedition statistics or milestones</div>
                   <div>• Appears in your journal feed but not in expedition timelines</div>
                   <div>• Useful for one-off observations, reflections, or test entries</div>
@@ -1218,7 +1217,7 @@ Share your thoughts, observations, and reflections. This entry is not tied to an
 • Test the journal entry format
 • Write about topics unrelated to a specific expedition
 
-Note: Standalone entries cannot receive sponsorships and won't appear in expedition timelines.` : `Write your journal entry here...
+Note: Standalone entries won't appear in expedition timelines.` : `Write your journal entry here...
 
 Share your experiences, observations, and reflections. Include details about:
 • What you saw and experienced today

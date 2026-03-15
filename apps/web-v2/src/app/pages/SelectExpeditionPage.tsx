@@ -446,7 +446,7 @@ export function SelectExpeditionPage() {
                 <div className="bg-[#fff8e1] dark:bg-[#3a3320] p-3 border-l-2 border-[#ac6d46] mb-4">
                   <div className="text-xs font-bold mb-1 dark:text-[#e5e5e5]">NOTE:</div>
                   <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                    Standalone entries appear in your journal but are not connected to any expedition. They cannot receive sponsorships and will not contribute to expedition statistics.
+                    Standalone entries appear in your journal but are not connected to any expedition. They will not contribute to expedition statistics.
                   </p>
                 </div>
 
