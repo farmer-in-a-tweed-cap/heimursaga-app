@@ -25,7 +25,7 @@ export function EntryCardFull({ entry, onPress, showAuthor = true }: EntryCardFu
   const coverUrl = entry.coverImage || entry.media?.[0]?.thumbnail || entry.media?.[0]?.original || entry.media?.[0]?.url;
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Journal entry: ${entry.title}`} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
       <HCard>
         <StatusHeader
           status="planned"

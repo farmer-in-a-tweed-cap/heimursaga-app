@@ -28,6 +28,8 @@ export function Avatar({ size = 32, name, pro, imageUrl }: AvatarProps) {
           borderColor,
         },
       ]}
+      accessibilityLabel={`${name}'s avatar`}
+      accessibilityRole="image"
     >
       {showImage ? (
         <Image

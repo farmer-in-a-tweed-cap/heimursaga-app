@@ -1,14 +1,13 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useApi } from '@/hooks/useApi';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
-import { HCard } from '@/components/ui/HCard';
 import { TopoBackground } from '@/components/ui/TopoBackground';
-import { mono, colors as brandColors, spacing } from '@/theme/tokens';
+import { mono, colors as brandColors } from '@/theme/tokens';
 import { ExplorerCardMini } from '@/components/cards/ExplorerCardMini';
 import { EntryCardFull } from '@/components/cards/EntryCardFull';
 import { ExpeditionCardMini } from '@/components/cards/ExpeditionCardMini';
@@ -17,7 +16,7 @@ import type { Expedition, ExplorerProfile, Entry } from '@/types/api';
 const FILTER_TABS = ['EXPEDITIONS', 'EXPLORERS', 'ENTRIES'];
 
 export default function DiscoverScreen() {
-  const { dark, colors } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { tab } = useLocalSearchParams<{ tab?: string }>();
@@ -51,6 +50,52 @@ export default function DiscoverScreen() {
     setRefreshing(false);
   }, [refetchTrips, refetchUsers, refetchPosts]);
 
+  const listHeader = useMemo(() => (
+    <>
+      <View style={styles.searchWrap}>
+        <SearchBar
+          placeholder="Search explorers, expeditions, entries..."
+          value={query}
+          onChangeText={setQuery}
+        />
+      </View>
+      <View style={styles.filterWrap}>
+        <SegmentedControl
+          options={FILTER_TABS}
+          active={activeTab}
+          onSelect={setActiveTab}
+        />
+      </View>
+    </>
+  ), [query, activeTab]);
+
+  const renderExpedition = useCallback(({ item }: { item: Expedition }) => (
+    <View style={styles.cardWrap}>
+      <ExpeditionCardMini
+        expedition={item}
+        onPress={() => router.push(`/expedition/${item.id}`)}
+      />
+    </View>
+  ), [router]);
+
+  const renderExplorer = useCallback(({ item }: { item: ExplorerProfile }) => (
+    <View style={styles.cardWrap}>
+      <ExplorerCardMini
+        explorer={item}
+        onPress={() => router.push(`/explorer/${item.username}`)}
+      />
+    </View>
+  ), [router]);
+
+  const renderEntry = useCallback(({ item }: { item: Entry }) => (
+    <View style={styles.cardWrap}>
+      <EntryCardFull
+        entry={item}
+        onPress={() => router.push(`/entry/${item.id}`)}
+      />
+    </View>
+  ), [router]);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <TopoBackground topOffset={insets.top + 47} />
@@ -59,70 +104,43 @@ export default function DiscoverScreen() {
         <Text style={styles.headerTitle}>DISCOVER</Text>
       </View>
 
-      <ScrollView
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={brandColors.copper} />}
-      >
-        {/* Search */}
-        <View style={styles.searchWrap}>
-          <SearchBar
-            placeholder="Search explorers, expeditions, entries..."
-            value={query}
-            onChangeText={setQuery}
-          />
-        </View>
+      {activeTab === 0 && (
+        <FlatList
+          data={trending}
+          keyExtractor={(item) => item.id}
+          renderItem={renderExpedition}
+          ListHeaderComponent={listHeader}
+          ListFooterComponent={<View style={styles.spacer} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={brandColors.copper} />}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
 
-        {/* Filter tabs */}
-        <View style={styles.filterWrap}>
-          <SegmentedControl
-            options={FILTER_TABS}
-            active={activeTab}
-            onSelect={setActiveTab}
-          />
-        </View>
+      {activeTab === 1 && (
+        <FlatList
+          data={explorers}
+          keyExtractor={(item) => item.username}
+          renderItem={renderExplorer}
+          numColumns={2}
+          columnWrapperStyle={styles.explorerRow}
+          ListHeaderComponent={listHeader}
+          ListFooterComponent={<View style={styles.spacer} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={brandColors.copper} />}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
 
-        {/* Expeditions */}
-        {activeTab === 0 && (
-          <View style={styles.sectionContent}>
-            {trending.map((item) => (
-              <ExpeditionCardMini
-                key={item.id}
-                expedition={item}
-                onPress={() => router.push(`/expedition/${item.id}`)}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* Explorers */}
-        {activeTab === 1 && (
-          <View style={styles.sectionContent}>
-            <View style={styles.explorerGrid}>
-              {explorers.map((explorer) => (
-                <ExplorerCardMini
-                  key={explorer.username}
-                  explorer={explorer}
-                  onPress={() => router.push(`/explorer/${explorer.username}`)}
-                />
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Entries */}
-        {activeTab === 2 && (
-          <View style={styles.sectionContent}>
-            {entries.map((entry) => (
-              <EntryCardFull
-                key={entry.id}
-                entry={entry}
-                onPress={() => router.push(`/entry/${entry.id}`)}
-              />
-            ))}
-          </View>
-        )}
-
-        <View style={styles.spacer} />
-      </ScrollView>
+      {activeTab === 2 && (
+        <FlatList
+          data={entries}
+          keyExtractor={(item) => item.id}
+          renderItem={renderEntry}
+          ListHeaderComponent={listHeader}
+          ListFooterComponent={<View style={styles.spacer} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={brandColors.copper} />}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
     </View>
   );
 }
@@ -151,14 +169,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
   },
-  sectionContent: {
+  listContent: {
+    paddingBottom: 16,
+  },
+  cardWrap: {
     paddingHorizontal: 16,
     paddingTop: 12,
   },
-  explorerGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  explorerRow: {
+    paddingHorizontal: 16,
     gap: 8,
+    paddingTop: 12,
   },
   spacer: { height: 32 },
 });

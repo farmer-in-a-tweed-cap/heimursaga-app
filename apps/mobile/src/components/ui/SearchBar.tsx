@@ -41,6 +41,8 @@ export function SearchBar({
         onChangeText={onChangeText}
         onSubmitEditing={onSubmitEditing}
         returnKeyType="search"
+        accessibilityLabel="Search"
+        accessibilityRole="search"
       />
     </View>
   );

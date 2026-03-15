@@ -45,7 +45,7 @@ function TabIcon({ name, focused }: { name: string; focused: boolean }) {
     ),
   };
 
-  return <View style={styles.iconWrap}>{icons[name]}</View>;
+  return <View style={styles.iconWrap} accessibilityElementsHidden>{icons[name]}</View>;
 }
 
 export default function TabLayout() {
@@ -80,6 +80,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Explore',
+          tabBarAccessibilityLabel: 'Explore tab',
           tabBarIcon: ({ focused }) => <TabIcon name="explore" focused={focused} />,
         }}
       />
@@ -87,6 +88,7 @@ export default function TabLayout() {
         name="discover"
         options={{
           title: 'Discover',
+          tabBarAccessibilityLabel: 'Discover tab',
           tabBarIcon: ({ focused }) => <TabIcon name="discover" focused={focused} />,
         }}
       />
@@ -94,6 +96,7 @@ export default function TabLayout() {
         name="create"
         options={{
           title: 'Log',
+          tabBarAccessibilityLabel: 'Log new entry tab',
           tabBarIcon: ({ focused }) => <TabIcon name="create" focused={focused} />,
         }}
       />
@@ -101,6 +104,7 @@ export default function TabLayout() {
         name="bookmarks"
         options={{
           title: 'Bookmark',
+          tabBarAccessibilityLabel: 'Bookmarks tab',
           tabBarIcon: ({ focused }) => <TabIcon name="saved" focused={focused} />,
         }}
       />
@@ -108,6 +112,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Journal',
+          tabBarAccessibilityLabel: 'Journal tab',
           tabBarIcon: ({ focused }) => <TabIcon name="journal" focused={focused} />,
         }}
       />

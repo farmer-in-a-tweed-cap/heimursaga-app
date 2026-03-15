@@ -26,7 +26,7 @@ export function NavBar({ onBack, title, right }: NavBarProps) {
       ]}
     >
       {onBack ? (
-        <Pressable onPress={onBack} style={styles.backButton} hitSlop={{ top: 12, bottom: 12, left: 8, right: 24 }}>
+        <Pressable onPress={onBack} style={styles.backButton} hitSlop={{ top: 12, bottom: 12, left: 8, right: 24 }} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={styles.backText}>{'\u2190'} Back</Text>
         </Pressable>
       ) : (
