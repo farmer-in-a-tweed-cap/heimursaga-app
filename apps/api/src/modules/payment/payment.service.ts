@@ -1116,11 +1116,27 @@ export class PaymentService {
         }
       )?.confirmation_secret?.client_secret;
 
+      const isFreeSubscription = !clientSecret;
+
+      // For free subscriptions (100% promo), complete the upgrade immediately.
+      // The webhook (payment_intent.succeeded) will never fire since there's no
+      // payment intent, and invoice.payment_succeeded fires before metadata is
+      // written to the subscription — so the webhook handler can't find the
+      // checkout ID and silently returns.
+      if (isFreeSubscription) {
+        this.logger.log(
+          `Free subscription detected for checkout ${checkout.id}, completing upgrade immediately`,
+        );
+        await this.completeSubscriptionPlanUpgrade({
+          checkoutId: checkout.id,
+        });
+      }
+
       return {
         subscriptionPlanId,
         subscriptionId,
-        clientSecret: clientSecret || null, // Explicitly return null for free subscriptions
-        isFreeSubscription: !clientSecret, // Flag to indicate free subscription
+        clientSecret: clientSecret || null,
+        isFreeSubscription,
       };
     } catch (e) {
       this.logger.error(e);

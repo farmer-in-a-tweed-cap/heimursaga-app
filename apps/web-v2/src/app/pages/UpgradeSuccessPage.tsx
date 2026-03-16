@@ -1,30 +1,100 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Check, ArrowRight, BarChart3, Settings, DollarSign, MessageSquare, FileText, Eye, Receipt, CreditCard, Sparkles } from 'lucide-react';
+import { Check, ArrowRight, BarChart3, Settings, DollarSign, MessageSquare, FileText, Eye, Receipt, CreditCard, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
+import { formatCurrency } from '@/app/utils/formatCurrency';
 
 export function UpgradeSuccessPage() {
   const searchParams = useSearchParams();
-  const { refreshUser } = useAuth();
+  const { refreshUser, user } = useAuth();
   const plan = searchParams.get('plan') || 'monthly';
-  const amount = plan === 'monthly' ? 7 : 50;
 
-  // Poll auth context until the webhook processes and the user's role updates to 'creator'
+  // Promo data from checkout
+  const promoCode = searchParams.get('promoCode');
+  const amountCents = searchParams.get('amount') ? Number(searchParams.get('amount')) : null;
+  const discountCents = searchParams.get('discount') ? Number(searchParams.get('discount')) : null;
+  const percentOff = searchParams.get('percentOff') ? Number(searchParams.get('percentOff')) : null;
+  const amountOff = searchParams.get('amountOff') ? Number(searchParams.get('amountOff')) : null;
+  const promoDuration = searchParams.get('duration');
+  const durationMonths = searchParams.get('durationMonths') ? Number(searchParams.get('durationMonths')) : null;
+
+  // Compute display amount: use promo amount if provided, otherwise default
+  const baseAmount = plan === 'monthly' ? 7 : 50;
+  const displayAmount = amountCents !== null ? amountCents / 100 : baseAmount;
+  const hasPromo = !!promoCode;
+
+  // Promo description text
+  const promoDescription = hasPromo
+    ? percentOff
+      ? `${percentOff}% off`
+      : amountOff
+        ? `$${formatCurrency(amountOff / 100)} off`
+        : 'Discount applied'
+    : null;
+
+  const promoDurationText = hasPromo
+    ? promoDuration === 'once'
+      ? ' (first payment)'
+      : promoDuration === 'repeating' && durationMonths
+        ? ` for ${durationMonths} month${durationMonths > 1 ? 's' : ''}`
+        : promoDuration === 'forever'
+          ? ' (forever)'
+          : ''
+    : '';
+
+  // Poll with exponential backoff: start at 1s, max 5s, for up to 60 seconds total
+  const [roleUpdated, setRoleUpdated] = useState(user?.role === 'creator');
+  const [pollFailed, setPollFailed] = useState(false);
+  const [manualRefreshing, setManualRefreshing] = useState(false);
+
   useEffect(() => {
-    let attempts = 0;
-    const maxAttempts = 20; // 10 seconds total
-    const interval = setInterval(async () => {
-      attempts++;
-      await refreshUser();
-      if (attempts >= maxAttempts) {
-        clearInterval(interval);
-      }
-    }, 500);
+    if (roleUpdated) return;
 
-    return () => clearInterval(interval);
+    let elapsed = 0;
+    let delay = 1000;
+    let timeoutId: NodeJS.Timeout;
+
+    const poll = async () => {
+      try {
+        await refreshUser();
+      } catch {
+        // ignore refresh errors
+      }
+      elapsed += delay;
+
+      if (elapsed >= 60000) {
+        setPollFailed(true);
+        return;
+      }
+
+      // Exponential backoff: 1s → 2s → 4s → 5s (cap)
+      delay = Math.min(delay * 2, 5000);
+      timeoutId = setTimeout(poll, delay);
+    };
+
+    timeoutId = setTimeout(poll, delay);
+    return () => clearTimeout(timeoutId);
+  }, [refreshUser, roleUpdated]);
+
+  // Watch for role change from auth context
+  useEffect(() => {
+    if (user?.role === 'creator') {
+      setRoleUpdated(true);
+      setPollFailed(false);
+    }
+  }, [user?.role]);
+
+  const handleManualRefresh = useCallback(async () => {
+    setManualRefreshing(true);
+    try {
+      await refreshUser();
+    } catch {
+      // ignore
+    }
+    setManualRefreshing(false);
   }, [refreshUser]);
 
   // Transaction details will be shown from the payment
@@ -57,12 +127,37 @@ export function UpgradeSuccessPage() {
 
             <div className="text-center mb-6">
               <div className="text-5xl font-bold text-[#ac6d46] mb-2">
-                ${amount}.00
+                ${formatCurrency(displayAmount)}
               </div>
+              {hasPromo && (
+                <div className="mb-2">
+                  <span className="text-lg line-through text-[#b5bcc4]">${baseAmount}.00</span>
+                </div>
+              )}
               <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
                 Payment processed successfully
               </div>
             </div>
+
+            {/* Promo applied banner */}
+            {hasPromo && (
+              <div className="bg-[#4676ac]/10 border-2 border-[#4676ac] p-4 mb-6">
+                <div className="flex items-center gap-2 justify-center">
+                  <Check className="w-4 h-4 text-[#4676ac]" />
+                  <span className="font-bold text-sm text-[#4676ac]">
+                    {promoCode!.toUpperCase()}
+                  </span>
+                  <span className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                    — {promoDescription}{promoDurationText}
+                  </span>
+                </div>
+                {discountCents !== null && discountCents > 0 && (
+                  <div className="text-center mt-2 text-sm text-[#4676ac] font-bold">
+                    You saved ${formatCurrency(discountCents / 100)}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -91,6 +186,29 @@ export function UpgradeSuccessPage() {
               </div>
             </div>
           </div>
+
+          {/* Role update status */}
+          {pollFailed && !roleUpdated && (
+            <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#ac6d46] p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-[#ac6d46] flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">Account upgrade processing</div>
+                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
+                    Your payment was successful but your account upgrade is still being processed. This usually takes a few moments. Pro features will be available as soon as processing completes.
+                  </div>
+                  <button
+                    onClick={handleManualRefresh}
+                    disabled={manualRefreshing}
+                    className="inline-flex items-center gap-2 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-xs font-bold dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all disabled:opacity-50"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${manualRefreshing ? 'animate-spin' : ''}`} />
+                    {manualRefreshing ? 'CHECKING...' : 'CHECK AGAIN'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Receipt Notice */}
           <div className="bg-[#4676ac] text-white border-2 border-[#4676ac] p-4 mb-6">
@@ -125,7 +243,7 @@ export function UpgradeSuccessPage() {
         <div className="bg-[#ac6d46] text-white px-6 py-4 border-b-2 border-[#202020] dark:border-[#616161]">
           <div className="font-bold text-xl">GET STARTED WITH EXPLORER PRO</div>
         </div>
-        
+
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Primary action */}

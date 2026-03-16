@@ -239,7 +239,18 @@ function CheckoutForm({ onPromoChange }: { onPromoChange: (promo: PromoData | nu
         }
       }
 
-      router.push('/upgrade-success?plan=' + billingPeriod);
+      // Build success page URL with promo data if applicable
+      const successParams = new URLSearchParams({ plan: billingPeriod });
+      if (promoApplied) {
+        successParams.set('amount', String(promoApplied.pricing.finalAmount));
+        successParams.set('discount', String(promoApplied.pricing.discountAmount));
+        successParams.set('promoCode', promoApplied.code);
+        if (promoApplied.coupon.percentOff) successParams.set('percentOff', String(promoApplied.coupon.percentOff));
+        if (promoApplied.coupon.amountOff) successParams.set('amountOff', String(promoApplied.coupon.amountOff));
+        successParams.set('duration', promoApplied.coupon.duration);
+        if (promoApplied.coupon.durationInMonths) successParams.set('durationMonths', String(promoApplied.coupon.durationInMonths));
+      }
+      router.push('/upgrade-success?' + successParams.toString());
 
     } catch (err: any) {
       setError(err.message || 'Payment failed. Please try again.');
