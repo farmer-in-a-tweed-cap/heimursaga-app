@@ -1254,48 +1254,34 @@ Remember: Your sponsors and followers are reading this to understand your journe
         </div>
       </div>
 
-      {/* Location Map Modal */}
+      {/* Location Map Modal - LocationMap renders its own modal wrapper */}
       {showMap && !isLinkedToWaypoint && (
-        <div className="fixed inset-0 bg-[#202020]/90 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold dark:text-[#e5e5e5]">UPDATE LOCATION</h2>
-              <button
-                onClick={() => setShowMap(false)}
-                className="px-4 py-2 bg-[#616161] text-white font-bold hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
-              >
-                CLOSE
-              </button>
-            </div>
-            <LocationMap
-              initialLat={coordinates?.lat}
-              initialLng={coordinates?.lng}
-              onLocationSelect={(lat, lng) => {
-                setCoordinates({ lat, lng });
-                setShowMap(false);
-              }}
-              onClose={() => setShowMap(false)}
-              expeditionWaypoints={fullExpedition?.waypoints?.map((wp, idx) => ({
-                id: String(wp.id),
-                lat: wp.lat || 0,
-                lng: wp.lon || 0,
-                title: wp.title || `Waypoint ${idx + 1}`,
-                type: idx === 0 ? 'start' as const : (idx === (fullExpedition?.waypoints?.length || 0) - 1 ? 'end' as const : 'standard' as const),
-              }))}
-              expeditionEntries={fullExpedition?.entries?.filter(e => e.lat && e.lon).map(e => ({
-                id: e.id,
-                lat: e.lat!,
-                lng: e.lon!,
-                title: e.title,
-              }))}
-              expeditionRouteGeometry={fullExpedition?.routeGeometry}
-              isRoundTrip={fullExpedition?.isRoundTrip}
-              currentLocationSource={fullExpedition?.currentLocationSource}
-              currentLocationId={fullExpedition?.currentLocationId}
-              onCompletedSegmentDrop={setMarkerOnCompletedSegment}
-            />
-          </div>
-        </div>
+        <LocationMap
+          initialLat={coordinates?.lat}
+          initialLng={coordinates?.lng}
+          onLocationSelect={(lat, lng) => {
+            setCoordinates({ lat, lng });
+          }}
+          onClose={() => setShowMap(false)}
+          expeditionWaypoints={fullExpedition?.waypoints?.map((wp, idx) => ({
+            id: String(wp.id),
+            lat: wp.lat || 0,
+            lng: wp.lon || 0,
+            title: wp.title || `Waypoint ${idx + 1}`,
+            type: idx === 0 ? 'start' as const : (idx === (fullExpedition?.waypoints?.length || 0) - 1 ? 'end' as const : 'standard' as const),
+          }))}
+          expeditionEntries={fullExpedition?.entries?.filter(e => e.lat && e.lon).map(e => ({
+            id: e.id,
+            lat: e.lat!,
+            lng: e.lon!,
+            title: e.title,
+          }))}
+          expeditionRouteGeometry={fullExpedition?.routeGeometry}
+          isRoundTrip={fullExpedition?.isRoundTrip}
+          currentLocationSource={fullExpedition?.currentLocationSource}
+          currentLocationId={fullExpedition?.currentLocationId}
+          onCompletedSegmentDrop={setMarkerOnCompletedSegment}
+        />
       )}
 
       {/* Photo Metadata Modal */}

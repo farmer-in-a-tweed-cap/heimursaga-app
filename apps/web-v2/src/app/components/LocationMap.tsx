@@ -435,9 +435,9 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       checkCompletedSegment(markerLng, markerLat);
     };
 
-    // Handle geocoder result
+    // Handle geocoder result — zoom to location only, don't drop a marker.
+    // User must tap the map to place a marker, then confirm via the button.
     geocoder.on('result', async (e: any) => {
-      // POI results have placeholder [0,0] coords — resolve via retrievePOI
       const mapboxId = e.result?.properties?.mapbox_id;
       let lng: number, lat: number;
       if (mapboxId) {
@@ -445,31 +445,11 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         if (!poi) return;
         lng = poi.lng;
         lat = poi.lat;
-        map.flyTo({ center: [lng, lat], zoom: 14 });
       } else {
         const { center } = e.result;
         [lng, lat] = center;
       }
-
-      setPosition({ lat, lng });
-      onLocationSelect(lat, lng);
-
-      // Remove existing marker
-      if (markerRef.current) {
-        markerRef.current.remove();
-      }
-
-      const marker = new mapboxgl.Marker({ element: createEntryMarkerElement(), draggable: true })
-        .setLngLat([lng, lat])
-        .addTo(map);
-      marker.on('dragend', () => {
-        const lngLat = marker.getLngLat();
-        setPosition({ lat: lngLat.lat, lng: lngLat.lng });
-        onLocationSelect(lngLat.lat, lngLat.lng);
-        updateRouteForMarker(lngLat.lng, lngLat.lat);
-      });
-      markerRef.current = marker;
-      updateRouteForMarker(lng, lat);
+      map.flyTo({ center: [lng, lat], zoom: 14 });
     });
 
     // Add geolocate control (only if geolocation is available)
@@ -500,13 +480,12 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         
         map.addControl(geolocate, 'top-right');
         
-        // Update position when geolocate finds user location
+        // Update position when geolocate finds user location (local only, confirm required)
         geolocate.on('geolocate', (e: any) => {
           const lat = e.coords.latitude;
           const lng = e.coords.longitude;
           setPosition({ lat, lng });
           setCurrentLocation({ lat, lng });
-          onLocationSelect(lat, lng);
         });
       } catch {
         // Silently handle case where GeolocateControl cannot be initialized
@@ -518,11 +497,11 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       setZoom(map.getZoom());
     });
 
-    // Handle map click
+    // Handle map click — drop/move marker, update local position only.
+    // Location is not confirmed until the user clicks CONFIRM LOCATION.
     map.on('click', (e) => {
       const { lng, lat } = e.lngLat;
       setPosition({ lat, lng });
-      onLocationSelect(lat, lng);
 
       // Remove existing marker
       if (markerRef.current) {
@@ -535,7 +514,6 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       marker.on('dragend', () => {
         const lngLat = marker.getLngLat();
         setPosition({ lat: lngLat.lat, lng: lngLat.lng });
-        onLocationSelect(lngLat.lat, lngLat.lng);
         updateRouteForMarker(lngLat.lng, lngLat.lat);
       });
       markerRef.current = marker;
@@ -550,7 +528,6 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       marker.on('dragend', () => {
         const lngLat = marker.getLngLat();
         setPosition({ lat: lngLat.lat, lng: lngLat.lng });
-        onLocationSelect(lngLat.lat, lngLat.lng);
         updateRouteForMarker(lngLat.lng, lngLat.lat);
       });
       markerRef.current = marker;
@@ -620,9 +597,8 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         const lng = pos.coords.longitude;
         setPosition({ lat, lng });
         setCurrentLocation({ lat, lng });
-        onLocationSelect(lat, lng);
-        
-        // Fly to the new location
+
+        // Fly to the new location and drop marker
         if (mapRef.current) {
           mapRef.current.flyTo({
             center: [lng, lat],
@@ -641,7 +617,6 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
           marker.on('dragend', () => {
             const lngLat = marker.getLngLat();
             setPosition({ lat: lngLat.lat, lng: lngLat.lng });
-            onLocationSelect(lngLat.lat, lngLat.lng);
             updateRouteSource(lngLat.lng, lngLat.lat);
           });
           markerRef.current = marker;
@@ -794,7 +769,12 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
                 CANCEL
               </button>
               <button
-                onClick={onClose}
+                onClick={() => {
+                  if (position) {
+                    onLocationSelect(position.lat, position.lng);
+                  }
+                  onClose();
+                }}
                 disabled={!position}
                 className="flex-1 sm:flex-none px-6 py-2.5 sm:py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >

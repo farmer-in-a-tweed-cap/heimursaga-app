@@ -1235,6 +1235,8 @@ export class EntryService {
         visibility,
         metadata,
         waypointId,
+        lat,
+        lon,
       } = payload;
 
       this.logger.log('entry_update');
@@ -1384,6 +1386,8 @@ export class EntryService {
             public: payload.public,
             sponsored: payload.sponsored,
             place: payload.place,
+            lat: lat !== undefined ? lat : undefined,
+            lon: lon !== undefined ? lon : undefined,
             date: payload.date ? new Date(payload.date) : undefined,
             is_draft:
               payload.isDraft !== undefined ? payload.isDraft : entry.is_draft,

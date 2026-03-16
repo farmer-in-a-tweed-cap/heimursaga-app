@@ -610,7 +610,7 @@ export class ExplorerService {
         deleted_at: null,
         is_draft: false,
         author: { username },
-        // Entries store coordinates directly
+        // Entries must have coordinates
         lat: { not: null },
         lon: { not: null },
         // Entry visibility derived from expedition

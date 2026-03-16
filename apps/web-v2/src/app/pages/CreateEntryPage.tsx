@@ -2093,7 +2093,6 @@ Include:
           initialLng={coordinates?.lng}
           onLocationSelect={(lat, lng) => {
             setCoordinates({ lat, lng });
-            // Don't close modal here - user must click CONFIRM LOCATION
           }}
           onClose={() => setShowMap(false)}
           expeditionWaypoints={expedition?.waypoints?.map((wp, idx) => ({

@@ -1,12 +1,14 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert, Modal,
+  ActivityIndicator, Alert, Modal, Image, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useApi } from '@/hooks/useApi';
 import { NavBar } from '@/components/ui/NavBar';
 import { HTextField } from '@/components/ui/HTextField';
 import { HButton } from '@/components/ui/HButton';
@@ -15,8 +17,15 @@ import { RadioOption } from '@/components/ui/RadioOption';
 import { ImagePlaceholder } from '@/components/ui/ImagePlaceholder';
 import HeimuMap, { WaypointMarker, HeimuMapRef, clusterMarkers } from '@/components/map/HeimuMap';
 import { Svg, Path, Circle } from 'react-native-svg';
-import { expeditionApi } from '@/services/api';
+import { expeditionApi, uploadApi } from '@/services/api';
+let ImagePicker: typeof import('expo-image-picker') | null = null;
+try {
+  ImagePicker = require('expo-image-picker');
+} catch {
+  // Native module not available
+}
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
+import type { Expedition } from '@/types/api';
 import { MAPBOX_TOKEN } from '@/services/mapConfig';
 import { GEO_REGION_GROUPS, EXPEDITION_CATEGORIES } from '@/constants/geoRegions';
 import {
@@ -52,6 +61,34 @@ export default function ExpeditionBuilderScreen() {
   const router = useRouter();
   const { ready } = useRequireAuth();
 
+  // Check for existing active/planned expeditions
+  const { data: userTripsData, loading: tripsLoading } = useApi<{ data: Expedition[] }>(
+    ready ? '/user/trips' : null,
+  );
+  const userExpeditions = userTripsData?.data ?? [];
+  const blockingExpedition = userExpeditions.find(e => e.status === 'active' || e.status === 'planned');
+
+  const handleCompleteExpedition = useCallback(async (exp: Expedition) => {
+    Alert.alert(
+      'Complete Expedition',
+      `Mark "${exp.title}" as completed so you can start a new one?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Complete',
+          onPress: async () => {
+            try {
+              await expeditionApi.updateExpedition(exp.id, { status: 'completed' } as any);
+              router.replace('/expedition/create');
+            } catch (err: any) {
+              Alert.alert('Error', err.message ?? 'Failed to update expedition');
+            }
+          },
+        },
+      ],
+    );
+  }, [router]);
+
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
 
@@ -60,9 +97,14 @@ export default function ExpeditionBuilderScreen() {
   const [description, setDescription] = useState('');
   const [selectedCat, setSelectedCat] = useState('');
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   const [visibility, setVisibility] = useState(0);
+  const [coverImageUri, setCoverImageUri] = useState<string | null>(null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   // Step 2 state
   const [waypoints, setWaypoints] = useState<WaypointEntry[]>([]);
@@ -407,6 +449,61 @@ export default function ExpeditionBuilderScreen() {
     clearRouteSearchCache();
   }, [waypoints, routeMode, isRoundTrip]);
 
+  const formatDate = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const formatDateDisplay = (d: Date) =>
+    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  const computeStatus = useCallback((): 'planned' | 'active' | 'completed' => {
+    const today = formatDate(new Date());
+    if (!startDate) return 'planned';
+    const start = formatDate(startDate);
+    if (endDate && formatDate(endDate) <= today) return 'completed';
+    if (start > today) return 'planned';
+    return 'active';
+  }, [startDate, endDate]);
+
+  const derivedStatus = computeStatus();
+
+  const handleStartDateChange = useCallback((_: any, selected?: Date) => {
+    if (Platform.OS === 'android') setShowStartPicker(false);
+    if (!selected) return;
+    setStartDate(selected);
+    if (endDate && selected > endDate) setEndDate(null);
+  }, [endDate]);
+
+  const handleEndDateChange = useCallback((_: any, selected?: Date) => {
+    if (Platform.OS === 'android') setShowEndPicker(false);
+    if (!selected) return;
+    if (startDate && selected < startDate) return;
+    setEndDate(selected);
+  }, [startDate]);
+
+  const handlePickCoverImage = useCallback(async () => {
+    if (!ImagePicker) {
+      Alert.alert('Unavailable', 'Image picker requires a development build.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets?.[0]) return;
+    const uri = result.assets[0].uri;
+    setCoverImageUri(uri);
+    setCoverUploading(true);
+    try {
+      const uploadResult = await uploadApi.upload(uri);
+      setCoverImageUrl(uploadResult.original);
+    } catch {
+      Alert.alert('Upload failed', 'Could not upload cover image. Please try again.');
+      setCoverImageUri(null);
+    } finally {
+      setCoverUploading(false);
+    }
+  }, []);
+
   const handleLaunch = useCallback(async (isDraft: boolean) => {
     if (!name.trim()) {
       Alert.alert('Name required', 'Please name your expedition.');
@@ -419,11 +516,12 @@ export default function ExpeditionBuilderScreen() {
         description: description.trim() || undefined,
         category: selectedCat || undefined,
         region: selectedRegions.length > 0 ? selectedRegions.join(', ') : undefined,
-        start_date: startDate || undefined,
-        end_date: endDate || undefined,
+        startDate: startDate ? formatDate(startDate) : undefined,
+        endDate: endDate ? formatDate(endDate) : undefined,
         visibility: VISIBILITY_OPTIONS[visibility].label.toLowerCase(),
         funding_goal: fundingEnabled && fundingGoal && !isNaN(parseFloat(fundingGoal.replace(/,/g, ''))) ? Math.round(parseFloat(fundingGoal.replace(/,/g, '')) * 100) : undefined,
-        status: isDraft ? 'planned' : 'active',
+        status: isDraft ? 'planned' : derivedStatus,
+        coverImage: coverImageUrl || undefined,
       });
 
       // Save waypoints to the newly created expedition
@@ -451,13 +549,58 @@ export default function ExpeditionBuilderScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [name, description, selectedCat, selectedRegions, startDate, endDate, visibility, fundingEnabled, fundingGoal, waypoints, router]);
+  }, [name, description, selectedCat, selectedRegions, startDate, endDate, visibility, fundingEnabled, fundingGoal, waypoints, router, coverImageUrl]);
 
-  if (!ready) {
+  if (!ready || tripsLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <NavBar onBack={() => router.back()} title="NEW EXPEDITION" />
         <ActivityIndicator color={brandColors.copper} style={styles.loader} />
+      </View>
+    );
+  }
+
+  if (blockingExpedition) {
+    const isActive = blockingExpedition.status === 'active';
+    const endDatePassed = blockingExpedition.endDate && new Date(blockingExpedition.endDate) < new Date();
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <NavBar onBack={() => router.back()} title="NEW EXPEDITION" />
+        <View style={styles.blockedWrap}>
+          <HCard>
+            <View style={styles.blockedInner}>
+              <Text style={[styles.blockedTitle, { color: colors.text }]}>
+                {isActive ? 'ACTIVE' : 'PLANNED'} EXPEDITION IN PROGRESS
+              </Text>
+              <Text style={[styles.blockedName, { color: brandColors.copper }]}>
+                {blockingExpedition.title}
+              </Text>
+              <Text style={[styles.blockedDesc, { color: colors.textSecondary }]}>
+                You can only have one active or planned expedition at a time. Complete or cancel your current expedition to start a new one.
+              </Text>
+              <View style={styles.blockedActions}>
+                <HButton
+                  variant="copper"
+                  outline
+                  onPress={() => router.push(`/expedition/${blockingExpedition.id}`)}
+                >
+                  VIEW EXPEDITION
+                </HButton>
+                {(isActive || endDatePassed) && (
+                  <>
+                    <View style={styles.blockedGap} />
+                    <HButton
+                      variant="copper"
+                      onPress={() => handleCompleteExpedition(blockingExpedition)}
+                    >
+                      MARK AS COMPLETED
+                    </HButton>
+                  </>
+                )}
+              </View>
+            </View>
+          </HCard>
+        </View>
       </View>
     );
   }
@@ -928,7 +1071,11 @@ export default function ExpeditionBuilderScreen() {
         </View>
       )}
 
-      <ScrollView style={[styles.scroll, step === 1 && { display: 'none' }]} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        style={[styles.flex1, step === 1 && { display: 'none' }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.form}>
 
           {/* STEP 1: DETAILS */}
@@ -943,15 +1090,34 @@ export default function ExpeditionBuilderScreen() {
                 <View style={styles.stepBody}>
                   <HTextField label="EXPEDITION NAME" placeholder="e.g. Trans-Siberian Journey" value={name} onChangeText={setName} />
 
-                  {/* Cover image placeholder */}
+                  {/* Cover image */}
                   <View style={styles.fieldGroup}>
                     <Text style={[styles.label, { color: colors.textSecondary }]}>COVER IMAGE</Text>
-                    <TouchableOpacity style={[styles.dashedBox, { borderColor: colors.textTertiary }]}>
-                      <Svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={1.5}>
-                        <Path d="M3 3h18v18H3zM8.5 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21" />
-                      </Svg>
-                      <Text style={[styles.dashedText, { color: colors.textTertiary }]}>Tap to add cover photo</Text>
-                    </TouchableOpacity>
+                    {coverImageUri ? (
+                      <View>
+                        <Image source={{ uri: coverImageUri }} style={styles.coverPreview} />
+                        {coverUploading && (
+                          <View style={styles.coverUploading}>
+                            <ActivityIndicator color="#fff" />
+                          </View>
+                        )}
+                        <TouchableOpacity
+                          style={styles.coverRemove}
+                          onPress={() => { setCoverImageUri(null); setCoverImageUrl(null); }}
+                        >
+                          <Svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5}>
+                            <Path d="M18 6L6 18M6 6l12 12" />
+                          </Svg>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity style={[styles.dashedBox, { borderColor: colors.textTertiary }]} onPress={handlePickCoverImage}>
+                        <Svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={1.5}>
+                          <Path d="M3 3h18v18H3zM8.5 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM21 15l-5-5L5 21" />
+                        </Svg>
+                        <Text style={[styles.dashedText, { color: colors.textTertiary }]}>Tap to add cover photo</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
 
                   {/* Description */}
@@ -1031,12 +1197,90 @@ export default function ExpeditionBuilderScreen() {
                   </View>
 
                   {/* Dates */}
-                  <View style={styles.dateRow}>
-                    <View style={styles.dateField}>
-                      <HTextField label="START DATE" placeholder="YYYY-MM-DD" value={startDate} onChangeText={setStartDate} />
+                  <View style={styles.fieldGroup}>
+                    <View style={styles.dateRow}>
+                      <View style={styles.dateField}>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>START DATE</Text>
+                        <TouchableOpacity
+                          style={[styles.dateButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
+                          onPress={() => setShowStartPicker(true)}
+                        >
+                          <Text style={[styles.dateButtonText, { color: startDate ? colors.text : colors.textTertiary }]}>
+                            {startDate ? formatDateDisplay(startDate) : 'Select date'}
+                          </Text>
+                        </TouchableOpacity>
+                        {startDate && (
+                          <TouchableOpacity onPress={() => setStartDate(null)} style={styles.dateClear}>
+                            <Text style={[styles.dateClearText, { color: colors.textTertiary }]}>Clear</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                      <View style={styles.dateField}>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>END DATE</Text>
+                        <TouchableOpacity
+                          style={[styles.dateButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
+                          onPress={() => setShowEndPicker(true)}
+                        >
+                          <Text style={[styles.dateButtonText, { color: endDate ? colors.text : colors.textTertiary }]}>
+                            {endDate ? formatDateDisplay(endDate) : 'Optional'}
+                          </Text>
+                        </TouchableOpacity>
+                        {endDate && (
+                          <TouchableOpacity onPress={() => setEndDate(null)} style={styles.dateClear}>
+                            <Text style={[styles.dateClearText, { color: colors.textTertiary }]}>Clear</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     </View>
-                    <View style={styles.dateField}>
-                      <HTextField label="END DATE" placeholder="YYYY-MM-DD" value={endDate} onChangeText={setEndDate} />
+
+                    {showStartPicker && (
+                      <View style={styles.pickerWrap}>
+                        <DateTimePicker
+                          value={startDate ?? new Date()}
+                          mode="date"
+                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                          onChange={handleStartDateChange}
+                          maximumDate={endDate ?? undefined}
+                          themeVariant={dark ? 'dark' : 'light'}
+                        />
+                        {Platform.OS === 'ios' && (
+                          <TouchableOpacity style={styles.dateConfirm} onPress={() => setShowStartPicker(false)}>
+                            <Text style={styles.dateConfirmText}>DONE</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
+
+                    {showEndPicker && (
+                      <View style={styles.pickerWrap}>
+                        <DateTimePicker
+                          value={endDate ?? new Date()}
+                          mode="date"
+                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+                          onChange={handleEndDateChange}
+                          minimumDate={startDate ?? undefined}
+                          themeVariant={dark ? 'dark' : 'light'}
+                        />
+                        {Platform.OS === 'ios' && (
+                          <TouchableOpacity style={styles.dateConfirm} onPress={() => setShowEndPicker(false)}>
+                            <Text style={styles.dateConfirmText}>DONE</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    )}
+
+                    {/* Derived status */}
+                    <View style={[styles.statusIndicator, {
+                      backgroundColor: derivedStatus === 'active' ? brandColors.green
+                        : derivedStatus === 'completed' ? brandColors.red
+                        : brandColors.blue,
+                    }]}>
+                      <Text style={styles.statusText}>
+                        {derivedStatus === 'active' ? 'ACTIVE — expedition is underway'
+                          : derivedStatus === 'completed' ? 'COMPLETED — end date has passed'
+                          : !startDate ? 'PLANNED — no start date set'
+                          : 'PLANNED — start date is in the future'}
+                      </Text>
                     </View>
                   </View>
 
@@ -1126,7 +1370,11 @@ export default function ExpeditionBuilderScreen() {
 
               {/* Preview card */}
               <HCard>
-                <ImagePlaceholder height={120} />
+                {coverImageUri ? (
+                  <Image source={{ uri: coverImageUri }} style={{ width: '100%', height: 120 }} />
+                ) : (
+                  <ImagePlaceholder height={120} />
+                )}
                 <View style={styles.previewContent}>
                   <Text style={[styles.previewTitle, { color: colors.text }]}>
                     {name || 'Untitled Expedition'}
@@ -1142,7 +1390,7 @@ export default function ExpeditionBuilderScreen() {
                   ) : null}
                   <View style={[styles.previewDivider, { borderTopColor: colors.borderThin }]}>
                     <Text style={[styles.previewInfo, { color: colors.textTertiary }]}>
-                      {startDate || '—'} → {endDate || '—'} · {waypoints.length} waypoints
+                      {startDate ? formatDateDisplay(startDate) : '—'} → {endDate ? formatDateDisplay(endDate) : '—'} · {waypoints.length} waypoints · {derivedStatus.toUpperCase()}
                     </Text>
                   </View>
                   {fundingEnabled && fundingGoal && (
@@ -1161,11 +1409,11 @@ export default function ExpeditionBuilderScreen() {
                 </View>
                 {[
                   { label: 'Expedition name', done: !!name.trim() },
-                  { label: 'Cover image', done: false },
+                  { label: 'Cover image', done: !!coverImageUrl },
                   { label: 'Description', done: !!description.trim() },
                   { label: 'Route with waypoints', done: waypoints.length > 0 },
                   { label: 'Funding goal', done: fundingEnabled && !!fundingGoal },
-                  { label: 'Dates set', done: !!startDate && !!endDate },
+                  { label: 'Dates set', done: !!startDate },
                 ].map((item, i) => (
                   <View
                     key={item.label}
@@ -1212,13 +1460,22 @@ export default function ExpeditionBuilderScreen() {
 
         <View style={styles.spacer} />
       </ScrollView>
+      </KeyboardAvoidingView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  flex1: { flex: 1 },
   loader: { flex: 1 },
+  blockedWrap: { padding: 16, paddingTop: 24 },
+  blockedInner: { padding: 16 },
+  blockedTitle: { fontFamily: mono, fontSize: 14, fontWeight: '700', letterSpacing: 0.8 },
+  blockedName: { fontSize: 18, fontWeight: '700', marginTop: 8 },
+  blockedDesc: { fontSize: 14, lineHeight: 20, marginTop: 12 },
+  blockedActions: { marginTop: 20 },
+  blockedGap: { height: 8 },
   scroll: { flex: 1 },
   form: { padding: 16 },
   stepCounter: {
@@ -1294,6 +1551,29 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
+  coverPreview: {
+    width: '100%',
+    height: 180,
+    borderRadius: 4,
+  },
+  coverUploading: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coverRemove: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   chipGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1326,6 +1606,54 @@ const styles = StyleSheet.create({
   },
   dateField: {
     flex: 1,
+  },
+  dateButton: {
+    borderWidth: 1,
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  dateButtonText: {
+    fontFamily: mono,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  dateClear: {
+    marginTop: 4,
+    alignSelf: 'flex-end',
+  },
+  dateClearText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  pickerWrap: {
+    marginTop: 8,
+  },
+  dateConfirm: {
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    marginTop: 4,
+  },
+  dateConfirmText: {
+    fontFamily: mono,
+    fontSize: 13,
+    fontWeight: '700',
+    color: brandColors.copper,
+    letterSpacing: 0.6,
+  },
+  statusIndicator: {
+    marginTop: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+    letterSpacing: 0.4,
   },
   navButtons: {
     flexDirection: 'row',
