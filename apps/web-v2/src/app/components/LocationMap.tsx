@@ -682,8 +682,8 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     position.lng === currentLocation.lng;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-[#202020] border-4 border-[#202020] dark:border-[#616161] w-full max-w-5xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 sm:p-4">
+      <div className="bg-white dark:bg-[#202020] border-4 border-[#202020] dark:border-[#616161] w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-[#4676ac] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center justify-between">
           <div>
@@ -705,19 +705,19 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         </div>
 
         {/* Coordinates Display & Controls */}
-        <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex-1">
+        <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
+            <div className="flex-1 min-w-0">
               <div className="text-xs font-bold mb-1 text-[#202020] dark:text-[#e5e5e5]">
                 SELECTED COORDINATES:
               </div>
-              <div className="font-mono text-sm text-[#616161] dark:text-[#b5bcc4]">
+              <div className="font-mono text-xs sm:text-sm text-[#616161] dark:text-[#b5bcc4]">
                 {position ? (
                   <>
                     <span className="text-[#ac6d46] font-bold">
                       {position.lat.toFixed(6)}, {position.lng.toFixed(6)}
                     </span>
-                    <span className="ml-3 text-xs">
+                    <span className="ml-2 sm:ml-3 text-xs">
                       (±{isCurrentLocation ? '10m accurate' : 'Manual selection'})
                     </span>
                   </>
@@ -729,7 +729,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
             <button
               onClick={getCurrentLocation}
               disabled={gettingLocation}
-              className="px-4 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-xs sm:text-sm whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {gettingLocation ? 'LOCATING...' : 'USE CURRENT LOCATION'}
             </button>
@@ -737,11 +737,11 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         </div>
 
         {/* Map Container */}
-        <div className="flex-1 relative" style={{ minHeight: '500px', height: '500px' }}>
+        <div className="flex-1 relative" style={{ minHeight: '250px' }}>
           <div ref={mapContainerRef} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }} />
 
-          {/* Map Instructions Overlay */}
-          <div className="absolute bottom-4 left-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 max-w-xs z-10 shadow-lg">
+          {/* Map Instructions Overlay - hidden on mobile */}
+          <div className="absolute bottom-4 left-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 max-w-xs z-10 shadow-lg hidden sm:block">
             <div className="text-xs font-bold mb-2 text-[#202020] dark:text-[#e5e5e5]">
               MAP INSTRUCTIONS:
             </div>
@@ -754,8 +754,8 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
             </div>
           </div>
 
-          {/* Zoom Level & Map Info Indicator */}
-          <div className="absolute bottom-4 right-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] px-3 py-2 z-10 font-mono text-xs">
+          {/* Zoom Level & Map Info Indicator - hidden on mobile */}
+          <div className="absolute bottom-4 right-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] px-3 py-2 z-10 font-mono text-xs hidden sm:block">
             <div className="space-y-1">
               <div>
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Zoom:</span>{' '}
@@ -774,9 +774,9 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         </div>
 
         {/* Footer Actions */}
-        <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+        <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] p-3 sm:p-4 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="text-xs text-[#616161] dark:text-[#b5bcc4] hidden sm:block">
               <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">DATA SOURCE:</div>
               {isCurrentLocation ? (
                 <div>Live GPS Capture (Real-time device location)</div>
@@ -786,17 +786,17 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
                 <div>No location selected yet</div>
               )}
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 w-full sm:w-auto">
               <button
                 onClick={onClose}
-                className="px-6 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a] transition-all text-sm"
+                className="flex-1 sm:flex-none px-6 py-2.5 sm:py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a] transition-all text-sm font-bold"
               >
                 CANCEL
               </button>
               <button
                 onClick={onClose}
                 disabled={!position}
-                className="px-6 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 sm:flex-none px-6 py-2.5 sm:py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 CONFIRM LOCATION
               </button>
