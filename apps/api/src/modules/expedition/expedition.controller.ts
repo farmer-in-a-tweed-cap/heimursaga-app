@@ -24,6 +24,7 @@ import {
   ExpeditionUpdateLocationDto,
   ExpeditionWaypointParamDto,
   WaypointCreateDto,
+  WaypointSyncDto,
   WaypointUpdateDto,
 } from './expedition.dto';
 import { ExpeditionService } from './expedition.service';
@@ -65,6 +66,41 @@ export class ExpeditionController {
       });
     }
     return { ...result, _patched: true };
+  }
+
+  @Get('drafts')
+  @HttpCode(HttpStatus.OK)
+  async getDraftExpeditions(@Session() session: ISession) {
+    return await this.expeditionService.getDraftExpeditions({
+      query: {},
+      session,
+    });
+  }
+
+  @Patch(':trip_id/publish')
+  @HttpCode(HttpStatus.OK)
+  async publishDraftExpedition(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+  ) {
+    return await this.expeditionService.publishDraftExpedition({
+      query: { id: param.trip_id },
+      session,
+    });
+  }
+
+  @Put(':trip_id/waypoints/sync')
+  @HttpCode(HttpStatus.OK)
+  async syncExpeditionWaypoints(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+    @Body() body: WaypointSyncDto,
+  ) {
+    return await this.expeditionService.syncExpeditionWaypoints({
+      query: { id: param.trip_id },
+      payload: body,
+      session,
+    });
   }
 
   @Public()

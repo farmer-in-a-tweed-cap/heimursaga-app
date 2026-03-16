@@ -46,6 +46,7 @@ export function SelectExpeditionPage() {
   // Treat expeditions without a status or with 'active'/'planned' status as active
   const activeExpeditions = expeditions.filter(e => !e.status || e.status === 'active' || e.status === 'planned');
   const completedExpeditions = expeditions.filter(e => e.status === 'completed');
+  const draftExpeditions = expeditions.filter(e => e.status === 'draft');
   const currentExpedition = activeExpeditions[0] || null;
   
   // Authentication gate
@@ -146,6 +147,41 @@ export function SelectExpeditionPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Draft Expeditions */}
+          {draftExpeditions.length > 0 && (
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46] p-6">
+              <div className="flex items-center gap-3 mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
+                <div className="px-3 py-1 bg-[#ac6d46] text-white font-bold text-sm">DRAFT</div>
+                <h2 className="text-sm font-bold dark:text-[#e5e5e5]">
+                  UNSAVED EXPEDITION{draftExpeditions.length > 1 ? 'S' : ''}
+                </h2>
+              </div>
+              <div className="space-y-3">
+                {draftExpeditions.map((draft) => (
+                  <div key={draft.id} className="border-2 border-[#ac6d46] p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="font-bold text-lg dark:text-[#e5e5e5]">{draft.title || 'Untitled Draft'}</h3>
+                          <span className="text-xs bg-[#ac6d46] text-white px-2 py-1">DRAFT</span>
+                        </div>
+                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+                          Last modified: {draft.updatedAt ? formatDateTime(new Date(draft.updatedAt)) : 'Unknown'}
+                        </div>
+                      </div>
+                      <Link
+                        href={`/expedition-builder/${draft.id}`}
+                        className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
+                      >
+                        CONTINUE IN BUILDER
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* OPTION 1: Select Current Expedition */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46] p-6">
             <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">

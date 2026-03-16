@@ -150,7 +150,7 @@ export class ExpeditionService {
 
       let where: Prisma.ExpeditionWhereInput = {
         deleted_at: null,
-        status: { not: 'cancelled' },
+        status: { notIn: ['cancelled', 'draft'] },
       };
 
       // query based on the explorer role (or public access for unauthenticated users)
@@ -404,7 +404,10 @@ export class ExpeditionService {
         author: { username },
         ...(isOwner
           ? {}
-          : { visibility: 'public', status: { not: 'cancelled' } }),
+          : {
+              visibility: 'public',
+              status: { notIn: ['cancelled', 'draft'] },
+            }),
         deleted_at: null,
       } satisfies Prisma.ExpeditionWhereInput;
 
@@ -802,6 +805,14 @@ export class ExpeditionService {
         entries,
         author,
       } = expedition;
+
+      // Draft expeditions are only visible to their authors
+      if (
+        expedition.status === 'draft' &&
+        (!isAuthenticated || explorerId !== expedition.author_id)
+      ) {
+        throw new ServiceNotFoundException('expedition not found');
+      }
 
       // access control - private expeditions are only accessible by their authors
       if (
@@ -1248,7 +1259,10 @@ export class ExpeditionService {
         },
       });
 
-      await this.checkAndUpdateRestingStatus(explorerId);
+      // Drafts don't affect resting status
+      if (payload.status !== 'draft') {
+        await this.checkAndUpdateRestingStatus(explorerId);
+      }
 
       const response: IExpeditionCreateResponse = {
         expeditionId: expedition.public_id,
@@ -1317,7 +1331,8 @@ export class ExpeditionService {
           const currentVis = expedition.visibility || 'public';
           const isPrivateTransition =
             (currentVis === 'private') !== (vis === 'private');
-          if (isPrivateTransition) {
+          // Private visibility lock only applies to published expeditions
+          if (expedition.status !== 'draft' && isPrivateTransition) {
             throw new ServiceBadRequestException(
               'Expedition visibility cannot be changed to or from private after creation',
             );
@@ -1347,14 +1362,19 @@ export class ExpeditionService {
           if (
             dateChanged &&
             expedition.start_date &&
-            expedition.status !== 'planned'
+            expedition.status !== 'planned' &&
+            expedition.status !== 'draft'
           ) {
             throw new ServiceBadRequestException(
               'Start date can only be changed for planned expeditions',
             );
           }
           // If expedition already has a start_date, enforce ±30 day limit
-          if (dateChanged && expedition.start_date) {
+          if (
+            dateChanged &&
+            expedition.start_date &&
+            expedition.status !== 'draft'
+          ) {
             const diffMs = Math.abs(
               newStartDate.getTime() - expedition.start_date.getTime(),
             );
@@ -1428,76 +1448,85 @@ export class ExpeditionService {
         data: updateData,
       });
 
-      // Notify sponsors when expedition goes off-grid
-      const oldVisibility = expedition.visibility || 'public';
-      const newVisibility = updateData.visibility;
-      if (newVisibility === 'off-grid' && oldVisibility !== 'off-grid') {
-        try {
-          const sponsors = await this.prisma.sponsorship.findMany({
-            where: {
-              sponsored_explorer_id: explorerId,
-              status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
-              deleted_at: null,
-            },
-            select: { sponsor_id: true },
-          });
-
-          for (const sponsor of sponsors) {
-            this.eventService.trigger<IUserNotificationCreatePayload>({
-              event: EVENTS.NOTIFICATION_CREATE,
-              data: {
-                context: UserNotificationContext.EXPEDITION_OFF_GRID,
-                userId: sponsor.sponsor_id,
-                mentionUserId: explorerId,
-                body: `An expedition you sponsor has gone off-grid. Access it from your Sponsorships dashboard.`,
+      // Skip notifications for draft expeditions
+      if (expedition.status !== 'draft') {
+        // Notify sponsors when expedition goes off-grid
+        const oldVisibility = expedition.visibility || 'public';
+        const newVisibility = updateData.visibility;
+        if (newVisibility === 'off-grid' && oldVisibility !== 'off-grid') {
+          try {
+            const sponsors = await this.prisma.sponsorship.findMany({
+              where: {
+                sponsored_explorer_id: explorerId,
+                status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
+                deleted_at: null,
               },
+              select: { sponsor_id: true },
             });
+
+            for (const sponsor of sponsors) {
+              this.eventService.trigger<IUserNotificationCreatePayload>({
+                event: EVENTS.NOTIFICATION_CREATE,
+                data: {
+                  context: UserNotificationContext.EXPEDITION_OFF_GRID,
+                  userId: sponsor.sponsor_id,
+                  mentionUserId: explorerId,
+                  body: `An expedition you sponsor has gone off-grid. Access it from your Sponsorships dashboard.`,
+                },
+              });
+            }
+          } catch (notifErr) {
+            this.logger.error(
+              'Failed to send off-grid notifications:',
+              notifErr,
+            );
           }
-        } catch (notifErr) {
-          this.logger.error('Failed to send off-grid notifications:', notifErr);
+        }
+
+        // Notify sponsors when start date changes
+        if (
+          updateData.start_date &&
+          expedition.start_date &&
+          updateData.start_date.getTime() !== expedition.start_date.getTime()
+        ) {
+          try {
+            const sponsors = await this.prisma.sponsorship.findMany({
+              where: {
+                sponsored_explorer_id: explorerId,
+                status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
+                deleted_at: null,
+              },
+              select: { sponsor_id: true },
+            });
+
+            const formattedDate = dateformat(updateData.start_date).format(
+              'MMMM D, YYYY',
+            );
+            for (const sponsor of sponsors) {
+              this.eventService.trigger<IUserNotificationCreatePayload>({
+                event: EVENTS.NOTIFICATION_CREATE,
+                data: {
+                  context: UserNotificationContext.EXPEDITION_DATE_CHANGED,
+                  userId: sponsor.sponsor_id,
+                  mentionUserId: explorerId,
+                  expeditionPublicId: expedition.public_id,
+                  body: `"${expedition.title}" start date has been changed to ${formattedDate}.`,
+                },
+              });
+            }
+          } catch (notifErr) {
+            this.logger.error(
+              'Failed to send date change notifications:',
+              notifErr,
+            );
+          }
         }
       }
 
-      // Notify sponsors when start date changes
-      if (
-        updateData.start_date &&
-        expedition.start_date &&
-        updateData.start_date.getTime() !== expedition.start_date.getTime()
-      ) {
-        try {
-          const sponsors = await this.prisma.sponsorship.findMany({
-            where: {
-              sponsored_explorer_id: explorerId,
-              status: { in: ['active', 'ACTIVE', 'confirmed', 'CONFIRMED'] },
-              deleted_at: null,
-            },
-            select: { sponsor_id: true },
-          });
-
-          const formattedDate = dateformat(updateData.start_date).format(
-            'MMMM D, YYYY',
-          );
-          for (const sponsor of sponsors) {
-            this.eventService.trigger<IUserNotificationCreatePayload>({
-              event: EVENTS.NOTIFICATION_CREATE,
-              data: {
-                context: UserNotificationContext.EXPEDITION_DATE_CHANGED,
-                userId: sponsor.sponsor_id,
-                mentionUserId: explorerId,
-                expeditionPublicId: expedition.public_id,
-                body: `"${expedition.title}" start date has been changed to ${formattedDate}.`,
-              },
-            });
-          }
-        } catch (notifErr) {
-          this.logger.error(
-            'Failed to send date change notifications:',
-            notifErr,
-          );
-        }
+      // Drafts don't affect resting status
+      if (expedition.status !== 'draft') {
+        await this.checkAndUpdateRestingStatus(explorerId);
       }
-
-      await this.checkAndUpdateRestingStatus(explorerId);
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;
@@ -2090,6 +2119,272 @@ export class ExpeditionService {
       };
 
       return response;
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async getDraftExpeditions({ session }: ISessionQuery<{}>): Promise<any> {
+    try {
+      const { explorerId } = session;
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      const drafts = await this.prisma.expedition.findMany({
+        where: {
+          author_id: explorerId,
+          status: 'draft',
+          deleted_at: null,
+        },
+        orderBy: { updated_at: 'desc' },
+        take: 10,
+        select: {
+          public_id: true,
+          title: true,
+          description: true,
+          visibility: true,
+          status: true,
+          start_date: true,
+          end_date: true,
+          cover_image: true,
+          category: true,
+          region: true,
+          tags: true,
+          is_round_trip: true,
+          route_mode: true,
+          route_geometry: true,
+          goal: true,
+          notes_access_threshold: true,
+          notes_visibility: true,
+          updated_at: true,
+          waypoints: {
+            orderBy: { sequence: 'asc' },
+            select: {
+              sequence: true,
+              waypoint: {
+                select: {
+                  id: true,
+                  title: true,
+                  lat: true,
+                  lon: true,
+                  date: true,
+                  description: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      return {
+        data: drafts.map((d) => ({
+          id: d.public_id,
+          title: d.title,
+          description: d.description,
+          visibility: d.visibility || 'public',
+          status: d.status,
+          startDate: d.start_date,
+          endDate: d.end_date,
+          coverImage: getStaticMediaUrl(d.cover_image),
+          category: d.category,
+          region: d.region,
+          tags: d.tags ? JSON.parse(d.tags) : [],
+          isRoundTrip: d.is_round_trip ?? false,
+          routeMode: d.route_mode || undefined,
+          routeGeometry: d.route_geometry
+            ? JSON.parse(d.route_geometry)
+            : undefined,
+          goal: integerToDecimal(d.goal ?? 0),
+          notesAccessThreshold: integerToDecimal(d.notes_access_threshold ?? 0),
+          notesVisibility: d.notes_visibility || 'public',
+          updatedAt: d.updated_at,
+          waypoints: d.waypoints.map(({ sequence, waypoint }) => ({
+            id: waypoint.id,
+            title: waypoint.title,
+            lat: waypoint.lat,
+            lon: waypoint.lon,
+            date: waypoint.date,
+            description: waypoint.description,
+            sequence,
+          })),
+        })),
+      };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async publishDraftExpedition({
+    session,
+    query,
+  }: ISessionQuery<{ id: string }>): Promise<void> {
+    try {
+      const { id } = query;
+      const { explorerId, userRole } = session;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+      if (!id) throw new ServiceNotFoundException('expedition not found');
+
+      const expedition = await this.prisma.expedition
+        .findFirstOrThrow({
+          where: { public_id: id, author_id: explorerId, deleted_at: null },
+          select: {
+            id: true,
+            status: true,
+            title: true,
+            description: true,
+            region: true,
+            category: true,
+            start_date: true,
+            cover_image: true,
+            end_date: true,
+            goal: true,
+            notes_access_threshold: true,
+          },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('expedition not found');
+        });
+
+      if (expedition.status !== 'draft') {
+        throw new ServiceBadRequestException(
+          'Only draft expeditions can be published',
+        );
+      }
+
+      // Validation
+      const errors: string[] = [];
+      if (!expedition.title?.trim()) errors.push('Title is required');
+      if (!expedition.description?.trim())
+        errors.push('Description is required');
+      if (!expedition.region?.trim()) errors.push('Region is required');
+      if (!expedition.category?.trim()) errors.push('Category is required');
+      if (!expedition.start_date) errors.push('Start date is required');
+      if (!expedition.cover_image) errors.push('Cover image is required');
+
+      // Pro checks
+      if (
+        expedition.goal &&
+        expedition.goal > 0 &&
+        !matchRoles(userRole, [UserRole.CREATOR])
+      ) {
+        errors.push('Setting a sponsorship goal requires Explorer Pro');
+      }
+      if (
+        expedition.notes_access_threshold &&
+        expedition.notes_access_threshold > 0 &&
+        !matchRoles(userRole, [UserRole.CREATOR])
+      ) {
+        errors.push('Setting a notes access threshold requires Explorer Pro');
+      }
+
+      if (errors.length > 0) {
+        throw new ServiceBadRequestException(errors.join('; '));
+      }
+
+      // Compute status from dates
+      const now = new Date();
+      let newStatus = 'planned';
+      if (expedition.start_date) {
+        if (expedition.end_date && expedition.end_date <= now) {
+          newStatus = 'completed';
+        } else if (expedition.start_date <= now) {
+          newStatus = 'active';
+        }
+      }
+
+      await this.prisma.expedition.update({
+        where: { id: expedition.id },
+        data: { status: newStatus },
+      });
+
+      await this.checkAndUpdateRestingStatus(explorerId);
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async syncExpeditionWaypoints({
+    session,
+    query,
+    payload,
+  }: ISessionQueryWithPayload<
+    { id: string },
+    {
+      waypoints: Array<{
+        lat: number;
+        lon: number;
+        title?: string;
+        date?: string;
+        description?: string;
+        sequence: number;
+      }>;
+    }
+  >): Promise<void> {
+    try {
+      const { id } = query;
+      const { explorerId } = session;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+      if (!id) throw new ServiceNotFoundException('expedition not found');
+
+      const expedition = await this.prisma.expedition
+        .findFirstOrThrow({
+          where: { public_id: id, author_id: explorerId, deleted_at: null },
+          select: { id: true },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('expedition not found');
+        });
+
+      await this.prisma.$transaction(async (tx) => {
+        // Delete existing waypoint joins and orphaned waypoints
+        const existingJoins = await tx.expeditionWaypoint.findMany({
+          where: { expedition_id: expedition.id },
+          select: { waypoint_id: true },
+        });
+
+        await tx.expeditionWaypoint.deleteMany({
+          where: { expedition_id: expedition.id },
+        });
+
+        // Soft-delete orphaned waypoints
+        if (existingJoins.length > 0) {
+          await tx.waypoint.updateMany({
+            where: {
+              id: { in: existingJoins.map((j) => j.waypoint_id) },
+            },
+            data: { deleted_at: new Date() },
+          });
+        }
+
+        // Create new waypoints
+        for (const wp of payload.waypoints) {
+          const dateTime = wp.date ? new Date(wp.date) : null;
+          await tx.expeditionWaypoint.create({
+            data: {
+              sequence: wp.sequence,
+              waypoint: {
+                create: {
+                  title: wp.title,
+                  lat: wp.lat,
+                  lon: wp.lon,
+                  date: dateTime,
+                  description: wp.description,
+                },
+              },
+              expedition: {
+                connect: { id: expedition.id },
+              },
+            },
+          });
+        }
+      });
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

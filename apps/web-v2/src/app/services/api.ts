@@ -414,6 +414,7 @@ export interface ExplorerExpedition {
     stripeAccountConnected?: boolean;
   };
   bookmarked?: boolean;
+  updatedAt?: string;
 }
 
 export interface ExplorerFollower {
@@ -934,6 +935,24 @@ export const expeditionApi = {
    */
   deleteNote: (expeditionId: string, noteId: number) =>
     api.delete<void>(`/trips/${expeditionId}/notes/${noteId}`),
+
+  /**
+   * Get user's draft expeditions
+   */
+  getDrafts: () =>
+    api.get<{ data: Expedition[] }>('/trips/drafts'),
+
+  /**
+   * Publish a draft expedition (transition from draft to planned/active)
+   */
+  publishDraft: (id: string) =>
+    api.patch<void>(`/trips/${id}/publish`),
+
+  /**
+   * Sync all waypoints for an expedition (atomic replace)
+   */
+  syncWaypoints: (id: string, waypoints: Array<{ lat: number; lon: number; title?: string; date?: string; description?: string; sequence: number }>) =>
+    api.put<void>(`/trips/${id}/waypoints/sync`, { waypoints }),
 };
 
 // Entry metadata types

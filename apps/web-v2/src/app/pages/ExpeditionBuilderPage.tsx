@@ -160,6 +160,16 @@ export function ExpeditionBuilderPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Draft / Autosave state
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [existingDraft, setExistingDraft] = useState<any | null>(null);
+  const lastSavedContentRef = useRef<string>('');
+  const isAutoSavingRef = useRef(false);
+  const isSubmittingRef = useRef(false);
+
   // Allowed image types for cover photo
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
   const MAX_COVER_SIZE = 25 * 1024 * 1024; // 25MB
@@ -297,6 +307,26 @@ export function ExpeditionBuilderPage() {
             await expeditionApi.updateWaypoint(expeditionPublicId, waypoint.id, buildWaypointPayload(waypoint));
           }
         }
+      } else if (draftId) {
+        // Publishing from a draft — update final state, sync waypoints, then publish
+        expeditionPublicId = draftId;
+        await expeditionApi.update(draftId, payload);
+
+        // Sync waypoints atomically
+        if (waypoints.length > 0) {
+          const wpPayload = waypoints.map((w, i) => ({
+            lat: w.coordinates.lat,
+            lon: w.coordinates.lng,
+            title: w.name || undefined,
+            date: w.date || undefined,
+            description: w.description || undefined,
+            sequence: i,
+          }));
+          await expeditionApi.syncWaypoints(draftId, wpPayload);
+        }
+
+        // Transition from draft to planned/active/completed
+        await expeditionApi.publishDraft(draftId);
       } else {
         const result = await expeditionApi.create(payload);
         expeditionPublicId = (result as any).expeditionId || (result as any).id;
@@ -359,6 +389,28 @@ export function ExpeditionBuilderPage() {
 
   const { handleStartDateChange, handleEndDateChange, handleDurationChange } =
     useBuilderDateHandlers(expeditionData, setExpeditionData, expectedDuration, setExpectedDuration);
+
+  // Keep isSubmittingRef in sync
+  useEffect(() => {
+    isSubmittingRef.current = isSubmitting;
+  }, [isSubmitting]);
+
+  // Build a content signature string for change detection
+  const getContentSignature = useCallback(() => {
+    const wpSig = waypoints.map(w => `${w.coordinates.lat},${w.coordinates.lng},${w.name},${w.sequence}`).join('|');
+    return JSON.stringify({
+      ...expeditionData,
+      coverPhotoUrl,
+      sponsorshipsEnabled,
+      sponsorshipGoal,
+      notesAccessThreshold,
+      notesVisibility,
+      isRoundTrip,
+      routeMode,
+      tags,
+      wpSig,
+    });
+  }, [expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, isRoundTrip, routeMode, tags, waypoints]);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -758,6 +810,161 @@ export function ExpeditionBuilderPage() {
 
     loadExpedition();
   }, [expeditionId, isEditMode]);
+
+  // Check for existing drafts on mount (create mode only)
+  useEffect(() => {
+    if (isEditMode) return;
+    const checkDrafts = async () => {
+      try {
+        const result = await expeditionApi.getDrafts();
+        if (result.data && result.data.length > 0) {
+          setExistingDraft(result.data[0]);
+          setShowDraftPrompt(true);
+        }
+      } catch {
+        // Silently ignore — user may not be authenticated yet
+      }
+    };
+    checkDrafts();
+  }, [isEditMode]);
+
+  // Load draft data into form state
+  const loadDraft = useCallback((draft: any) => {
+    setDraftId(draft.id);
+    setExpeditionData({
+      title: draft.title || '',
+      regions: draft.region ? draft.region.split(', ').map((r: string) => r.trim()).filter(Boolean) : [],
+      description: draft.description || '',
+      category: draft.category || '',
+      startDate: draft.startDate ? new Date(draft.startDate).toISOString().split('T')[0] : '',
+      endDate: draft.endDate ? new Date(draft.endDate).toISOString().split('T')[0] : '',
+      visibility: draft.visibility || 'public',
+    });
+    if (draft.tags?.length) setTags(draft.tags.join(', '));
+    if (draft.coverImage) {
+      setCoverPhotoPreview(draft.coverImage);
+      setCoverPhotoUrl(draft.coverImage);
+    }
+    if (draft.goal && draft.goal > 0) {
+      setSponsorshipsEnabled(true);
+      setSponsorshipGoal(draft.goal);
+    }
+    if (draft.notesAccessThreshold > 0) setNotesAccessThreshold(draft.notesAccessThreshold);
+    if (draft.notesVisibility) setNotesVisibility(draft.notesVisibility);
+    if (draft.isRoundTrip) setIsRoundTrip(true);
+    if (draft.routeMode && draft.routeMode !== 'straight') setRouteMode(draft.routeMode as RouteMode);
+    if (draft.waypoints?.length > 0) {
+      const transformed: Waypoint[] = draft.waypoints.map((wp: any, index: number) => ({
+        id: String(wp.id),
+        sequence: index,
+        name: wp.title || `Waypoint ${index + 1}`,
+        type: 'standard' as const,
+        coordinates: { lat: wp.lat || 0, lng: wp.lon || 0 },
+        location: '',
+        date: wp.date ? new Date(wp.date).toISOString().split('T')[0] : '',
+        description: wp.description || '',
+        entryIds: [],
+      }));
+      setWaypoints(updateDistances(transformed));
+    }
+    if (draft.startDate && draft.endDate) {
+      const start = new Date(draft.startDate);
+      const end = new Date(draft.endDate);
+      const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      setExpectedDuration(diffDays.toString());
+    }
+    setShowDraftPrompt(false);
+    setExistingDraft(null);
+    // Set the content signature after loading so autosave doesn't immediately trigger
+    setTimeout(() => {
+      lastSavedContentRef.current = getContentSignature();
+    }, 100);
+  }, [getContentSignature, updateDistances]);
+
+  // Handle "Start Fresh" — delete existing draft
+  const handleStartFresh = useCallback(async () => {
+    if (existingDraft?.id) {
+      try {
+        await expeditionApi.delete(existingDraft.id);
+      } catch {
+        // Ignore — draft may already be gone
+      }
+    }
+    setShowDraftPrompt(false);
+    setExistingDraft(null);
+  }, [existingDraft]);
+
+  // Autosave interval (30s, create/draft mode only)
+  useEffect(() => {
+    if (isEditMode) return;
+
+    const interval = setInterval(async () => {
+      // Skip if no title, currently submitting, or already auto-saving
+      if (!expeditionData.title.trim() || isSubmittingRef.current || isAutoSavingRef.current) return;
+
+      const currentSignature = getContentSignature();
+      if (currentSignature === lastSavedContentRef.current) return;
+
+      isAutoSavingRef.current = true;
+      setIsAutoSaving(true);
+
+      try {
+        const payload = {
+          title: expeditionData.title,
+          description: expeditionData.description,
+          visibility: expeditionData.visibility,
+          status: 'draft' as const,
+          startDate: expeditionData.startDate || undefined,
+          endDate: expeditionData.endDate || undefined,
+          coverImage: coverPhotoUrl || undefined,
+          goal: sponsorshipsEnabled && sponsorshipGoal ? Number(sponsorshipGoal) : undefined,
+          notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
+          notesVisibility,
+          isRoundTrip,
+          category: expeditionData.category || undefined,
+          region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
+          routeMode: routeMode !== 'straight' ? routeMode : null,
+          routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
+          tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+        };
+
+        let currentDraftId = draftId;
+
+        if (!currentDraftId) {
+          // First save — create draft
+          const result = await expeditionApi.create(payload as any);
+          currentDraftId = (result as any).expeditionId || (result as any).id;
+          setDraftId(currentDraftId);
+        } else {
+          // Subsequent saves — update existing draft
+          await expeditionApi.update(currentDraftId, payload as any);
+        }
+
+        // Sync waypoints if any exist
+        if (currentDraftId && waypointsRef.current.length > 0) {
+          const wpPayload = waypointsRef.current.map((w, i) => ({
+            lat: w.coordinates.lat,
+            lon: w.coordinates.lng,
+            title: w.name || undefined,
+            date: w.date || undefined,
+            description: w.description || undefined,
+            sequence: i,
+          }));
+          await expeditionApi.syncWaypoints(currentDraftId, wpPayload);
+        }
+
+        lastSavedContentRef.current = currentSignature;
+        setLastSaved(new Date());
+      } catch {
+        // Silent failure — don't interrupt user flow
+      } finally {
+        isAutoSavingRef.current = false;
+        setIsAutoSaving(false);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isEditMode, expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, isRoundTrip, routeMode, directionsGeometry, tags, draftId, getContentSignature]);
 
   // Initialize map
   useEffect(() => {
@@ -1935,7 +2142,7 @@ export function ExpeditionBuilderPage() {
               EXPEDITION BUILDER
             </h1>
             <span className={`px-2 py-1 text-xs font-bold rounded-full ${isEditMode ? 'bg-[#4676ac] text-white' : 'bg-[#ac6d46] text-white'}`}>
-              {isEditMode ? 'EDIT' : 'CREATE'}
+              {isEditMode ? 'EDIT' : (draftId ? 'DRAFT' : 'CREATE')}
             </span>
             <div className="hidden md:block h-6 w-px bg-[#616161]" />
             <span className="hidden md:block text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
@@ -1962,6 +2169,36 @@ export function ExpeditionBuilderPage() {
           </div>
         </div>
       </div>
+
+      {/* Draft Recovery Banner */}
+      {showDraftPrompt && existingDraft && (
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#ac6d46] p-4 md:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-bold dark:text-[#e5e5e5] mb-1">
+                UNSAVED DRAFT FOUND
+              </div>
+              <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+                &quot;{existingDraft.title || 'Untitled'}&quot; — last modified {existingDraft.updatedAt ? formatDateTime(new Date(existingDraft.updatedAt)) : 'recently'}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => loadDraft(existingDraft)}
+                className="px-5 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] text-xs"
+              >
+                CONTINUE DRAFT
+              </button>
+              <button
+                onClick={handleStartFresh}
+                className="px-5 py-2 border-2 border-[#616161] text-[#202020] dark:text-[#e5e5e5] font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] text-xs"
+              >
+                START FRESH
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Expedition Identity Section */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4 md:p-6">
@@ -3248,7 +3485,7 @@ export function ExpeditionBuilderPage() {
             className="px-6 py-3 bg-[#4676ac] text-white hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isSubmitting && <Loader2 size={18} className="animate-spin" />}
-            <span>{isSubmitting ? 'SAVING...' : (isEditMode ? 'SAVE CHANGES' : 'CREATE EXPEDITION')}</span>
+            <span>{isSubmitting ? 'PUBLISHING...' : (isEditMode ? 'SAVE CHANGES' : (draftId ? 'PUBLISH EXPEDITION' : 'CREATE EXPEDITION'))}</span>
           </button>
           {!isEditMode && (
             <button
@@ -3256,14 +3493,31 @@ export function ExpeditionBuilderPage() {
               disabled={isSubmitting || uploadingCover}
               className="px-6 py-3 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <span>SAVE AND LOG FIRST ENTRY</span>
+              <span>{draftId ? 'PUBLISH AND LOG FIRST ENTRY' : 'SAVE AND LOG FIRST ENTRY'}</span>
             </button>
+          )}
+          {/* Autosave indicator */}
+          {!isEditMode && (
+            <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono flex items-center gap-2 sm:ml-auto">
+              {isAutoSaving && (
+                <>
+                  <Loader2 size={12} className="animate-spin" />
+                  <span>Saving...</span>
+                </>
+              )}
+              {!isAutoSaving && lastSaved && (
+                <span>Auto-saved {lastSaved.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              )}
+              {draftId && !isAutoSaving && !lastSaved && (
+                <span>Draft loaded</span>
+              )}
+            </div>
           )}
           {submitError && (
             <div className="text-red-500 text-sm mt-2">{submitError}</div>
           )}
         </div>
-        
+
         <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#616161] flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
             Expedition builder v1.0 • Route: {routeMode === 'straight' ? 'Haversine (straight-line)' : `Mapbox Directions (${routeMode})`} • {waypoints.length} waypoints defined

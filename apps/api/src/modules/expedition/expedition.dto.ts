@@ -5,18 +5,21 @@ import {
   IWaypointCreatePayload,
   IWaypointUpdatePayload,
 } from '@repo/types';
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsDate,
   IsDateString,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
-  IsIn,
   IsString,
   Max,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
 
 import { SanitizeContent, SanitizeText } from '@/lib/sanitizer';
@@ -321,4 +324,49 @@ export class WaypointUpdateDto implements IWaypointUpdatePayload {
   @IsNumber()
   @IsOptional()
   sequence?: number;
+}
+
+class WaypointSyncItemDto {
+  @ApiProperty({ required: true })
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  lat: number;
+
+  @ApiProperty({ required: true })
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  lon: number;
+
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(200)
+  title?: string;
+
+  @ApiProperty({ required: false })
+  @IsDateString()
+  @IsOptional()
+  date?: string;
+
+  @ApiProperty({ required: false })
+  @SanitizeText()
+  @IsString()
+  @IsOptional()
+  @MaxLength(1000)
+  description?: string;
+
+  @ApiProperty({ required: true })
+  @IsNumber()
+  sequence: number;
+}
+
+export class WaypointSyncDto {
+  @ApiProperty({ required: true, type: [Object] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => WaypointSyncItemDto)
+  waypoints: WaypointSyncItemDto[];
 }
