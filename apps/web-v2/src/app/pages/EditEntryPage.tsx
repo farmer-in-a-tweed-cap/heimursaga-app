@@ -725,45 +725,6 @@ export function EditEntryPage() {
                 </div>
               </div>
               
-              {/* Location Details - Only for data-log and standard */}
-              {(entryType === 'data-log' || entryType === 'standard') && (
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                      ELEVATION (meters)
-                      <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
-                    </label>
-                    <input
-                      type="number"
-                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                      placeholder="e.g., 702"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                      ACCURACY (meters)
-                      <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
-                    </label>
-                    <input
-                      type="number"
-                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                      placeholder="e.g., 10"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                      TIMEZONE
-                      <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                      placeholder="e.g., UTC+5"
-                    />
-                  </div>
-                </div>
-              )}
-              
 
 
               {/* STANDARD ENTRY FIELDS */}
