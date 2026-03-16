@@ -95,7 +95,7 @@ export function EditEntryPage() {
 
   // Allowed image types for upload
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-  const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+  const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 
   // Validate file type and size
   const validateFile = (file: File): { valid: boolean; error?: string } => {
@@ -103,7 +103,7 @@ export function EditEntryPage() {
       return { valid: false, error: `${file.name}: Invalid file type. Allowed: JPG, PNG, WEBP, GIF` };
     }
     if (file.size > MAX_FILE_SIZE) {
-      return { valid: false, error: `${file.name}: File too large. Maximum size is 15MB` };
+      return { valid: false, error: `${file.name}: File too large. Maximum size is 25MB` };
     }
     return { valid: true };
   };
@@ -912,12 +912,12 @@ Remember: Your sponsors and followers are reading this to understand your journe
                                 <Image
                                   src={media.thumbnail}
                                   alt={media.name}
-                                  className="w-16 h-16 object-cover border border-[#b5bcc4] dark:border-[#3a3a3a] flex-shrink-0"
+                                  className="w-12 h-12 sm:w-16 sm:h-16 object-cover border border-[#b5bcc4] dark:border-[#3a3a3a] flex-shrink-0"
                                   width={64}
                                   height={64}
                                 />
                               ) : (
-                                <div className="w-16 h-16 bg-[#e5e5e5] dark:bg-[#3a3a3a] flex items-center justify-center flex-shrink-0">
+                                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#e5e5e5] dark:bg-[#3a3a3a] flex items-center justify-center flex-shrink-0">
                                   <ImageIcon size={24} className="text-[#616161]" />
                                 </div>
                               )}
@@ -934,9 +934,10 @@ Remember: Your sponsors and followers are reading this to understand your journe
                                 </div>
                               )}
                             </div>
+                            </div>
 
                             {/* Actions */}
-                            <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="flex items-center gap-1.5 sm:gap-2 mt-2 flex-wrap">
                               <button
                                 type="button"
                                 onClick={() => setCoverPhotoId(coverPhotoId === media.id ? null : media.id)}
@@ -973,7 +974,6 @@ Remember: Your sponsors and followers are reading this to understand your journe
                                 <X size={14} />
                                 REMOVE
                               </button>
-                            </div>
                             </div>
 
                             {/* EXIF Warning for potentially AI-generated image */}
@@ -1039,7 +1039,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
                           )}
                         </div>
                         <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                          JPG, PNG, WEBP • Max 15MB
+                          JPG, PNG, WEBP • Max 25MB
                         </span>
                       </div>
                     </label>
