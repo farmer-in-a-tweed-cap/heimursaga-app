@@ -35,9 +35,13 @@ interface ExpeditionNotesProps {
   isPublicNotes: boolean;
   expeditionStatus?: string;
   notes: ExpeditionNote[];
-  noteCount?: number; // For locked state display when notes aren't accessible
+  noteCount?: number;
   onPostNote?: (text: string) => Promise<void>;
   onPostReply?: (noteId: string, text: string) => Promise<void>;
+  onEditNote?: (noteId: string, text: string) => Promise<void>;
+  onDeleteNote?: (noteId: string) => Promise<void>;
+  onEditReply?: (noteId: string, replyId: string, text: string) => Promise<void>;
+  onDeleteReply?: (noteId: string, replyId: string) => Promise<void>;
 }
 
 export function ExpeditionNotes({
@@ -51,6 +55,10 @@ export function ExpeditionNotes({
   noteCount,
   onPostNote,
   onPostReply,
+  onEditNote,
+  onDeleteNote,
+  onEditReply,
+  onDeleteReply,
 }: ExpeditionNotesProps) {
   const { user, isAuthenticated } = useAuth();
   const [noteText, setNoteText] = useState('');
@@ -61,18 +69,27 @@ export function ExpeditionNotes({
   const [isPostingReply, setIsPostingReply] = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
 
-  // Check if user can post today (not for cancelled expeditions)
+  // Edit state
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editNoteText, setEditNoteText] = useState('');
+  const [isSavingNote, setIsSavingNote] = useState(false);
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editReplyText, setEditReplyText] = useState('');
+  const [isSavingReply, setIsSavingReply] = useState(false);
+
+  // Delete confirm state
+  const [confirmDeleteNoteId, setConfirmDeleteNoteId] = useState<string | null>(null);
+  const [confirmDeleteReplyId, setConfirmDeleteReplyId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const canPostToday = isOwner && dailyLimit.used < dailyLimit.max && expeditionStatus !== 'cancelled';
   const remainingPosts = dailyLimit.max - dailyLimit.used;
 
   const handlePostNote = async () => {
     if (!noteText.trim() || noteText.length > 280 || !canPostToday) return;
-
     setIsPosting(true);
     try {
-      if (onPostNote) {
-        await onPostNote(noteText);
-      }
+      if (onPostNote) await onPostNote(noteText);
       setNoteText('');
       setShowNoteForm(false);
       setDailyLimit(prev => ({ ...prev, used: prev.used + 1 }));
@@ -85,12 +102,9 @@ export function ExpeditionNotes({
 
   const handlePostReply = async (noteId: string) => {
     if (!replyText.trim() || replyText.length > 280) return;
-
     setIsPostingReply(true);
     try {
-      if (onPostReply) {
-        await onPostReply(noteId, replyText);
-      }
+      if (onPostReply) await onPostReply(noteId, replyText);
       setReplyText('');
       setReplyingTo(null);
     } catch (error) {
@@ -100,7 +114,58 @@ export function ExpeditionNotes({
     }
   };
 
-  // Get badge color for expedition status
+  const handleSaveEditNote = async (noteId: string) => {
+    if (!editNoteText.trim() || editNoteText.length > 280) return;
+    setIsSavingNote(true);
+    try {
+      if (onEditNote) await onEditNote(noteId, editNoteText);
+      setEditingNoteId(null);
+      setEditNoteText('');
+    } catch (error) {
+      console.error('Failed to edit note:', error);
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  const handleConfirmDeleteNote = async (noteId: string) => {
+    setIsDeleting(true);
+    try {
+      if (onDeleteNote) await onDeleteNote(noteId);
+      setConfirmDeleteNoteId(null);
+    } catch (error) {
+      console.error('Failed to delete note:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleSaveEditReply = async (noteId: string, replyId: string) => {
+    if (!editReplyText.trim() || editReplyText.length > 280) return;
+    setIsSavingReply(true);
+    try {
+      if (onEditReply) await onEditReply(noteId, replyId, editReplyText);
+      setEditingReplyId(null);
+      setEditReplyText('');
+    } catch (error) {
+      console.error('Failed to edit reply:', error);
+    } finally {
+      setIsSavingReply(false);
+    }
+  };
+
+  const handleConfirmDeleteReply = async (noteId: string, replyId: string) => {
+    setIsDeleting(true);
+    try {
+      if (onDeleteReply) await onDeleteReply(noteId, replyId);
+      setConfirmDeleteReplyId(null);
+    } catch (error) {
+      console.error('Failed to delete reply:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'PLANNING': return 'bg-[#4676ac]';
@@ -110,7 +175,7 @@ export function ExpeditionNotes({
     }
   };
 
-  // Non-sponsor view (locked state) — only for sponsor-gated notes
+  // Non-sponsor view (locked state)
   if (!isPublicNotes && !isSponsoring && !isOwner) {
     return (
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
@@ -211,7 +276,7 @@ export function ExpeditionNotes({
         </div>
       )}
 
-      {/* Notes List - Each note is its own card */}
+      {/* Notes List */}
       {notes.length === 0 ? (
         <div className="p-6 text-center">
           <div className="text-[#616161] dark:text-[#b5bcc4] font-mono text-sm mb-1">NO NOTES LOGGED YET</div>
@@ -236,17 +301,99 @@ export function ExpeditionNotes({
                     {note.expeditionStatus}
                   </span>
                 </div>
-                <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
-                  {new Date(note.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
+                    {new Date(note.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
+                  </span>
+                  {isOwner && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          if (editingNoteId === note.id) {
+                            setEditingNoteId(null);
+                            setEditNoteText('');
+                          } else {
+                            setEditingNoteId(note.id);
+                            setEditNoteText(note.text);
+                            setConfirmDeleteNoteId(null);
+                          }
+                        }}
+                        className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] hover:text-[#4676ac] dark:hover:text-[#4676ac] transition-colors"
+                      >
+                        {editingNoteId === note.id ? 'CANCEL' : 'EDIT'}
+                      </button>
+                      <span className="text-[#b5bcc4] dark:text-[#616161]">|</span>
+                      <button
+                        onClick={() => setConfirmDeleteNoteId(confirmDeleteNoteId === note.id ? null : note.id)}
+                        className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] hover:text-[#994040] dark:hover:text-[#994040] transition-colors"
+                      >
+                        DELETE
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Delete confirmation */}
+              {confirmDeleteNoteId === note.id && (
+                <div className="px-3 py-2 bg-[#994040]/10 border-b-2 border-[#994040]/30 flex items-center justify-between">
+                  <span className="text-xs font-mono text-[#994040] font-bold">DELETE THIS NOTE AND ALL RESPONSES?</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleConfirmDeleteNote(note.id)}
+                      disabled={isDeleting}
+                      className="px-3 py-1 bg-[#994040] text-white text-xs font-mono font-bold hover:bg-[#7a3333] transition-colors disabled:opacity-50"
+                    >
+                      {isDeleting ? 'DELETING...' : 'CONFIRM'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteNoteId(null)}
+                      className="px-3 py-1 border border-[#994040]/30 text-xs font-mono text-[#994040] hover:bg-[#994040]/10 transition-colors"
+                    >
+                      CANCEL
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Note Content */}
               <div className="px-3 py-3">
-                <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed whitespace-pre-wrap">{note.text}</p>
+                {editingNoteId === note.id ? (
+                  <div>
+                    <textarea
+                      className="w-full px-3 py-2 border-2 border-[#4676ac] focus:border-[#4676ac] outline-none text-sm mb-1 dark:bg-[#202020] dark:text-[#e5e5e5] font-mono"
+                      rows={3}
+                      value={editNoteText}
+                      onChange={(e) => setEditNoteText(e.target.value.slice(0, 280))}
+                      maxLength={280}
+                    />
+                    <div className="flex justify-between items-center mb-2">
+                      <span className={`text-xs font-mono ${editNoteText.length > 250 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                        {editNoteText.length}/280
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleSaveEditNote(note.id)}
+                        disabled={isSavingNote || !editNoteText.trim() || editNoteText === note.text}
+                        className="px-3 py-1.5 bg-[#4676ac] text-white hover:bg-[#365d8a] border-2 border-[#202020] transition-all active:scale-[0.98] text-xs font-mono font-bold disabled:opacity-50 disabled:active:scale-100"
+                      >
+                        {isSavingNote ? 'SAVING...' : 'SAVE'}
+                      </button>
+                      <button
+                        onClick={() => { setEditingNoteId(null); setEditNoteText(''); }}
+                        className="px-3 py-1.5 border-2 border-[#616161] dark:border-[#3a3a3a] dark:text-[#e5e5e5] hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] text-xs font-mono"
+                      >
+                        CANCEL
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed whitespace-pre-wrap">{note.text}</p>
+                )}
 
                 {/* Respond Button */}
-                {isAuthenticated && (isSponsoring || isOwner) && (
+                {isAuthenticated && (isSponsoring || isOwner) && !editingNoteId && (
                   <button
                     onClick={() => {
                       setReplyingTo(replyingTo === note.id ? null : note.id);
@@ -296,7 +443,7 @@ export function ExpeditionNotes({
                 )}
               </div>
 
-              {/* Responses Section - Contained within the note card */}
+              {/* Responses Section */}
               {note.replies && note.replies.length > 0 && (
                 <div className="border-t-2 border-[#202020] dark:border-[#616161] px-3 py-3">
                   <div className="ml-8 pl-3 border-l-2 border-[#b5bcc4] dark:border-[#616161]">
@@ -304,35 +451,120 @@ export function ExpeditionNotes({
                       {note.replies.length} {note.replies.length === 1 ? 'RESPONSE' : 'RESPONSES'}
                     </div>
                     <div className="space-y-2">
-                      {note.replies.map((reply) => (
-                        <div key={reply.id} className="flex items-start gap-2">
-                          <Link href={`/journal/${reply.authorId}`} className="flex-shrink-0">
-                            <div className={`w-6 h-6 border ${reply.isExplorer ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
-                              <Image
-                                src={reply.authorPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.authorId}`}
-                                alt={reply.authorName}
-                                className="w-full h-full object-cover"
-                                width={24}
-                                height={24}
-                              />
-                            </div>
-                          </Link>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Link href={`/journal/${reply.authorId}`} className="font-bold text-xs hover:text-[#ac6d46] dark:text-[#e5e5e5] font-mono">
-                                {reply.authorId}
-                              </Link>
-                              {reply.isExplorer && (
-                                <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-mono font-bold rounded-full">EXPLORER</span>
+                      {note.replies.map((reply) => {
+                        const isReplyAuthor = user?.username === reply.authorId;
+                        const canEditReply = isReplyAuthor;
+                        const canDeleteReply = isReplyAuthor || isOwner;
+
+                        return (
+                          <div key={reply.id} className="flex items-start gap-2">
+                            <Link href={`/journal/${reply.authorId}`} className="flex-shrink-0">
+                              <div className={`w-6 h-6 border ${reply.isExplorer ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'} overflow-hidden bg-[#616161] hover:border-[#4676ac] transition-colors`}>
+                                <Image
+                                  src={reply.authorPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${reply.authorId}`}
+                                  alt={reply.authorName}
+                                  className="w-full h-full object-cover"
+                                  width={24}
+                                  height={24}
+                                />
+                              </div>
+                            </Link>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Link href={`/journal/${reply.authorId}`} className="font-bold text-xs hover:text-[#ac6d46] dark:text-[#e5e5e5] font-mono">
+                                  {reply.authorId}
+                                </Link>
+                                {reply.isExplorer && (
+                                  <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-mono font-bold rounded-full">EXPLORER</span>
+                                )}
+                                <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+                                  {new Date(reply.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
+                                </span>
+                                {(canEditReply || canDeleteReply) && editingReplyId !== reply.id && confirmDeleteReplyId !== reply.id && (
+                                  <span className="flex items-center gap-1 ml-auto">
+                                    {canEditReply && (
+                                      <button
+                                        onClick={() => {
+                                          setEditingReplyId(reply.id);
+                                          setEditReplyText(reply.text);
+                                          setConfirmDeleteReplyId(null);
+                                        }}
+                                        className="text-[10px] font-mono text-[#b5bcc4] hover:text-[#4676ac] transition-colors"
+                                      >
+                                        EDIT
+                                      </button>
+                                    )}
+                                    {canEditReply && canDeleteReply && (
+                                      <span className="text-[#b5bcc4]">|</span>
+                                    )}
+                                    {canDeleteReply && (
+                                      <button
+                                        onClick={() => setConfirmDeleteReplyId(reply.id)}
+                                        className="text-[10px] font-mono text-[#b5bcc4] hover:text-[#994040] transition-colors"
+                                      >
+                                        DELETE
+                                      </button>
+                                    )}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Delete reply confirmation */}
+                              {confirmDeleteReplyId === reply.id && (
+                                <div className="mt-1 flex items-center gap-2">
+                                  <span className="text-[10px] font-mono text-[#994040] font-bold">DELETE?</span>
+                                  <button
+                                    onClick={() => handleConfirmDeleteReply(note.id, reply.id)}
+                                    disabled={isDeleting}
+                                    className="text-[10px] font-mono font-bold text-white bg-[#994040] px-2 py-0.5 hover:bg-[#7a3333] transition-colors disabled:opacity-50"
+                                  >
+                                    {isDeleting ? '...' : 'YES'}
+                                  </button>
+                                  <button
+                                    onClick={() => setConfirmDeleteReplyId(null)}
+                                    className="text-[10px] font-mono text-[#616161] hover:text-[#202020] dark:hover:text-[#e5e5e5] transition-colors"
+                                  >
+                                    NO
+                                  </button>
+                                </div>
                               )}
-                              <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                                {new Date(reply.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
-                              </span>
+
+                              {/* Edit reply form */}
+                              {editingReplyId === reply.id ? (
+                                <div className="mt-1">
+                                  <textarea
+                                    className="w-full px-2 py-1 border-2 border-[#4676ac] outline-none text-xs dark:bg-[#202020] dark:text-[#e5e5e5] font-mono"
+                                    rows={2}
+                                    value={editReplyText}
+                                    onChange={(e) => setEditReplyText(e.target.value.slice(0, 280))}
+                                    maxLength={280}
+                                  />
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className={`text-[10px] font-mono ${editReplyText.length > 250 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                                      {editReplyText.length}/280
+                                    </span>
+                                    <button
+                                      onClick={() => handleSaveEditReply(note.id, reply.id)}
+                                      disabled={isSavingReply || !editReplyText.trim() || editReplyText === reply.text}
+                                      className="px-2 py-0.5 bg-[#4676ac] text-white text-[10px] font-mono font-bold hover:bg-[#365d8a] transition-colors disabled:opacity-50"
+                                    >
+                                      {isSavingReply ? '...' : 'SAVE'}
+                                    </button>
+                                    <button
+                                      onClick={() => { setEditingReplyId(null); setEditReplyText(''); }}
+                                      className="text-[10px] font-mono text-[#616161] hover:text-[#202020] dark:hover:text-[#e5e5e5] transition-colors"
+                                    >
+                                      CANCEL
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="text-xs text-[#202020] dark:text-[#e5e5e5] mt-0.5 leading-relaxed">{reply.text}</p>
+                              )}
                             </div>
-                            <p className="text-xs text-[#202020] dark:text-[#e5e5e5] mt-0.5 leading-relaxed">{reply.text}</p>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

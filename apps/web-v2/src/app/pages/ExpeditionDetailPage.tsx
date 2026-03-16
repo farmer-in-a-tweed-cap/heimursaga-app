@@ -80,8 +80,12 @@ export function ExpeditionDetailPage() {
   const { sponsors, fundingStats } = useExpeditionSponsors(apiExpedition);
   const { weatherCondition, weatherLocalTime } = useWeatherConditions(apiExpedition, expeditionId);
   const notesVisibility = (apiExpedition as any)?.notesVisibility || 'public';
-  const { expeditionNotes, noteCount, isSponsoring, isPublicNotes, handlePostNote, handlePostReply } =
-    useExpeditionNotes(expeditionId, isAuthenticated, isOwner, notesVisibility);
+  const {
+    expeditionNotes, noteCount, isSponsoring, isPublicNotes,
+    handlePostNote, handlePostReply,
+    handleEditNote, handleDeleteNote,
+    handleEditReply, handleDeleteReply,
+  } = useExpeditionNotes(expeditionId, isAuthenticated, isOwner, notesVisibility);
 
   // Explorer profile data (for global stats in HeroBanner)
   const [explorerProfile, setExplorerProfile] = useState<ExplorerProfile | null>(null);
@@ -1028,6 +1032,10 @@ export function ExpeditionDetailPage() {
             notesSectionRef={notesSectionRef}
             onPostNote={handlePostNote}
             onPostReply={handlePostReply}
+            onEditNote={handleEditNote}
+            onDeleteNote={handleDeleteNote}
+            onEditReply={handleEditReply}
+            onDeleteReply={handleDeleteReply}
             onWaypointClick={handleWaypointClick}
             router={router}
           />

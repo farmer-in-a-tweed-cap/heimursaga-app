@@ -35,6 +35,15 @@ export class ExpeditionNoteParamDto {
   expedition_id: string;
 }
 
+export class ExpeditionNoteUpdateDto {
+  @ApiProperty({ required: true })
+  @SanitizeText()
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(280)
+  text: string;
+}
+
 export class ExpeditionNoteIdParamDto {
   @IsString()
   @IsNotEmpty()
@@ -44,4 +53,20 @@ export class ExpeditionNoteIdParamDto {
   @ToNumber()
   @IsNotEmpty()
   note_id: number;
+}
+
+export class ExpeditionNoteReplyIdParamDto {
+  @IsString()
+  @IsNotEmpty()
+  expedition_id: string;
+
+  @IsNumber()
+  @ToNumber()
+  @IsNotEmpty()
+  note_id: number;
+
+  @IsNumber()
+  @ToNumber()
+  @IsNotEmpty()
+  reply_id: number;
 }

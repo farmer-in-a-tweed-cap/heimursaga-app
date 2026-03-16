@@ -931,10 +931,28 @@ export const expeditionApi = {
     api.post<{ replyId: number }>(`/trips/${expeditionId}/notes/${noteId}/replies`, { text }),
 
   /**
+   * Edit a note (owner only)
+   */
+  updateNote: (expeditionId: string, noteId: number, text: string) =>
+    api.patch<void>(`/trips/${expeditionId}/notes/${noteId}`, { text }),
+
+  /**
    * Delete a note (owner only)
    */
   deleteNote: (expeditionId: string, noteId: number) =>
     api.delete<void>(`/trips/${expeditionId}/notes/${noteId}`),
+
+  /**
+   * Edit a reply (reply author only)
+   */
+  updateReply: (expeditionId: string, noteId: number, replyId: number, text: string) =>
+    api.patch<void>(`/trips/${expeditionId}/notes/${noteId}/replies/${replyId}`, { text }),
+
+  /**
+   * Delete a reply (reply author or expedition owner)
+   */
+  deleteReply: (expeditionId: string, noteId: number, replyId: number) =>
+    api.delete<void>(`/trips/${expeditionId}/notes/${noteId}/replies/${replyId}`),
 
   /**
    * Get user's draft expeditions

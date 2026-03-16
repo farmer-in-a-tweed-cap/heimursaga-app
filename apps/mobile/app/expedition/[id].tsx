@@ -18,7 +18,9 @@ import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
 import { api, ApiError, bookmarksApi } from '@/services/api';
+import { MAPBOX_TOKEN } from '@/services/mapConfig';
 import { colors as brandColors, mono, heading, borders } from '@/theme/tokens';
+import { fmtAmount } from '@/utils/formatAmount';
 import { Svg, Path, Line, Polyline, Circle, Rect } from 'react-native-svg';
 import { NavBar } from '@/components/ui/NavBar';
 import { StatusHeader } from '@/components/ui/StatusHeader';
@@ -104,6 +106,9 @@ interface ExpeditionDetail {
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
+  routeMode?: string;
+  routeGeometry?: number[][];
+  isRoundTrip?: boolean;
 }
 
 export default function ExpeditionDetailScreen() {
@@ -129,6 +134,12 @@ export default function ExpeditionDetailScreen() {
   const [replyText, setReplyText] = useState('');
   const [noteSubmitting, setNoteSubmitting] = useState(false);
   const [replySubmitting, setReplySubmitting] = useState(false);
+  // Edit/delete state
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editNoteText, setEditNoteText] = useState('');
+  const [editingReplyId, setEditingReplyId] = useState<number | null>(null);
+  const [editReplyText, setEditReplyText] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   const [mapZoom, setMapZoom] = useState(10); // conservative default — camera events will refine
   const mapZoomTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -272,6 +283,70 @@ export default function ExpeditionDetailScreen() {
     }
   };
 
+  const handleEditNote = async (noteId: number, text: string) => {
+    setEditSaving(true);
+    try {
+      await api.patch(`/trips/${id}/notes/${noteId}`, { text });
+      setEditingNoteId(null);
+      setEditNoteText('');
+      await fetchNotes();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to edit note';
+      Alert.alert('Error', msg);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeleteNote = (noteId: number) => {
+    Alert.alert('Delete Note', 'Delete this note and all its responses?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await api.delete(`/trips/${id}/notes/${noteId}`);
+            await fetchNotes();
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Failed to delete note';
+            Alert.alert('Error', msg);
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleEditReply = async (noteId: number, replyId: number, text: string) => {
+    setEditSaving(true);
+    try {
+      await api.patch(`/trips/${id}/notes/${noteId}/replies/${replyId}`, { text });
+      setEditingReplyId(null);
+      setEditReplyText('');
+      await fetchNotes();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to edit reply';
+      Alert.alert('Error', msg);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeleteReply = (noteId: number, replyId: number) => {
+    Alert.alert('Delete Response', 'Delete this response?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await api.delete(`/trips/${id}/notes/${noteId}/replies/${replyId}`);
+            await fetchNotes();
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Failed to delete reply';
+            Alert.alert('Error', msg);
+          }
+        },
+      },
+    ]);
+  };
+
   // Merge all markers — must run before early returns to satisfy rules of hooks
   const allMarkers = useMemo<WaypointMarker[]>(() => {
     if (!expedition) return [];
@@ -351,6 +426,36 @@ export default function ExpeditionDetailScreen() {
     return clusterMarkers(markers, mapZoom);
   }, [expedition, mapZoom]);
 
+  // Fetch directions on-demand when routeMode is set but routeGeometry is missing
+  const [fetchedDirections, setFetchedDirections] = useState<[number, number][] | null>(null);
+  const needsDirectionsFetch = expedition
+    && !(expedition.routeGeometry && expedition.routeGeometry.length > 0)
+    && expedition.routeMode
+    && expedition.routeMode !== 'straight'
+    && (expedition.waypoints ?? []).filter(w => w.lat != null && w.lon != null).length >= 2;
+
+  useEffect(() => {
+    if (!needsDirectionsFetch || !expedition) return;
+    let cancelled = false;
+    const wps = [...(expedition.waypoints ?? [])]
+      .filter(w => w.lat != null && w.lon != null)
+      .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+    const coords = wps.map(w => [w.lon, w.lat] as [number, number]);
+    if (expedition.isRoundTrip && coords.length > 1) coords.push(coords[0]);
+    const coordStr = coords.map(c => `${c[0].toFixed(6)},${c[1].toFixed(6)}`).join(';');
+    fetch(
+      `https://api.mapbox.com/directions/v5/mapbox/${expedition.routeMode}/${coordStr}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`,
+    )
+      .then(res => res.json())
+      .then(data => {
+        if (!cancelled && data.code === 'Ok' && data.routes?.[0]) {
+          setFetchedDirections(data.routes[0].geometry.coordinates);
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [needsDirectionsFetch, expedition]);
+
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -385,10 +490,16 @@ export default function ExpeditionDetailScreen() {
     .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
   const geoEntries = (expedition.entries ?? []).filter(e => e.lat != null && e.lon != null);
 
-  // Route polyline follows waypoints; fall back to entries if no waypoints
-  const routeCoords: [number, number][] = sortedWaypoints.length > 0
+  // Route polyline: use saved directions geometry, fetch on-demand, or straight lines
+  const straightCoords: [number, number][] = sortedWaypoints.length > 0
     ? sortedWaypoints.map(w => [w.lon, w.lat])
     : geoEntries.map(e => [e.lon!, e.lat!]);
+
+  const hasDirectionsRoute = expedition.routeGeometry && expedition.routeGeometry.length > 0;
+
+  const routeCoords: [number, number][] = hasDirectionsRoute
+    ? (expedition.routeGeometry as [number, number][])
+    : fetchedDirections ?? straightCoords;
 
   // Bounds include both waypoints and entries
   const allCoords = [
@@ -566,7 +677,7 @@ export default function ExpeditionDetailScreen() {
         </View>
       )}
 
-      <ScrollView>
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <NavBar onBack={() => router.back()} />
 
         {/* Status */}
@@ -668,7 +779,8 @@ export default function ExpeditionDetailScreen() {
           <StatsBar
             stats={[
               {
-                value: `$${(expedition.raised ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+                value: fmtAmount(expedition.raised ?? 0),
+                suffix: (expedition.goal ?? 0) > 0 ? `/${fmtAmount(expedition.goal!)}` : undefined,
                 label: 'RAISED',
               },
               { value: String(expedition.sponsorsCount ?? 0), label: 'SPONSORS' },
@@ -856,11 +968,53 @@ export default function ExpeditionDetailScreen() {
                         </Text>
                       </View>
 
-                      {/* Note text */}
-                      <Text style={[styles.noteText, { color: colors.text }]}>{note.text}</Text>
+                      {/* Owner actions */}
+                      {isOwner && editingNoteId !== note.id && (
+                        <View style={styles.noteActions}>
+                          <TouchableOpacity onPress={() => { setEditingNoteId(note.id); setEditNoteText(note.text); }}>
+                            <Text style={[styles.noteActionText, { color: brandColors.blue }]}>EDIT</Text>
+                          </TouchableOpacity>
+                          <Text style={{ color: colors.textTertiary }}>|</Text>
+                          <TouchableOpacity onPress={() => handleDeleteNote(note.id)}>
+                            <Text style={[styles.noteActionText, { color: brandColors.red }]}>DELETE</Text>
+                          </TouchableOpacity>
+                        </View>
+                      )}
+
+                      {/* Note text or edit form */}
+                      {editingNoteId === note.id ? (
+                        <View style={{ paddingHorizontal: 12, paddingBottom: 10 }}>
+                          <TextInput
+                            style={[styles.noteFormInput, { color: colors.text, borderColor: brandColors.blue }]}
+                            value={editNoteText}
+                            onChangeText={setEditNoteText}
+                            maxLength={280}
+                            multiline
+                          />
+                          <View style={styles.noteFormFooter}>
+                            <Text style={[styles.noteFormCount, { color: editNoteText.length > 250 ? brandColors.red : colors.textTertiary }]}>
+                              {editNoteText.length}/280
+                            </Text>
+                            <View style={{ flexDirection: 'row', gap: 8 }}>
+                              <TouchableOpacity
+                                style={[styles.noteFormSubmit, { backgroundColor: brandColors.blue, opacity: editNoteText.trim() && editNoteText !== note.text ? 1 : 0.5 }]}
+                                onPress={() => handleEditNote(note.id, editNoteText.trim())}
+                                disabled={!editNoteText.trim() || editNoteText === note.text || editSaving}
+                              >
+                                <Text style={styles.noteFormSubmitText}>{editSaving ? 'SAVING...' : 'SAVE'}</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => { setEditingNoteId(null); setEditNoteText(''); }}>
+                                <Text style={[styles.noteActionText, { color: colors.textTertiary, paddingVertical: 8 }]}>CANCEL</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        </View>
+                      ) : (
+                        <Text style={[styles.noteText, { color: colors.text }]}>{note.text}</Text>
+                      )}
 
                       {/* Respond button */}
-                      {isAuthenticated && !notesLocked && (
+                      {isAuthenticated && !notesLocked && editingNoteId !== note.id && (
                         <TouchableOpacity
                           style={styles.noteRespondBtn}
                           onPress={() => { setReplyingTo(replyingTo === note.id ? null : note.id); setReplyText(''); }}
@@ -906,12 +1060,17 @@ export default function ExpeditionDetailScreen() {
                           <Text style={[styles.repliesCount, { color: colors.textTertiary }]}>
                             {note.replies.length} {note.replies.length === 1 ? 'RESPONSE' : 'RESPONSES'}
                           </Text>
-                          {note.replies.map((reply) => (
+                          {note.replies.map((reply) => {
+                            const isReplyAuthor = user?.username === reply.authorId;
+                            const canEditReply = isReplyAuthor;
+                            const canDeleteReply = isReplyAuthor || isOwner;
+
+                            return (
                             <View key={reply.id} style={styles.replyRow}>
                               <Avatar size={24} name={reply.authorName} imageUrl={reply.authorPicture} />
                               <View style={styles.replyContent}>
                                 <View style={styles.replyHeader}>
-                                  <Text style={[styles.replyAuthor, { color: colors.text }]}>{reply.authorName}</Text>
+                                  <Text style={[styles.replyAuthor, { color: colors.text }]}>{reply.authorId}</Text>
                                   {reply.isExplorer && (
                                     <View style={styles.explorerBadge}>
                                       <Text style={styles.explorerBadgeText}>EXPLORER</Text>
@@ -921,10 +1080,59 @@ export default function ExpeditionDetailScreen() {
                                     {new Date(reply.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                   </Text>
                                 </View>
-                                <Text style={[styles.replyText, { color: colors.textSecondary }]}>{reply.text}</Text>
+
+                                {/* Reply edit form or text */}
+                                {editingReplyId === reply.id ? (
+                                  <View style={{ marginTop: 4 }}>
+                                    <TextInput
+                                      style={[styles.noteFormInput, { color: colors.text, borderColor: brandColors.blue, minHeight: 50, fontSize: 13 }]}
+                                      value={editReplyText}
+                                      onChangeText={setEditReplyText}
+                                      maxLength={280}
+                                      multiline
+                                    />
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                                      <Text style={[styles.noteFormCount, { color: editReplyText.length > 250 ? brandColors.red : colors.textTertiary }]}>
+                                        {editReplyText.length}/280
+                                      </Text>
+                                      <TouchableOpacity
+                                        style={[styles.noteFormSubmit, { backgroundColor: brandColors.blue, opacity: editReplyText.trim() && editReplyText !== reply.text ? 1 : 0.5, paddingVertical: 4, paddingHorizontal: 10 }]}
+                                        onPress={() => handleEditReply(note.id, reply.id, editReplyText.trim())}
+                                        disabled={!editReplyText.trim() || editReplyText === reply.text || editSaving}
+                                      >
+                                        <Text style={[styles.noteFormSubmitText, { fontSize: 10 }]}>{editSaving ? '...' : 'SAVE'}</Text>
+                                      </TouchableOpacity>
+                                      <TouchableOpacity onPress={() => { setEditingReplyId(null); setEditReplyText(''); }}>
+                                        <Text style={[styles.noteActionText, { color: colors.textTertiary }]}>CANCEL</Text>
+                                      </TouchableOpacity>
+                                    </View>
+                                  </View>
+                                ) : (
+                                  <>
+                                    <Text style={[styles.replyText, { color: colors.textSecondary }]}>{reply.text}</Text>
+                                    {(canEditReply || canDeleteReply) && (
+                                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                                        {canEditReply && (
+                                          <TouchableOpacity onPress={() => { setEditingReplyId(reply.id); setEditReplyText(reply.text); }}>
+                                            <Text style={[styles.noteActionText, { color: brandColors.blue, fontSize: 10 }]}>EDIT</Text>
+                                          </TouchableOpacity>
+                                        )}
+                                        {canEditReply && canDeleteReply && (
+                                          <Text style={{ color: colors.textTertiary, fontSize: 10 }}>|</Text>
+                                        )}
+                                        {canDeleteReply && (
+                                          <TouchableOpacity onPress={() => handleDeleteReply(note.id, reply.id)}>
+                                            <Text style={[styles.noteActionText, { color: brandColors.red, fontSize: 10 }]}>DELETE</Text>
+                                          </TouchableOpacity>
+                                        )}
+                                      </View>
+                                    )}
+                                  </>
+                                )}
                               </View>
                             </View>
-                          ))}
+                            );
+                          })}
                         </View>
                       )}
                     </View>
@@ -1271,6 +1479,8 @@ const styles = StyleSheet.create({
   noteStatusBadge: { paddingVertical: 2, paddingHorizontal: 6 },
   noteStatusText: { fontFamily: mono, fontSize: 10, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
   noteTimestamp: { fontFamily: mono, fontSize: 11, fontWeight: '600', marginLeft: 'auto' },
+  noteActions: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingBottom: 6 },
+  noteActionText: { fontFamily: mono, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   noteText: { fontSize: 14, lineHeight: 21, paddingHorizontal: 12, paddingBottom: 10 },
   noteRespondBtn: { paddingHorizontal: 12, paddingBottom: 10 },
   noteRespondText: { fontFamily: mono, fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },

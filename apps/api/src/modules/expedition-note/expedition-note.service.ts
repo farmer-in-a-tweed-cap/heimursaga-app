@@ -182,9 +182,22 @@ export class ExpeditionNoteService {
       // Map expedition status
       const expeditionStatus = this.mapStatus(expedition.status);
 
-      // Calculate daily limit for owner - DISABLED FOR TESTING
-      const dailyUsed = 0;
-      const dailyMax = 999; // Unlimited for testing (normally 1)
+      // Calculate daily limit for owner
+      let dailyUsed = 0;
+      const dailyMax = 1;
+
+      if (isOwner) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dailyUsed = await this.prisma.expeditionNote.count({
+          where: {
+            expedition_id: expedition.id,
+            author_id: explorerId,
+            created_at: { gte: today },
+            deleted_at: null,
+          },
+        });
+      }
 
       return {
         notes: notes.map((note) => ({
@@ -266,22 +279,22 @@ export class ExpeditionNoteService {
         );
       }
 
-      // Check daily limit - DISABLED FOR TESTING
-      // const today = new Date();
-      // today.setHours(0, 0, 0, 0);
+      // Check daily limit (1 note per day per expedition)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-      // const todayNotes = await this.prisma.expeditionNote.count({
-      //   where: {
-      //     expedition_id: expedition.id,
-      //     author_id: explorerId,
-      //     created_at: { gte: today },
-      //     deleted_at: null,
-      //   },
-      // });
+      const todayNotes = await this.prisma.expeditionNote.count({
+        where: {
+          expedition_id: expedition.id,
+          author_id: explorerId,
+          created_at: { gte: today },
+          deleted_at: null,
+        },
+      });
 
-      // if (todayNotes >= 1) {
-      //   throw new ServiceForbiddenException('daily note limit reached');
-      // }
+      if (todayNotes >= 1) {
+        throw new ServiceForbiddenException('daily note limit reached');
+      }
 
       // Create the note
       const note = await this.prisma.expeditionNote.create({
@@ -458,6 +471,165 @@ export class ExpeditionNoteService {
       // Soft delete the note
       await this.prisma.expeditionNote.update({
         where: { id: noteId },
+        data: { deleted_at: new Date() },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Edit a note (owner only)
+   */
+  async updateNote({
+    session,
+    query,
+    payload,
+  }: ISessionQueryWithPayload<
+    { expeditionId: string; noteId: number },
+    { text: string }
+  >): Promise<void> {
+    try {
+      const { expeditionId, noteId } = query;
+      const { explorerId } = session;
+      const { text } = payload;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      const expedition = await this.prisma.expedition.findFirst({
+        where: { public_id: expeditionId, deleted_at: null },
+        select: { id: true, author_id: true },
+      });
+
+      if (!expedition)
+        throw new ServiceNotFoundException('expedition not found');
+
+      if (explorerId !== expedition.author_id) {
+        throw new ServiceForbiddenException(
+          'only the expedition owner can edit notes',
+        );
+      }
+
+      const note = await this.prisma.expeditionNote.findFirst({
+        where: { id: noteId, expedition_id: expedition.id, deleted_at: null },
+      });
+
+      if (!note) throw new ServiceNotFoundException('note not found');
+
+      await this.prisma.expeditionNote.update({
+        where: { id: noteId },
+        data: { text },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Edit a reply (reply author only)
+   */
+  async updateReply({
+    session,
+    query,
+    payload,
+  }: ISessionQueryWithPayload<
+    { expeditionId: string; noteId: number; replyId: number },
+    { text: string }
+  >): Promise<void> {
+    try {
+      const { expeditionId, noteId, replyId } = query;
+      const { explorerId } = session;
+      const { text } = payload;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      const expedition = await this.prisma.expedition.findFirst({
+        where: { public_id: expeditionId, deleted_at: null },
+        select: { id: true },
+      });
+
+      if (!expedition)
+        throw new ServiceNotFoundException('expedition not found');
+
+      const reply = await this.prisma.expeditionNoteReply.findFirst({
+        where: {
+          id: replyId,
+          note_id: noteId,
+          deleted_at: null,
+          note: { expedition_id: expedition.id, deleted_at: null },
+        },
+      });
+
+      if (!reply) throw new ServiceNotFoundException('reply not found');
+
+      if (reply.author_id !== explorerId) {
+        throw new ServiceForbiddenException(
+          'only the reply author can edit replies',
+        );
+      }
+
+      await this.prisma.expeditionNoteReply.update({
+        where: { id: replyId },
+        data: { text },
+      });
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  /**
+   * Delete a reply (reply author or expedition owner)
+   */
+  async deleteReply({
+    session,
+    query,
+  }: ISessionQuery<{
+    expeditionId: string;
+    noteId: number;
+    replyId: number;
+  }>): Promise<void> {
+    try {
+      const { expeditionId, noteId, replyId } = query;
+      const { explorerId } = session;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      const expedition = await this.prisma.expedition.findFirst({
+        where: { public_id: expeditionId, deleted_at: null },
+        select: { id: true, author_id: true },
+      });
+
+      if (!expedition)
+        throw new ServiceNotFoundException('expedition not found');
+
+      const reply = await this.prisma.expeditionNoteReply.findFirst({
+        where: {
+          id: replyId,
+          note_id: noteId,
+          deleted_at: null,
+          note: { expedition_id: expedition.id, deleted_at: null },
+        },
+      });
+
+      if (!reply) throw new ServiceNotFoundException('reply not found');
+
+      const isOwner = explorerId === expedition.author_id;
+      const isReplyAuthor = reply.author_id === explorerId;
+
+      if (!isOwner && !isReplyAuthor) {
+        throw new ServiceForbiddenException(
+          'only the reply author or expedition owner can delete replies',
+        );
+      }
+
+      await this.prisma.expeditionNoteReply.update({
+        where: { id: replyId },
         data: { deleted_at: new Date() },
       });
     } catch (e) {

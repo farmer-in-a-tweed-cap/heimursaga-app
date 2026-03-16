@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 
 import { Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
@@ -8,6 +8,8 @@ import {
   ExpeditionNoteIdParamDto,
   ExpeditionNoteParamDto,
   ExpeditionNoteReplyCreateDto,
+  ExpeditionNoteReplyIdParamDto,
+  ExpeditionNoteUpdateDto,
 } from './expedition-note.dto';
 import { ExpeditionNoteService } from './expedition-note.service';
 
@@ -75,6 +77,25 @@ export class ExpeditionNoteController {
   }
 
   /**
+   * Edit a note (owner only)
+   */
+  @Patch(':note_id')
+  async updateNote(
+    @Session() session: ISession,
+    @Param() params: ExpeditionNoteIdParamDto,
+    @Body() body: ExpeditionNoteUpdateDto,
+  ) {
+    return this.expeditionNoteService.updateNote({
+      session,
+      query: {
+        expeditionId: params.expedition_id,
+        noteId: params.note_id,
+      },
+      payload: body,
+    });
+  }
+
+  /**
    * Delete a note (owner only)
    */
   @Delete(':note_id')
@@ -87,6 +108,44 @@ export class ExpeditionNoteController {
       query: {
         expeditionId: params.expedition_id,
         noteId: params.note_id,
+      },
+    });
+  }
+
+  /**
+   * Edit a reply (reply author only)
+   */
+  @Patch(':note_id/replies/:reply_id')
+  async updateReply(
+    @Session() session: ISession,
+    @Param() params: ExpeditionNoteReplyIdParamDto,
+    @Body() body: ExpeditionNoteUpdateDto,
+  ) {
+    return this.expeditionNoteService.updateReply({
+      session,
+      query: {
+        expeditionId: params.expedition_id,
+        noteId: params.note_id,
+        replyId: params.reply_id,
+      },
+      payload: body,
+    });
+  }
+
+  /**
+   * Delete a reply (reply author or expedition owner)
+   */
+  @Delete(':note_id/replies/:reply_id')
+  async deleteReply(
+    @Session() session: ISession,
+    @Param() params: ExpeditionNoteReplyIdParamDto,
+  ) {
+    return this.expeditionNoteService.deleteReply({
+      session,
+      query: {
+        expeditionId: params.expedition_id,
+        noteId: params.note_id,
+        replyId: params.reply_id,
       },
     });
   }

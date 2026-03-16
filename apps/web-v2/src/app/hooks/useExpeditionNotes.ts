@@ -86,5 +86,39 @@ export function useExpeditionNotes(
     }
   };
 
-  return { expeditionNotes, noteCount, isSponsoring, isPublicNotes, handlePostNote, handlePostReply };
+  const handleEditNote = async (noteId: string, text: string) => {
+    if (!expeditionId) return;
+    await expeditionApi.updateNote(expeditionId, parseInt(noteId), text);
+    const notesData = await expeditionApi.getNotes(expeditionId);
+    setExpeditionNotes(notesData.notes);
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!expeditionId) return;
+    await expeditionApi.deleteNote(expeditionId, parseInt(noteId));
+    const notesData = await expeditionApi.getNotes(expeditionId);
+    setExpeditionNotes(notesData.notes);
+    setNoteCount(prev => prev - 1);
+  };
+
+  const handleEditReply = async (noteId: string, replyId: string, text: string) => {
+    if (!expeditionId) return;
+    await expeditionApi.updateReply(expeditionId, parseInt(noteId), parseInt(replyId), text);
+    const notesData = await expeditionApi.getNotes(expeditionId);
+    setExpeditionNotes(notesData.notes);
+  };
+
+  const handleDeleteReply = async (noteId: string, replyId: string) => {
+    if (!expeditionId) return;
+    await expeditionApi.deleteReply(expeditionId, parseInt(noteId), parseInt(replyId));
+    const notesData = await expeditionApi.getNotes(expeditionId);
+    setExpeditionNotes(notesData.notes);
+  };
+
+  return {
+    expeditionNotes, noteCount, isSponsoring, isPublicNotes,
+    handlePostNote, handlePostReply,
+    handleEditNote, handleDeleteNote,
+    handleEditReply, handleDeleteReply,
+  };
 }

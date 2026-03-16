@@ -28,6 +28,10 @@ interface ContentTabsProps {
   notesSectionRef: Ref<HTMLDivElement>;
   onPostNote: (text: string) => Promise<void>;
   onPostReply: (noteId: string, text: string) => Promise<void>;
+  onEditNote: (noteId: string, text: string) => Promise<void>;
+  onDeleteNote: (noteId: string) => Promise<void>;
+  onEditReply: (noteId: string, replyId: string, text: string) => Promise<void>;
+  onDeleteReply: (noteId: string, replyId: string) => Promise<void>;
   onWaypointClick: (coords: { lat: number; lng: number }) => void;
   router: { push: (url: string) => void };
 }
@@ -49,6 +53,10 @@ export function ContentTabs({
   notesSectionRef,
   onPostNote,
   onPostReply,
+  onEditNote,
+  onDeleteNote,
+  onEditReply,
+  onDeleteReply,
   onWaypointClick,
   router,
 }: ContentTabsProps) {
@@ -149,6 +157,10 @@ export function ContentTabs({
               noteCount={noteCount}
               onPostNote={onPostNote}
               onPostReply={onPostReply}
+              onEditNote={onEditNote}
+              onDeleteNote={onDeleteNote}
+              onEditReply={onEditReply}
+              onDeleteReply={onDeleteReply}
             />
           </div>
         )}
