@@ -517,7 +517,7 @@ export function ExpeditionQuickEntryPage() {
                         UPLOAD COVER PHOTO
                       </div>
                       <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                        Click or drag file here • JPG, PNG, WEBP • Max 10MB • Recommended: 1200x600px
+                        Click or drag file here • JPG, PNG, WEBP • Max 25MB • Recommended: 1200x600px
                       </div>
                     </>
                   )}

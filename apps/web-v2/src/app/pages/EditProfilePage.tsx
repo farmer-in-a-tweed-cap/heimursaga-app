@@ -472,7 +472,7 @@ export function EditProfilePage() {
                   )}
                 </div>
                 <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                  Requirements: JPG or PNG • 1200x300px recommended • Max 10MB
+                  Requirements: JPG or PNG • 1200x300px recommended • Max 25MB
                 </div>
               </div>
 
