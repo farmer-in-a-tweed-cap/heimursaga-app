@@ -45,11 +45,12 @@ export function UpgradeSuccessPage() {
           : ''
     : '';
 
-  // Poll with exponential backoff: start at 1s, max 5s, for up to 60 seconds total
-  const [roleUpdated, setRoleUpdated] = useState(user?.role === 'creator');
+  // Derive role status directly from auth context
+  const roleUpdated = user?.role === 'creator';
   const [pollFailed, setPollFailed] = useState(false);
   const [manualRefreshing, setManualRefreshing] = useState(false);
 
+  // Poll with exponential backoff: start at 1s, max 5s, for up to 60 seconds total
   useEffect(() => {
     if (roleUpdated) return;
 
@@ -78,14 +79,6 @@ export function UpgradeSuccessPage() {
     timeoutId = setTimeout(poll, delay);
     return () => clearTimeout(timeoutId);
   }, [refreshUser, roleUpdated]);
-
-  // Watch for role change from auth context
-  useEffect(() => {
-    if (user?.role === 'creator') {
-      setRoleUpdated(true);
-      setPollFailed(false);
-    }
-  }, [user?.role]);
 
   const handleManualRefresh = useCallback(async () => {
     setManualRefreshing(true);
