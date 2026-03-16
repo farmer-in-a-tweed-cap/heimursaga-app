@@ -256,7 +256,7 @@ export function JournalEntryPage() {
       title: api.title,
       date: api.date || api.createdAt || '',
       publishedAt: api.createdAt || '',
-      lastModified: api.createdAt || '',
+      lastModified: api.updatedAt || api.createdAt || '',
 
       explorerId: author?.username || '',
       explorerName: author?.username || 'Unknown', // Use username for display
@@ -306,8 +306,6 @@ export function JournalEntryPage() {
 
       wordCount,
       readTime: Math.ceil(wordCount / 200),
-      mediaSize: '0 MB',
-      uploadBandwidth: '0 MB/s',
 
       // API flags
       liked: api.liked,
@@ -720,7 +718,6 @@ export function JournalEntryPage() {
             <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
               <div className="bg-[#616161] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center justify-between">
                 <h2 className="text-sm font-bold">MEDIA GALLERY ({entry.media.length})</h2>
-                <span className="text-xs font-mono text-[#b5bcc4]">Total Size: {entry.mediaSize}</span>
               </div>
 
               {/* Main Image Display */}
@@ -1328,14 +1325,6 @@ export function JournalEntryPage() {
               <div>
                 <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Last Modified:</span>
                 <div>{formatDateTime(entry.lastModified)}</div>
-              </div>
-              <div>
-                <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Media Storage:</span>
-                <div>{entry.mediaSize}</div>
-              </div>
-              <div>
-                <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Upload Speed:</span>
-                <div>{entry.uploadBandwidth}</div>
               </div>
               <div>
                 <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Visibility:</span>

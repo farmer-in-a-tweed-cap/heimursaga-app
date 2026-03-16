@@ -624,6 +624,7 @@ export class EntryService {
             },
           },
           created_at: true,
+          updated_at: true,
         },
       });
 
@@ -866,6 +867,7 @@ export class EntryService {
             ? (entry.author.followers?.length || 0) > 0
             : undefined,
         createdAt: entry.created_at,
+        updatedAt: entry.updated_at,
         entryNumber,
         expeditionDay,
         quickSponsorsCount: entry.quick_sponsors_count || 0,

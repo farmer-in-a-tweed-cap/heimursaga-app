@@ -322,6 +322,7 @@ export interface IPostDetail {
   createdByMe?: boolean;
   followingAuthor?: boolean;
   createdAt?: Date;
+  updatedAt?: Date;
   // New fields
   entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
   coverImage?: string;

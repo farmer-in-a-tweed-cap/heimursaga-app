@@ -969,6 +969,7 @@ export interface Entry {
   date?: string;
   place?: string;
   createdAt?: string;
+  updatedAt?: string;
   // Coordinates stored directly on entry (entries are distinct from waypoints)
   lat?: number;
   lon?: number;
