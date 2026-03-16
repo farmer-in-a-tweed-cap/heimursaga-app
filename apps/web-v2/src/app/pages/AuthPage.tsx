@@ -417,9 +417,9 @@ export function AuthPage() {
                       <input type="checkbox" id="terms" name="terms" className="mt-1" required disabled={loading} />
                       <label htmlFor="terms" className="text-xs text-[#202020] dark:text-[#e5e5e5]">
                         <strong className="text-[#ac6d46]">*REQUIRED:</strong> I have read and agree to the{' '}
-                        <Link href="/legal/terms" className="text-[#4676ac] hover:text-[#ac6d46]">Terms of Service</Link>
+                        <Link href="/legal/terms" target="_blank" className="text-[#4676ac] hover:text-[#ac6d46]">Terms of Service</Link>
                         {' '}and{' '}
-                        <Link href="/legal/privacy" className="text-[#4676ac] hover:text-[#ac6d46]">Privacy Policy</Link>
+                        <Link href="/legal/privacy" target="_blank" className="text-[#4676ac] hover:text-[#ac6d46]">Privacy Policy</Link>
                       </label>
                     </div>
 

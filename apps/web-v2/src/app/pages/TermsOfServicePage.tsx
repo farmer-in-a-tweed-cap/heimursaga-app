@@ -360,7 +360,7 @@ export function TermsOfServicePage() {
           
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
             Our collection, use, and sharing of your personal data is governed by our{' '}
-            <Link href="/legal/privacy" className="text-[#ac6d46] hover:text-[#4676ac]">Privacy Policy</Link>. 
+            <Link href="/legal/privacy" target="_blank" className="text-[#ac6d46] hover:text-[#4676ac]">Privacy Policy</Link>.
             By using our Service, you consent to our data practices as described in the Privacy Policy.
           </p>
         </section>
@@ -412,6 +412,7 @@ export function TermsOfServicePage() {
       <div className="mt-8 flex gap-4 justify-center">
         <Link
           href="/legal/privacy"
+          target="_blank"
           className="px-6 py-3 bg-[#4676ac] text-white hover:bg-[#3a5f8c] transition-all text-sm font-bold"
         >
           VIEW PRIVACY POLICY

@@ -978,7 +978,7 @@ export function SponsorshipPaymentPage() {
                       {paymentType === 'recurring' && (
                         <p>* Recurring payments support the explorer across multiple expeditions</p>
                       )}
-                      <p>* I have read the <Link href="/legal/terms" className="text-[#4676ac] hover:underline">full terms</Link> and <Link href="/legal/privacy" className="text-[#4676ac] hover:underline">privacy policy</Link></p>
+                      <p>* I have read the <Link href="/legal/terms" target="_blank" className="text-[#4676ac] hover:underline">full terms</Link> and <Link href="/legal/privacy" target="_blank" className="text-[#4676ac] hover:underline">privacy policy</Link></p>
                     </div>
                   </div>
                 </label>

@@ -449,6 +449,7 @@ export function PrivacyPolicyPage() {
       <div className="mt-8 flex gap-4 justify-center">
         <Link
           href="/legal/terms"
+          target="_blank"
           className="px-6 py-3 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-sm font-bold"
         >
           VIEW TERMS OF SERVICE

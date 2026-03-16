@@ -342,12 +342,6 @@ export function BillingSettingsPage() {
 
                   {!showCancelConfirm ? (
                     <div className="flex gap-2 pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a]">
-                      <Link
-                        href="/upgrade"
-                        className="flex-1 px-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] text-xs font-bold hover:bg-[#b5bcc4] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-center"
-                      >
-                        CHANGE PLAN
-                      </Link>
                       {!subscription?.cancelAtPeriodEnd && (
                         <button
                           onClick={() => setShowCancelConfirm(true)}
