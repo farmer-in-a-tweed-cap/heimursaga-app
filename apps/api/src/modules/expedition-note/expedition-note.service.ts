@@ -305,6 +305,33 @@ export class ExpeditionNoteService {
         },
       });
 
+      // Notify all active sponsors of this expedition
+      const sponsorships = await this.prisma.sponsorship.findMany({
+        where: {
+          sponsored_explorer_id: expedition.author_id,
+          deleted_at: null,
+          status: { in: ['active', 'confirmed', 'ACTIVE', 'CONFIRMED'] },
+        },
+        select: { sponsor_id: true },
+      });
+
+      const uniqueSponsorIds = [
+        ...new Set(sponsorships.map((s) => s.sponsor_id)),
+      ];
+
+      for (const sponsorId of uniqueSponsorIds) {
+        this.eventService.trigger<IUserNotificationCreatePayload>({
+          event: EVENTS.NOTIFICATION_CREATE,
+          data: {
+            context: UserNotificationContext.EXPEDITION_NOTE_CREATED,
+            userId: sponsorId,
+            mentionUserId: explorerId,
+            expeditionPublicId: expeditionId,
+            body: text,
+          },
+        });
+      }
+
       return { noteId: note.id };
     } catch (e) {
       this.logger.error(e);

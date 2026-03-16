@@ -48,6 +48,7 @@ export enum UserNotificationContext {
   EXPEDITION_COMPLETED = 'expedition_completed',
   SPONSORSHIP_MILESTONE = 'sponsorship_milestone',
   EXPEDITION_OFF_GRID = 'expedition_off_grid',
+  EXPEDITION_NOTE_CREATED = 'expedition_note_created',
   EXPEDITION_NOTE_REPLY = 'expedition_note_reply',
   EXPEDITION_CANCELLED = 'expedition_cancelled',
   EXPEDITION_DATE_CHANGED = 'expedition_date_changed',

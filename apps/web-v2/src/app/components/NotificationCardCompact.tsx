@@ -33,6 +33,7 @@ export function NotificationCardCompact({
         return <DollarSign className="w-3.5 h-3.5" />;
       case "comment":
       case "comment_reply":
+      case "expedition_note_created":
       case "expedition_note_reply":
         return <MessageSquare className="w-3.5 h-3.5" />;
       case "entry_milestone":
@@ -73,6 +74,7 @@ export function NotificationCardCompact({
       case "follow":
       case "comment":
       case "comment_reply":
+      case "expedition_note_created":
       case "expedition_note_reply":
         return "text-[#4676ac]";
       case "expedition_started":

@@ -45,6 +45,7 @@ export function NotificationCard({
         return <DollarSign className="w-4 h-4" />;
       case "comment":
       case "comment_reply":
+      case "expedition_note_created":
       case "expedition_note_reply":
         return <MessageSquare className="w-4 h-4" />;
       case "entry_milestone":
@@ -90,6 +91,7 @@ export function NotificationCard({
       case "follow":
       case "comment":
       case "comment_reply":
+      case "expedition_note_created":
       case "expedition_note_reply":
         return "bg-[#4676ac]"; // Blue
       case "expedition_cancelled":
@@ -119,6 +121,8 @@ export function NotificationCard({
         return "NEW NOTE";
       case "comment_reply":
         return "NOTE REPLY";
+      case "expedition_note_created":
+        return "EXPEDITION NOTE LOGGED";
       case "expedition_note_reply":
         return "NOTE REPLY";
       case "entry_milestone":

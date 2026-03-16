@@ -38,6 +38,11 @@ function formatNotification(n: Notification): { action: string; detail?: string;
         action: n.postTitle ? `replied on "${n.postTitle}"` : 'replied to your note',
         detail: n.body ? `"${n.body.slice(0, 200)}${n.body.length > 200 ? '...' : ''}"` : undefined,
       };
+    case 'expedition_note_created':
+      return {
+        action: 'logged a new expedition note',
+        detail: n.body ? `"${n.body.slice(0, 200)}${n.body.length > 200 ? '...' : ''}"` : undefined,
+      };
     case 'expedition_note_reply':
       return {
         action: 'replied to your expedition note',

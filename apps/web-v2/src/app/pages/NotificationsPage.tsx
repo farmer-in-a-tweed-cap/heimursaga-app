@@ -144,6 +144,13 @@ function formatNotification(apiNotif: ApiNotification): { titleText: string; mes
           ? `"${apiNotif.body.slice(0, 300)}${apiNotif.body.length > 300 ? '...' : ''}"`
           : ''
       };
+    case 'expedition_note_created':
+      return {
+        titleText: 'logged a new expedition note',
+        message: apiNotif.body
+          ? `"${apiNotif.body.slice(0, 300)}${apiNotif.body.length > 300 ? '...' : ''}"`
+          : '',
+      };
     case 'expedition_note_reply':
       return {
         titleText: 'replied to your expedition note',
@@ -257,7 +264,7 @@ function mapApiNotification(apiNotif: ApiNotification, index: number): Notificat
 
 // Types that have an actor link
 const ACTOR_TYPES: NotificationType[] = [
-  'follow', 'sponsorship', 'quick_sponsor', 'comment', 'comment_reply', 'expedition_note_reply'
+  'follow', 'sponsorship', 'quick_sponsor', 'comment', 'comment_reply', 'expedition_note_created', 'expedition_note_reply'
 ];
 
 export function NotificationsPage() {
@@ -405,6 +412,7 @@ export function NotificationsPage() {
         // Title already references the post name, no need for a source link
         return undefined;
 
+      case 'expedition_note_created':
       case 'expedition_note_reply':
         if (metadata?.expeditionId && metadata?.expeditionName) {
           return { type: 'expedition', id: metadata.expeditionId, title: metadata.expeditionName };

@@ -60,6 +60,8 @@ function formatNotification(apiNotif: ApiNotification): string {
       return apiNotif.postTitle
         ? `${actor} replied on "${apiNotif.postTitle}"`
         : `${actor} replied to your note`;
+    case 'expedition_note_created':
+      return `${actor} logged a new expedition note`;
     case 'expedition_note_reply':
       return `${actor} replied to your expedition note`;
     case 'entry_milestone':
