@@ -200,7 +200,7 @@ export function ExpeditionQuickEntryPage() {
     if (!file) return;
 
     const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-    const MAX_COVER_SIZE = 10 * 1024 * 1024;
+    const MAX_COVER_SIZE = 25 * 1024 * 1024;
 
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
       setSubmitError('Invalid file type. Please use JPG, PNG, or WEBP');
@@ -208,7 +208,7 @@ export function ExpeditionQuickEntryPage() {
       return;
     }
     if (file.size > MAX_COVER_SIZE) {
-      setSubmitError('Cover photo must be less than 10MB');
+      setSubmitError('Cover photo must be less than 25MB');
       e.target.value = '';
       return;
     }

@@ -162,7 +162,7 @@ export function ExpeditionBuilderPage() {
 
   // Allowed image types for cover photo
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-  const MAX_COVER_SIZE = 10 * 1024 * 1024; // 10MB
+  const MAX_COVER_SIZE = 25 * 1024 * 1024; // 25MB
 
   // Handle cover photo upload
   const handleCoverPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -178,7 +178,7 @@ export function ExpeditionBuilderPage() {
 
     // Validate file size
     if (file.size > MAX_COVER_SIZE) {
-      setSubmitError('Cover photo must be less than 10MB');
+      setSubmitError('Cover photo must be less than 25MB');
       e.target.value = '';
       return;
     }

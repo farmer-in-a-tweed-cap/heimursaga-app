@@ -234,7 +234,7 @@ export class SessionExplorerController {
     FileInterceptor('file', {
       limits: {
         files: 1,
-        fileSize: 10 * 1024 * 1024, // 10MB to support HEIC files
+        fileSize: 25 * 1024 * 1024, // 25MB to support iPhone photos
       },
     }),
   )
@@ -255,7 +255,7 @@ export class SessionExplorerController {
     FileInterceptor('file', {
       limits: {
         files: 1,
-        fileSize: 10 * 1024 * 1024, // 10MB for cover photos
+        fileSize: 25 * 1024 * 1024, // 25MB for cover photos
       },
     }),
   )

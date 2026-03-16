@@ -111,11 +111,11 @@ export class UploadService {
       );
 
       // Validate file size (additional check beyond multer)
-      const maxSizeBytes = 15 * 1024 * 1024; // 15MB
+      const maxSizeBytes = 25 * 1024 * 1024; // 25MB
       const fileSize = file.buffer?.length || 0;
       if (fileSize > maxSizeBytes) {
         throw new ServiceBadRequestException(
-          `File size ${Math.round(fileSize / 1024 / 1024)}MB exceeds maximum of 15MB`,
+          `File size ${Math.round(fileSize / 1024 / 1024)}MB exceeds maximum of 25MB`,
         );
       }
 

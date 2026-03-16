@@ -163,9 +163,9 @@ export function EditProfilePage() {
         toast.error('Please select an image file');
         return;
       }
-      // Validate file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        toast.error('Cover photo must be less than 10MB');
+      // Validate file size (max 25MB)
+      if (file.size > 25 * 1024 * 1024) {
+        toast.error('Cover photo must be less than 25MB');
         return;
       }
       setCoverPhotoFile(file);

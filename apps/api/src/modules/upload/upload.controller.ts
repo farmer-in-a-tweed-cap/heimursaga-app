@@ -16,7 +16,7 @@ import { ISession } from '@/common/interfaces';
 import { IUploadedFile } from './upload.interface';
 import { UploadService } from './upload.service';
 
-const UPLOAD_MAX_FILE_SIZE = 15; // mb - increased for higher quality uploads
+const UPLOAD_MAX_FILE_SIZE = 25; // mb - supports iPhone photo sizes
 
 @ApiTags('upload')
 @Controller('upload')
