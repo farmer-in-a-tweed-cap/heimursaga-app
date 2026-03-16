@@ -340,16 +340,11 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     map.addControl(navControl, 'top-right');
     navControlRef.current = navControl;
 
-    map.on('moveend', updateVisibleItems);
-    map.on('zoomend', updateVisibleItems);
-
     map.on('load', () => {
       updateVisibleItems();
     });
 
     return () => {
-      map.off('moveend', updateVisibleItems);
-      map.off('zoomend', updateVisibleItems);
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
       if (highlightMarkerRef.current) {
@@ -361,6 +356,21 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Attach moveend/zoomend listeners — re-attaches when updateVisibleItems changes
+  // so the callback always has the current mapMode and data
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    map.on('moveend', updateVisibleItems);
+    map.on('zoomend', updateVisibleItems);
+
+    return () => {
+      map.off('moveend', updateVisibleItems);
+      map.off('zoomend', updateVisibleItems);
+    };
+  }, [updateVisibleItems]);
 
   // Update markers when mode or data changes
   useEffect(() => {

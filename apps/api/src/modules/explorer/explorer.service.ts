@@ -247,6 +247,9 @@ export class ExplorerService {
           const activeExpeditionOffGrid =
             !hasPublicActiveExp && !!hasOffGridActiveExp;
 
+          const locVis = profile?.location_visibility || 'hidden';
+          const showLocation = locVis !== 'hidden';
+
           return {
             username,
             role,
@@ -254,13 +257,13 @@ export class ExplorerService {
             name: profile?.name,
             picture: getStaticMediaUrl(profile?.picture),
             bio: profile?.bio,
-            locationFrom: profile?.location_from,
-            locationLives: profile?.location_lives,
-            locationFromLat: profile?.location_from_lat,
-            locationFromLon: profile?.location_from_lon,
-            locationLivesLat: profile?.location_lives_lat,
-            locationLivesLon: profile?.location_lives_lon,
-            locationVisibility: profile?.location_visibility || 'hidden',
+            locationFrom: showLocation ? profile?.location_from : null,
+            locationLives: showLocation ? profile?.location_lives : null,
+            locationFromLat: showLocation ? profile?.location_from_lat : null,
+            locationFromLon: showLocation ? profile?.location_from_lon : null,
+            locationLivesLat: showLocation ? profile?.location_lives_lat : null,
+            locationLivesLon: showLocation ? profile?.location_lives_lon : null,
+            locationVisibility: locVis,
             entriesCount: entries_count,
             postsCount: entries_count,
             memberDate: created_at,
@@ -502,8 +505,8 @@ export class ExplorerService {
         you: explorerId ? explorerId === explorer.id : false,
         creator: explorer.role === UserRole.CREATOR,
         stripeAccountConnected: explorer.is_stripe_account_connected,
-        locationFrom: explorer.profile?.location_from,
-        locationLives: explorer.profile?.location_lives,
+        locationFrom: (explorer.profile?.location_visibility || 'hidden') !== 'hidden' ? explorer.profile?.location_from : null,
+        locationLives: (explorer.profile?.location_visibility || 'hidden') !== 'hidden' ? explorer.profile?.location_lives : null,
         locationVisibility: explorer.profile?.location_visibility || 'hidden',
         sponsorsFund: explorer.profile?.sponsors_fund,
         sponsorsFundType: explorer.profile?.sponsors_fund_type,
