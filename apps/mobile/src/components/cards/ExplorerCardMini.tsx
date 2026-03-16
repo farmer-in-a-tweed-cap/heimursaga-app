@@ -25,7 +25,7 @@ export function ExplorerCardMini({ explorer, onPress, action }: ExplorerCardMini
   const statusCfg = explorerStatusConfig[status];
 
   return (
-    <Pressable style={({ pressed }) => [styles.wrapper, { transform: [{ scale: pressed ? 0.98 : 1 }] }]} onPress={onPress}>
+    <Pressable style={({ pressed }) => [styles.wrapper, { transform: [{ scale: pressed ? 0.98 : 1 }] }]} onPress={onPress} accessibilityRole="button" accessibilityLabel={`Explorer: ${explorer.name || explorer.username}`}>
       <HCard>
         <StatusHeader status="active" label={statusCfg.label} dotColor={statusCfg.color} />
         <View style={styles.inner}>

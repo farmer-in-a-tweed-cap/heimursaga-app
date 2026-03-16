@@ -24,7 +24,7 @@ export function ExplorerCardFull({ explorer, onPress }: ExplorerCardFullProps) {
   const statusCfg = explorerStatusConfig[status];
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Explorer: ${explorer.name || explorer.username}`} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
       <HCard>
         <StatusHeader
           status="active"

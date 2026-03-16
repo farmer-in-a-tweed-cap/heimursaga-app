@@ -179,7 +179,7 @@ export default function HomeScreen() {
         <View style={styles.headerRight}>
           {user && <Avatar size={30} name={user.username} imageUrl={user.picture ?? user.avatar_url} pro={user.isPremium ?? user.is_pro} />}
           {user && (
-            <Pressable onPress={() => router.push('/notifications')} hitSlop={8} style={styles.bellWrap}>
+            <Pressable onPress={() => router.push('/notifications')} hitSlop={8} style={styles.bellWrap} accessibilityRole="button" accessibilityLabel={`Notifications${badgeCount > 0 ? `, ${badgeCount} unread` : ''}`}>
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#e5e5e5" strokeWidth={1.8}>
                 <Path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                 <Path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -191,7 +191,7 @@ export default function HomeScreen() {
               )}
             </Pressable>
           )}
-          <Pressable onPress={() => router.push('/menu')} hitSlop={8}>
+          <Pressable onPress={() => router.push('/menu')} hitSlop={8} accessibilityRole="button" accessibilityLabel="Menu">
             <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#e5e5e5" strokeWidth={2}>
               <Path d="M3 6h18M3 12h18M3 18h18" />
             </Svg>

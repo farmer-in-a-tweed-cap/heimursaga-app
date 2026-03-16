@@ -30,7 +30,7 @@ export function EntryCardMini({ entry, onPress, showAuthor = true }: EntryCardMi
       : '';
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`Journal entry: ${entry.title}`} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
       <HCard>
         <StatusHeader
           status="planned"

@@ -22,10 +22,19 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
+import * as Sentry from '@sentry/react-native';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { ThemeProvider, useTheme } from '@/theme/ThemeContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { mono, colors as brandColors } from '@/theme/tokens';
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN ?? '',
+  enabled: !__DEV__,
+  tracesSampleRate: 0.2,
+});
 
 // Keep the native splash visible until we explicitly hide it
 SplashScreen.preventAutoHideAsync();
@@ -483,6 +492,7 @@ function RootNav() {
   return (
     <>
       <StatusBar style={dark ? 'light' : 'dark'} />
+      <OfflineBanner />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
@@ -527,16 +537,23 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null; // native splash stays visible
 
+  const stripeKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
+  if (__DEV__ && !stripeKey) {
+    console.warn('EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY is not set — Stripe features will not work.');
+  }
+
   return (
     <StripeProvider
-      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
+      publishableKey={stripeKey}
       urlScheme="heimursaga"
     >
-      <ThemeProvider>
-        <AuthProvider>
-          <RootNav />
-        </AuthProvider>
-      </ThemeProvider>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <AuthProvider>
+            <RootNav />
+          </AuthProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
     </StripeProvider>
   );
 }

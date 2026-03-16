@@ -22,6 +22,7 @@ export function HTextField({ label, ...inputProps }: HTextFieldProps) {
       </Text>
       <TextInput
         {...inputProps}
+        accessibilityLabel={label}
         placeholderTextColor={dark ? '#4a4a4a' : '#b5bcc4'}
         style={[
           styles.input,

@@ -39,7 +39,7 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
       : undefined);
 
   return (
-    <Pressable onPress={onPress} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${expedition.title} expedition`} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
       <HCard>
         <StatusHeader
           status={expedition.status}

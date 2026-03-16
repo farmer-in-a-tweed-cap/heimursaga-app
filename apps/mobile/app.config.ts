@@ -14,17 +14,45 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   icon: './assets/icon.png',
   userInterfaceStyle: 'automatic',
   scheme: 'heimursaga',
+  updates: {
+    url: 'https://u.expo.dev/heimursaga',
+    fallbackToCacheTimeout: 0,
+  },
+  runtimeVersion: {
+    policy: 'appVersion',
+  },
   splash: {
     backgroundColor: '#141109',
   },
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.heimursaga.app',
+    buildNumber: '1',
     infoPlist: {
       NSFaceIDUsageDescription: 'Authenticate to unlock Heimursaga',
       NSPhotoLibraryUsageDescription: 'Upload photos to your journal entries',
       NSCameraUsageDescription: 'Take photos for your journal entries',
       NSLocationWhenInUseUsageDescription: 'Show your location on the Explorer Atlas',
+    },
+    privacyManifests: {
+      NSPrivacyAccessedAPITypes: [
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+          NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
+          NSPrivacyAccessedAPITypeReasons: ['C617.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryDiskSpace',
+          NSPrivacyAccessedAPITypeReasons: ['E174.1'],
+        },
+        {
+          NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategorySystemBootTime',
+          NSPrivacyAccessedAPITypeReasons: ['35F9.1'],
+        },
+      ],
     },
   },
   android: {
@@ -76,5 +104,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     '@react-native-community/datetimepicker',
+    'expo-notifications',
+    [
+      '@sentry/react-native/expo',
+      {
+        organization: process.env.SENTRY_ORG ?? '',
+        project: process.env.SENTRY_PROJECT ?? '',
+      },
+    ],
   ],
 });

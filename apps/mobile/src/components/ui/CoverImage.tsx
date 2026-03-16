@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Image, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { useTheme } from '@/theme/ThemeContext';
 import { mono } from '@/theme/tokens';
 
@@ -18,7 +19,8 @@ export function CoverImage({ uri, height = 160, label }: CoverImageProps) {
       <Image
         source={{ uri }}
         style={[styles.image, { height }]}
-        resizeMode="cover"
+        contentFit="cover"
+        transition={200}
         onError={() => setImgError(true)}
       />
     );
