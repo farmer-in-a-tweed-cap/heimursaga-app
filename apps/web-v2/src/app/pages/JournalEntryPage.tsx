@@ -581,11 +581,6 @@ export function JournalEntryPage() {
                       </div>
                     )}
                   </div>
-                  {!entry.expeditionId && (
-                    <button className="px-4 py-2 border-2 border-[#616161] hover:bg-[#95a2aa] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs dark:text-[#e5e5e5]">
-                      CHANGE VISIBILITY
-                    </button>
-                  )}
                   <button
                     onClick={() => setConfirmingDeleteEntry(true)}
                     className="px-4 py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold flex items-center gap-2"
