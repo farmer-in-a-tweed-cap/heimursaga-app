@@ -292,26 +292,24 @@ export function ExpeditionBuilderPage() {
         await expeditionApi.update(expeditionId, finalPayload);
         expeditionPublicId = expeditionId;
 
-        // Sync waypoints: update existing, create new, delete removed (skip for cancelled)
-        if (expedition?.status !== 'cancelled') {
-          const currentWaypointIds = new Set(
-            waypoints.filter(w => !w.id.startsWith('waypoint-')).map(w => w.id)
-          );
+        // Sync waypoints: update existing, create new, delete removed
+        const currentWaypointIds = new Set(
+          waypoints.filter(w => !w.id.startsWith('waypoint-')).map(w => w.id)
+        );
 
-          // Delete waypoints that were removed (ones from API that are no longer in state)
-          for (const originalId of originalWaypointIdsRef.current) {
-            if (!currentWaypointIds.has(originalId)) {
-              await expeditionApi.deleteWaypoint(expeditionPublicId, originalId);
-            }
+        // Delete waypoints that were removed (ones from API that are no longer in state)
+        for (const originalId of originalWaypointIdsRef.current) {
+          if (!currentWaypointIds.has(originalId)) {
+            await expeditionApi.deleteWaypoint(expeditionPublicId, originalId);
           }
+        }
 
-          // Update existing and create new waypoints
-          for (const waypoint of waypoints) {
-            if (waypoint.id.startsWith('waypoint-')) {
-              await expeditionApi.createWaypoint(expeditionPublicId, buildWaypointPayload(waypoint));
-            } else {
-              await expeditionApi.updateWaypoint(expeditionPublicId, waypoint.id, buildWaypointPayload(waypoint));
-            }
+        // Update existing and create new waypoints
+        for (const waypoint of waypoints) {
+          if (waypoint.id.startsWith('waypoint-')) {
+            await expeditionApi.createWaypoint(expeditionPublicId, buildWaypointPayload(waypoint));
+          } else {
+            await expeditionApi.updateWaypoint(expeditionPublicId, waypoint.id, buildWaypointPayload(waypoint));
           }
         }
       } else if (draftId) {
