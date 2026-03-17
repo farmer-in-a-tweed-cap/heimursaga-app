@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { DayPicker } from 'react-day-picker';
-import { format, parse, isValid, startOfMonth, getYear, getMonth, setYear, setMonth } from 'date-fns';
+import { format, parse, isValid, getYear, getMonth, setYear, setMonth } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/app/components/ui/popover';
 
@@ -47,11 +47,12 @@ export function DatePicker({
   );
 
   // When the popover opens, navigate to the selected date or the start of the valid range
-  useEffect(() => {
-    if (open) {
+  const handleOpenChange = useCallback((nextOpen: boolean) => {
+    if (nextOpen) {
       setMonthState(selected || minDate || new Date());
     }
-  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+    setOpen(nextOpen);
+  }, [selected, minDate]);
 
   // Year range for the dropdown
   const yearRange = useMemo(() => {
@@ -87,7 +88,7 @@ export function DatePicker({
   const displayValue = selected ? format(selected, 'MMM d, yyyy') : '';
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <button
           type="button"
