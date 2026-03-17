@@ -311,7 +311,8 @@ export function EditEntryPage() {
   };
 
   const wordCount = getWordCount();
-  const isWordCountValid = entryType === 'waypoint' || (wordCount >= 200 && wordCount <= 2000);
+  const minWords = entryType === 'standard' ? 200 : 20;
+  const isWordCountValid = entryType === 'waypoint' || (wordCount >= minWords && wordCount <= 2000);
 
   // Get expedition info from API entry
   const expedition = apiEntry?.trip || apiEntry?.expedition;
@@ -412,8 +413,8 @@ export function EditEntryPage() {
       errors.push('GPS coordinates are required');
     }
     if (!isWordCountValid) {
-      if (wordCount < 200) {
-        errors.push(`Entry content must be at least 200 words (currently ${wordCount})`);
+      if (wordCount < minWords) {
+        errors.push(`Entry content must be at least ${minWords} words (currently ${wordCount})`);
       } else if (wordCount > 2000) {
         errors.push(`Entry content must not exceed 2,000 words (currently ${wordCount})`);
       }
@@ -771,15 +772,15 @@ Remember: Your sponsors and followers are reading this to understand your journe
                       onBlur={() => contentValidationActions.checkAiPhrases(standardContent)}
                     />
                     <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
-                      <span className={wordCount < 200 || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
-                        Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < 200 && `(Minimum: 200)`} {wordCount > 2000 && `(Maximum: 2,000)`}
+                      <span className={wordCount < minWords || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
+                        Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < minWords && `(Minimum: ${minWords})`} {wordCount > 2000 && `(Maximum: 2,000)`}
                       </span>
                       <span>Character count: {standardContent.length} / 50,000</span>
                     </div>
-                    {wordCount > 0 && (wordCount < 200 || wordCount > 2000) && (
+                    {wordCount > 0 && (wordCount < minWords || wordCount > 2000) && (
                       <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
                         <div className="font-bold mb-1">WORD COUNT REQUIREMENT:</div>
-                        {wordCount < 200 && <div>• Your entry must be at least 200 words. Current: {wordCount} words ({200 - wordCount} more needed)</div>}
+                        {wordCount < minWords && <div>• Your entry must be at least {minWords} words. Current: {wordCount} words ({minWords - wordCount} more needed)</div>}
                         {wordCount > 2000 && <div>• Your entry must not exceed 2,000 words. Current: {wordCount} words ({wordCount - 2000} over limit)</div>}
                       </div>
                     )}
@@ -1063,15 +1064,15 @@ Remember: Your sponsors and followers are reading this to understand your journe
                       }}
                     />
                     <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                      <span className={wordCount < 200 || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
-                        Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < 200 && `(Minimum: 200)`} {wordCount > 2000 && `(Maximum: 2,000)`}
+                      <span className={wordCount < minWords || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
+                        Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < minWords && `(Minimum: ${minWords})`} {wordCount > 2000 && `(Maximum: 2,000)`}
                       </span>
                       <span>Character count: {(videoContent || standardContent).length} / 15,000</span>
                     </div>
-                    {wordCount > 0 && (wordCount < 200 || wordCount > 2000) && (
+                    {wordCount > 0 && (wordCount < minWords || wordCount > 2000) && (
                       <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
                         <div className="font-bold mb-1">WORD COUNT REQUIREMENT:</div>
-                        {wordCount < 200 && <div>• Your entry must be at least 200 words. Current: {wordCount} words ({200 - wordCount} more needed)</div>}
+                        {wordCount < minWords && <div>• Your entry must be at least {minWords} words. Current: {wordCount} words ({minWords - wordCount} more needed)</div>}
                         {wordCount > 2000 && <div>• Your entry must not exceed 2,000 words. Current: {wordCount} words ({wordCount - 2000} over limit)</div>}
                       </div>
                     )}
