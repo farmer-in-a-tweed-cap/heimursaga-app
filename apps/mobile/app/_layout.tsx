@@ -28,6 +28,7 @@ import { ThemeProvider, useTheme } from '@/theme/ThemeContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
+import { initAnalytics, analytics } from '@/services/analytics';
 import { mono, colors as brandColors } from '@/theme/tokens';
 
 Sentry.init({
@@ -465,6 +466,21 @@ function RootNav() {
   const [minSplashDone, setMinSplashDone] = useState(false);
   const segments = useSegments();
   const router = useRouter();
+
+  // Initialize PostHog analytics
+  useEffect(() => {
+    initAnalytics();
+  }, []);
+
+  // Screen tracking
+  const currentSegment = segments.join('/');
+  useEffect(() => {
+    if (!currentSegment) return;
+    const screenName = '/' + currentSegment
+      .replace(/[a-f0-9-]{20,}/g, ':id')
+      .replace(/\d{3,}/g, ':id');
+    analytics.screen(screenName);
+  }, [currentSegment]);
 
   // Enforce minimum 1.5-second splash duration
   useEffect(() => {

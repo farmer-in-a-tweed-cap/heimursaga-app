@@ -20,6 +20,7 @@ import { MessageModule } from '@/modules/message';
 import { NotificationModule } from '@/modules/notification';
 import { PaymentModule } from '@/modules/payment';
 import { PayoutModule } from '@/modules/payout';
+import { PostHogModule } from '@/modules/posthog';
 import { PrismaModule } from '@/modules/prisma';
 import { RecaptchaModule } from '@/modules/recaptcha/recaptcha.module';
 import { SearchModule } from '@/modules/search';
@@ -57,6 +58,7 @@ import { AppService } from './app.service';
       },
     ]),
     LoggerModule,
+    PostHogModule,
     AdminModule,
     EventModule,
     EmailModule,

@@ -1,47 +1,55 @@
 /**
- * Analytics service — lightweight wrapper for event tracking.
+ * Analytics service — PostHog implementation.
  *
- * Replace the implementation with PostHog, Mixpanel, or Amplitude
- * once a provider is selected. All call sites use this facade so
- * swapping providers requires changes only here.
+ * All call sites use this facade so swapping providers
+ * requires changes only here.
  */
+
+import PostHog from 'posthog-react-native';
 
 type EventProperties = Record<string, string | number | boolean | undefined>;
 
-let userId: string | undefined;
+const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '';
+const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
+
+let client: PostHog | null = null;
+
+export async function initAnalytics(): Promise<PostHog | null> {
+  if (!POSTHOG_KEY) {
+    if (__DEV__) console.log('[analytics] No PostHog key — analytics disabled');
+    return null;
+  }
+  if (client) return client;
+
+  try {
+    client = await PostHog.initAsync(POSTHOG_KEY, {
+      host: POSTHOG_HOST,
+    });
+    if (__DEV__) console.log('[analytics] PostHog initialized');
+  } catch (err) {
+    if (__DEV__) console.warn('[analytics] PostHog init failed:', err);
+  }
+  return client;
+}
 
 export const analytics = {
   identify(id: string, traits?: EventProperties) {
-    userId = id;
-    if (__DEV__) {
-      console.log('[analytics] identify', id, traits);
-    }
-    // TODO: Replace with provider SDK call
-    // e.g. posthog.identify(id, traits);
+    if (__DEV__) console.log('[analytics] identify', id, traits);
+    client?.identify(id, traits);
   },
 
   track(event: string, properties?: EventProperties) {
-    if (__DEV__) {
-      console.log('[analytics] track', event, properties);
-    }
-    // TODO: Replace with provider SDK call
-    // e.g. posthog.capture(event, { ...properties, userId });
+    if (__DEV__) console.log('[analytics] track', event, properties);
+    client?.capture(event, properties);
   },
 
   screen(name: string, properties?: EventProperties) {
-    if (__DEV__) {
-      console.log('[analytics] screen', name, properties);
-    }
-    // TODO: Replace with provider SDK call
-    // e.g. posthog.screen(name, properties);
+    if (__DEV__) console.log('[analytics] screen', name, properties);
+    client?.screen(name, properties);
   },
 
   reset() {
-    userId = undefined;
-    if (__DEV__) {
-      console.log('[analytics] reset');
-    }
-    // TODO: Replace with provider SDK call
-    // e.g. posthog.reset();
+    if (__DEV__) console.log('[analytics] reset');
+    client?.reset();
   },
 };

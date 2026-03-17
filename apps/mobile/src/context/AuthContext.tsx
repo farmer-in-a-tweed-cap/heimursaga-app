@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from 'react';
 import { api, ApiError } from '@/services/api';
+import { analytics } from '@/services/analytics';
 import {
   setTokens,
   clearTokens,
@@ -85,6 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         );
         if (__DEV__) console.log('[Auth] auto-login success:', res.data?.username);
         setUser(res.data);
+        analytics.identify(String(res.data.id), {
+          username: res.data.username,
+          email: res.data.email,
+          is_pro: res.data.is_pro,
+        });
       } catch (err) {
         if (__DEV__) console.log('[Auth] auto-login failed:', err instanceof ApiError ? `${err.status}: ${err.message}` : err);
         // Only clear tokens on auth failures (401/403), not network errors
@@ -107,6 +113,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await setTokens(res.data.token, res.data.refreshToken);
       setUser(res.data.user);
       setHasStoredSession(false);
+      analytics.identify(String(res.data.user.id), {
+        username: res.data.user.username,
+        email: res.data.user.email,
+        is_pro: res.data.user.is_pro,
+      });
+      analytics.track('login', { method: 'password' });
     },
     [],
   );
@@ -120,12 +132,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
     setUser(res.data);
     setHasStoredSession(false);
+    analytics.identify(String(res.data.id), { username: res.data.username });
+    analytics.track('login', { method: 'biometric' });
   }, []);
 
   const register = useCallback(
     async (email: string, username: string, password: string) => {
       await api.post('/auth/register', { email, username, password }, { noAuth: true });
       await login(username, password);
+      analytics.track('signup', { method: 'email' });
     },
     [login],
   );
@@ -134,6 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await clearTokens();
     setUser(null);
     setHasStoredSession(false);
+    analytics.reset();
   }, []);
 
   const handleSetBiometricEnabled = useCallback(async (enabled: boolean) => {

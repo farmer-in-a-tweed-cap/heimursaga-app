@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { authApi, SessionUser, ApiError, clearCsrfToken } from '@/app/services/api';
+import { posthog } from '@/lib/posthog';
 
 // Re-export SessionUser as User for backwards compatibility
 export type User = SessionUser;
@@ -52,6 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await authApi.getUser();
         if (!cancelled) {
           setUser(userData);
+          if (posthog.__loaded) {
+            posthog.identify(String(userData.id), {
+              username: userData.username,
+              email: userData.email,
+              role: userData.role,
+              is_premium: userData.isPremium,
+            });
+          }
         }
       } catch {
         if (!cancelled) {
@@ -73,15 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (loginInput: string, password: string, remember?: boolean) => {
     await authApi.login({ login: loginInput, password, remember });
-    // Fetch user data after successful login
     await refreshUser();
+    if (posthog.__loaded) posthog.capture('login', { method: 'password' });
   };
 
   const signup = async (email: string, username: string, password: string, recaptchaToken?: string) => {
     await authApi.signup({ email, username, password, recaptchaToken });
-    // Fetch user data after successful signup (auto-logged in)
     await refreshUser();
-    // Mark as new signup to trigger welcome modal
+    if (posthog.__loaded) posthog.capture('signup', { method: 'email' });
     setIsNewSignup(true);
   };
 
@@ -89,10 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authApi.logout();
     } finally {
-      // Always clear local state, even if API call fails
       setUser(null);
-      // Clear cached CSRF token so next login fetches a fresh one
       clearCsrfToken();
+      if (posthog.__loaded) posthog.reset();
     }
   };
 

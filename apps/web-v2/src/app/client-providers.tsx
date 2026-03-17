@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { ThemeProvider } from '@/app/context/ThemeContext';
 import { DistanceUnitProvider } from '@/app/context/DistanceUnitContext';
 import { MapLayerProvider } from '@/app/context/MapLayerContext';
@@ -10,6 +11,7 @@ import { Header } from '@/app/components/Header';
 import { ActiveExpeditionBanner } from '@/app/components/ActiveExpeditionBanner';
 import { Footer } from '@/app/components/Footer';
 import { WelcomeModal } from '@/app/components/WelcomeModal';
+import { PostHogPageviewTracker } from '@/app/components/PostHogPageviewTracker';
 import { Toaster } from '@/app/components/ui/sonner';
 import { usePathname } from 'next/navigation';
 
@@ -52,6 +54,9 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
             <AuthProvider>
               <StripeProvider>
                 <AppContent>{children}</AppContent>
+                <Suspense fallback={null}>
+                  <PostHogPageviewTracker />
+                </Suspense>
               </StripeProvider>
             </AuthProvider>
           </DistanceUnitProvider>
