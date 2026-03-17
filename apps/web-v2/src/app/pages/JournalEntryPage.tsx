@@ -36,6 +36,13 @@ export function JournalEntryPage() {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
 
+  // Edit/delete state
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false);
+
   // Follow state
   const [isFollowingExplorer, setIsFollowingExplorer] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
@@ -237,6 +244,56 @@ export function JournalEntryPage() {
     }
   };
 
+  // Edit a comment or reply
+  const handleEditComment = async (commentId: string) => {
+    const trimmed = editCommentText.trim();
+    if (!trimmed || trimmed.length > 2000 || editSaving) return;
+    setEditSaving(true);
+    try {
+      await commentApi.update(commentId, trimmed);
+      // Update in local state (could be a top-level comment or a nested reply)
+      setComments(prev => prev.map(c => {
+        if (c.id === commentId) return { ...c, content: trimmed };
+        if (c.replies) {
+          return { ...c, replies: c.replies.map(r => r.id === commentId ? { ...r, content: trimmed } : r) };
+        }
+        return c;
+      }));
+      setEditingCommentId(null);
+      setEditCommentText('');
+    } catch (err) {
+      console.error('Error editing comment:', err);
+      toast.error('Failed to edit comment');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // Delete a comment or reply
+  const handleDeleteComment = async (commentId: string, parentId?: string) => {
+    setIsDeleteLoading(true);
+    try {
+      await commentApi.delete(commentId);
+      if (parentId) {
+        // Remove reply from parent
+        setComments(prev => prev.map(c => {
+          if (c.id === parentId && c.replies) {
+            return { ...c, replies: c.replies.filter(r => r.id !== commentId) };
+          }
+          return c;
+        }));
+      } else {
+        // Remove top-level comment
+        setComments(prev => prev.filter(c => c.id !== commentId));
+      }
+      setConfirmDeleteId(null);
+    } catch (err) {
+      console.error('Error deleting comment:', err);
+      toast.error('Failed to delete comment');
+    } finally {
+      setIsDeleteLoading(false);
+    }
+  };
 
   // Transform API entry data to match component format
   const transformApiEntry = (api: Entry) => {
@@ -976,6 +1033,28 @@ export function JournalEntryPage() {
                         </span>
                       </div>
 
+                      {/* Delete confirmation */}
+                      {confirmDeleteId === comment.id && (
+                        <div className="px-3 py-2 bg-[#994040]/10 border-b border-[#994040]/30 flex items-center justify-between">
+                          <span className="text-xs font-mono text-[#994040] font-bold">DELETE THIS NOTE AND ALL RESPONSES?</span>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              disabled={isDeleteLoading}
+                              className="px-3 py-1 bg-[#994040] text-white text-xs font-mono font-bold hover:bg-[#7a3333] transition-colors disabled:opacity-50"
+                            >
+                              {isDeleteLoading ? 'DELETING...' : 'CONFIRM'}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="px-3 py-1 border border-[#994040]/30 text-xs font-mono text-[#994040] hover:bg-[#994040]/10 transition-colors"
+                            >
+                              CANCEL
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Note Content */}
                       <div className="px-3 py-3">
                         <div className="flex items-start gap-3">
@@ -994,19 +1073,77 @@ export function JournalEntryPage() {
                             <Link href={`/journal/${comment.author.username}`} className="font-bold text-sm hover:text-[#ac6d46] dark:text-[#e5e5e5] font-mono">
                               {comment.author.username}
                             </Link>
-                            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mt-1 leading-relaxed">{comment.content}</p>
 
-                            {/* Respond Button */}
-                            {isAuthenticated && (
-                              <button
-                                onClick={() => {
-                                  setReplyingTo(replyingTo === comment.id ? null : comment.id);
-                                  setReplyText('');
-                                }}
-                                className="mt-3 text-xs text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] dark:hover:text-[#ac6d46] font-mono font-bold transition-all"
-                              >
-                                {replyingTo === comment.id ? '✕ CANCEL' : '↳ RESPOND'}
-                              </button>
+                            {/* Edit form or content */}
+                            {editingCommentId === comment.id ? (
+                              <div className="mt-1">
+                                <textarea
+                                  className="w-full px-3 py-2 border-2 border-[#4676ac] focus:border-[#4676ac] outline-none text-sm mb-1 dark:bg-[#202020] dark:text-[#e5e5e5] font-mono"
+                                  rows={3}
+                                  value={editCommentText}
+                                  onChange={(e) => setEditCommentText(e.target.value.slice(0, 2000))}
+                                  maxLength={2000}
+                                />
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className={`text-xs font-mono ${editCommentText.length > 1800 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                                    {editCommentText.length}/2000
+                                  </span>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleEditComment(comment.id)}
+                                    disabled={editSaving || !editCommentText.trim() || editCommentText === comment.content}
+                                    className="px-3 py-1.5 bg-[#4676ac] text-white hover:bg-[#365d8a] border-2 border-[#202020] transition-all active:scale-[0.98] text-xs font-mono font-bold disabled:opacity-50 disabled:active:scale-100"
+                                  >
+                                    {editSaving ? 'SAVING...' : 'SAVE'}
+                                  </button>
+                                  <button
+                                    onClick={() => { setEditingCommentId(null); setEditCommentText(''); }}
+                                    className="px-3 py-1.5 border-2 border-[#616161] dark:border-[#3a3a3a] dark:text-[#e5e5e5] hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] text-xs font-mono"
+                                  >
+                                    CANCEL
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mt-1 leading-relaxed">{comment.content}</p>
+                            )}
+
+                            {/* Action buttons: edit/delete for own, respond for all */}
+                            {editingCommentId !== comment.id && (
+                              <div className="mt-3 flex items-center gap-3">
+                                {comment.createdByMe && (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        setEditingCommentId(comment.id);
+                                        setEditCommentText(comment.content);
+                                        setConfirmDeleteId(null);
+                                      }}
+                                      className="text-xs text-[#616161] dark:text-[#b5bcc4] hover:text-[#4676ac] dark:hover:text-[#4676ac] font-mono font-bold transition-all"
+                                    >
+                                      EDIT
+                                    </button>
+                                    <button
+                                      onClick={() => setConfirmDeleteId(confirmDeleteId === comment.id ? null : comment.id)}
+                                      className="text-xs text-[#616161] dark:text-[#b5bcc4] hover:text-[#994040] dark:hover:text-[#994040] font-mono font-bold transition-all"
+                                    >
+                                      DELETE
+                                    </button>
+                                  </>
+                                )}
+                                {isAuthenticated && (
+                                  <button
+                                    onClick={() => {
+                                      setReplyingTo(replyingTo === comment.id ? null : comment.id);
+                                      setReplyText('');
+                                    }}
+                                    className="text-xs text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] dark:hover:text-[#ac6d46] font-mono font-bold transition-all"
+                                  >
+                                    {replyingTo === comment.id ? '✕ CANCEL' : '↳ RESPOND'}
+                                  </button>
+                                )}
+                              </div>
                             )}
 
                             {/* Inline Response Form */}
@@ -1084,8 +1221,81 @@ export function JournalEntryPage() {
                                       <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
                                         {new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
                                       </span>
+                                      {reply.createdByMe && editingCommentId !== reply.id && confirmDeleteId !== reply.id && (
+                                        <span className="flex items-center gap-1 ml-auto">
+                                          <button
+                                            onClick={() => {
+                                              setEditingCommentId(reply.id);
+                                              setEditCommentText(reply.content);
+                                              setConfirmDeleteId(null);
+                                            }}
+                                            className="text-[10px] font-mono text-[#b5bcc4] hover:text-[#4676ac] transition-colors"
+                                          >
+                                            EDIT
+                                          </button>
+                                          <span className="text-[#b5bcc4]">|</span>
+                                          <button
+                                            onClick={() => setConfirmDeleteId(reply.id)}
+                                            className="text-[10px] font-mono text-[#b5bcc4] hover:text-[#994040] transition-colors"
+                                          >
+                                            DELETE
+                                          </button>
+                                        </span>
+                                      )}
                                     </div>
-                                    <p className="text-xs text-[#202020] dark:text-[#e5e5e5] mt-0.5 leading-relaxed">{reply.content}</p>
+
+                                    {/* Delete reply confirmation */}
+                                    {confirmDeleteId === reply.id && (
+                                      <div className="mt-1 flex items-center gap-2">
+                                        <span className="text-[10px] font-mono text-[#994040] font-bold">DELETE?</span>
+                                        <button
+                                          onClick={() => handleDeleteComment(reply.id, comment.id)}
+                                          disabled={isDeleteLoading}
+                                          className="text-[10px] font-mono font-bold text-white bg-[#994040] px-2 py-0.5 hover:bg-[#7a3333] transition-colors disabled:opacity-50"
+                                        >
+                                          {isDeleteLoading ? '...' : 'YES'}
+                                        </button>
+                                        <button
+                                          onClick={() => setConfirmDeleteId(null)}
+                                          className="text-[10px] font-mono text-[#616161] hover:text-[#202020] dark:hover:text-[#e5e5e5] transition-colors"
+                                        >
+                                          NO
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {/* Edit reply form or content */}
+                                    {editingCommentId === reply.id ? (
+                                      <div className="mt-1">
+                                        <textarea
+                                          className="w-full px-2 py-1 border-2 border-[#4676ac] outline-none text-xs dark:bg-[#202020] dark:text-[#e5e5e5] font-mono"
+                                          rows={2}
+                                          value={editCommentText}
+                                          onChange={(e) => setEditCommentText(e.target.value.slice(0, 2000))}
+                                          maxLength={2000}
+                                        />
+                                        <div className="flex items-center gap-2 mt-1">
+                                          <span className={`text-[10px] font-mono ${editCommentText.length > 1800 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                                            {editCommentText.length}/2000
+                                          </span>
+                                          <button
+                                            onClick={() => handleEditComment(reply.id)}
+                                            disabled={editSaving || !editCommentText.trim() || editCommentText === reply.content}
+                                            className="px-2 py-0.5 bg-[#4676ac] text-white text-[10px] font-mono font-bold hover:bg-[#365d8a] transition-colors disabled:opacity-50"
+                                          >
+                                            {editSaving ? '...' : 'SAVE'}
+                                          </button>
+                                          <button
+                                            onClick={() => { setEditingCommentId(null); setEditCommentText(''); }}
+                                            className="text-[10px] font-mono text-[#616161] hover:text-[#202020] dark:hover:text-[#e5e5e5] transition-colors"
+                                          >
+                                            CANCEL
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <p className="text-xs text-[#202020] dark:text-[#e5e5e5] mt-0.5 leading-relaxed">{reply.content}</p>
+                                    )}
                                   </div>
                                 </div>
                               ))}
