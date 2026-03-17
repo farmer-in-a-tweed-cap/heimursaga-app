@@ -1346,7 +1346,7 @@ export class ExpeditionService {
         routeGeometry,
       } = payload as any;
 
-      // Completed expeditions: only allow title, description, and cover image edits
+      // Completed expeditions: block date, goal, visibility, and sponsorship changes
       if (isCompleted) {
         const blockedFields = {
           startDate,
@@ -1355,9 +1355,6 @@ export class ExpeditionService {
           category,
           region,
           tags,
-          isRoundTrip,
-          routeMode,
-          routeGeometry,
           visibility: (payload as any).visibility,
           notesAccessThreshold: (payload as any).notesAccessThreshold,
           notesVisibility: (payload as any).notesVisibility,
@@ -1367,7 +1364,7 @@ export class ExpeditionService {
         );
         if (hasBlockedField) {
           throw new ServiceForbiddenException(
-            'Completed expeditions can only update title, description, and cover image',
+            'Completed expeditions can only update title, description, cover image, waypoints, and route',
           );
         }
       }
