@@ -875,7 +875,7 @@ export function ExplorerProfilePage() {
 
       {/* Map of All Expeditions */}
       <div className="mb-4 md:mb-6">
-        {expeditionsForMap.length === 0 && entriesForMap.length === 0 ? (
+        {entriesForMap.length === 0 && expeditionsForMap.length === 0 ? (
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
             <div className="p-4 border-b-2 border-[#202020] dark:border-[#616161] bg-[#616161]">
               <h3 className="text-xs font-bold text-white">EXPEDITION MAP</h3>
@@ -888,9 +888,7 @@ export function ExplorerProfilePage() {
                 backgroundPosition: 'center',
               }}
             >
-              {/* Gray overlay */}
               <div className="absolute inset-0 bg-[#b5bcc4]/80 dark:bg-[#202020]/80" />
-              {/* Content */}
               <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center">
                 <Globe className="w-8 h-8 md:w-12 md:h-12 text-[#616161] dark:text-[#b5bcc4] mb-2 md:mb-4" />
                 {isOwnProfile ? (

@@ -8,7 +8,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
-import { X, ChevronLeft } from 'lucide-react';
+import { X, ChevronLeft, Globe } from 'lucide-react';
 import {
   clusterEntriesByProximity,
   createSingleEntryMarker,
@@ -506,7 +506,23 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
       {/* Map Container */}
       <div className="relative bg-[#b5bcc4]" style={{ height: '500px' }}>
         <div ref={mapContainerRef} className="absolute top-0 left-0 w-full h-full" />
-        
+
+        {/* No Active Expedition Overlay */}
+        {mapMode === 'expedition' && !hasActiveExpedition && (
+          <div className="absolute inset-0 z-10">
+            <div className="absolute inset-0 bg-[#b5bcc4]/80 dark:bg-[#202020]/80" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center p-4 md:p-8 text-center">
+              <Globe className="w-8 h-8 md:w-12 md:h-12 text-[#616161] dark:text-[#b5bcc4] mb-2 md:mb-4" />
+              <p className="text-sm md:text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-1 md:mb-2">
+                No active expedition
+              </p>
+              <p className="text-xs md:text-sm text-[#616161] dark:text-[#b5bcc4]">
+                {explorerName ? `${explorerName} doesn't have` : 'No'} an active expedition right now.
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Dynamic Position Popup Overlay - Entry Mode */}
         {clickedEntry && (
           <div 
