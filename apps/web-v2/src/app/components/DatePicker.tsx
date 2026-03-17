@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { format, parse, isValid, startOfMonth, getYear, getMonth, setYear, setMonth } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
@@ -41,10 +41,17 @@ export function DatePicker({
   const minDate = min ? parseDate(min) : undefined;
   const maxDate = max ? parseDate(max) : undefined;
 
-  // Month the calendar is currently viewing
+  // Month the calendar is currently viewing — default to selected date, min date, or today
   const [month, setMonthState] = useState<Date>(
-    selected || new Date()
+    selected || minDate || new Date()
   );
+
+  // When the popover opens, navigate to the selected date or the start of the valid range
+  useEffect(() => {
+    if (open) {
+      setMonthState(selected || minDate || new Date());
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Year range for the dropdown
   const yearRange = useMemo(() => {
