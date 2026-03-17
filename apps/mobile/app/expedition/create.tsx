@@ -17,7 +17,7 @@ import { ImagePlaceholder } from '@/components/ui/ImagePlaceholder';
 import { CalendarPicker, fmtDateDisplay, todayISO } from '@/components/ui/CalendarPicker';
 import HeimuMap, { WaypointMarker, HeimuMapRef, clusterMarkers } from '@/components/map/HeimuMap';
 import { Svg, Path, Circle } from 'react-native-svg';
-import { expeditionApi, uploadApi } from '@/services/api';
+import { expeditionApi, uploadApi, ApiError } from '@/services/api';
 let ExpoLocation: typeof import('expo-location') | null = null;
 try { ExpoLocation = require('expo-location'); } catch { /* not available */ }
 let ImagePicker: typeof import('expo-image-picker') | null = null;
@@ -93,7 +93,8 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
               await expeditionApi.updateExpedition(exp.id, { status: 'completed' } as any);
               router.replace('/expedition/create');
             } catch (err: any) {
-              Alert.alert('Error', err.message ?? 'Failed to update expedition');
+              const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
+              Alert.alert('Error', msg);
             }
           },
         },
@@ -228,7 +229,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
           setWaypoints(mapped);
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Failed to load expedition';
+        const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
         Alert.alert('Error', msg, [{ text: 'OK', onPress: () => router.back() }]);
       } finally {
         if (!cancelled) setEditLoading(false);
@@ -584,7 +585,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
       const uploadResult = await uploadApi.upload(uri, 'image/jpeg');
       setCoverImageUrl(uploadResult.original);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Could not upload cover image.';
+      const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
       Alert.alert('Upload failed', msg);
       setCoverImageUri(null);
     } finally {
@@ -650,7 +651,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to update expedition';
+      const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
       Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
@@ -678,7 +679,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                 { text: 'OK', onPress: () => router.replace('/(tabs)') },
               ]);
             } catch (err) {
-              const msg = err instanceof Error ? err.message : 'Failed to delete expedition';
+              const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
               Alert.alert('Error', msg);
             }
           },
@@ -753,7 +754,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         [{ text: 'OK', onPress: () => router.back() }],
       );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to create expedition';
+      const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
       Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);

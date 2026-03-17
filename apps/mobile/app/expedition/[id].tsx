@@ -113,6 +113,7 @@ interface ExpeditionDetail {
 
 export default function ExpeditionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const resolvedId = Array.isArray(id) ? id[0] : id;
   const { dark, colors } = useTheme();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
@@ -148,6 +149,12 @@ export default function ExpeditionDetailScreen() {
     mapZoomTimerRef.current = setTimeout(() => setMapZoom(z), 200);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (mapZoomTimerRef.current) clearTimeout(mapZoomTimerRef.current);
+    };
+  }, []);
+
   // Defer MapboxGL import to avoid blocking the JS thread
   const [MapComponent, setMapComponent] = useState<ComponentType<HeimuMapProps> | null>(null);
   useEffect(() => {
@@ -157,7 +164,7 @@ export default function ExpeditionDetailScreen() {
     return () => clearTimeout(timer);
   }, []);
 
-  const { data: expedition, loading, error, refetch } = useApi<ExpeditionDetail>(`/trips/${id}`, { refetchOnFocus: true });
+  const { data: expedition, loading, error, refetch } = useApi<ExpeditionDetail>(`/trips/${resolvedId}`, { refetchOnFocus: true });
 
   useEffect(() => {
     if (expedition?.bookmarked != null) setBookmarked(expedition.bookmarked);
@@ -172,11 +179,11 @@ export default function ExpeditionDetailScreen() {
       router.push('/(auth)/login');
       return;
     }
-    if (bookmarkLoading || !id) return;
+    if (bookmarkLoading || !resolvedId) return;
     setBookmarkLoading(true);
     setBookmarked(prev => !prev);
     try {
-      await bookmarksApi.toggleExpedition(id);
+      await bookmarksApi.toggleExpedition(resolvedId);
     } catch {
       setBookmarked(prev => !prev);
     } finally {
@@ -189,12 +196,12 @@ export default function ExpeditionDetailScreen() {
     if (!id) return;
     setNotesLoading(true);
     try {
-      const countRes = await api.get<{ count: number }>(`/trips/${id}/notes/count`, { noAuth: true });
+      const countRes = await api.get<{ count: number }>(`/trips/${resolvedId}/notes/count`, { noAuth: true });
       setNoteCount(countRes.count);
     } catch { /* ignore */ }
     if (isAuthenticated) {
       try {
-        const res = await api.get<NotesResponse>(`/trips/${id}/notes`);
+        const res = await api.get<NotesResponse>(`/trips/${resolvedId}/notes`);
         setNotes(res.notes);
         setDailyLimit(res.dailyLimit);
         setNotesLocked(false);
@@ -236,7 +243,7 @@ export default function ExpeditionDetailScreen() {
     if (!locSelectedId || !id) return;
     setLocSaving(true);
     try {
-      await api.patch(`/trips/${id}/location`, {
+      await api.patch(`/trips/${resolvedId}/location`, {
         source: locSource,
         locationId: locSelectedId,
         visibility: locVisibility,
@@ -259,7 +266,7 @@ export default function ExpeditionDetailScreen() {
     if (!noteText.trim() || noteSubmitting) return;
     setNoteSubmitting(true);
     try {
-      await api.post(`/trips/${id}/notes`, { text: noteText.trim() });
+      await api.post(`/trips/${resolvedId}/notes`, { text: noteText.trim() });
       setNoteText('');
       setShowNoteForm(false);
       await fetchNotes();
@@ -275,7 +282,7 @@ export default function ExpeditionDetailScreen() {
     if (!replyText.trim() || replySubmitting) return;
     setReplySubmitting(true);
     try {
-      await api.post(`/trips/${id}/notes/${noteId}/replies`, { text: replyText.trim() });
+      await api.post(`/trips/${resolvedId}/notes/${noteId}/replies`, { text: replyText.trim() });
       setReplyText('');
       setReplyingTo(null);
       await fetchNotes();
@@ -290,7 +297,7 @@ export default function ExpeditionDetailScreen() {
   const handleEditNote = async (noteId: number, text: string) => {
     setEditSaving(true);
     try {
-      await api.patch(`/trips/${id}/notes/${noteId}`, { text });
+      await api.patch(`/trips/${resolvedId}/notes/${noteId}`, { text });
       setEditingNoteId(null);
       setEditNoteText('');
       await fetchNotes();
@@ -308,7 +315,7 @@ export default function ExpeditionDetailScreen() {
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
           try {
-            await api.delete(`/trips/${id}/notes/${noteId}`);
+            await api.delete(`/trips/${resolvedId}/notes/${noteId}`);
             await fetchNotes();
           } catch (err) {
             const msg = err instanceof Error ? err.message : 'Failed to delete note';
@@ -322,7 +329,7 @@ export default function ExpeditionDetailScreen() {
   const handleEditReply = async (noteId: number, replyId: number, text: string) => {
     setEditSaving(true);
     try {
-      await api.patch(`/trips/${id}/notes/${noteId}/replies/${replyId}`, { text });
+      await api.patch(`/trips/${resolvedId}/notes/${noteId}/replies/${replyId}`, { text });
       setEditingReplyId(null);
       setEditReplyText('');
       await fetchNotes();
@@ -340,7 +347,7 @@ export default function ExpeditionDetailScreen() {
       {
         text: 'Delete', style: 'destructive', onPress: async () => {
           try {
-            await api.delete(`/trips/${id}/notes/${noteId}/replies/${replyId}`);
+            await api.delete(`/trips/${resolvedId}/notes/${noteId}/replies/${replyId}`);
             await fetchNotes();
           } catch (err) {
             const msg = err instanceof Error ? err.message : 'Failed to delete reply';
