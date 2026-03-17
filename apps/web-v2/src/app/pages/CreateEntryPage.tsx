@@ -30,7 +30,7 @@ export function CreateEntryPage() {
   const isStandalone = expeditionId === 'standalone';
 
   // ALL HOOKS MUST BE DECLARED BEFORE ANY CONDITIONAL RETURNS
-  const [entryType, setEntryType] = useState<'standard' | 'photo-essay' | 'data-log'>('standard');
+  const [entryType, setEntryType] = useState<'standard' | 'photo' | 'video' | 'data'>('standard');
   const [showMap, setShowMap] = useState(false);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [selectedWaypointId, setSelectedWaypointId] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export function CreateEntryPage() {
   // Media upload state
   const [uploadedMedia, setUploadedMedia] = useState<Array<{ id: string; name: string; type: string; size: number; url: string; thumbnail: string; exifResult?: ExifResult }>>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const mediaLimit = isPro ? (entryType === 'photo-essay' ? 10 : 5) : 2;
+  const mediaLimit = entryType === 'video' ? 0 : isPro ? (entryType === 'photo' ? 10 : 5) : 2;
   const [selectedMediaForEdit, setSelectedMediaForEdit] = useState<string | null>(null);
   const [mediaMetadata, setMediaMetadata] = useState<Record<string, { caption: string; altText: string; credit: string }>>({});
   const [coverPhotoId, setCoverPhotoId] = useState<string | null>(null);
@@ -62,8 +62,10 @@ export function CreateEntryPage() {
 
   // Content state for word count validation
   const [standardContent, setStandardContent] = useState('');
-  const [photoEssayContent, setPhotoEssayContent] = useState('');
-  const [dataLogContent, setDataLogContent] = useState('');
+  const [photoContent, setPhotoContent] = useState('');
+  const [videoContent, setVideoContent] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [dataContent, setDataContent] = useState('');
   const [entryTitle, setEntryTitle] = useState('');
 
   // Standard metadata state — commented out until display is implemented
@@ -192,12 +194,18 @@ export function CreateEntryPage() {
     setDraftId(draft.id);
     setEntryTitle(draft.title || '');
     const draftType = draft.entryType === 'waypoint' ? 'standard' : (draft.entryType || 'standard');
-    setEntryType(draftType as 'standard' | 'photo-essay' | 'data-log');
+    setEntryType(draftType as 'standard' | 'photo' | 'video' | 'data');
     // Load content into the correct field based on entry type
-    if (draftType === 'photo-essay') {
-      setPhotoEssayContent(draft.content || '');
-    } else if (draftType === 'data-log') {
-      setDataLogContent(draft.content || '');
+    if (draftType === 'photo') {
+      setPhotoContent(draft.content || '');
+    } else if (draftType === 'video') {
+      setVideoContent(draft.content || '');
+      if (draft.metadata && typeof draft.metadata === 'object') {
+        const meta = draft.metadata as Record<string, any>;
+        if (meta.videoUrl) setVideoUrl(meta.videoUrl);
+      }
+    } else if (draftType === 'data') {
+      setDataContent(draft.content || '');
     } else {
       setStandardContent(draft.content || '');
     }
@@ -222,7 +230,7 @@ export function CreateEntryPage() {
       //   setStdMood(String(meta.mood || ''));
       //   setStdExpenses(meta.expenses != null ? String(meta.expenses) : '');
       // } else
-      if (draftType === 'data-log') {
+      if (draftType === 'data') {
         setDlTemperature(meta.temperature != null ? String(meta.temperature) : '');
         setDlHumidity(meta.humidity != null ? String(meta.humidity) : '');
         setDlWindSpeed(meta.windSpeed != null ? String(meta.windSpeed) : '');
@@ -284,11 +292,12 @@ export function CreateEntryPage() {
   const getCurrentContent = useCallback(() => {
     switch (entryType) {
       case 'standard': return standardContent;
-      case 'photo-essay': return photoEssayContent;
-      case 'data-log': return dataLogContent;
+      case 'photo': return photoContent;
+      case 'video': return videoContent;
+      case 'data': return dataContent;
       default: return '';
     }
-  }, [entryType, standardContent, photoEssayContent, dataLogContent]);
+  }, [entryType, standardContent, photoContent, videoContent, dataContent]);
 
   // Build metadata for current entry type
   const buildMetadata = useCallback(() => {
@@ -301,7 +310,11 @@ export function CreateEntryPage() {
     //   if (stdExpenses) meta.expenses = parseFloat(stdExpenses);
     //   return Object.keys(meta).length > 0 ? meta : undefined;
     // }
-    if (entryType === 'data-log') {
+    if (entryType === 'video') {
+      if (videoUrl) return { videoUrl };
+      return undefined;
+    }
+    if (entryType === 'data') {
       const meta: Record<string, unknown> = {};
       if (dlTemperature) meta.temperature = parseFloat(dlTemperature);
       if (dlHumidity) meta.humidity = parseFloat(dlHumidity);
@@ -314,7 +327,7 @@ export function CreateEntryPage() {
       return Object.keys(meta).length > 0 ? meta : undefined;
     }
     return undefined;
-  }, [entryType, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
+  }, [entryType, videoUrl, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
 
   // Build payload for saving
   const buildSavePayload = useCallback((isDraft: boolean) => {
@@ -489,10 +502,12 @@ export function CreateEntryPage() {
     switch (entryType) {
       case 'standard':
         return countWords(standardContent);
-      case 'photo-essay':
-        return countWords(photoEssayContent);
-      case 'data-log':
-        return countWords(dataLogContent);
+      case 'photo':
+        return countWords(photoContent);
+      case 'video':
+        return countWords(videoContent);
+      case 'data':
+        return countWords(dataContent);
       default:
         return 0;
     }
@@ -894,21 +909,21 @@ export function CreateEntryPage() {
                     if (!isPro) {
                       setEntryTypeNotification({
                         type: 'pro',
-                        message: 'Photo Essay entries are an Explorer Pro feature. Upgrade to Explorer Pro to create photo essays with visual storytelling and image galleries.'
+                        message: 'Photo entries are an Explorer Pro feature. Upgrade to Explorer Pro to create photo entries with visual storytelling and image galleries.'
                       });
                       return;
                     }
-                    setEntryType('photo-essay');
+                    setEntryType('photo');
                   }}
                   className={`py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-1 ${
-                    entryType === 'photo-essay'
+                    entryType === 'photo'
                       ? 'bg-[#ac6d46] text-white border-2 border-[#ac6d46]'
                       : !isPro
                       ? 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4] opacity-60 cursor-not-allowed'
                       : 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#e5e5e5] hover:border-[#ac6d46]'
                   }`}
                 >
-                  PHOTO ESSAY
+                  PHOTO
                   {!isPro && <span className="text-xs text-[#ac6d46]">PRO</span>}
                 </button>
                 <button
@@ -917,21 +932,44 @@ export function CreateEntryPage() {
                     if (!isPro) {
                       setEntryTypeNotification({
                         type: 'pro',
-                        message: 'Data Log entries are an Explorer Pro feature. Upgrade to Explorer Pro to create technical data logs with environmental and activity metrics.'
+                        message: 'Video entries are an Explorer Pro feature. Upgrade to Explorer Pro to create video entries with embedded footage.'
                       });
                       return;
                     }
-                    setEntryType('data-log');
+                    setEntryType('video');
                   }}
                   className={`py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-1 ${
-                    entryType === 'data-log'
+                    entryType === 'video'
                       ? 'bg-[#ac6d46] text-white border-2 border-[#ac6d46]'
                       : !isPro
                       ? 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4] opacity-60 cursor-not-allowed'
                       : 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#e5e5e5] hover:border-[#ac6d46]'
                   }`}
                 >
-                  DATA LOG
+                  VIDEO
+                  {!isPro && <span className="text-xs text-[#ac6d46]">PRO</span>}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!isPro) {
+                      setEntryTypeNotification({
+                        type: 'pro',
+                        message: 'Data entries are an Explorer Pro feature. Upgrade to Explorer Pro to create technical data entries with environmental and activity metrics.'
+                      });
+                      return;
+                    }
+                    setEntryType('data');
+                  }}
+                  className={`py-2 text-xs font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-1 ${
+                    entryType === 'data'
+                      ? 'bg-[#ac6d46] text-white border-2 border-[#ac6d46]'
+                      : !isPro
+                      ? 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4] opacity-60 cursor-not-allowed'
+                      : 'border-2 border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#e5e5e5] hover:border-[#ac6d46]'
+                  }`}
+                >
+                  DATA
                   {!isPro && <span className="text-xs text-[#ac6d46]">PRO</span>}
                 </button>
               </div>
@@ -941,11 +979,14 @@ export function CreateEntryPage() {
                 {entryType === 'standard' && (
                   <div><strong className="text-[#202020] dark:text-[#e5e5e5]">Standard Entry:</strong> Traditional journal format with text, photos, and rich media. Best for daily updates and storytelling.</div>
                 )}
-                {entryType === 'photo-essay' && (
-                  <div><strong className="text-[#202020] dark:text-[#e5e5e5]">Photo Essay:</strong> Image-focused format with captions. Ideal for visual storytelling and location documentation.</div>
+                {entryType === 'photo' && (
+                  <div><strong className="text-[#202020] dark:text-[#e5e5e5]">Photo:</strong> Image-focused format with captions. Ideal for visual storytelling and location documentation.</div>
                 )}
-                {entryType === 'data-log' && (
-                  <div><strong className="text-[#202020] dark:text-[#e5e5e5]">Data Log:</strong> Structured format emphasizing metrics, coordinates, and quantifiable information. For technical documentation and research.</div>
+                {entryType === 'video' && (
+                  <div><strong className="text-[#202020] dark:text-[#e5e5e5]">Video:</strong> Single video embed format. Share footage from your expedition with narrative context.</div>
+                )}
+                {entryType === 'data' && (
+                  <div><strong className="text-[#202020] dark:text-[#e5e5e5]">Data:</strong> Structured format emphasizing metrics, coordinates, and quantifiable information. For technical documentation and research.</div>
                 )}
               </div>
             </div>
@@ -1447,8 +1488,8 @@ Remember: Your sponsors and followers are reading this to understand your journe
                 </>
               )}
 
-              {/* PHOTO ESSAY FIELDS */}
-              {entryType === 'photo-essay' && (
+              {/* PHOTO FIELDS */}
+              {entryType === 'photo' && (
                 <>
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
@@ -1647,14 +1688,14 @@ This narrative should tie your photos together and provide:
 • Technical or artistic considerations
 
 Individual photo captions can be added after upload.`}
-                      value={photoEssayContent}
-                      onChange={(e) => setPhotoEssayContent(e.target.value)}
+                      value={photoContent}
+                      onChange={(e) => setPhotoContent(e.target.value)}
                     />
                     <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
                       <span className={wordCount < 200 || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
                         Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < 200 && `(Minimum: 200)`} {wordCount > 2000 && `(Maximum: 2,000)`}
                       </span>
-                      <span>Character count: {photoEssayContent.length} / 15,000</span>
+                      <span>Character count: {photoContent.length} / 15,000</span>
                     </div>
                     {wordCount > 0 && (wordCount < 200 || wordCount > 2000) && (
                       <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
@@ -1667,8 +1708,61 @@ Individual photo captions can be added after upload.`}
                 </>
               )}
 
-              {/* DATA LOG FIELDS */}
-              {entryType === 'data-log' && (
+              {/* VIDEO FIELDS */}
+              {entryType === 'video' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                      VIDEO URL
+                      <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+                    </label>
+                    <input
+                      type="url"
+                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                      placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                    />
+                    <div className="mt-1 text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      YouTube or Vimeo links supported
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                      DESCRIPTION
+                      <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+                    </label>
+                    <textarea
+                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono leading-relaxed dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                      rows={8}
+                      placeholder={`Describe the footage and provide context...
+
+• What is being shown in the video
+• Where and when it was filmed
+• Any relevant background or conditions`}
+                      value={videoContent}
+                      onChange={(e) => setVideoContent(e.target.value)}
+                    />
+                    <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                      <span>
+                        Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < 200 && `(Minimum: 200)`} {wordCount > 2000 && `(Maximum: 2,000)`}
+                      </span>
+                      <span>Character count: {videoContent.length} / 15,000</span>
+                    </div>
+                    {wordCount > 0 && (wordCount < 200 || wordCount > 2000) && (
+                      <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
+                        <div className="font-bold mb-1">WORD COUNT REQUIREMENT:</div>
+                        {wordCount < 200 && <div>• Your entry must be at least 200 words. Current: {wordCount} words ({200 - wordCount} more needed)</div>}
+                        {wordCount > 2000 && <div>• Your entry must not exceed 2,000 words. Current: {wordCount} words ({wordCount - 2000} over limit)</div>}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+              {/* DATA FIELDS */}
+              {entryType === 'data' && (
                 <>
                   <div className="border-2 border-[#4676ac] p-4 dark:bg-[#2a2a2a]">
                     <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">ENVIRONMENTAL DATA:</div>
@@ -1783,14 +1877,14 @@ Include:
 • Equipment used
 • Conditions affecting measurements
 • Analysis and conclusions`}
-                      value={dataLogContent}
-                      onChange={(e) => setDataLogContent(e.target.value)}
+                      value={dataContent}
+                      onChange={(e) => setDataContent(e.target.value)}
                     />
                     <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
                       <span className={wordCount < 200 || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
                         Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < 200 && `(Minimum: 200)`} {wordCount > 2000 && `(Maximum: 2,000)`}
                       </span>
-                      <span>Character count: {dataLogContent.length} / 25,000</span>
+                      <span>Character count: {dataContent.length} / 25,000</span>
                     </div>
                     {wordCount > 0 && (wordCount < 200 || wordCount > 2000) && (
                       <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
@@ -2035,14 +2129,21 @@ Include:
               </div>
               <div>
                 <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-1 flex items-center gap-1">
-                  Photo Essay
+                  Photo
                   <span className="text-xs text-[#ac6d46]">PRO</span>
                 </div>
                 <div className="text-[#616161] dark:text-[#b5bcc4]">Visual storytelling with image galleries and captions</div>
               </div>
               <div>
                 <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-1 flex items-center gap-1">
-                  Data Log
+                  Video
+                  <span className="text-xs text-[#ac6d46]">PRO</span>
+                </div>
+                <div className="text-[#616161] dark:text-[#b5bcc4]">Single video embed with narrative context</div>
+              </div>
+              <div>
+                <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-1 flex items-center gap-1">
+                  Data
                   <span className="text-xs text-[#ac6d46]">PRO</span>
                 </div>
                 <div className="text-[#616161] dark:text-[#b5bcc4]">Technical documentation with environmental and activity metrics</div>
@@ -2050,7 +2151,7 @@ Include:
             </div>
             {!isPro && (
               <div className="mt-3 pt-3 border-t border-[#202020] dark:border-[#616161] text-xs text-[#616161] dark:text-[#b5bcc4]">
-                <span className="font-bold text-[#ac6d46]">NOTE:</span> Photo Essay and Data Log entries require Explorer Pro.
+                <span className="font-bold text-[#ac6d46]">NOTE:</span> Photo, Video, and Data entries require Explorer Pro.
                 <Link href="/settings/billing" className="text-[#4676ac] hover:underline ml-1">Upgrade to Pro</Link>
               </div>
             )}

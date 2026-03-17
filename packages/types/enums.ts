@@ -60,6 +60,9 @@ export enum UserNotificationContext {
   PASSPORT_COUNTRY = 'passport_country',
   PASSPORT_CONTINENT = 'passport_continent',
   PASSPORT_STAMP = 'passport_stamp',
+  // Follower notifications
+  NEW_ENTRY = 'new_entry',
+  NEW_EXPEDITION = 'new_expedition',
 }
 
 // Alias for new naming convention

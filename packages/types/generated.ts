@@ -324,7 +324,7 @@ export interface IPostDetail {
   createdAt?: Date;
   updatedAt?: Date;
   // New fields
-  entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
   coverImage?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';
@@ -390,7 +390,7 @@ export interface IPostCreatePayload {
   expeditionId?: string;
   commentsEnabled?: boolean;
   // New fields
-  entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
   coverUploadId?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';
@@ -421,7 +421,7 @@ export interface IPostUpdatePayload {
   expeditionId?: string;
   commentsEnabled?: boolean;
   // New fields
-  entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
   coverUploadId?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';

@@ -18,7 +18,7 @@ export type JournalEntryType = {
   location: string;
   coords: { lat: number; lng: number };
   excerpt: string;
-  type: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  type: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
   mediaCount: number;
   views: number;
   visibility: 'public' | 'off-grid' | 'private';

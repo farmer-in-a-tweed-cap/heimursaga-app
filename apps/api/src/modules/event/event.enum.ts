@@ -27,4 +27,5 @@ export const EVENTS = {
   EXPLORER_EXITED_RESTING: 'explorer_exited_resting',
   EXPEDITION_CANCELLED: 'expedition_cancelled',
   EXPEDITION_COMPLETED: 'expedition_completed',
+  EXPEDITION_PUBLISHED: 'expedition_published',
 };

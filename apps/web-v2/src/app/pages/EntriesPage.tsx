@@ -184,10 +184,12 @@ export function EntriesPage() {
     // Apply filter
     if (activeFilter === 'standard') {
       result = result.filter(e => e.type === 'standard');
-    } else if (activeFilter === 'photo-essay') {
-      result = result.filter(e => e.type === 'photo-essay');
-    } else if (activeFilter === 'data-log') {
-      result = result.filter(e => e.type === 'data-log');
+    } else if (activeFilter === 'photo') {
+      result = result.filter(e => e.type === 'photo');
+    } else if (activeFilter === 'video') {
+      result = result.filter(e => e.type === 'video');
+    } else if (activeFilter === 'data') {
+      result = result.filter(e => e.type === 'data');
     }
 
     // Apply search
@@ -276,8 +278,9 @@ export function EntriesPage() {
             {[
               { key: 'all', label: 'ALL' },
               { key: 'standard', label: 'STANDARD' },
-              { key: 'photo-essay', label: 'PHOTO ESSAY' },
-              { key: 'data-log', label: 'DATA LOG' },
+              { key: 'photo', label: 'PHOTO' },
+              { key: 'video', label: 'VIDEO' },
+              { key: 'data', label: 'DATA' },
             ].map(({ key, label }) => (
               <button
                 key={key}

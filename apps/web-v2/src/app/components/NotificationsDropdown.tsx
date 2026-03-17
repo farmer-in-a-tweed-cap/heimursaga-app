@@ -64,6 +64,14 @@ function formatNotification(apiNotif: ApiNotification): string {
       return `${actor} logged a new expedition note`;
     case 'expedition_note_reply':
       return `${actor} replied to your expedition note`;
+    case 'new_entry':
+      return apiNotif.body
+        ? `${actor} logged a new entry: "${apiNotif.body}"`
+        : `${actor} logged a new entry`;
+    case 'new_expedition':
+      return apiNotif.body
+        ? `${actor} started a new expedition: "${apiNotif.body}"`
+        : `${actor} started a new expedition`;
     case 'entry_milestone':
       return 'Entry Milestone';
     case 'expedition_started':

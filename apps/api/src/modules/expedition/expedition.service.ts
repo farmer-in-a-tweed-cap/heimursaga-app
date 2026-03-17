@@ -1264,6 +1264,18 @@ export class ExpeditionService {
         await this.checkAndUpdateRestingStatus(explorerId);
       }
 
+      // Notify followers when a non-draft expedition is created
+      if (payload.status && payload.status !== 'draft') {
+        this.eventService.trigger({
+          event: EVENTS.EXPEDITION_PUBLISHED,
+          data: {
+            expeditionPublicId: expedition.public_id,
+            creatorId: explorerId,
+            expeditionTitle: payload.title,
+          },
+        });
+      }
+
       const response: IExpeditionCreateResponse = {
         expeditionId: expedition.public_id,
       };
@@ -1337,8 +1349,15 @@ export class ExpeditionService {
       // Completed expeditions: only allow title, description, and cover image edits
       if (isCompleted) {
         const blockedFields = {
-          startDate, endDate, goal, category, region, tags,
-          isRoundTrip, routeMode, routeGeometry,
+          startDate,
+          endDate,
+          goal,
+          category,
+          region,
+          tags,
+          isRoundTrip,
+          routeMode,
+          routeGeometry,
           visibility: (payload as any).visibility,
           notesAccessThreshold: (payload as any).notesAccessThreshold,
           notesVisibility: (payload as any).notesVisibility,
@@ -1476,6 +1495,22 @@ export class ExpeditionService {
         where: { id: expedition.id },
         data: updateData,
       });
+
+      // Notify followers when expedition is published (draft → planned/active)
+      if (
+        expedition.status === 'draft' &&
+        status !== undefined &&
+        status !== 'draft'
+      ) {
+        this.eventService.trigger({
+          event: EVENTS.EXPEDITION_PUBLISHED,
+          data: {
+            expeditionPublicId: expedition.public_id,
+            creatorId: explorerId,
+            expeditionTitle: title || expedition.title,
+          },
+        });
+      }
 
       // Skip notifications for draft expeditions
       if (expedition.status !== 'draft') {

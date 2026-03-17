@@ -335,7 +335,7 @@ export function JournalEntryPage() {
 
       location: api.place || 'Unknown location',
       coords: { lat, lng: lon },
-      entryType: (api.entryType || 'standard') as 'standard' | 'photo-essay' | 'data-log' | 'waypoint',
+      entryType: (api.entryType || 'standard') as 'standard' | 'photo' | 'video' | 'data' | 'waypoint',
       metadata: api.metadata as Record<string, unknown> | undefined,
 
       content: api.content || '',
@@ -465,13 +465,15 @@ export function JournalEntryPage() {
                   <span
                     className="px-2 py-1 text-white text-xs rounded-full"
                     style={{
-                      backgroundColor: entry.entryType === 'photo-essay' ? '#4676ac'
-                        : entry.entryType === 'data-log' ? '#616161'
+                      backgroundColor: entry.entryType === 'photo' ? '#4676ac'
+                        : entry.entryType === 'video' ? '#4676ac'
+                        : entry.entryType === 'data' ? '#616161'
                         : '#4676ac'
                     }}
                   >
-                    {entry.entryType === 'photo-essay' ? 'PHOTO ESSAY'
-                      : entry.entryType === 'data-log' ? 'DATA LOG'
+                    {entry.entryType === 'photo' ? 'PHOTO'
+                      : entry.entryType === 'video' ? 'VIDEO'
+                      : entry.entryType === 'data' ? 'DATA'
                       : 'STANDARD'}
                   </span>
                   <span className="px-2 py-1 bg-[#616161] dark:bg-[#3a3a3a] text-white text-xs rounded-full">{entry.visibility.toUpperCase()}</span>
@@ -625,7 +627,7 @@ export function JournalEntryPage() {
             </div>
 
             {/* Data-Log Metrics (above content) */}
-            {entry.entryType === 'data-log' && entry.metadata && (
+            {entry.entryType === 'data' && entry.metadata && (
               <div className="p-6 lg:p-8 pb-0 space-y-4">
                 {/* Environmental Data */}
                 {(entry.metadata.temperature != null || entry.metadata.humidity != null || entry.metadata.windSpeed != null || entry.metadata.pressure != null) && (
@@ -696,7 +698,7 @@ export function JournalEntryPage() {
             )}
 
             {/* Photo-Essay Inline Gallery (above narrative) */}
-            {entry.entryType === 'photo-essay' && entry.media.length > 0 && (
+            {entry.entryType === 'photo' && entry.media.length > 0 && (
               <div className="p-6 lg:p-8 pb-0 space-y-4">
                 {entry.media.map((item, idx) => (
                   <div key={item.id || idx} className="border border-[#b5bcc4] dark:border-[#3a3a3a] overflow-hidden">
@@ -732,6 +734,30 @@ export function JournalEntryPage() {
               </div>
             )}
 
+            {/* Video Embed */}
+            {entry.entryType === 'video' && entry.metadata && (entry.metadata as Record<string, unknown>).videoUrl && (
+              <div className="p-6 lg:p-8 pb-0">
+                <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src={(() => {
+                      const url = String((entry.metadata as Record<string, unknown>).videoUrl);
+                      // YouTube
+                      const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/);
+                      if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+                      // Vimeo
+                      const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+                      if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+                      return url;
+                    })()}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title="Video"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Entry Content */}
             <div className="p-6 lg:p-8">
               {!!(entry.metadata as Record<string, unknown>)?.loggedDuringPlanning && (
@@ -739,11 +765,14 @@ export function JournalEntryPage() {
                   <span className="text-[10px] font-bold font-mono tracking-wider text-[#4676ac]">LOGGED DURING EXPEDITION PLANNING</span>
                 </div>
               )}
-              {entry.entryType === 'data-log' && (
+              {entry.entryType === 'data' && (
                 <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">TECHNICAL NOTES</div>
               )}
-              {entry.entryType === 'photo-essay' && (
+              {entry.entryType === 'photo' && (
                 <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">ESSAY NARRATIVE</div>
+              )}
+              {entry.entryType === 'video' && (
+                <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">DESCRIPTION</div>
               )}
               <div className="prose prose-sm max-w-none">
                 {entry.content.split('\n\n').map((paragraph, idx) => (
@@ -770,8 +799,8 @@ export function JournalEntryPage() {
             </div>
           </div>
 
-          {/* Media Gallery (hidden for photo-essay to avoid duplication with inline gallery) */}
-          {entry.media.length > 0 && entry.entryType !== 'photo-essay' && (
+          {/* Media Gallery (hidden for photo type to avoid duplication with inline gallery) */}
+          {entry.media.length > 0 && entry.entryType !== 'photo' && (
             <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
               <div className="bg-[#616161] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center justify-between">
                 <h2 className="text-sm font-bold">MEDIA GALLERY ({entry.media.length})</h2>

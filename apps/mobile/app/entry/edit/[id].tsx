@@ -34,8 +34,8 @@ const VISIBILITY_OPTIONS = [
   { label: 'PRIVATE', description: 'Only you can see this' },
 ];
 
-const ENTRY_TYPES = ['STANDARD', 'PHOTO ESSAY', 'DATA LOG'];
-const ENTRY_TYPE_VALUES = ['standard', 'photo-essay', 'data-log'] as const;
+const ENTRY_TYPES = ['STANDARD', 'PHOTO', 'VIDEO', 'DATA'];
+const ENTRY_TYPE_VALUES = ['standard', 'photo', 'video', 'data'] as const;
 
 export default function EditEntryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -69,13 +69,16 @@ export default function EditEntryScreen() {
   const [commentsEnabled, setCommentsEnabled] = useState(true);
   const [isMilestone, setIsMilestone] = useState(false);
 
-  // Metadata (standard / photo-essay)
+  // Metadata (standard / photo)
   const [weather, setWeather] = useState('');
   const [mood, setMood] = useState('');
   const [distanceTraveled, setDistanceTraveled] = useState('');
   const [expenses, setExpenses] = useState('');
 
-  // Metadata (data-log)
+  // Video URL
+  const [videoUrl, setVideoUrl] = useState('');
+
+  // Metadata (data)
   const [temperature, setTemperature] = useState('');
   const [humidity, setHumidity] = useState('');
   const [windSpeed, setWindSpeed] = useState('');
@@ -136,6 +139,7 @@ export default function EditEntryScreen() {
       if (meta.elevationGain != null) setElevationGain(String(meta.elevationGain));
       if (meta.duration != null) setDuration(String(meta.duration));
       if (meta.distanceCovered != null && !meta.distanceTraveled) setDistanceTraveled(String(meta.distanceCovered));
+      if (meta.videoUrl) setVideoUrl(String(meta.videoUrl));
     }
   }, [entry, hydrated]);
 
@@ -257,13 +261,16 @@ export default function EditEntryScreen() {
       const metadata: Record<string, unknown> = {};
       const typeValue = ENTRY_TYPE_VALUES[entryType];
 
-      if (typeValue === 'standard' || typeValue === 'photo-essay') {
+      if (typeValue === 'standard' || typeValue === 'photo') {
         if (weather.trim()) metadata.weather = weather.trim();
         if (mood.trim()) metadata.mood = mood.trim();
         const dist = safeFloat(distanceTraveled); if (dist !== undefined) metadata.distanceTraveled = dist;
         const exp = safeFloat(expenses); if (exp !== undefined) metadata.expenses = exp;
       }
-      if (typeValue === 'data-log') {
+      if (typeValue === 'video' && videoUrl.trim()) {
+        metadata.videoUrl = videoUrl.trim();
+      }
+      if (typeValue === 'data') {
         const temp = safeFloat(temperature); if (temp !== undefined) metadata.temperature = temp;
         const hum = safeFloat(humidity); if (hum !== undefined) metadata.humidity = hum;
         const wind = safeFloat(windSpeed); if (wind !== undefined) metadata.windSpeed = wind;
@@ -444,7 +451,7 @@ export default function EditEntryScreen() {
           </View>
 
           {/* Type-specific metadata */}
-          {(typeValue === 'standard' || typeValue === 'photo-essay') && (
+          {(typeValue === 'standard' || typeValue === 'photo') && (
             <View style={styles.fieldGroup}>
               <SectionDivider title="METADATA" />
               <View style={styles.metaRow}>
@@ -466,9 +473,23 @@ export default function EditEntryScreen() {
             </View>
           )}
 
-          {typeValue === 'data-log' && (
+          {typeValue === 'video' && (
             <View style={styles.fieldGroup}>
-              <SectionDivider title="DATA LOG FIELDS" />
+              <SectionDivider title="VIDEO" />
+              <HTextField
+                label="VIDEO URL"
+                placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+                value={videoUrl}
+                onChangeText={setVideoUrl}
+                keyboardType="url"
+                autoCapitalize="none"
+              />
+            </View>
+          )}
+
+          {typeValue === 'data' && (
+            <View style={styles.fieldGroup}>
+              <SectionDivider title="DATA FIELDS" />
               <View style={styles.metaRow}>
                 <View style={styles.metaField}>
                   <HTextField label="TEMP. (\u00B0C)" placeholder="0" value={temperature} onChangeText={setTemperature} keyboardType="decimal-pad" />

@@ -69,7 +69,7 @@ function sanitizeEntryMetadata(
       result.distanceTraveled = distanceTraveled;
     if (mood !== undefined) result.mood = mood;
     if (expenses !== undefined) result.expenses = expenses;
-  } else if (entryType === 'data-log') {
+  } else if (entryType === 'data' || entryType === 'data-log') {
     const fields: Array<[string, 'number']> = [
       ['temperature', 'number'],
       ['humidity', 'number'],
@@ -86,7 +86,12 @@ function sanitizeEntryMetadata(
       if (val !== undefined) result[key] = val;
     }
   }
-  // photo-essay has no extra metadata
+  // photo has no extra metadata
+
+  if (entryType === 'video') {
+    const videoUrl = truncateStr(metadata.videoUrl, 500);
+    if (videoUrl !== undefined) result.videoUrl = videoUrl;
+  }
 
   // Return undefined if empty (don't store empty objects)
   return Object.keys(result).length > 0 ? result : undefined;
@@ -179,8 +184,9 @@ export class EntryService {
         updatedAt: entry.updated_at,
         entryType: entry.entry_type as
           | 'standard'
-          | 'photo-essay'
-          | 'data-log'
+          | 'photo'
+          | 'video'
+          | 'data'
           | 'waypoint'
           | undefined,
         metadata:
@@ -285,7 +291,10 @@ export class EntryService {
           ...(explorerId
             ? [
                 { author_id: explorerId, expedition_id: null },
-                { author_id: explorerId, expedition: { status: { not: 'cancelled' } } },
+                {
+                  author_id: explorerId,
+                  expedition: { status: { not: 'cancelled' } },
+                },
               ]
             : []),
           { expedition_id: null, visibility: 'public' },
@@ -440,8 +449,9 @@ export class EntryService {
           coverImage,
           entryType: (entry.entry_type || 'standard') as
             | 'standard'
-            | 'photo-essay'
-            | 'data-log'
+            | 'photo'
+            | 'video'
+            | 'data'
             | 'waypoint',
           expedition: entry.expedition
             ? {
@@ -810,8 +820,9 @@ export class EntryService {
         // New fields
         entryType: entry.entry_type as
           | 'standard'
-          | 'photo-essay'
-          | 'data-log'
+          | 'photo'
+          | 'video'
+          | 'data'
           | 'waypoint'
           | undefined,
         coverImage: entry.cover_upload
@@ -1040,8 +1051,9 @@ export class EntryService {
       // Validate entryType if provided
       const validEntryTypes = [
         'standard',
-        'photo-essay',
-        'data-log',
+        'photo',
+        'video',
+        'data',
         'waypoint',
       ];
       if (entryType && !validEntryTypes.includes(entryType)) {
@@ -1051,7 +1063,7 @@ export class EntryService {
       }
 
       // Pro-only entry types require Explorer Pro
-      const proEntryTypes = ['photo-essay', 'data-log'];
+      const proEntryTypes = ['photo', 'video', 'data'];
       if (
         entryType &&
         proEntryTypes.includes(entryType) &&
@@ -1059,6 +1071,13 @@ export class EntryService {
       ) {
         throw new ServiceForbiddenException(
           `${entryType} entries require Explorer Pro`,
+        );
+      }
+
+      // Video entries don't allow photo uploads
+      if (entryType === 'video' && payload.uploads && payload.uploads.length > 0) {
+        throw new ServiceBadRequestException(
+          'Video entries do not support photo uploads',
         );
       }
 
@@ -1196,6 +1215,7 @@ export class EntryService {
           event: EVENTS.ENTRY_CREATED,
           data: {
             entryId: entry.public_id,
+            entryInternalId: entry.id,
             creatorId: explorerId,
             entryTitle: title,
             entryContent: content,
@@ -1303,8 +1323,9 @@ export class EntryService {
       // Validate entryType if provided
       const validEntryTypes = [
         'standard',
-        'photo-essay',
-        'data-log',
+        'photo',
+        'video',
+        'data',
         'waypoint',
       ];
       if (entryType && !validEntryTypes.includes(entryType)) {
@@ -1314,7 +1335,7 @@ export class EntryService {
       }
 
       // Pro-only entry types require Explorer Pro
-      const proEntryTypes = ['photo-essay', 'data-log'];
+      const proEntryTypes = ['photo', 'video', 'data'];
       if (
         entryType &&
         proEntryTypes.includes(entryType) &&
@@ -1446,6 +1467,7 @@ export class EntryService {
 
         // Store email trigger info for later use
         const emailTriggerData = {
+          internalId: entry.id,
           publicId: entry.public_id,
           title: payload.title || entry.title,
           content: normalizeText(payload.content) || entry.content,
@@ -1600,6 +1622,7 @@ export class EntryService {
           event: EVENTS.ENTRY_CREATED,
           data: {
             entryId: result.entryData.publicId,
+            entryInternalId: result.entryData.internalId,
             creatorId: explorerId,
             entryTitle: result.entryData.title,
             entryContent: result.entryData.content,

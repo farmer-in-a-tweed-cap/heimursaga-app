@@ -298,7 +298,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">5.</span>
-                  <span><strong>Tags & Category:</strong> Add relevant tags and select category (photo-essay, expedition-log, etc.)</span>
+                  <span><strong>Tags & Category:</strong> Add relevant tags and select category (photo, video, data, etc.)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">6.</span>

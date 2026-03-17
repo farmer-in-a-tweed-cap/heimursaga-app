@@ -49,8 +49,10 @@ export function NotificationCard({
       case "expedition_note_reply":
         return <MessageSquare className="w-4 h-4" />;
       case "entry_milestone":
+      case "new_entry":
         return <FileText className="w-4 h-4" />;
       case "expedition_started":
+      case "new_expedition":
         return <Map className="w-4 h-4" />;
       case "expedition_completed":
         return <MapPin className="w-4 h-4" />;
@@ -93,6 +95,8 @@ export function NotificationCard({
       case "comment_reply":
       case "expedition_note_created":
       case "expedition_note_reply":
+      case "new_entry":
+      case "new_expedition":
         return "bg-[#4676ac]"; // Blue
       case "expedition_cancelled":
         return "bg-[#994040]"; // Burgundy
@@ -127,8 +131,11 @@ export function NotificationCard({
         return "NOTE REPLY";
       case "entry_milestone":
         return "ENTRY MILESTONE";
+      case "new_entry":
+        return "NEW ENTRY";
       case "expedition_started":
-        return "EXPEDITION STARTED";
+      case "new_expedition":
+        return "NEW EXPEDITION";
       case "expedition_completed":
         return "EXPEDITION COMPLETE";
       case "expedition_off_grid":

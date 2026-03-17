@@ -34,8 +34,8 @@ const VISIBILITY_OPTIONS = [
   { label: 'PRIVATE', description: 'Only you can see this' },
 ];
 
-const ENTRY_TYPES = ['STANDARD', 'PHOTO ESSAY', 'DATA LOG'];
-const ENTRY_TYPE_VALUES = ['standard', 'photo-essay', 'data-log'] as const;
+const ENTRY_TYPES = ['STANDARD', 'PHOTO', 'VIDEO', 'DATA'];
+const ENTRY_TYPE_VALUES = ['standard', 'photo', 'video', 'data'] as const;
 
 export default function CreateScreen() {
   const { dark, colors } = useTheme();
@@ -72,7 +72,10 @@ export default function CreateScreen() {
   const [distanceTraveled, setDistanceTraveled] = useState('');
   const [expenses, setExpenses] = useState('');
 
-  // Metadata fields (data-log)
+  // Video URL
+  const [videoUrl, setVideoUrl] = useState('');
+
+  // Metadata fields (data)
   const [temperature, setTemperature] = useState('');
   const [humidity, setHumidity] = useState('');
   const [windSpeed, setWindSpeed] = useState('');
@@ -345,13 +348,16 @@ export default function CreateScreen() {
 
       const safeFloat = (s: string) => { const n = parseFloat(s); return Number.isFinite(n) ? n : undefined; };
 
-      if (typeValue === 'standard' || typeValue === 'photo-essay') {
+      if (typeValue === 'standard' || typeValue === 'photo') {
         if (weather.trim()) metadata.weather = weather.trim();
         if (mood.trim()) metadata.mood = mood.trim();
         const dist = safeFloat(distanceTraveled); if (dist !== undefined) metadata.distanceTraveled = dist;
         const exp = safeFloat(expenses); if (exp !== undefined) metadata.expenses = exp;
       }
-      if (typeValue === 'data-log') {
+      if (typeValue === 'video' && videoUrl.trim()) {
+        metadata.videoUrl = videoUrl.trim();
+      }
+      if (typeValue === 'data') {
         const temp = safeFloat(temperature); if (temp !== undefined) metadata.temperature = temp;
         const hum = safeFloat(humidity); if (hum !== undefined) metadata.humidity = hum;
         const wind = safeFloat(windSpeed); if (wind !== undefined) metadata.windSpeed = wind;
@@ -680,7 +686,7 @@ export default function CreateScreen() {
           </View>
 
           {/* Type-specific metadata */}
-          {(typeValue === 'standard' || typeValue === 'photo-essay') && (
+          {(typeValue === 'standard' || typeValue === 'photo') && (
             <View style={styles.fieldGroup}>
               <SectionDivider title="METADATA" />
               <View style={styles.metaRow}>
@@ -702,9 +708,23 @@ export default function CreateScreen() {
             </View>
           )}
 
-          {typeValue === 'data-log' && (
+          {typeValue === 'video' && (
             <View style={styles.fieldGroup}>
-              <SectionDivider title="DATA LOG FIELDS" />
+              <SectionDivider title="VIDEO" />
+              <HTextField
+                label="VIDEO URL"
+                placeholder="https://youtube.com/watch?v=... or https://vimeo.com/..."
+                value={videoUrl}
+                onChangeText={setVideoUrl}
+                keyboardType="url"
+                autoCapitalize="none"
+              />
+            </View>
+          )}
+
+          {typeValue === 'data' && (
+            <View style={styles.fieldGroup}>
+              <SectionDivider title="DATA FIELDS" />
               <View style={styles.metaRow}>
                 <View style={styles.metaField}>
                   <HTextField label="TEMP. (\u00B0C)" placeholder="0" value={temperature} onChangeText={setTemperature} keyboardType="decimal-pad" />

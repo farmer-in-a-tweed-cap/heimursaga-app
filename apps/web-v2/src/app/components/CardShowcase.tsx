@@ -462,43 +462,43 @@ import { NotificationDropdownDemo } from '@/app/components/NotificationDropdownD
             {/* Photo Essay */}
             <div className="border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] p-4">
               <h3 className="text-sm font-bold mb-2 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
-                Photo Essay
+                Photo
                 <span className="text-xs text-[#ac6d46] px-2 py-0.5 bg-[#ac6d46]/10 rounded-full">EXPLORER PRO</span>
               </h3>
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
                 Image-focused format with captions. Ideal for visual storytelling and location documentation.
               </p>
               <EntryCardLandscape
-                id="photo-essay-entry"
+                id="photo-entry"
                 title="Colors of the Silk Road Bazaar"
                 explorerUsername="sarah_wanderer"
                 expeditionName="Cycling the Silk Road"
                 location="Samarkand, Uzbekistan"
                 date="Jan 18, 2025"
                 excerpt="24 images capturing the vibrant textiles, spices, and craftwork of Central Asia's most historic market. Each photograph tells a story of tradition, trade, and timeless beauty."
-                type="Photo Essay"
+                type="Photo"
                 onClick={() => {}}
               />
             </div>
 
-            {/* Data Log */}
+            {/* Data */}
             <div className="border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] p-4">
               <h3 className="text-sm font-bold mb-2 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
-                Data Log
+                Data
                 <span className="text-xs text-[#ac6d46] px-2 py-0.5 bg-[#ac6d46]/10 rounded-full">EXPLORER PRO</span>
               </h3>
               <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
                 Structured format for scientific observations, measurements, and environmental data collection.
               </p>
               <EntryCardLandscape
-                id="data-log-entry"
+                id="data-entry"
                 title="Ice Core Sample Analysis - Day 34"
                 explorerUsername="marcus_explorer"
                 expeditionName="Antarctic Research"
                 location="McMurdo Dry Valleys, Antarctica"
                 date="Jan 15, 2025"
                 excerpt="Collected 12 ice core samples from depths of 50-150m. Air bubble analysis shows CO2 concentrations of 285ppm at 100m depth. Temperature readings: -28°C surface, -18°C at 50m."
-                type="Data Log"
+                type="Data"
                 onClick={() => {}}
               />
             </div>

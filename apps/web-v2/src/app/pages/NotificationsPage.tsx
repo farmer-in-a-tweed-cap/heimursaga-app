@@ -158,6 +158,20 @@ function formatNotification(apiNotif: ApiNotification): { titleText: string; mes
           ? `"${apiNotif.body.slice(0, 300)}${apiNotif.body.length > 300 ? '...' : ''}"`
           : '',
       };
+    case 'new_entry':
+      return {
+        titleText: apiNotif.body
+          ? `logged a new entry: "${apiNotif.body}"`
+          : 'logged a new entry',
+        message: '',
+      };
+    case 'new_expedition':
+      return {
+        titleText: apiNotif.body
+          ? `started a new expedition: "${apiNotif.body}"`
+          : 'started a new expedition',
+        message: '',
+      };
     case 'entry_milestone':
       return {
         titleText: 'Entry Milestone',
@@ -425,6 +439,13 @@ export function NotificationsPage() {
         }
         return undefined;
 
+      case 'new_entry':
+        if (metadata?.postId && metadata?.entryTitle) {
+          return { type: 'entry', id: metadata.postId, title: metadata.entryTitle };
+        }
+        return undefined;
+
+      case 'new_expedition':
       case 'expedition_started':
       case 'expedition_completed':
       case 'expedition_cancelled':

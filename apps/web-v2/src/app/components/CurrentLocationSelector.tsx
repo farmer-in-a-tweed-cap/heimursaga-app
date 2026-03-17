@@ -18,7 +18,7 @@ interface JournalEntry {
   date: string;
   location: string;
   coords: { lat: number; lng: number };
-  type: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  type: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
 }
 
 interface CurrentLocationSelectorProps {
@@ -53,8 +53,9 @@ export function CurrentLocationSelector({
   const getEntryTypeBadge = (type: string) => {
     const typeMap: Record<string, { label: string; color: string }> = {
       'standard': { label: 'STANDARD', color: 'bg-[#616161]' },
-      'photo-essay': { label: 'PHOTO ESSAY', color: 'bg-[#ac6d46]' },
-      'data-log': { label: 'DATA LOG', color: 'bg-[#4676ac]' },
+      'photo': { label: 'PHOTO', color: 'bg-[#ac6d46]' },
+      'video': { label: 'VIDEO', color: 'bg-[#4676ac]' },
+      'data': { label: 'DATA', color: 'bg-[#4676ac]' },
       'waypoint': { label: 'WAYPOINT', color: 'bg-[#b5bcc4]' },
     };
     return typeMap[type] || typeMap.standard;

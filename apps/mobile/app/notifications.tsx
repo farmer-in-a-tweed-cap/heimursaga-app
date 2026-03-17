@@ -54,6 +54,18 @@ function formatNotification(n: Notification): { action: string; detail?: string;
       return { action: `You explored ${n.passportContinentName || 'a new continent'}` };
     case 'passport_stamp':
       return { action: `You earned the "${n.passportStampName || 'Achievement'}" stamp` };
+    case 'new_entry':
+      return {
+        action: n.body ? `logged a new entry: "${n.body}"` : 'logged a new entry',
+      };
+    case 'new_expedition':
+      return {
+        action: n.body ? `started a new expedition: "${n.body}"` : 'started a new expedition',
+      };
+    case 'expedition_started':
+      return {
+        action: n.body ? `started expedition "${n.body}"` : 'started an expedition',
+      };
     default:
       return { action: n.body || n.context };
   }

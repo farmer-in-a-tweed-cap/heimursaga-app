@@ -18,7 +18,7 @@ interface JournalEntry {
   date: string;
   location: string;
   coords: { lat: number; lng: number };
-  type: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  type: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
 }
 
 interface ExpeditionCardLandscapeProps {

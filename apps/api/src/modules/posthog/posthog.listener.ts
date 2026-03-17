@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
+
 import { EVENTS } from '@/modules/event/event.enum';
+
 import { PostHogService } from './posthog.service';
 
 @Injectable()
@@ -18,7 +20,11 @@ export class PostHogListener {
   }
 
   @OnEvent(EVENTS.ENTRY_CREATED)
-  handleEntryCreated(data: { userId: number; entryId?: string; expeditionId?: string }) {
+  handleEntryCreated(data: {
+    userId: number;
+    entryId?: string;
+    expeditionId?: string;
+  }) {
     this.posthog.capture(String(data.userId), 'entry_created', {
       entry_id: data.entryId,
       expedition_id: data.expeditionId,
@@ -26,7 +32,11 @@ export class PostHogListener {
   }
 
   @OnEvent(EVENTS.SPONSORSHIP_CHECKOUT_COMPLETE)
-  handleSponsorshipCheckout(data: { userId: number; creatorId?: number; checkoutId?: number }) {
+  handleSponsorshipCheckout(data: {
+    userId: number;
+    creatorId?: number;
+    checkoutId?: number;
+  }) {
     this.posthog.capture(String(data.userId), 'sponsorship_completed', {
       creator_id: data.creatorId,
       checkout_id: data.checkoutId,
@@ -34,7 +44,10 @@ export class PostHogListener {
   }
 
   @OnEvent(EVENTS.SUBSCRIPTION_UPGRADE_COMPLETE)
-  handleSubscriptionUpgrade(data: { userId: number; subscriptionPlanId?: number }) {
+  handleSubscriptionUpgrade(data: {
+    userId: number;
+    subscriptionPlanId?: number;
+  }) {
     this.posthog.capture(String(data.userId), 'subscription_upgraded', {
       plan_id: data.subscriptionPlanId,
     });
@@ -51,6 +64,16 @@ export class PostHogListener {
   handleExpeditionCancelled(data: { userId: number; expeditionId?: string }) {
     this.posthog.capture(String(data.userId), 'expedition_cancelled', {
       expedition_id: data.expeditionId,
+    });
+  }
+
+  @OnEvent(EVENTS.EXPEDITION_PUBLISHED)
+  handleExpeditionPublished(data: {
+    creatorId: number;
+    expeditionPublicId?: string;
+  }) {
+    this.posthog.capture(String(data.creatorId), 'expedition_published', {
+      expedition_id: data.expeditionPublicId,
     });
   }
 }

@@ -23,7 +23,7 @@ export function EditEntryPage() {
   const { entryId } = useParams<{ entryId: string }>();
   const router = useRouter();
   const pathname = usePathname();
-  const [entryType, setEntryType] = useState<'standard' | 'photo-essay' | 'data-log' | 'waypoint'>('standard');
+  const [entryType, setEntryType] = useState<'standard' | 'photo' | 'video' | 'data' | 'waypoint'>('standard');
   const [showMap, setShowMap] = useState(false);
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +37,7 @@ export function EditEntryPage() {
   // Media upload state
   const [uploadedMedia, setUploadedMedia] = useState<Array<{ id: string; name: string; type: string; size: number; url?: string; thumbnail?: string; exifResult?: ExifResult }>>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const mediaLimit = isPro ? (entryType === 'photo-essay' ? 10 : 5) : 2;
+  const mediaLimit = entryType === 'video' ? 0 : isPro ? (entryType === 'photo' ? 10 : 5) : 2;
   const [selectedMediaForEdit, setSelectedMediaForEdit] = useState<string | null>(null);
   const [mediaMetadata, setMediaMetadata] = useState<Record<string, { caption: string; altText: string; credit: string }>>({});
   const [coverPhotoId, setCoverPhotoId] = useState<string | null>(null);
@@ -51,8 +51,10 @@ export function EditEntryPage() {
   
   // Content state for word count validation
   const [standardContent, setStandardContent] = useState('');
-  const [photoEssayContent] = useState('');
-  const [dataLogContent] = useState('');
+  const [photoContent] = useState('');
+  const [videoContent, setVideoContent] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [dataContent] = useState('');
   const [entryTitle, setEntryTitle] = useState('');
   const [locationName, setLocationName] = useState('');
   const [entryDate, setEntryDate] = useState('');
@@ -245,6 +247,15 @@ export function EditEntryPage() {
           }
         }
 
+        // Load video-specific data from metadata
+        if (entry.entryType === 'video') {
+          setVideoContent(entry.content || '');
+          if (entry.metadata) {
+            const meta = entry.metadata as Record<string, string>;
+            if (meta.videoUrl) setVideoUrl(meta.videoUrl);
+          }
+        }
+
         // Set comments enabled state (default to true if not specified)
         setCommentsEnabled(entry.commentsEnabled !== false);
 
@@ -288,10 +299,12 @@ export function EditEntryPage() {
     switch (entryType) {
       case 'standard':
         return countWords(standardContent);
-      case 'photo-essay':
-        return countWords(photoEssayContent);
-      case 'data-log':
-        return countWords(dataLogContent);
+      case 'photo':
+        return countWords(photoContent);
+      case 'video':
+        return countWords(videoContent);
+      case 'data':
+        return countWords(dataContent);
       default:
         return 0;
     }
@@ -315,12 +328,13 @@ export function EditEntryPage() {
   const buildSavePayload = useCallback(() => {
     return {
       title: entryTitle,
-      content: standardContent || photoEssayContent || dataLogContent,
+      content: standardContent || photoContent || videoContent || dataContent,
       place: locationName,
       lat: coordinates?.lat,
       lon: coordinates?.lng,
       date: entryDate ? `${entryDate}T${entryTime || '00:00'}:00.000Z` : undefined,
       entryType,
+      ...(entryType === 'video' && videoUrl ? { metadata: { videoUrl } } : {}),
       uploads: uploadedMedia.map(m => m.id),
       uploadCaptions: Object.fromEntries(
         Object.entries(mediaMetadata).map(([id, data]) => [id, data.caption])
@@ -334,16 +348,16 @@ export function EditEntryPage() {
       coverUploadId: coverPhotoId || undefined,
       commentsEnabled,
     };
-  }, [entryTitle, standardContent, photoEssayContent, dataLogContent, locationName, coordinates, entryDate, entryTime, entryType, uploadedMedia, mediaMetadata, coverPhotoId, commentsEnabled]);
+  }, [entryTitle, standardContent, photoContent, videoContent, videoUrl, dataContent, locationName, coordinates, entryDate, entryTime, entryType, uploadedMedia, mediaMetadata, coverPhotoId, commentsEnabled]);
 
   // Auto-save function
   const performAutoSave = useCallback(async () => {
     if (!entryId || !apiEntry) return;
 
-    const content = standardContent || photoEssayContent || dataLogContent;
+    const content = standardContent || photoContent || videoContent || dataContent;
     const mediaIds = uploadedMedia.map(m => m.id).join(',');
     const captionsStr = JSON.stringify(mediaMetadata);
-    const contentSignature = `${entryTitle}|${content}|${locationName}|${coordinates?.lat}|${coordinates?.lng}|${entryType}|${mediaIds}|${captionsStr}|${coverPhotoId}`;
+    const contentSignature = `${entryTitle}|${content}|${locationName}|${coordinates?.lat}|${coordinates?.lng}|${entryType}|${videoUrl}|${mediaIds}|${captionsStr}|${coverPhotoId}`;
 
     // Skip if no changes
     if (contentSignature === lastSavedContentRef.current) return;
@@ -362,7 +376,7 @@ export function EditEntryPage() {
       setIsAutoSaving(false);
       isAutoSavingRef.current = false;
     }
-  }, [entryId, apiEntry, entryTitle, standardContent, photoEssayContent, dataLogContent, locationName, coordinates, buildSavePayload, uploadedMedia, mediaMetadata, coverPhotoId, entryType]);
+  }, [entryId, apiEntry, entryTitle, standardContent, photoContent, videoContent, videoUrl, dataContent, locationName, coordinates, buildSavePayload, uploadedMedia, mediaMetadata, coverPhotoId, entryType]);
 
   // Auto-save interval (every 30 seconds)
   useEffect(() => {
@@ -592,9 +606,10 @@ export function EditEntryPage() {
                 <div className="flex items-center gap-3">
                   <span className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4]">TYPE:</span>
                   <span className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5]">
-                    {entryType === 'standard' && 'STANDARD ENTRY'}
-                    {entryType === 'photo-essay' && 'PHOTO ESSAY'}
-                    {entryType === 'data-log' && 'DATA LOG'}
+                    {entryType === 'standard' && 'STANDARD'}
+                    {entryType === 'photo' && 'PHOTO'}
+                    {entryType === 'video' && 'VIDEO'}
+                    {entryType === 'data' && 'DATA'}
                     {entryType === 'waypoint' && 'WAYPOINT'}
                   </span>
                 </div>
@@ -1004,6 +1019,62 @@ Remember: Your sponsors and followers are reading this to understand your journe
                         </span>
                       </div>
                     </label>
+                  </div>
+                </>
+              )}
+
+              {/* VIDEO ENTRY FIELDS */}
+              {entryType === 'video' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                      VIDEO URL
+                      <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+                    </label>
+                    <input
+                      type="url"
+                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                      placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+                      value={videoUrl}
+                      onChange={(e) => setVideoUrl(e.target.value)}
+                    />
+                    <div className="mt-1 text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      YouTube or Vimeo links supported
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                      DESCRIPTION
+                      <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+                    </label>
+                    <textarea
+                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm font-mono leading-relaxed dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                      rows={8}
+                      placeholder={`Describe the footage and provide context...
+
+• What is being shown in the video
+• Where and when it was filmed
+• Any relevant background or conditions`}
+                      value={videoContent || standardContent}
+                      onChange={(e) => {
+                        setVideoContent(e.target.value);
+                        setStandardContent(e.target.value);
+                      }}
+                    />
+                    <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                      <span className={wordCount < 200 || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
+                        Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < 200 && `(Minimum: 200)`} {wordCount > 2000 && `(Maximum: 2,000)`}
+                      </span>
+                      <span>Character count: {(videoContent || standardContent).length} / 15,000</span>
+                    </div>
+                    {wordCount > 0 && (wordCount < 200 || wordCount > 2000) && (
+                      <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
+                        <div className="font-bold mb-1">WORD COUNT REQUIREMENT:</div>
+                        {wordCount < 200 && <div>• Your entry must be at least 200 words. Current: {wordCount} words ({200 - wordCount} more needed)</div>}
+                        {wordCount > 2000 && <div>• Your entry must not exceed 2,000 words. Current: {wordCount} words ({wordCount - 2000} over limit)</div>}
+                      </div>
+                    )}
                   </div>
                 </>
               )}

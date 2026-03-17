@@ -992,7 +992,11 @@ export interface DataLogMetadata {
   avgSpeed?: number;
 }
 
-export type EntryMetadata = StandardMetadata | DataLogMetadata;
+export interface VideoMetadata {
+  videoUrl: string;
+}
+
+export type EntryMetadata = StandardMetadata | DataLogMetadata | VideoMetadata;
 
 // Entry types matching API response from getById
 export interface Entry {
@@ -1068,7 +1072,7 @@ export interface Entry {
     type?: string;
   }>;
   // New fields
-  entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
   coverImage?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';
@@ -1100,7 +1104,7 @@ export interface EntryCreatePayload {
   isDraft?: boolean;
   commentsEnabled?: boolean;
   // New fields
-  entryType?: 'standard' | 'photo-essay' | 'data-log' | 'waypoint';
+  entryType?: 'standard' | 'photo' | 'video' | 'data' | 'waypoint';
   coverUploadId?: string;
   isMilestone?: boolean;
   visibility?: 'public' | 'off-grid' | 'private';
