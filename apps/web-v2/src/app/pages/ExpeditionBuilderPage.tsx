@@ -1567,29 +1567,42 @@ export function ExpeditionBuilderPage() {
       }
 
       // Build route coordinates from waypoints, or fall back to entry markers sorted by date
+      // When 0-1 waypoints exist alongside entries, merge them into a single route
       const hasWaypointRoute = waypoints.length > 1;
-      const sortedEntries = !hasWaypointRoute && expeditionEntries.length > 1
-        ? [...expeditionEntries].sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime())
-        : [];
-      const hasEntryRoute = sortedEntries.length > 1;
 
-      if (hasWaypointRoute || hasEntryRoute) {
-        const useDirections = hasWaypointRoute && routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0;
+      // Collect unlinked entries for fallback/merged routing
+      const routeLinkedIds = new Set<string>();
+      waypoints.forEach(wp => (wp.entryIds || []).forEach(eid => routeLinkedIds.add(eid)));
+      const unlinkedEntries = expeditionEntries.filter(e => !routeLinkedIds.has(e.id));
 
-        let routeCoordinates: number[][];
+      let routeCoordinates: number[][] | null = null;
+
+      if (hasWaypointRoute) {
+        const useDirections = routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0;
         if (useDirections) {
           routeCoordinates = directionsGeometry;
-        } else if (hasWaypointRoute) {
+        } else {
           // Straight-line route through waypoints in order
           routeCoordinates = waypoints.map(w => [w.coordinates.lng, w.coordinates.lat]);
           // If round trip is enabled, add the start point to the end
           if (isRoundTrip && routeCoordinates.length > 0) {
             routeCoordinates.push(routeCoordinates[0]);
           }
-        } else {
-          // Straight-line route through entries sorted by date
-          routeCoordinates = sortedEntries.map(e => [e.coords.lng, e.coords.lat]);
         }
+      } else {
+        // Merge any waypoints (0-1) with unlinked entries, sorted by date
+        const allPoints: { lng: number; lat: number; date: string }[] = [];
+        waypoints.forEach(w => allPoints.push({ lng: w.coordinates.lng, lat: w.coordinates.lat, date: w.date }));
+        unlinkedEntries.forEach(e => allPoints.push({ lng: e.coords.lng, lat: e.coords.lat, date: e.date || '' }));
+        allPoints.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        if (allPoints.length > 1) {
+          routeCoordinates = allPoints.map(p => [p.lng, p.lat]);
+        }
+      }
+
+      const useDirections = hasWaypointRoute && routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0;
+
+      if (routeCoordinates && routeCoordinates.length >= 2) {
 
         try {
           map.current.addSource('route', {
