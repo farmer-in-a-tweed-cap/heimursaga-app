@@ -105,7 +105,8 @@ export function ExpeditionBuilderPage() {
   const [isRoundTrip, setIsRoundTrip] = useState(false);
   const [showInstructions, setShowInstructions] = useState(true);
 
-  // Waypoint reorder highlight — briefly flashes when a waypoint is moved
+  // Route item reorder
+  const [routeOrder, setRouteOrder] = useState<string[]>([]); // persistent display order by ID
   const [movedWaypointId, setMovedWaypointId] = useState<string | null>(null);
   const movedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -1432,10 +1433,11 @@ export function ExpeditionBuilderPage() {
         el.className = 'waypoint-marker';
         el.style.cssText = 'cursor: pointer;';
 
-        const isStart = wpIdx === 0;
-        const isEnd = wpIdx === waypoints.length - 1 && !isRoundTrip && waypoints.length > 1;
+        const isStart = waypoint.id === startRouteItemId;
+        const isEnd = waypoint.id === endRouteItemId;
         const isStartEnd = isStart || isEnd;
-        const positionNumber = wpIdx + 1;
+        const routeIdx = routeItems.findIndex(r => r.id === waypoint.id);
+        const positionNumber = routeIdx >= 0 ? routeIdx + 1 : wpIdx + 1;
         const isConverted = waypoint.entryIds.length > 0;
 
         if (isConverted) {
@@ -1566,41 +1568,40 @@ export function ExpeditionBuilderPage() {
         // Source/layer may already be removed
       }
 
-      // Build route coordinates from waypoints, or fall back to entry markers sorted by date
-      // When 0-1 waypoints exist alongside entries, merge them into a single route
+      // Build route coordinates from routeItems order (matches sidebar)
       const hasWaypointRoute = waypoints.length > 1;
-
-      // Collect unlinked entries for fallback/merged routing
-      const routeLinkedIds = new Set<string>();
-      waypoints.forEach(wp => (wp.entryIds || []).forEach(eid => routeLinkedIds.add(eid)));
-      const unlinkedEntries = expeditionEntries.filter(e => !routeLinkedIds.has(e.id));
+      const useDirections = hasWaypointRoute && routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0;
 
       let routeCoordinates: number[][] | null = null;
 
-      if (hasWaypointRoute) {
-        const useDirections = routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0;
-        if (useDirections) {
-          routeCoordinates = directionsGeometry;
-        } else {
-          // Straight-line route through waypoints in order
-          routeCoordinates = waypoints.map(w => [w.coordinates.lng, w.coordinates.lat]);
-          // If round trip is enabled, add the start point to the end
-          if (isRoundTrip && routeCoordinates.length > 0) {
-            routeCoordinates.push(routeCoordinates[0]);
+      if (useDirections) {
+        // Directions API route — splice unlinked entry coords at closest route points
+        routeCoordinates = [...directionsGeometry];
+        const routeLinkedIds = new Set<string>();
+        waypoints.forEach(wp => (wp.entryIds || []).forEach(eid => routeLinkedIds.add(eid)));
+        const unlinked = expeditionEntries.filter(e => !routeLinkedIds.has(e.id));
+        for (const entry of unlinked) {
+          const coord = [entry.coords.lng, entry.coords.lat];
+          let bestIdx = 0;
+          let bestDist = Infinity;
+          for (let i = 0; i < routeCoordinates.length; i++) {
+            const d = Math.pow(routeCoordinates[i][0] - coord[0], 2) + Math.pow(routeCoordinates[i][1] - coord[1], 2);
+            if (d < bestDist) { bestDist = d; bestIdx = i; }
           }
+          routeCoordinates.splice(bestIdx + 1, 0, coord);
         }
       } else {
-        // Merge any waypoints (0-1) with unlinked entries, sorted by date
-        const allPoints: { lng: number; lat: number; date: string }[] = [];
-        waypoints.forEach(w => allPoints.push({ lng: w.coordinates.lng, lat: w.coordinates.lat, date: w.date }));
-        unlinkedEntries.forEach(e => allPoints.push({ lng: e.coords.lng, lat: e.coords.lat, date: e.date || '' }));
-        allPoints.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-        if (allPoints.length > 1) {
-          routeCoordinates = allPoints.map(p => [p.lng, p.lat]);
+        // Straight-line route — use routeItems order (respects custom reordering)
+        const coords = routeItems.map(r =>
+          r.kind === 'waypoint'
+            ? [r.waypoint.coordinates.lng, r.waypoint.coordinates.lat]
+            : [r.entry.coords.lng, r.entry.coords.lat]
+        );
+        if (coords.length > 1) routeCoordinates = coords;
+        if (isRoundTrip && routeCoordinates && routeCoordinates.length > 0) {
+          routeCoordinates.push(routeCoordinates[0]);
         }
       }
-
-      const useDirections = hasWaypointRoute && routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0;
 
       if (routeCoordinates && routeCoordinates.length >= 2) {
 
@@ -1726,7 +1727,7 @@ export function ExpeditionBuilderPage() {
       entryMarkersRef.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waypoints, mapLoaded, isRoundTrip, routeMode, directionsGeometry, directionsLoading, expeditionEntries]);
+  }, [waypoints, mapLoaded, isRoundTrip, routeMode, directionsGeometry, directionsLoading, expeditionEntries, routeOrder]);
 
   // Delete waypoint
   const handleDeleteWaypoint = (id: string) => {
@@ -1785,48 +1786,51 @@ export function ExpeditionBuilderPage() {
   };
 
   // Check if moving a waypoint maintains chronological order among dated waypoints
-  const canMoveWaypoint = (waypointId: string, direction: 'up' | 'down', points: Waypoint[]): boolean => {
-    const idx = points.findIndex(w => w.id === waypointId);
+  // Check if a route item can be moved up/down in the combined list
+  // Constraint: entries must maintain date order relative to other entries
+  const canMoveRouteItem = (itemId: string, direction: 'up' | 'down'): boolean => {
+    const idx = routeOrder.indexOf(itemId);
     if (idx < 0) return false;
     if (direction === 'up' && idx === 0) return false;
-    if (direction === 'down' && idx === points.length - 1) return false;
+    if (direction === 'down' && idx === routeOrder.length - 1) return false;
 
-    // Build proposed order
-    const without = points.filter(w => w.id !== waypointId);
-    const insertAt = direction === 'up' ? idx - 1 : idx;
-    const proposed = [...without.slice(0, insertAt), points[idx], ...without.slice(insertAt)];
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    const proposed = [...routeOrder];
+    [proposed[idx], proposed[swapIdx]] = [proposed[swapIdx], proposed[idx]];
 
-    // Check for any date inversion among dated waypoints
-    let lastDate = '';
-    for (const w of proposed) {
-      if (w.date) {
-        if (lastDate && w.date < lastDate) return false;
-        lastDate = w.date;
+    // Check entry date order: entries must not invert dates relative to each other
+    let lastEntryDate = '';
+    for (const id of proposed) {
+      const entry = expeditionEntries.find(e => e.id === id);
+      if (entry?.date) {
+        if (lastEntryDate && entry.date < lastEntryDate) return false;
+        lastEntryDate = entry.date;
       }
     }
     return true;
   };
 
-  // Move waypoint up/down by one position with visual highlight
-  const handleMoveWaypoint = (waypointId: string, direction: 'up' | 'down') => {
-    if (!canMoveWaypoint(waypointId, direction, waypoints)) return;
-    const idx = waypoints.findIndex(w => w.id === waypointId);
+  // Move a route item (waypoint or entry) up/down in the combined list
+  const handleMoveRouteItem = (itemId: string, direction: 'up' | 'down') => {
+    if (!canMoveRouteItem(itemId, direction)) return;
+    const idx = routeOrder.indexOf(itemId);
+    const swapIdx = direction === 'up' ? idx - 1 : idx + 1;
+    const updated = [...routeOrder];
+    [updated[idx], updated[swapIdx]] = [updated[swapIdx], updated[idx]];
+    setRouteOrder(updated);
 
-    setWaypoints(prev => {
-      const source = prev[idx];
-      const without = prev.filter(w => w.id !== waypointId);
-      const insertAt = direction === 'up' ? idx - 1 : idx + 1;
-      const inserted = [...without.slice(0, insertAt), source, ...without.slice(insertAt)];
-      const resequenced = inserted.map((w, i) => ({
-        ...w,
-        sequence: i,
-      }));
-      return updateDistances(resequenced);
-    });
+    // Also update waypoint array order to match route order for waypoints
+    const waypointIdsInOrder = updated.filter(id => waypoints.some(w => w.id === id));
+    const reorderedWaypoints = waypointIdsInOrder
+      .map(id => waypoints.find(w => w.id === id)!)
+      .map((w, i) => ({ ...w, sequence: i }));
+    if (reorderedWaypoints.length === waypoints.length) {
+      setWaypoints(updateDistances(reorderedWaypoints));
+    }
 
-    // Flash highlight on the moved waypoint
+    // Flash highlight
     if (movedTimerRef.current) clearTimeout(movedTimerRef.current);
-    setMovedWaypointId(waypointId);
+    setMovedWaypointId(itemId);
     movedTimerRef.current = setTimeout(() => setMovedWaypointId(null), 600);
   };
 
@@ -2090,9 +2094,61 @@ export function ExpeditionBuilderPage() {
 
   const selectedWaypointData = waypoints.find(w => w.id === selectedWaypoint);
 
-  // Start/End waypoint IDs — simple: first waypoint = start, last = end
-  const startWaypointId = waypoints.length > 0 ? waypoints[0].id : null;
-  const endWaypointId = waypoints.length > 1 ? waypoints[waypoints.length - 1].id : null;
+  // Build combined route items list (waypoints + unlinked entries)
+  type RouteItem =
+    | { kind: 'waypoint'; id: string; date: string; waypoint: Waypoint; wpIdx: number }
+    | { kind: 'entry'; id: string; date: string; entry: typeof expeditionEntries[0] };
+
+  const routeLinkedEntryIds = new Set<string>();
+  waypoints.forEach(wp => (wp.entryIds || []).forEach(eid => routeLinkedEntryIds.add(eid)));
+
+  const unlinkedEntryList = expeditionEntries.filter(e => !routeLinkedEntryIds.has(e.id));
+
+  // Default date-sorted list for initial rendering and route drawing
+  const dateSortedItems: RouteItem[] = [
+    ...waypoints.map((wp, i) => ({ kind: 'waypoint' as const, id: wp.id, date: wp.date || '', waypoint: wp, wpIdx: i })),
+    ...unlinkedEntryList.map(e => ({ kind: 'entry' as const, id: e.id, date: e.date || '', entry: e })),
+  ].sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime());
+
+  // Sync routeOrder when items change (add/remove)
+  useEffect(() => {
+    const currentIds = new Set(dateSortedItems.map(r => r.id));
+    const existingIds = new Set(routeOrder);
+    const removed = routeOrder.some(id => !currentIds.has(id));
+    const added = [...currentIds].filter(id => !existingIds.has(id));
+
+    if (added.length > 0 || removed) {
+      const cleaned = routeOrder.filter(id => currentIds.has(id));
+      // Insert new items at date-sorted positions
+      for (const newId of added) {
+        const newItem = dateSortedItems.find(r => r.id === newId);
+        if (!newItem) continue;
+        let insertIdx = cleaned.length;
+        for (let i = 0; i < cleaned.length; i++) {
+          const existing = dateSortedItems.find(r => r.id === cleaned[i]);
+          if (existing && newItem.date && existing.date && newItem.date < existing.date) {
+            insertIdx = i;
+            break;
+          }
+        }
+        cleaned.splice(insertIdx, 0, newId);
+      }
+      setRouteOrder(cleaned);
+    } else if (routeOrder.length === 0 && dateSortedItems.length > 0) {
+      setRouteOrder(dateSortedItems.map(r => r.id));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waypoints.length, unlinkedEntryList.length, waypoints.map(w => w.id).join(',')]);
+
+  // Build routeItems from routeOrder (or fall back to date sort)
+  const routeItemsById = new Map(dateSortedItems.map(r => [r.id, r]));
+  const routeItems: RouteItem[] = routeOrder.length > 0
+    ? routeOrder.map(id => routeItemsById.get(id)).filter((r): r is RouteItem => r !== undefined)
+    : dateSortedItems;
+
+  // Start/End IDs — first and last in the combined route list
+  const startRouteItemId = routeItems.length > 0 ? routeItems[0].id : null;
+  const endRouteItemId = routeItems.length > 1 && !isRoundTrip ? routeItems[routeItems.length - 1].id : null;
 
   // Authentication gate
   if (!isAuthenticated) {
@@ -2745,7 +2801,7 @@ export function ExpeditionBuilderPage() {
                       
                       <div className="flex gap-3">
                         {/* Round Trip button - only for start waypoint */}
-                        {selectedWaypointData.id === startWaypointId && waypoints.length > 1 && (
+                        {selectedWaypointData.id === startRouteItemId && waypoints.length > 1 && (
                           <button
                             onClick={() => setIsRoundTrip(!isRoundTrip)}
                             className={`flex-1 px-3 py-2 transition-all text-xs font-bold ${
@@ -2759,7 +2815,7 @@ export function ExpeditionBuilderPage() {
                         )}
 
                         {/* Delete Button - not for start waypoint, not for converted waypoints */}
-                        {selectedWaypointData.id !== startWaypointId && selectedWaypointData.entryIds.length === 0 && (
+                        {selectedWaypointData.id !== startRouteItemId && selectedWaypointData.entryIds.length === 0 && (
                           <button
                             onClick={() => setConfirmingDelete(selectedWaypoint)}
                             className="flex-1 px-3 py-2 border-2 border-[#616161] dark:border-[#616161] bg-[#616161] dark:bg-[#4a4a4a] text-white hover:bg-[#202020] dark:hover:bg-[#616161] transition-all text-xs font-bold flex items-center justify-center gap-2"
@@ -2796,7 +2852,7 @@ export function ExpeditionBuilderPage() {
             <div className="flex-1 overflow-y-auto min-h-0">
                 <div className="px-4 py-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] sticky top-0 z-10 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-bold dark:text-[#e5e5e5] whitespace-nowrap">WAYPOINTS ({waypoints.length})</h3>
+                    <h3 className="text-xs font-bold dark:text-[#e5e5e5] whitespace-nowrap">ROUTE ({routeItems.length})</h3>
                     <div className="flex items-center gap-3">
                       {waypoints.length >= 2 && (
                         <button
@@ -2952,152 +3008,244 @@ export function ExpeditionBuilderPage() {
                   </div>
                 )}
 
-                {waypoints.length === 0 ? (
+                {routeItems.length === 0 ? (
                   <div className="p-6 text-center">
                     <MapPin className="w-12 h-12 mx-auto mb-3 text-[#b5bcc4]" />
-                    <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-1">No waypoints yet</p>
+                    <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-1">No waypoints or entries yet</p>
                     <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
                       Click on the map to add your first waypoint
                     </p>
                   </div>
                 ) : (
                   <div>
-                    {waypoints.map((waypoint, wpIdx) => {
-                      const positionNumber = wpIdx + 1;
-                      const isStart = wpIdx === 0;
-                      const isEnd = wpIdx === waypoints.length - 1 && !isRoundTrip && waypoints.length > 1;
-                      const justMoved = movedWaypointId === waypoint.id;
-                      const canUp = canMoveWaypoint(waypoint.id, 'up', waypoints);
-                      const canDown = canMoveWaypoint(waypoint.id, 'down', waypoints);
+                    {routeItems.map((item, routeIdx) => {
+                      const isStart = item.id === startRouteItemId;
+                      const isEnd = item.id === endRouteItemId;
+                      const positionNumber = routeIdx + 1;
 
-                      return (
-                        <div key={`wp-${waypoint.id}`}>
-                          {/* Waypoint row */}
-                          <div
-                            onClick={() => setSelectedWaypoint(waypoint.id)}
-                            className={`p-3 transition-colors duration-300 cursor-pointer ${
-                              justMoved
-                                ? 'bg-[#ac6d46]/15 dark:bg-[#ac6d46]/20 ring-1 ring-inset ring-[#ac6d46]/40'
-                                : selectedWaypoint === waypoint.id
-                                  ? 'bg-[#fff8dc] dark:bg-[#3a2f1f]'
-                                  : 'hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a]'
-                            }`}
-                          >
-                            <div className="flex items-start gap-2">
-                              {/* Move buttons — hidden for entry-linked waypoints (sequence is date-driven) */}
-                              {waypoints.length > 1 && waypoint.entryIds.length === 0 && (
-                                <div className="flex flex-col items-center flex-shrink-0 pt-1">
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleMoveWaypoint(waypoint.id, 'up'); }}
-                                    disabled={!canUp}
-                                    className={`p-0.5 rounded transition-all ${canUp ? 'text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] hover:bg-[#ac6d46]/10' : 'text-[#e5e5e5] dark:text-[#3a3a3a] cursor-default'}`}
-                                    title="Move up"
-                                  >
-                                    <ChevronUp size={14} />
-                                  </button>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); handleMoveWaypoint(waypoint.id, 'down'); }}
-                                    disabled={!canDown}
-                                    className={`p-0.5 rounded transition-all ${canDown ? 'text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] hover:bg-[#ac6d46]/10' : 'text-[#e5e5e5] dark:text-[#3a3a3a] cursor-default'}`}
-                                    title="Move down"
-                                  >
-                                    <ChevronDown size={14} />
-                                  </button>
-                                </div>
-                              )}
+                      if (item.kind === 'waypoint') {
+                        const { waypoint, wpIdx } = item;
+                        const justMoved = movedWaypointId === waypoint.id;
+                        const canUp = routeItems.length > 1 && canMoveRouteItem(waypoint.id, 'up');
+                        const canDown = routeItems.length > 1 && canMoveRouteItem(waypoint.id, 'down');
 
-                              {/* Marker Badge — circle for converted, diamond for unconverted */}
-                              {waypoint.entryIds.length > 0 ? (
-                                <div
-                                  className="rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
-                                  style={{
-                                    width: waypoint.entryIds.length > 1 ? '32px' : '28px',
-                                    height: waypoint.entryIds.length > 1 ? '32px' : '28px',
-                                    fontSize: waypoint.entryIds.length > 1 ? '12px' : '12px',
-                                    backgroundColor: waypoint.entryIds.length > 1 ? '#8a5738' : '#ac6d46',
-                                    border: '2px solid white',
-                                    boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
-                                  }}
-                                >
-                                  {waypoint.entryIds.length > 1 ? waypoint.entryIds.length : positionNumber}
-                                </div>
-                              ) : (
-                                <div className="flex items-center justify-center flex-shrink-0" style={{ width: isStart || isEnd ? '32px' : '28px', height: isStart || isEnd ? '32px' : '28px' }}>
+                        return (
+                          <div key={`wp-${waypoint.id}`}>
+                            <div
+                              onClick={() => setSelectedWaypoint(waypoint.id)}
+                              className={`p-3 transition-colors duration-300 cursor-pointer ${
+                                justMoved
+                                  ? 'bg-[#ac6d46]/15 dark:bg-[#ac6d46]/20 ring-1 ring-inset ring-[#ac6d46]/40'
+                                  : selectedWaypoint === waypoint.id
+                                    ? 'bg-[#fff8dc] dark:bg-[#3a2f1f]'
+                                    : 'hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a]'
+                              }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                {routeItems.length > 1 && waypoint.entryIds.length === 0 && (
+                                  <div className="flex flex-col items-center flex-shrink-0 pt-1">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleMoveRouteItem(waypoint.id, 'up'); }}
+                                      disabled={!canUp}
+                                      className={`p-0.5 rounded transition-all ${canUp ? 'text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] hover:bg-[#ac6d46]/10' : 'text-[#e5e5e5] dark:text-[#3a3a3a] cursor-default'}`}
+                                      title="Move up"
+                                    >
+                                      <ChevronUp size={14} />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleMoveRouteItem(waypoint.id, 'down'); }}
+                                      disabled={!canDown}
+                                      className={`p-0.5 rounded transition-all ${canDown ? 'text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] hover:bg-[#ac6d46]/10' : 'text-[#e5e5e5] dark:text-[#3a3a3a] cursor-default'}`}
+                                      title="Move down"
+                                    >
+                                      <ChevronDown size={14} />
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Marker Badge — circle for converted, diamond for unconverted */}
+                                {waypoint.entryIds.length > 0 ? (
                                   <div
-                                    className="flex items-center justify-center text-white font-bold"
+                                    className="rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
                                     style={{
-                                      width: isStart || isEnd ? '24px' : '20px',
-                                      height: isStart || isEnd ? '24px' : '20px',
-                                      transform: 'rotate(45deg)',
-                                      backgroundColor: isStart ? '#ac6d46' : isEnd ? '#4676ac' : '#616161',
-                                      border: isStart && isRoundTrip ? '2px solid #4676ac' : '2px solid white',
+                                      width: waypoint.entryIds.length > 1 ? '32px' : '28px',
+                                      height: waypoint.entryIds.length > 1 ? '32px' : '28px',
+                                      fontSize: '12px',
+                                      backgroundColor: waypoint.entryIds.length > 1 ? '#8a5738' : '#ac6d46',
+                                      border: '2px solid white',
                                       boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
                                     }}
                                   >
-                                    <span style={{ transform: 'rotate(-45deg)', fontSize: isStart || isEnd ? '12px' : '10px', lineHeight: '1' }}>
-                                      {isStart ? 'S' : isEnd ? 'E' : positionNumber}
-                                    </span>
+                                    {waypoint.entryIds.length > 1 ? waypoint.entryIds.length : positionNumber}
                                   </div>
-                                </div>
-                              )}
-
-                              {/* Waypoint Info */}
-                              <div className="flex-1 min-w-0">
-                                <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5] truncate flex items-center gap-2">
-                                  <span className="truncate">{waypoint.name || `Waypoint ${wpIdx + 1}`}</span>
-                                  {waypoint.entryIds.length > 0 && (
-                                    <span className="ml-auto px-1.5 py-0.5 bg-[#ac6d46]/15 text-[#ac6d46] text-[10px] font-bold border border-[#ac6d46]/30 flex-shrink-0">
-                                      {waypoint.entryIds.length === 1 ? 'ENTRY' : `${waypoint.entryIds.length} ENTRIES`}
-                                    </span>
-                                  )}
-                                </div>
-                                {waypoint.location && (
-                                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] truncate mb-1">
-                                    {waypoint.location}
+                                ) : (
+                                  <div className="flex items-center justify-center flex-shrink-0" style={{ width: isStart || isEnd ? '32px' : '28px', height: isStart || isEnd ? '32px' : '28px' }}>
+                                    <div
+                                      className="flex items-center justify-center text-white font-bold"
+                                      style={{
+                                        width: isStart || isEnd ? '24px' : '20px',
+                                        height: isStart || isEnd ? '24px' : '20px',
+                                        transform: 'rotate(45deg)',
+                                        backgroundColor: isStart ? '#ac6d46' : isEnd ? '#4676ac' : '#616161',
+                                        border: isStart && isRoundTrip ? '2px solid #4676ac' : '2px solid white',
+                                        boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                                      }}
+                                    >
+                                      <span style={{ transform: 'rotate(-45deg)', fontSize: isStart || isEnd ? '12px' : '10px', lineHeight: '1' }}>
+                                        {isStart ? 'S' : isEnd ? 'E' : positionNumber}
+                                      </span>
+                                    </div>
                                   </div>
                                 )}
-                                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono space-y-0.5">
-                                  <div className="truncate">{Math.abs(waypoint.coordinates.lat).toFixed(4)}°{waypoint.coordinates.lat >= 0 ? 'N' : 'S'}, {Math.abs(waypoint.coordinates.lng).toFixed(4)}°{waypoint.coordinates.lng >= 0 ? 'E' : 'W'}</div>
-                                  {waypoint.date && (
-                                    <div className="text-[#ac6d46]">{waypoint.date}</div>
-                                  )}
-                                  {wpIdx > 0 && waypoint.distanceFromPrevious !== undefined && (
-                                    <div className="text-[#4676ac]">
-                                      +{formatDistance(waypoint.distanceFromPrevious, 1)}
-                                      {waypoint.travelTimeFromPrevious ? ` (${formatTravelTime(waypoint.travelTimeFromPrevious)})` : ''}
-                                      {waypoint.cumulativeDistance !== undefined && (
-                                        <> • {formatDistance(waypoint.cumulativeDistance, 1)} total</>
-                                      )}
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5] truncate flex items-center gap-2">
+                                    <span className="truncate">{waypoint.name || `Waypoint ${wpIdx + 1}`}</span>
+                                    {waypoint.entryIds.length > 0 && (
+                                      <span className="ml-auto px-1.5 py-0.5 bg-[#ac6d46]/15 text-[#ac6d46] text-[10px] font-bold border border-[#ac6d46]/30 flex-shrink-0">
+                                        {waypoint.entryIds.length === 1 ? 'ENTRY' : `${waypoint.entryIds.length} ENTRIES`}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {waypoint.location && (
+                                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] truncate mb-1">
+                                      {waypoint.location}
                                     </div>
                                   )}
+                                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono space-y-0.5">
+                                    <div className="truncate">{Math.abs(waypoint.coordinates.lat).toFixed(4)}°{waypoint.coordinates.lat >= 0 ? 'N' : 'S'}, {Math.abs(waypoint.coordinates.lng).toFixed(4)}°{waypoint.coordinates.lng >= 0 ? 'E' : 'W'}</div>
+                                    {waypoint.date && (
+                                      <div className="text-[#ac6d46]">{waypoint.date}</div>
+                                    )}
+                                    {wpIdx > 0 && waypoint.distanceFromPrevious !== undefined && (
+                                      <div className="text-[#4676ac]">
+                                        +{formatDistance(waypoint.distanceFromPrevious, 1)}
+                                        {waypoint.travelTimeFromPrevious ? ` (${formatTravelTime(waypoint.travelTimeFromPrevious)})` : ''}
+                                        {waypoint.cumulativeDistance !== undefined && (
+                                          <> • {formatDistance(waypoint.cumulativeDistance, 1)} total</>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {waypoint.entryIds.length === 0 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setConfirmingDelete(waypoint.id);
+                                    }}
+                                    className="text-[#ac6d46] hover:text-[#8a5738] transition-all flex-shrink-0"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="h-px bg-[#202020] dark:bg-[#616161]" />
+                          </div>
+                        );
+                      } else {
+                        // Entry row
+                        const { entry } = item;
+                        const justMoved = movedWaypointId === entry.id;
+                        const canUp = routeItems.length > 1 && canMoveRouteItem(entry.id, 'up');
+                        const canDown = routeItems.length > 1 && canMoveRouteItem(entry.id, 'down');
+
+                        return (
+                          <div key={`entry-${entry.id}`}>
+                            <div
+                              onClick={() => map.current?.flyTo({ center: [entry.coords.lng, entry.coords.lat], zoom: 14 })}
+                              className={`p-3 cursor-pointer transition-colors duration-300 ${
+                                justMoved
+                                  ? 'bg-[#ac6d46]/15 dark:bg-[#ac6d46]/20 ring-1 ring-inset ring-[#ac6d46]/40'
+                                  : 'hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a]'
+                              }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                {/* Move buttons */}
+                                {routeItems.length > 1 && (
+                                  <div className="flex flex-col items-center flex-shrink-0 pt-1">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleMoveRouteItem(entry.id, 'up'); }}
+                                      disabled={!canUp}
+                                      className={`p-0.5 rounded transition-all ${canUp ? 'text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] hover:bg-[#ac6d46]/10' : 'text-[#e5e5e5] dark:text-[#3a3a3a] cursor-default'}`}
+                                      title="Move up"
+                                    >
+                                      <ChevronUp size={14} />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleMoveRouteItem(entry.id, 'down'); }}
+                                      disabled={!canDown}
+                                      className={`p-0.5 rounded transition-all ${canDown ? 'text-[#616161] dark:text-[#b5bcc4] hover:text-[#ac6d46] hover:bg-[#ac6d46]/10' : 'text-[#e5e5e5] dark:text-[#3a3a3a] cursor-default'}`}
+                                      title="Move down"
+                                    >
+                                      <ChevronDown size={14} />
+                                    </button>
+                                  </div>
+                                )}
+
+                                {/* Entry badge — S/E diamond or circle */}
+                                {isStart || isEnd ? (
+                                  <div className="flex items-center justify-center flex-shrink-0" style={{ width: '32px', height: '32px' }}>
+                                    <div
+                                      className="flex items-center justify-center text-white font-bold"
+                                      style={{
+                                        width: '24px',
+                                        height: '24px',
+                                        transform: 'rotate(45deg)',
+                                        backgroundColor: isStart ? '#ac6d46' : '#4676ac',
+                                        border: '2px solid white',
+                                        boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                                      }}
+                                    >
+                                      <span style={{ transform: 'rotate(-45deg)', fontSize: '12px', lineHeight: '1' }}>
+                                        {isStart ? 'S' : 'E'}
+                                      </span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div
+                                    className="rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                                    style={{
+                                      width: '26px',
+                                      height: '26px',
+                                      fontSize: '11px',
+                                      backgroundColor: '#ac6d46',
+                                      border: '2px solid white',
+                                      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                                    }}
+                                  >
+                                    {positionNumber}
+                                  </div>
+                                )}
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5] truncate flex items-center gap-2">
+                                    <span className="truncate">{entry.title}</span>
+                                    <span className="ml-auto px-1.5 py-0.5 bg-[#4676ac]/10 text-[#4676ac] text-[10px] font-bold border border-[#4676ac]/30 flex-shrink-0">
+                                      ENTRY
+                                    </span>
+                                  </div>
+                                  {entry.place && (
+                                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] truncate mb-1">
+                                      {entry.place}
+                                    </div>
+                                  )}
+                                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono space-y-0.5">
+                                    <div className="truncate">{Math.abs(entry.coords.lat).toFixed(4)}°{entry.coords.lat >= 0 ? 'N' : 'S'}, {Math.abs(entry.coords.lng).toFixed(4)}°{entry.coords.lng >= 0 ? 'E' : 'W'}</div>
+                                    {entry.date && (
+                                      <div className="text-[#ac6d46]">{entry.date}</div>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-
-                              {waypoint.entryIds.length === 0 && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setConfirmingDelete(waypoint.id);
-                                  }}
-                                  className="text-[#ac6d46] hover:text-[#8a5738] transition-all flex-shrink-0"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              )}
                             </div>
+                            <div className="h-px bg-[#202020] dark:bg-[#616161]" />
                           </div>
-
-                          {/* Separator */}
-                          <div className="h-px bg-[#202020] dark:bg-[#616161]" />
-                        </div>
-                      );
+                        );
+                      }
                     })}
-                    {/* Entries indicator */}
-                    {expeditionEntries.length > 0 && (
-                      <div className="p-3 text-center text-xs text-[#616161] dark:text-[#b5bcc4] font-mono bg-[#faf6f2] dark:bg-[#2a2520]">
-                        {expeditionEntries.length} {expeditionEntries.length === 1 ? 'journal entry' : 'journal entries'} linked to waypoints
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
