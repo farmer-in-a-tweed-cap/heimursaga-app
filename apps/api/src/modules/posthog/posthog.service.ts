@@ -6,10 +6,10 @@ export class PostHogService implements OnModuleDestroy {
   private client: PostHog | null = null;
 
   constructor() {
-    const apiKey = process.env.POSTHOG_API_KEY;
+    const apiKey = process.env.POSTHOG_API_KEY?.trim();
     if (apiKey) {
       this.client = new PostHog(apiKey, {
-        host: process.env.POSTHOG_HOST || 'https://us.i.posthog.com',
+        host: (process.env.POSTHOG_HOST || 'https://us.i.posthog.com').trim(),
         flushAt: 20,
         flushInterval: 10000,
       });

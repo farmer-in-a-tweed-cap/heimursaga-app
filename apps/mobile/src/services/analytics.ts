@@ -9,8 +9,8 @@ import PostHog from 'posthog-react-native';
 
 type EventProperties = Record<string, string | number | boolean | undefined>;
 
-const POSTHOG_KEY = process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '';
-const POSTHOG_HOST = process.env.EXPO_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com';
+const POSTHOG_KEY = (process.env.EXPO_PUBLIC_POSTHOG_KEY ?? '').trim();
+const POSTHOG_HOST = (process.env.EXPO_PUBLIC_POSTHOG_HOST ?? 'https://us.i.posthog.com').trim();
 
 let client: PostHog | null = null;
 
