@@ -517,12 +517,12 @@ export function CreateEntryPage() {
   const minWords = entryType === 'standard' ? 200 : 50;
   const isWordCountValid = wordCount >= minWords && wordCount <= 2000;
 
-  // Calculate days active
-  const calculateDaysActive = (startDate?: string): number => {
+  // Calculate days active (use end date for completed expeditions)
+  const calculateDaysActive = (startDate?: string, endDate?: string, status?: string): number => {
     if (!startDate) return 0;
     const start = new Date(startDate);
-    const now = new Date();
-    return Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const end = status === 'completed' && endDate ? new Date(endDate) : new Date();
+    return Math.max(0, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
   };
 
   // Authentication gate - MUST be after all hooks
@@ -821,7 +821,7 @@ export function CreateEntryPage() {
                 <>Loading expedition...</>
               ) : expedition ? (
                 <>
-                  Expedition: <span className="text-[#ac6d46] font-bold">{expedition.title}</span> • Day {calculateDaysActive(expedition.startDate)}
+                  Expedition: <span className="text-[#ac6d46] font-bold">{expedition.title}</span> • Day {calculateDaysActive(expedition.startDate, expedition.endDate, expedition.status)}
                 </>
               ) : (
                 <>Expedition not found</>
@@ -2108,7 +2108,7 @@ Include:
                 </div>
                 <div>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Day:</span>
-                  <div className="font-bold dark:text-[#e5e5e5]">{calculateDaysActive(expedition.startDate)}</div>
+                  <div className="font-bold dark:text-[#e5e5e5]">{calculateDaysActive(expedition.startDate, expedition.endDate, expedition.status)}</div>
                 </div>
                 <div>
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Status:</span>

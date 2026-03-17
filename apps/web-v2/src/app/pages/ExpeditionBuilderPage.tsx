@@ -1566,19 +1566,29 @@ export function ExpeditionBuilderPage() {
         // Source/layer may already be removed
       }
 
-      if (waypoints.length > 1) {
-        const useDirections = routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0;
+      // Build route coordinates from waypoints, or fall back to entry markers sorted by date
+      const hasWaypointRoute = waypoints.length > 1;
+      const sortedEntries = !hasWaypointRoute && expeditionEntries.length > 1
+        ? [...expeditionEntries].sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime())
+        : [];
+      const hasEntryRoute = sortedEntries.length > 1;
+
+      if (hasWaypointRoute || hasEntryRoute) {
+        const useDirections = hasWaypointRoute && routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0;
 
         let routeCoordinates: number[][];
         if (useDirections) {
           routeCoordinates = directionsGeometry;
-        } else {
+        } else if (hasWaypointRoute) {
           // Straight-line route through waypoints in order
           routeCoordinates = waypoints.map(w => [w.coordinates.lng, w.coordinates.lat]);
           // If round trip is enabled, add the start point to the end
           if (isRoundTrip && routeCoordinates.length > 0) {
             routeCoordinates.push(routeCoordinates[0]);
           }
+        } else {
+          // Straight-line route through entries sorted by date
+          routeCoordinates = sortedEntries.map(e => [e.coords.lng, e.coords.lat]);
         }
 
         try {
@@ -2208,12 +2218,14 @@ export function ExpeditionBuilderPage() {
 
       {/* Completed expedition banner */}
       {isCompletedExpedition && isEditMode && (
-        <div className="bg-[#4676ac]/10 border-2 border-[#4676ac] p-4 flex items-start gap-3">
-          <span className="text-[#4676ac] text-lg mt-0.5">i</span>
+        <div className="bg-white dark:bg-[#202020] border-2 border-b-0 border-[#202020] dark:border-[#616161] p-4 flex items-start gap-3">
+          <div className="w-6 h-6 flex-shrink-0 bg-[#4676ac] flex items-center justify-center mt-0.5">
+            <span className="text-white text-xs font-bold">i</span>
+          </div>
           <div>
-            <h4 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">COMPLETED EXPEDITION</h4>
+            <h4 className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">COMPLETED EXPEDITION</h4>
             <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-              This expedition is completed. You can update the title, description, cover image, waypoints, and route. Dates, visibility, and sponsorship settings are locked to preserve the historical record.
+              This expedition is completed. You can still edit the title, description, cover image, waypoints, and route. Dates, visibility, and sponsorship settings are locked.
             </p>
           </div>
         </div>
@@ -2296,7 +2308,11 @@ export function ExpeditionBuilderPage() {
           <div>
             <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
               END DATE <span className="text-[#ac6d46]">*</span>
-              <span className="text-[#616161] dark:text-[#b5bcc4] ml-2 font-medium">or duration in days</span>
+              {isCompletedExpedition ? (
+                <span className="ml-2 text-xs text-[#616161] dark:text-[#b5bcc4]">(LOCKED)</span>
+              ) : (
+                <span className="text-[#616161] dark:text-[#b5bcc4] ml-2 font-medium">or duration in days</span>
+              )}
             </label>
             <div className="grid grid-cols-[1fr_auto_80px] gap-2 items-center">
               <DatePicker
@@ -2304,6 +2320,7 @@ export function ExpeditionBuilderPage() {
                 onChange={handleEndDateChange}
                 min={expeditionData.startDate || undefined}
                 className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
+                disabled={isCompletedExpedition}
               />
               <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-bold">OR</span>
               <input
@@ -2312,6 +2329,7 @@ export function ExpeditionBuilderPage() {
                 onChange={(e) => handleDurationChange(e.target.value)}
                 className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] font-mono"
                 placeholder="Days"
+                disabled={isCompletedExpedition}
               />
             </div>
           </div>

@@ -594,8 +594,8 @@ export function WaypointSelectorMap({
         }
       `}</style>
 
-      <div className="fixed inset-0 bg-[#202020]/90 z-50 flex items-center justify-center p-4">
-        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] w-full max-w-5xl max-h-[90vh] flex flex-col">
+      <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 sm:p-4">
+        <div className="bg-white dark:bg-[#202020] border-4 border-[#202020] dark:border-[#616161] w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden">
 
           {/* ---------------------------------------------------------------- */}
           {/* Header                                                           */}
@@ -619,13 +619,13 @@ export function WaypointSelectorMap({
           {/* ---------------------------------------------------------------- */}
           {/* Info bar                                                         */}
           {/* ---------------------------------------------------------------- */}
-          <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] px-4 py-2.5">
+          <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161] px-3 sm:px-4 py-2.5">
             <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-              Click an existing waypoint or tap the map to add a new one
+              Tap an existing waypoint or tap the map to add a new one
             </p>
 
-            {/* Legend */}
-            <div className="flex items-center gap-5 mt-2">
+            {/* Legend — hidden on mobile */}
+            <div className="hidden sm:flex items-center gap-5 mt-2">
               <div className="flex items-center gap-2">
                 <span
                   style={{
@@ -681,7 +681,7 @@ export function WaypointSelectorMap({
           {/* Existing-entry notice (shown when a converted waypoint is clicked) */}
           {/* ---------------------------------------------------------------- */}
           {existingEntryNotice && (
-            <div className="bg-[#ac6d46]/10 border-b-2 border-[#ac6d46]/40 px-4 py-2.5 flex items-center gap-2">
+            <div className="bg-[#ac6d46]/10 border-b-2 border-[#ac6d46]/40 px-3 sm:px-4 py-2.5 flex items-center gap-2">
               <span className="text-xs text-[#ac6d46] font-bold">NOTE:</span>
               <span className="text-xs text-[#616161] dark:text-[#b5bcc4]">
                 This waypoint has{' '}
@@ -697,7 +697,7 @@ export function WaypointSelectorMap({
           {/* ---------------------------------------------------------------- */}
           {/* Map container                                                    */}
           {/* ---------------------------------------------------------------- */}
-          <div className="flex-1 relative" style={{ minHeight: '460px', height: '460px' }}>
+          <div className="flex-1 relative" style={{ minHeight: '300px' }}>
             <div
               ref={mapContainerRef}
               style={{
@@ -716,29 +716,29 @@ export function WaypointSelectorMap({
           {/* Footer — pending confirmation or idle close button               */}
           {/* ---------------------------------------------------------------- */}
           {pendingWaypoint ? (
-            <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] p-4">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] p-3 sm:p-4 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                 <div>
                   <div className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] mb-0.5">
                     NEW WAYPOINT AT
                   </div>
-                  <div className="font-mono text-sm text-[#4676ac] font-bold">
+                  <div className="font-mono text-xs sm:text-sm text-[#4676ac] font-bold">
                     {pendingWaypoint.lat.toFixed(6)}, {pendingWaypoint.lng.toFixed(6)}
                   </div>
-                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-0.5">
+                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-0.5 hidden sm:block">
                     Sequence position ~{pendingWaypoint.sequence.toFixed(1)}
                   </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 w-full sm:w-auto">
                   <button
                     onClick={handleCancelSelection}
-                    className="px-5 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a] transition-all text-xs font-bold"
+                    className="flex-1 sm:flex-none px-5 py-2.5 sm:py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a] transition-all text-sm font-bold"
                   >
                     CANCEL
                   </button>
                   <button
                     onClick={handleConfirmNew}
-                    className="px-5 py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a87] transition-all text-xs"
+                    className="flex-1 sm:flex-none px-5 py-2.5 sm:py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a87] transition-all text-sm"
                   >
                     CONFIRM
                   </button>
@@ -746,8 +746,8 @@ export function WaypointSelectorMap({
               </div>
             </div>
           ) : pendingExisting ? (
-            <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] p-4">
-              <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] p-3 sm:p-4 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
                 <div>
                   <div className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] mb-0.5">
                     SELECTED WAYPOINT
@@ -759,16 +759,16 @@ export function WaypointSelectorMap({
                     {pendingExisting.coords.lat.toFixed(6)}, {pendingExisting.coords.lng.toFixed(6)}
                   </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-3 w-full sm:w-auto">
                   <button
                     onClick={handleCancelSelection}
-                    className="px-5 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a] transition-all text-xs font-bold"
+                    className="flex-1 sm:flex-none px-5 py-2.5 sm:py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a] transition-all text-sm font-bold"
                   >
                     CANCEL
                   </button>
                   <button
                     onClick={handleConfirmExisting}
-                    className="px-5 py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a87] transition-all text-xs"
+                    className="flex-1 sm:flex-none px-5 py-2.5 sm:py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a87] transition-all text-sm"
                   >
                     CONFIRM
                   </button>
@@ -776,10 +776,10 @@ export function WaypointSelectorMap({
               </div>
             </div>
           ) : (
-            <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] p-4 flex justify-end">
+            <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-t-2 border-[#202020] dark:border-[#616161] p-3 sm:p-4 flex-shrink-0 flex justify-end">
               <button
                 onClick={onClose}
-                className="px-6 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a] transition-all text-xs font-bold"
+                className="w-full sm:w-auto px-6 py-2.5 sm:py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a] transition-all text-sm font-bold"
               >
                 CLOSE
               </button>
