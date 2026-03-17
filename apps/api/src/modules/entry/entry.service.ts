@@ -285,7 +285,7 @@ export class EntryService {
           ...(explorerId ? [{ author_id: explorerId }] : []),
           { expedition_id: null, visibility: 'public' },
           {
-            expedition: { visibility: 'public' },
+            expedition: { visibility: 'public', status: { not: 'cancelled' } },
             NOT: { visibility: 'private' },
           },
         ],

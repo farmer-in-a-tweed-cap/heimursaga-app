@@ -281,30 +281,37 @@ export function ExpeditionBuilderPage() {
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
       };
 
+      // Completed expeditions: only send allowed fields
+      const finalPayload = isCompletedExpedition
+        ? { title: payload.title, description: payload.description, coverImage: payload.coverImage }
+        : payload;
+
       let expeditionPublicId: string;
 
       if (isEditMode && expeditionId) {
-        await expeditionApi.update(expeditionId, payload);
+        await expeditionApi.update(expeditionId, finalPayload);
         expeditionPublicId = expeditionId;
 
-        // Sync waypoints: update existing, create new, delete removed
-        const currentWaypointIds = new Set(
-          waypoints.filter(w => !w.id.startsWith('waypoint-')).map(w => w.id)
-        );
+        // Sync waypoints: update existing, create new, delete removed (skip for completed)
+        if (!isCompletedExpedition) {
+          const currentWaypointIds = new Set(
+            waypoints.filter(w => !w.id.startsWith('waypoint-')).map(w => w.id)
+          );
 
-        // Delete waypoints that were removed (ones from API that are no longer in state)
-        for (const originalId of originalWaypointIdsRef.current) {
-          if (!currentWaypointIds.has(originalId)) {
-            await expeditionApi.deleteWaypoint(expeditionPublicId, originalId);
+          // Delete waypoints that were removed (ones from API that are no longer in state)
+          for (const originalId of originalWaypointIdsRef.current) {
+            if (!currentWaypointIds.has(originalId)) {
+              await expeditionApi.deleteWaypoint(expeditionPublicId, originalId);
+            }
           }
-        }
 
-        // Update existing and create new waypoints
-        for (const waypoint of waypoints) {
-          if (waypoint.id.startsWith('waypoint-')) {
-            await expeditionApi.createWaypoint(expeditionPublicId, buildWaypointPayload(waypoint));
-          } else {
-            await expeditionApi.updateWaypoint(expeditionPublicId, waypoint.id, buildWaypointPayload(waypoint));
+          // Update existing and create new waypoints
+          for (const waypoint of waypoints) {
+            if (waypoint.id.startsWith('waypoint-')) {
+              await expeditionApi.createWaypoint(expeditionPublicId, buildWaypointPayload(waypoint));
+            } else {
+              await expeditionApi.updateWaypoint(expeditionPublicId, waypoint.id, buildWaypointPayload(waypoint));
+            }
           }
         }
       } else if (draftId) {
@@ -379,6 +386,7 @@ export function ExpeditionBuilderPage() {
   };
 
   const status = computeStatus();
+  const isCompletedExpedition = status === 'completed';
 
   // Disable sponsorships when status changes to completed
   useEffect(() => {
@@ -2196,6 +2204,19 @@ export function ExpeditionBuilderPage() {
                 START FRESH
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Completed expedition banner */}
+      {isCompletedExpedition && isEditMode && (
+        <div className="bg-[#4676ac]/10 border-2 border-[#4676ac] p-4 flex items-start gap-3">
+          <span className="text-[#4676ac] text-lg mt-0.5">i</span>
+          <div>
+            <h4 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">COMPLETED EXPEDITION</h4>
+            <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+              This expedition is completed. You can update the title, description, and cover image. Dates, waypoints, route, visibility, and sponsorship settings are locked to preserve the historical record.
+            </p>
           </div>
         </div>
       )}

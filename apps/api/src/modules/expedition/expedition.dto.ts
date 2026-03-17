@@ -73,11 +73,15 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
 
   @ApiProperty({ required: false })
   @IsNumber()
+  @Min(1)
+  @Max(999999.99)
   @IsOptional()
   goal?: number;
 
   @ApiProperty({ required: false })
   @IsNumber()
+  @Min(0)
+  @Max(999999.99)
   @IsOptional()
   notesAccessThreshold?: number;
 
@@ -162,11 +166,15 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
 
   @ApiProperty({ required: false })
   @IsNumber()
+  @Min(1)
+  @Max(999999.99)
   @IsOptional()
   goal?: number;
 
   @ApiProperty({ required: false })
   @IsNumber()
+  @Min(0)
+  @Max(999999.99)
   @IsOptional()
   notesAccessThreshold?: number;
 

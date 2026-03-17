@@ -212,6 +212,10 @@ export default function ExpeditionDetailScreen() {
   }, [activeTab, fetchNotes]);
 
   const isOwner = !!(user && expedition?.author && user.username === expedition.author.username);
+  const isCompleted = expedition?.status === 'completed';
+  const isCancelled = expedition?.status === 'cancelled';
+  const isExpeditionLocked = isCompleted || isCancelled;
+  const canEditNotes = isOwner && !isExpeditionLocked;
 
   // Update location modal
   const [locationModalVisible, setLocationModalVisible] = useState(false);
@@ -757,7 +761,7 @@ export default function ExpeditionDetailScreen() {
             {/* Current location */}
             <Pressable
               style={styles.currentLocRow}
-              onPress={isOwner ? openLocationModal : undefined}
+              onPress={isOwner && !isExpeditionLocked ? openLocationModal : undefined}
             >
               <View style={styles.currentLocLeft}>
                 <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth={3}>
@@ -800,7 +804,7 @@ export default function ExpeditionDetailScreen() {
           >
             <Text style={[styles.actionText, { color: brandColors.copper }]}>{isOwner ? 'LOG ENTRY' : 'SPONSOR'}</Text>
           </Pressable>
-          {isOwner && (
+          {isOwner && !isCancelled && (
             <Pressable style={styles.iconBtn} onPress={() => router.push(`/expedition/edit/${id}`)}>
               <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
                 <Path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
@@ -899,7 +903,7 @@ export default function ExpeditionDetailScreen() {
                       {notes.length} {notes.length === 1 ? 'NOTE' : 'NOTES'} LOGGED • SPONSOR EXCLUSIVE
                     </Text>
                   </View>
-                  {isOwner && dailyLimit.used < dailyLimit.max && (
+                  {canEditNotes && dailyLimit.used < dailyLimit.max && (
                     <TouchableOpacity
                       style={styles.logNoteBtn}
                       onPress={() => setShowNoteForm(!showNoteForm)}
@@ -969,7 +973,7 @@ export default function ExpeditionDetailScreen() {
                       </View>
 
                       {/* Owner actions */}
-                      {isOwner && editingNoteId !== note.id && (
+                      {canEditNotes && editingNoteId !== note.id && (
                         <View style={styles.noteActions}>
                           <TouchableOpacity onPress={() => { setEditingNoteId(note.id); setEditNoteText(note.text); }}>
                             <Text style={[styles.noteActionText, { color: brandColors.blue }]}>EDIT</Text>
@@ -1014,7 +1018,7 @@ export default function ExpeditionDetailScreen() {
                       )}
 
                       {/* Respond button */}
-                      {isAuthenticated && !notesLocked && editingNoteId !== note.id && (
+                      {isAuthenticated && !notesLocked && !isCancelled && editingNoteId !== note.id && (
                         <TouchableOpacity
                           style={styles.noteRespondBtn}
                           onPress={() => { setReplyingTo(replyingTo === note.id ? null : note.id); setReplyText(''); }}
@@ -1062,8 +1066,8 @@ export default function ExpeditionDetailScreen() {
                           </Text>
                           {note.replies.map((reply) => {
                             const isReplyAuthor = user?.username === reply.authorId;
-                            const canEditReply = isReplyAuthor;
-                            const canDeleteReply = isReplyAuthor || isOwner;
+                            const canEditReply = isReplyAuthor && !isExpeditionLocked;
+                            const canDeleteReply = (isReplyAuthor || isOwner) && !isExpeditionLocked;
 
                             return (
                             <View key={reply.id} style={styles.replyRow}>

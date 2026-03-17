@@ -1306,6 +1306,16 @@ export class ExpeditionService {
         },
       });
 
+      // Status-based edit restrictions
+      const isCancelled = expedition.status === 'cancelled';
+      const isCompleted = expedition.status === 'completed';
+
+      if (isCancelled) {
+        throw new ServiceForbiddenException(
+          'Cancelled expeditions cannot be edited',
+        );
+      }
+
       // update the expedition
       const {
         title,
@@ -1323,6 +1333,25 @@ export class ExpeditionService {
         routeMode,
         routeGeometry,
       } = payload as any;
+
+      // Completed expeditions: only allow title, description, and cover image edits
+      if (isCompleted) {
+        const blockedFields = {
+          startDate, endDate, goal, category, region, tags,
+          isRoundTrip, routeMode, routeGeometry,
+          visibility: (payload as any).visibility,
+          notesAccessThreshold: (payload as any).notesAccessThreshold,
+          notesVisibility: (payload as any).notesVisibility,
+        };
+        const hasBlockedField = Object.entries(blockedFields).some(
+          ([, v]) => v !== undefined,
+        );
+        if (hasBlockedField) {
+          throw new ServiceForbiddenException(
+            'Completed expeditions can only update title, description, and cover image',
+          );
+        }
+      }
       const updateData: any = { title };
       if ((payload as any).visibility !== undefined) {
         const vis = (payload as any).visibility;
@@ -1738,6 +1767,15 @@ export class ExpeditionService {
           throw new ServiceNotFoundException('expedition not found');
         });
 
+      if (
+        expedition.status === 'completed' ||
+        expedition.status === 'cancelled'
+      ) {
+        throw new ServiceForbiddenException(
+          'Location cannot be updated on completed or cancelled expeditions',
+        );
+      }
+
       const { source, locationId, visibility } = payload;
 
       // Validate visibility if provided
@@ -1855,11 +1893,20 @@ export class ExpeditionService {
             author_id: explorerId,
             deleted_at: null,
           },
-          select: { id: true },
+          select: { id: true, status: true },
         })
         .catch(() => {
           throw new ServiceNotFoundException('expedition not found');
         });
+
+      if (
+        expedition.status === 'completed' ||
+        expedition.status === 'cancelled'
+      ) {
+        throw new ServiceForbiddenException(
+          'Waypoints cannot be modified on completed or cancelled expeditions',
+        );
+      }
 
       // create a waypoint
       const { title, lat, lon, date, description, sequence } = payload;
@@ -1917,18 +1964,27 @@ export class ExpeditionService {
       // get the expedition (must be owned by this user)
       if (!expeditionId)
         throw new ServiceNotFoundException('expedition not found');
-      await this.prisma.expedition
+      const expedition = await this.prisma.expedition
         .findFirstOrThrow({
           where: {
             public_id: expeditionId,
             author_id: explorerId,
             deleted_at: null,
           },
-          select: { id: true },
+          select: { id: true, status: true },
         })
         .catch(() => {
           throw new ServiceNotFoundException('expedition not found');
         });
+
+      if (
+        expedition.status === 'completed' ||
+        expedition.status === 'cancelled'
+      ) {
+        throw new ServiceForbiddenException(
+          'Waypoints cannot be modified on completed or cancelled expeditions',
+        );
+      }
 
       // get the waypoint
       if (!waypointId) throw new ServiceNotFoundException('waypoint not found');
@@ -2007,11 +2063,20 @@ export class ExpeditionService {
             author_id: explorerId,
             deleted_at: null,
           },
-          select: { id: true },
+          select: { id: true, status: true },
         })
         .catch(() => {
           throw new ServiceNotFoundException('expedition not found');
         });
+
+      if (
+        expedition.status === 'completed' ||
+        expedition.status === 'cancelled'
+      ) {
+        throw new ServiceForbiddenException(
+          'Waypoints cannot be modified on completed or cancelled expeditions',
+        );
+      }
 
       // get the waypoint
       if (!waypointId) throw new ServiceNotFoundException('waypoint not found');
@@ -2336,11 +2401,20 @@ export class ExpeditionService {
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
           where: { public_id: id, author_id: explorerId, deleted_at: null },
-          select: { id: true },
+          select: { id: true, status: true },
         })
         .catch(() => {
           throw new ServiceNotFoundException('expedition not found');
         });
+
+      if (
+        expedition.status === 'completed' ||
+        expedition.status === 'cancelled'
+      ) {
+        throw new ServiceForbiddenException(
+          'Waypoints cannot be modified on completed or cancelled expeditions',
+        );
+      }
 
       await this.prisma.$transaction(async (tx) => {
         // Delete existing waypoint joins and orphaned waypoints

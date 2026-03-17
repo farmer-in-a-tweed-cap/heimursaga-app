@@ -265,10 +265,13 @@ export class ExpeditionNoteService {
         );
       }
 
-      // Block note creation for cancelled expeditions
-      if (expedition.status === 'cancelled') {
+      // Block note creation for completed or cancelled expeditions
+      if (
+        expedition.status === 'completed' ||
+        expedition.status === 'cancelled'
+      ) {
         throw new ServiceForbiddenException(
-          'Cannot create notes for a cancelled expedition',
+          'Cannot create notes for a completed or cancelled expedition',
         );
       }
 
@@ -368,6 +371,7 @@ export class ExpeditionNoteService {
           id: true,
           public_id: true,
           author_id: true,
+          status: true,
           visibility: true,
           notes_access_threshold: true,
           notes_visibility: true,
@@ -376,6 +380,12 @@ export class ExpeditionNoteService {
 
       if (!expedition)
         throw new ServiceNotFoundException('expedition not found');
+
+      if (expedition.status === 'cancelled') {
+        throw new ServiceForbiddenException(
+          'Cannot reply to notes on a cancelled expedition',
+        );
+      }
 
       // Private expeditions have notes completely disabled
       if (expedition.visibility === 'private') {
@@ -482,11 +492,20 @@ export class ExpeditionNoteService {
       // Get the expedition
       const expedition = await this.prisma.expedition.findFirst({
         where: { public_id: expeditionId, deleted_at: null },
-        select: { id: true, author_id: true },
+        select: { id: true, author_id: true, status: true },
       });
 
       if (!expedition)
         throw new ServiceNotFoundException('expedition not found');
+
+      if (
+        expedition.status === 'completed' ||
+        expedition.status === 'cancelled'
+      ) {
+        throw new ServiceForbiddenException(
+          'Notes cannot be modified on completed or cancelled expeditions',
+        );
+      }
 
       // Only owner can delete notes
       if (explorerId !== expedition.author_id) {
@@ -527,11 +546,20 @@ export class ExpeditionNoteService {
 
       const expedition = await this.prisma.expedition.findFirst({
         where: { public_id: expeditionId, deleted_at: null },
-        select: { id: true, author_id: true },
+        select: { id: true, author_id: true, status: true },
       });
 
       if (!expedition)
         throw new ServiceNotFoundException('expedition not found');
+
+      if (
+        expedition.status === 'completed' ||
+        expedition.status === 'cancelled'
+      ) {
+        throw new ServiceForbiddenException(
+          'Notes cannot be modified on completed or cancelled expeditions',
+        );
+      }
 
       if (explorerId !== expedition.author_id) {
         throw new ServiceForbiddenException(

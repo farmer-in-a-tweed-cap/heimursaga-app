@@ -232,7 +232,7 @@ export function ExpeditionManagementModal({
 
           {/* Status Change Options */}
           <div className="space-y-4">
-            {/* Edit Details & Waypoints - Always available for non-cancelled */}
+            {/* Edit Details & Waypoints - Available for non-cancelled */}
             {!isCancelled && (
               <div className="border-2 border-[#ac6d46] p-4">
                 <div className="flex items-start gap-3 mb-4">
@@ -242,7 +242,9 @@ export function ExpeditionManagementModal({
                       EDIT EXPEDITION DETAILS
                     </h4>
                     <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
-                      Modify expedition details, dates, description, waypoints, and route planning. Changes will be reflected immediately across all journal views.
+                      {isCompleted
+                        ? 'Update title, description, and cover image. Dates, waypoints, route, and sponsorship settings are locked for completed expeditions.'
+                        : 'Modify expedition details, dates, description, waypoints, and route planning. Changes will be reflected immediately across all journal views.'}
                     </p>
                   </div>
                 </div>
@@ -250,7 +252,7 @@ export function ExpeditionManagementModal({
                   onClick={() => router.push(`/expedition-builder/${expedition.id}`)}
                   className="w-full px-4 py-3 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-2"
                 >
-                  EDIT DETAILS & WAYPOINTS
+                  {isCompleted ? 'EDIT TITLE & DESCRIPTION' : 'EDIT DETAILS & WAYPOINTS'}
                 </button>
               </div>
             )}

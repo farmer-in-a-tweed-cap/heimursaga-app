@@ -621,7 +621,7 @@ export class ExplorerService {
               OR: [
                 { expedition_id: null, visibility: 'public' },
                 {
-                  expedition: { visibility: 'public' },
+                  expedition: { visibility: 'public', status: { not: 'cancelled' } },
                   NOT: { visibility: 'private' },
                 },
               ],
@@ -858,7 +858,7 @@ export class ExplorerService {
                 OR: [
                   { expedition_id: null, visibility: 'public' },
                   {
-                    expedition: { visibility: 'public' },
+                    expedition: { visibility: 'public', status: { not: 'cancelled' } },
                     NOT: { visibility: 'private' },
                   },
                 ],
@@ -1483,7 +1483,7 @@ export class SessionExplorerService {
               { author: { id: explorerId } },
               { expedition_id: null, visibility: 'public' },
               {
-                expedition: { visibility: 'public' },
+                expedition: { visibility: 'public', status: { not: 'cancelled' } },
                 NOT: { visibility: 'private' },
               },
             ],

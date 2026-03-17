@@ -1,10 +1,9 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert, Modal, Image, KeyboardAvoidingView, Platform,
+  ActivityIndicator, Alert, Modal, Image, Platform, Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
@@ -15,6 +14,7 @@ import { HButton } from '@/components/ui/HButton';
 import { HCard } from '@/components/ui/HCard';
 import { RadioOption } from '@/components/ui/RadioOption';
 import { ImagePlaceholder } from '@/components/ui/ImagePlaceholder';
+import { CalendarPicker, fmtDateDisplay, todayISO } from '@/components/ui/CalendarPicker';
 import HeimuMap, { WaypointMarker, HeimuMapRef, clusterMarkers } from '@/components/map/HeimuMap';
 import { Svg, Path, Circle } from 'react-native-svg';
 import { expeditionApi, uploadApi } from '@/services/api';
@@ -56,17 +56,27 @@ interface WaypointEntry {
   lat?: number;
 }
 
-export default function ExpeditionBuilderScreen() {
+interface ExpeditionBuilderProps {
+  editExpeditionId?: string;
+}
+
+export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) {
+  const isEditMode = !!editExpeditionId;
   const { dark, colors } = useTheme();
   const router = useRouter();
-  const { ready } = useRequireAuth();
+  const { ready, user } = useRequireAuth();
 
-  // Check for existing active/planned expeditions
+  // ── Edit mode state ──
+  const [editLoading, setEditLoading] = useState(isEditMode);
+  const [editExpedition, setEditExpedition] = useState<Expedition | null>(null);
+  const [originalVisibility, setOriginalVisibility] = useState<string | null>(null);
+
+  // Check for existing active/planned expeditions (skip in edit mode)
   const { data: userTripsData, loading: tripsLoading } = useApi<{ data: Expedition[] }>(
-    ready ? '/user/trips' : null,
+    ready && !isEditMode ? '/user/trips' : null,
   );
   const userExpeditions = userTripsData?.data ?? [];
-  const blockingExpedition = userExpeditions.find(e => e.status === 'active' || e.status === 'planned');
+  const blockingExpedition = !isEditMode ? userExpeditions.find(e => e.status === 'active' || e.status === 'planned') : undefined;
 
   const handleCompleteExpedition = useCallback(async (exp: Expedition) => {
     Alert.alert(
@@ -89,7 +99,11 @@ export default function ExpeditionBuilderScreen() {
     );
   }, [router]);
 
-  const [step, setStep] = useState(0);
+  const [step, setStepRaw] = useState(0);
+  const setStep = useCallback((s: number | ((prev: number) => number)) => {
+    Keyboard.dismiss();
+    setStepRaw(s);
+  }, []);
   const [submitting, setSubmitting] = useState(false);
 
   // Step 1 state
@@ -97,10 +111,9 @@ export default function ExpeditionBuilderScreen() {
   const [description, setDescription] = useState('');
   const [selectedCat, setSelectedCat] = useState('');
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [startDateStr, setStartDateStr] = useState('');
+  const [endDateStr, setEndDateStr] = useState('');
+  const [datePicker, setDatePicker] = useState<'start' | 'end' | null>(null);
   const [visibility, setVisibility] = useState(0);
   const [coverImageUri, setCoverImageUri] = useState<string | null>(null);
   const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
@@ -133,6 +146,74 @@ export default function ExpeditionBuilderScreen() {
   // Step 3 state
   const [fundingEnabled, setFundingEnabled] = useState(false);
   const [fundingGoal, setFundingGoal] = useState('');
+  const [notesVisibility, setNotesVisibility] = useState<'public' | 'sponsor'>('public');
+  const [notesAccessThreshold, setNotesAccessThreshold] = useState('');
+
+  // ── Load expedition data in edit mode ──
+  useEffect(() => {
+    if (!isEditMode || !ready || !editExpeditionId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await expeditionApi.getExpedition(editExpeditionId);
+        const exp = (res as any)?.data ?? res;
+        if (cancelled) return;
+        setEditExpedition(exp);
+
+        // Pre-populate form state
+        setName(exp.title || '');
+        setDescription(exp.description || '');
+        if (exp.category) setSelectedCat(exp.category);
+        if (exp.region) {
+          setSelectedRegions(exp.region.split(',').map((r: string) => r.trim()).filter(Boolean));
+        }
+        if (exp.startDate) setStartDateStr(exp.startDate.split('T')[0]);
+        if (exp.endDate) setEndDateStr(exp.endDate.split('T')[0]);
+        if (exp.visibility) {
+          const visIdx = VISIBILITY_OPTIONS.findIndex(v => v.label.toLowerCase() === exp.visibility);
+          if (visIdx >= 0) setVisibility(visIdx);
+          setOriginalVisibility(exp.visibility);
+        }
+        if (exp.coverImage) {
+          setCoverImageUri(exp.coverImage);
+          setCoverImageUrl(exp.coverImage);
+        }
+        if (exp.goal && exp.goal > 0) {
+          setFundingEnabled(true);
+          setFundingGoal(String(exp.goal));
+        }
+        if (exp.notesVisibility) setNotesVisibility(exp.notesVisibility);
+        if (exp.notesAccessThreshold) setNotesAccessThreshold(String(exp.notesAccessThreshold));
+        if (exp.isRoundTrip) setIsRoundTrip(true);
+        if (exp.routeMode && exp.routeMode !== 'straight') setRouteMode(exp.routeMode as RouteMode);
+
+        // Map API waypoints to builder format
+        if (exp.waypoints && exp.waypoints.length > 0) {
+          const sorted = [...exp.waypoints].sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+          const mapped: WaypointEntry[] = sorted.map((wp, i) => {
+            const lat = wp.lat ?? wp.latitude;
+            const lon = wp.lon ?? wp.longitude;
+            const isFirst = i === 0;
+            const isLast = i === sorted.length - 1 && sorted.length > 1;
+            return {
+              name: wp.title || wp.name || `Waypoint ${i + 1}`,
+              type: isFirst ? 'origin' : isLast ? 'destination' : 'waypoint',
+              coords: lat != null && lon != null ? `${lon},${lat}` : undefined,
+              lng: lon ?? undefined,
+              lat: lat ?? undefined,
+            };
+          });
+          setWaypoints(mapped);
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to load expedition';
+        Alert.alert('Error', msg, [{ text: 'OK', onPress: () => router.back() }]);
+      } finally {
+        if (!cancelled) setEditLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isEditMode, ready, editExpeditionId]);
 
   const updateWaypoint = useCallback((index: number, updates: Partial<WaypointEntry>) => {
     setWaypoints((prev) => prev.map((wp, i) => i === index ? { ...wp, ...updates } : wp));
@@ -449,36 +530,17 @@ export default function ExpeditionBuilderScreen() {
     clearRouteSearchCache();
   }, [waypoints, routeMode, isRoundTrip]);
 
-  const formatDate = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const today = useMemo(() => todayISO(), []);
 
-  const formatDateDisplay = (d: Date) =>
-    d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
-  const computeStatus = useCallback((): 'planned' | 'active' | 'completed' => {
-    const today = formatDate(new Date());
-    if (!startDate) return 'planned';
-    const start = formatDate(startDate);
-    if (endDate && formatDate(endDate) <= today) return 'completed';
-    if (start > today) return 'planned';
+  const derivedStatus: 'planned' | 'active' | 'completed' = useMemo(() => {
+    if (isEditMode && editExpedition?.status) {
+      return editExpedition.status as 'planned' | 'active' | 'completed';
+    }
+    if (!startDateStr) return 'planned';
+    if (endDateStr && endDateStr <= today) return 'completed';
+    if (startDateStr > today) return 'planned';
     return 'active';
-  }, [startDate, endDate]);
-
-  const derivedStatus = computeStatus();
-
-  const handleStartDateChange = useCallback((_: any, selected?: Date) => {
-    if (Platform.OS === 'android') setShowStartPicker(false);
-    if (!selected) return;
-    setStartDate(selected);
-    if (endDate && selected > endDate) setEndDate(null);
-  }, [endDate]);
-
-  const handleEndDateChange = useCallback((_: any, selected?: Date) => {
-    if (Platform.OS === 'android') setShowEndPicker(false);
-    if (!selected) return;
-    if (startDate && selected < startDate) return;
-    setEndDate(selected);
-  }, [startDate]);
+  }, [isEditMode, editExpedition, startDateStr, endDateStr, today]);
 
   const handlePickCoverImage = useCallback(async () => {
     if (!ImagePicker) {
@@ -487,27 +549,148 @@ export default function ExpeditionBuilderScreen() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [16, 9],
       quality: 0.8,
     });
     if (result.canceled || !result.assets?.[0]) return;
     const uri = result.assets[0].uri;
+
     setCoverImageUri(uri);
     setCoverUploading(true);
     try {
-      const uploadResult = await uploadApi.upload(uri);
+      const uploadResult = await uploadApi.upload(uri, 'image/jpeg');
       setCoverImageUrl(uploadResult.original);
-    } catch {
-      Alert.alert('Upload failed', 'Could not upload cover image. Please try again.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Could not upload cover image.';
+      Alert.alert('Upload failed', msg);
       setCoverImageUri(null);
     } finally {
       setCoverUploading(false);
     }
   }, []);
 
+  // ── Edit mode: save changes ──
+  const handleSaveEdit = useCallback(async () => {
+    if (!name.trim()) {
+      Alert.alert('Name required', 'Please name your expedition.');
+      return;
+    }
+    if (fundingEnabled) {
+      const goalNum = parseFloat((fundingGoal || '0').replace(/,/g, ''));
+      if (!goalNum || goalNum < 1) {
+        Alert.alert('Funding goal required', 'Please set a funding goal of at least $1.');
+        return;
+      }
+    }
+    if (notesVisibility === 'sponsor') {
+      const threshold = Number(notesAccessThreshold);
+      if (!threshold || threshold < 1) {
+        Alert.alert('Threshold required', 'Sponsor-exclusive notes require an access threshold of at least $1.');
+        return;
+      }
+    }
+    setSubmitting(true);
+    try {
+      const fullPayload = {
+        title: name.trim(),
+        description: description.trim() || undefined,
+        endDate: endDateStr || undefined,
+        visibility: VISIBILITY_OPTIONS[visibility].label.toLowerCase() as Expedition['visibility'],
+        goal: fundingEnabled && fundingGoal && !isNaN(parseFloat(fundingGoal.replace(/,/g, ''))) ? parseFloat(fundingGoal.replace(/,/g, '')) : 0,
+        notesVisibility,
+        notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
+        coverImage: coverImageUrl || undefined,
+        isRoundTrip,
+        routeMode: routeMode !== 'straight' ? routeMode : undefined,
+        routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
+      } as Partial<Expedition>;
+
+      // Completed expeditions can only update title, description, and cover image
+      const payload = isCompletedExpedition
+        ? { title: fullPayload.title, description: fullPayload.description, coverImage: fullPayload.coverImage }
+        : fullPayload;
+
+      await expeditionApi.updateExpedition(editExpeditionId!, payload as Partial<Expedition>);
+
+      // Sync waypoints (skip for completed expeditions)
+      if (!isCompletedExpedition) {
+        const validWps = waypoints.filter(wp => wp.lng != null && wp.lat != null);
+        await expeditionApi.syncWaypoints(editExpeditionId!, validWps.map((wp, i) => ({
+          title: wp.name,
+          lat: wp.lat!,
+          lon: wp.lng!,
+          sequence: i,
+        })));
+      }
+
+      Alert.alert('Saved', 'Expedition updated successfully.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update expedition';
+      Alert.alert('Error', msg);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [editExpeditionId, name, description, endDateStr, visibility, fundingEnabled, fundingGoal, notesVisibility, notesAccessThreshold, waypoints, router, coverImageUrl, isRoundTrip, routeMode, directionsGeometry]);
+
+  // ── Edit mode: delete expedition ──
+  const handleDeleteExpedition = useCallback(() => {
+    if (!editExpeditionId) return;
+    const hasEntries = (editExpedition?.entriesCount ?? 0) > 0;
+    if (hasEntries) return;
+
+    Alert.alert(
+      'Delete Expedition',
+      'Are you sure you want to permanently delete this expedition? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await expeditionApi.deleteExpedition(editExpeditionId);
+              Alert.alert('Deleted', 'Expedition has been deleted.', [
+                { text: 'OK', onPress: () => router.replace('/(tabs)') },
+              ]);
+            } catch (err) {
+              const msg = err instanceof Error ? err.message : 'Failed to delete expedition';
+              Alert.alert('Error', msg);
+            }
+          },
+        },
+      ],
+    );
+  }, [editExpeditionId, editExpedition, router]);
+
   const handleLaunch = useCallback(async (isDraft: boolean) => {
     if (!name.trim()) {
       Alert.alert('Name required', 'Please name your expedition.');
       return;
+    }
+    if (fundingEnabled) {
+      const goalNum = parseFloat((fundingGoal || '0').replace(/,/g, ''));
+      if (!goalNum || goalNum < 1) {
+        Alert.alert('Funding goal required', 'Please set a funding goal of at least $1.');
+        return;
+      }
+      if (goalNum > 999999.99) {
+        Alert.alert('Funding goal too high', 'Funding goal cannot exceed $999,999.99.');
+        return;
+      }
+    }
+    if (notesVisibility === 'sponsor') {
+      const threshold = Number(notesAccessThreshold);
+      if (!threshold || threshold < 1) {
+        Alert.alert('Threshold required', 'Sponsor-exclusive notes require an access threshold of at least $1.');
+        return;
+      }
+      if (threshold > 999999.99) {
+        Alert.alert('Threshold too high', 'Notes access threshold cannot exceed $999,999.99.');
+        return;
+      }
     }
     setSubmitting(true);
     try {
@@ -516,16 +699,20 @@ export default function ExpeditionBuilderScreen() {
         description: description.trim() || undefined,
         category: selectedCat || undefined,
         region: selectedRegions.length > 0 ? selectedRegions.join(', ') : undefined,
-        startDate: startDate ? formatDate(startDate) : undefined,
-        endDate: endDate ? formatDate(endDate) : undefined,
+        startDate: startDateStr || undefined,
+        endDate: endDateStr || undefined,
         visibility: VISIBILITY_OPTIONS[visibility].label.toLowerCase(),
-        funding_goal: fundingEnabled && fundingGoal && !isNaN(parseFloat(fundingGoal.replace(/,/g, ''))) ? Math.round(parseFloat(fundingGoal.replace(/,/g, '')) * 100) : undefined,
+        goal: fundingEnabled && fundingGoal && !isNaN(parseFloat(fundingGoal.replace(/,/g, ''))) ? parseFloat(fundingGoal.replace(/,/g, '')) : undefined,
+        notesVisibility,
+        notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
         status: isDraft ? 'planned' : derivedStatus,
         coverImage: coverImageUrl || undefined,
+        routeMode: routeMode !== 'straight' ? routeMode : undefined,
+        routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
       });
 
       // Save waypoints to the newly created expedition
-      const tripId = (res as any)?.data?.id ?? (res as any)?.id;
+      const tripId = (res as any)?.data?.expeditionId ?? (res as any)?.expeditionId ?? (res as any)?.data?.id;
       if (tripId) {
         const validWps = waypoints.filter(wp => wp.lng != null && wp.lat != null);
         await Promise.all(validWps.map((wp, i) =>
@@ -549,18 +736,27 @@ export default function ExpeditionBuilderScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [name, description, selectedCat, selectedRegions, startDate, endDate, visibility, fundingEnabled, fundingGoal, waypoints, router, coverImageUrl]);
+  }, [name, description, selectedCat, selectedRegions, startDateStr, endDateStr, visibility, fundingEnabled, fundingGoal, waypoints, router, coverImageUrl, derivedStatus, routeMode, directionsGeometry]);
 
-  if (!ready || tripsLoading) {
+  // Locked field helpers for edit mode
+  const isCompletedExpedition = isEditMode && editExpedition?.status === 'completed';
+  const isStartDateLocked = isEditMode;
+  const isCategoryLocked = isEditMode;
+  const isRegionLocked = isEditMode;
+  const isVisibilityPrivateLocked = isEditMode && originalVisibility === 'private';
+  const isVisibilityPrivateDisabled = isEditMode && originalVisibility !== 'private';
+  const isSponsorshipLocked = isEditMode && editExpedition?.status === 'completed';
+
+  if (!ready || (!isEditMode && tripsLoading) || editLoading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <NavBar onBack={() => router.back()} title="NEW EXPEDITION" />
+        <NavBar onBack={() => router.back()} title={isEditMode ? 'EDIT EXPEDITION' : 'NEW EXPEDITION'} />
         <ActivityIndicator color={brandColors.copper} style={styles.loader} />
       </View>
     );
   }
 
-  if (blockingExpedition) {
+  if (!isEditMode && blockingExpedition) {
     const isActive = blockingExpedition.status === 'active';
     const endDatePassed = blockingExpedition.endDate && new Date(blockingExpedition.endDate) < new Date();
     return (
@@ -608,8 +804,8 @@ export default function ExpeditionBuilderScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <NavBar
-        onBack={() => (step > 0 ? setStep(step - 1) : router.back())}
-        title="NEW EXPEDITION"
+        onBack={() => (step > 0 ? setStep(isCompletedExpedition && step === 3 ? 0 : step - 1) : router.back())}
+        title={isEditMode ? 'EDIT EXPEDITION' : 'NEW EXPEDITION'}
         right={
           <Text style={styles.stepCounter}>{step + 1}/{STEPS.length}</Text>
         }
@@ -1071,16 +1267,26 @@ export default function ExpeditionBuilderScreen() {
         </View>
       )}
 
-      <KeyboardAvoidingView
-        style={[styles.flex1, step === 1 && { display: 'none' }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <ScrollView
+        style={[styles.scroll, step === 1 && { display: 'none' }]}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        contentContainerStyle={styles.scrollContent}
+        onScrollBeginDrag={() => Keyboard.dismiss()}
       >
-      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.form}>
 
           {/* STEP 1: DETAILS */}
           {step === 0 && (
             <>
+              {isCompletedExpedition && (
+                <View style={[styles.infoBanner, { backgroundColor: brandColors.blue + '18', borderColor: brandColors.blue }]}>
+                  <Text style={[styles.infoBannerText, { color: brandColors.blue }]}>
+                    This expedition is completed. Only the title, description, and cover image can be edited.
+                  </Text>
+                </View>
+              )}
+
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>EXPEDITION DETAILS</Text>
                 <View style={[styles.sectionLine, { backgroundColor: colors.border }]} />
@@ -1135,8 +1341,8 @@ export default function ExpeditionBuilderScreen() {
                   </View>
 
                   {/* Category chips */}
-                  <View style={styles.fieldGroup}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>CATEGORY</Text>
+                  <View style={[styles.fieldGroup, isCategoryLocked && { opacity: 0.4 }]}>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>CATEGORY{isCategoryLocked ? ' (LOCKED)' : ''}</Text>
                     <View style={styles.chipGrid}>
                       {EXPEDITION_CATEGORIES.map((cat) => (
                         <TouchableOpacity
@@ -1148,7 +1354,8 @@ export default function ExpeditionBuilderScreen() {
                               borderColor: selectedCat === cat ? brandColors.copper : colors.border,
                             },
                           ]}
-                          onPress={() => setSelectedCat(selectedCat === cat ? '' : cat)}
+                          onPress={isCategoryLocked ? undefined : () => setSelectedCat(selectedCat === cat ? '' : cat)}
+                          activeOpacity={isCategoryLocked ? 1 : 0.7}
                         >
                           <Text style={[styles.chipText, { color: selectedCat === cat ? '#fff' : colors.textTertiary }]}>
                             {cat.toUpperCase()}
@@ -1159,8 +1366,8 @@ export default function ExpeditionBuilderScreen() {
                   </View>
 
                   {/* Region chips – grouped by macro-region */}
-                  <View style={styles.fieldGroup}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>REGION</Text>
+                  <View style={[styles.fieldGroup, isRegionLocked && { opacity: 0.4 }]}>
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>REGION{isRegionLocked ? ' (LOCKED)' : ''}</Text>
                     {GEO_REGION_GROUPS.map((group) => (
                       <View key={group.label} style={styles.regionGroup}>
                         <Text style={[styles.regionGroupLabel, { color: colors.textTertiary }]}>
@@ -1179,11 +1386,12 @@ export default function ExpeditionBuilderScreen() {
                                     borderColor: selected ? brandColors.blue : colors.border,
                                   },
                                 ]}
-                                onPress={() =>
+                                onPress={isRegionLocked ? undefined : () =>
                                   setSelectedRegions((prev) =>
                                     selected ? prev.filter((v) => v !== r) : [...prev, r],
                                   )
                                 }
+                                activeOpacity={isRegionLocked ? 1 : 0.7}
                               >
                                 <Text style={[styles.chipText, { color: selected ? '#fff' : colors.textTertiary }]}>
                                   {r.toUpperCase()}
@@ -1199,75 +1407,41 @@ export default function ExpeditionBuilderScreen() {
                   {/* Dates */}
                   <View style={styles.fieldGroup}>
                     <View style={styles.dateRow}>
-                      <View style={styles.dateField}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>START DATE</Text>
+                      <View style={[styles.dateField, isStartDateLocked && { opacity: 0.4 }]}>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>START DATE{isStartDateLocked ? ' (LOCKED)' : ''}</Text>
                         <TouchableOpacity
                           style={[styles.dateButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
-                          onPress={() => setShowStartPicker(true)}
+                          onPress={isStartDateLocked ? undefined : () => setDatePicker('start')}
+                          activeOpacity={isStartDateLocked ? 1 : 0.7}
                         >
-                          <Text style={[styles.dateButtonText, { color: startDate ? colors.text : colors.textTertiary }]}>
-                            {startDate ? formatDateDisplay(startDate) : 'Select date'}
+                          <Text style={[styles.dateButtonText, { color: startDateStr ? colors.text : colors.textTertiary }]}>
+                            {startDateStr ? fmtDateDisplay(startDateStr) : 'Select date'}
                           </Text>
                         </TouchableOpacity>
-                        {startDate && (
-                          <TouchableOpacity onPress={() => setStartDate(null)} style={styles.dateClear}>
+                        {!!startDateStr && !isStartDateLocked && (
+                          <TouchableOpacity onPress={() => setStartDateStr('')} style={styles.dateClear}>
                             <Text style={[styles.dateClearText, { color: colors.textTertiary }]}>Clear</Text>
                           </TouchableOpacity>
                         )}
                       </View>
-                      <View style={styles.dateField}>
-                        <Text style={[styles.label, { color: colors.textSecondary }]}>END DATE</Text>
+                      <View style={[styles.dateField, isCompletedExpedition && { opacity: 0.4 }]}>
+                        <Text style={[styles.label, { color: colors.textSecondary }]}>END DATE{isCompletedExpedition ? ' (LOCKED)' : ''}</Text>
                         <TouchableOpacity
                           style={[styles.dateButton, { backgroundColor: colors.inputBackground, borderColor: colors.border }]}
-                          onPress={() => setShowEndPicker(true)}
+                          onPress={isCompletedExpedition ? undefined : () => setDatePicker('end')}
+                          activeOpacity={isCompletedExpedition ? 1 : 0.7}
                         >
-                          <Text style={[styles.dateButtonText, { color: endDate ? colors.text : colors.textTertiary }]}>
-                            {endDate ? formatDateDisplay(endDate) : 'Optional'}
+                          <Text style={[styles.dateButtonText, { color: endDateStr ? colors.text : colors.textTertiary }]}>
+                            {endDateStr ? fmtDateDisplay(endDateStr) : 'Optional'}
                           </Text>
                         </TouchableOpacity>
-                        {endDate && (
-                          <TouchableOpacity onPress={() => setEndDate(null)} style={styles.dateClear}>
+                        {!!endDateStr && (
+                          <TouchableOpacity onPress={() => setEndDateStr('')} style={styles.dateClear}>
                             <Text style={[styles.dateClearText, { color: colors.textTertiary }]}>Clear</Text>
                           </TouchableOpacity>
                         )}
                       </View>
                     </View>
-
-                    {showStartPicker && (
-                      <View style={styles.pickerWrap}>
-                        <DateTimePicker
-                          value={startDate ?? new Date()}
-                          mode="date"
-                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                          onChange={handleStartDateChange}
-                          maximumDate={endDate ?? undefined}
-                          themeVariant={dark ? 'dark' : 'light'}
-                        />
-                        {Platform.OS === 'ios' && (
-                          <TouchableOpacity style={styles.dateConfirm} onPress={() => setShowStartPicker(false)}>
-                            <Text style={styles.dateConfirmText}>DONE</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    )}
-
-                    {showEndPicker && (
-                      <View style={styles.pickerWrap}>
-                        <DateTimePicker
-                          value={endDate ?? new Date()}
-                          mode="date"
-                          display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                          onChange={handleEndDateChange}
-                          minimumDate={startDate ?? undefined}
-                          themeVariant={dark ? 'dark' : 'light'}
-                        />
-                        {Platform.OS === 'ios' && (
-                          <TouchableOpacity style={styles.dateConfirm} onPress={() => setShowEndPicker(false)}>
-                            <Text style={styles.dateConfirmText}>DONE</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    )}
 
                     {/* Derived status */}
                     <View style={[styles.statusIndicator, {
@@ -1278,7 +1452,7 @@ export default function ExpeditionBuilderScreen() {
                       <Text style={styles.statusText}>
                         {derivedStatus === 'active' ? 'ACTIVE — expedition is underway'
                           : derivedStatus === 'completed' ? 'COMPLETED — end date has passed'
-                          : !startDate ? 'PLANNED — no start date set'
+                          : !startDateStr ? 'PLANNED — no start date set'
                           : 'PLANNED — start date is in the future'}
                       </Text>
                     </View>
@@ -1286,22 +1460,43 @@ export default function ExpeditionBuilderScreen() {
 
                   {/* Visibility */}
                   <View style={styles.fieldGroup}>
-                    <Text style={[styles.label, { color: colors.textSecondary }]}>VISIBILITY</Text>
-                    {VISIBILITY_OPTIONS.map((opt, i) => (
-                      <RadioOption
-                        key={opt.label}
-                        label={opt.label}
-                        description={opt.desc}
-                        selected={visibility === i}
-                        onSelect={() => setVisibility(i)}
-                      />
-                    ))}
+                    <Text style={[styles.label, { color: colors.textSecondary }]}>
+                      VISIBILITY{isVisibilityPrivateLocked ? ' (LOCKED)' : ''}
+                    </Text>
+                    {VISIBILITY_OPTIONS.map((opt, i) => {
+                      const isPrivateOpt = opt.label === 'PRIVATE';
+                      // In edit: if original was private, all locked; if original was public/off-grid, private is disabled
+                      const optDisabled = isCompletedExpedition || isVisibilityPrivateLocked || (isPrivateOpt && isVisibilityPrivateDisabled);
+                      return (
+                        <RadioOption
+                          key={opt.label}
+                          label={opt.label}
+                          description={opt.desc}
+                          selected={visibility === i}
+                          onSelect={() => setVisibility(i)}
+                          disabled={optDisabled}
+                        />
+                      );
+                    })}
+                    {isEditMode && (
+                      <Text style={[styles.lockedFieldInfo, { color: brandColors.blue }]}>
+                        {originalVisibility === 'private'
+                          ? 'Private visibility cannot be changed after creation.'
+                          : 'Public and Off-Grid can be toggled freely. Private cannot be selected after creation.'}
+                      </Text>
+                    )}
                   </View>
+
+                  {isEditMode && (
+                    <Text style={[styles.lockedFieldInfo, { color: brandColors.blue }]}>
+                      Start date, category, and region are locked after creation.
+                    </Text>
+                  )}
                 </View>
               </HCard>
 
-              <HButton variant="copper" onPress={() => setStep(1)}>
-                NEXT: PLAN ROUTE →
+              <HButton variant="copper" onPress={() => setStep(isCompletedExpedition ? 3 : 1)}>
+                {isCompletedExpedition ? 'NEXT: REVIEW →' : 'NEXT: PLAN ROUTE →'}
               </HButton>
             </>
           )}
@@ -1326,11 +1521,14 @@ export default function ExpeditionBuilderScreen() {
               </HCard>
 
               <HCard>
-                <View style={styles.stepBody}>
+                <View style={[styles.stepBody, isSponsorshipLocked && { opacity: 0.4 }]}>
                   {/* Toggle */}
                   <TouchableOpacity
                     style={[styles.toggleRow, { borderBottomColor: colors.borderThin }]}
-                    onPress={() => setFundingEnabled(!fundingEnabled)}
+                    onPress={isSponsorshipLocked ? undefined : () => {
+                      setFundingEnabled(!fundingEnabled);
+                    }}
+                    activeOpacity={isSponsorshipLocked ? 1 : 0.7}
                   >
                     <Text style={[styles.toggleLabel, { color: colors.text }]}>Enable sponsorship</Text>
                     <View style={[styles.toggle, fundingEnabled && styles.toggleActive]}>
@@ -1341,13 +1539,63 @@ export default function ExpeditionBuilderScreen() {
                   {fundingEnabled && (
                     <HTextField
                       label="FUNDING GOAL ($)"
-                      placeholder="0.00"
+                      placeholder="e.g., 15000"
                       value={fundingGoal}
-                      onChangeText={setFundingGoal}
+                      onChangeText={isSponsorshipLocked ? undefined : setFundingGoal}
+                      keyboardType="numeric"
+                      editable={!isSponsorshipLocked}
                     />
+                  )}
+                  {isSponsorshipLocked && (
+                    <Text style={[styles.lockedFieldInfo, { color: brandColors.blue }]}>
+                      Sponsorship settings are locked for completed expeditions.
+                    </Text>
                   )}
                 </View>
               </HCard>
+
+              {/* Notes visibility — only for Pro users with Stripe Connect and non-private expeditions */}
+              {(user?.is_pro || user?.isPremium) && user?.stripeAccountConnected && visibility !== 2 && (
+                <>
+                  <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+                    <Text style={[styles.sectionTitle, { color: colors.text }]}>EXPEDITION NOTES</Text>
+                    <View style={[styles.sectionLine, { backgroundColor: colors.border }]} />
+                  </View>
+
+                  <HCard>
+                    <View style={styles.stepBody}>
+                      <RadioOption
+                        label="PUBLIC"
+                        description="Anyone can read expedition notes"
+                        selected={notesVisibility === 'public'}
+                        onSelect={() => setNotesVisibility('public')}
+                        disabled={isSponsorshipLocked}
+                      />
+                      <RadioOption
+                        label="SPONSOR EXCLUSIVE"
+                        description="Only sponsors meeting the threshold can read notes"
+                        selected={notesVisibility === 'sponsor'}
+                        onSelect={() => {
+                          setNotesVisibility('sponsor');
+                          setFundingEnabled(true);
+                        }}
+                        disabled={isSponsorshipLocked}
+                      />
+                      {notesVisibility === 'sponsor' && fundingEnabled && (
+                        <View style={{ marginTop: 8 }}>
+                          <HTextField
+                            label="NOTES ACCESS THRESHOLD ($)"
+                            placeholder="e.g., 15"
+                            value={notesAccessThreshold}
+                            onChangeText={setNotesAccessThreshold}
+                            keyboardType="numeric"
+                          />
+                        </View>
+                      )}
+                    </View>
+                  </HCard>
+                </>
+              )}
 
               <View style={styles.navButtons}>
                 <View style={styles.navBtnSmall}>
@@ -1390,7 +1638,7 @@ export default function ExpeditionBuilderScreen() {
                   ) : null}
                   <View style={[styles.previewDivider, { borderTopColor: colors.borderThin }]}>
                     <Text style={[styles.previewInfo, { color: colors.textTertiary }]}>
-                      {startDate ? formatDateDisplay(startDate) : '—'} → {endDate ? formatDateDisplay(endDate) : '—'} · {waypoints.length} waypoints · {derivedStatus.toUpperCase()}
+                      {startDateStr ? fmtDateDisplay(startDateStr) : '—'} → {endDateStr ? fmtDateDisplay(endDateStr) : '—'} · {waypoints.length} waypoints · {derivedStatus.toUpperCase()}
                     </Text>
                   </View>
                   {fundingEnabled && fundingGoal && (
@@ -1399,21 +1647,32 @@ export default function ExpeditionBuilderScreen() {
                       <Text style={[styles.fundingAmount, { color: colors.text }]}>${fundingGoal}</Text>
                     </View>
                   )}
+                  {notesVisibility === 'sponsor' && (
+                    <View style={[styles.previewDivider, { borderTopColor: colors.borderThin }]}>
+                      <Text style={styles.fundingLabel}>NOTES ACCESS</Text>
+                      <Text style={[styles.previewMeta, { color: colors.textSecondary }]}>
+                        Sponsor exclusive{notesAccessThreshold ? ` · $${notesAccessThreshold} threshold` : ''}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </HCard>
 
               {/* Launch Checklist */}
               <HCard>
                 <View style={[styles.checklistHeader, { borderBottomWidth: 1, borderBottomColor: colors.borderThin }]}>
-                  <Text style={[styles.checklistTitle, { color: colors.text }]}>LAUNCH CHECKLIST</Text>
+                  <Text style={[styles.checklistTitle, { color: colors.text }]}>
+                    {isEditMode ? 'SAVE CHECKLIST' : 'LAUNCH CHECKLIST'}
+                  </Text>
                 </View>
                 {[
                   { label: 'Expedition name', done: !!name.trim() },
-                  { label: 'Cover image', done: !!coverImageUrl },
+                  ...(!isEditMode ? [{ label: 'Cover image', done: !!coverImageUrl }] : []),
                   { label: 'Description', done: !!description.trim() },
                   { label: 'Route with waypoints', done: waypoints.length > 0 },
-                  { label: 'Funding goal', done: fundingEnabled && !!fundingGoal },
-                  { label: 'Dates set', done: !!startDate },
+                  { label: 'Funding goal', done: !fundingEnabled || (!!fundingGoal && parseFloat(fundingGoal.replace(/,/g, '')) > 0) },
+                  { label: 'Notes threshold', done: notesVisibility !== 'sponsor' || (!!notesAccessThreshold && Number(notesAccessThreshold) > 0) },
+                  ...(!isEditMode ? [{ label: 'Dates set', done: !!startDateStr }] : []),
                 ].map((item, i) => (
                   <View
                     key={item.label}
@@ -1445,29 +1704,85 @@ export default function ExpeditionBuilderScreen() {
                 ))}
               </HCard>
 
-              <View style={styles.launchActions}>
-                <HButton variant="copper" onPress={() => handleLaunch(false)} disabled={submitting}>
-                  {submitting ? 'LAUNCHING...' : 'LAUNCH EXPEDITION'}
-                </HButton>
-                <View style={styles.gap} />
-                <HButton variant="copper" outline onPress={() => handleLaunch(true)} disabled={submitting}>
-                  SAVE AS DRAFT
-                </HButton>
-              </View>
+              {isEditMode ? (
+                <View style={styles.launchActions}>
+                  <HButton variant="copper" onPress={handleSaveEdit} disabled={submitting}>
+                    {submitting ? 'SAVING...' : 'SAVE CHANGES'}
+                  </HButton>
+                </View>
+              ) : (
+                <View style={styles.launchActions}>
+                  <HButton variant="copper" onPress={() => handleLaunch(false)} disabled={submitting}>
+                    {submitting ? 'LAUNCHING...' : 'LAUNCH EXPEDITION'}
+                  </HButton>
+                  <View style={styles.gap} />
+                  <HButton variant="copper" outline onPress={() => handleLaunch(true)} disabled={submitting}>
+                    SAVE AS DRAFT
+                  </HButton>
+                </View>
+              )}
+
+              {/* Danger Zone — edit mode only */}
+              {isEditMode && (
+                <View style={styles.dangerZone}>
+                  <View style={[styles.sectionHeader, { marginTop: 16 }]}>
+                    <Text style={[styles.sectionTitle, { color: brandColors.red }]}>DANGER ZONE</Text>
+                    <View style={[styles.sectionLine, { backgroundColor: brandColors.red }]} />
+                  </View>
+                  <HCard>
+                    <View style={styles.stepBody}>
+                      <Text style={[styles.dangerText, { color: colors.textSecondary }]}>
+                        Permanently delete this expedition and all its data.
+                      </Text>
+                      {(editExpedition?.entriesCount ?? 0) > 0 && (
+                        <Text style={[styles.dangerDisabledText, { color: colors.textTertiary }]}>
+                          Cannot delete — this expedition has {editExpedition?.entriesCount} {editExpedition?.entriesCount === 1 ? 'entry' : 'entries'}. Remove all entries first.
+                        </Text>
+                      )}
+                      <HButton
+                        variant="destructive"
+                        outline
+                        onPress={handleDeleteExpedition}
+                        disabled={(editExpedition?.entriesCount ?? 0) > 0}
+                      >
+                        DELETE EXPEDITION
+                      </HButton>
+                    </View>
+                  </HCard>
+                </View>
+              )}
             </>
           )}
         </View>
 
         <View style={styles.spacer} />
       </ScrollView>
-      </KeyboardAvoidingView>
+
+      <CalendarPicker
+        visible={!!datePicker}
+        value={datePicker === 'start' ? startDateStr : endDateStr}
+        minDate={datePicker === 'end' ? startDateStr : undefined}
+        onSelect={(val) => {
+          if (datePicker === 'start') {
+            setStartDateStr(val);
+            if (endDateStr && val > endDateStr) setEndDateStr('');
+          } else {
+            setEndDateStr(val);
+          }
+        }}
+        onClose={() => setDatePicker(null)}
+      />
     </View>
   );
 }
 
+export default function ExpeditionBuilderScreen() {
+  return <ExpeditionBuilder />;
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  flex1: { flex: 1 },
+  scrollContent: { paddingBottom: 120 },
   loader: { flex: 1 },
   blockedWrap: { padding: 16, paddingTop: 24 },
   blockedInner: { padding: 16 },
@@ -1478,6 +1793,19 @@ const styles = StyleSheet.create({
   blockedGap: { height: 8 },
   scroll: { flex: 1 },
   form: { padding: 16 },
+  infoBanner: {
+    borderWidth: 1,
+    borderRadius: 6,
+    padding: 12,
+    marginBottom: 16,
+  },
+  infoBannerText: {
+    fontFamily: mono,
+    fontSize: 12,
+    fontWeight: '600',
+    letterSpacing: 0.3,
+    lineHeight: 18,
+  },
   stepCounter: {
     fontFamily: mono,
     fontSize: 12,
@@ -1625,22 +1953,6 @@ const styles = StyleSheet.create({
   dateClearText: {
     fontSize: 11,
     fontWeight: '600',
-  },
-  pickerWrap: {
-    marginTop: 8,
-  },
-  dateConfirm: {
-    alignSelf: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    marginTop: 4,
-  },
-  dateConfirmText: {
-    fontFamily: mono,
-    fontSize: 13,
-    fontWeight: '700',
-    color: brandColors.copper,
-    letterSpacing: 0.6,
   },
   statusIndicator: {
     marginTop: 10,
@@ -2119,5 +2431,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.4,
     color: '#fff',
+  },
+  lockedFieldInfo: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 16,
+    marginTop: 8,
+  },
+  dangerZone: {
+    marginTop: 16,
+  },
+  dangerText: {
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  dangerDisabledText: {
+    fontSize: 12,
+    lineHeight: 17,
+    marginBottom: 12,
   },
 });

@@ -82,7 +82,9 @@ export function ExpeditionNotes({
   const [confirmDeleteReplyId, setConfirmDeleteReplyId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const canPostToday = isOwner && dailyLimit.used < dailyLimit.max && expeditionStatus !== 'cancelled';
+  const isExpeditionLocked = expeditionStatus === 'completed' || expeditionStatus === 'cancelled';
+  const canPostToday = isOwner && dailyLimit.used < dailyLimit.max && !isExpeditionLocked;
+  const canEditNotes = isOwner && !isExpeditionLocked;
   const remainingPosts = dailyLimit.max - dailyLimit.used;
 
   const handlePostNote = async () => {
@@ -305,7 +307,7 @@ export function ExpeditionNotes({
                   <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
                     {new Date(note.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
                   </span>
-                  {isOwner && (
+                  {canEditNotes && (
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => {
