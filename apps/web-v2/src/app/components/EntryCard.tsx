@@ -83,7 +83,7 @@ export function EntryCard({
 
           <div className="relative pt-6">
             <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed italic font-serif min-h-[4.5rem]">
-              {excerpt.substring(0, 180)}{excerpt.length > 180 ? '...' : ''}
+              {excerpt}
             </p>
           </div>
 

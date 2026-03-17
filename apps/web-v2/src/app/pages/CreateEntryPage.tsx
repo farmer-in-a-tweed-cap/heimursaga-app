@@ -514,7 +514,7 @@ export function CreateEntryPage() {
   };
 
   const wordCount = getWordCount();
-  const minWords = entryType === 'standard' ? 200 : 20;
+  const minWords = entryType === 'standard' ? 200 : 50;
   const isWordCountValid = wordCount >= minWords && wordCount <= 2000;
 
   // Calculate days active

@@ -311,7 +311,7 @@ export function EditEntryPage() {
   };
 
   const wordCount = getWordCount();
-  const minWords = entryType === 'standard' ? 200 : 20;
+  const minWords = entryType === 'standard' ? 200 : 50;
   const isWordCountValid = entryType === 'waypoint' || (wordCount >= minWords && wordCount <= 2000);
 
   // Get expedition info from API entry

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { expeditionApi, explorerApi, entryApi, type Expedition } from '@/app/services/api';
 import { haversineKm } from '@/app/utils/haversine';
+import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import type { WaypointType, JournalEntryType, TransformedExpedition, CurrentLocationData } from '@/app/components/expedition-detail/types';
 
 export function useExpeditionData(
@@ -261,11 +262,7 @@ export function useExpeditionData(
         date: entry.date || '',
         location: entry.place || 'Unknown location',
         coords: { lat: entry.lat || 0, lng: entry.lon || 0 },
-        excerpt: entry.content
-          ? entry.content.length <= 200
-            ? entry.content
-            : entry.content.substring(0, 200).replace(/\s+\S*$/, '') + '...'
-          : '',
+        excerpt: truncateExcerpt(entry.content || ''),
         type: 'standard' as const,
         mediaCount: entry.mediaCount || 0,
         views: 0,

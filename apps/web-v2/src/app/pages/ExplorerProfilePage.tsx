@@ -16,6 +16,7 @@ import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
 import { getExplorerStatus, getCurrentExpeditionInfo } from '@/app/components/ExplorerStatusBadge';
 import { useAuth } from '@/app/context/AuthContext';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
+import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import { explorerApi, entryApi, expeditionApi, type ExplorerProfile, type ExplorerEntry, type ExplorerExpedition, type ExplorerFollower } from '@/app/services/api';
 import { CountryFlag } from '@/app/components/CountryFlag';
 import { ContinentIcon } from '@/app/components/ContinentIcon';
@@ -442,11 +443,7 @@ export function ExplorerProfilePage() {
       expeditionId: e.expedition?.id || '',
       date: e.date || e.createdAt || '',
       timeAgo: '',
-      excerpt: e.content
-        ? e.content.length <= 150
-          ? e.content
-          : e.content.substring(0, 150).replace(/\s+\S*$/, '') + '...'
-        : '',
+      excerpt: truncateExcerpt(e.content || ''),
       mediaCount: (e as any).mediaCount || 0,
       wordCount: (e as any).wordCount || 0,
       type: (e as any).entryType || 'standard',
@@ -472,11 +469,7 @@ export function ExplorerProfilePage() {
       coords: { lat: e.lat!, lng: e.lon! },
       location: e.place || '',
       date: e.date || e.createdAt || '',
-      excerpt: e.content
-        ? e.content.length <= 200
-          ? e.content
-          : e.content.substring(0, 200).replace(/\s+\S*$/, '') + '...'
-        : '',
+      excerpt: truncateExcerpt(e.content || ''),
       mediaCount: (e as any).mediaCount || 0,
       views: 0,
       explorerName: explorer.name,
@@ -1210,7 +1203,7 @@ export function ExplorerProfilePage() {
                     onClick={() => router.push(`/journal/${follower.id}`)}
                     className="w-full flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] group"
                   >
-                    <div className="w-8 h-8 flex-shrink-0 overflow-hidden border border-[#b5bcc4] dark:border-[#616161]">
+                    <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border ${follower.accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'}`}>
                       <Image
                         src={follower.avatarUrl}
                         alt={follower.name}
@@ -1224,16 +1217,15 @@ export function ExplorerProfilePage() {
                         <span className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] truncate">
                           {follower.name}
                         </span>
-                        {follower.accountType === 'explorer-pro' && (
-                          <span className="px-1 bg-[#ac6d46] text-white text-xs font-bold flex-shrink-0 rounded-full">PRO</span>
-                        )}
                         {follower.mutualFollow && (
-                          <span className="px-1 bg-[#4676ac] text-white text-xs font-bold flex-shrink-0 rounded-full">MUTUAL</span>
+                          <span className="px-1 bg-[#4676ac] text-white text-[0.6rem] font-bold flex-shrink-0 leading-tight rounded-full">MUTUAL</span>
                         )}
                       </div>
-                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                        Following since {follower.followedSince}
-                      </div>
+                      {follower.followedSince && (
+                        <div className="text-[0.65rem] text-[#616161] dark:text-[#b5bcc4] font-mono">
+                          Following since {follower.followedSince}
+                        </div>
+                      )}
                     </div>
                   </button>
                 ))}

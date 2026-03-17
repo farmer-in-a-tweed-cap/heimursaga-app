@@ -443,7 +443,7 @@ export class EntryService {
           public: entry.public,
           sponsored: entry.sponsored,
           isDraft: entry.is_draft,
-          content: entry.content.slice(0, 200),
+          content: entry.content.slice(0, 300),
           mediaCount: entry._count?.media || 0,
           wordCount,
           coverImage,

@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { explorerApi, entryApi, expeditionApi, ExplorerEntry } from '@/app/services/api';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
+import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import { ExpeditionCardLandscape } from '@/app/components/ExpeditionCardLandscape';
 import { ExplorerCardLandscape } from '@/app/components/ExplorerCardLandscape';
 
@@ -268,10 +269,7 @@ export function BookmarksPage() {
                 expeditionName={entry.expedition?.title || ''}
                 location={entry.place || 'Location not set'}
                 date={entry.createdAt || entry.date || ''}
-                excerpt={(() => {
-                  const text = entry.content?.replace(/<[^>]*>/g, '') || '';
-                  return text.length <= 200 ? text : text.substring(0, 200).replace(/\s+\S*$/, '') + '...';
-                })()}
+                excerpt={truncateExcerpt(entry.content || '')}
                 type=""
                 onClick={() => router.push(`/entry/${entry.id}`)}
                 onUnbookmark={() => handleUnbookmarkEntry(entry.id)}

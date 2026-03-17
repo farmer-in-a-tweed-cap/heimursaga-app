@@ -6,6 +6,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { EntryCard } from '@/app/components/EntryCard';
 import { FileText, Loader2 } from 'lucide-react';
 import { entryApi, type Entry } from '@/app/services/api';
+import { truncateExcerpt } from '@/app/utils/truncateExcerpt';
 import { useAuth } from '@/app/context/AuthContext';
 import { EntryCardSkeleton, SKELETON_COUNT } from '@/app/components/skeletons/CardSkeletons';
 import { ErrorState } from '@/app/components/ErrorState';
@@ -165,11 +166,7 @@ export function EntriesPage() {
     expeditionId: entry.expedition?.id || entry.trip?.id || '',
     location: entry.place || '',
     date: entry.date || entry.createdAt || '',
-    excerpt: entry.content
-      ? entry.content.length <= 300
-        ? entry.content
-        : entry.content.substring(0, 300).replace(/\s+\S*$/, '') + '...'
-      : '',
+    excerpt: truncateExcerpt(entry.content || ''),
     mediaCount: entry.mediaCount || 0,
     views: entry.viewsCount || 0,
     wordCount: entry.wordCount || 0,

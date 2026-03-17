@@ -13,6 +13,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/app/context/AuthContext";
 import { Globe, Users, Loader2 } from "lucide-react";
 import { expeditionApi, explorerApi, entryApi, type Expedition, type ExplorerListItem, type Entry } from "@/app/services/api";
+import { truncateExcerpt } from "@/app/utils/truncateExcerpt";
 import { calculateDaysElapsed } from "@/app/utils/dateFormat";
 import { getExplorerStatus, getCurrentExpeditionInfo } from "@/app/components/ExplorerStatusBadge";
 
@@ -83,7 +84,7 @@ function transformEntry(entry: Entry) {
     expeditionId: entry.expedition?.id || entry.trip?.id || '',
     location: entry.place || '',
     date: entry.date || entry.createdAt || '',
-    excerpt: entry.content || '',
+    excerpt: truncateExcerpt(entry.content || ''),
     mediaCount: entry.mediaCount || 0,
     wordCount: entry.wordCount || 0,
     type: entry.entryType || 'standard',

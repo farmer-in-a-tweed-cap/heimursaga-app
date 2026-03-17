@@ -236,7 +236,7 @@ export function FollowingPage() {
                       {follow.username}
                     </button>
                     {follow.creator && (
-                      <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-bold flex-shrink-0">
+                      <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-bold flex-shrink-0 rounded-full">
                         PRO
                       </span>
                     )}
