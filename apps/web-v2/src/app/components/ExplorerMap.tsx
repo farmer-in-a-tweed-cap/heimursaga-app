@@ -340,6 +340,20 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     map.addControl(navControl, 'top-right');
     navControlRef.current = navControl;
 
+    if (navigator.geolocation) {
+      try {
+        const geolocate = new mapboxgl.GeolocateControl({
+          positionOptions: { enableHighAccuracy: true },
+          trackUserLocation: false,
+          showUserHeading: false,
+        });
+        geolocate.on('error', () => { /* silently handle */ });
+        map.addControl(geolocate, 'top-right');
+      } catch {
+        // GeolocateControl unavailable — continue without it
+      }
+    }
+
     map.on('load', () => {
       updateVisibleItems();
     });

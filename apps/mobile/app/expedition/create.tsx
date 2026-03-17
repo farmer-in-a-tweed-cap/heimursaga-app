@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-  ActivityIndicator, Alert, Modal, Image, Platform, Keyboard,
+  ActivityIndicator, Alert, Modal, Image, Platform, Keyboard, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,6 +18,8 @@ import { CalendarPicker, fmtDateDisplay, todayISO } from '@/components/ui/Calend
 import HeimuMap, { WaypointMarker, HeimuMapRef, clusterMarkers } from '@/components/map/HeimuMap';
 import { Svg, Path, Circle } from 'react-native-svg';
 import { expeditionApi, uploadApi } from '@/services/api';
+let ExpoLocation: typeof import('expo-location') | null = null;
+try { ExpoLocation = require('expo-location'); } catch { /* not available */ }
 let ImagePicker: typeof import('expo-image-picker') | null = null;
 try {
   ImagePicker = require('expo-image-picker');
@@ -134,6 +136,26 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
   const lastDirectionsFingerprintRef = useRef('');
   const mapRef = useRef<HeimuMapRef>(null);
   const [mapZoom, setMapZoom] = useState(10); // conservative default — camera events will refine
+
+  // Geolocate state
+  const [geolocating, setGeolocating] = useState(false);
+  const handleGeolocate = useCallback(async () => {
+    if (!ExpoLocation) return;
+    setGeolocating(true);
+    try {
+      const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Location Permission', 'Location access was denied. You can enable it in Settings.', [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings() },
+        ]);
+        return;
+      }
+      const loc = await ExpoLocation.getCurrentPositionAsync({ accuracy: ExpoLocation.Accuracy.Balanced });
+      mapRef.current?.flyTo([loc.coords.longitude, loc.coords.latitude], 12);
+    } catch { /* ignore */ }
+    finally { setGeolocating(false); }
+  }, []);
 
   // Route search (find along route) state
   const [showRouteSearch, setShowRouteSearch] = useState(false);
@@ -1062,6 +1084,21 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                   </View>
                 </View>
               )}
+
+              {/* Geolocate button */}
+              <TouchableOpacity
+                style={[styles.geolocateBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                onPress={handleGeolocate}
+                disabled={geolocating}
+              >
+                {geolocating
+                  ? <ActivityIndicator size="small" color={brandColors.copper} />
+                  : <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={brandColors.copper} strokeWidth={2}>
+                      <Circle cx={12} cy={12} r={3} />
+                      <Path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+                    </Svg>
+                }
+              </TouchableOpacity>
 
               {/* Compact legend */}
               <View style={[styles.routeLegend, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -2125,6 +2162,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  geolocateBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 36,
+    height: 36,
+    borderWidth: borders.thick,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   routeLegend: {
     position: 'absolute',
