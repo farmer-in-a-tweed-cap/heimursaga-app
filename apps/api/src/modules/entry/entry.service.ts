@@ -282,7 +282,12 @@ export class EntryService {
       // Owner bypass: always show the explorer's own entries regardless of visibility
       const publicExpeditionFilter = {
         OR: [
-          ...(explorerId ? [{ author_id: explorerId }] : []),
+          ...(explorerId
+            ? [
+                { author_id: explorerId, expedition_id: null },
+                { author_id: explorerId, expedition: { status: { not: 'cancelled' } } },
+              ]
+            : []),
           { expedition_id: null, visibility: 'public' },
           {
             expedition: { visibility: 'public', status: { not: 'cancelled' } },

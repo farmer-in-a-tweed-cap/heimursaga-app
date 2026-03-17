@@ -615,8 +615,14 @@ export class ExplorerService {
         lon: { not: null },
         // Entry visibility derived from expedition
         // Owner bypass: always show the explorer's own entries regardless of visibility
+        // Cancelled expedition entries are always hidden
         ...(isOwner
-          ? {}
+          ? {
+              OR: [
+                { expedition_id: null },
+                { expedition: { status: { not: 'cancelled' } } },
+              ],
+            }
           : {
               OR: [
                 { expedition_id: null, visibility: 'public' },
@@ -853,7 +859,12 @@ export class ExplorerService {
           },
           deleted_at: null,
           ...(isOwner
-            ? {}
+            ? {
+                OR: [
+                  { expedition_id: null },
+                  { expedition: { status: { not: 'cancelled' } } },
+                ],
+              }
             : {
                 OR: [
                   { expedition_id: null, visibility: 'public' },
@@ -1480,7 +1491,8 @@ export class SessionExplorerService {
               },
             },
             OR: [
-              { author: { id: explorerId } },
+              { author: { id: explorerId }, expedition_id: null },
+              { author: { id: explorerId }, expedition: { status: { not: 'cancelled' } } },
               { expedition_id: null, visibility: 'public' },
               {
                 expedition: { visibility: 'public', status: { not: 'cancelled' } },
