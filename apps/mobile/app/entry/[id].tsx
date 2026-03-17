@@ -12,7 +12,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { ImagePlaceholder } from '@/components/ui/ImagePlaceholder';
 import { MetadataGrid } from '@/components/ui/MetadataGrid';
 import { SectionDivider } from '@/components/ui/SectionDivider';
-import { commentsApi, bookmarksApi } from '@/services/api';
+import { commentsApi, bookmarksApi, ApiError } from '@/services/api';
 import { Svg, Path } from 'react-native-svg';
 import { QuickSponsorButton } from '@/components/ui/QuickSponsorButton';
 import { TopoBackground } from '@/components/ui/TopoBackground';
@@ -27,6 +27,12 @@ export default function EntryDetailScreen() {
   const [commentText, setCommentText] = useState('');
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  // Edit/delete/reply state
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
 
   const { data: entry, loading, refetch: refetchEntry } = useApi<Entry>(
     id ? `/posts/${id}` : null,
@@ -78,10 +84,57 @@ export default function EntryDetailScreen() {
       await commentsApi.createComment(id, commentText.trim());
       setCommentText('');
       refetchComments();
-    } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to post comment');
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Failed to post comment';
+      Alert.alert('Error', msg);
     }
   }, [commentText, id, refetchComments]);
+
+  const handlePostReply = useCallback(async (parentId: string) => {
+    if (!replyText.trim() || !id) return;
+    try {
+      await commentsApi.createComment(id, replyText.trim(), parentId);
+      setReplyText('');
+      setReplyingTo(null);
+      refetchComments();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Failed to post reply';
+      Alert.alert('Error', msg);
+    }
+  }, [replyText, id, refetchComments]);
+
+  const handleEditComment = useCallback(async (commentId: string) => {
+    if (!editCommentText.trim()) return;
+    setEditSaving(true);
+    try {
+      await commentsApi.updateComment(commentId, editCommentText.trim());
+      setEditingCommentId(null);
+      setEditCommentText('');
+      refetchComments();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : 'Failed to edit comment';
+      Alert.alert('Error', msg);
+    } finally {
+      setEditSaving(false);
+    }
+  }, [editCommentText, refetchComments]);
+
+  const handleDeleteComment = useCallback((commentId: string) => {
+    Alert.alert('Delete Comment', 'Delete this comment?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try {
+            await commentsApi.deleteComment(commentId);
+            refetchComments();
+          } catch (err) {
+            const msg = err instanceof ApiError ? err.message : 'Failed to delete comment';
+            Alert.alert('Error', msg);
+          }
+        },
+      },
+    ]);
+  }, [refetchComments]);
 
   if (loading || !entry) {
     return (
@@ -105,7 +158,7 @@ export default function EntryDetailScreen() {
       <TopoBackground topOffset={53} />
       <NavBar onBack={() => router.back()} />
 
-      <ScrollView>
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <StatusHeader
           status={(entry.trip?.status as any) ?? 'active'}
           label={`JOURNAL ENTRY${entry.entryNumber != null ? ` #${entry.entryNumber}` : ''}`}
@@ -129,6 +182,7 @@ export default function EntryDetailScreen() {
               JOURNAL ENTRY{entry.entryNumber != null ? ` #${entry.entryNumber}` : ''}{entry.expeditionDay != null ? ` · DAY ${entry.expeditionDay}` : ''}
             </Text>
             <Text style={styles.heroTitle}>{entry.title}</Text>
+            {entry.author && (
             <TouchableOpacity
               style={styles.heroAuthor}
               onPress={() => router.push(`/explorer/${entry.author.username}`)}
@@ -139,6 +193,7 @@ export default function EntryDetailScreen() {
                 {entry.trip ? ` · ${entry.trip.title}` : ''}
               </Text>
             </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -259,12 +314,87 @@ export default function EntryDetailScreen() {
                       {new Date(comment.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                     </Text>
                   </View>
-                  <Text style={[styles.commentBody, { color: colors.text }]}>
-                    {comment.content}
-                  </Text>
+
+                  {/* Comment body or edit form */}
+                  {editingCommentId === comment.id ? (
+                    <View style={styles.editWrap}>
+                      <TextInput
+                        style={[styles.editInput, { color: colors.text, borderColor: brandColors.blue }]}
+                        value={editCommentText}
+                        onChangeText={setEditCommentText}
+                        maxLength={5000}
+                        multiline
+                      />
+                      <View style={styles.editFooter}>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <TouchableOpacity
+                            style={[styles.editSaveBtn, { opacity: editCommentText.trim() && editCommentText !== comment.content ? 1 : 0.5 }]}
+                            onPress={() => handleEditComment(comment.id)}
+                            disabled={!editCommentText.trim() || editCommentText === comment.content || editSaving}
+                          >
+                            <Text style={styles.editSaveBtnText}>{editSaving ? 'SAVING...' : 'SAVE'}</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => { setEditingCommentId(null); setEditCommentText(''); }}>
+                            <Text style={[styles.editActionText, { color: colors.textTertiary }]}>CANCEL</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  ) : (
+                    <Text style={[styles.commentBody, { color: colors.text }]}>
+                      {comment.content}
+                    </Text>
+                  )}
+
+                  {/* Actions: edit/delete for own comments, reply for all */}
+                  {editingCommentId !== comment.id && (
+                    <View style={styles.commentActions}>
+                      {comment.createdByMe && (
+                        <>
+                          <TouchableOpacity onPress={() => { setEditingCommentId(comment.id); setEditCommentText(comment.content); }}>
+                            <Text style={[styles.editActionText, { color: brandColors.blue }]}>EDIT</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => handleDeleteComment(comment.id)}>
+                            <Text style={[styles.editActionText, { color: brandColors.red }]}>DELETE</Text>
+                          </TouchableOpacity>
+                        </>
+                      )}
+                      {isAuthenticated && (
+                        <TouchableOpacity onPress={() => { setReplyingTo(replyingTo === comment.id ? null : comment.id); setReplyText(''); }}>
+                          <Text style={styles.replyBtn}>{replyingTo === comment.id ? 'CANCEL' : 'REPLY'}</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Reply form */}
+                  {replyingTo === comment.id && (
+                    <View style={[styles.replyFormWrap, { borderColor: colors.border }]}>
+                      <TextInput
+                        style={[styles.editInput, { color: colors.text, borderColor: colors.border }]}
+                        value={replyText}
+                        onChangeText={setReplyText}
+                        placeholder="Write a reply..."
+                        placeholderTextColor={colors.textTertiary}
+                        maxLength={5000}
+                        multiline
+                      />
+                      <View style={styles.editFooter}>
+                        <TouchableOpacity
+                          style={[styles.editSaveBtn, { opacity: replyText.trim() ? 1 : 0.5 }]}
+                          onPress={() => handlePostReply(comment.id)}
+                          disabled={!replyText.trim()}
+                        >
+                          <Text style={styles.editSaveBtnText}>POST REPLY</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+
+                  {/* Replies */}
                   {(comment.replies?.length ?? 0) > 0 && (
                     comment.replies!.map((reply) => (
-                      <View key={reply.id} style={styles.replyCard}>
+                      <View key={reply.id} style={[styles.replyCard, { borderTopColor: colors.border }]}>
                         <View style={styles.commentTop}>
                           <View style={styles.commentAuthor}>
                             <Avatar size={18} name={reply.author?.username ?? '?'} imageUrl={reply.author?.picture} />
@@ -274,15 +404,50 @@ export default function EntryDetailScreen() {
                             {new Date(reply.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </Text>
                         </View>
-                        <Text style={[styles.commentBody, { color: colors.text }]}>
-                          {reply.content}
-                        </Text>
+
+                        {/* Reply body or edit form */}
+                        {editingCommentId === reply.id ? (
+                          <View style={styles.editWrap}>
+                            <TextInput
+                              style={[styles.editInput, { color: colors.text, borderColor: brandColors.blue, minHeight: 50, fontSize: 13 }]}
+                              value={editCommentText}
+                              onChangeText={setEditCommentText}
+                              maxLength={5000}
+                              multiline
+                            />
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                              <TouchableOpacity
+                                style={[styles.editSaveBtn, { opacity: editCommentText.trim() && editCommentText !== reply.content ? 1 : 0.5 }]}
+                                onPress={() => handleEditComment(reply.id)}
+                                disabled={!editCommentText.trim() || editCommentText === reply.content || editSaving}
+                              >
+                                <Text style={styles.editSaveBtnText}>{editSaving ? '...' : 'SAVE'}</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => { setEditingCommentId(null); setEditCommentText(''); }}>
+                                <Text style={[styles.editActionText, { color: colors.textTertiary }]}>CANCEL</Text>
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                        ) : (
+                          <>
+                            <Text style={[styles.commentBody, { color: colors.text }]}>
+                              {reply.content}
+                            </Text>
+                            {reply.createdByMe && editingCommentId !== reply.id && (
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 4, marginLeft: 30 }}>
+                                <TouchableOpacity onPress={() => { setEditingCommentId(reply.id); setEditCommentText(reply.content); }}>
+                                  <Text style={[styles.editActionText, { color: brandColors.blue, fontSize: 10 }]}>EDIT</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => handleDeleteComment(reply.id)}>
+                                  <Text style={[styles.editActionText, { color: brandColors.red, fontSize: 10 }]}>DELETE</Text>
+                                </TouchableOpacity>
+                              </View>
+                            )}
+                          </>
+                        )}
                       </View>
                     ))
                   )}
-                  <View style={styles.commentActions}>
-                    <Text style={styles.replyBtn}>Reply</Text>
-                  </View>
                 </View>
               </HCard>
             ))}
@@ -515,15 +680,18 @@ const styles = StyleSheet.create({
   },
   commentActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'flex-end',
     gap: 14,
     marginTop: 8,
   },
   replyBtn: {
     fontFamily: mono,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
     color: brandColors.copper,
+    paddingVertical: 6,
   },
   inputRow: {
     flexDirection: 'row',
@@ -560,7 +728,46 @@ const styles = StyleSheet.create({
   relatedCardBody: { padding: 8, paddingHorizontal: 10 },
   relatedDay: { fontFamily: mono, fontSize: 12, fontWeight: '700', color: brandColors.copper },
   relatedLoc: { fontSize: 11, fontWeight: '600', marginTop: 2 },
-  replyCard: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#e5e5e5' },
+  replyCard: { marginTop: 10, paddingTop: 10, borderTopWidth: 1 },
+  editWrap: { marginTop: 8, marginLeft: 30 },
+  editInput: {
+    borderWidth: borders.thick,
+    padding: 10,
+    fontSize: 13,
+    lineHeight: 20,
+    minHeight: 60,
+  },
+  editFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 6,
+  },
+  editSaveBtn: {
+    backgroundColor: brandColors.blue,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  editSaveBtnText: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#ffffff',
+    letterSpacing: 0.4,
+  },
+  editActionText: {
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    paddingVertical: 6,
+  },
+  replyFormWrap: {
+    marginTop: 8,
+    marginLeft: 30,
+    paddingTop: 8,
+    borderTopWidth: 1,
+  },
   expeditionContextWrap: { padding: 16, paddingTop: 4 },
   expContextCard: { padding: 14 },
   expContextName: {

@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Alert, Platform, Switch,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { CalendarPicker, fmtDateISO, fmtDateDisplay, todayISO } from '@/components/ui/CalendarPicker';
 let ImagePicker: typeof import('expo-image-picker') | null = null;
 try {
   ImagePicker = require('expo-image-picker');
@@ -14,7 +14,7 @@ try {
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useApi } from '@/hooks/useApi';
-import { entryApi, uploadApi } from '@/services/api';
+import { entryApi, uploadApi, ApiError } from '@/services/api';
 import { NavBar } from '@/components/ui/NavBar';
 import { HCard } from '@/components/ui/HCard';
 import { HTextField } from '@/components/ui/HTextField';
@@ -39,6 +39,7 @@ const ENTRY_TYPE_VALUES = ['standard', 'photo-essay', 'data-log'] as const;
 
 export default function EditEntryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const resolvedId = Array.isArray(id) ? id[0] : id;
   const { dark, colors } = useTheme();
   const router = useRouter();
   const { ready } = useRequireAuth();
@@ -60,7 +61,7 @@ export default function EditEntryScreen() {
 
   // Entry type & date
   const [entryType, setEntryType] = useState(0);
-  const [date, setDate] = useState(new Date());
+  const [dateStr, setDateStr] = useState(() => todayISO());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
@@ -94,7 +95,7 @@ export default function EditEntryScreen() {
     setLocation(entry.place ?? '');
     if (entry.lat != null) setLat(entry.lat);
     if (entry.lon != null) setLon(entry.lon);
-    if (entry.date) setDate(new Date(entry.date));
+    if (entry.date) setDateStr(entry.date.split('T')[0]);
     if (entry.commentsEnabled === false) setCommentsEnabled(false);
     if (entry.isMilestone) setIsMilestone(true);
     if (entry.entryType) {
@@ -226,11 +227,6 @@ export default function EditEntryScreen() {
 
   // ─── Date ──────────────────────────────────────────────────────────────────
 
-  const handleDateChange = useCallback((_: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShowDatePicker(false);
-    if (selectedDate) setDate(selectedDate);
-  }, []);
-
   // ─── Save ──────────────────────────────────────────────────────────────────
 
   const handleSave = useCallback(async () => {
@@ -283,7 +279,7 @@ export default function EditEntryScreen() {
         place: location.trim() || undefined,
         lat: lat ?? undefined,
         lon: lon ?? undefined,
-        date: date.toISOString().split('T')[0],
+        date: dateStr,
         visibility: isExpeditionEntry ? undefined : VISIBILITY_OPTIONS[visibility].label.toLowerCase(),
         entryType: typeValue,
         commentsEnabled,
@@ -293,17 +289,18 @@ export default function EditEntryScreen() {
         metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
       };
 
-      await entryApi.updateEntry(id!, entryData as Partial<Entry>);
+      await entryApi.updateEntry(resolvedId!, entryData as Partial<Entry>);
       Alert.alert('Saved', 'Entry updated successfully.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to update entry');
+      const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
+      Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
     }
   }, [
-    title, body, location, visibility, lat, lon, date, id,
+    title, body, location, visibility, lat, lon, dateStr, id,
     photos, coverIndex, entryType, commentsEnabled, isMilestone, isExpeditionEntry,
     weather, mood, distanceTraveled, expenses,
     temperature, humidity, windSpeed, pressure, elevationGain, duration,
@@ -328,7 +325,7 @@ export default function EditEntryScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <NavBar onBack={() => router.back()} title="EDIT ENTRY" />
 
-      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <View style={styles.form}>
           <HCard>
             <View style={styles.formInner}>
@@ -363,29 +360,19 @@ export default function EditEntryScreen() {
               onPress={() => setShowDatePicker(true)}
             >
               <Text style={[styles.selectorText, { color: colors.text }]}>
-                {date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {fmtDateDisplay(dateStr)}
               </Text>
               <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
                 <Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
               </Svg>
             </TouchableOpacity>
-            {showDatePicker && (
-              <View>
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                  onChange={handleDateChange}
-                  maximumDate={new Date()}
-                  themeVariant={dark ? 'dark' : 'light'}
-                />
-                {Platform.OS === 'ios' && (
-                  <TouchableOpacity style={styles.dateConfirm} onPress={() => setShowDatePicker(false)}>
-                    <Text style={styles.dateConfirmText}>DONE</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
+            <CalendarPicker
+              visible={showDatePicker}
+              value={dateStr}
+              maxDate={todayISO()}
+              onSelect={setDateStr}
+              onClose={() => setShowDatePicker(false)}
+            />
           </View>
 
           {/* Location — only for standalone entries */}
