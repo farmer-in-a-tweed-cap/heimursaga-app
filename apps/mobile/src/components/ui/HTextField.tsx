@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 import { mono, borders } from '@/theme/tokens';
@@ -7,35 +7,38 @@ interface HTextFieldProps extends Omit<TextInputProps, 'style'> {
   label: string;
 }
 
-export function HTextField({ label, ...inputProps }: HTextFieldProps) {
-  const { colors, dark } = useTheme();
+export const HTextField = forwardRef<TextInput, HTextFieldProps>(
+  function HTextField({ label, ...inputProps }, ref) {
+    const { colors, dark } = useTheme();
 
-  return (
-    <View style={styles.container}>
-      <Text
-        style={[
-          styles.label,
-          { color: colors.textSecondary },
-        ]}
-      >
-        {label}
-      </Text>
-      <TextInput
-        {...inputProps}
-        accessibilityLabel={label}
-        placeholderTextColor={dark ? '#4a4a4a' : '#b5bcc4'}
-        style={[
-          styles.input,
-          {
-            backgroundColor: colors.inputBackground,
-            borderColor: colors.border,
-            color: colors.text,
-          },
-        ]}
-      />
-    </View>
-  );
-}
+    return (
+      <View style={styles.container}>
+        <Text
+          style={[
+            styles.label,
+            { color: colors.textSecondary },
+          ]}
+        >
+          {label}
+        </Text>
+        <TextInput
+          ref={ref}
+          {...inputProps}
+          accessibilityLabel={label}
+          placeholderTextColor={dark ? '#4a4a4a' : '#b5bcc4'}
+          style={[
+            styles.input,
+            {
+              backgroundColor: colors.inputBackground,
+              borderColor: colors.border,
+              color: colors.text,
+            },
+          ]}
+        />
+      </View>
+    );
+  },
+);
 
 const styles = StyleSheet.create({
   container: {

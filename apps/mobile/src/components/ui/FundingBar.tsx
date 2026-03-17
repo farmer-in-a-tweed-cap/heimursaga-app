@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/theme/ThemeContext';
 import { colors as brandColors, mono } from '@/theme/tokens';
+import { fmtAmount } from '@/utils/formatAmount';
 
 interface FundingBarProps {
   raised: number;
@@ -28,8 +29,11 @@ export function FundingBar({ raised, goal }: FundingBarProps) {
         />
       </View>
       <View style={styles.labels}>
-        <Text style={[styles.amount, { color: colors.textTertiary }]}>
-          ${raised.toLocaleString()} / ${goal.toLocaleString()}
+        <Text style={[styles.amount, { color: brandColors.copper }]}>
+          {fmtAmount(raised)}
+          <Text style={{ color: colors.textTertiary }}>
+            {' '}/ {fmtAmount(goal)}
+          </Text>
         </Text>
         <Text style={styles.pct}>{Math.round(pct)}%</Text>
       </View>

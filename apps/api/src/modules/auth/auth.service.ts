@@ -292,6 +292,29 @@ export class AuthService {
         { expiresIn: '30d' },
       );
 
+      // Check Stripe Connect status
+      const verifiedPayout = await this.prisma.payoutMethod.findFirst({
+        where: {
+          explorer_id: user.id,
+          deleted_at: null,
+          stripe_account_id: { not: null },
+        },
+        select: { stripe_account_id: true },
+      });
+
+      let stripeConnected = false;
+      if (verifiedPayout?.stripe_account_id) {
+        try {
+          const acct = await this.stripeService.accounts.retrieve(
+            verifiedPayout.stripe_account_id,
+          );
+          stripeConnected =
+            acct.charges_enabled === true && acct.payouts_enabled === true;
+        } catch {
+          stripeConnected = false;
+        }
+      }
+
       // Format user response
       const userResponse: ISessionUserGetResponse = {
         id: user.id,
@@ -304,6 +327,7 @@ export class AuthService {
           : undefined,
         isEmailVerified: user.is_email_verified,
         isPremium: user.is_premium,
+        stripeAccountConnected: stripeConnected,
       };
 
       return {
@@ -464,7 +488,7 @@ export class AuthService {
       };
     } catch (e) {
       this.logger.error(e);
-      throw e.status ? e : new ServiceUnauthorizedException('Invalid token');
+      throw e.status ? e : new ServiceInternalException();
     }
   }
 

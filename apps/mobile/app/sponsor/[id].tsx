@@ -1,10 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import * as Sentry from '@sentry/react-native';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { CardField, useStripe } from '@stripe/stripe-react-native';
+import { usePaymentSheet } from '@stripe/stripe-react-native';
 import { useTheme } from '@/theme/ThemeContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useApi } from '@/hooks/useApi';
@@ -27,7 +28,7 @@ export default function SponsorScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const { ready } = useRequireAuth();
-  const { createPaymentMethod, confirmPayment, confirmSetupIntent } = useStripe();
+  const { initPaymentSheet, presentPaymentSheet } = usePaymentSheet();
 
   const { data: expedition, loading } = useApi<Expedition>(
     id ? `/trips/${id}` : null,
@@ -57,7 +58,6 @@ export default function SponsorScreen() {
   const [message, setMessage] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [isMessagePublic, setIsMessagePublic] = useState(true);
-  const [cardComplete, setCardComplete] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Auto-select first available tier when tiers load or type changes
@@ -99,29 +99,13 @@ export default function SponsorScreen() {
       return;
     }
 
-    if (!cardComplete) {
-      Alert.alert('Card Required', 'Please enter your card details.');
-      return;
-    }
-
     setSubmitting(true);
     try {
-      // Step 1: Create a Stripe PaymentMethod from the card field
-      const { paymentMethod, error: pmError } = await createPaymentMethod({
-        paymentMethodType: 'Card',
-      });
-
-      if (pmError || !paymentMethod) {
-        Alert.alert('Card Error', pmError?.message ?? 'Failed to process card.');
-        return;
-      }
-
-      // Step 2: Call API checkout with correct payload
-      const checkout = await sponsorshipApi.checkout({
+      // Step 1: Prepare checkout — get PaymentSheet params from API
+      const prepared = await sponsorshipApi.prepareCheckout({
         sponsorshipType: paymentType === 0 ? 'one_time_payment' : 'subscription',
         creatorId: expedition.author.username,
         sponsorshipTierId: tier.id,
-        stripePaymentMethodId: paymentMethod.id,
         oneTimePaymentAmount: paymentType === 0 ? activeAmount : undefined,
         billingPeriod: paymentType === 1 ? 'monthly' : undefined,
         message: message.trim() || undefined,
@@ -130,35 +114,39 @@ export default function SponsorScreen() {
         expeditionId: Array.isArray(id) ? id[0] : id,
       });
 
-      // Step 3: Confirm payment — subscriptions use SetupIntent, one-time uses PaymentIntent
-      if (paymentType === 1) {
-        // Subscription: confirm SetupIntent to attach payment method for recurring billing
-        const { error: confirmError } = await confirmSetupIntent(
-          checkout.clientSecret,
-          { paymentMethodType: 'Card' },
-        );
-        if (confirmError) {
-          Alert.alert('Payment Failed', confirmError.message);
-          return;
-        }
-      } else {
-        // One-time: confirm PaymentIntent for immediate charge
-        const { error: confirmError, paymentIntent } = await confirmPayment(
-          checkout.clientSecret,
-          { paymentMethodType: 'Card' },
-        );
-        if (confirmError) {
-          Alert.alert('Payment Failed', confirmError.message);
-          return;
-        }
-        // Complete checkout on backend (webhook fallback)
-        if (paymentIntent?.id) {
-          try {
-            await sponsorshipApi.completeCheckout(paymentIntent.id);
-          } catch {
-            // Non-critical — webhook will handle it
-          }
-        }
+      // Step 2: Initialise PaymentSheet
+      const { error: initError } = await initPaymentSheet({
+        paymentIntentClientSecret: prepared.clientSecret,
+        customerEphemeralKeySecret: prepared.ephemeralKey,
+        customerId: prepared.customerId,
+        merchantDisplayName: 'Heimursaga',
+        applePay: { merchantCountryCode: 'US' },
+        googlePay: { merchantCountryCode: 'US', testEnv: __DEV__ },
+        returnURL: 'heimursaga://stripe-redirect',
+      });
+
+      if (initError) {
+        Alert.alert('Payment Error', initError.message);
+        return;
+      }
+
+      // Step 3: Present PaymentSheet (Apple Pay / card entry)
+      const { error: presentError } = await presentPaymentSheet();
+
+      if (presentError) {
+        // User cancelled — not an error
+        if (presentError.code === 'Canceled') return;
+        Alert.alert('Payment Failed', presentError.message);
+        return;
+      }
+
+      // Step 4: Payment succeeded — notify backend (webhook fallback)
+      const paymentIntentId = prepared.paymentIntentId;
+      try {
+        await sponsorshipApi.completeCheckout(paymentIntentId);
+      } catch (err) {
+        // Non-critical — webhook will handle it
+        if (typeof Sentry !== 'undefined') Sentry.captureException(err);
       }
 
       // Step 5: Success
@@ -173,7 +161,7 @@ export default function SponsorScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [id, expedition, selectedTier, currentTiers, paymentType, activeAmount, cardComplete, message, isPublic, isMessagePublic, createPaymentMethod, confirmPayment, confirmSetupIntent, router]);
+  }, [id, expedition, selectedTier, currentTiers, paymentType, activeAmount, message, isPublic, isMessagePublic, initPaymentSheet, presentPaymentSheet, router]);
 
   if (!ready || loading || !expedition) {
     return (
@@ -310,27 +298,6 @@ export default function SponsorScreen() {
             </View>
           )}
 
-          {/* Card input */}
-          <View style={styles.fieldGroup}>
-            <Text style={[styles.label, { color: colors.textSecondary }]}>PAYMENT METHOD</Text>
-            <View style={[styles.labelLine, { backgroundColor: colors.border }]} />
-            <CardField
-              postalCodeEnabled={false}
-              placeholders={{ number: '4242 4242 4242 4242' }}
-              cardStyle={{
-                backgroundColor: colors.inputBackground,
-                textColor: colors.text,
-                borderColor: colors.border,
-                borderWidth: 2,
-                borderRadius: 0,
-                fontSize: 14,
-                placeholderColor: colors.textTertiary,
-              }}
-              style={styles.cardField}
-              onCardChange={(details) => setCardComplete(details.complete)}
-            />
-          </View>
-
           {/* Message */}
           <View style={styles.fieldGroup}>
             <Text style={[styles.label, { color: colors.textSecondary }]}>MESSAGE (OPTIONAL)</Text>
@@ -342,6 +309,7 @@ export default function SponsorScreen() {
               value={message}
               onChangeText={setMessage}
               textAlignVertical="top"
+              maxLength={500}
             />
           </View>
 
@@ -355,7 +323,7 @@ export default function SponsorScreen() {
           <HButton
             variant="copper"
             onPress={handleSponsor}
-            disabled={submitting || !cardComplete || (paymentType === 1 && monthlyTiers.length === 0)}
+            disabled={submitting || (paymentType === 1 && monthlyTiers.length === 0)}
           >
             {submitting ? 'PROCESSING...' : `SPONSOR $${activeAmount.toFixed(2)}${paymentType === 1 ? '/MO' : ''}`}
           </HButton>
@@ -420,7 +388,6 @@ const styles = StyleSheet.create({
   tierPrice: { fontFamily: mono, fontSize: 16, fontWeight: '700' },
   tierDesc: { fontFamily: mono, fontSize: 12, marginTop: 4 },
   emptyTiers: { fontFamily: mono, fontSize: 12, textAlign: 'center', paddingVertical: 16 },
-  cardField: { width: '100%', height: 50 },
   messageInput: {
     borderWidth: borders.thick,
     padding: 12,

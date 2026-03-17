@@ -79,8 +79,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       '@stripe/stripe-react-native',
       {
-        enableApplePay: false,
-        enableGooglePay: false,
+        merchantIdentifier: 'merchant.com.heimursaga.app',
+        enableApplePay: true,
+        enableGooglePay: true,
       },
     ],
     'expo-secure-store',

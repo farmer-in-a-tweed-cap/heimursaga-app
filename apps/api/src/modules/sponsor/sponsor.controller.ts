@@ -22,6 +22,7 @@ import {
   QuickSponsorDto,
   SponsorCheckoutCompleteDto,
   SponsorCheckoutDto,
+  SponsorPrepareCheckoutDto,
   SponsorshipRefundDto,
   SponsorshipTierCreateDto,
   SponsorshipTierUpdateDto,
@@ -71,6 +72,20 @@ export class SponsorController {
       session,
       setupIntentId: body.setupIntentId,
       entryPublicId: body.entryPublicId,
+    });
+  }
+
+  @Post('checkout/prepare')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async prepareCheckout(
+    @Session() session: ISession,
+    @Body() body: SponsorPrepareCheckoutDto,
+  ) {
+    return await this.sponsorService.prepareCheckout({
+      query: {},
+      payload: body,
+      session,
     });
   }
 

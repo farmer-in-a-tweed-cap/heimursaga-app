@@ -8,6 +8,7 @@ import { StatsBar } from '@/components/ui/StatsBar';
 import { FundingBar } from '@/components/ui/FundingBar';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { Expedition } from '@/types/api';
+import { fmtAmount } from '@/utils/formatAmount';
 
 interface ExpeditionCardFullProps {
   expedition: Expedition;
@@ -92,7 +93,8 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
                 label: expedition.status === 'active' ? 'DAYS ACTIVE' : 'DAYS',
               },
               {
-                value: `$${(expedition.raised ?? 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}`,
+                value: fmtAmount(expedition.raised ?? 0),
+                suffix: sponsorable ? `/${fmtAmount(expedition.goal!)}` : undefined,
                 label: 'RAISED',
               },
               { value: String(expedition.sponsorsCount ?? 0), label: 'SPONSORS' },

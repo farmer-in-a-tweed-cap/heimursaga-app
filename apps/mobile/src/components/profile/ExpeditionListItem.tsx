@@ -8,6 +8,7 @@ import { ImagePlaceholder } from '@/components/ui/ImagePlaceholder';
 import { FundingBar } from '@/components/ui/FundingBar';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { Expedition } from '@/types/api';
+import { fmtAmount } from '@/utils/formatAmount';
 
 interface ExpeditionListItemProps {
   expedition: Expedition;
@@ -52,7 +53,13 @@ export function ExpeditionListItem({ expedition }: ExpeditionListItemProps) {
                 {expedition.entriesCount ?? 0} entries
               </Text>
               <Text style={[styles.stat, { color: brandColors.copper }]}>
-                ${(expedition.raised ?? 0).toLocaleString()} raised
+                {fmtAmount(expedition.raised ?? 0)}
+                {(expedition.goal ?? 0) > 0 && (
+                  <Text style={{ color: colors.textTertiary }}>
+                    /{fmtAmount(expedition.goal!)}
+                  </Text>
+                )}
+                {' raised'}
               </Text>
             </View>
           </View>

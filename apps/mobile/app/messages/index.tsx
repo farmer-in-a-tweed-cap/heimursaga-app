@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
@@ -32,6 +32,19 @@ export default function MessagesScreen() {
     );
   }
 
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredConversations = useMemo(() => {
+    if (!conversations) return [];
+    if (!searchQuery.trim()) return conversations;
+    const q = searchQuery.trim().toLowerCase();
+    return conversations.filter((convo) => {
+      const username = (convo.recipientUsername ?? convo.username ?? '').toLowerCase();
+      const displayName = (convo.recipientName ?? convo.display_name ?? '').toLowerCase();
+      return username.includes(q) || displayName.includes(q);
+    });
+  }, [conversations, searchQuery]);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <NavBar onBack={() => router.back()} title="MESSAGES" />
@@ -52,17 +65,17 @@ export default function MessagesScreen() {
         ) : (
           <>
             <View style={styles.searchWrap}>
-              <SearchBar placeholder="Search conversations..." />
+              <SearchBar placeholder="Search conversations..." value={searchQuery} onChangeText={setSearchQuery} />
             </View>
 
             <View style={styles.listWrap}>
-              {(!conversations || conversations.length === 0) && !loading && (
+              {filteredConversations.length === 0 && !loading && (
                 <Text style={[styles.empty, { color: colors.textTertiary }]}>No conversations</Text>
               )}
 
-              {conversations && conversations.length > 0 && (
+              {filteredConversations.length > 0 && (
                 <HCard>
-                  {conversations.map((convo, i) => (
+                  {filteredConversations.map((convo, i) => (
                     <View
                       key={convo.recipientUsername ?? convo.username}
                       style={i > 0 ? [styles.divider, { borderTopColor: colors.borderThin }] : undefined}

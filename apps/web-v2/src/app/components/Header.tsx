@@ -315,7 +315,7 @@ export function Header() {
 
           {/* Vertical divider before user data */}
           {isAuthenticated && user && (
-            <div className="hidden xl:block flex-shrink-0 self-center h-[60px]" style={{ width: '2px', backgroundColor: '#616161', marginLeft: '24px', marginRight: '24px' }}></div>
+            <div className="hidden xl:block flex-shrink-0 self-center h-[60px] w-[2px] bg-[#616161] mx-6"></div>
           )}
 
           {/* User Status & Context - Hidden on smaller screens */}

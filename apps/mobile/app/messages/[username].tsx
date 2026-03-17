@@ -11,7 +11,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
 import { NavBar } from '@/components/ui/NavBar';
 import { MessageBubble } from '@/components/ui/MessageBubble';
-import { messagesApi } from '@/services/api';
+import { messagesApi, ApiError } from '@/services/api';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { Message } from '@/types/api';
 
@@ -48,7 +48,8 @@ export default function MessageDetailScreen() {
       setText('');
       refetch();
     } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to send message');
+      const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
+      Alert.alert('Error', msg);
     }
   }, [text, username, refetch]);
 
@@ -73,8 +74,8 @@ export default function MessageDetailScreen() {
 
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={96}
       >
         <FlatList
           data={reversedMessages}
@@ -99,6 +100,7 @@ export default function MessageDetailScreen() {
               value={text}
               onChangeText={setText}
               onSubmitEditing={handleSend}
+              maxLength={2000}
             />
             <TouchableOpacity style={styles.sendBtn} onPress={handleSend}>
               <Text style={styles.sendText}>SEND</Text>

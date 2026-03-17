@@ -8,6 +8,7 @@ export async function getAccessToken(): Promise<string | null> {
 }
 
 export async function setAccessToken(token: string): Promise<void> {
+  if (!token) return; // never store empty/undefined tokens
   await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, token);
 }
 
@@ -16,6 +17,7 @@ export async function getRefreshToken(): Promise<string | null> {
 }
 
 export async function setRefreshToken(token: string): Promise<void> {
+  if (!token) return; // never store empty/undefined tokens
   await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, token);
 }
 

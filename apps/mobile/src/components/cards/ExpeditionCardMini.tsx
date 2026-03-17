@@ -7,6 +7,7 @@ import { CoverImage } from '@/components/ui/CoverImage';
 import { FundingBar } from '@/components/ui/FundingBar';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { Expedition } from '@/types/api';
+import { fmtAmount } from '@/utils/formatAmount';
 
 interface ExpeditionCardMiniProps {
   expedition: Expedition;
@@ -66,7 +67,13 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
                 {expedition.entriesCount ?? 0} entries
               </Text>
               <Text style={[styles.stat, { color: brandColors.copper }]}>
-                ${(expedition.raised ?? 0).toLocaleString()} raised
+                {fmtAmount(expedition.raised ?? 0)}
+                {sponsorable && (
+                  <Text style={{ color: colors.textTertiary }}>
+                    /{fmtAmount(expedition.goal!)}
+                  </Text>
+                )}
+                {' raised'}
               </Text>
             </View>
           </View>

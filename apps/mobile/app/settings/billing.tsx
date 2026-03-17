@@ -14,6 +14,7 @@ import { HCard } from '@/components/ui/HCard';
 import { HButton } from '@/components/ui/HButton';
 import {
   paymentMethodApi,
+  ApiError,
   type PaymentMethodInfo,
 } from '@/services/api';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
@@ -76,7 +77,8 @@ export default function BillingScreen() {
       setCardComplete(false);
       fetchMethods();
     } catch (err: any) {
-      Alert.alert('Error', err.message ?? 'Failed to add payment method.');
+      const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
+      Alert.alert('Error', msg);
     } finally {
       setAddingCard(false);
     }

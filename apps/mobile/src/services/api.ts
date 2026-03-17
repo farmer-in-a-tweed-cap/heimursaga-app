@@ -1,5 +1,6 @@
 import {
   getAccessToken,
+  setAccessToken,
   getRefreshToken,
   setTokens,
   clearTokens,
@@ -73,7 +74,10 @@ async function tryRefreshToken(): Promise<boolean> {
       }
 
       const data = await res.json();
-      await setTokens(data.data.accessToken, data.data.refreshToken);
+      const newAccessToken = data.data.token;
+      if (!newAccessToken) return false;
+      // Server only returns a new access token; keep the existing refresh token
+      await setAccessToken(newAccessToken);
       return true;
     } catch {
       // Network error (offline, timeout) — don't clear tokens
@@ -207,6 +211,7 @@ import type {
   Sponsorship,
   SponsorshipTier,
   SponsorshipCheckout,
+  PrepareCheckoutResponse,
   Balance,
   Payout,
   ProfileSettings,
@@ -309,8 +314,14 @@ export const commentsApi = {
   getComments(postId: string | number) {
     return api.get<ApiResponse<Comment[]>>(`/posts/${postId}/comments`);
   },
-  createComment(postId: string | number, content: string) {
-    return api.post<ApiResponse<Comment>>(`/posts/${postId}/comments`, { content });
+  createComment(postId: string | number, content: string, parentId?: string) {
+    return api.post<ApiResponse<Comment>>(`/posts/${postId}/comments`, { content, parentId });
+  },
+  updateComment(commentId: string, content: string) {
+    return api.put<ApiResponse<Comment>>(`/comments/${commentId}`, { content });
+  },
+  deleteComment(commentId: string) {
+    return api.delete<ApiResponse<void>>(`/comments/${commentId}`);
   },
 };
 
@@ -339,7 +350,7 @@ export const expeditionApi = {
   getExpeditions(params?: string) {
     return api.get<ApiResponse<Expedition[]>>(`/trips${params ? `?${params}` : ''}`);
   },
-  getExpedition(id: number) {
+  getExpedition(id: string | number) {
     return api.get<ApiResponse<Expedition>>(`/trips/${id}`);
   },
   createExpedition(data: Record<string, unknown>) {
@@ -348,7 +359,7 @@ export const expeditionApi = {
   updateExpedition(id: string | number, data: Partial<Expedition>) {
     return api.put<ApiResponse<Expedition>>(`/trips/${id}`, data);
   },
-  deleteExpedition(id: number) {
+  deleteExpedition(id: string | number) {
     return api.delete<ApiResponse<void>>(`/trips/${id}`);
   },
   createWaypoint(expeditionId: string | number, data: { title?: string; lat: number; lon: number; date?: string; sequence?: number }) {
@@ -356,6 +367,9 @@ export const expeditionApi = {
   },
   deleteWaypoint(tripId: number, waypointId: number) {
     return api.delete<ApiResponse<void>>(`/trips/${tripId}/waypoints/${waypointId}`);
+  },
+  syncWaypoints(expeditionId: string | number, waypoints: Array<{ lat: number; lon: number; title?: string; sequence: number }>) {
+    return api.put<void>(`/trips/${expeditionId}/waypoints/sync`, { waypoints });
   },
   getUserExpeditions() {
     return api.get<ApiResponse<Expedition[]>>('/user/trips');
@@ -378,6 +392,20 @@ export const sponsorshipApi = {
     expeditionId?: string;
   }) {
     return api.post<SponsorshipCheckout>('/sponsor/checkout', data);
+  },
+  prepareCheckout(data: {
+    sponsorshipType: string;
+    creatorId: string;
+    sponsorshipTierId: string;
+    oneTimePaymentAmount?: number;
+    customAmount?: number;
+    billingPeriod?: string;
+    message?: string;
+    isPublic?: boolean;
+    isMessagePublic?: boolean;
+    expeditionId?: string;
+  }) {
+    return api.post<PrepareCheckoutResponse>('/sponsor/checkout/prepare', data);
   },
   completeCheckout(paymentIntentId: string) {
     return api.post<{ success: boolean }>('/sponsor/checkout/complete', { paymentIntentId });

@@ -613,6 +613,448 @@ export class SponsorService {
     }
   }
 
+  /**
+   * Prepare a checkout for PaymentSheet (mobile Apple Pay / Google Pay).
+   * Creates the PaymentIntent or Subscription without a payment method,
+   * returning the clientSecret, ephemeralKey, and customerId needed to
+   * initialise the Stripe PaymentSheet on the client.
+   */
+  async prepareCheckout({
+    session,
+    payload,
+  }: ISessionQueryWithPayload<
+    {},
+    {
+      sponsorshipType: string;
+      creatorId: string;
+      sponsorshipTierId?: string;
+      billingPeriod?: SponsorshipBillingPeriod;
+      oneTimePaymentAmount?: number;
+      customAmount?: number;
+      message?: string;
+      emailDelivery?: boolean;
+      isPublic?: boolean;
+      isMessagePublic?: boolean;
+      expeditionId?: string;
+    }
+  >): Promise<{ clientSecret: string; ephemeralKey: string; customerId: string; paymentIntentId: string }> {
+    try {
+      const { userId } = session;
+      const {
+        sponsorshipTierId,
+        oneTimePaymentAmount,
+        customAmount,
+        creatorId,
+        billingPeriod = SponsorshipBillingPeriod.MONTHLY,
+        message = '',
+        emailDelivery = true,
+        isPublic = true,
+        isMessagePublic = true,
+        expeditionId,
+      } = payload;
+
+      if (!userId) throw new ServiceForbiddenException();
+
+      const sponsorshipType =
+        payload.sponsorshipType === SponsorshipType.SUBSCRIPTION
+          ? SponsorshipType.SUBSCRIPTION
+          : SponsorshipType.ONE_TIME_PAYMENT;
+      const currency = CurrencyCode.USD;
+
+      // Validate one-time payment amounts
+      if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
+        if (!oneTimePaymentAmount || oneTimePaymentAmount < 5) {
+          throw new ServiceBadRequestException(
+            'One-time payment must be at least $5',
+          );
+        }
+        if (oneTimePaymentAmount > 10000) {
+          throw new ServiceBadRequestException(
+            'One-time payment cannot exceed $10,000',
+          );
+        }
+      }
+
+      // get sponsorship tier
+      const sponsorshipTier =
+        await this.prisma.sponsorshipTier.findFirstOrThrow({
+          where: { public_id: sponsorshipTierId },
+          select: { id: true },
+        });
+
+      // get user
+      const user = await this.prisma.explorer.findFirstOrThrow({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          stripe_customer_id: true,
+        },
+      });
+
+      // get creator
+      const creator = await this.prisma.explorer.findFirstOrThrow({
+        where: { username: creatorId },
+        select: {
+          id: true,
+          stripe_customer_id: true,
+          username: true,
+          role: true,
+        },
+      });
+
+      if (creator.role !== UserRole.CREATOR) {
+        throw new ServiceBadRequestException(
+          'This explorer is not eligible to receive sponsorships',
+        );
+      }
+
+      if (user.id === creator.id) {
+        throw new ServiceBadRequestException('You cannot sponsor yourself');
+      }
+
+      // Check duplicate subscription
+      if (sponsorshipType === SponsorshipType.SUBSCRIPTION) {
+        const subscribed = await this.prisma.sponsorship
+          .count({
+            where: {
+              type: SponsorshipType.SUBSCRIPTION,
+              status: SponsorshipStatus.ACTIVE,
+              sponsor_id: user.id,
+              sponsored_explorer_id: creator.id,
+            },
+          })
+          .then((count) => count >= 1);
+        if (subscribed) {
+          throw new ServiceBadRequestException(
+            'You already have an active subscription to this explorer',
+          );
+        }
+      }
+
+      // get creator payout method
+      const payoutMethod = await this.prisma.payoutMethod.findFirstOrThrow({
+        where: {
+          explorer_id: creator.id,
+          platform: PayoutMethodPlatform.STRIPE,
+        },
+        select: { stripe_account_id: true, is_verified: true },
+      });
+      const creatorStripeAccountId = payoutMethod.stripe_account_id;
+
+      if (!creatorStripeAccountId) {
+        throw new ServiceBadRequestException(
+          'This explorer has not completed payment setup',
+        );
+      }
+
+      const stripeAccount = await this.stripeService.accounts.retrieve(
+        creatorStripeAccountId,
+      );
+      if (
+        !stripeAccount.charges_enabled ||
+        !stripeAccount.payouts_enabled ||
+        stripeAccount.requirements?.currently_due?.length > 0
+      ) {
+        throw new ServiceBadRequestException(
+          'This explorer has not completed Stripe onboarding to receive payments',
+        );
+      }
+
+      // Get/create Stripe customer
+      const stripeCustomer = await this.stripeService.getOrCreateCustomer({
+        email: user.email,
+        data: { email: user.email, name: user.username },
+      });
+
+      // Create ephemeral key for PaymentSheet
+      const ephemeralKey = await this.stripeService.createEphemeralKey(
+        stripeCustomer.id,
+      );
+
+      // Create checkout + Stripe objects (without payment method)
+      const { clientSecret, paymentIntentId } = await this.prisma.$transaction(
+        async (tx) => {
+          let clientSecret = '';
+          let paymentIntentId = '';
+
+          if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
+            const applicationFeeAmount = decimalToInteger(
+              calculateFee({
+                amount: oneTimePaymentAmount,
+                percent: APPLICATION_FEE,
+              }),
+            );
+            const amount = decimalToInteger(oneTimePaymentAmount);
+
+            const checkout = await tx.checkout.create({
+              data: {
+                public_id: generator.publicId(),
+                status: CheckoutStatus.PENDING,
+                transaction_type: PaymentTransactionType.SPONSORSHIP,
+                sponsorship_type: sponsorshipType,
+                sponsorship_tier_id: sponsorshipTier.id,
+                message,
+                total: amount,
+                explorer_id: user.id,
+                sponsored_explorer_id: creator.id,
+                email_delivery_enabled: emailDelivery,
+                is_public: isPublic,
+                is_message_public: isMessagePublic,
+                expedition_public_id: expeditionId || null,
+              },
+              select: { id: true, public_id: true },
+            });
+
+            const idempotencyKey = `sponsor_otp_prepare_${checkout.id}`;
+
+            const stripePaymentIntent =
+              await this.stripeService.paymentIntents.create(
+                {
+                  amount,
+                  currency,
+                  customer: stripeCustomer.id,
+                  // No payment_method — PaymentSheet handles collection
+                  transfer_data: { destination: creatorStripeAccountId },
+                  payment_method_types: ['card'],
+                  application_fee_amount: applicationFeeAmount,
+                  description: `Sponsorship from ${user.username} to ${creator.username}`,
+                  metadata: {
+                    [StripeMetadataKey.TRANSACTION]:
+                      PaymentTransactionType.SPONSORSHIP,
+                    [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
+                    [StripeMetadataKey.USER_ID]: user.id.toString(),
+                    [StripeMetadataKey.CREATOR_ID]: creator.id.toString(),
+                  },
+                },
+                { idempotencyKey },
+              );
+
+            await tx.checkout.update({
+              where: { id: checkout.id },
+              data: { stripe_payment_intent_id: stripePaymentIntent.id },
+            });
+
+            clientSecret = stripePaymentIntent.client_secret;
+            paymentIntentId = stripePaymentIntent.id;
+            return { clientSecret, paymentIntentId };
+          }
+
+          // ── Subscription flow ──
+          if (!sponsorshipTierId) {
+            throw new ServiceBadRequestException(
+              'sponsorship tier not available',
+            );
+          }
+
+          const subscriptionTier = await tx.sponsorshipTier
+            .findFirstOrThrow({
+              where: { public_id: sponsorshipTierId },
+              select: {
+                id: true,
+                price: true,
+                stripe_product_id: true,
+                stripe_price_month_id: true,
+                stripe_price_year_id: true,
+                explorer_id: true,
+              },
+            })
+            .catch(() => {
+              throw new ServiceBadRequestException(
+                'sponsorship tier not available',
+              );
+            });
+
+          const isYearly = billingPeriod === SponsorshipBillingPeriod.YEARLY;
+          const hasCustomAmount = customAmount && customAmount > 0;
+
+          let stripePriceId: string | null;
+          let subscriptionAmount: number;
+
+          if (hasCustomAmount) {
+            const customAmountCents = decimalToInteger(customAmount);
+            subscriptionAmount = customAmountCents;
+
+            if (customAmountCents < 500) {
+              throw new ServiceBadRequestException(
+                'Subscription amount must be at least $5',
+              );
+            }
+            if (customAmountCents > 1000000) {
+              throw new ServiceBadRequestException(
+                'Subscription amount cannot exceed $10,000',
+              );
+            }
+
+            const dynamicPrice = await this.stripeService.prices.create({
+              unit_amount: customAmountCents,
+              currency: CurrencyCode.USD,
+              recurring: { interval: isYearly ? 'year' : 'month' },
+              product_data: { name: `Sponsorship - $${customAmount}/mo` },
+            });
+            stripePriceId = dynamicPrice.id;
+          } else {
+            stripePriceId = isYearly
+              ? subscriptionTier.stripe_price_year_id
+              : subscriptionTier.stripe_price_month_id;
+
+            const monthlyAmount = subscriptionTier.price;
+            subscriptionAmount = isYearly
+              ? this.calculateYearlyAmount(monthlyAmount)
+              : monthlyAmount;
+
+            if (!stripePriceId) {
+              this.logger.log(
+                `tier ${subscriptionTier.id} missing Stripe price (prepare), provisioning`,
+              );
+
+              let productId = subscriptionTier.stripe_product_id;
+
+              if (!productId) {
+                const stripeProduct =
+                  await this.stripeService.products.create({
+                    name: `creator_${subscriptionTier.explorer_id}__sponsorship`,
+                    active: true,
+                    default_price_data: {
+                      currency,
+                      unit_amount: monthlyAmount,
+                      recurring: { interval: 'month' },
+                    },
+                  });
+                productId = stripeProduct.id;
+                subscriptionTier.stripe_price_month_id =
+                  stripeProduct.default_price as string;
+              }
+
+              if (!subscriptionTier.stripe_price_month_id) {
+                const monthlyPrice = await this.stripeService.prices.create({
+                  currency,
+                  unit_amount: monthlyAmount,
+                  recurring: { interval: 'month' },
+                  product: productId,
+                });
+                subscriptionTier.stripe_price_month_id = monthlyPrice.id;
+              }
+
+              if (!subscriptionTier.stripe_price_year_id) {
+                const yearlyPrice = await this.stripeService.prices.create({
+                  currency,
+                  unit_amount: this.calculateYearlyAmount(monthlyAmount),
+                  recurring: { interval: 'year' },
+                  product: productId,
+                });
+                subscriptionTier.stripe_price_year_id = yearlyPrice.id;
+              }
+
+              await tx.sponsorshipTier.update({
+                where: { id: subscriptionTier.id },
+                data: {
+                  stripe_product_id: productId,
+                  stripe_price_month_id:
+                    subscriptionTier.stripe_price_month_id,
+                  stripe_price_year_id: subscriptionTier.stripe_price_year_id,
+                },
+              });
+
+              stripePriceId = isYearly
+                ? subscriptionTier.stripe_price_year_id
+                : subscriptionTier.stripe_price_month_id;
+            }
+          }
+
+          const checkout = await tx.checkout.create({
+            data: {
+              public_id: generator.publicId(),
+              status: CheckoutStatus.PENDING,
+              transaction_type: PaymentTransactionType.SPONSORSHIP,
+              sponsorship_type: sponsorshipType,
+              sponsorship_tier_id: sponsorshipTier.id,
+              message,
+              total: subscriptionAmount,
+              explorer_id: user.id,
+              sponsored_explorer_id: creator.id,
+              email_delivery_enabled: emailDelivery,
+              is_public: isPublic,
+              is_message_public: isMessagePublic,
+              expedition_public_id: expeditionId || null,
+            },
+            select: { id: true, public_id: true },
+          });
+
+          const subscriptionIdempotencyKey = `sponsor_sub_prepare_${checkout.id}`;
+
+          const subscription =
+            await this.stripeService.subscriptions.create(
+              {
+                customer: stripeCustomer.id,
+                items: [{ price: stripePriceId }],
+                // No default_payment_method — PaymentSheet handles collection
+                transfer_data: { destination: creatorStripeAccountId },
+                application_fee_percent: APPLICATION_FEE,
+                collection_method: 'charge_automatically',
+                payment_behavior: 'default_incomplete',
+                payment_settings: {
+                  save_default_payment_method: 'on_subscription',
+                  payment_method_types: ['card'],
+                },
+                expand: ['latest_invoice.payment_intent'],
+                metadata: {
+                  [StripeMetadataKey.TRANSACTION]:
+                    PaymentTransactionType.SPONSORSHIP,
+                  [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
+                  [StripeMetadataKey.USER_ID]: user.id.toString(),
+                  [StripeMetadataKey.CREATOR_ID]: creator.id.toString(),
+                  description: `${user.username} sponsors ${creator.username}`,
+                },
+              },
+              { idempotencyKey: subscriptionIdempotencyKey },
+            );
+
+          const invoice =
+            subscription.latest_invoice as Stripe.Invoice;
+          const paymentIntent =
+            invoice.payment_intent as Stripe.PaymentIntent;
+
+          await tx.checkout.update({
+            where: { id: checkout.id },
+            data: {
+              stripe_payment_intent_id: paymentIntent.id,
+              stripe_subscription_id: subscription.id,
+            },
+          });
+
+          // Add metadata to the payment intent
+          await this.stripeService.paymentIntents.update(paymentIntent.id, {
+            metadata: {
+              [StripeMetadataKey.TRANSACTION]:
+                PaymentTransactionType.SPONSORSHIP,
+              [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
+              [StripeMetadataKey.USER_ID]: user.id.toString(),
+              [StripeMetadataKey.CREATOR_ID]: creator.id.toString(),
+            },
+          });
+
+          clientSecret = paymentIntent.client_secret;
+          paymentIntentId = paymentIntent.id;
+          return { clientSecret, paymentIntentId };
+        },
+        { timeout: 30000 },
+      );
+
+      return {
+        clientSecret,
+        ephemeralKey,
+        customerId: stripeCustomer.id,
+        paymentIntentId,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
   async completeCheckout(
     payload: ISponsorCheckoutCompletePayload,
   ): Promise<void> {

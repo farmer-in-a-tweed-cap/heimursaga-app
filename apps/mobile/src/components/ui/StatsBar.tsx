@@ -5,6 +5,7 @@ import { colors as brandColors, mono } from '@/theme/tokens';
 
 interface Stat {
   value: string;
+  suffix?: string;
   label: string;
 }
 
@@ -42,6 +43,11 @@ export function StatsBar({ stats }: StatsBarProps) {
           >
             <Text style={[styles.value, { color: valueColor }]}>
               {s.value}
+              {s.suffix && (
+                <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>
+                  {s.suffix}
+                </Text>
+              )}
             </Text>
             <Text style={[styles.label, { color: colors.textTertiary }]}>
               {s.label}

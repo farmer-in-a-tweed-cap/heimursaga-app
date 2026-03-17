@@ -507,6 +507,7 @@ function RootNav() {
         <Stack.Screen name="explorer/[username]/followers" />
         <Stack.Screen name="explorer/[username]/following" />
         <Stack.Screen name="menu" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="notifications" />
         <Stack.Screen name="settings/index" />
         <Stack.Screen name="settings/profile" />
         <Stack.Screen name="settings/notifications" />
@@ -546,6 +547,7 @@ export default function RootLayout() {
     <StripeProvider
       publishableKey={stripeKey}
       urlScheme="heimursaga"
+      merchantIdentifier="merchant.com.heimursaga.app"
     >
       <ErrorBoundary>
         <ThemeProvider>

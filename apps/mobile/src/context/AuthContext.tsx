@@ -27,6 +27,7 @@ interface User {
   picture?: string;
   is_pro?: boolean;
   isPremium?: boolean;
+  stripeAccountConnected?: boolean;
   created_at?: string;
 }
 
@@ -66,21 +67,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setBiometricEnabledState(bioPref);
 
         const token = await getAccessToken();
+        if (__DEV__) console.log('[Auth] stored token:', token ? `${token.slice(0, 20)}...` : 'none');
+        if (__DEV__) console.log('[Auth] biometric:', { bioAvail, bioPref });
         if (!token) return;
 
         // If biometric enabled, don't auto-login — let login screen handle it
-        if (bioPref && bioAvail) {
+        // Skip in dev to avoid re-authenticating on every reload
+        if (bioPref && bioAvail && !__DEV__) {
           setHasStoredSession(true);
           return;
         }
 
         // No biometric — auto-login with stored token
+        if (__DEV__) console.log('[Auth] calling /auth/mobile/user at', require('@/services/api').API_BASE_URL);
         const res = await api.get<{ success: boolean; data: User }>(
           '/auth/mobile/user',
         );
+        if (__DEV__) console.log('[Auth] auto-login success:', res.data?.username);
         setUser(res.data);
-      } catch {
-        await clearTokens();
+      } catch (err) {
+        if (__DEV__) console.log('[Auth] auto-login failed:', err instanceof ApiError ? `${err.status}: ${err.message}` : err);
+        // Only clear tokens on auth failures (401/403), not network errors
+        if (err instanceof ApiError && err.status >= 400 && err.status < 500) {
+          await clearTokens();
+        }
       } finally {
         setLoading(false);
       }

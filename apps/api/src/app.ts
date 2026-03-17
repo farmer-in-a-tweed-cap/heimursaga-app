@@ -57,7 +57,7 @@ export async function app() {
     // create a fastify adapter
     const adapter = new FastifyAdapter({
       trustProxy: true,
-      bodyLimit: 2 * 1024 * 1024,
+      bodyLimit: 25 * 1024 * 1024,
     });
 
     // create a fastify instance
@@ -90,7 +90,7 @@ export async function app() {
     await fastify.register<FastifyMultipartOptions>(fastifyMultipart as any, {
       limits: {
         files: 1,
-        fileSize: 2 * 1024 * 1024,
+        fileSize: 25 * 1024 * 1024,
       },
     } satisfies FastifyMultipartOptions);
 

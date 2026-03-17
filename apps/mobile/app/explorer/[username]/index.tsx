@@ -1,5 +1,5 @@
 import React, { useState, useEffect, ComponentType } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Share, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Share, Alert, Linking } from 'react-native';
 // SafeAreaView no longer needed – NavBar handles top inset
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
@@ -361,18 +361,19 @@ export default function ExplorerProfileScreen() {
               <View style={styles.sectionContent}>
                 <HCard>
                   {links.map((link, i) => (
-                    <View
+                    <TouchableOpacity
                       key={link.label}
                       style={[
                         styles.linkItem,
                         i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderThin },
                       ]}
+                      onPress={() => Linking.openURL(link.value)}
                     >
                       <Text style={styles.linkLabel}>{link.label}</Text>
                       <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
                         <Path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />
                       </Svg>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </HCard>
               </View>

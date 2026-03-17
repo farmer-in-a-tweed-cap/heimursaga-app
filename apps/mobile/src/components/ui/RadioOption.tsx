@@ -8,13 +8,14 @@ interface RadioOptionProps {
   description?: string;
   selected: boolean;
   onSelect: () => void;
+  disabled?: boolean;
 }
 
-export function RadioOption({ label, description, selected, onSelect }: RadioOptionProps) {
+export function RadioOption({ label, description, selected, onSelect, disabled }: RadioOptionProps) {
   const { colors } = useTheme();
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onSelect} activeOpacity={0.7}>
+    <TouchableOpacity style={[styles.container, disabled && { opacity: 0.4 }]} onPress={disabled ? undefined : onSelect} activeOpacity={disabled ? 1 : 0.7}>
       <View
         style={[
           styles.outer,

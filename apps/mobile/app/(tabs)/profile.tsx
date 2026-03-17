@@ -64,21 +64,6 @@ export default function ProfileScreen() {
 
   const [loadingFollow, setLoadingFollow] = useState<Record<string, boolean>>({});
 
-  if (!ready) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
-        <ActivityIndicator color={brandColors.copper} style={styles.loader} />
-      </SafeAreaView>
-    );
-  }
-
-  const expeditions = tripsData?.data ?? [];
-  const entries = postsData?.data ?? [];
-  const following = followingData?.data ?? [];
-  const followers = followersData?.data ?? [];
-
-  const followingUsernames = new Set(following.map((f) => f.username));
-
   const handleFollow = useCallback(async (targetUsername: string) => {
     setLoadingFollow((prev) => ({ ...prev, [targetUsername]: true }));
     try {
@@ -104,6 +89,21 @@ export default function ProfileScreen() {
       setLoadingFollow((prev) => ({ ...prev, [targetUsername]: false }));
     }
   }, [refetchFollowing, refetchFollowers]);
+
+  if (!ready) {
+    return (
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={brandColors.copper} style={styles.loader} />
+      </SafeAreaView>
+    );
+  }
+
+  const expeditions = tripsData?.data ?? [];
+  const entries = postsData?.data ?? [];
+  const following = followingData?.data ?? [];
+  const followers = followersData?.data ?? [];
+
+  const followingUsernames = new Set(following.map((f) => f.username));
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
@@ -142,7 +142,7 @@ export default function ProfileScreen() {
             stats={[
               { value: String(expeditions.length), label: 'EXPED.' },
               { value: String(entries.length), label: 'ENTRIES' },
-              { value: '0', label: 'SPONSORS' },
+              { value: '\u2014', label: 'SPONSORS' },
               { value: String(following.length + followers.length), label: 'FOLLOW' },
             ]}
           />

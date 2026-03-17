@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Keyboard,
+  TextInput,
   StyleSheet,
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
@@ -15,12 +17,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
+import { ApiError } from '@/services/api';
 import { colors as brandColors, mono, borders } from '@/theme/tokens';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import { HButton } from '@/components/ui/HButton';
 import { HTextField } from '@/components/ui/HTextField';
 import { HCard } from '@/components/ui/HCard';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
+
+// Prevent autofill auto-submit from looping across remounts
+let lastAutoLoginAt = 0;
 
 export default function LoginScreen() {
   const { dark, colors } = useTheme();
@@ -29,6 +35,17 @@ export default function LoginScreen() {
 
   const [mode, setMode] = useState<0 | 1>(0); // 0=login, 1=register
   const [submitting, setSubmitting] = useState(false);
+
+  // Refs for field chaining
+  const passwordRef = useRef<TextInput>(null);
+  const regUsernameRef = useRef<TextInput>(null);
+  const regPasswordRef = useRef<TextInput>(null);
+  const regConfirmRef = useRef<TextInput>(null);
+
+  // Autofill detection: when both login fields change in the same render, auto-submit.
+  // Module-level cooldown prevents looping if login succeeds but auth bounces back.
+  const prevLogin = useRef({ user: '', pass: '' });
+
   // Login fields
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -39,19 +56,36 @@ export default function LoginScreen() {
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
 
-  async function handleLogin() {
+  const handleLogin = useCallback(async () => {
+    Keyboard.dismiss();
     if (!usernameOrEmail || !password) return;
     setSubmitting(true);
     try {
       await login(usernameOrEmail, password);
     } catch (err: any) {
-      Alert.alert('Login Failed', err.message || 'Invalid credentials');
+      const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
+      Alert.alert('Login Failed', msg);
     } finally {
       setSubmitting(false);
     }
-  }
+  }, [usernameOrEmail, password, login]);
+
+  useEffect(() => {
+    if (mode !== 0 || submitting) return;
+    if (Date.now() - lastAutoLoginAt < 10000) return;
+    const prev = prevLogin.current;
+    const bothChanged = usernameOrEmail !== prev.user && password !== prev.pass;
+    const bothFilled = !!usernameOrEmail && !!password;
+    prevLogin.current = { user: usernameOrEmail, pass: password };
+    if (bothChanged && bothFilled) {
+      lastAutoLoginAt = Date.now();
+      Keyboard.dismiss();
+      handleLogin();
+    }
+  }, [usernameOrEmail, password, handleLogin]);
 
   async function handleRegister() {
+    Keyboard.dismiss();
     if (!regEmail || !regUsername || !regPassword) return;
     if (regPassword !== regConfirm) {
       Alert.alert('Error', 'Passwords do not match');
@@ -61,7 +95,8 @@ export default function LoginScreen() {
     try {
       await register(regEmail, regUsername, regPassword);
     } catch (err: any) {
-      Alert.alert('Registration Failed', err.message || 'Could not create account');
+      const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
+      Alert.alert('Registration Failed', msg);
     } finally {
       setSubmitting(false);
     }
@@ -123,13 +158,21 @@ export default function LoginScreen() {
                 autoCapitalize="none"
                 autoCorrect={false}
                 keyboardType="email-address"
+                textContentType="username"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                blurOnSubmit={false}
               />
               <HTextField
+                ref={passwordRef}
                 label="PASSWORD"
                 placeholder="Enter your password"
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
+                textContentType="password"
+                returnKeyType="go"
+                onSubmitEditing={handleLogin}
               />
 
               <HButton onPress={handleLogin} disabled={submitting}>
@@ -194,27 +237,41 @@ export default function LoginScreen() {
                 onChangeText={setRegEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                returnKeyType="next"
+                onSubmitEditing={() => regUsernameRef.current?.focus()}
+                blurOnSubmit={false}
               />
               <HTextField
+                ref={regUsernameRef}
                 label="USERNAME"
                 placeholder="Choose a username"
                 value={regUsername}
                 onChangeText={setRegUsername}
                 autoCapitalize="none"
+                returnKeyType="next"
+                onSubmitEditing={() => regPasswordRef.current?.focus()}
+                blurOnSubmit={false}
               />
               <HTextField
+                ref={regPasswordRef}
                 label="PASSWORD"
                 placeholder="Create a password"
                 value={regPassword}
                 onChangeText={setRegPassword}
                 secureTextEntry
+                returnKeyType="next"
+                onSubmitEditing={() => regConfirmRef.current?.focus()}
+                blurOnSubmit={false}
               />
               <HTextField
+                ref={regConfirmRef}
                 label="CONFIRM PASSWORD"
                 placeholder="Repeat your password"
                 value={regConfirm}
                 onChangeText={setRegConfirm}
                 secureTextEntry
+                returnKeyType="go"
+                onSubmitEditing={handleRegister}
               />
 
               <HButton onPress={handleRegister} disabled={submitting}>

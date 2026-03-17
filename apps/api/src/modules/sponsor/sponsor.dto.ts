@@ -85,6 +85,65 @@ export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
   expeditionId?: string;
 }
 
+export class SponsorPrepareCheckoutDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsEnum(SponsorshipType)
+  @IsNotEmpty()
+  sponsorshipType: string;
+
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  creatorId: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  sponsorshipTierId?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsEnum(SponsorshipBillingPeriod)
+  @IsOptional()
+  billingPeriod?: SponsorshipBillingPeriod;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  oneTimePaymentAmount?: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @IsOptional()
+  customAmount?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  message?: string;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  emailDelivery?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isPublic?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isMessagePublic?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  expeditionId?: string;
+}
+
 export class SponsorCheckoutCompleteDto {
   @ApiProperty({ required: true })
   @IsString()

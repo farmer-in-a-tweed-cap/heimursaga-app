@@ -227,7 +227,7 @@ importers:
         version: 7.0.0
       ts-jest:
         specifier: ^29.1.0
-        version: 29.1.0(esbuild@0.25.9)(jest@29.6.3)(typescript@5.5.4)
+        version: 29.1.0(@babel/core@7.28.3)(esbuild@0.25.9)(jest@29.6.3)(typescript@5.5.4)
       ts-loader:
         specifier: ^9.4.3
         version: 9.4.3(typescript@5.5.4)(webpack@5.101.3)
@@ -301,6 +301,9 @@ importers:
       expo-image:
         specifier: ~2.3.0
         version: 2.3.0(expo@55.0.4)(react-native@0.83.2)(react@19.2.0)
+      expo-image-manipulator:
+        specifier: ~55.0.10
+        version: 55.0.10(expo@55.0.4)
       expo-image-picker:
         specifier: ~55.0.10
         version: 55.0.10(expo@55.0.4)
@@ -14820,6 +14823,15 @@ packages:
       expo: 55.0.4(@babel/core@7.28.3)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.3)(react-dom@18.3.1)(react-native@0.83.2)(react@19.2.0)(typescript@5.9.2)
     dev: false
 
+  /expo-image-manipulator@55.0.10(expo@55.0.4):
+    resolution: {integrity: sha512-eEiHSznWa0i5I7iNFDRuHz663XiS26s8SEFigGbsvkFDibGI9x391Qb76DPSGtnqNkJa39etuFw42lbErHphHA==}
+    peerDependencies:
+      expo: '*'
+    dependencies:
+      expo: 55.0.4(@babel/core@7.28.3)(@expo/dom-webview@55.0.3)(@expo/metro-runtime@55.0.6)(expo-router@55.0.3)(react-dom@18.3.1)(react-native@0.83.2)(react@19.2.0)(typescript@5.9.2)
+      expo-image-loader: 55.0.0(expo@55.0.4)
+    dev: false
+
   /expo-image-picker@55.0.10(expo@55.0.4):
     resolution: {integrity: sha512-uspDWjNBNjUD//MLzu7oEtT9cuNgW5pd6HxPfAJffRIdkdCUCYxLYXRp5pfB6JtW640eCdvm2QEQrQC172Y62g==}
     peerDependencies:
@@ -21751,7 +21763,7 @@ packages:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
     dev: true
 
-  /ts-jest@29.1.0(esbuild@0.25.9)(jest@29.6.3)(typescript@5.5.4):
+  /ts-jest@29.1.0(@babel/core@7.28.3)(esbuild@0.25.9)(jest@29.6.3)(typescript@5.5.4):
     resolution: {integrity: sha512-ZhNr7Z4PcYa+JjMl62ir+zPiNJfXJN6E8hSLnaUKhOgqcn8vb3e537cpkd0FuAfRK3sR1LSqM1MOhliXNgOFPA==}
     engines: {node: ^14.15.0 || ^16.10.0 || >=18.0.0}
     hasBin: true
@@ -21772,6 +21784,7 @@ packages:
       esbuild:
         optional: true
     dependencies:
+      '@babel/core': 7.28.3
       bs-logger: 0.2.6
       esbuild: 0.25.9
       fast-json-stable-stringify: 2.1.0

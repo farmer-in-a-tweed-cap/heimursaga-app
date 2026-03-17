@@ -4,7 +4,7 @@ import {
   ActivityIndicator, Alert, Platform, Switch,
 } from 'react-native';
 import { useRouter, useGlobalSearchParams } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { CalendarPicker, fmtDateISO, fmtDateDisplay, todayISO } from '@/components/ui/CalendarPicker';
 let ImagePicker: typeof import('expo-image-picker') | null = null;
 try {
   ImagePicker = require('expo-image-picker');
@@ -60,7 +60,7 @@ export default function CreateScreen() {
 
   // New fields matching web app
   const [entryType, setEntryType] = useState(0);
-  const [date, setDate] = useState(new Date());
+  const [dateStr, setDateStr] = useState(() => todayISO());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
   const [commentsEnabled, setCommentsEnabled] = useState(true);
@@ -152,7 +152,7 @@ export default function CreateScreen() {
               setLocation(draft.place ?? '');
               if (draft.lat != null) setLat(draft.lat);
               if (draft.lon != null) setLon(draft.lon);
-              if (draft.date) setDate(new Date(draft.date));
+              if (draft.date) setDateStr(draft.date.split('T')[0]);
               if (draft.entryType) {
                 const idx = ENTRY_TYPE_VALUES.indexOf(draft.entryType as any);
                 if (idx >= 0) setEntryType(idx);
@@ -293,11 +293,6 @@ export default function CreateScreen() {
 
   // ─── Date ────────────────────────────────────────────────────────────────────
 
-  const handleDateChange = useCallback((_: any, selectedDate?: Date) => {
-    if (Platform.OS === 'android') setShowDatePicker(false);
-    if (selectedDate) setDate(selectedDate);
-  }, []);
-
   // ─── Submit ──────────────────────────────────────────────────────────────────
 
   const handlePublish = useCallback(async (isDraft: boolean) => {
@@ -372,7 +367,7 @@ export default function CreateScreen() {
         place: location.trim() || undefined,
         lat: lat ?? undefined,
         lon: lon ?? undefined,
-        date: date.toISOString().split('T')[0],
+        date: dateStr,
         visibility: selectedExpedition ? undefined : VISIBILITY_OPTIONS[visibility].label.toLowerCase(),
         isDraft,
         expeditionId: selectedExpedition ?? undefined,
@@ -409,7 +404,7 @@ export default function CreateScreen() {
       setSubmitting(false);
     }
   }, [
-    title, body, location, visibility, selectedExpedition, selectedWaypointId, lat, lon, date,
+    title, body, location, visibility, selectedExpedition, selectedWaypointId, lat, lon, dateStr,
     photos, coverIndex, entryType, commentsEnabled, isMilestone, draftId,
     weather, mood, distanceTraveled, expenses,
     temperature, humidity, windSpeed, pressure, elevationGain, duration,
@@ -424,7 +419,7 @@ export default function CreateScreen() {
     setLon(null);
     setPhotos([]);
     setCoverIndex(0);
-    setDate(new Date());
+    setDateStr(todayISO());
     setEntryType(0);
     setCommentsEnabled(true);
     setIsMilestone(false);
@@ -469,7 +464,7 @@ export default function CreateScreen() {
         }
       />
 
-      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.scroll} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <View style={styles.form}>
           <HCard>
             <View style={styles.formInner}>
@@ -601,29 +596,19 @@ export default function CreateScreen() {
               onPress={() => setShowDatePicker(true)}
             >
               <Text style={[styles.selectorText, { color: colors.text }]}>
-                {date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {fmtDateDisplay(dateStr)}
               </Text>
               <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
                 <Path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z" />
               </Svg>
             </TouchableOpacity>
-            {showDatePicker && (
-              <View>
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                  onChange={handleDateChange}
-                  maximumDate={new Date()}
-                  themeVariant={dark ? 'dark' : 'light'}
-                />
-                {Platform.OS === 'ios' && (
-                  <TouchableOpacity style={styles.dateConfirm} onPress={() => setShowDatePicker(false)}>
-                    <Text style={styles.dateConfirmText}>DONE</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
+            <CalendarPicker
+              visible={showDatePicker}
+              value={dateStr}
+              maxDate={todayISO()}
+              onSelect={setDateStr}
+              onClose={() => setShowDatePicker(false)}
+            />
           </View>
 
           {/* Location — only for standalone entries; expedition entries use waypoint */}

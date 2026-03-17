@@ -94,6 +94,10 @@ export interface Expedition {
   entriesCount?: number;
   waypointsCount?: number;
   isRoundTrip?: boolean;
+  notesVisibility?: 'public' | 'sponsor';
+  notesAccessThreshold?: number;
+  routeMode?: string;
+  routeGeometry?: number[][];
   tags?: string[];
   author?: {
     username: string;
@@ -300,6 +304,13 @@ export interface SponsorshipTier {
 export interface SponsorshipCheckout {
   clientSecret: string;
   paymentMethodId: string;
+}
+
+export interface PrepareCheckoutResponse {
+  clientSecret: string;
+  ephemeralKey: string;
+  customerId: string;
+  paymentIntentId: string;
 }
 
 // ─── Payout ───

@@ -1027,4 +1027,18 @@ export class StripeService {
   get webhooks() {
     return this.stripe.webhooks;
   }
+
+  async createEphemeralKey(customerId: string): Promise<string> {
+    try {
+      const key = await this.stripe.ephemeralKeys.create(
+        { customer: customerId },
+        { apiVersion: '2025-02-24.acacia' },
+      );
+      return key.secret;
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
 }
