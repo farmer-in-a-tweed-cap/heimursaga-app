@@ -378,14 +378,14 @@ export function HomePage() {
         <RegionReport />
 
         {/* View Mode Toggle */}
-        <div className="mt-6 grid grid-cols-2 gap-0 border-2 border-[#202020] dark:border-[#616161] overflow-hidden">
+        <div className="mt-6 flex border-2 border-[#202020] dark:border-[#616161] overflow-hidden">
           {/* GLOBAL Option */}
           <button
             onClick={() => setViewMode('global')}
-            className={`p-2.5 md:p-4 transition-all text-xs md:text-sm ${
+            className={`flex-1 p-2.5 md:p-4 transition-all text-xs md:text-sm border-r-2 border-[#202020] dark:border-[#616161] ${
               viewMode === 'global'
-                ? 'bg-[#ac6d46] border-r-2 border-[#202020] dark:border-[#616161] text-white'
-                : 'bg-white dark:bg-[#202020] border-r-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-white hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a]'
+                ? 'bg-[#ac6d46] text-white'
+                : 'bg-white dark:bg-[#202020] text-[#202020] dark:text-white hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a]'
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -401,7 +401,7 @@ export function HomePage() {
           <button
             onClick={() => setViewMode('following')}
             disabled={!isAuthenticated}
-            className={`p-2.5 md:p-4 transition-all text-xs md:text-sm ${
+            className={`flex-1 p-2.5 md:p-4 transition-all text-xs md:text-sm ${
               viewMode === 'following'
                 ? 'bg-[#4676ac] text-white'
                 : isAuthenticated
