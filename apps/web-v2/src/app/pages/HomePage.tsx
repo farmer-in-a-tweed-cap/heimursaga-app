@@ -378,7 +378,7 @@ export function HomePage() {
         <RegionReport />
 
         {/* View Mode Toggle */}
-        <div className="mt-8 flex border-2 border-[#202020] dark:border-[#616161] overflow-hidden">
+        <div className="mt-6 flex border-2 border-[#202020] dark:border-[#616161] overflow-hidden">
           {/* GLOBAL Option */}
           <button
             onClick={() => setViewMode('global')}
@@ -423,7 +423,7 @@ export function HomePage() {
 
         {/* Loading State (global) */}
         {viewMode === 'global' && loading && (
-          <div className="mt-8 flex items-center justify-center py-12">
+          <div className="mt-6 flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-[#4676ac]" />
             <span className="ml-3 text-[#616161] dark:text-[#b5bcc4]">Loading...</span>
           </div>
@@ -434,7 +434,7 @@ export function HomePage() {
           <>
             {/* Loading State (following) */}
             {followingLoading && (
-              <div className="mt-8 flex items-center justify-center py-12">
+              <div className="mt-6 flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-[#4676ac]" />
                 <span className="ml-3 text-[#616161] dark:text-[#b5bcc4]">Loading your feed...</span>
               </div>
@@ -530,7 +530,7 @@ export function HomePage() {
         {viewMode === 'global' && !loading && (
           <>
             {/* Global Explorer Map - Primary Element */}
-            <div className="mt-8">
+            <div className="mt-6">
               <ExplorerMap />
             </div>
 
