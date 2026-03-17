@@ -601,9 +601,9 @@ export function InsightsPage() {
 
                   {/* Expedition Performance */}
                   <SectionCard title="EXPEDITION PERFORMANCE" icon={Map}>
-                    {data.expeditions.length > 0 ? (
+                    {data.expeditions.filter(e => e.status === 'active' || e.status === 'completed').length > 0 ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {data.expeditions.slice(0, 4).map((expedition) => (
+                        {data.expeditions.filter(e => e.status === 'active' || e.status === 'completed').slice(0, 4).map((expedition) => (
                           <ExpeditionCard key={expedition.publicId || expedition.id} expedition={expedition} />
                         ))}
                       </div>
@@ -619,7 +619,7 @@ export function InsightsPage() {
                         </Link>
                       </div>
                     )}
-                    {data.expeditions.length > 4 && (
+                    {data.expeditions.filter(e => e.status === 'active' || e.status === 'completed').length > 4 && (
                       <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#3a3a3a]">
                         <Link
                           href="/settings/expeditions"

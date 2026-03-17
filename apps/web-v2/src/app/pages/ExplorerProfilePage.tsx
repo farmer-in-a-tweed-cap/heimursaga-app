@@ -82,8 +82,8 @@ export function ExplorerProfilePage() {
   const [explorerBookmarkLoading, setExplorerBookmarkLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
-  const [showAllExpeditions, setShowAllExpeditions] = useState(false);
-  const [showAllEntries, setShowAllEntries] = useState(false);
+  const [expeditionsLimit, setExpeditionsLimit] = useState(5);
+  const [entriesLimit, setEntriesLimit] = useState(5);
   const [reportOpen, setReportOpen] = useState(false);
 
   // Handle bookmark explorer profile
@@ -404,8 +404,8 @@ export function ExplorerProfilePage() {
         lastEntry: '',
       })),
 
-    // Recent expeditions (all statuses, limited to 5 unless expanded)
-    recentExpeditions: (showAllExpeditions ? expeditions : expeditions.slice(0, 5)).map(e => ({
+    // Recent expeditions (active + completed + planned only, paginated)
+    recentExpeditions: expeditions.filter(e => e.status !== 'cancelled' && e.status !== 'draft').slice(0, expeditionsLimit).map(e => ({
         id: (e as any).id || e.publicId,
         title: e.title,
         description: e.description || '',
@@ -434,8 +434,8 @@ export function ExplorerProfilePage() {
         entries: e.entriesCount || 0,
       })),
 
-    // Entries from API (limited to 5 unless expanded)
-    recentEntries: (showAllEntries ? entries : entries.slice(0, 5)).map(e => ({
+    // Entries from API (paginated)
+    recentEntries: entries.slice(0, entriesLimit).map(e => ({
       id: e.id || e.publicId || '',
       title: e.title,
       expedition: e.expedition?.title || '',
@@ -982,12 +982,12 @@ export function ExplorerProfilePage() {
                 </div>
               )}
             </div>
-            {explorer.stats.totalExpeditions > 5 && (
+            {explorer.recentExpeditions.length < explorer.stats.totalExpeditions && (
               <button
-                onClick={() => setShowAllExpeditions(prev => !prev)}
+                onClick={() => setExpeditionsLimit(prev => prev + 5)}
                 className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
               >
-                {showAllExpeditions ? 'SHOW FEWER' : `VIEW ALL EXPEDITIONS (${explorer.stats.totalExpeditions})`}
+                LOAD MORE EXPEDITIONS
               </button>
             )}
           </div>
@@ -1026,12 +1026,12 @@ export function ExplorerProfilePage() {
                 </div>
               )}
             </div>
-            {explorer.stats.totalEntries > 5 && (
+            {explorer.recentEntries.length < explorer.stats.totalEntries && (
               <button
-                onClick={() => setShowAllEntries(prev => !prev)}
+                onClick={() => setEntriesLimit(prev => prev + 5)}
                 className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
               >
-                {showAllEntries ? 'SHOW FEWER' : `VIEW ALL ENTRIES (${explorer.stats.totalEntries})`}
+                LOAD MORE ENTRIES
               </button>
             )}
           </div>
