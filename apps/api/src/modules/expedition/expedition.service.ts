@@ -1934,12 +1934,9 @@ export class ExpeditionService {
           throw new ServiceNotFoundException('expedition not found');
         });
 
-      if (
-        expedition.status === 'completed' ||
-        expedition.status === 'cancelled'
-      ) {
+      if (expedition.status === 'cancelled') {
         throw new ServiceForbiddenException(
-          'Waypoints cannot be modified on completed or cancelled expeditions',
+          'Waypoints cannot be modified on cancelled expeditions',
         );
       }
 
@@ -2012,12 +2009,9 @@ export class ExpeditionService {
           throw new ServiceNotFoundException('expedition not found');
         });
 
-      if (
-        expedition.status === 'completed' ||
-        expedition.status === 'cancelled'
-      ) {
+      if (expedition.status === 'cancelled') {
         throw new ServiceForbiddenException(
-          'Waypoints cannot be modified on completed or cancelled expeditions',
+          'Waypoints cannot be modified on cancelled expeditions',
         );
       }
 
@@ -2104,12 +2098,9 @@ export class ExpeditionService {
           throw new ServiceNotFoundException('expedition not found');
         });
 
-      if (
-        expedition.status === 'completed' ||
-        expedition.status === 'cancelled'
-      ) {
+      if (expedition.status === 'cancelled') {
         throw new ServiceForbiddenException(
-          'Waypoints cannot be modified on completed or cancelled expeditions',
+          'Waypoints cannot be modified on cancelled expeditions',
         );
       }
 
@@ -2442,12 +2433,9 @@ export class ExpeditionService {
           throw new ServiceNotFoundException('expedition not found');
         });
 
-      if (
-        expedition.status === 'completed' ||
-        expedition.status === 'cancelled'
-      ) {
+      if (expedition.status === 'cancelled') {
         throw new ServiceForbiddenException(
-          'Waypoints cannot be modified on completed or cancelled expeditions',
+          'Waypoints cannot be modified on cancelled expeditions',
         );
       }
 

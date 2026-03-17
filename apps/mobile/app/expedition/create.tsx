@@ -629,15 +629,15 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
       } as Partial<Expedition>;
 
-      // Completed expeditions can only update title, description, and cover image
+      // Completed expeditions can only update title, description, cover image, and route
       const payload = isCompletedExpedition
-        ? { title: fullPayload.title, description: fullPayload.description, coverImage: fullPayload.coverImage }
+        ? { title: fullPayload.title, description: fullPayload.description, coverImage: fullPayload.coverImage, routeGeometry: fullPayload.routeGeometry }
         : fullPayload;
 
       await expeditionApi.updateExpedition(editExpeditionId!, payload as Partial<Expedition>);
 
-      // Sync waypoints (skip for completed expeditions)
-      if (!isCompletedExpedition) {
+      // Sync waypoints (skip for cancelled expeditions)
+      if (editExpedition?.status !== 'cancelled') {
         const validWps = waypoints.filter(wp => wp.lng != null && wp.lat != null);
         await expeditionApi.syncWaypoints(editExpeditionId!, validWps.map((wp, i) => ({
           title: wp.name,
@@ -1320,7 +1320,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
               {isCompletedExpedition && (
                 <View style={[styles.infoBanner, { backgroundColor: brandColors.blue + '18', borderColor: brandColors.blue }]}>
                   <Text style={[styles.infoBannerText, { color: brandColors.blue }]}>
-                    This expedition is completed. Only the title, description, and cover image can be edited.
+                    This expedition is completed. You can update the title, description, cover image, and waypoints.
                   </Text>
                 </View>
               )}

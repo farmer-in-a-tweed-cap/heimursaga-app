@@ -281,9 +281,9 @@ export function ExpeditionBuilderPage() {
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
       };
 
-      // Completed expeditions: only send allowed fields
+      // Completed expeditions: only send allowed fields (title, description, cover, waypoints)
       const finalPayload = isCompletedExpedition
-        ? { title: payload.title, description: payload.description, coverImage: payload.coverImage }
+        ? { title: payload.title, description: payload.description, coverImage: payload.coverImage, routeGeometry: payload.routeGeometry }
         : payload;
 
       let expeditionPublicId: string;
@@ -292,8 +292,8 @@ export function ExpeditionBuilderPage() {
         await expeditionApi.update(expeditionId, finalPayload);
         expeditionPublicId = expeditionId;
 
-        // Sync waypoints: update existing, create new, delete removed (skip for completed)
-        if (!isCompletedExpedition) {
+        // Sync waypoints: update existing, create new, delete removed (skip for cancelled)
+        if (expedition?.status !== 'cancelled') {
           const currentWaypointIds = new Set(
             waypoints.filter(w => !w.id.startsWith('waypoint-')).map(w => w.id)
           );
@@ -2215,7 +2215,7 @@ export function ExpeditionBuilderPage() {
           <div>
             <h4 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">COMPLETED EXPEDITION</h4>
             <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-              This expedition is completed. You can update the title, description, and cover image. Dates, waypoints, route, visibility, and sponsorship settings are locked to preserve the historical record.
+              This expedition is completed. You can update the title, description, cover image, waypoints, and route. Dates, visibility, and sponsorship settings are locked to preserve the historical record.
             </p>
           </div>
         </div>
