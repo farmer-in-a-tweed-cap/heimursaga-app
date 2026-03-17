@@ -1356,6 +1356,19 @@ export function JournalEntryPage() {
                   </h4>
                 </Link>
                 <div className="text-xs space-y-2 text-[#616161] dark:text-[#b5bcc4] font-mono">
+                  {entry.expeditionStatus && (
+                    <div className="flex justify-between">
+                      <span>Status:</span>
+                      <span className={`font-bold ${
+                        entry.expeditionStatus === 'active' ? 'text-[#598636]' :
+                        entry.expeditionStatus === 'completed' ? 'text-[#616161] dark:text-[#b5bcc4]' :
+                        entry.expeditionStatus === 'cancelled' ? 'text-[#994040]' :
+                        'text-[#4676ac]'
+                      }`}>
+                        {entry.expeditionStatus.toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Expedition Day:</span>
                     <span className="font-bold text-[#202020] dark:text-[#e5e5e5]">{entry.expeditionDay}</span>

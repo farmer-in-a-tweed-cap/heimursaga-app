@@ -695,12 +695,6 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
             <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
               Showing all journal entries from {explorerName} across all expeditions. Click any marker to view entry details.
             </div>
-            <div className="flex gap-6 text-xs pt-3 border-t border-[#b5bcc4] dark:border-[#3a3a3a] dark:text-[#b5bcc4]">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-[#ac6d46] border border-white text-white text-xs flex items-center justify-center">E</div>
-                <span>Journal Entry ({allEntries.length} total)</span>
-              </div>
-            </div>
           </>
         )}
       </div>

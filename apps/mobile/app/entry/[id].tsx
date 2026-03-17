@@ -510,6 +510,17 @@ export default function EntryDetailScreen() {
                 <Text style={[styles.expContextName, { color: colors.text }]}>{entry.trip.title}</Text>
 
                 <View style={styles.expContextRows}>
+                  {entry.trip.status && (
+                    <View style={styles.expContextRow}>
+                      <Text style={[styles.expContextLabel, { color: colors.textTertiary }]}>Status</Text>
+                      <Text style={[styles.expContextValue, {
+                        color: entry.trip.status === 'active' ? brandColors.green :
+                          entry.trip.status === 'completed' ? '#616161' :
+                          entry.trip.status === 'cancelled' ? brandColors.red :
+                          brandColors.blue,
+                      }]}>{(entry.trip.status as string).toUpperCase()}</Text>
+                    </View>
+                  )}
                   {entry.expeditionDay != null && (
                     <View style={styles.expContextRow}>
                       <Text style={[styles.expContextLabel, { color: colors.textTertiary }]}>Expedition Day</Text>
