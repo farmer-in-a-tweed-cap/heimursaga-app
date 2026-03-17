@@ -336,7 +336,7 @@ export function JournalEntryPage() {
       location: api.place || 'Unknown location',
       coords: { lat, lng: lon },
       entryType: (api.entryType || 'standard') as 'standard' | 'photo' | 'video' | 'data' | 'waypoint',
-      metadata: api.metadata as Record<string, unknown> | undefined,
+      metadata: (api.metadata || undefined) as { [key: string]: string | number | boolean | null | undefined } | undefined,
 
       content: api.content || '',
 
@@ -626,8 +626,8 @@ export function JournalEntryPage() {
               </div>
             </div>
 
-            {/* Data-Log Metrics (above content) */}
-            {entry.entryType === 'data' && entry.metadata && (
+            {/* Data Metrics (above content) */}
+            {entry.entryType === 'data' && !!entry.metadata && (
               <div className="p-6 lg:p-8 pb-0 space-y-4">
                 {/* Environmental Data */}
                 {(entry.metadata.temperature != null || entry.metadata.humidity != null || entry.metadata.windSpeed != null || entry.metadata.pressure != null) && (
@@ -637,25 +637,25 @@ export function JournalEntryPage() {
                       {entry.metadata.temperature != null && (
                         <div>
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Temperature</div>
-                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.temperature)}°C</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.temperature}°C</div>
                         </div>
                       )}
                       {entry.metadata.humidity != null && (
                         <div>
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Humidity</div>
-                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.humidity)}%</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.humidity}%</div>
                         </div>
                       )}
                       {entry.metadata.windSpeed != null && (
                         <div>
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Wind Speed</div>
-                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.windSpeed)} km/h</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.windSpeed} km/h</div>
                         </div>
                       )}
                       {entry.metadata.pressure != null && (
                         <div>
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Pressure</div>
-                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.pressure)} hPa</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.pressure} hPa</div>
                         </div>
                       )}
                     </div>
@@ -670,25 +670,25 @@ export function JournalEntryPage() {
                       {entry.metadata.distanceCovered != null && (
                         <div>
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Distance</div>
-                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.distanceCovered)} km</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.distanceCovered} km</div>
                         </div>
                       )}
                       {entry.metadata.elevationGain != null && (
                         <div>
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Elevation Gain</div>
-                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.elevationGain)} m</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.elevationGain} m</div>
                         </div>
                       )}
                       {entry.metadata.duration != null && (
                         <div>
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Duration</div>
-                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.duration)} hrs</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.duration} hrs</div>
                         </div>
                       )}
                       {entry.metadata.avgSpeed != null && (
                         <div>
                           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Avg Speed</div>
-                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.avgSpeed)} km/h</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.avgSpeed} km/h</div>
                         </div>
                       )}
                     </div>
@@ -735,7 +735,7 @@ export function JournalEntryPage() {
             )}
 
             {/* Video Embed */}
-            {entry.entryType === 'video' && entry.metadata && (entry.metadata as Record<string, unknown>).videoUrl && (
+            {entry.entryType === 'video' && !!entry.metadata && !!(entry.metadata as Record<string, unknown>).videoUrl && (
               <div className="p-6 lg:p-8 pb-0">
                 <div className="relative w-full" style={{ paddingBottom: '56.25%' }}>
                   <iframe
@@ -918,7 +918,7 @@ export function JournalEntryPage() {
                 className="h-full"
               />
             </div>
-            {entry.entryType === 'standard' && entry.metadata && (
+            {entry.entryType === 'standard' && !!entry.metadata && (
                   (() => {
                     const meta = entry.metadata as Record<string, unknown>;
                     const hasMetadata = meta.weather || meta.distanceTraveled != null || meta.mood || meta.expenses != null;
