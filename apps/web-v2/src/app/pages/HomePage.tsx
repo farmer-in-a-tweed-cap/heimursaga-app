@@ -378,7 +378,7 @@ export function HomePage() {
         <RegionReport />
 
         {/* View Mode Toggle */}
-        <div className="mt-6 flex border-2 border-[#202020] dark:border-[#616161] overflow-hidden">
+        <div className="mt-8 flex border-2 border-[#202020] dark:border-[#616161] overflow-hidden">
           {/* GLOBAL Option */}
           <button
             onClick={() => setViewMode('global')}
