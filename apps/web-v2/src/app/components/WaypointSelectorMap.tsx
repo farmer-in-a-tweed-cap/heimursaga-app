@@ -498,12 +498,26 @@ export function WaypointSelectorMap({
 
     if (navigator.geolocation) {
       try {
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        console.warn = () => {};
+        console.error = () => {};
+
         const geolocate = new mapboxgl.GeolocateControl({
-          positionOptions: { enableHighAccuracy: true },
-          trackUserLocation: false,
-          showUserHeading: false,
+          positionOptions: {
+            enableHighAccuracy: true,
+          },
+          trackUserLocation: true,
+          showUserHeading: true,
         });
-        geolocate.on('error', () => { /* silently handle */ });
+
+        console.warn = originalWarn;
+        console.error = originalError;
+
+        geolocate.on('error', () => {
+          // Silently handle errors - geolocation not available
+        });
+
         map.addControl(geolocate, 'top-right');
       } catch {
         // GeolocateControl unavailable — continue without it

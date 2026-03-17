@@ -325,7 +325,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
       },
       externalGeocoder: createPOIGeocoder(map),
     } as any);
-    map.addControl(geocoder as any, 'top-right');
+    map.addControl(geocoder as any, 'top-left');
     geocoderRef.current = geocoder;
 
     // Manually manage proximity bias at all zoom levels
@@ -342,12 +342,26 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
 
     if (navigator.geolocation) {
       try {
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        console.warn = () => {};
+        console.error = () => {};
+
         const geolocate = new mapboxgl.GeolocateControl({
-          positionOptions: { enableHighAccuracy: true },
-          trackUserLocation: false,
-          showUserHeading: false,
+          positionOptions: {
+            enableHighAccuracy: true,
+          },
+          trackUserLocation: true,
+          showUserHeading: true,
         });
-        geolocate.on('error', () => { /* silently handle */ });
+
+        console.warn = originalWarn;
+        console.error = originalError;
+
+        geolocate.on('error', () => {
+          // Silently handle errors - geolocation not available
+        });
+
         map.addControl(geolocate, 'top-right');
       } catch {
         // GeolocateControl unavailable — continue without it
@@ -552,9 +566,12 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     updateVisibleItems();
 
     return () => {
-      // Clean up clustered markers
-      clusteredRef.current?.cleanup();
-      clusteredRef.current = null;
+      // Clean up clustered entry markers and their zoomend handler
+      if (clusteredRef.current) {
+        mapRef.current?.off('zoomend', clusteredRef.current.recalculate);
+        clusteredRef.current.cleanup();
+        clusteredRef.current = null;
+      }
 
       // Remove event listeners before removing markers
       eventListeners.forEach(({ element, handler }) => {
@@ -563,7 +580,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
 
-      // Clean up cluster layers/source
+      // Clean up explorer cluster layers/source
       const map = mapRef.current;
       if (map) {
         ['explorer-unclustered-dot', 'explorer-cluster-count', 'explorer-clusters', 'explorer-unclustered'].forEach(id => {
