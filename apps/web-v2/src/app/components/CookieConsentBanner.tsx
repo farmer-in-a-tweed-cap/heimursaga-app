@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { getConsentStatus, setConsentStatus } from '@/lib/analytics-consent';
 import { initPostHog } from '@/lib/posthog';
 
@@ -13,13 +13,7 @@ import { initPostHog } from '@/lib/posthog';
  * reads the same cookie).
  */
 export function CookieConsentBanner() {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (getConsentStatus() === 'undecided') {
-      setVisible(true);
-    }
-  }, []);
+  const [visible, setVisible] = useState(() => getConsentStatus() === 'undecided');
 
   if (!visible) return null;
 

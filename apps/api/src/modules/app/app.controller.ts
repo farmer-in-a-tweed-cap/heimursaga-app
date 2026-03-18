@@ -36,14 +36,30 @@ export class AppController {
   @Public()
   @Get('sitemap.xml')
   async sitemapXml(@Res() reply: FastifyReply) {
+    const BASE = 'https://heimursaga.com';
     const data = await this.appService.generateSitemap();
+    const urls: string[] = [];
+
+    for (const e of data.expeditions) {
+      urls.push(
+        `  <url><loc>${BASE}/expedition/${e.publicId}</loc><lastmod>${new Date(e.updatedAt).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`,
+      );
+    }
+    for (const e of data.entries) {
+      urls.push(
+        `  <url><loc>${BASE}/entry/${e.publicId}</loc><lastmod>${new Date(e.updatedAt).toISOString()}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`,
+      );
+    }
+    for (const e of data.explorers) {
+      urls.push(
+        `  <url><loc>${BASE}/journal/${e.username}</loc><lastmod>${new Date(e.updatedAt).toISOString()}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`,
+      );
+    }
+
     const xml = [
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-      ...data.sources.map(
-        (s) =>
-          `  <url><loc>${s.loc}</loc><lastmod>${new Date(s.lastmod).toISOString()}</lastmod><changefreq>${s.changefreq}</changefreq><priority>${s.priority}</priority></url>`,
-      ),
+      ...urls,
       '</urlset>',
     ].join('\n');
     reply.header('Content-Type', 'application/xml').send(xml);
