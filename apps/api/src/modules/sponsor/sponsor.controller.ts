@@ -9,6 +9,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -109,18 +110,26 @@ export class SponsorshipController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  async getSponsorships(@Session() session: ISession) {
+  async getSponsorships(
+    @Session() session: ISession,
+    @Query('limit') limit?: string,
+    @Query('skip') skip?: string,
+  ) {
     return await this.sponsorService.getCreatorSponsorships({
-      query: {},
+      query: { limit, skip },
       session,
     });
   }
 
   @Get('given')
   @HttpCode(HttpStatus.OK)
-  async getGivenSponsorships(@Session() session: ISession) {
+  async getGivenSponsorships(
+    @Session() session: ISession,
+    @Query('limit') limit?: string,
+    @Query('skip') skip?: string,
+  ) {
     return await this.sponsorService.getSponsorships({
-      query: {},
+      query: { limit, skip },
       session,
     });
   }

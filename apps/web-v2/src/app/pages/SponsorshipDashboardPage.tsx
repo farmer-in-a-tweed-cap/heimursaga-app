@@ -588,7 +588,7 @@ export function SponsorshipDashboardPage() {
 
                         {/* Expanded Details */}
                         {expandedTransaction === payment.id && (
-                          <tr className="bg-[#f0f4f8] dark:bg-[#1a2a3a] border-b-2 border-[#202020] dark:border-[#616161]">
+                          <tr className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161]">
                             <td colSpan={6} className="p-6">
                               <div className="grid md:grid-cols-2 gap-6">
                                 <div>
@@ -694,7 +694,7 @@ export function SponsorshipDashboardPage() {
       {/* Received Sponsorships Tab (Explorer Pro Only) */}
       {activeTab === 'received' && isPro && (
         <div className="space-y-6">
-          <div className="bg-[#f0f4f8] dark:bg-[#1a2a3a] border-2 border-[#4676ac] p-6">
+          <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#4676ac] p-6">
             <h3 className="font-bold mb-2 dark:text-[#e5e5e5]">EXPLORER PRO REVENUE DASHBOARD</h3>
             <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
               Track sponsorships received from your supporters. Manage your sponsorship settings from the{' '}

@@ -12,6 +12,10 @@ export const EMAIL_TEMPLATES = {
   MONTHLY_DIGEST: 'monthly_digest',
   SPONSORSHIP_AUTO_CANCELED: 'sponsorship_auto_canceled',
   QUICK_SPONSOR_RECEIVED: 'quick_sponsor_received',
+  EXPEDITION_CANCELLED: 'expedition_cancelled',
+  EXPEDITION_COMPLETED: 'expedition_completed',
+  NEW_FOLLOWER: 'new_follower',
+  COMMENT_NOTIFICATION: 'comment_notification',
 };
 
 const APP_BASE_URL =
@@ -1353,6 +1357,165 @@ const templates: {
       return emailWrapper(
         content,
         `${v.sponsorUsername} sent you a $3 quick sponsor`,
+      );
+    },
+  },
+  // --- Stub templates (to be fleshed out) ---
+  {
+    key: EMAIL_TEMPLATES.EXPEDITION_CANCELLED,
+    subject: (v: { expeditionTitle?: string } = {}) =>
+      `Expedition Cancelled: ${v.expeditionTitle || 'Untitled'}`,
+    html: (
+      v: {
+        username?: string;
+        expeditionTitle?: string;
+        expeditionUrl?: string;
+        reason?: string;
+      } = {},
+    ) => {
+      const content = emailSection(`
+        ${emailHeading('EXPEDITION CANCELLED', 1)}
+
+        <p style="margin: 0 0 16px 0; line-height: 1.6;">
+          Hello <strong>${v.username || 'Explorer'}</strong>,
+        </p>
+
+        <p style="margin: 0 0 16px 0; line-height: 1.6;">
+          The expedition <strong>${v.expeditionTitle || 'Untitled'}</strong> has been cancelled.
+        </p>
+
+        ${
+          v.reason
+            ? emailInfoBox(
+                `<strong style="display: block; margin-bottom: 4px;">REASON</strong>${v.reason}`,
+                'warning',
+              )
+            : ''
+        }
+
+        ${v.expeditionUrl ? emailButton(v.expeditionUrl, 'VIEW EXPEDITION', 'secondary') : ''}
+      `);
+      return emailWrapper(
+        content,
+        `Expedition "${v.expeditionTitle || 'Untitled'}" has been cancelled`,
+      );
+    },
+  },
+  {
+    key: EMAIL_TEMPLATES.EXPEDITION_COMPLETED,
+    subject: (v: { expeditionTitle?: string } = {}) =>
+      `Expedition Completed: ${v.expeditionTitle || 'Untitled'}`,
+    html: (
+      v: {
+        username?: string;
+        expeditionTitle?: string;
+        expeditionUrl?: string;
+        totalEntries?: number;
+        totalDistance?: string;
+        durationDays?: number;
+      } = {},
+    ) => {
+      const content = emailSection(`
+        ${emailHeading('EXPEDITION COMPLETED', 1)}
+
+        <p style="margin: 0 0 16px 0; line-height: 1.6;">
+          Hello <strong>${v.username || 'Explorer'}</strong>,
+        </p>
+
+        <p style="margin: 0 0 16px 0; line-height: 1.6;">
+          The expedition <strong>${v.expeditionTitle || 'Untitled'}</strong> has been marked as completed. Congratulations!
+        </p>
+
+        ${emailDataTable(
+          [
+            ...(v.totalEntries !== undefined
+              ? [{ label: 'TOTAL ENTRIES', value: String(v.totalEntries) }]
+              : []),
+            ...(v.totalDistance
+              ? [{ label: 'TOTAL DISTANCE', value: v.totalDistance }]
+              : []),
+            ...(v.durationDays !== undefined
+              ? [{ label: 'DURATION', value: `${v.durationDays} days` }]
+              : []),
+          ].filter((r) => r.value),
+        )}
+
+        ${v.expeditionUrl ? emailButton(v.expeditionUrl, 'VIEW EXPEDITION', 'primary') : ''}
+      `);
+      return emailWrapper(
+        content,
+        `Expedition "${v.expeditionTitle || 'Untitled'}" is now complete`,
+      );
+    },
+  },
+  {
+    key: EMAIL_TEMPLATES.NEW_FOLLOWER,
+    subject: (v: { followerUsername?: string } = {}) =>
+      `${v.followerUsername || 'Someone'} is now following you`,
+    html: (
+      v: {
+        username?: string;
+        followerUsername?: string;
+        followerProfileUrl?: string;
+      } = {},
+    ) => {
+      const content = emailSection(`
+        ${emailHeading('NEW FOLLOWER', 1)}
+
+        <p style="margin: 0 0 16px 0; line-height: 1.6;">
+          Hello <strong>${v.username || 'Explorer'}</strong>,
+        </p>
+
+        <p style="margin: 0 0 16px 0; line-height: 1.6;">
+          <strong>${v.followerUsername || 'A new explorer'}</strong> is now following your journal. They will receive notifications when you publish new entries.
+        </p>
+
+        ${v.followerProfileUrl ? emailButton(v.followerProfileUrl, 'VIEW PROFILE', 'secondary') : ''}
+      `);
+      return emailWrapper(
+        content,
+        `${v.followerUsername || 'Someone'} started following you on Heimursaga`,
+      );
+    },
+  },
+  {
+    key: EMAIL_TEMPLATES.COMMENT_NOTIFICATION,
+    subject: (v: { commenterUsername?: string; entryTitle?: string } = {}) =>
+      `${v.commenterUsername || 'Someone'} commented on "${v.entryTitle || 'your entry'}"`,
+    html: (
+      v: {
+        username?: string;
+        commenterUsername?: string;
+        entryTitle?: string;
+        commentPreview?: string;
+        entryUrl?: string;
+      } = {},
+    ) => {
+      const content = emailSection(`
+        ${emailHeading('NEW COMMENT', 1)}
+
+        <p style="margin: 0 0 16px 0; line-height: 1.6;">
+          Hello <strong>${v.username || 'Explorer'}</strong>,
+        </p>
+
+        <p style="margin: 0 0 16px 0; line-height: 1.6;">
+          <strong>${v.commenterUsername || 'Someone'}</strong> commented on your entry <strong>${v.entryTitle || 'Untitled'}</strong>.
+        </p>
+
+        ${
+          v.commentPreview
+            ? emailInfoBox(
+                `<strong style="display: block; margin-bottom: 4px;">COMMENT</strong>${v.commentPreview}`,
+                'info',
+              )
+            : ''
+        }
+
+        ${v.entryUrl ? emailButton(v.entryUrl, 'VIEW ENTRY', 'primary') : ''}
+      `);
+      return emailWrapper(
+        content,
+        `${v.commenterUsername || 'Someone'} commented on "${v.entryTitle || 'your entry'}"`,
       );
     },
   },

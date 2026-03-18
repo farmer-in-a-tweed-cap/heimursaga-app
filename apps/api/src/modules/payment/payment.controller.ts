@@ -16,6 +16,7 @@ import { ParamPublicIdDto, ParamSlugDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
 import {
+  AppleReceiptDto,
   PaymentMethodCreateDto,
   PlanUpgradeCheckoutDto,
   ValidatePromoCodeDto,
@@ -167,6 +168,18 @@ export class PlanController {
     @Body() body: ValidatePromoCodeDto,
   ) {
     return await this.paymentService.validatePromoCode({
+      session,
+      payload: body,
+    });
+  }
+
+  @Post('upgrade/apple')
+  @HttpCode(HttpStatus.OK)
+  async upgradeViaApple(
+    @Session() session: ISession,
+    @Body() body: AppleReceiptDto,
+  ) {
+    return await this.paymentService.upgradeViaAppleReceipt({
       session,
       payload: body,
     });

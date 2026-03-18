@@ -6,7 +6,13 @@ import {
   ISubscriptionPlanUpgradeCheckoutPayload,
   PlanExpiryPeriod,
 } from '@repo/types';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsEnum,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class PaymentMethodCreateDto implements IPaymentMethodCreatePayload {
   @ApiProperty({ required: true })
@@ -39,6 +45,28 @@ export class PlanUpgradeCheckoutDto
   @IsOptional()
   @IsString()
   promoCode?: string;
+}
+
+export class AppleReceiptDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  receiptData: string;
+
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  productId: string;
+
+  @ApiProperty({ required: true, enum: ['ios', 'android'] })
+  @IsIn(['ios', 'android'])
+  @IsNotEmpty()
+  platform: 'ios' | 'android';
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  transactionId?: string;
 }
 
 export class ValidatePromoCodeDto {

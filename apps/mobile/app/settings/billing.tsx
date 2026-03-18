@@ -136,8 +136,12 @@ export default function BillingScreen() {
               <Text style={[styles.planValue, { color: colors.text }]}>
                 {user.is_pro ? 'Explorer Pro' : 'Free'}
               </Text>
-              {user.is_pro && (
+              {user.is_pro ? (
                 <Text style={styles.proBadge}>ACTIVE</Text>
+              ) : (
+                <HButton variant="copper" small onPress={() => router.push('/upgrade')}>
+                  UPGRADE TO PRO
+                </HButton>
               )}
             </View>
           </HCard>

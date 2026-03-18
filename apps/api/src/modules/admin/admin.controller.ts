@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Delete,
   Get,
@@ -9,13 +10,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { UserRole } from '@repo/types';
 
 import { Roles, Session } from '@/common/decorators';
 import { ParamPublicIdDto, ParamUsernameDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
-import { AdminExplorerQueryDto, AdminPaginationDto } from './admin.dto';
+import {
+  AdminExplorerQueryDto,
+  AdminPaginationDto,
+  AdminRefundDto,
+} from './admin.dto';
 import { AdminService } from './admin.service';
 
 @ApiTags('admin')
@@ -95,5 +101,19 @@ export class AdminController {
   ) {
     await this.adminService.unblockExplorer(session, param.username);
     return { success: true };
+  }
+
+  @Post('refund')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 refunds per hour
+  async refundPayment(
+    @Body() body: AdminRefundDto,
+    @Session() session: ISession,
+  ) {
+    return await this.adminService.refundPayment(
+      session,
+      body.chargeId,
+      body.reason,
+    );
   }
 }

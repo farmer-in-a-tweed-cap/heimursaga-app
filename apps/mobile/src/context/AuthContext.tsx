@@ -45,6 +45,8 @@ interface AuthContextValue {
   register: (email: string, username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
+  /** Re-fetch the current user from API (e.g. after upgrading to Pro) */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -152,6 +154,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     analytics.reset();
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await api.get<{ success: boolean; data: User }>(
+        '/auth/mobile/user',
+      );
+      setUser(res.data);
+    } catch {
+      // Silently fail — user stays as-is
+    }
+  }, []);
+
   const handleSetBiometricEnabled = useCallback(async (enabled: boolean) => {
     if (enabled) {
       const authed = await authenticateWithBiometric();
@@ -175,6 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         setBiometricEnabled: handleSetBiometricEnabled,
+        refreshUser,
       }}
     >
       {children}

@@ -3,13 +3,9 @@ import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Prisma } from '@prisma/client';
 import {
-  CheckoutMode,
   CheckoutStatus,
   DEFAULT_MONTHLY_TIERS,
   DEFAULT_ONE_TIME_TIERS,
-  ICheckoutPayload,
-  ICheckoutResponse,
-  IPaymentIntentCreateResponse,
   IPaymentMethodCreatePayload,
   IPaymentMethodGetAllResponse,
   IPaymentMethodGetByIdResponse,
@@ -434,204 +430,6 @@ export class PaymentService {
         where: { public_id: publicId, explorer_id: userId },
         data: { deleted_at: dateformat().toDate() },
       });
-    } catch (e) {
-      this.logger.error(e);
-      if (e.status) throw e;
-      throw new ServiceInternalException();
-    }
-  }
-
-  async createPaymentIntent({
-    session,
-  }: ISessionQueryWithPayload<{}>): Promise<IPaymentIntentCreateResponse> {
-    try {
-      const { userId } = session;
-
-      if (!userId) throw new ServiceForbiddenException();
-
-      const amount = 500;
-      const currency = 'usd';
-
-      // get the user
-      const user = await this.prisma.explorer
-        .findFirstOrThrow({
-          where: { id: userId },
-          select: { email: true, username: true },
-        })
-        .catch(() => {
-          throw new ServiceForbiddenException();
-        });
-
-      // get the customer
-      const customer = await this.stripeService.getOrCreateCustomer({
-        email: user.email,
-        data: {
-          email: user.email,
-          name: user.username,
-        },
-      });
-
-      // create a payment intent
-      const paymentIntent = await this.stripeService.paymentIntents.create({
-        amount,
-        currency,
-        payment_method_types: ['card'],
-        customer: customer.id,
-      });
-
-      return {
-        secret: paymentIntent.client_secret,
-      };
-    } catch (e) {
-      this.logger.error(e);
-      if (e.status) throw e;
-      throw new ServiceInternalException();
-    }
-  }
-
-  // @todo
-  async createCheckout({
-    session,
-    payload,
-  }: ISessionQueryWithPayload<
-    {},
-    ICheckoutPayload
-  >): Promise<ICheckoutResponse> {
-    try {
-      const { userId } = session;
-      const { mode, donation } = payload;
-
-      if (!userId) throw new ServiceForbiddenException();
-
-      let currency = 'usd';
-      let amount = 0;
-
-      const period: string = 'year';
-
-      // get the user
-      const user = await this.prisma.explorer
-        .findFirstOrThrow({
-          where: { id: userId },
-          select: { email: true, username: true },
-        })
-        .catch(() => {
-          throw new ServiceForbiddenException();
-        });
-
-      // define the mode
-      switch (mode) {
-        case CheckoutMode.UPGRADE:
-          const plan = await this.prisma.plan
-            .findFirstOrThrow({
-              where: { slug: 'premium' },
-              select: {
-                stripe_price_month_id: true,
-                stripe_price_year_id: true,
-              },
-            })
-            .then(async ({ stripe_price_month_id, stripe_price_year_id }) => {
-              let price: number = 0;
-              let currency: string = 'usd';
-              let stripePriceId: string = '';
-
-              switch (period) {
-                case 'month':
-                  await this.stripeService.prices
-                    .retrieve(stripe_price_month_id)
-                    .then((s) => {
-                      price = s.unit_amount;
-                      currency = s.currency;
-                      stripePriceId = s.id;
-                    })
-                    .catch(() => {
-                      throw new ServiceBadRequestException('plan is not found');
-                    });
-                  break;
-                case 'year':
-                  await this.stripeService.prices
-                    .retrieve(stripe_price_year_id)
-                    .then((s) => {
-                      price = s.unit_amount;
-                      currency = s.currency;
-                      stripePriceId = s.id;
-                    })
-                    .catch(() => {
-                      throw new ServiceBadRequestException('plan is not found');
-                    });
-                  break;
-                default:
-                  throw new ServiceBadRequestException('plan is not found');
-              }
-
-              return {
-                price,
-                currency,
-                stripePriceId,
-              };
-            })
-            .catch(() => {
-              throw new ServiceBadRequestException('plan is not found');
-            });
-
-          amount = plan.price;
-          currency = plan.currency;
-          break;
-        case CheckoutMode.MEMBERSHIP:
-          // @todo
-          amount = 0;
-          currency = config.premium.currency;
-          break;
-        case CheckoutMode.DONATION:
-          // @todo
-          amount = donation;
-          currency = config.premium.currency;
-          break;
-      }
-
-      // get the customer
-      const customer = await this.stripeService.getOrCreateCustomer({
-        email: user.email,
-        data: {
-          email: user.email,
-          name: user.username,
-        },
-      });
-
-      const { checkout, paymentIntent } = await this.prisma.$transaction(
-        async (tx) => {
-          // create a payment intent
-          const paymentIntent = await this.stripeService.paymentIntents.create({
-            amount,
-            currency,
-            payment_method_types: ['card'],
-            customer: customer.id,
-          });
-
-          // create a checkout
-          const checkout = await tx.checkout.create({
-            data: {
-              public_id: generator.publicId(),
-              status: CheckoutStatus.PENDING,
-              // stripe_payment_intent_id: paymentIntent.id,
-              total: amount,
-              explorer_id: userId,
-            },
-            select: { public_id: true, status: true },
-          });
-
-          return {
-            checkout,
-            paymentIntent,
-          };
-        },
-      );
-
-      return {
-        checkoutId: checkout.public_id,
-        status: checkout.status as CheckoutStatus,
-        secret: paymentIntent.client_secret,
-        requiresAction: false,
-      };
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;
@@ -1856,5 +1654,281 @@ export class PaymentService {
       if (e.status) throw e;
       throw new ServiceInternalException();
     }
+  }
+
+  // ─── Apple In-App Purchase Receipt Validation ───
+
+  async upgradeViaAppleReceipt({
+    session,
+    payload,
+  }: {
+    session: ISession;
+    payload: {
+      receiptData: string;
+      productId: string;
+      platform: string;
+      transactionId?: string;
+    };
+  }): Promise<{ success: boolean; message: string }> {
+    try {
+      const { userId } = session;
+      if (!userId) throw new ServiceForbiddenException();
+
+      const { receiptData, productId, platform, transactionId } = payload;
+
+      // Validate product ID
+      const validProducts = [
+        'com.heimursaga.pro.monthly',
+        'com.heimursaga.pro.annual',
+      ];
+      if (!validProducts.includes(productId)) {
+        throw new ServiceBadRequestException('Invalid product ID');
+      }
+
+      // Reject Android until Google Play receipt validation is implemented
+      if (platform === 'android') {
+        throw new ServiceBadRequestException(
+          'Android in-app purchases are not yet supported. Please upgrade on iOS or the web.',
+        );
+      }
+
+      // Idempotency: check if this transaction was already processed
+      if (transactionId) {
+        const duplicate = await this.prisma.explorerSubscription.findFirst({
+          where: {
+            stripe_subscription_id: `iap_${platform}_${transactionId}`,
+          },
+        });
+        if (duplicate) {
+          return {
+            success: true,
+            message: 'Already upgraded to Explorer Pro',
+          };
+        }
+      }
+
+      // Check if user already has CREATOR role
+      const existingUser = await this.prisma.explorer.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      if (existingUser?.role === UserRole.CREATOR) {
+        return { success: true, message: 'Already upgraded to Explorer Pro' };
+      }
+
+      // Validate receipt with Apple
+      const isValid = await this.validateAppleReceipt(receiptData, productId);
+      if (!isValid) {
+        throw new ServiceBadRequestException(
+          'Receipt validation failed. Please try again or contact support.',
+        );
+      }
+
+      // Determine billing period from product ID
+      const period = productId.includes('annual')
+        ? PlanExpiryPeriod.YEAR
+        : PlanExpiryPeriod.MONTH;
+
+      // Calculate expiry
+      const now = new Date();
+      const expiry = new Date(now);
+      if (period === PlanExpiryPeriod.YEAR) {
+        expiry.setFullYear(expiry.getFullYear() + 1);
+      } else {
+        expiry.setMonth(expiry.getMonth() + 1);
+      }
+
+      // Get the Explorer Pro plan
+      const plan = await this.prisma.plan.findFirst({
+        where: { slug: 'explorer-pro' },
+        select: { id: true },
+      });
+
+      if (!plan) {
+        throw new ServiceInternalException();
+      }
+
+      const user = await this.prisma.explorer.findUnique({
+        where: { id: userId },
+        select: { id: true, email: true, username: true },
+      });
+
+      if (!user) throw new ServiceForbiddenException();
+
+      if (!transactionId) {
+        throw new ServiceBadRequestException(
+          'Transaction ID is required for IAP purchases.',
+        );
+      }
+
+      // Create subscription and upgrade user in a transaction
+      await this.prisma.$transaction(async (tx) => {
+        // Create subscription record (no Stripe subscription for IAP)
+        const subscription = await tx.explorerSubscription.create({
+          data: {
+            public_id: generator.publicId(),
+            stripe_subscription_id: `iap_${platform}_${transactionId}`,
+            period,
+            expiry,
+            explorer: { connect: { id: userId } },
+          },
+        });
+
+        // Link plan to user
+        const existingPlan = await tx.explorerPlan.findFirst({
+          where: { explorer_id: userId, plan_id: plan.id },
+        });
+
+        if (existingPlan) {
+          await tx.explorerPlan.updateMany({
+            where: { plan_id: plan.id, explorer_id: userId },
+            data: { subscription_id: subscription.id },
+          });
+        } else {
+          await tx.explorerPlan.create({
+            data: {
+              plan_id: plan.id,
+              explorer_id: userId,
+              subscription_id: subscription.id,
+            },
+          });
+        }
+
+        // Upgrade role to CREATOR
+        await tx.explorer.update({
+          where: { id: userId },
+          data: { role: UserRole.CREATOR },
+        });
+
+        // Create default sponsorship tiers
+        for (const tierConfig of DEFAULT_ONE_TIME_TIERS) {
+          await tx.sponsorshipTier.create({
+            data: {
+              public_id: generator.publicId(),
+              type: 'ONE_TIME',
+              price: tierConfig.defaultPrice * 100,
+              description: tierConfig.label,
+              priority: tierConfig.slot,
+              is_available: true,
+              explorer: { connect: { id: userId } },
+            },
+          });
+        }
+        for (const tierConfig of DEFAULT_MONTHLY_TIERS) {
+          await tx.sponsorshipTier.create({
+            data: {
+              public_id: generator.publicId(),
+              type: 'MONTHLY',
+              price: tierConfig.defaultPrice * 100,
+              description: tierConfig.label,
+              priority: tierConfig.slot,
+              is_available: true,
+              explorer: { connect: { id: userId } },
+            },
+          });
+        }
+      });
+
+      this.logger.log(
+        `User ${userId} upgraded to Explorer Pro via ${platform} IAP (product: ${productId})`,
+      );
+
+      // Send upgrade confirmation email
+      try {
+        this.eventService.trigger<IEventSendEmail>({
+          event: EVENTS.SEND_EMAIL,
+          data: {
+            to: user.email,
+            template: EMAIL_TEMPLATES.UPGRADE_CONFIRMATION,
+            vars: {
+              username: user.username,
+              planName: 'EXPLORER PRO',
+              price: period === PlanExpiryPeriod.YEAR ? 49.99 : 6.99,
+              currency: '$',
+              billingPeriod:
+                period === PlanExpiryPeriod.YEAR ? 'annual' : 'monthly',
+              nextBillingDate: expiry.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              }),
+            },
+          },
+        });
+      } catch (emailErr) {
+        this.logger.error('Failed to send IAP upgrade email:', emailErr);
+      }
+
+      return { success: true, message: 'Upgraded to Explorer Pro' };
+    } catch (e) {
+      this.logger.error('Error upgrading via Apple receipt:', e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  private async validateAppleReceipt(
+    receiptData: string,
+    expectedProductId: string,
+  ): Promise<boolean> {
+    const sharedSecret = config.apple?.iapSharedSecret;
+    if (!sharedSecret) {
+      this.logger.error(
+        'APPLE_IAP_SHARED_SECRET is not configured — cannot validate receipts',
+      );
+      return false;
+    }
+
+    // Try production first, fall back to sandbox
+    const urls = [
+      'https://buy.itunes.apple.com/verifyReceipt',
+      'https://sandbox.itunes.apple.com/verifyReceipt',
+    ];
+
+    for (const url of urls) {
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            'receipt-data': receiptData,
+            password: sharedSecret,
+            'exclude-old-transactions': true,
+          }),
+        });
+
+        const result = await response.json();
+
+        // Status 21007 means sandbox receipt sent to production — retry with sandbox
+        if (result.status === 21007) continue;
+
+        if (result.status !== 0) {
+          this.logger.warn(
+            `Apple receipt validation failed with status ${result.status}`,
+          );
+          return false;
+        }
+
+        // Verify the receipt contains the expected product
+        const latestReceipts =
+          result.latest_receipt_info || result.receipt?.in_app || [];
+        const validReceipt = latestReceipts.find(
+          (r: { product_id: string; expires_date_ms?: string }) => {
+            if (r.product_id !== expectedProductId) return false;
+            // For subscriptions, check expiry
+            if (r.expires_date_ms) {
+              return parseInt(r.expires_date_ms, 10) > Date.now();
+            }
+            return true;
+          },
+        );
+
+        return !!validReceipt;
+      } catch (err) {
+        this.logger.error(`Apple receipt validation error (${url}):`, err);
+      }
+    }
+
+    return false;
   }
 }

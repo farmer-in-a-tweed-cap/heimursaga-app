@@ -77,14 +77,14 @@ export function StripeProvider({ children }: StripeProviderProps) {
             variables: {
               colorPrimary: '#4676ac',
               colorBackground: isDark ? '#2a2a2a' : '#ffffff',
-              colorText: isDark ? '#e5e5e5' : '#1f2937',
+              colorText: isDark ? '#e5e5e5' : '#202020',
               colorDanger: '#994040',
               fontFamily: 'Jost, system-ui, sans-serif',
               borderRadius: '0px',
             },
             rules: {
               '.Input': {
-                backgroundColor: isDark ? '#333333' : '#ffffff',
+                backgroundColor: isDark ? '#3a3a3a' : '#ffffff',
                 border: isDark ? '1px solid #616161' : '1px solid #b5bcc4',
               },
               '.Input:focus': {

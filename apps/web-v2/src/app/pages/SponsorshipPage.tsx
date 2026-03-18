@@ -701,7 +701,7 @@ export function SponsorshipPage() {
                                       </td>
                                     </tr>
                                     {expandedTransaction === payment.id && (
-                                      <tr className="bg-[#fff5f0] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161]">
+                                      <tr className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161]">
                                         <td colSpan={6} className="p-6">
                                           <div className="grid md:grid-cols-2 gap-6">
                                             <div>

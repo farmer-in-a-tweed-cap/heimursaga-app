@@ -1,0 +1,12 @@
+{
+  "name": "Heimursaga",
+  "short_name": "Heimursaga",
+  "description": "Global expedition documentation and sponsorship platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#ac6d46",
+  "icons": [
+    { "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }
+  ]
+}

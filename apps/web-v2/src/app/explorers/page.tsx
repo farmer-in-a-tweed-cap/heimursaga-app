@@ -5,6 +5,12 @@ export const metadata: Metadata = {
   title: 'Explorers',
   description:
     'Discover explorers from around the world sharing their adventures on Heimursaga.',
+  openGraph: {
+    title: 'Explorers | Heimursaga',
+    description:
+      'Discover explorers from around the world sharing their adventures on Heimursaga.',
+    url: 'https://heimursaga.com/explorers',
+  },
 };
 
 export default function Page() {

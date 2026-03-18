@@ -13,6 +13,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { randomUUID } from 'crypto';
 import { execSync } from 'child_process';
 
 import { getEnv, sleep } from '@/lib/utils';
@@ -61,10 +62,18 @@ export async function app() {
     const adapter = new FastifyAdapter({
       trustProxy: true,
       bodyLimit: 25 * 1024 * 1024,
+      genReqId: (req) =>
+        (req.headers['x-request-id'] as string) || randomUUID(),
+      requestIdHeader: 'x-request-id',
     });
 
     // create a fastify instance
     const fastify = adapter.getInstance();
+
+    // Add request ID to response headers for client-side tracing
+    fastify.addHook('onRequest', async (request, reply) => {
+      reply.header('x-request-id', request.id);
+    });
 
     // set fastify plugins
     await fastify.register<FastifyCorsOptions>(fastifyCors as any, {

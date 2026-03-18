@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3 } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, PutObjectCommand, S3 } from '@aws-sdk/client-s3';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
@@ -510,5 +510,33 @@ export class UploadService {
     if (mimeType.includes('application/pdf')) return UploadedFileType.DOCUMENT;
 
     return null;
+  }
+
+  /**
+   * Delete an object from S3 by its stored path (e.g. "upload/abc123.jpg").
+   * The path format is "{bucket}/{key}" as stored in the database.
+   */
+  async deleteFromS3(path: string): Promise<void> {
+    if (!path) return;
+
+    const separatorIndex = path.indexOf('/');
+    if (separatorIndex === -1) {
+      this.logger.warn(`Invalid S3 path format (no bucket prefix): ${path}`);
+      return;
+    }
+
+    const bucket = path.substring(0, separatorIndex);
+    const key = path.substring(separatorIndex + 1);
+
+    try {
+      await this.s3.send(
+        new DeleteObjectCommand({
+          Bucket: bucket,
+          Key: key,
+        }),
+      );
+    } catch (error) {
+      this.logger.error(`Failed to delete S3 object: ${path}`, error);
+    }
   }
 }

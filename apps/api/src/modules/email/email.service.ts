@@ -58,7 +58,10 @@ export class EmailService {
         html,
       });
     } catch (e) {
-      this.logger.error(e);
+      this.logger.error(
+        `[EMAIL] Failed to send email to ${options.to}, subject: "${options.subject}"`,
+        e instanceof Error ? e.stack : e,
+      );
       if (e.status) throw e;
     }
   }

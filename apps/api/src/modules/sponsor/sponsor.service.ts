@@ -267,86 +267,88 @@ export class SponsorService {
         );
       }
 
-      // create a checkout and payment intent
+      // One-time payments: create checkout in DB first, then call Stripe outside
+      // the transaction to avoid holding a DB transaction open during external API calls
+      if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
+        const applicationFeeAmount = decimalToInteger(
+          calculateFee({
+            amount: oneTimePaymentAmount,
+            percent: APPLICATION_FEE,
+          }),
+        );
+
+        const amount = decimalToInteger(oneTimePaymentAmount);
+
+        // Step 1: Create checkout record in the database
+        const checkout = await this.prisma.checkout.create({
+          data: {
+            public_id: generator.publicId(),
+            status: CheckoutStatus.PENDING,
+            transaction_type: PaymentTransactionType.SPONSORSHIP,
+            sponsorship_type: sponsorshipType,
+            sponsorship_tier_id: sponsorshipTier.id,
+            message,
+            total: amount,
+            explorer_id: user.id,
+            sponsored_explorer_id: creator.id,
+            email_delivery_enabled: emailDelivery,
+            is_public: isPublic,
+            is_message_public: isMessagePublic,
+            expedition_public_id: expeditionId || null,
+          },
+          select: {
+            id: true,
+            public_id: true,
+          },
+        });
+
+        // Step 2: Create Stripe PaymentIntent outside the transaction
+        const idempotencyKey = `sponsor_otp_checkout_${checkout.id}`;
+
+        const stripePaymentIntent =
+          await this.stripeService.paymentIntents.create(
+            {
+              amount,
+              currency,
+              customer: stripeCustomer.id,
+              payment_method: stripePaymentMethodId,
+              transfer_data: { destination: creatorStripeAccountId },
+              payment_method_types: ['card'],
+              application_fee_amount: applicationFeeAmount,
+              description: `Sponsorship from ${user.username} to ${creator.username}`,
+              metadata: {
+                [StripeMetadataKey.TRANSACTION]:
+                  PaymentTransactionType.SPONSORSHIP,
+                [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
+                [StripeMetadataKey.USER_ID]: user.id.toString(),
+                [StripeMetadataKey.CREATOR_ID]: creator.id.toString(),
+              },
+            },
+            { idempotencyKey },
+          );
+
+        // Step 3: Update checkout with Stripe payment intent ID
+        await this.prisma.checkout.update({
+          where: { id: checkout.id },
+          data: { stripe_payment_intent_id: stripePaymentIntent.id },
+        });
+
+        const response: ISponsorCheckoutResponse = {
+          clientSecret: stripePaymentIntent.client_secret,
+          paymentMethodId: stripePaymentMethodId,
+        };
+
+        return response;
+      }
+
+      // Subscription flow: kept in a transaction since tier provisioning
+      // requires coordinated Stripe + DB writes
       const { clientSecret } = await this.prisma.$transaction(
         async (tx) => {
           let amount = 0;
           let stripePaymentIntentId: string | undefined;
           let stripeSubscriptionId: string | undefined = undefined;
           let clientSecret = '';
-
-          // create an one time payment stripe payment intent
-          if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
-            const applicationFeeAmount = decimalToInteger(
-              calculateFee({
-                amount: oneTimePaymentAmount,
-                percent: APPLICATION_FEE,
-              }),
-            );
-
-            amount = decimalToInteger(oneTimePaymentAmount);
-
-            // Create checkout first to get ID for metadata
-            const checkout = await tx.checkout.create({
-              data: {
-                public_id: generator.publicId(),
-                status: CheckoutStatus.PENDING,
-                transaction_type: PaymentTransactionType.SPONSORSHIP,
-                sponsorship_type: sponsorshipType,
-                sponsorship_tier_id: sponsorshipTier.id,
-                message,
-                total: amount,
-                explorer_id: user.id,
-                sponsored_explorer_id: creator.id,
-                email_delivery_enabled: emailDelivery,
-                is_public: isPublic,
-                is_message_public: isMessagePublic,
-                expedition_public_id: expeditionId || null,
-              },
-              select: {
-                id: true,
-                public_id: true,
-              },
-            });
-
-            // Use deterministic idempotency key based on checkout ID
-            const idempotencyKey = `sponsor_otp_checkout_${checkout.id}`;
-
-            // Include metadata in initial create to avoid race condition
-            const stripePaymentIntent =
-              await this.stripeService.paymentIntents.create(
-                {
-                  amount,
-                  currency,
-                  customer: stripeCustomer.id,
-                  payment_method: stripePaymentMethodId,
-                  transfer_data: { destination: creatorStripeAccountId },
-                  payment_method_types: ['card'],
-                  application_fee_amount: applicationFeeAmount,
-                  description: `Sponsorship from ${user.username} to ${creator.username}`,
-                  metadata: {
-                    [StripeMetadataKey.TRANSACTION]:
-                      PaymentTransactionType.SPONSORSHIP,
-                    [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
-                    [StripeMetadataKey.USER_ID]: user.id.toString(),
-                    [StripeMetadataKey.CREATOR_ID]: creator.id.toString(),
-                  },
-                },
-                { idempotencyKey },
-              );
-
-            stripePaymentIntentId = stripePaymentIntent.id;
-            clientSecret = stripePaymentIntent.client_secret;
-
-            // Update checkout with payment intent ID
-            await tx.checkout.update({
-              where: { id: checkout.id },
-              data: { stripe_payment_intent_id: stripePaymentIntentId },
-            });
-
-            // Return early for one-time payments since checkout is already created
-            return { checkout, clientSecret };
-          }
 
           // create a subscription stripe payment intent
           // get a sponsorship tier
@@ -1940,7 +1942,11 @@ export class SponsorService {
 
   async getSponsorships({
     session,
-  }: ISessionQuery): Promise<ISponsorshipGetAllResponse> {
+    query,
+  }: ISessionQuery<{
+    limit?: string;
+    skip?: string;
+  }>): Promise<ISponsorshipGetAllResponse> {
     try {
       const { userId, userRole } = session;
 
@@ -1949,13 +1955,16 @@ export class SponsorService {
         !!userId && matchRoles(userRole, [UserRole.USER, UserRole.CREATOR]);
       if (!access) throw new ServiceForbiddenException();
 
+      // Parse pagination params with sensible defaults
+      const take = Math.min(Math.max(parseInt(query?.limit, 10) || 50, 1), 100);
+      const skip = Math.max(parseInt(query?.skip, 10) || 0, 0);
+
       const where: Prisma.SponsorshipWhereInput = {
         sponsor_id: userId,
         deleted_at: null,
       };
 
       // get sponsorships
-      const take = 50;
       const results = await this.prisma.sponsorship.count({ where });
       const data = await this.prisma.sponsorship.findMany({
         where,
@@ -1982,6 +1991,7 @@ export class SponsorService {
           created_at: true,
         },
         take,
+        skip,
         orderBy: [{ id: 'desc' }],
       });
 
@@ -2099,7 +2109,11 @@ export class SponsorService {
 
   async getCreatorSponsorships({
     session,
-  }: ISessionQuery): Promise<ISponsorshipGetAllResponse> {
+    query,
+  }: ISessionQuery<{
+    limit?: string;
+    skip?: string;
+  }>): Promise<ISponsorshipGetAllResponse> {
     try {
       const { userId, userRole } = session;
 
@@ -2107,13 +2121,16 @@ export class SponsorService {
       const access = !!userId && matchRoles(userRole, [UserRole.CREATOR]);
       if (!access) throw new ServiceForbiddenException();
 
+      // Parse pagination params with sensible defaults
+      const take = Math.min(Math.max(parseInt(query?.limit, 10) || 50, 1), 100);
+      const skip = Math.max(parseInt(query?.skip, 10) || 0, 0);
+
       const where: Prisma.SponsorshipWhereInput = {
         sponsored_explorer_id: userId,
         deleted_at: null,
       };
 
       // get sponsorships
-      const take = 50;
       const results = await this.prisma.sponsorship.count({ where });
       const data = await this.prisma.sponsorship.findMany({
         where,
@@ -2146,6 +2163,7 @@ export class SponsorService {
           created_at: true,
         },
         take,
+        skip,
         orderBy: [{ id: 'desc' }],
       });
 

@@ -23,6 +23,9 @@ export const config = {
     monthlyPrice: 5,
     yearlyPrice: 50,
   },
+  apple: {
+    iapSharedSecret: process.env.APPLE_IAP_SHARED_SECRET,
+  },
 };
 
 const _parsedFee =

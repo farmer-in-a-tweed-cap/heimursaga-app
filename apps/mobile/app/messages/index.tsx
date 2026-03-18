@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Linking } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
@@ -23,15 +23,6 @@ export default function MessagesScreen() {
     ready && isPro ? '/messages/conversations' : null,
   );
 
-  if (!ready) {
-    return (
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <NavBar onBack={() => router.back()} title="MESSAGES" />
-        <ActivityIndicator color={brandColors.copper} style={styles.loader} />
-      </View>
-    );
-  }
-
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredConversations = useMemo(() => {
@@ -45,6 +36,15 @@ export default function MessagesScreen() {
     });
   }, [conversations, searchQuery]);
 
+  if (!ready) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <NavBar onBack={() => router.back()} title="MESSAGES" />
+        <ActivityIndicator color={brandColors.copper} style={styles.loader} />
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <NavBar onBack={() => router.back()} title="MESSAGES" />
@@ -57,8 +57,8 @@ export default function MessagesScreen() {
               <Text style={[styles.upgradeDesc, { color: colors.textSecondary }]}>
                 Upgrade to Explorer Pro to send and receive direct messages with other explorers.
               </Text>
-              <HButton variant="copper" onPress={() => Linking.openURL('https://heimursaga.com/upgrade')}>
-                UPGRADE ON WEB
+              <HButton variant="copper" onPress={() => router.push('/upgrade')}>
+                UPGRADE TO PRO
               </HButton>
             </View>
           </View>

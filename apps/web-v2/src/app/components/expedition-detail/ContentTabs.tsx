@@ -205,7 +205,7 @@ export function ContentTabs({
                 ))}
               </>
             ) : (
-              <div className="border border-dashed border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#fafafa] dark:bg-[#1a1a1a] p-8 text-center">
+              <div className="border border-dashed border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#f5f5f5] dark:bg-[#1a1a1a] p-8 text-center">
                 <div className="text-sm font-bold font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">
                   NO ENTRIES LOGGED YET
                 </div>
@@ -283,7 +283,7 @@ export function ContentTabs({
                     <div
                       key={s.id}
                       className={`grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-3 items-center border-b border-[#b5bcc4] dark:border-[#3a3a3a] ${
-                        idx === 0 ? 'bg-[#fff5f0] dark:bg-[#2a2018]' : idx === 1 ? 'bg-[#fafafa] dark:bg-[#252525]' : idx === 2 ? 'bg-[#fafafa] dark:bg-[#232323]' : ''
+                        idx === 0 ? 'bg-[#f5f5f5] dark:bg-[#2a2a2a]' : idx === 1 ? 'bg-[#f5f5f5] dark:bg-[#2a2a2a]' : idx === 2 ? 'bg-[#f5f5f5] dark:bg-[#2a2a2a]' : ''
                       }`}
                     >
                       {/* Rank */}
@@ -346,7 +346,7 @@ export function ContentTabs({
                 })}
               </div>
             ) : (
-              <div className="border border-dashed border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#fafafa] dark:bg-[#1a1a1a] p-8 text-center">
+              <div className="border border-dashed border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#f5f5f5] dark:bg-[#1a1a1a] p-8 text-center">
                 <Users className="w-12 h-12 text-[#b5bcc4] dark:text-[#616161] mx-auto mb-3" />
                 <div className="text-sm font-bold font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">
                   NO SPONSORS YET

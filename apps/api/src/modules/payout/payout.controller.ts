@@ -7,6 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 import { Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
@@ -96,6 +97,7 @@ export class PayoutController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 payout requests per hour
   async createPayout(
     @Session() session: ISession,
     @Body() body: PayoutCreateDto,

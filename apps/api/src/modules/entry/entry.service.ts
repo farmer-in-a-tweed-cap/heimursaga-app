@@ -31,6 +31,7 @@ import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
+import { UploadService } from '@/modules/upload/upload.service';
 
 /**
  * Whitelist-based sanitizer for entry metadata.
@@ -103,9 +104,16 @@ export class EntryService {
     private logger: Logger,
     private prisma: PrismaService,
     private eventService: EventService,
+    private uploadService: UploadService,
   ) {}
 
-  async getDrafts({ session }: ISessionQuery): Promise<IEntryGetAllResponse> {
+  async getDrafts({
+    query,
+    session,
+  }: ISessionQuery<{
+    limit?: string;
+    skip?: string;
+  }>): Promise<IEntryGetAllResponse> {
     try {
       const { explorerId } = session;
 
@@ -119,7 +127,8 @@ export class EntryService {
         deleted_at: null,
       } as Prisma.EntryWhereInput;
 
-      const take = 20; // Limit drafts to recent ones
+      const take = Math.min(Math.max(parseInt(query?.limit) || 20, 1), 100);
+      const skip = Math.max(parseInt(query?.skip) || 0, 0);
 
       // get drafts
       const results = await this.prisma.entry.count({ where });
@@ -166,6 +175,7 @@ export class EntryService {
           },
         },
         take,
+        skip,
         orderBy: [{ updated_at: 'desc' }], // Most recently updated drafts first
       });
 
@@ -1075,7 +1085,11 @@ export class EntryService {
       }
 
       // Video entries don't allow photo uploads
-      if (entryType === 'video' && payload.uploads && payload.uploads.length > 0) {
+      if (
+        entryType === 'video' &&
+        payload.uploads &&
+        payload.uploads.length > 0
+      ) {
         throw new ServiceBadRequestException(
           'Video entries do not support photo uploads',
         );
@@ -1680,7 +1694,22 @@ export class EntryService {
 
       // check access
       const entry = await this.prisma.entry
-        .findFirstOrThrow({ where, select: { id: true } })
+        .findFirstOrThrow({
+          where,
+          select: {
+            id: true,
+            cover_upload: {
+              select: { original: true, thumbnail: true },
+            },
+            media: {
+              select: {
+                upload: {
+                  select: { original: true, thumbnail: true },
+                },
+              },
+            },
+          },
+        })
         .catch(() => {
           throw new ServiceForbiddenException();
         });
@@ -1690,6 +1719,21 @@ export class EntryService {
         where: { id: entry.id },
         data: { deleted_at: dateformat().toDate() },
       });
+
+      // Clean up S3 objects for cover image and media
+      const s3Paths: string[] = [];
+
+      if (entry.cover_upload) {
+        if (entry.cover_upload.original) s3Paths.push(entry.cover_upload.original);
+        if (entry.cover_upload.thumbnail) s3Paths.push(entry.cover_upload.thumbnail);
+      }
+
+      for (const m of entry.media || []) {
+        if (m.upload?.original) s3Paths.push(m.upload.original);
+        if (m.upload?.thumbnail) s3Paths.push(m.upload.thumbnail);
+      }
+
+      await Promise.all(s3Paths.map((path) => this.uploadService.deleteFromS3(path)));
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

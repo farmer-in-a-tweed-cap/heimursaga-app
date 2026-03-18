@@ -506,7 +506,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
           </p>
           <Link
             href="/upgrade"
-            className="inline-block px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all"
+            className="inline-block px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
           >
             UPGRADE TO EXPLORER PRO
           </Link>
@@ -534,7 +534,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
               <h2 className="text-lg font-bold dark:text-[#e5e5e5]">SELECT YOUR COUNTRY</h2>
               <button
                 onClick={() => setShowCountryModal(false)}
-                className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all"
+                className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
               >
                 <X className="w-5 h-5 dark:text-[#e5e5e5]" />
               </button>
@@ -557,20 +557,20 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#616161] pointer-events-none" />
               </div>
-              <div className="p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
+              <div className="p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
                 <strong className="dark:text-[#e5e5e5]">Note:</strong> You cannot change your country after setup. Make sure to select the correct country.
               </div>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowCountryModal(false)}
-                  className="flex-1 py-3 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5]"
+                  className="flex-1 py-3 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
                 >
                   CANCEL
                 </button>
                 <button
                   onClick={() => proceedWithOnboarding()}
                   disabled={isStartingOnboarding}
-                  className="flex-1 py-3 bg-[#ac6d46] text-white font-bold text-sm hover:bg-[#8a5738] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-3 bg-[#ac6d46] text-white font-bold text-sm hover:bg-[#8a5738] transition-all flex items-center justify-center gap-2 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                 >
                   {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
                   CONTINUE
@@ -592,7 +592,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   setShowRefundModal(false);
                   setRefundTarget(null);
                 }}
-                className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all"
+                className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
               >
                 <X className="w-5 h-5 dark:text-[#e5e5e5]" />
               </button>
@@ -601,7 +601,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
               <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-4">
                 Are you sure you want to refund <strong className="text-[#ac6d46]">${formatCurrency(refundTarget.amount)}</strong>?
               </p>
-              <div className="p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-[#994040] text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
+              <div className="p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#994040] text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
                 <strong className="dark:text-[#e5e5e5]">Warning:</strong> This action cannot be undone. The full amount will be returned to the sponsor.
               </div>
               <div className="flex gap-3">
@@ -610,14 +610,14 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                     setShowRefundModal(false);
                     setRefundTarget(null);
                   }}
-                  className="flex-1 py-3 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5]"
+                  className="flex-1 py-3 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
                 >
                   CANCEL
                 </button>
                 <button
                   onClick={confirmRefund}
                   disabled={isProcessingRefund}
-                  className="flex-1 py-3 bg-[#994040] text-white font-bold text-sm hover:bg-[#7a3333] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-3 bg-[#994040] text-white font-bold text-sm hover:bg-[#7a3333] transition-all flex items-center justify-center gap-2 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
                 >
                   {isProcessingRefund && <Loader2 className="w-4 h-4 animate-spin" />}
                   ISSUE REFUND
@@ -639,7 +639,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   setShowDeleteTierModal(false);
                   setDeleteTierTarget(null);
                 }}
-                className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all"
+                className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
               >
                 <X className="w-5 h-5 dark:text-[#e5e5e5]" />
               </button>
@@ -648,7 +648,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
               <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-4">
                 Are you sure you want to delete this sponsorship tier?
               </p>
-              <div className="p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
+              <div className="p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
                 <strong className="dark:text-[#e5e5e5]">Note:</strong> Existing sponsors on this tier will not be affected, but new sponsors will not be able to select it.
               </div>
               <div className="flex gap-3">
@@ -657,14 +657,14 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                     setShowDeleteTierModal(false);
                     setDeleteTierTarget(null);
                   }}
-                  className="flex-1 py-3 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5]"
+                  className="flex-1 py-3 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
                 >
                   CANCEL
                 </button>
                 <button
                   onClick={confirmDeleteTier}
                   disabled={isDeletingTier}
-                  className="flex-1 py-3 bg-[#994040] text-white font-bold text-sm hover:bg-[#7a3333] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 py-3 bg-[#994040] text-white font-bold text-sm hover:bg-[#7a3333] transition-all flex items-center justify-center gap-2 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
                 >
                   {isDeletingTier && <Loader2 className="w-4 h-4 animate-spin" />}
                   DELETE TIER
@@ -686,7 +686,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   setShowOnboardingGuide(false);
                   setPendingOnboardingUrl('');
                 }}
-                className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all"
+                className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
               >
                 <X className="w-5 h-5 dark:text-[#e5e5e5]" />
               </button>
@@ -748,7 +748,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 </div>
               </div>
 
-              <div className="flex gap-2 items-start p-3 bg-[#f0f4f8] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
+              <div className="flex gap-2 items-start p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
                 <Shield className="w-5 h-5 text-[#4676ac] flex-shrink-0 mt-0.5" />
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
                   <strong className="dark:text-[#e5e5e5]">Your data is secure.</strong> All sensitive information is collected and stored directly by Stripe. Heimursaga never sees your bank details, SSN, or identity documents.
@@ -761,13 +761,13 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                     setShowOnboardingGuide(false);
                     setPendingOnboardingUrl('');
                   }}
-                  className="flex-1 py-3 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5]"
+                  className="flex-1 py-3 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
                 >
                   CANCEL
                 </button>
                 <button
                   onClick={handleContinueToStripe}
-                  className="flex-1 py-3 bg-[#ac6d46] text-white font-bold text-sm hover:bg-[#8a5738] transition-all flex items-center justify-center gap-2"
+                  className="flex-1 py-3 bg-[#ac6d46] text-white font-bold text-sm hover:bg-[#8a5738] transition-all flex items-center justify-center gap-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                 >
                   <ExternalLink className="w-4 h-4" />
                   CONTINUE TO STRIPE
@@ -844,7 +844,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
           <div className="flex items-center gap-3">
             <CheckCircle className="w-5 h-5" />
             <div className="flex-1 text-sm font-bold">Stripe Connected - Ready to receive sponsorships</div>
-            <button onClick={() => setSelectedView('stripe')} className="text-xs text-white opacity-90 hover:opacity-100 font-bold">
+            <button onClick={() => setSelectedView('stripe')} className="text-xs text-white opacity-90 hover:opacity-100 font-bold focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-white">
               MANAGE
             </button>
           </div>
@@ -864,7 +864,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 <button
                   onClick={handleStartStripeOnboarding}
                   disabled={isStartingOnboarding}
-                  className="px-6 py-3 bg-white text-[#ac6d46] font-bold hover:bg-[#f5f5f5] transition-all text-sm disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-white text-[#ac6d46] font-bold hover:bg-[#f5f5f5] transition-all text-sm disabled:opacity-50 flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                 >
                   {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
                   START STRIPE ONBOARDING
@@ -887,7 +887,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 <button
                   onClick={handleStartStripeOnboarding}
                   disabled={isStartingOnboarding}
-                  className="px-6 py-3 bg-white text-[#ac6d46] font-bold hover:bg-[#f5f5f5] transition-all text-sm disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-white text-[#ac6d46] font-bold hover:bg-[#f5f5f5] transition-all text-sm disabled:opacity-50 flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                 >
                   {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
                   CONTINUE ONBOARDING
@@ -909,7 +909,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 </div>
                 <button
                   onClick={() => setSelectedView('stripe')}
-                  className="px-6 py-3 border-2 border-white text-white font-bold hover:bg-white hover:text-[#4676ac] transition-all text-sm"
+                  className="px-6 py-3 border-2 border-white text-white font-bold hover:bg-white hover:text-[#4676ac] transition-all text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-white"
                 >
                   VIEW DETAILS
                 </button>
@@ -938,7 +938,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 <button
                   onClick={handleStartStripeOnboarding}
                   disabled={isStartingOnboarding}
-                  className="px-6 py-3 bg-white text-[#994040] font-bold hover:bg-[#f5f5f5] transition-all text-sm disabled:opacity-50 flex items-center gap-2"
+                  className="px-6 py-3 bg-white text-[#994040] font-bold hover:bg-[#f5f5f5] transition-all text-sm disabled:opacity-50 flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                 >
                   {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
                   COMPLETE REQUIREMENTS
@@ -962,7 +962,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   href="https://dashboard.stripe.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#994040] font-bold hover:bg-[#f5f5f5] transition-all text-sm"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-white text-[#994040] font-bold hover:bg-[#f5f5f5] transition-all text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
                 >
                   <ExternalLink className="w-4 h-4" />
                   OPEN STRIPE DASHBOARD
@@ -984,7 +984,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 selectedView === view
                   ? 'bg-[#ac6d46] text-white'
                   : 'bg-[#b5bcc4] dark:bg-[#3a3a3a] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#4a4a4a]'
-              } transition-all`}
+              } transition-all focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#ac6d46]`}
             >
               {view.toUpperCase()}
             </button>
@@ -1063,7 +1063,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   )}
                   <button
                     onClick={() => setSelectedView('sponsors')}
-                    className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#202020] hover:text-white dark:hover:bg-[#616161] transition-all dark:text-[#e5e5e5]"
+                    className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] font-bold text-sm hover:bg-[#202020] hover:text-white dark:hover:bg-[#616161] transition-all dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020]"
                   >
                     VIEW ALL PAYMENTS
                   </button>
@@ -1074,19 +1074,19 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button
                   onClick={() => setSelectedView('tiers')}
-                  className="p-4 border-2 border-[#ac6d46] hover:bg-[#ac6d46] hover:text-white transition-all font-bold dark:text-[#e5e5e5]"
+                  className="p-4 border-2 border-[#ac6d46] hover:bg-[#ac6d46] hover:text-white transition-all font-bold dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                 >
                   MANAGE TIERS
                 </button>
                 <button
                   onClick={() => setSelectedView('payouts')}
-                  className="p-4 border-2 border-[#4676ac] hover:bg-[#4676ac] hover:text-white transition-all font-bold dark:text-[#e5e5e5]"
+                  className="p-4 border-2 border-[#4676ac] hover:bg-[#4676ac] hover:text-white transition-all font-bold dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
                 >
                   VIEW PAYOUTS
                 </button>
                 <Link
                   href={`/journal/${user?.username}`}
-                  className="p-4 border-2 border-[#202020] dark:border-[#616161] hover:bg-[#b5bcc4] dark:hover:bg-[#2a2a2a] transition-all font-bold dark:text-[#e5e5e5] text-center"
+                  className="p-4 border-2 border-[#202020] dark:border-[#616161] hover:bg-[#b5bcc4] dark:hover:bg-[#2a2a2a] transition-all font-bold dark:text-[#e5e5e5] text-center focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020]"
                 >
                   VIEW PUBLIC PROFILE
                 </Link>
@@ -1108,7 +1108,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       <button
                         onClick={handleSaveTiers}
                         disabled={isSavingTiers}
-                        className="px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 disabled:opacity-50"
+                        className="px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                       >
                         {isSavingTiers && <Loader2 className="w-4 h-4 animate-spin" />}
                         SAVE ALL CHANGES
@@ -1128,7 +1128,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                           setEditedOneTimeTiers(oneTime);
                           setEditedMonthlyTiers(monthly);
                         }}
-                        className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-xs font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all dark:text-[#e5e5e5]"
+                        className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] text-xs font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
                       >
                         CANCEL
                       </button>
@@ -1136,7 +1136,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   ) : (
                     <button
                       onClick={() => setEditingTiers(true)}
-                      className="px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2"
+                      className="px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                     >
                       EDIT TIERS
                     </button>
@@ -1244,7 +1244,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   {editingTiers && editedOneTimeTiers.length < ONE_TIME_TIER_SLOTS.length && (
                     <button
                       onClick={handleAddOneTimeTier}
-                      className="w-full mt-4 py-3 border-2 border-dashed border-[#b5bcc4] dark:border-[#616161] font-bold text-sm hover:border-[#4676ac] hover:text-[#4676ac] transition-all flex items-center justify-center gap-2 dark:text-[#e5e5e5]"
+                      className="w-full mt-4 py-3 border-2 border-dashed border-[#b5bcc4] dark:border-[#616161] font-bold text-sm hover:border-[#4676ac] hover:text-[#4676ac] transition-all flex items-center justify-center gap-2 dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
                     >
                       ADD ONE-TIME TIER
                     </button>
@@ -1264,7 +1264,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   <p className="text-xs mt-1 opacity-90">Recurring support that follows you across all expeditions</p>
                 </div>
                 <div className="p-6">
-                  <div className="mb-4 p-4 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs dark:text-[#b5bcc4]">
+                  <div className="mb-4 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs dark:text-[#b5bcc4]">
                     <strong className="dark:text-[#e5e5e5]">Monthly billing info:</strong> Subscriptions automatically pause when you're RESTING
                     (no active expeditions) and resume when you start a new expedition. Auto-cancels after 90 days of rest.
                   </div>
@@ -1361,7 +1361,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   {editingTiers && editedMonthlyTiers.length < MONTHLY_TIER_SLOTS.length && (
                     <button
                       onClick={handleAddMonthlyTier}
-                      className="w-full mt-4 py-3 border-2 border-dashed border-[#b5bcc4] dark:border-[#616161] font-bold text-sm hover:border-[#ac6d46] hover:text-[#ac6d46] transition-all flex items-center justify-center gap-2 dark:text-[#e5e5e5]"
+                      className="w-full mt-4 py-3 border-2 border-dashed border-[#b5bcc4] dark:border-[#616161] font-bold text-sm hover:border-[#ac6d46] hover:text-[#ac6d46] transition-all flex items-center justify-center gap-2 dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                     >
                       ADD MONTHLY TIER
                     </button>
@@ -1455,7 +1455,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                               ) : (
                                 <button
                                   onClick={() => handleRefund(payment.id, payment.amount)}
-                                  className="px-3 py-1 text-xs font-bold border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all"
+                                  className="px-3 py-1 text-xs font-bold border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
                                 >
                                   REFUND
                                 </button>
@@ -1464,7 +1464,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                             <td className="px-4 py-3 text-center">
                               <button
                                 onClick={() => setExpandedPayment(expandedPayment === payment.id ? null : payment.id)}
-                                className="p-1 hover:bg-[#b5bcc4] dark:hover:bg-[#616161] transition-all dark:text-[#e5e5e5]"
+                                className="p-1 hover:bg-[#b5bcc4] dark:hover:bg-[#616161] transition-all dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
                               >
                                 {expandedPayment === payment.id ? (
                                   <ChevronUp className="w-5 h-5" />
@@ -1475,7 +1475,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                             </td>
                           </tr>
                           {expandedPayment === payment.id && (
-                            <tr className="bg-[#f0f4f8] dark:bg-[#1a2a3a] border-b-2 border-[#202020] dark:border-[#616161]">
+                            <tr className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161]">
                               <td colSpan={7} className="p-6">
                                 <div className="space-y-2 text-xs font-mono">
                                   <div className="flex justify-between">
@@ -1634,7 +1634,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       }
                     }}
                     disabled={isRefreshingStatus}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border-2 border-[#202020] dark:border-[#616161] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all dark:text-[#e5e5e5] disabled:opacity-50"
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold border-2 border-[#202020] dark:border-[#616161] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all dark:text-[#e5e5e5] disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingStatus ? 'animate-spin' : ''}`} />
                     {isRefreshingStatus ? 'REFRESHING...' : 'REFRESH STATUS'}
@@ -1657,7 +1657,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                     <button
                       onClick={handleStartStripeOnboarding}
                       disabled={isStartingOnboarding}
-                      className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 disabled:opacity-50"
+                      className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                     >
                       {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
                       START STRIPE ONBOARDING
@@ -1720,7 +1720,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                         <button
                           onClick={handleStartStripeOnboarding}
                           disabled={isStartingOnboarding}
-                          className="mt-3 px-4 py-2 bg-[#994040] text-white text-sm font-bold hover:bg-[#7a3333] transition-all flex items-center gap-2 disabled:opacity-50"
+                          className="mt-3 px-4 py-2 bg-[#994040] text-white text-sm font-bold hover:bg-[#7a3333] transition-all flex items-center gap-2 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
                         >
                           {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
                           COMPLETE REQUIREMENTS
@@ -1746,7 +1746,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       <button
                         onClick={handleStartStripeOnboarding}
                         disabled={isStartingOnboarding}
-                        className="px-4 py-2 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 disabled:opacity-50"
+                        className="px-4 py-2 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                       >
                         {isStartingOnboarding && <Loader2 className="w-4 h-4 animate-spin" />}
                         CONTINUE ONBOARDING
@@ -1783,7 +1783,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
 
                     {/* Payout Schedule */}
                     {payoutMethods[0].automaticPayouts && (
-                      <div className="p-4 bg-[#f0f4f8] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs dark:text-[#b5bcc4]">
+                      <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs dark:text-[#b5bcc4]">
                         <strong className="dark:text-[#e5e5e5]">Payout Schedule:</strong>{' '}
                         {payoutMethods[0].automaticPayouts.enabled
                           ? `${payoutMethods[0].automaticPayouts.schedule.interval} payouts`

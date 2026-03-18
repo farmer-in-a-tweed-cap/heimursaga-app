@@ -57,7 +57,6 @@
     "dayjs": "^1.11.13",
     "dompurify": "^3.2.6",
     "dotenv": "^16.4.7",
-    "express-recaptcha": "^5.1.0",
     "fastify": "^5.6.2",
     "fastify-multer": "^2.0.3",
     "jsdom": "^26.1.0",

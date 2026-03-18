@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -40,4 +41,16 @@ export class AdminExplorerQueryDto extends AdminPaginationDto {
   @Type(() => Boolean)
   @IsBoolean()
   blocked?: boolean;
+}
+
+export class AdminRefundDto {
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  chargeId: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  reason?: string;
 }

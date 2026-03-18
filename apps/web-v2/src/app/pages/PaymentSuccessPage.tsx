@@ -96,7 +96,7 @@ export function PaymentSuccessPage() {
 
           <div className="p-8">
             {/* Transaction Summary */}
-            <div className="bg-[#f0f4f8] dark:bg-[#2a2a2a] border-2 border-[#4676ac] p-6 mb-6">
+            <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#4676ac] p-6 mb-6">
               <div className="text-center mb-6">
                 <div className="text-5xl font-bold text-[#ac6d46] mb-2">
                   ${formatCurrency(amount)}

@@ -27,8 +27,15 @@ export class EntryController {
 
   @Get('drafts')
   @HttpCode(HttpStatus.OK)
-  async getDrafts(@Session() session: ISession) {
-    return await this.entryService.getDrafts({ query: {}, session });
+  async getDrafts(
+    @Session() session: ISession,
+    @Query('limit') limit?: string,
+    @Query('skip') skip?: string,
+  ) {
+    return await this.entryService.getDrafts({
+      query: { limit, skip },
+      session,
+    });
   }
 
   @Public()

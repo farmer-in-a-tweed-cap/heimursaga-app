@@ -1,6 +1,7 @@
 import { Global, Module } from '@nestjs/common';
-import { PostHogService } from './posthog.service';
+
 import { PostHogListener } from './posthog.listener';
+import { PostHogService } from './posthog.service';
 
 @Global()
 @Module({

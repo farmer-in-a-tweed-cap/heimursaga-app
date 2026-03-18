@@ -108,7 +108,7 @@ export function WelcomeModal({ open, onClose, onSaveComplete, username }: Welcom
           {/* Avatar Upload */}
           <div className="flex items-start gap-4">
             <div
-              className="relative w-20 h-20 bg-[#e5e5e5] dark:bg-[#404040] border-2 border-[#202020] dark:border-[#616161] rounded-sm flex items-center justify-center cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] overflow-hidden"
+              className="relative w-20 h-20 bg-[#e5e5e5] dark:bg-[#3a3a3a] border-2 border-[#202020] dark:border-[#616161] rounded-sm flex items-center justify-center cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] overflow-hidden"
               onClick={() => fileInputRef.current?.click()}
             >
               {avatarPreview ? (
@@ -156,7 +156,7 @@ export function WelcomeModal({ open, onClose, onSaveComplete, username }: Welcom
               value={journalName}
               onChange={(e) => setJournalName(e.target.value)}
               placeholder="A title for your journal..."
-              className="w-full px-3 py-2 bg-white dark:bg-[#404040] border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] placeholder:text-[#616161] text-sm focus:outline-none focus:border-[#ac6d46]"
+              className="w-full px-3 py-2 bg-white dark:bg-[#3a3a3a] border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] placeholder:text-[#616161] text-sm focus:outline-none focus:border-[#ac6d46]"
               maxLength={100}
             />
           </div>
@@ -171,7 +171,7 @@ export function WelcomeModal({ open, onClose, onSaveComplete, username }: Welcom
               onChange={(e) => setBio(e.target.value)}
               placeholder="Tell others about yourself and your explorations..."
               rows={4}
-              className="w-full px-3 py-2 bg-white dark:bg-[#404040] border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] placeholder:text-[#616161] text-sm resize-none focus:outline-none focus:border-[#ac6d46]"
+              className="w-full px-3 py-2 bg-white dark:bg-[#3a3a3a] border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] placeholder:text-[#616161] text-sm resize-none focus:outline-none focus:border-[#ac6d46]"
               maxLength={500}
             />
             <div className="text-right text-xs text-[#616161] mt-1">

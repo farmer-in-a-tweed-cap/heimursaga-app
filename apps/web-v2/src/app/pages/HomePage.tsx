@@ -367,14 +367,14 @@ export function HomePage() {
     <>
       {/* Heimursaga Tagline - Full Width Spread */}
       <div>
-        <div className="max-w-[1600px] mx-auto px-6 pt-12 pb-0">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 pt-12 pb-0">
           <h1 className="tagline-spread text-[#e5e5e5] dark:text-[#e5e5e5] font-bold text-sm sm:text-base md:text-lg">
             EXPLORE · DISCOVER · SHARE · SPONSOR · INSPIRE
           </h1>
         </div>
       </div>
 
-      <div className="max-w-[1600px] mx-auto px-6 py-12">
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-12">
         {/* Regional Field Report (replaces Platform Statistics) */}
         <RegionReport />
 

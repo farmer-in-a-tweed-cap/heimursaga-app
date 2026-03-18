@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import * as Sentry from '@sentry/react-native';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
   ActivityIndicator, Alert,
@@ -146,7 +145,7 @@ export default function SponsorScreen() {
         await sponsorshipApi.completeCheckout(paymentIntentId);
       } catch (err) {
         // Non-critical — webhook will handle it
-        if (typeof Sentry !== 'undefined') Sentry.captureException(err);
+        if (__DEV__) console.error('[Sponsor] completeCheckout error:', err);
       }
 
       // Step 5: Success

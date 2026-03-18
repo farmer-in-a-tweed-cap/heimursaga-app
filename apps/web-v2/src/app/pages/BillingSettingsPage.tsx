@@ -355,7 +355,7 @@ export function BillingSettingsPage() {
                     <div className="pt-4 border-t-2 border-[#b5bcc4] dark:border-[#3a3a3a] space-y-3">
                       <div className="flex items-start gap-2 p-3 bg-[#994040]/10 dark:bg-[#994040]/20 border-2 border-[#994040]">
                         <AlertCircle className="w-4 h-4 text-[#994040] flex-shrink-0 mt-0.5" />
-                        <div className="text-xs text-[#7a3333] dark:text-[#c4a0a0]">
+                        <div className="text-xs text-[#7a3333] dark:text-[#b5bcc4]">
                           Are you sure you want to cancel your Explorer Pro subscription? You will retain access to all Pro features until the end of your current billing period
                           {subscription?.currentPeriodEnd
                             ? ` (${new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })})`
@@ -461,7 +461,7 @@ export function BillingSettingsPage() {
                         style: {
                           base: {
                             fontSize: '14px',
-                            color: isDark ? '#e5e5e5' : '#1f2937',
+                            color: isDark ? '#e5e5e5' : '#202020',
                             '::placeholder': {
                               color: isDark ? '#6b7280' : '#9ca3af',
                             },

@@ -29,6 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: 'com.heimursaga.app',
     buildNumber: '1',
     infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
       NSFaceIDUsageDescription: 'Authenticate to unlock Heimursaga',
       NSPhotoLibraryUsageDescription: 'Upload photos to your journal entries',
       NSCameraUsageDescription: 'Take photos for your journal entries',
@@ -106,12 +107,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     '@react-native-community/datetimepicker',
     'expo-notifications',
-    [
-      '@sentry/react-native/expo',
-      {
-        organization: process.env.SENTRY_ORG ?? '',
-        project: process.env.SENTRY_PROJECT ?? '',
-      },
-    ],
+    'react-native-iap',
   ],
 });

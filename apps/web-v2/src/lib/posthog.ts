@@ -1,4 +1,5 @@
 import posthog from 'posthog-js';
+import { hasAnalyticsConsent } from './analytics-consent';
 
 const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY?.trim();
 const POSTHOG_HOST = (process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com').trim();
@@ -7,6 +8,8 @@ export function initPostHog() {
   if (typeof window === 'undefined') return;
   if (!POSTHOG_KEY) return;
   if (posthog.__loaded) return;
+  // GDPR: only initialise after the user has granted analytics consent
+  if (!hasAnalyticsConsent()) return;
 
   posthog.init(POSTHOG_KEY, {
     api_host: POSTHOG_HOST,

@@ -13,6 +13,7 @@ import { ActiveExpeditionBanner } from '@/app/components/ActiveExpeditionBanner'
 import { Footer } from '@/app/components/Footer';
 import { WelcomeModal } from '@/app/components/WelcomeModal';
 import { PostHogPageviewTracker } from '@/app/components/PostHogPageviewTracker';
+import { CookieConsentBanner } from '@/app/components/CookieConsentBanner';
 import { Toaster } from '@/app/components/ui/sonner';
 import { usePathname } from 'next/navigation';
 
@@ -33,7 +34,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      <div className="min-h-screen flex flex-col bg-[#404040] dark:bg-[#2a2a2a] topo-bg">
+      <div className="min-h-screen flex flex-col bg-[#3a3a3a] dark:bg-[#2a2a2a] topo-bg">
         <ActiveExpeditionBanner />
         <Header />
         <div className={`flex-1 ${isHomePage ? '' : 'pt-[15px]'}`}>
@@ -41,6 +42,7 @@ function AppContent({ children }: { children: React.ReactNode }) {
         </div>
         <Footer />
       </div>
+      <CookieConsentBanner />
       <Toaster />
     </>
   );

@@ -22,7 +22,6 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
-import * as Sentry from '@sentry/react-native';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import { ThemeProvider, useTheme } from '@/theme/ThemeContext';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
@@ -30,12 +29,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { initAnalytics, analytics } from '@/services/analytics';
 import { mono, colors as brandColors } from '@/theme/tokens';
-
-Sentry.init({
-  dsn: process.env.SENTRY_DSN ?? '',
-  enabled: !__DEV__,
-  tracesSampleRate: 0.2,
-});
 
 // Keep the native splash visible until we explicitly hide it
 SplashScreen.preventAutoHideAsync();
@@ -534,6 +527,7 @@ function RootNav() {
         <Stack.Screen name="messages/[username]" />
         <Stack.Screen name="sponsor/[id]" />
         <Stack.Screen name="sponsorships/index" />
+        <Stack.Screen name="upgrade" />
       </Stack>
     </>
   );

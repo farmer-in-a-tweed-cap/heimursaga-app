@@ -12,6 +12,7 @@ import { dateformat } from '@/lib/date-format';
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
+  ServiceBadRequestException,
   ServiceException,
   ServiceForbiddenException,
   ServiceInternalException,
@@ -20,6 +21,7 @@ import {
 import { ISession } from '@/common/interfaces';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
+import { StripeService } from '@/modules/stripe';
 
 const MAX_PER_PAGE = 100;
 const DEFAULT_PER_PAGE = 50;
@@ -29,6 +31,7 @@ export class AdminService {
   constructor(
     private logger: Logger,
     private prisma: PrismaService,
+    private stripeService: StripeService,
   ) {}
 
   private async assertAdmin(session: ISession) {
@@ -402,6 +405,57 @@ export class AdminService {
       this.logger.log(
         `[AUDIT] Admin ${session.userId} unblocked explorer ${username}`,
       );
+    } catch (e) {
+      this.logger.error(e);
+      if (e instanceof ServiceException) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async refundPayment(
+    session: ISession,
+    chargeId: string,
+    reason?: string,
+  ): Promise<{ success: boolean; refundId: string }> {
+    try {
+      await this.assertAdmin(session);
+
+      if (!chargeId) {
+        throw new ServiceBadRequestException('Charge ID is required');
+      }
+
+      // Retrieve the charge to verify it exists and is not already refunded
+      const charge = await this.stripeService.charges.retrieve(chargeId);
+
+      if (!charge) {
+        throw new ServiceNotFoundException('Charge not found');
+      }
+
+      if (charge.refunded) {
+        throw new ServiceBadRequestException('Charge has already been refunded');
+      }
+
+      // Issue the refund from the platform account
+      const refund = await this.stripeService.refunds.create({
+        charge: chargeId,
+        reason: 'requested_by_customer',
+        reverse_transfer: true,
+        refund_application_fee: true,
+        metadata: {
+          issued_by: 'admin',
+          admin_id: session.userId.toString(),
+          admin_reason: reason || 'Refund issued by admin',
+        },
+      });
+
+      this.logger.log(
+        `[AUDIT] Admin ${session.userId} refunded charge ${chargeId}: ${refund.id}`,
+      );
+
+      return {
+        success: true,
+        refundId: refund.id,
+      };
     } catch (e) {
       this.logger.error(e);
       if (e instanceof ServiceException) throw e;

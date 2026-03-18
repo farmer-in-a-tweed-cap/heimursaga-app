@@ -842,7 +842,7 @@ export function ExpeditionQuickEntryPage() {
                 )}
 
                 <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border-l-2 border-yellow-600 text-xs">
-                  <strong className="text-yellow-700 dark:text-yellow-500">⚠️ PERMANENT SETTING:</strong>
+                  <strong className="text-yellow-700 dark:text-yellow-500"><AlertTriangle className="inline w-4 h-4 mr-1 -mt-0.5" /> PERMANENT SETTING:</strong>
                   <div className="text-[#616161] dark:text-[#b5bcc4] mt-1">
                     Private visibility <span className="font-bold">cannot be changed after creation.</span> Public and Off-Grid can be toggled freely. Category, region, and start date are also locked after creation.
                   </div>

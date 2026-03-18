@@ -1225,7 +1225,7 @@ export function JournalEntryPage() {
 
                       {/* Responses Section - Contained within the note card */}
                       {comment.replies && comment.replies.length > 0 && (
-                        <div className="border-t border-[#e5e5e5] dark:border-[#3a3a3a] bg-[#fafafa] dark:bg-[#1e1e1e] px-3 py-2">
+                        <div className="border-t border-[#e5e5e5] dark:border-[#3a3a3a] bg-[#f5f5f5] dark:bg-[#1a1a1a] px-3 py-2">
                           <div className="ml-8 pl-3 border-l-2 border-[#b5bcc4] dark:border-[#616161]">
                             <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4] font-bold mb-2">
                               {comment.replies.length} {comment.replies.length === 1 ? 'RESPONSE' : 'RESPONSES'}

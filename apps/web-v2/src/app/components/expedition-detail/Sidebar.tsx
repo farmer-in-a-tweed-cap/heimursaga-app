@@ -253,7 +253,7 @@ export function Sidebar({
           )}
 
           {/* Funding Sources Breakdown */}
-          <div className="mb-4 p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46]">
+          <div className="mb-4 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46]">
             <div className="text-xs font-bold mb-2 text-[#ac6d46]">ONE-TIME SPONSORSHIPS</div>
             <div className="flex justify-between items-baseline">
               <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">{oneTimeSponsorsCount} sponsor{oneTimeSponsorsCount !== 1 ? 's' : ''}</span>
@@ -261,7 +261,7 @@ export function Sidebar({
             </div>
           </div>
 
-          <div className="mb-4 p-3 bg-[#f0f4f8] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
+          <div className="mb-4 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
             <div className="text-xs font-bold mb-2 text-[#4676ac]">RECURRING MONTHLY</div>
             <div className="space-y-2">
               <div className="flex justify-between items-baseline">

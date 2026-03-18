@@ -206,7 +206,7 @@ export function EntriesPage() {
   const entries = filteredEntries;
 
   return (
-    <div className="max-w-[1600px] mx-auto px-6 py-12">
+    <div className="max-w-[1600px] mx-auto px-4 sm:px-6 py-12">
       {/* Page Header */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         {/* Submenu Banner */}
@@ -271,7 +271,7 @@ export function EntriesPage() {
             )}
           </div>
 
-          <div className="flex flex-wrap gap-2 text-xs mt-4">
+          <div className="flex flex-wrap gap-1.5 md:gap-2 lg:gap-3 text-xs mt-4">
             {[
               { key: 'all', label: 'ALL' },
               { key: 'standard', label: 'STANDARD' },

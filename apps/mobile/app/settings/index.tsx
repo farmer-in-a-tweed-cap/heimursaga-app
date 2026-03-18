@@ -9,9 +9,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { NavBar } from '@/components/ui/NavBar';
 import { HCard } from '@/components/ui/HCard';
+import { HButton } from '@/components/ui/HButton';
 import { Avatar } from '@/components/ui/Avatar';
 import { paymentMethodApi, type PaymentMethodInfo } from '@/services/api';
-import { mono, colors as brandColors } from '@/theme/tokens';
+import { mono, colors as brandColors, borders } from '@/theme/tokens';
 
 interface SettingsItem {
   label: string;
@@ -115,6 +116,27 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Upgrade banner (free users only) */}
+        {!user.is_pro && (
+          <View style={styles.sectionContent}>
+            <TouchableOpacity
+              style={[styles.upgradeBanner, { backgroundColor: colors.card, borderColor: brandColors.copper }]}
+              onPress={() => router.push('/upgrade')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.upgradeBannerLeft}>
+                <View>
+                  <Text style={[styles.upgradeBannerTitle, { color: colors.text }]}>Upgrade to Explorer Pro</Text>
+                  <Text style={[styles.upgradeBannerDesc, { color: colors.textTertiary }]}>
+                    Sponsorships, direct messages, and more
+                  </Text>
+                </View>
+              </View>
+              <Chevron color={brandColors.copper} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Settings items */}
         <View style={styles.sectionContent}>
           <HCard>
@@ -205,6 +227,30 @@ const styles = StyleSheet.create({
   },
   itemValue: {
     fontSize: 12,
+  },
+  upgradeBanner: {
+    borderWidth: borders.thick,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  upgradeBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  upgradeBannerTitle: {
+    fontFamily: mono,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+  upgradeBannerDesc: {
+    fontFamily: mono,
+    fontSize: 11,
+    marginTop: 2,
   },
   spacer: { height: 32 },
 });

@@ -149,7 +149,7 @@ export function UpdateLocationModal({
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-6">
-            <div className="mb-4 p-4 bg-[#f0f4f8] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
+            <div className="mb-4 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac]">
               <div className="text-xs font-bold mb-2 text-[#202020] dark:text-[#e5e5e5]">
                 QUICK LOCATION UPDATE:
               </div>

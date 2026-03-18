@@ -1,6 +1,5 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import * as Sentry from '@sentry/react-native';
 import { colors, mono } from '@/theme/tokens';
 
 interface Props {
@@ -20,7 +19,6 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    Sentry.captureException(error, { extra: { componentStack: info.componentStack } });
     if (__DEV__) {
       console.error('ErrorBoundary caught:', error, info.componentStack);
     }

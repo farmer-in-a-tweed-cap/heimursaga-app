@@ -540,7 +540,7 @@ export function SponsorshipPaymentPage() {
                 )}
               </div>
 
-              <div className="mt-3 p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs">
+              <div className="mt-3 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs">
                 <div className="font-bold mb-1 dark:text-[#e5e5e5]">HOW EXPLORER-LEVEL SPONSORSHIPS WORK:</div>
                 <ul className="space-y-1 text-[#616161] dark:text-[#b5bcc4]">
                   <li>* You sponsor <strong>{explorer?.username}</strong> as an explorer, not a single expedition</li>
@@ -598,7 +598,7 @@ export function SponsorshipPaymentPage() {
                       setSelectedAmount(currentTiers[0]?.amount || 25);
                     }}
                     className={`p-6 border-2 transition-all ${paymentType === 'one-time'
-                      ? 'border-[#ac6d46] bg-[#fff5f0] dark:bg-[#2a2a2a]'
+                      ? 'border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a]'
                       : 'border-[#b5bcc4] dark:border-[#616161] hover:border-[#ac6d46]'
                       }`}
                   >
@@ -628,7 +628,7 @@ export function SponsorshipPaymentPage() {
                     className={`p-6 border-2 transition-all ${hasActiveSubscription
                       ? 'border-[#b5bcc4] dark:border-[#616161] opacity-60 cursor-not-allowed'
                       : paymentType === 'recurring'
-                        ? 'border-[#4676ac] bg-[#f0f4f8] dark:bg-[#2a2a2a]'
+                        ? 'border-[#4676ac] bg-[#f5f5f5] dark:bg-[#2a2a2a]'
                         : 'border-[#b5bcc4] dark:border-[#616161] hover:border-[#4676ac]'
                       }`}
                   >
@@ -675,7 +675,7 @@ export function SponsorshipPaymentPage() {
                         setCustomAmount('');
                       }}
                       className={`p-4 border-2 transition-all text-left ${selectedAmount === tier.amount && !customAmount
-                        ? 'border-[#4676ac] bg-[#f0f4f8] dark:bg-[#2a2a2a]'
+                        ? 'border-[#4676ac] bg-[#f5f5f5] dark:bg-[#2a2a2a]'
                         : 'border-[#b5bcc4] dark:border-[#616161] hover:border-[#ac6d46]'
                         }`}
                     >
@@ -737,7 +737,7 @@ export function SponsorshipPaymentPage() {
                 </div>
 
                 {/* Sponsor Benefits */}
-                <div className="mt-6 p-4 bg-[#f0f8ff] dark:bg-[#1a2a3a] border-2 border-[#4676ac]">
+                <div className="mt-6 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#4676ac]">
                   <div className="font-bold text-sm mb-2 text-[#4676ac]">ALL SPONSORS RECEIVE:</div>
                   <ul className="text-xs space-y-1 text-[#202020] dark:text-[#e5e5e5]">
                     <li>* Recognition on expedition sponsorship leaderboard</li>
@@ -913,9 +913,9 @@ export function SponsorshipPaymentPage() {
                           style: {
                             base: {
                               fontSize: '16px',
-                              color: isDark ? '#e5e5e5' : '#1f2937',
+                              color: isDark ? '#e5e5e5' : '#202020',
                               '::placeholder': {
-                                color: isDark ? '#6b7280' : '#9ca3af',
+                                color: isDark ? '#616161' : '#b5bcc4',
                               },
                             },
                             invalid: {

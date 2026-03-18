@@ -39,6 +39,7 @@ import { EVENTS, EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { IUserNotificationCreatePayload } from '@/modules/notification';
 import { PrismaService } from '@/modules/prisma';
+import { UploadService } from '@/modules/upload/upload.service';
 
 @Injectable()
 export class ExpeditionService {
@@ -46,6 +47,7 @@ export class ExpeditionService {
     private logger: Logger,
     private prisma: PrismaService,
     private eventService: EventService,
+    private uploadService: UploadService,
   ) {}
 
   /**
@@ -1616,6 +1618,7 @@ export class ExpeditionService {
           title: true,
           status: true,
           author_id: true,
+          cover_image: true,
         },
       });
 
@@ -1624,6 +1627,11 @@ export class ExpeditionService {
         where: { id: expedition.id },
         data: { deleted_at: dateformat().toDate() },
       });
+
+      // Clean up S3 cover image
+      if (expedition.cover_image) {
+        await this.uploadService.deleteFromS3(expedition.cover_image);
+      }
 
       // Emit cancellation event so sponsors stop being billed
       const cancellableStatuses = ['planned', 'active'];

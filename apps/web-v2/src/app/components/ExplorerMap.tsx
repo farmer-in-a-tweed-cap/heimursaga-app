@@ -740,7 +740,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
         {clickedExplorer && mapMode === 'explorer' && (
           <div
             className={`absolute w-80 max-w-[calc(100%-2rem)] bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20 animate-in fade-in slide-in-from-bottom-2 duration-200 ${
-              popupPosition === 'bottom-left' ? 'bottom-20 left-4' : 'bottom-20 right-4'
+              popupPosition === 'bottom-left' ? 'bottom-16 sm:bottom-20 left-4' : 'bottom-16 sm:bottom-20 right-4'
             }`}
           >
             {/* Status banner — top of card */}
@@ -858,7 +858,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
         {clickedEntry && mapMode === 'entry' && (
           <div
             className={`absolute w-96 max-w-[calc(100%-2rem)] bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20 animate-in fade-in slide-in-from-bottom-2 duration-200 ${
-              popupPosition === 'bottom-left' ? 'bottom-20 left-4' : 'bottom-20 right-4'
+              popupPosition === 'bottom-left' ? 'bottom-16 sm:bottom-20 left-4' : 'bottom-16 sm:bottom-20 right-4'
             }`}
           >
             <div className="p-3 text-xs font-mono">
@@ -963,7 +963,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
           <ClusterTimelinePopup
             cluster={clickedCluster}
             position={popupPosition}
-            className="w-96 max-w-[calc(100%-2rem)] bottom-20"
+            className="w-96 max-w-[calc(100%-2rem)] bottom-16 sm:bottom-20"
             onClose={() => {
               setClickedCluster(null);
               clusteredRef.current?.removeAllHighlights();

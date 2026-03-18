@@ -1,3 +1,5 @@
+import * as crypto from 'node:crypto';
+
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
@@ -871,10 +873,23 @@ export class AuthService {
       if (!token)
         throw new ServiceBadRequestException('token is expired or invalid');
 
-      // validate the token
-      await this.prisma.emailVerification.findFirstOrThrow({
-        where: { token, expired: false },
+      // Fetch all active (non-expired) verifications and compare using
+      // constant-time comparison to avoid leaking token validity via timing.
+      const activeVerifications = await this.prisma.emailVerification.findMany({
+        where: { expired: false },
+        select: { token: true },
       });
+
+      const tokenBuffer = Buffer.from(token);
+      const match = activeVerifications.some((v) => {
+        const storedBuffer = Buffer.from(v.token);
+        if (tokenBuffer.length !== storedBuffer.length) return false;
+        return crypto.timingSafeEqual(tokenBuffer, storedBuffer);
+      });
+
+      if (!match) {
+        throw new ServiceBadRequestException('token is expired or invalid');
+      }
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

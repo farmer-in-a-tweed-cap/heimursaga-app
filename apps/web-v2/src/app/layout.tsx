@@ -79,6 +79,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${lora.variable} ${jost.variable}`}>
       <head>
+        <link rel="manifest" href="/manifest.json" />
         <link rel="preconnect" href="https://api.mapbox.com" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <script
@@ -118,22 +119,23 @@ export default function RootLayout({
           />
         )}
 
-        {/* Google Analytics */}
+        {/* Google Analytics — GDPR: only load when consent cookie is present */}
         {process.env.NEXT_PUBLIC_GA_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script id="ga4" strategy="afterInteractive">
-              {`
+          <Script id="ga4-consent" strategy="afterInteractive">
+            {`
+              (function() {
+                if (document.cookie.indexOf('heimursaga-analytics-consent=granted') === -1) return;
+                var s = document.createElement('script');
+                s.src = 'https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA_ID}';
+                s.async = true;
+                document.head.appendChild(s);
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
                 gtag('config', '${process.env.NEXT_PUBLIC_GA_ID}');
-              `}
-            </Script>
-          </>
+              })();
+            `}
+          </Script>
         )}
       </body>
     </html>

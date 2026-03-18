@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert, Linking,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
@@ -109,8 +109,8 @@ export default function SponsorshipsScreen() {
                 <Text style={[styles.upgradeDesc, { color: colors.textSecondary }]}>
                   Upgrade to Explorer Pro to receive sponsorships, manage tiers, view analytics, and request payouts.
                 </Text>
-                <HButton variant="copper" onPress={() => Linking.openURL('https://heimursaga.com/upgrade')}>
-                  UPGRADE ON WEB
+                <HButton variant="copper" onPress={() => router.push('/upgrade')}>
+                  UPGRADE TO PRO
                 </HButton>
               </View>
             </View>

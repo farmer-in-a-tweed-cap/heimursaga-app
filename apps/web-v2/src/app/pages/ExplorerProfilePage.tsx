@@ -286,7 +286,6 @@ export function ExplorerProfilePage() {
   const passportData = calculatePassport(entries, expeditions, profile);
 
   // Build explorer object from API data + fallbacks for missing fields
-  // TODO: Many fields are not yet provided by the API and use placeholder data
   const explorer = {
     // Core data from API
     id: username || '1',

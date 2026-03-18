@@ -294,7 +294,7 @@ export function ExpeditionNotes({
           {notes.map((note, index) => (
             <div key={note.id} className="border-2 border-[#202020] dark:border-[#616161] border-l-4 border-l-[#ac6d46] bg-white dark:bg-[#1a1a1a]">
               {/* Note Card Header */}
-              <div className="flex items-center justify-between px-3 py-2 bg-[#f5f5f5] dark:bg-[#252525] border-b-2 border-[#202020] dark:border-[#616161]">
+              <div className="flex items-center justify-between px-3 py-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161]">
                 <div className="flex items-center gap-2">
                   <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-mono font-bold">
                     NOTE #{notes.length - index}

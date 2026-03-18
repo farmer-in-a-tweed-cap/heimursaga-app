@@ -103,7 +103,7 @@ export function CurrentLocationSelector({
         <div className="space-y-2">
           <label className={`flex items-center gap-3 p-3 border-2 cursor-pointer transition-all ${
             selectedSource === 'waypoint' 
-              ? 'border-[#ac6d46] bg-[#fff5f0] dark:bg-[#2a2a2a]' 
+              ? 'border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a]' 
               : 'border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#ac6d46]'
           } ${!hasWaypoints ? 'opacity-50 cursor-not-allowed' : ''}`}>
             <input
@@ -131,7 +131,7 @@ export function CurrentLocationSelector({
 
           <label className={`flex items-center gap-3 p-3 border-2 cursor-pointer transition-all ${
             selectedSource === 'entry' 
-              ? 'border-[#ac6d46] bg-[#fff5f0] dark:bg-[#2a2a2a]' 
+              ? 'border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a]' 
               : 'border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#ac6d46]'
           } ${!hasEntries ? 'opacity-50 cursor-not-allowed' : ''}`}>
             <input
@@ -197,7 +197,7 @@ export function CurrentLocationSelector({
 
       {/* Selected Location Details */}
       {selectedItem && (
-        <div className="border-2 border-[#4676ac] bg-[#f0f4f8] dark:bg-[#2a2a2a] p-4">
+        <div className="border-2 border-[#4676ac] bg-[#f5f5f5] dark:bg-[#2a2a2a] p-4">
           <div className="text-xs font-bold mb-3 border-b-2 border-[#4676ac] pb-2 text-[#202020] dark:text-[#e5e5e5]">
             SELECTED LOCATION DETAILS:
           </div>

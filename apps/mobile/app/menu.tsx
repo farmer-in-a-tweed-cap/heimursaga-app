@@ -148,6 +148,26 @@ export default function MenuScreen() {
           </HCard>
         </View>
 
+        {/* Upgrade banner (free users only) */}
+        {user && !user.is_pro && (
+          <View style={styles.sectionContent}>
+            <TouchableOpacity
+              style={[styles.upgradeBanner, { backgroundColor: colors.card, borderColor: brandColors.copper }]}
+              onPress={() => { router.back(); router.push('/upgrade' as any); }}
+            >
+              <View style={styles.menuText}>
+                <Text style={[styles.menuLabel, { color: brandColors.copper }]}>Upgrade to Explorer Pro</Text>
+                <Text style={[styles.menuDetail, { color: colors.textTertiary }]}>
+                  Sponsorships, direct messages, and more
+                </Text>
+              </View>
+              <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={brandColors.copper} strokeWidth={2}>
+                <Polyline points="9 18 15 12 9 6" />
+              </Svg>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Sections */}
         {sections.map((section) => (
           <View key={section.title}>
@@ -311,6 +331,13 @@ const styles = StyleSheet.create({
   },
   toggleKnobActive: {
     alignSelf: 'flex-end',
+  },
+  upgradeBanner: {
+    borderWidth: borders.thick,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   spacer: { height: 32 },
 });

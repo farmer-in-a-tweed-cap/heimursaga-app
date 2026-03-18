@@ -3,9 +3,9 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { UserNotificationContext } from '@repo/types';
 
 import { EVENTS } from '@/modules/event';
+import { EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
-import { EventService } from '@/modules/event';
 
 import { IUserNotificationCreatePayload } from './notification.interface';
 
@@ -105,10 +105,7 @@ export class FollowerNotificationListener {
         });
       }
     } catch (e) {
-      this.logger.error(
-        'Failed to send follower expedition notifications',
-        e,
-      );
+      this.logger.error('Failed to send follower expedition notifications', e);
     }
   }
 }
