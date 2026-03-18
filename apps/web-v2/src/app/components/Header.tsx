@@ -352,11 +352,11 @@ export function Header() {
             
             {/* Stacked Notifications and Settings Icons (authenticated only) */}
             {isAuthenticated && user && (
-              <div className="flex flex-col justify-between gap-1 h-full">
+              <div className="flex flex-col justify-between h-full">
                 {/* Notifications Icon */}
                 <div ref={notificationsRef} className="relative">
                   <button
-                    className={`relative w-11 h-11 flex items-center justify-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border border-[#202020] ${
+                    className={`relative w-[31px] h-[31px] flex items-center justify-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border border-[#202020] ${
                       notificationsOpen
                         ? 'bg-[#4676ac]'
                         : 'bg-[#616161] hover:bg-[#4676ac]'
@@ -379,7 +379,7 @@ export function Header() {
                 {/* Settings Icon */}
                 <Link
                   href="/settings"
-                  className={`w-11 h-11 flex items-center justify-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border border-[#202020] ${
+                  className={`w-[31px] h-[31px] flex items-center justify-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border border-[#202020] ${
                     isActive('/settings')
                       ? 'bg-[#4676ac] text-white'
                       : 'bg-[#616161] text-white hover:bg-[#4676ac]'
@@ -393,10 +393,10 @@ export function Header() {
                 {process.env.NODE_ENV === 'development' && (
                   <button
                     onClick={toggleTheme}
-                    className="w-11 h-11 flex items-center justify-center bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] border border-[#202020]"
+                    className="w-[31px] h-[31px] flex items-center justify-center bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] border border-[#202020]"
                     title={`Theme: ${theme}`}
                   >
-                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                    {theme === 'dark' ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
                   </button>
                 )}
               </div>
