@@ -104,9 +104,10 @@ export function ExpeditionQuickEntryPage() {
           setSponsorshipsEnabled(true);
           setSponsorshipGoal(String(exp.goal));
         }
-        setNotesVisibility((exp.notesVisibility as 'public' | 'sponsor') || 'public');
-        if (exp.notesAccessThreshold && Number(exp.notesAccessThreshold) > 0) {
-          setNotesAccessThreshold(String(exp.notesAccessThreshold));
+        const expAny = exp as any;
+        setNotesVisibility((expAny.notesVisibility as 'public' | 'sponsor') || 'public');
+        if (expAny.notesAccessThreshold && Number(expAny.notesAccessThreshold) > 0) {
+          setNotesAccessThreshold(String(expAny.notesAccessThreshold));
         }
       } catch {
         setSubmitError('Failed to load expedition data');
