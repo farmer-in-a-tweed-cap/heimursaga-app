@@ -16,6 +16,15 @@ export function SelectExpeditionPage() {
   const pathname = usePathname();
   const [showCompleted, setShowCompleted] = useState(false);
 
+  // Mobile detection — expedition builder requires desktop
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   // API state
   const [expeditions, setExpeditions] = useState<ExplorerExpedition[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,12 +178,18 @@ export function SelectExpeditionPage() {
                           Last modified: {draft.updatedAt ? formatDateTime(new Date(draft.updatedAt)) : 'Unknown'}
                         </div>
                       </div>
-                      <Link
-                        href={`/expedition-builder/${draft.id}`}
-                        className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
-                      >
-                        CONTINUE IN BUILDER
-                      </Link>
+                      {isMobile ? (
+                        <div className="px-4 py-2 bg-[#616161] text-white text-xs text-center">
+                          Open on desktop to continue in builder
+                        </div>
+                      ) : (
+                        <Link
+                          href={`/expedition-builder/${draft.id}`}
+                          className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
+                        >
+                          CONTINUE IN BUILDER
+                        </Link>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -416,12 +431,18 @@ export function SelectExpeditionPage() {
                   </li>
                 </ul>
                 {isPro ? (
-                  <Link
-                    href="/expedition-builder"
-                    className="w-full block text-center px-4 py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm"
-                  >
-                    EXPEDITION BUILDER
-                  </Link>
+                  isMobile ? (
+                    <div className="w-full text-center px-4 py-2 bg-[#616161] text-white text-xs">
+                      Open on desktop to use the builder
+                    </div>
+                  ) : (
+                    <Link
+                      href="/expedition-builder"
+                      className="w-full block text-center px-4 py-2 bg-[#4676ac] text-white font-bold hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm"
+                    >
+                      EXPEDITION BUILDER
+                    </Link>
+                  )
                 ) : (
                   <div>
                     <div className="w-full text-center px-4 py-2 bg-[#616161] text-white font-bold cursor-not-allowed text-sm opacity-60">
