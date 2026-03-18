@@ -26,9 +26,7 @@ import { MessageService } from './message.service';
 @Controller('messages')
 @UseGuards(AuthGuard, CreatorRoleGuard)
 export class MessageController {
-  constructor(private readonly messageService: MessageService) {
-    console.log('MessageController initialized');
-  }
+  constructor(private readonly messageService: MessageService) {}
 
   @Post('send')
   @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 messages per minute
@@ -67,7 +65,6 @@ export class MessageController {
     description: 'Only Explorer Pro members can access conversations',
   })
   async getConversations(@Session() session: ISession) {
-    console.log('getConversations endpoint called');
     return this.messageService.getConversations({
       session,
     });

@@ -474,7 +474,7 @@ export function EditEntryPage() {
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => router.push('/auth?from=' + pathname)}
+                onClick={() => router.push('/auth?redirect=' + pathname)}
                 className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
               >
                 LOG IN / REGISTER
@@ -513,7 +513,7 @@ export function EditEntryPage() {
     return (
       <div className="max-w-[1600px] mx-auto px-6 py-12">
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-          <div className="p-6 border-b-2 border-[#202020] dark:border-[#616161] bg-red-600 text-white">
+          <div className="p-6 border-b-2 border-[#202020] dark:border-[#616161] bg-[#994040] text-white">
             <div className="flex items-center gap-3">
               <AlertCircle size={24} strokeWidth={2} />
               <h2 className="text-lg font-bold">ERROR LOADING ENTRY</h2>
@@ -769,13 +769,13 @@ Remember: Your sponsors and followers are reading this to understand your journe
                       onBlur={() => contentValidationActions.checkAiPhrases(standardContent)}
                     />
                     <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
-                      <span className={wordCount < minWords || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
+                      <span className={wordCount < minWords || wordCount > 2000 ? 'text-[#994040] dark:text-red-400 font-bold' : ''}>
                         Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < minWords && `(Minimum: ${minWords})`} {wordCount > 2000 && `(Maximum: 2,000)`}
                       </span>
                       <span>Character count: {standardContent.length} / 50,000</span>
                     </div>
                     {wordCount > 0 && (wordCount < minWords || wordCount > 2000) && (
-                      <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
+                      <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-[#994040] text-xs text-red-700 dark:text-red-400">
                         <div className="font-bold mb-1">WORD COUNT REQUIREMENT:</div>
                         {wordCount < minWords && <div>• Your entry must be at least {minWords} words. Current: {wordCount} words ({minWords - wordCount} more needed)</div>}
                         {wordCount > 2000 && <div>• Your entry must not exceed 2,000 words. Current: {wordCount} words ({wordCount - 2000} over limit)</div>}
@@ -810,9 +810,9 @@ Remember: Your sponsors and followers are reading this to understand your journe
                     )}
 
                     {contentValidation.hasAiPhraseWarning && (
-                      <div className="mt-3 p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-500 text-sm">
+                      <div className="mt-3 p-4 bg-red-50 dark:bg-red-900/20 border-2 border-[#994040] text-sm">
                         <div className="flex items-start gap-3">
-                          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                          <AlertTriangle className="w-5 h-5 text-[#994040] dark:text-red-400 flex-shrink-0 mt-0.5" />
                           <div className="flex-1">
                             <div className="font-bold text-red-800 dark:text-red-300 mb-1">AI-STYLE PHRASES DETECTED</div>
                             <div className="text-red-700 dark:text-red-400 text-xs mb-2">
@@ -828,7 +828,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
                                 type="checkbox"
                                 checked={contentValidation.aiPhraseAcknowledged}
                                 onChange={() => contentValidationActions.acknowledgeAiPhrases()}
-                                className="w-4 h-4 border-2 border-red-500 accent-red-600"
+                                className="w-4 h-4 border-2 border-[#994040] accent-[#994040]"
                               />
                               <span className="text-xs font-bold text-red-800 dark:text-red-300">
                                 I confirm this is my own original writing, not AI-generated
@@ -943,7 +943,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
                                     return next;
                                   });
                                 }}
-                                className="px-3 py-1.5 text-xs font-bold border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white flex items-center gap-1.5 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-red-600"
+                                className="px-3 py-1.5 text-xs font-bold border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white flex items-center gap-1.5 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
                               >
                                 <X size={14} />
                                 REMOVE
@@ -1061,13 +1061,13 @@ Remember: Your sponsors and followers are reading this to understand your journe
                       }}
                     />
                     <div className="flex justify-between text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                      <span className={wordCount < minWords || wordCount > 2000 ? 'text-red-600 dark:text-red-400 font-bold' : ''}>
+                      <span className={wordCount < minWords || wordCount > 2000 ? 'text-[#994040] dark:text-red-400 font-bold' : ''}>
                         Word count: {wordCount} / 2,000 {wordCount > 0 && wordCount < minWords && `(Minimum: ${minWords})`} {wordCount > 2000 && `(Maximum: 2,000)`}
                       </span>
                       <span>Character count: {(videoContent || standardContent).length} / 15,000</span>
                     </div>
                     {wordCount > 0 && (wordCount < minWords || wordCount > 2000) && (
-                      <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-red-600 text-xs text-red-700 dark:text-red-400">
+                      <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border-l-2 border-[#994040] text-xs text-red-700 dark:text-red-400">
                         <div className="font-bold mb-1">WORD COUNT REQUIREMENT:</div>
                         {wordCount < minWords && <div>• Your entry must be at least {minWords} words. Current: {wordCount} words ({minWords - wordCount} more needed)</div>}
                         {wordCount > 2000 && <div>• Your entry must not exceed 2,000 words. Current: {wordCount} words ({wordCount - 2000} over limit)</div>}
@@ -1152,7 +1152,7 @@ Remember: Your sponsors and followers are reading this to understand your journe
 
               {/* Submit Error */}
               {submitError && (
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-600 text-red-700 dark:text-red-400 text-sm">
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 border-2 border-[#994040] text-red-700 dark:text-red-400 text-sm">
                   <div className="flex items-center gap-2">
                     <AlertCircle size={16} />
                     <span className="font-bold">Error:</span> {submitError}

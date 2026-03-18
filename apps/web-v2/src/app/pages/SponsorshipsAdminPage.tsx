@@ -601,7 +601,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
               <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-4">
                 Are you sure you want to refund <strong className="text-[#ac6d46]">${formatCurrency(refundTarget.amount)}</strong>?
               </p>
-              <div className="p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-red-500 text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
+              <div className="p-3 bg-[#fff5f0] dark:bg-[#2a2a2a] border-l-4 border-[#994040] text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
                 <strong className="dark:text-[#e5e5e5]">Warning:</strong> This action cannot be undone. The full amount will be returned to the sponsor.
               </div>
               <div className="flex gap-3">
@@ -1166,7 +1166,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                           key={tier.id || `onetime-${index}`}
                           className={`flex items-center gap-4 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 ${
                             !isPriceValid && editingTiers
-                              ? 'border-red-400 dark:border-red-500'
+                              ? 'border-[#994040] dark:border-[#994040]'
                               : 'border-[#b5bcc4] dark:border-[#616161]'
                           }`}
                         >
@@ -1200,12 +1200,12 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                                 }}
                                 className={`w-full px-3 py-2 border-2 dark:bg-[#202020] dark:text-[#e5e5e5] disabled:bg-[#f5f5f5] dark:disabled:bg-[#1a1a1a] disabled:cursor-not-allowed ${
                                   !isPriceValid && editingTiers
-                                    ? 'border-red-400 dark:border-red-500'
+                                    ? 'border-[#994040] dark:border-[#994040]'
                                     : 'border-[#b5bcc4] dark:border-[#616161]'
                                 }`}
                               />
                               {!isPriceValid && editingTiers && (
-                                <p className="text-xs text-red-500 mt-1">Price out of range</p>
+                                <p className="text-xs text-[#994040] mt-1">Price out of range</p>
                               )}
                             </div>
                             <div>
@@ -1283,7 +1283,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                           key={tier.id || `monthly-${index}`}
                           className={`flex items-center gap-4 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 ${
                             !isPriceValid && editingTiers
-                              ? 'border-red-400 dark:border-red-500'
+                              ? 'border-[#994040] dark:border-[#994040]'
                               : 'border-[#b5bcc4] dark:border-[#616161]'
                           }`}
                         >
@@ -1317,12 +1317,12 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                                 }}
                                 className={`w-full px-3 py-2 border-2 dark:bg-[#202020] dark:text-[#e5e5e5] disabled:bg-[#f5f5f5] dark:disabled:bg-[#1a1a1a] disabled:cursor-not-allowed ${
                                   !isPriceValid && editingTiers
-                                    ? 'border-red-400 dark:border-red-500'
+                                    ? 'border-[#994040] dark:border-[#994040]'
                                     : 'border-[#b5bcc4] dark:border-[#616161]'
                                 }`}
                               />
                               {!isPriceValid && editingTiers && (
-                                <p className="text-xs text-red-500 mt-1">Price out of range</p>
+                                <p className="text-xs text-[#994040] mt-1">Price out of range</p>
                               )}
                             </div>
                             <div>

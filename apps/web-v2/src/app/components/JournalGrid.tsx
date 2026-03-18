@@ -43,7 +43,7 @@ export function JournalGrid({ entries, onViewAll, title }: JournalGridProps) {
   // Handle bookmark entry
   const handleBookmarkEntry = async (entryId: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     if (bookmarkingInProgress.has(entryId)) return;

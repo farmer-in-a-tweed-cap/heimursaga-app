@@ -81,8 +81,8 @@ function StatCard({
       <div className={`text-2xl font-medium ${valueColor}`}>{value}</div>
       {trend && (
         <div className="flex items-center justify-center gap-1 mt-1 text-xs">
-          {trend === 'up' && <ArrowUpRight className="w-3 h-3 text-green-600" />}
-          {trend === 'down' && <ArrowDownRight className="w-3 h-3 text-red-600" />}
+          {trend === 'up' && <ArrowUpRight className="w-3 h-3 text-[#598636]" />}
+          {trend === 'down' && <ArrowDownRight className="w-3 h-3 text-[#994040]" />}
           {trend === 'stable' && <Minus className="w-3 h-3 text-[#616161]" />}
         </div>
       )}
@@ -423,9 +423,9 @@ export function InsightsPage() {
           {isLoading ? (
             <LoadingSkeleton />
           ) : error ? (
-            <div className="bg-white dark:bg-[#202020] border-2 border-red-500 p-6 text-center">
-              <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-              <p className="text-sm text-red-600 dark:text-red-400 mb-4">{error}</p>
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#994040] p-6 text-center">
+              <AlertCircle className="w-12 h-12 text-[#994040] mx-auto mb-4" />
+              <p className="text-sm text-[#994040] dark:text-red-400 mb-4">{error}</p>
               <button
                 onClick={() => window.location.reload()}
                 className="px-4 py-2 bg-[#ac6d46] text-white font-bold text-sm hover:bg-[#8a5738] transition-all"

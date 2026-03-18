@@ -31,12 +31,9 @@ type UploadedFile = {
 
 // app
 export interface ISitemapGetResponse {
-  sources: {
-    loc: string;
-    lastmod: Date;
-    changefreq: 'daily' | 'monthly' | 'yearly';
-    priority: number;
-  }[];
+  expeditions: { publicId: string; updatedAt: Date }[];
+  entries: { publicId: string; updatedAt: Date }[];
+  explorers: { username: string; updatedAt: Date }[];
 }
 
 // session

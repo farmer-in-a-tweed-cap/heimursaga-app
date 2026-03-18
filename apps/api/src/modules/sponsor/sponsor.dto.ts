@@ -14,6 +14,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
+  Min,
 } from 'class-validator';
 
 export class SponsorCheckoutDto implements ISponsorCheckoutPayload {
@@ -185,6 +187,8 @@ export class SponsorshipRefundDto {
 export class SponsorshipTierUpdateDto implements ISponsorshipTierUpdatePayload {
   @ApiProperty({ required: false })
   @IsNumber()
+  @Min(100)
+  @Max(99999900)
   @IsOptional()
   price: number;
 
@@ -213,6 +217,8 @@ export class SponsorshipTierCreateDto implements ISponsorshipTierCreatePayload {
 
   @ApiProperty({ required: true })
   @IsNumber()
+  @Min(100)
+  @Max(99999900)
   @IsNotEmpty()
   price: number;
 

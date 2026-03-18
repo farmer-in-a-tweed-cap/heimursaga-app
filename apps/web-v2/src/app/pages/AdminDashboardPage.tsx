@@ -758,7 +758,7 @@ export function AdminDashboardPage() {
                         </td>
                         <td className="px-4 py-3">
                           {entry.deletedAt ? (
-                            <span className="text-xs font-bold px-2 py-1 bg-red-600 text-white">DELETED</span>
+                            <span className="text-xs font-bold px-2 py-1 bg-[#994040] text-white">DELETED</span>
                           ) : (
                             <span className="text-xs font-bold px-2 py-1 bg-[#4676ac] text-white">ACTIVE</span>
                           )}
@@ -903,9 +903,9 @@ export function AdminDashboardPage() {
                         </td>
                         <td className="px-4 py-3">
                           {expedition.deletedAt ? (
-                            <span className="text-xs font-bold px-2 py-1 bg-red-600 text-white">DELETED</span>
+                            <span className="text-xs font-bold px-2 py-1 bg-[#994040] text-white">DELETED</span>
                           ) : (
-                            <span className="text-xs font-bold px-2 py-1 bg-green-600 text-white">LIVE</span>
+                            <span className="text-xs font-bold px-2 py-1 bg-[#598636] text-white">LIVE</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -1044,9 +1044,9 @@ export function AdminDashboardPage() {
                         </td>
                         <td className="px-4 py-3">
                           {explorer.blocked ? (
-                            <span className="text-xs font-bold px-2 py-1 bg-red-600 text-white">BLOCKED</span>
+                            <span className="text-xs font-bold px-2 py-1 bg-[#994040] text-white">BLOCKED</span>
                           ) : (
-                            <span className="text-xs font-bold px-2 py-1 bg-green-600 text-white">ACTIVE</span>
+                            <span className="text-xs font-bold px-2 py-1 bg-[#598636] text-white">ACTIVE</span>
                           )}
                         </td>
                         <td className="px-4 py-3">
@@ -1061,7 +1061,7 @@ export function AdminDashboardPage() {
                             {explorer.blocked ? (
                               <button
                                 onClick={() => handleUnblockExplorer(explorer.username)}
-                                className="p-2 bg-green-600 text-white hover:bg-green-700 transition-colors"
+                                className="p-2 bg-[#598636] text-white hover:bg-[#4a6d2b] transition-colors"
                                 title="Unblock Explorer"
                               >
                                 <UserCheck size={14} strokeWidth={2.5} />

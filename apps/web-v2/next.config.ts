@@ -6,7 +6,6 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@repo/types'],
   images: {
-    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

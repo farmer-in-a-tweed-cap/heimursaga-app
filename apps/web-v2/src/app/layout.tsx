@@ -3,7 +3,6 @@ import Script from 'next/script';
 import { Lora, Jost } from 'next/font/google';
 import { ClientProviders } from './client-providers';
 import '@/styles/index.css';
-import 'mapbox-gl/dist/mapbox-gl.css';
 
 const lora = Lora({
   subsets: ['latin'],
@@ -66,6 +65,7 @@ export const metadata: Metadata = {
   },
   icons: { icon: '/favicon.ico' },
   metadataBase: new URL('https://heimursaga.com'),
+  alternates: { canonical: '/' },
   other: {
     'theme-color': '#ac6d46',
   },
@@ -81,6 +81,16 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://api.mapbox.com" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'Heimursaga',
+            url: 'https://heimursaga.com',
+            description: 'Global expedition documentation and sponsorship platform',
+          }) }}
+        />
       </head>
       <body>
         {/* Dark mode flash prevention */}
@@ -98,7 +108,7 @@ export default function RootLayout({
             `,
           }}
         />
-        <ClientProviders>{children}</ClientProviders>
+        <ClientProviders><main>{children}</main></ClientProviders>
 
         {/* reCAPTCHA v3 */}
         {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && (

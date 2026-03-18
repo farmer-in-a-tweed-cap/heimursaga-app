@@ -150,6 +150,25 @@ export class StripeService {
       case 'charge.dispute.created':
         await this.onDisputeCreated(data as Stripe.Dispute);
         break;
+      case 'charge.dispute.updated':
+        this.logger.warn(
+          `Dispute updated: ${(data as Stripe.Dispute).id}`,
+          { eventId: eventType },
+        );
+        break;
+      case 'charge.dispute.closed':
+        this.logger.log(
+          `Dispute closed: ${(data as Stripe.Dispute).id}, status: ${(data as Stripe.Dispute).status}`,
+        );
+        break;
+      case 'charge.dispute.funds_withdrawn':
+        this.logger.warn(
+          `Dispute funds withdrawn: ${(data as Stripe.Dispute).id}, amount: ${(data as Stripe.Dispute).amount}`,
+        );
+        break;
+      case 'customer.subscription.created':
+        await this.onSubscriptionCreated(data as Stripe.Subscription);
+        break;
     }
   }
 
@@ -416,7 +435,7 @@ export class StripeService {
           event.amount_paid &&
           event.billing_reason !== 'subscription_create'
         ) {
-          const amountDollars = event.amount_paid / 100;
+          const amountCents = event.amount_paid;
 
           // Use the original expedition from checkout, fall back to latest active
           let targetExpedition: { id: number } | null = null;
@@ -451,11 +470,11 @@ export class StripeService {
             await this.prisma.expedition.update({
               where: { id: targetExpedition.id },
               data: {
-                raised: { increment: amountDollars },
+                raised: { increment: amountCents },
               },
             });
             this.logger.log(
-              `Recurring sponsorship renewal: added $${amountDollars} to expedition ${targetExpedition.id} for creator ${creatorId}`,
+              `Recurring sponsorship renewal: added ${amountCents} cents to expedition ${targetExpedition.id} for creator ${creatorId}`,
             );
           }
         }
@@ -789,6 +808,34 @@ export class StripeService {
   }
 
   /**
+   * Handle subscription creation - log and sync initial state
+   */
+  async onSubscriptionCreated(event: Stripe.Subscription) {
+    const { id: stripeSubscriptionId, status, metadata } = event;
+
+    this.logger.log(
+      `Subscription created: ${stripeSubscriptionId}, status: ${status}`,
+    );
+
+    // If metadata contains a checkout ID, ensure the checkout record
+    // has the stripe_subscription_id set (safety net for race conditions
+    // where the webhook fires before completeCheckout finishes)
+    const checkoutId = metadata?.[StripeMetadataKey.CHECKOUT_ID]
+      ? parseInt(metadata[StripeMetadataKey.CHECKOUT_ID])
+      : undefined;
+
+    if (checkoutId) {
+      await this.prisma.checkout.updateMany({
+        where: {
+          id: checkoutId,
+          stripe_subscription_id: null,
+        },
+        data: { stripe_subscription_id: stripeSubscriptionId },
+      });
+    }
+  }
+
+  /**
    * Handle failed invoice payments - notify and update status
    */
   async onInvoicePaymentFailed(event: Stripe.Invoice) {
@@ -856,17 +903,17 @@ export class StripeService {
       });
 
       if (checkout?.sponsored_explorer_id && amount_refunded) {
-        const amountDollars = amount_refunded / 100;
+        const amountCents = amount_refunded;
 
         // Use the original expedition from checkout, fall back to latest active
-        let targetExpedition: { id: number; raised: number } | null = null;
+        let targetExpedition: { id: number } | null = null;
         if (checkout.expedition_public_id) {
           targetExpedition = await this.prisma.expedition.findFirst({
             where: {
               public_id: checkout.expedition_public_id,
               deleted_at: null,
             },
-            select: { id: true, raised: true },
+            select: { id: true },
           });
         }
         if (!targetExpedition) {
@@ -876,49 +923,44 @@ export class StripeService {
               deleted_at: null,
               status: { in: ['active', 'planned'] },
             },
-            select: { id: true, raised: true },
+            select: { id: true },
             orderBy: { id: 'desc' },
           });
         }
 
         if (targetExpedition) {
-          // Clamp to 0 minimum to prevent negative values
-          const newRaised = Math.max(
-            0,
-            targetExpedition.raised - amountDollars,
-          );
-          await this.prisma.expedition.update({
-            where: { id: targetExpedition.id },
-            data: { raised: newRaised },
-          });
-          this.logger.log(
-            `Refund: decremented $${amountDollars} from expedition ${targetExpedition.id} for creator ${checkout.sponsored_explorer_id}`,
-          );
-        }
+          // Atomic decrement with clamp to 0 to prevent race conditions
+          await this.prisma.$transaction(async (tx) => {
+            await tx.expedition.update({
+              where: { id: targetExpedition.id },
+              data: { raised: { decrement: amountCents } },
+            });
+            // Clamp to 0 minimum to prevent negative values
+            await tx.expedition.updateMany({
+              where: { id: targetExpedition.id, raised: { lt: 0 } },
+              data: { raised: 0 },
+            });
 
-        // On full refund, decrement sponsors_count
-        if (refunded) {
-          const expeditionForCount = targetExpedition
-            ? { id: targetExpedition.id }
-            : null;
-          if (expeditionForCount) {
-            await this.prisma.expedition.update({
-              where: { id: expeditionForCount.id },
-              data: {
-                sponsors_count: {
-                  decrement: 1,
-                },
-              },
-            });
-            // Clamp sponsors_count to 0
-            await this.prisma.expedition.updateMany({
-              where: { id: expeditionForCount.id, sponsors_count: { lt: 0 } },
-              data: { sponsors_count: 0 },
-            });
-            this.logger.log(
-              `Full refund: decremented sponsors_count on expedition ${expeditionForCount.id}`,
-            );
-          }
+            // On full refund, also decrement sponsors_count atomically
+            if (refunded) {
+              await tx.expedition.update({
+                where: { id: targetExpedition.id },
+                data: { sponsors_count: { decrement: 1 } },
+              });
+              // Clamp sponsors_count to 0
+              await tx.expedition.updateMany({
+                where: { id: targetExpedition.id, sponsors_count: { lt: 0 } },
+                data: { sponsors_count: 0 },
+              });
+              this.logger.log(
+                `Full refund: decremented sponsors_count on expedition ${targetExpedition.id}`,
+              );
+            }
+          });
+
+          this.logger.log(
+            `Refund: decremented ${amountCents} cents from expedition ${targetExpedition.id} for creator ${checkout.sponsored_explorer_id}`,
+          );
         }
       }
     }

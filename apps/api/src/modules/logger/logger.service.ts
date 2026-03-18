@@ -11,9 +11,15 @@ export class Logger implements LoggerService {
     const isProduction = NODE_ENV === 'production' || false;
     const isDevelopment = !isStaging && !isProduction;
 
+    const redactOpts = {
+      paths: ['req.headers.authorization', '*.password', '*.email', '*.token', '*.sessionSecret'],
+      remove: true,
+    };
+
     this.logger = !isDevelopment
-      ? pino()
+      ? pino({ redact: redactOpts })
       : pino({
+          redact: redactOpts,
           transport: {
             target: 'pino-pretty',
             options: {

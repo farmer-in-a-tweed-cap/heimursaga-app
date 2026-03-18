@@ -43,6 +43,7 @@ export class SearchService {
             contains: searchTerm,
             mode: 'insensitive',
           },
+          blocked: { not: true },
         },
         select: {
           id: true,
@@ -77,6 +78,12 @@ export class SearchService {
             },
             {
               public: true,
+            },
+            {
+              deleted_at: null,
+            },
+            {
+              is_draft: { not: true },
             },
             {
               OR: [

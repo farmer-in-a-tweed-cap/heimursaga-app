@@ -1,6 +1,14 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 
-import { Session } from '@/common/decorators';
+import { Public, Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
 
 import {
@@ -34,6 +42,7 @@ export class ExpeditionNoteController {
   /**
    * Get note count (public - for locked state display)
    */
+  @Public()
   @Get('count')
   async getNoteCount(@Param() params: ExpeditionNoteParamDto) {
     return this.expeditionNoteService.getNoteCount({

@@ -349,7 +349,7 @@ export function ExpeditionQuickEntryPage() {
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => router.push('/auth?from=' + pathname)}
+                onClick={() => router.push('/auth?redirect=' + pathname)}
                 className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
               >
                 LOG IN / REGISTER
@@ -401,7 +401,7 @@ export function ExpeditionQuickEntryPage() {
             <form onSubmit={(e) => { e.preventDefault(); handleCreate(false); }} className="space-y-6">
               {/* Error Display */}
               {submitError && (
-                <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 p-4 text-sm text-red-700 dark:text-red-400">
+                <div className="bg-red-50 dark:bg-red-900/20 border-2 border-[#994040] p-4 text-sm text-red-700 dark:text-red-400">
                   {submitError}
                 </div>
               )}
@@ -417,6 +417,7 @@ export function ExpeditionQuickEntryPage() {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
+                  maxLength={200}
                   className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                   placeholder="e.g., Cycling the Silk Road"
                 />
@@ -599,7 +600,7 @@ export function ExpeditionQuickEntryPage() {
                   />
                   {coverPhotoPreview ? (
                     <div className="relative">
-                      <Image src={coverPhotoPreview} alt="Cover preview" className="max-h-32 mx-auto object-cover" width={0} height={0} sizes="100vw" style={{ width: 'auto', height: 'auto', maxHeight: '8rem' }} />
+                      <Image src={coverPhotoPreview} alt="Cover preview" className="max-h-32 mx-auto object-cover" width={400} height={200} sizes="400px" style={{ width: 'auto', height: 'auto', maxHeight: '8rem' }} />
                       {uploadingCover && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                           <Loader2 className="w-8 h-8 text-white animate-spin" />

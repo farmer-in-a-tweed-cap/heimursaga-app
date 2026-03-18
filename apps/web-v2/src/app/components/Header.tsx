@@ -212,7 +212,7 @@ export function Header() {
           }`}>
             <Link 
               href="/" 
-              className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold relative ${isActive('/') 
+              className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] relative ${isActive('/') 
                   ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-12 after:h-0.5 after:bg-[#4676ac]' 
                   : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
               }`}
@@ -221,7 +221,7 @@ export function Header() {
             </Link>
             <Link 
               href="/explorers" 
-              className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold relative ${
+              className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] relative ${
                 isActive('/discover') 
                   ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-16 after:h-0.5 after:bg-[#4676ac]' 
                   : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
@@ -234,7 +234,7 @@ export function Header() {
             {!isAuthenticated && (
               <Link 
                 href="/about" 
-                className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold relative ${
+                className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] relative ${
                   isActive('/about') 
                     ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-12 after:h-0.5 after:bg-[#4676ac]' 
                     : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
@@ -249,7 +249,7 @@ export function Header() {
               <>
                 <Link 
                   href={`/journal/${user.username}`}
-                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold relative ${
+                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] relative ${
                     isActive('/journal') 
                       ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-14 after:h-0.5 after:bg-[#4676ac]' 
                       : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
@@ -259,7 +259,7 @@ export function Header() {
                 </Link>
                 <Link 
                   href="/sponsorship" 
-                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold relative ${
+                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] relative ${
                     isActive('/sponsorship') 
                       ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-20 after:h-0.5 after:bg-[#4676ac]' 
                       : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
@@ -269,7 +269,7 @@ export function Header() {
                 </Link>
                 <Link
                   href="/messages"
-                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold relative ${
+                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] relative ${
                     isActive('/messages')
                       ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-16 after:h-0.5 after:bg-[#4676ac]'
                       : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
@@ -284,7 +284,7 @@ export function Header() {
                 </Link>
                 <Link 
                   href="/bookmarks" 
-                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold relative ${
+                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] relative ${
                     isActive('/bookmarks') 
                       ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-18 after:h-0.5 after:bg-[#4676ac]' 
                       : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
@@ -294,7 +294,7 @@ export function Header() {
                 </Link>
                 <Link
                   href="/select-expedition"
-                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold ${
+                  className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] ${
                     isActive('/select-expedition')
                       ? 'bg-[#4676ac] text-white'
                       : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
@@ -305,7 +305,7 @@ export function Header() {
                 {user.admin && (
                   <Link
                     href="/admin"
-                    className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold relative ${
+                    className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] relative ${
                       isActive('/admin')
                         ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-12 after:h-0.5 after:bg-[#4676ac]'
                         : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
@@ -344,7 +344,7 @@ export function Header() {
               </div>
             ) : (
               <div className="text-white flex items-center">
-                <Link href="/auth" className="hover:text-[#ac6d46] transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:underline focus-visible:text-[#ac6d46] font-bold">
+                <Link href="/auth" className="hover:text-[#ac6d46] transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:underline focus-visible:text-[#ac6d46] font-bold tracking-[0.14em]">
                   LOGIN / REGISTER
                 </Link>
               </div>
@@ -356,7 +356,7 @@ export function Header() {
                 {/* Notifications Icon */}
                 <div ref={notificationsRef} className="relative">
                   <button
-                    className={`relative w-[31px] h-[31px] flex items-center justify-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border border-[#202020] ${
+                    className={`relative w-11 h-11 flex items-center justify-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border border-[#202020] ${
                       notificationsOpen
                         ? 'bg-[#4676ac]'
                         : 'bg-[#616161] hover:bg-[#4676ac]'
@@ -379,7 +379,7 @@ export function Header() {
                 {/* Settings Icon */}
                 <Link
                   href="/settings"
-                  className={`w-[31px] h-[31px] flex items-center justify-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border border-[#202020] ${
+                  className={`w-11 h-11 flex items-center justify-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border border-[#202020] ${
                     isActive('/settings')
                       ? 'bg-[#4676ac] text-white'
                       : 'bg-[#616161] text-white hover:bg-[#4676ac]'
@@ -393,7 +393,7 @@ export function Header() {
                 {process.env.NODE_ENV === 'development' && (
                   <button
                     onClick={toggleTheme}
-                    className="w-[31px] h-[31px] flex items-center justify-center bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] border border-[#202020]"
+                    className="w-11 h-11 flex items-center justify-center bg-[#616161] text-white hover:bg-[#4676ac] transition-all active:scale-[0.98] border border-[#202020]"
                     title={`Theme: ${theme}`}
                   >
                     {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -415,7 +415,7 @@ export function Header() {
           {/* Overflow Menu Button - Shows on smaller screens */}
           <button
             onClick={() => setOverflowMenuOpen(!overflowMenuOpen)}
-            className="xl:hidden px-3 py-2 bg-[#616161] hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] flex-shrink-0 text-xs font-bold ml-auto"
+            className="xl:hidden px-3 py-2 bg-[#616161] hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] flex-shrink-0 text-xs font-bold tracking-[0.14em] ml-auto"
           >
             MENU {overflowMenuOpen ? '▲' : '▼'}
           </button>
@@ -485,7 +485,7 @@ export function Header() {
               <div className="bg-[#202020] p-3 border-l-2 border-[#ac6d46] mb-4">
                 <Link
                   href="/auth"
-                  className="block px-4 py-2 bg-[#ac6d46] text-white text-center text-sm font-bold hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
+                  className="block px-4 py-2 bg-[#ac6d46] text-white text-center text-sm font-bold tracking-[0.14em] hover:bg-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
                 >
                   LOGIN / REGISTER
                 </Link>
@@ -494,11 +494,11 @@ export function Header() {
 
             {/* Navigation */}
             <div className="mt-4">
-              <div className="text-xs font-bold mb-2 text-[#b5bcc4]">NAVIGATION:</div>
+              <div className="text-xs font-bold tracking-[0.14em] mb-2 text-[#b5bcc4]">NAVIGATION:</div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 <Link 
                   href="/" 
-                  className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                  className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                     isActive('/') 
                       ? 'bg-[#4676ac] text-white' 
                       : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
@@ -508,7 +508,7 @@ export function Header() {
                 </Link>
                 <Link 
                   href="/explorers" 
-                  className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                  className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                     isActive('/discover') 
                       ? 'bg-[#4676ac] text-white' 
                       : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
@@ -521,7 +521,7 @@ export function Header() {
                 {!isAuthenticated && (
                   <Link 
                     href="/about" 
-                    className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                    className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                       isActive('/about') 
                         ? 'bg-[#4676ac] text-white' 
                         : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
@@ -535,7 +535,7 @@ export function Header() {
                   <>
                     <Link 
                       href={`/journal/${user.username}`}
-                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                         isActive('/journal') 
                           ? 'bg-[#4676ac] text-white' 
                           : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
@@ -545,7 +545,7 @@ export function Header() {
                     </Link>
                     <Link 
                       href="/sponsorship" 
-                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                         isActive('/sponsorship') 
                           ? 'bg-[#4676ac] text-white' 
                           : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
@@ -555,7 +555,7 @@ export function Header() {
                     </Link>
                     <Link
                       href="/messages"
-                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold relative ${
+                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] relative ${
                         isActive('/messages')
                           ? 'bg-[#4676ac] text-white'
                           : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
@@ -570,7 +570,7 @@ export function Header() {
                     </Link>
                     <Link 
                       href="/bookmarks" 
-                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                         isActive('/bookmarks') 
                           ? 'bg-[#4676ac] text-white' 
                           : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
@@ -580,7 +580,7 @@ export function Header() {
                     </Link>
                     <Link 
                       href="/notifications" 
-                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                         isActive('/notifications') 
                           ? 'bg-[#4676ac] text-white' 
                           : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
@@ -590,7 +590,7 @@ export function Header() {
                     </Link>
                     <Link 
                       href="/settings" 
-                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                         isActive('/settings') 
                           ? 'bg-[#4676ac] text-white' 
                           : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
@@ -600,7 +600,7 @@ export function Header() {
                     </Link>
                     <Link
                       href="/select-expedition"
-                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                      className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                         isActive('/select-expedition')
                           ? 'bg-[#4676ac] text-white'
                           : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
@@ -611,7 +611,7 @@ export function Header() {
                     {user.admin && (
                       <Link
                         href="/admin"
-                        className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold ${
+                        className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                           isActive('/admin')
                             ? 'bg-[#4676ac] text-white'
                             : 'bg-[#202020] text-white hover:bg-[#ac6d46]'

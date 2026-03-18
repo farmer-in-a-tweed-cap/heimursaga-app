@@ -115,7 +115,7 @@ export function NotificationDropdownDemo() {
           />
 
           {/* Dropdown Content */}
-          <div className="absolute right-0 mt-2 w-96 border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] shadow-lg z-20">
+          <div className="absolute right-0 mt-2 w-96 max-w-[calc(100vw-1rem)] border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] shadow-lg z-20">
             {/* Dropdown Header */}
             <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-[#b5bcc4] dark:bg-[#3a3a3a] px-3 py-2">
               <div className="flex items-center justify-between">

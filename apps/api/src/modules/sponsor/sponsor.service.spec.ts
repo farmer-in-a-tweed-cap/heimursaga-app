@@ -362,7 +362,7 @@ describe('SponsorService', () => {
       expect(txMock.expedition.update).toHaveBeenCalledWith({
         where: { id: 50 },
         data: expect.objectContaining({
-          raised: { increment: 50 },
+          raised: { increment: 5000 },
           sponsors_count: { increment: 1 },
         }),
       });

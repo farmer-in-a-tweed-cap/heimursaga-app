@@ -368,8 +368,8 @@ export function AboutPage() {
               ].map((row, i) => (
                 <tr key={i} className={row.proOnly ? 'bg-[#ac6d46]/10' : row.alt ? 'bg-[#f5f5f5] dark:bg-[#2a2a2a]' : ''}>
                   <td className={`p-3 border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] ${row.bold ? 'font-bold' : ''}`}>{row.feature}</td>
-                  <td className="text-center p-3 border border-[#202020] dark:border-[#616161]">{row.free ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" /> : <XCircle className="w-4 h-4 text-red-500 mx-auto" />}</td>
-                  <td className="text-center p-3 border border-[#202020] dark:border-[#616161]">{row.pro ? <CheckCircle className="w-4 h-4 text-green-500 mx-auto" /> : <XCircle className="w-4 h-4 text-red-500 mx-auto" />}</td>
+                  <td className="text-center p-3 border border-[#202020] dark:border-[#616161]">{row.free ? <CheckCircle className="w-4 h-4 text-[#598636] mx-auto" /> : <XCircle className="w-4 h-4 text-[#994040] mx-auto" />}</td>
+                  <td className="text-center p-3 border border-[#202020] dark:border-[#616161]">{row.pro ? <CheckCircle className="w-4 h-4 text-[#598636] mx-auto" /> : <XCircle className="w-4 h-4 text-[#994040] mx-auto" />}</td>
                 </tr>
               ))}
             </tbody>
@@ -391,7 +391,7 @@ export function AboutPage() {
                   'Reply to Expedition Notes',
                 ].map((f) => (
                   <div key={f} className="flex items-center gap-2 p-3 text-xs font-mono">
-                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                    <CheckCircle className="w-4 h-4 text-[#598636] shrink-0" />
                     <span className="dark:text-[#e5e5e5]">{f}</span>
                   </div>
                 ))}
@@ -414,7 +414,7 @@ export function AboutPage() {
                   'Stripe payout integration',
                 ].map((f) => (
                   <div key={f} className="flex items-center gap-2 p-3 text-xs font-mono bg-[#ac6d46]/5">
-                    <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                    <CheckCircle className="w-4 h-4 text-[#598636] shrink-0" />
                     <span className="dark:text-[#e5e5e5]">{f}</span>
                   </div>
                 ))}
@@ -560,7 +560,7 @@ export function AboutPage() {
           <div className="grid md:grid-cols-3 gap-6">
             <div className="border border-[#616161] p-4">
               <div className="flex items-center gap-2 mb-3">
-                <Shield className="w-5 h-5 text-green-500" />
+                <Shield className="w-5 h-5 text-[#598636]" />
                 <h4 className="font-bold dark:text-[#e5e5e5]">SECURITY</h4>
               </div>
               <div className="space-y-2 text-xs font-mono">
@@ -578,11 +578,11 @@ export function AboutPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">GDPR:</span>
-                  <span className="text-green-500">Compliant</span>
+                  <span className="text-[#598636]">Compliant</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">PCI DSS:</span>
-                  <span className="text-green-500">Via Stripe</span>
+                  <span className="text-[#598636]">Via Stripe</span>
                 </div>
               </div>
             </div>

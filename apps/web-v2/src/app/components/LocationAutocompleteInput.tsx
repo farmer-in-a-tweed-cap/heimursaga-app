@@ -209,7 +209,7 @@ export function LocationAutocompleteInput({
           {isLoading ? (
             <Loader className="w-4 h-4 text-[#616161] dark:text-[#b5bcc4] animate-spin" strokeWidth={2} />
           ) : error ? (
-            <AlertCircle className="w-4 h-4 text-red-500" strokeWidth={2} />
+            <AlertCircle className="w-4 h-4 text-[#994040]" strokeWidth={2} />
           ) : (
             <MapPin className="w-4 h-4 text-[#616161] dark:text-[#b5bcc4]" strokeWidth={2} />
           )}
@@ -275,7 +275,7 @@ export function LocationAutocompleteInput({
       )}
       
       {error && (
-        <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+        <p className="text-xs text-[#994040] mt-1 flex items-center gap-1">
           <AlertCircle className="w-3 h-3" strokeWidth={2} />
           {error}
         </p>

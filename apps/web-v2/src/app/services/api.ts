@@ -138,8 +138,13 @@ async function request<T>(
 
   let response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
-  // If we get a 401 (session expired) or 403 (CSRF token expired), refresh CSRF and retry once
-  if ((response.status === 401 || response.status === 403) && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+  // If we get a 401 (session expired), clear cached CSRF token and let the response propagate
+  if (response.status === 401) {
+    csrfToken = null;
+  }
+
+  // If we get a 403 (CSRF token expired), refresh CSRF token and retry once
+  if (response.status === 403 && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     try {
       csrfToken = null;
       headers['x-csrf-token'] = await fetchCsrfToken();

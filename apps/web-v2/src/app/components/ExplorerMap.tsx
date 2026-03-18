@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
@@ -131,7 +132,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
   // Handle follow/unfollow explorer
   const handleFollowExplorer = async (username: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
 
@@ -159,7 +160,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
   // Handle bookmark/unbookmark entry
   const handleBookmarkEntry = async (entryId: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
 

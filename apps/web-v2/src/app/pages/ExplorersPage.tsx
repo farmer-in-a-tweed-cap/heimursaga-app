@@ -40,7 +40,7 @@ export function ExplorersPage() {
   // Handle bookmark explorer with loading state
   const handleBookmarkExplorer = async (username: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
 
@@ -73,7 +73,7 @@ export function ExplorersPage() {
   // Handle follow/unfollow explorer with loading state
   const handleFollowExplorer = async (username: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
 

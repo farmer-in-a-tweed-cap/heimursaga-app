@@ -79,7 +79,6 @@ export class BotDetectionGuard implements CanActivate {
     // This is a basic check - in production you'd use Redis or similar
     // for now, we'll check if multiple headers suggest automation
     const automationHeaders = [
-      request.headers['x-requested-with'],
       request.headers['x-automation'],
       request.headers['x-robot'],
     ].filter(Boolean);
@@ -102,7 +101,6 @@ export class BotDetectionGuard implements CanActivate {
     const suspiciousHeaders = [
       'x-python-version',
       'x-node-version',
-      'x-requested-with',
     ];
 
     return suspiciousHeaders.some((header) => request.headers[header]);

@@ -399,16 +399,20 @@ export class MapService {
       if (!access) throw new ServiceForbiddenException();
 
       const { lat, lon, title, date, tripId } = payload;
-      let expedition: { id: number } | null = null;
+      let expedition: { id: number; author_id: number } | null = null;
 
       // get an expedition
       if (tripId) {
         expedition = await this.prisma.expedition
           .findFirstOrThrow({
-            where: { public_id: tripId },
-            select: { id: true },
+            where: { public_id: tripId, deleted_at: null },
+            select: { id: true, author_id: true },
           })
           .catch(() => null);
+
+        if (expedition && expedition.author_id !== userId) {
+          throw new ServiceForbiddenException();
+        }
       }
 
       // create a waypoint

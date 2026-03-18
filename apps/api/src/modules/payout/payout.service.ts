@@ -324,7 +324,7 @@ export class PayoutService {
 
       // check if the user already has a payout method
       const payoutMethod = await this.prisma.payoutMethod.findFirst({
-        where: { explorer_id: userId },
+        where: { explorer_id: userId, deleted_at: null },
         select: {
           id: true,
           public_id: true,

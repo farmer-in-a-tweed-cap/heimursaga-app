@@ -118,7 +118,7 @@ export function PrivacySettingsPage() {
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => router.push('/auth?from=' + pathname)}
+                onClick={() => router.push('/auth?redirect=' + pathname)}
                 className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
               >
                 LOG IN / REGISTER

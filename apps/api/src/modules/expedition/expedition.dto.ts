@@ -16,6 +16,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   MaxLength,
   Min,
@@ -52,7 +53,7 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   visibility?: 'public' | 'off-grid' | 'private';
 
   @ApiProperty({ required: false })
-  @IsString()
+  @IsIn(['draft', 'planned', 'active', 'completed', 'cancelled'])
   @IsOptional()
   status?: string;
 
@@ -67,8 +68,8 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   endDate?: Date;
 
   @ApiProperty({ required: false })
-  @IsString()
   @IsOptional()
+  @IsUrl({}, { message: 'Cover image must be a valid URL' })
   coverImage?: string;
 
   @ApiProperty({ required: false })
@@ -145,7 +146,7 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   description?: string;
 
   @ApiProperty({ required: false })
-  @IsString()
+  @IsIn(['draft', 'planned', 'active', 'completed', 'cancelled'])
   @IsOptional()
   status?: string;
 
@@ -160,8 +161,8 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   endDate?: Date;
 
   @ApiProperty({ required: false })
-  @IsString()
   @IsOptional()
+  @IsUrl({}, { message: 'Cover image must be a valid URL' })
   coverImage?: string;
 
   @ApiProperty({ required: false })

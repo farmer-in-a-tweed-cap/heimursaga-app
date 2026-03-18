@@ -637,7 +637,12 @@ export class SponsorService {
       isMessagePublic?: boolean;
       expeditionId?: string;
     }
-  >): Promise<{ clientSecret: string; ephemeralKey: string; customerId: string; paymentIntentId: string }> {
+  >): Promise<{
+    clientSecret: string;
+    ephemeralKey: string;
+    customerId: string;
+    paymentIntentId: string;
+  }> {
     try {
       const { userId } = session;
       const {
@@ -912,16 +917,15 @@ export class SponsorService {
               let productId = subscriptionTier.stripe_product_id;
 
               if (!productId) {
-                const stripeProduct =
-                  await this.stripeService.products.create({
-                    name: `creator_${subscriptionTier.explorer_id}__sponsorship`,
-                    active: true,
-                    default_price_data: {
-                      currency,
-                      unit_amount: monthlyAmount,
-                      recurring: { interval: 'month' },
-                    },
-                  });
+                const stripeProduct = await this.stripeService.products.create({
+                  name: `creator_${subscriptionTier.explorer_id}__sponsorship`,
+                  active: true,
+                  default_price_data: {
+                    currency,
+                    unit_amount: monthlyAmount,
+                    recurring: { interval: 'month' },
+                  },
+                });
                 productId = stripeProduct.id;
                 subscriptionTier.stripe_price_month_id =
                   stripeProduct.default_price as string;
@@ -951,8 +955,7 @@ export class SponsorService {
                 where: { id: subscriptionTier.id },
                 data: {
                   stripe_product_id: productId,
-                  stripe_price_month_id:
-                    subscriptionTier.stripe_price_month_id,
+                  stripe_price_month_id: subscriptionTier.stripe_price_month_id,
                   stripe_price_year_id: subscriptionTier.stripe_price_year_id,
                 },
               });
@@ -984,37 +987,34 @@ export class SponsorService {
 
           const subscriptionIdempotencyKey = `sponsor_sub_prepare_${checkout.id}`;
 
-          const subscription =
-            await this.stripeService.subscriptions.create(
-              {
-                customer: stripeCustomer.id,
-                items: [{ price: stripePriceId }],
-                // No default_payment_method — PaymentSheet handles collection
-                transfer_data: { destination: creatorStripeAccountId },
-                application_fee_percent: APPLICATION_FEE,
-                collection_method: 'charge_automatically',
-                payment_behavior: 'default_incomplete',
-                payment_settings: {
-                  save_default_payment_method: 'on_subscription',
-                  payment_method_types: ['card'],
-                },
-                expand: ['latest_invoice.payment_intent'],
-                metadata: {
-                  [StripeMetadataKey.TRANSACTION]:
-                    PaymentTransactionType.SPONSORSHIP,
-                  [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
-                  [StripeMetadataKey.USER_ID]: user.id.toString(),
-                  [StripeMetadataKey.CREATOR_ID]: creator.id.toString(),
-                  description: `${user.username} sponsors ${creator.username}`,
-                },
+          const subscription = await this.stripeService.subscriptions.create(
+            {
+              customer: stripeCustomer.id,
+              items: [{ price: stripePriceId }],
+              // No default_payment_method — PaymentSheet handles collection
+              transfer_data: { destination: creatorStripeAccountId },
+              application_fee_percent: APPLICATION_FEE,
+              collection_method: 'charge_automatically',
+              payment_behavior: 'default_incomplete',
+              payment_settings: {
+                save_default_payment_method: 'on_subscription',
+                payment_method_types: ['card'],
               },
-              { idempotencyKey: subscriptionIdempotencyKey },
-            );
+              expand: ['latest_invoice.payment_intent'],
+              metadata: {
+                [StripeMetadataKey.TRANSACTION]:
+                  PaymentTransactionType.SPONSORSHIP,
+                [StripeMetadataKey.CHECKOUT_ID]: checkout.id.toString(),
+                [StripeMetadataKey.USER_ID]: user.id.toString(),
+                [StripeMetadataKey.CREATOR_ID]: creator.id.toString(),
+                description: `${user.username} sponsors ${creator.username}`,
+              },
+            },
+            { idempotencyKey: subscriptionIdempotencyKey },
+          );
 
-          const invoice =
-            subscription.latest_invoice as Stripe.Invoice;
-          const paymentIntent =
-            invoice.payment_intent as Stripe.PaymentIntent;
+          const invoice = subscription.latest_invoice as Stripe.Invoice;
+          const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
 
           await tx.checkout.update({
             where: { id: checkout.id },
@@ -1165,8 +1165,8 @@ export class SponsorService {
           });
 
           // Update the creator's expedition raised amount and sponsor count
-          // Goal and raised are stored in dollars, checkout.total is in cents
-          const raisedDollars = integerToDecimal(checkout.total);
+          // Goal and raised are stored in cents, checkout.total is in cents
+          const raisedCents = checkout.total;
 
           // Use the original expedition from checkout, fall back to latest active
           let targetExpedition: { id: number } | null = null;
@@ -1195,7 +1195,7 @@ export class SponsorService {
             await tx.expedition.update({
               where: { id: targetExpedition.id },
               data: {
-                raised: { increment: raisedDollars },
+                raised: { increment: raisedCents },
                 sponsors_count: { increment: 1 },
               },
             });

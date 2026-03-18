@@ -52,7 +52,7 @@
   --muted-foreground: #717182;
   --accent: #e9ebef;
   --accent-foreground: #030213;
-  --destructive: #d4183d;
+  --destructive: #994040;
   --destructive-foreground: #ffffff;
   --border: rgba(0, 0, 0, 0.1);
   --input: transparent;
@@ -114,7 +114,7 @@
   --muted-foreground: #b5bcc4;
   --accent: #2a2a2a;
   --accent-foreground: #e5e5e5;
-  --destructive: #d4183d;
+  --destructive: #994040;
   --destructive-foreground: #ffffff;
   --border: #616161;
   --input: #2a2a2a;
@@ -185,6 +185,10 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+
+  html, body {
+    overflow-x: hidden;
   }
 
   body {

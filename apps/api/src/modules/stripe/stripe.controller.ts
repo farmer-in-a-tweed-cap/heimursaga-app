@@ -9,6 +9,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { UserRole } from '@repo/types';
 
 import { Public, Roles, Session } from '@/common/decorators';
@@ -27,6 +28,7 @@ export class StripeController {
   ) {}
 
   @Public()
+  @SkipThrottle()
   @Post('')
   stripeWebhook(@Req() req: RawBodyRequest<IRequest>) {
     return this.stripeService.webhook(req);

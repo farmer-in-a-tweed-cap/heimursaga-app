@@ -8,6 +8,7 @@ import { PrismaModule } from '@/modules/prisma';
 import { RecaptchaModule } from '@/modules/recaptcha/recaptcha.module';
 import { StripeModule } from '@/modules/stripe/stripe.module';
 
+import { AuthCronService } from './auth-cron.service';
 import { AuthController } from './auth.controller';
 import { AuthGuard, RolesGuard } from './auth.guard';
 import { AuthService } from './auth.service';
@@ -32,6 +33,7 @@ import { AuthService } from './auth.service';
   controllers: [AuthController],
   providers: [
     AuthService,
+    AuthCronService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,

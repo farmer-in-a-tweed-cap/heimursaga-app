@@ -70,7 +70,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           {/* Resources & Support Combined */}
           <div>
-            <h4 className="text-sm font-bold mb-3 border-b border-[#616161] pb-2">
+            <h4 className="text-sm font-bold tracking-[0.14em] mb-3 border-b border-[#616161] pb-2">
               RESOURCES & SUPPORT
             </h4>
             <ul className="text-xs space-y-2">
@@ -86,7 +86,7 @@ export function Footer() {
 
           {/* Platform Info */}
           <div>
-            <h4 className="text-sm font-bold mb-3 border-b border-[#616161] pb-2">
+            <h4 className="text-sm font-bold tracking-[0.14em] mb-3 border-b border-[#616161] pb-2">
               PLATFORM INFORMATION
             </h4>
             <ul className="text-xs space-y-2 text-[#b5bcc4] font-mono">
@@ -103,7 +103,7 @@ export function Footer() {
 
           {/* Technical */}
           <div>
-            <h4 className="text-sm font-bold mb-3 border-b border-[#616161] pb-2">
+            <h4 className="text-sm font-bold tracking-[0.14em] mb-3 border-b border-[#616161] pb-2">
               TECHNICAL SPECIFICATIONS
             </h4>
             <ul className="text-xs space-y-2 text-[#b5bcc4] font-mono">

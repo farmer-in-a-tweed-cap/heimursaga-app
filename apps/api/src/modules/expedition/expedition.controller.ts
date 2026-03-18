@@ -43,29 +43,10 @@ export class ExpeditionController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const result = await this.expeditionService.getExpeditions({
+    return await this.expeditionService.getExpeditions({
       query: { context, page, limit },
       session,
     });
-    // Patch: ensure category/region from DB are included
-    const prisma = (this.expeditionService as any).prisma;
-    const ids = result.data.map((d: any) => d.id);
-    if (ids.length > 0) {
-      const rows = await prisma.expedition.findMany({
-        where: { public_id: { in: ids } },
-        select: { public_id: true, category: true, region: true },
-      });
-      const lookup = new Map(rows.map((r: any) => [r.public_id, r]));
-      result.data = result.data.map((d: any) => {
-        const match = lookup.get(d.id) as any;
-        return {
-          ...d,
-          category: match?.category ?? d.category,
-          region: match?.region ?? d.region,
-        };
-      });
-    }
-    return { ...result, _patched: true };
   }
 
   @Get('drafts')

@@ -168,7 +168,7 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
   };
 
   return (
-    <div className="absolute top-full right-0 mt-2 w-96 border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] shadow-lg z-50">
+    <div className="absolute top-full right-0 mt-2 w-96 max-w-[calc(100vw-1rem)] border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] shadow-lg z-50">
       {/* Dropdown Header */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-[#202020] dark:bg-[#1a1a1a] px-4 py-3">
         <div className="flex items-center justify-between mb-2">

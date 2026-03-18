@@ -58,7 +58,7 @@ export function useExpeditionData(
   // Handle follow/unfollow explorer
   const handleFollowExplorer = async (username: string) => {
     if (!isAuthenticated || !username) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     setFollowLoading(true);
@@ -80,7 +80,7 @@ export function useExpeditionData(
   // Handle bookmark/unbookmark expedition
   const handleBookmarkExpedition = async () => {
     if (!isAuthenticated || !expeditionId) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     setBookmarkLoading(true);
@@ -97,7 +97,7 @@ export function useExpeditionData(
   // Handle bookmark/unbookmark entry from map popup
   const handleBookmarkEntry = async (entryId: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     setEntryBookmarkLoading(entryId);

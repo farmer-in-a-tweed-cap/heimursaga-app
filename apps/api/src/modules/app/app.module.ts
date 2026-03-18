@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { AdminModule } from '@/modules/admin';
 import { AuthModule } from '@/modules/auth';
@@ -65,7 +66,7 @@ import { AppService } from './app.service';
     StripeModule,
     PrismaModule,
     AuthModule,
-    DevModule,
+    ...(process.env.NODE_ENV !== 'production' ? [DevModule] : []),
     EntryModule,
     CommentModule,
     FlagModule,
@@ -84,6 +85,9 @@ import { AppService } from './app.service';
     WeatherModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

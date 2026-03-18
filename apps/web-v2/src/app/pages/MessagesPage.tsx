@@ -131,7 +131,7 @@ function ComposeModal({
         </div>
         <div className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-500 text-red-600 dark:text-red-400 text-sm">
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border-2 border-[#994040] text-[#994040] dark:text-red-400 text-sm">
               {error}
             </div>
           )}
@@ -140,7 +140,7 @@ function ComposeModal({
             {selectedUser ? (
               <div className="flex items-center gap-3 px-4 py-2 border-2 border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                 {selectedUser.picture ? (
-                  <Image src={selectedUser.picture} alt="" className="w-8 h-8 object-cover" width={32} height={32} />
+                  <Image src={selectedUser.picture} alt={`${selectedUser.username}'s avatar`} className="w-8 h-8 object-cover" width={32} height={32} />
                 ) : (
                   <div className="w-8 h-8 bg-[#ac6d46] text-white flex items-center justify-center font-bold text-sm uppercase">
                     {selectedUser.username[0]}
@@ -195,7 +195,7 @@ function ComposeModal({
                         >
                           <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border-2 ${user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'}`}>
                             {user.picture ? (
-                              <Image src={user.picture} alt="" className="w-full h-full object-cover" width={32} height={32} />
+                              <Image src={user.picture} alt={`${user.username}'s avatar`} className="w-full h-full object-cover" width={32} height={32} />
                             ) : (
                               <div className="w-full h-full bg-[#b5bcc4] text-white flex items-center justify-center font-bold text-sm uppercase">
                                 {user.username[0]}
@@ -528,7 +528,7 @@ export function MessagesPage() {
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => router.push('/auth?from=' + pathname)}
+                onClick={() => router.push('/auth?redirect=' + pathname)}
                 className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
               >
                 LOG IN / REGISTER
@@ -789,9 +789,9 @@ export function MessagesPage() {
                                   </div>
                                 </button>
                                 <button className="w-full px-4 py-3 hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] flex items-center gap-3 text-left">
-                                  <Trash2 className="w-4 h-4 text-red-600" />
+                                  <Trash2 className="w-4 h-4 text-[#994040]" />
                                   <div>
-                                    <div className="text-sm font-bold text-red-600">Delete Conversation</div>
+                                    <div className="text-sm font-bold text-[#994040]">Delete Conversation</div>
                                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Permanently remove all messages</div>
                                   </div>
                                 </button>

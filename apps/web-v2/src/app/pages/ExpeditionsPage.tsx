@@ -38,7 +38,7 @@ export function ExpeditionsPage() {
   // Handle bookmark expedition with loading state
   const handleBookmarkExpedition = async (expeditionId: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
 

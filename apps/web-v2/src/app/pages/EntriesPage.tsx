@@ -38,7 +38,7 @@ export function EntriesPage() {
   // Handle bookmark entry with loading state
   const handleBookmarkEntry = async (entryId: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
 

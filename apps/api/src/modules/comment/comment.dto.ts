@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
 
 import { SanitizeText } from '@/lib/sanitizer';
 
@@ -29,6 +30,7 @@ export class CommentUpdateDto {
 export class CommentQueryDto {
   @ApiProperty({ required: false, default: 20 })
   @IsOptional()
+  @Type(() => Number)
   limit?: number = 20;
 
   @ApiProperty({ required: false })

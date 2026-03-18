@@ -20,7 +20,7 @@ export function AuthPage() {
   const searchParams = useSearchParams();
 
   const getSafeRedirect = () => {
-    const redirect = searchParams.get('redirect');
+    const redirect = searchParams.get('redirect') || searchParams.get('from');
     if (!redirect) return '/';
     // Only allow relative paths (same-origin)
     if (redirect.startsWith('/') && !redirect.startsWith('//')) return redirect;
@@ -64,6 +64,18 @@ export function AuthPage() {
     // Client-side validation
     if (!terms) {
       setError('You must agree to the Terms of Service and Privacy Policy');
+      setLoading(false);
+      return;
+    }
+
+    if (username.length < 3 || username.length > 30) {
+      setError('Username must be between 3 and 30 characters');
+      setLoading(false);
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      setError('Username can only contain letters, numbers, and underscores');
       setLoading(false);
       return;
     }
@@ -268,9 +280,13 @@ export function AuthPage() {
                       placeholder="your_username"
                       required
                       disabled={loading}
+                      minLength={3}
+                      maxLength={30}
+                      pattern="^[a-zA-Z0-9_]+$"
+                      title="Letters, numbers, and underscores only"
                     />
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono space-y-1">
-                      <div>• 3-20 characters</div>
+                      <div>• 3-30 characters</div>
                       <div>• Letters, numbers, underscore only</div>
                       <div>• Case-insensitive • Must be unique</div>
                       <div>• Your username is your ONLY public identifier</div>

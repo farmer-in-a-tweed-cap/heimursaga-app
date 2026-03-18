@@ -364,11 +364,12 @@ export function EditProfilePage() {
                   value={formData.bio}
                   onChange={(e) => handleChange('bio', e.target.value)}
                   rows={5}
+                  maxLength={500}
                   className="w-full px-3 py-2 border-2 border-[#202020] dark:border-[#616161] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] text-sm focus:outline-none focus:border-[#4676ac] resize-y"
                   placeholder="Tell your story..."
                 />
                 <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                  Character count: {formData.bio.length} / 500 recommended
+                  Character count: {formData.bio.length} / 500
                 </p>
               </div>
             </div>

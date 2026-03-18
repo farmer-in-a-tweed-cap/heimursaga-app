@@ -526,7 +526,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
         {/* Dynamic Position Popup Overlay - Entry Mode */}
         {clickedEntry && (
           <div 
-            className={`absolute w-96 max-w-[calc(100%-2rem)] bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20 animate-in fade-in slide-in-from-bottom-2 duration-200 ${
+            className={`absolute w-96 max-w-[calc(100%-2rem)] max-h-[calc(100vh-100px)] overflow-y-auto bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-2xl z-20 animate-in fade-in slide-in-from-bottom-2 duration-200 ${
               popupPosition === 'bottom-left' ? 'bottom-[20px] left-4' : 'bottom-[20px] right-4'
             }`}
           >

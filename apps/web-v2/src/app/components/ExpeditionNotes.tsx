@@ -250,7 +250,7 @@ export function ExpeditionNotes({
             maxLength={280}
           />
           <div className="flex justify-between items-center mb-2">
-            <span className={`text-xs font-mono ${noteText.length > 250 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+            <span className={`text-xs font-mono ${noteText.length > 250 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
               {noteText.length}/280
             </span>
             <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
@@ -370,7 +370,7 @@ export function ExpeditionNotes({
                       maxLength={280}
                     />
                     <div className="flex justify-between items-center mb-2">
-                      <span className={`text-xs font-mono ${editNoteText.length > 250 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                      <span className={`text-xs font-mono ${editNoteText.length > 250 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                         {editNoteText.length}/280
                       </span>
                     </div>
@@ -419,7 +419,7 @@ export function ExpeditionNotes({
                       maxLength={280}
                     />
                     <div className="flex justify-between items-center mb-2">
-                      <span className={`text-xs font-mono ${replyText.length > 250 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                      <span className={`text-xs font-mono ${replyText.length > 250 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                         {replyText.length}/280
                       </span>
                     </div>
@@ -542,7 +542,7 @@ export function ExpeditionNotes({
                                     maxLength={280}
                                   />
                                   <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-[10px] font-mono ${editReplyText.length > 250 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                                    <span className={`text-[10px] font-mono ${editReplyText.length > 250 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                                       {editReplyText.length}/280
                                     </span>
                                     <button

@@ -8,6 +8,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { MediaUploadContext } from '@repo/types';
 
 import { FileInterceptor } from '@/common/interceptors';
@@ -25,6 +26,7 @@ export class UploadController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {

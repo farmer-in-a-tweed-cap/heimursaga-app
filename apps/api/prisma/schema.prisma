@@ -174,7 +174,7 @@ model Sponsorship {
   expedition_public_id   String?          @db.VarChar(14)
   entry_public_id        String?          @db.VarChar(14)
   sponsored_explorer     Explorer         @relation("received_sponsorships", fields: [sponsored_explorer_id], references: [id], onDelete: Cascade)
-  tier                   SponsorshipTier? @relation(fields: [tier_id], references: [id], onDelete: Cascade)
+  tier                   SponsorshipTier? @relation(fields: [tier_id], references: [id], onDelete: SetNull)
   sponsor                Explorer         @relation("given_sponsorships", fields: [sponsor_id], references: [id], onDelete: Cascade)
   entry                  Entry?           @relation("entry_sponsorships", fields: [entry_public_id], references: [public_id])
 
@@ -182,6 +182,7 @@ model Sponsorship {
   @@index([sponsored_explorer_id])
   @@index([sponsor_id])
   @@index([entry_public_id])
+  @@index([expedition_public_id])
   @@map("sponsorships")
 }
 
@@ -201,9 +202,10 @@ model SponsorshipTier {
   stripe_price_month_id String?       @db.VarChar(30)
   stripe_price_year_id  String?       @db.VarChar(30)
   stripe_product_id     String?       @db.VarChar(30)
-  explorer              Explorer      @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
+  explorer              Explorer      @relation(fields: [explorer_id], references: [id], onDelete: Restrict)
   sponsorships          Sponsorship[]
 
+  @@index([explorer_id])
   @@map("sponsorship_tiers")
 }
 
@@ -353,12 +355,13 @@ model Waypoint {
   expeditions ExpeditionWaypoint[]  @relation("waypoint_expeditions")
   author      Explorer?             @relation(fields: [author_id], references: [id], onDelete: Cascade)
 
+  @@index([author_id])
   @@map("waypoints")
 }
 
 model Expedition {
   id             Int                  @id @default(autoincrement())
-  public_id      String               @db.VarChar(14)
+  public_id      String               @unique @db.VarChar(14)
   title          String               @db.VarChar(200)
   description    String?
   public         Boolean?             @default(true)
@@ -415,6 +418,7 @@ model ExpeditionNote {
   author         Explorer               @relation("explorer_expedition_notes", fields: [author_id], references: [id], onDelete: Cascade)
   replies        ExpeditionNoteReply[]  @relation("note_replies")
 
+  @@index([expedition_id])
   @@map("expedition_notes")
 }
 
@@ -514,6 +518,7 @@ model Upload {
   entry_covers Entry[]      @relation("entry_cover")
   explorer     Explorer?    @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
 
+  @@index([explorer_id])
   @@map("uploads")
 }
 
@@ -565,6 +570,7 @@ model Checkout {
 
   @@index([stripe_payment_intent_id])
   @@index([stripe_subscription_id])
+  @@index([explorer_id])
   @@map("checkouts")
 }
 
@@ -623,6 +629,7 @@ model Payout {
   payout_method    PayoutMethod @relation(fields: [payout_method_id], references: [id], onDelete: Cascade)
   explorer         Explorer     @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
 
+  @@index([explorer_id])
   @@map("payouts")
 }
 
@@ -651,6 +658,7 @@ model ExplorerNotification {
   mention_explorer        Explorer? @relation("explorer_notification_mentions", fields: [mention_explorer_id], references: [id], onDelete: Cascade)
   explorer                Explorer? @relation("explorer_notifications", fields: [explorer_id], references: [id], onDelete: Cascade)
 
+  @@index([explorer_id])
   @@map("user_notifications")
 }
 

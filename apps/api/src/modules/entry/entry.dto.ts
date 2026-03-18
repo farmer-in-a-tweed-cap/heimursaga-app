@@ -16,8 +16,23 @@ import {
   IsString,
   Length,
   MaxLength,
+  Validate,
   ValidateNested,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
 } from 'class-validator';
+
+@ValidatorConstraint({ name: 'maxJsonSize', async: false })
+class MaxJsonSizeConstraint implements ValidatorConstraintInterface {
+  validate(value: unknown) {
+    if (value === null || value === undefined) return true;
+    return JSON.stringify(value).length <= 65536;
+  }
+
+  defaultMessage() {
+    return 'Metadata must not exceed 64KB when serialized';
+  }
+}
 
 import { SanitizeContent, SanitizeText } from '@/lib/sanitizer';
 
@@ -132,6 +147,7 @@ export class EntryCreateDto implements IEntryCreatePayload {
 
   @ApiProperty({ required: false })
   @IsObject()
+  @Validate(MaxJsonSizeConstraint)
   @IsOptional()
   metadata?: Record<string, unknown>;
 }
@@ -239,6 +255,7 @@ export class EntryUpdateDto implements IEntryUpdatePayload {
 
   @ApiProperty({ required: false })
   @IsObject()
+  @Validate(MaxJsonSizeConstraint)
   @IsOptional()
   metadata?: Record<string, unknown>;
 

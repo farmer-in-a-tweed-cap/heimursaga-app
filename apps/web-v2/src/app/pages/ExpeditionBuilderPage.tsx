@@ -2176,7 +2176,7 @@ export function ExpeditionBuilderPage() {
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => router.push('/auth?from=' + pathname)}
+                onClick={() => router.push('/auth?redirect=' + pathname)}
                 className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
               >
                 LOG IN / REGISTER
@@ -2406,6 +2406,7 @@ export function ExpeditionBuilderPage() {
               value={expeditionData.title}
               onChange={(e) => setExpeditionData({ ...expeditionData, title: e.target.value })}
               placeholder="e.g., Trans-Siberian Railway Journey"
+              maxLength={200}
               className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161]"
             />
             <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
@@ -3805,7 +3806,7 @@ export function ExpeditionBuilderPage() {
             </div>
           )}
           {submitError && (
-            <div className="text-red-500 text-sm mt-2">{submitError}</div>
+            <div className="text-[#994040] text-sm mt-2">{submitError}</div>
           )}
         </div>
 

@@ -351,6 +351,12 @@ export class AdminService {
         data: { deleted_at: dateformat().toDate() },
       });
 
+      // Soft-delete comments
+      await this.prisma.comment.updateMany({
+        where: { author_id: explorer.id },
+        data: { deleted_at: dateformat().toDate() },
+      });
+
       this.logger.log(
         `[AUDIT] Admin ${session.userId} blocked explorer ${username}`,
       );
@@ -377,6 +383,20 @@ export class AdminService {
       await this.prisma.explorer.update({
         where: { id: explorer.id },
         data: { blocked: false },
+      });
+
+      // Restore content that was soft-deleted when blocked
+      await this.prisma.entry.updateMany({
+        where: { author_id: explorer.id, deleted_at: { not: null } },
+        data: { deleted_at: null },
+      });
+      await this.prisma.expedition.updateMany({
+        where: { author_id: explorer.id, deleted_at: { not: null } },
+        data: { deleted_at: null },
+      });
+      await this.prisma.comment.updateMany({
+        where: { author_id: explorer.id, deleted_at: { not: null } },
+        data: { deleted_at: null },
       });
 
       this.logger.log(

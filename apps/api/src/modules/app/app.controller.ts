@@ -28,12 +28,6 @@ export class AppController {
   }
 
   @Public()
-  @Post('test')
-  test() {
-    return this.appService.test();
-  }
-
-  @Public()
   @Get('sitemap')
   sitemap() {
     return this.appService.generateSitemap();

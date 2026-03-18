@@ -52,6 +52,9 @@ export async function app() {
     const API_VERSION = 1;
     const API_PREFIX = `v${API_VERSION}`;
     const { SESSION_SECRET, SESSION_MAX_AGE = 720, CORS_ORIGIN } = process.env;
+    if (!SESSION_SECRET || !/^[0-9a-f]+$/i.test(SESSION_SECRET)) {
+      throw new Error('SESSION_SECRET must be a valid hex string');
+    }
     const DISABLE_ERROR_MESSAGES = IS_PRODUCTION;
 
     // create a fastify adapter

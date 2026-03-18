@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
@@ -48,15 +48,18 @@ export function InteractionButtons({
   const [bookmarked, setBookmarked] = useState(isBookmarked);
   const [shareMenuOpen, setShareMenuOpen] = useState(false);
 
+  // Sync local bookmark state when the prop changes (e.g., after API refetch)
+  useEffect(() => { setBookmarked(isBookmarked); }, [isBookmarked]);
+
   // Size configurations
   const sizeConfig = {
     sm: {
-      button: 'px-2 py-1 text-xs',
+      button: 'px-2 py-1.5 text-xs min-h-[44px] min-w-[44px]',
       icon: 14,
       gap: 'gap-1',
     },
     md: {
-      button: 'px-3 py-2 text-sm',
+      button: 'px-3 py-2 text-sm min-h-[44px] min-w-[44px]',
       icon: 16,
       gap: 'gap-2',
     },
@@ -76,7 +79,7 @@ export function InteractionButtons({
   
   const handleSponsor = () => {
     if (!isAuthenticated) {
-      router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+      router.push(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
     onSponsor?.();
@@ -142,7 +145,7 @@ export function InteractionButtons({
 
           {/* Share Menu */}
           {shareMenuOpen && (
-            <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-lg z-50 min-w-[200px]">
+            <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-lg z-50 min-w-[200px] max-w-[calc(100vw-2rem)]">
               <div className="border-b-2 border-[#202020] dark:border-[#616161] p-2 bg-[#616161] text-white">
                 <div className="text-xs font-bold font-mono">SHARE OPTIONS:</div>
               </div>

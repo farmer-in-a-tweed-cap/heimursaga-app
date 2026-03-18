@@ -34,10 +34,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (data.expeditions) {
       for (const exp of data.expeditions) {
         dynamicPages.push({
-          url: `${SITE_URL}/expedition/${exp.id}`,
-          lastModified: exp.updatedAt ? new Date(exp.updatedAt) : new Date(),
+          url: `${SITE_URL}/expedition/${exp.publicId}`,
+          lastModified: new Date(exp.updatedAt),
           changeFrequency: 'weekly',
-          priority: 0.7,
+          priority: 0.8,
         });
       }
     }
@@ -45,21 +45,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     if (data.entries) {
       for (const entry of data.entries) {
         dynamicPages.push({
-          url: `${SITE_URL}/entry/${entry.id}`,
-          lastModified: entry.updatedAt ? new Date(entry.updatedAt) : new Date(),
+          url: `${SITE_URL}/entry/${entry.publicId}`,
+          lastModified: new Date(entry.updatedAt),
           changeFrequency: 'monthly',
           priority: 0.6,
         });
       }
     }
 
-    if (data.users) {
-      for (const user of data.users) {
+    if (data.explorers) {
+      for (const explorer of data.explorers) {
         dynamicPages.push({
-          url: `${SITE_URL}/journal/${user.username}`,
-          lastModified: user.updatedAt ? new Date(user.updatedAt) : new Date(),
+          url: `${SITE_URL}/journal/${explorer.username}`,
+          lastModified: new Date(explorer.updatedAt),
           changeFrequency: 'weekly',
-          priority: 0.6,
+          priority: 0.7,
         });
       }
     }

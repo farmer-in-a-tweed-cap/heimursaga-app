@@ -521,10 +521,8 @@ export class AuthService {
       const isDevelopment = process.env.NODE_ENV === 'development';
       if (this.recaptchaService.isConfigured() && !isDevelopment) {
         if (!payload.recaptchaToken) {
-          // Token missing — script may be blocked by CSP, ad blockers, etc.
-          // Allow registration but log for monitoring
-          this.logger.warn(
-            `reCAPTCHA token missing for signup: ${email} (${username})`,
+          throw new ServiceForbiddenException(
+            'reCAPTCHA verification is required',
           );
         } else {
           const isValidRecaptcha = await this.recaptchaService.verifyToken(
@@ -617,7 +615,10 @@ export class AuthService {
             login: signup.email,
             password: signup.password,
           },
-        }).catch(() => {});
+        }).catch((err) => {
+          this.logger.error('Login after signup failed', err);
+          throw err;
+        });
 
         if (login) {
           const response: ILoginResponse = { ...login };

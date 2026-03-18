@@ -6,12 +6,25 @@ export async function generateMetadata({ params }: { params: Promise<{ username:
   const { username } = await params;
   const explorer = await getExplorerProfile(username);
   if (!explorer) return { title: 'Explorer | Heimursaga' };
+
+  const title = explorer.displayName || explorer.username;
+  const description = explorer.bio?.slice(0, 160) || `Follow ${explorer.displayName || explorer.username}'s expeditions on Heimursaga.`;
+  const images = explorer.picture ? [explorer.picture] : [];
+
   return {
-    title: explorer.displayName || explorer.username,
-    description: explorer.bio?.slice(0, 160) || `Follow ${explorer.displayName || explorer.username}'s expeditions on Heimursaga.`,
+    title,
+    description,
     openGraph: {
       type: 'profile',
-      images: explorer.picture ? [explorer.picture] : [],
+      title,
+      description,
+      images,
+    },
+    twitter: {
+      card: explorer.picture ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images,
     },
   };
 }

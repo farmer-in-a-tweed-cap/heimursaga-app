@@ -29,7 +29,7 @@ export function UserDropdown() {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-1 bg-white border-2 border-[#202020] min-w-[300px] z-50">
+        <div className="absolute right-0 top-full mt-1 bg-white border-2 border-[#202020] min-w-[250px] md:min-w-[300px] max-w-[calc(100vw-1rem)] z-50">
           {/* User Info */}
           <div className="bg-[#616161] text-white p-4 border-b-2 border-[#202020]">
             <div className="font-bold text-sm mb-1">{user.username}</div>

@@ -261,42 +261,45 @@ export class CommentService {
         parentCommentId = parentComment.id;
       }
 
-      // Create the comment
-      const comment = await this.prisma.comment.create({
-        data: {
-          public_id: generator.publicId({ prefix: 'cm' }),
-          content: payload.content,
-          author_id: userId,
-          entry_id: post.id,
-          parent_id: parentCommentId,
-        },
-        select: {
-          id: true,
-          public_id: true,
-          content: true,
-          author_id: true,
-          created_at: true,
-          updated_at: true,
-          author: {
-            select: {
-              username: true,
-              role: true,
-              profile: {
-                select: {
-                  picture: true,
+      // Create the comment and increment count in a transaction
+      const comment = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.comment.create({
+          data: {
+            public_id: generator.publicId({ prefix: 'cm' }),
+            content: payload.content,
+            author_id: userId,
+            entry_id: post.id,
+            parent_id: parentCommentId,
+          },
+          select: {
+            id: true,
+            public_id: true,
+            content: true,
+            author_id: true,
+            created_at: true,
+            updated_at: true,
+            author: {
+              select: {
+                username: true,
+                role: true,
+                profile: {
+                  select: {
+                    picture: true,
+                  },
                 },
               },
             },
           },
-        },
-      });
+        });
 
-      // Increment the comment count on the post
-      await this.prisma.entry.update({
-        where: { id: post.id },
-        data: {
-          comments_count: { increment: 1 },
-        },
+        await tx.entry.update({
+          where: { id: post.id },
+          data: {
+            comments_count: { increment: 1 },
+          },
+        });
+
+        return created;
       });
 
       // Send notifications
@@ -477,9 +480,13 @@ export class CommentService {
         throw new ServiceNotFoundException('Comment not found');
       }
 
-      // Check if the user is the author or an admin
+      // Check if the user is the author or an admin (fresh DB lookup)
       const isAuthor = existingComment.author_id === userId;
-      const isAdmin = userRole === 'admin';
+      const explorer = await this.prisma.explorer.findUnique({
+        where: { id: userId },
+        select: { admin: true },
+      });
+      const isAdmin = explorer?.admin === true;
 
       if (!isAuthor && !isAdmin) {
         throw new ServiceForbiddenException(
@@ -491,33 +498,36 @@ export class CommentService {
       const totalDeleted = 1 + (existingComment.replies?.length || 0);
       const now = new Date();
 
-      // Soft delete the comment
-      await this.prisma.comment.update({
-        where: { id: existingComment.id },
-        data: {
-          deleted_at: now,
-        },
-      });
-
-      // Soft delete all replies (if any)
-      if (existingComment.replies && existingComment.replies.length > 0) {
-        await this.prisma.comment.updateMany({
-          where: {
-            parent_id: existingComment.id,
-            deleted_at: null,
-          },
+      // Soft delete comment(s) and decrement count in a transaction
+      await this.prisma.$transaction(async (tx) => {
+        // Soft delete the comment
+        await tx.comment.update({
+          where: { id: existingComment.id },
           data: {
             deleted_at: now,
           },
         });
-      }
 
-      // Decrement the comment count on the post by total deleted
-      await this.prisma.entry.update({
-        where: { id: existingComment.entry_id },
-        data: {
-          comments_count: { decrement: totalDeleted },
-        },
+        // Soft delete all replies (if any)
+        if (existingComment.replies && existingComment.replies.length > 0) {
+          await tx.comment.updateMany({
+            where: {
+              parent_id: existingComment.id,
+              deleted_at: null,
+            },
+            data: {
+              deleted_at: now,
+            },
+          });
+        }
+
+        // Decrement the comment count on the post by total deleted
+        await tx.entry.update({
+          where: { id: existingComment.entry_id },
+          data: {
+            comments_count: { decrement: totalDeleted },
+          },
+        });
       });
 
       return { success: true };

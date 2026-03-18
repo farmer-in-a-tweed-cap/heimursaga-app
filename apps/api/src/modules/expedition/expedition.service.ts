@@ -1610,7 +1610,13 @@ export class ExpeditionService {
       if (!id) throw new ServiceNotFoundException('expedition not found');
       const expedition = await this.prisma.expedition.findFirstOrThrow({
         where: { public_id: id, author_id: explorerId, deleted_at: null },
-        select: { id: true },
+        select: {
+          id: true,
+          public_id: true,
+          title: true,
+          status: true,
+          author_id: true,
+        },
       });
 
       // delete the expedition
@@ -1618,6 +1624,20 @@ export class ExpeditionService {
         where: { id: expedition.id },
         data: { deleted_at: dateformat().toDate() },
       });
+
+      // Emit cancellation event so sponsors stop being billed
+      const cancellableStatuses = ['planned', 'active'];
+      if (cancellableStatuses.includes(expedition.status || '')) {
+        this.eventService.trigger({
+          event: EVENTS.EXPEDITION_CANCELLED,
+          data: {
+            expeditionPublicId: expedition.public_id,
+            expeditionTitle: expedition.title,
+            explorerId: expedition.author_id,
+            cancellationReason: 'Expedition deleted by explorer',
+          },
+        });
+      }
 
       await this.checkAndUpdateRestingStatus(explorerId);
     } catch (e) {
@@ -2384,9 +2404,11 @@ export class ExpeditionService {
         }
       }
 
-      await this.prisma.expedition.update({
-        where: { id: expedition.id },
-        data: { status: newStatus },
+      await this.prisma.$transaction(async (tx) => {
+        await tx.expedition.update({
+          where: { id: expedition.id },
+          data: { status: newStatus },
+        });
       });
 
       await this.checkAndUpdateRestingStatus(explorerId);

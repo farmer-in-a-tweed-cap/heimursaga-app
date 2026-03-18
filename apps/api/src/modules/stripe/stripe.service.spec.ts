@@ -290,7 +290,7 @@ describe('StripeService', () => {
       );
       expect(prisma.expedition.update).toHaveBeenCalledWith({
         where: { id: 100 },
-        data: { raised: { increment: 10 } },
+        data: { raised: { increment: 1000 } },
       });
     });
 
@@ -331,7 +331,7 @@ describe('StripeService', () => {
       );
       expect(prisma.expedition.update).toHaveBeenCalledWith({
         where: { id: 100 },
-        data: { raised: { increment: 10 } },
+        data: { raised: { increment: 1000 } },
       });
     });
   });
@@ -657,8 +657,8 @@ describe('StripeService', () => {
         sponsored_explorer_id: 20,
         expedition_public_id: 'exp_abc123',
       });
-      // Expedition found by public_id, current raised is $3 but refund is $5
-      prisma.expedition.findFirst.mockResolvedValue({ id: 100, raised: 3 });
+      // Expedition found by public_id, current raised is 300 cents but refund is 500 cents
+      prisma.expedition.findFirst.mockResolvedValue({ id: 100, raised: 300 });
       prisma.expedition.update.mockResolvedValue({});
       prisma.expedition.updateMany.mockResolvedValue({});
 
@@ -693,7 +693,7 @@ describe('StripeService', () => {
         sponsored_explorer_id: 20,
         expedition_public_id: null,
       });
-      prisma.expedition.findFirst.mockResolvedValue({ id: 100, raised: 10 });
+      prisma.expedition.findFirst.mockResolvedValue({ id: 100, raised: 1000 });
       prisma.expedition.update.mockResolvedValue({});
       prisma.expedition.updateMany.mockResolvedValue({});
 
@@ -719,7 +719,7 @@ describe('StripeService', () => {
         sponsored_explorer_id: 20,
         expedition_public_id: null,
       });
-      prisma.expedition.findFirst.mockResolvedValue({ id: 100, raised: 10 });
+      prisma.expedition.findFirst.mockResolvedValue({ id: 100, raised: 1000 });
       prisma.expedition.update.mockResolvedValue({});
 
       await (service as any).onChargeRefunded({
@@ -729,11 +729,11 @@ describe('StripeService', () => {
         amount_refunded: 200,
       });
 
-      // raised update only (10 - 2 = 8)
+      // raised update only (1000 - 200 = 800 cents)
       expect(prisma.expedition.update).toHaveBeenCalledTimes(1);
       expect(prisma.expedition.update).toHaveBeenCalledWith({
         where: { id: 100 },
-        data: { raised: 8 },
+        data: { raised: 800 },
       });
     });
 

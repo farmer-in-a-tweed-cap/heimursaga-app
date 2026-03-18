@@ -16,10 +16,6 @@ module.exports = {
         redesign: ['system-ui', 'sans-serif'],
         'redesign-mono': ['ui-monospace', 'monospace'],
       },
-      screens: {
-        desktop: '760px',
-        mobile: '760px',
-      },
       colors: {
         primary: {
           DEFAULT: 'rgb(var(--color-primary))',

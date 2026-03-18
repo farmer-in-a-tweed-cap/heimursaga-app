@@ -409,8 +409,8 @@ export function SponsorshipPaymentPage() {
   if (error || !expedition) {
     return (
       <div className="max-w-4xl mx-auto px-6 py-12 text-center">
-        <div className="bg-white dark:bg-[#202020] border-2 border-red-500 p-8">
-          <AlertCircle className="w-12 h-12 mx-auto text-red-500 mb-4" />
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#994040] p-8">
+          <AlertCircle className="w-12 h-12 mx-auto text-[#994040] mb-4" />
           <h1 className="text-2xl font-bold mb-4 dark:text-[#e5e5e5]">Failed to Load</h1>
           <p className="text-[#616161] dark:text-[#b5bcc4] mb-6">{error || 'Expedition not found'}</p>
           <Link

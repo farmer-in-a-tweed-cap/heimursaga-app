@@ -99,7 +99,7 @@ export function JournalEntryPage() {
   // Handle follow/unfollow explorer
   const handleFollowExplorer = async (username: string) => {
     if (!isAuthenticated || !username) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     setFollowLoading(true);
@@ -711,10 +711,11 @@ export function JournalEntryPage() {
                           src={item.url}
                           alt={item.altText || item.caption || `Photo ${idx + 1}`}
                           className="w-full h-auto object-contain max-h-[600px]"
-                          width={0}
-                          height={0}
-                          sizes="100vw"
+                          width={800}
+                          height={600}
+                          sizes="(max-width: 768px) 100vw, 800px"
                           style={{ width: '100%', height: 'auto' }}
+                          onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                         />
                       ) : (
                         <div className="w-full h-48 bg-[#616161] flex items-center justify-center text-white text-sm">
@@ -817,10 +818,11 @@ export function JournalEntryPage() {
                       src={entry.media[activeMediaIndex].url}
                       alt={entry.media[activeMediaIndex].altText || entry.media[activeMediaIndex].caption || `Image ${activeMediaIndex + 1}`}
                       className="w-full h-full object-contain"
-                      width={0}
-                      height={0}
-                      sizes="100vw"
+                      width={800}
+                      height={600}
+                      sizes="(max-width: 768px) 100vw, 800px"
                       style={{ width: '100%', height: '100%' }}
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   ) : (
                     <div className="w-full h-full bg-[#616161] flex items-center justify-center text-white text-sm">
@@ -1010,7 +1012,7 @@ export function JournalEntryPage() {
                     maxLength={2000}
                   />
                   <div className="flex justify-between items-center mb-2">
-                    <span className={`text-xs font-mono ${newComment.length > 1800 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                    <span className={`text-xs font-mono ${newComment.length > 1800 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                       {newComment.length}/2000
                     </span>
                   </div>
@@ -1117,7 +1119,7 @@ export function JournalEntryPage() {
                                   maxLength={2000}
                                 />
                                 <div className="flex justify-between items-center mb-2">
-                                  <span className={`text-xs font-mono ${editCommentText.length > 1800 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                                  <span className={`text-xs font-mono ${editCommentText.length > 1800 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                                     {editCommentText.length}/2000
                                   </span>
                                 </div>
@@ -1193,7 +1195,7 @@ export function JournalEntryPage() {
                                   maxLength={2000}
                                 />
                                 <div className="flex justify-between items-center mb-2">
-                                  <span className={`text-xs font-mono ${replyText.length > 1800 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                                  <span className={`text-xs font-mono ${replyText.length > 1800 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                                     {replyText.length}/2000
                                   </span>
                                 </div>
@@ -1307,7 +1309,7 @@ export function JournalEntryPage() {
                                           maxLength={2000}
                                         />
                                         <div className="flex items-center gap-2 mt-1">
-                                          <span className={`text-[10px] font-mono ${editCommentText.length > 1800 ? 'text-red-500' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                                          <span className={`text-[10px] font-mono ${editCommentText.length > 1800 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                                             {editCommentText.length}/2000
                                           </span>
                                           <button

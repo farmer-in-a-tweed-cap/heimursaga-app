@@ -6,12 +6,25 @@ export async function generateMetadata({ params }: { params: Promise<{ expeditio
   const { expeditionId } = await params;
   const expedition = await getExpedition(expeditionId);
   if (!expedition) return { title: 'Expedition | Heimursaga' };
+
+  const title = expedition.title;
+  const description = expedition.description?.slice(0, 160) || 'Follow this expedition on Heimursaga.';
+  const images = expedition.coverImage ? [expedition.coverImage] : [];
+
   return {
-    title: expedition.title,
-    description: expedition.description?.slice(0, 160) || 'Follow this expedition on Heimursaga.',
+    title,
+    description,
     openGraph: {
       type: 'website',
-      images: expedition.coverImage ? [expedition.coverImage] : [],
+      title,
+      description,
+      images,
+    },
+    twitter: {
+      card: expedition.coverImage ? 'summary_large_image' : 'summary',
+      title,
+      description,
+      images,
     },
   };
 }

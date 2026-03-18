@@ -90,7 +90,7 @@ export function ExplorerProfilePage() {
   // Handle bookmark explorer profile
   const handleBookmarkExplorer = async () => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     if (!username || explorerBookmarkLoading) return;
@@ -132,7 +132,7 @@ export function ExplorerProfilePage() {
   // Handle bookmark entry
   const handleBookmarkEntry = async (entryId: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     if (entryBookmarkingInProgress.has(entryId)) return;
@@ -163,7 +163,7 @@ export function ExplorerProfilePage() {
   // Handle bookmark expedition
   const handleBookmarkExpedition = async (expeditionId: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     try {

@@ -151,7 +151,7 @@ export function BookmarksPage() {
             </p>
             <div className="flex gap-3 justify-center">
               <button
-                onClick={() => router.push('/auth?from=' + pathname)}
+                onClick={() => router.push('/auth?redirect=' + pathname)}
                 className="px-6 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"
               >
                 LOG IN / REGISTER
@@ -190,8 +190,8 @@ export function BookmarksPage() {
   if (error) {
     return (
       <div className="max-w-[1000px] mx-auto px-6 py-12">
-        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 p-6 text-center">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
+        <div className="bg-red-50 dark:bg-red-900/20 border-2 border-[#994040] dark:border-[#994040] p-6 text-center">
+          <p className="text-[#994040] dark:text-red-400">{error}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-4 px-4 py-2 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm"

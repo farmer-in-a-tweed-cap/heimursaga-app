@@ -140,7 +140,7 @@ export function HomePage() {
   // Handle bookmark explorer
   const handleBookmarkExplorer = async (username: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     if (explorerBookmarkingInProgress.has(username)) return;
@@ -171,7 +171,7 @@ export function HomePage() {
   // Handle follow/unfollow explorer
   const handleFollowExplorer = async (username: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     if (explorerFollowingInProgress.has(username)) return;
@@ -206,7 +206,7 @@ export function HomePage() {
   // Handle bookmark expedition
   const handleBookmarkExpedition = async (expeditionId: string) => {
     if (!isAuthenticated) {
-      router.push('/login');
+      router.push('/auth');
       return;
     }
     if (expeditionBookmarkingInProgress.has(expeditionId)) return;
@@ -368,9 +368,9 @@ export function HomePage() {
       {/* Heimursaga Tagline - Full Width Spread */}
       <div>
         <div className="max-w-[1600px] mx-auto px-6 pt-12 pb-0">
-          <div className="tagline-spread text-[#e5e5e5] dark:text-[#e5e5e5] font-bold text-sm sm:text-base md:text-lg">
+          <h1 className="tagline-spread text-[#e5e5e5] dark:text-[#e5e5e5] font-bold text-sm sm:text-base md:text-lg">
             EXPLORE · DISCOVER · SHARE · SPONSOR · INSPIRE
-          </div>
+          </h1>
         </div>
       </div>
 
@@ -493,9 +493,9 @@ export function HomePage() {
                   <div className="mt-8">
                     <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
                       <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
-                        <h3 className="text-sm font-bold dark:text-[#e5e5e5]">EXPEDITIONS FROM FOLLOWED EXPLORERS</h3>
+                        <h2 className="text-sm font-bold dark:text-[#e5e5e5]">EXPEDITIONS FROM FOLLOWED EXPLORERS</h2>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
                         {followingExpeditionCards.map((expedition) => (
                           <ExpeditionCard
                             key={expedition.id}
@@ -540,7 +540,7 @@ export function HomePage() {
               <div className="mt-8">
                 <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
                   <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
-                    <h3 className="text-sm font-bold dark:text-[#e5e5e5]">FEATURED EXPEDITIONS</h3>
+                    <h2 className="text-sm font-bold dark:text-[#e5e5e5]">FEATURED EXPEDITIONS</h2>
                     <button
                       onClick={() => router.push('/expeditions')}
                       className="text-xs text-[#ac6d46] hover:text-[#8a5738] font-mono font-bold"
@@ -548,7 +548,7 @@ export function HomePage() {
                       VIEW ALL →
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
                     {featuredExpeditions.map((expedition) => (
                       <ExpeditionCard
                         key={expedition.id}
@@ -571,7 +571,7 @@ export function HomePage() {
               <div className="mt-8">
                 <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
                   <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
-                    <h3 className="text-sm font-bold dark:text-[#e5e5e5]">FEATURED EXPLORERS</h3>
+                    <h2 className="text-sm font-bold dark:text-[#e5e5e5]">FEATURED EXPLORERS</h2>
                     <button
                       onClick={() => router.push('/explorers')}
                       className="text-xs text-[#ac6d46] hover:text-[#8a5738] font-mono font-bold"
@@ -579,7 +579,7 @@ export function HomePage() {
                       VIEW ALL →
                     </button>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
                     {featuredExplorers.map((explorer) => (
                       <ExplorerCard
                         key={explorer.id}

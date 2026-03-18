@@ -1,14 +1,8 @@
-import { EmailService } from '../email';
 import { Injectable } from '@nestjs/common';
 import { ISitemapGetResponse } from '@repo/types';
 
-import { getEnv } from '@/lib/utils';
-
-import { ENVIRONMENTS } from '@/common/constants';
-import { EMAIL_TEMPLATES } from '@/common/email-templates';
 import {
   ServiceBadRequestException,
-  ServiceForbiddenException,
   ServiceInternalException,
 } from '@/common/exceptions';
 import { EVENTS, EventService, IEventSendEmail } from '@/modules/event';
@@ -19,75 +13,13 @@ import { PrismaService } from '@/modules/prisma';
 export class AppService {
   constructor(
     private readonly prisma: PrismaService,
-    private emailService: EmailService,
     private eventService: EventService,
     private logger: Logger,
   ) {}
 
-  async test() {
-    try {
-      // check access
-      const access = getEnv() === ENVIRONMENTS.DEVELOPMENT;
-      if (!access) throw new ServiceForbiddenException();
-
-      // Send test welcome email
-      this.eventService.trigger<IEventSendEmail>({
-        event: EVENTS.SEND_EMAIL,
-        data: {
-          to: 'cnhamilton1@yahoo.com',
-          template: EMAIL_TEMPLATES.WELCOME,
-        },
-      });
-
-      return { message: 'Test welcome email sent to cnhamilton1@yahoo.com' };
-    } catch (error) {
-      throw new ServiceForbiddenException();
-    }
-  }
-
   async generateSitemap(): Promise<ISitemapGetResponse> {
     try {
-      const buildUrl = (path: string) => {
-        const baseUrl = process.env.APP_BASE_URL;
-        const url = new URL(path, baseUrl).toString();
-        return url;
-      };
-
-      type SitemapSource = {
-        path: string;
-        priority: number;
-        changefreq: 'daily' | 'monthly' | 'yearly';
-        date: Date;
-      };
-
-      const sources: SitemapSource[] = [];
-
-      // static pages
-      sources.push(
-        ...[
-          { path: '/', changefreq: 'daily' as const },
-          { path: '/explorers', changefreq: 'daily' as const },
-          { path: '/expeditions', changefreq: 'daily' as const },
-          { path: '/entries', changefreq: 'daily' as const },
-          { path: '/about', changefreq: 'monthly' as const },
-          { path: '/documentation', changefreq: 'monthly' as const },
-          { path: '/explorer-guidelines', changefreq: 'monthly' as const },
-          { path: '/sponsorship-guide', changefreq: 'monthly' as const },
-          { path: '/upgrade', changefreq: 'monthly' as const },
-          { path: '/legal/terms', changefreq: 'monthly' as const },
-          { path: '/legal/privacy', changefreq: 'monthly' as const },
-        ].map(
-          ({ path, changefreq }) =>
-            ({
-              path,
-              date: new Date(),
-              priority: 1,
-              changefreq,
-            }) as SitemapSource,
-        ),
-      );
-
-      // entries
+      // entries (published, not deleted, not off-grid)
       const posts = await this.prisma.entry.findMany({
         where: {
           public: true,
@@ -105,20 +37,6 @@ export class AppService {
         },
       });
 
-      sources.push(
-        ...posts
-          .filter(({ public_id }) => public_id && public_id !== '')
-          .map(
-            ({ public_id, updated_at }) =>
-              ({
-                path: `entry/${public_id}`,
-                date: updated_at,
-                priority: 0.8,
-                changefreq: 'daily',
-              }) as SitemapSource,
-          ),
-      );
-
       // expeditions (public, not deleted)
       const expeditions = await this.prisma.expedition.findMany({
         where: {
@@ -130,20 +48,6 @@ export class AppService {
           updated_at: true,
         },
       });
-
-      sources.push(
-        ...expeditions
-          .filter(({ public_id }) => public_id && public_id !== '')
-          .map(
-            ({ public_id, updated_at }) =>
-              ({
-                path: `expedition/${public_id}`,
-                date: updated_at,
-                priority: 0.9,
-                changefreq: 'daily',
-              }) as SitemapSource,
-          ),
-      );
 
       // explorer journals (exclude blocked users)
       const users = await this.prisma.explorer.findMany({
@@ -158,24 +62,22 @@ export class AppService {
         },
       });
 
-      sources.push(
-        ...users.map(
-          ({ username, updated_at }) =>
-            ({
-              path: `journal/${username}`,
-              date: updated_at,
-              priority: 0.8,
-              changefreq: 'daily',
-            }) as SitemapSource,
-        ),
-      );
-
       const response: ISitemapGetResponse = {
-        sources: sources.map(({ path, date, changefreq, priority }) => ({
-          loc: buildUrl(path),
-          lastmod: date,
-          changefreq,
-          priority,
+        expeditions: expeditions
+          .filter(({ public_id }) => public_id && public_id !== '')
+          .map(({ public_id, updated_at }) => ({
+            publicId: public_id!,
+            updatedAt: updated_at,
+          })),
+        entries: posts
+          .filter(({ public_id }) => public_id && public_id !== '')
+          .map(({ public_id, updated_at }) => ({
+            publicId: public_id!,
+            updatedAt: updated_at,
+          })),
+        explorers: users.map(({ username, updated_at }) => ({
+          username,
+          updatedAt: updated_at,
         })),
       };
 
@@ -231,6 +133,28 @@ export class AppService {
       const adminEmail = process.env.CONTACT_EMAIL || 'admin@heimursaga.com';
       const categoryLabel = categoryLabels[category] || category;
 
+      const escapeHtml = (text: string): string =>
+        text.replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              '&': '&amp;',
+              '<': '&lt;',
+              '>': '&gt;',
+              '"': '&quot;',
+              "'": '&#039;',
+            })[c]!,
+        );
+
+      const escapeUrl = (rawUrl: string): string => {
+        if (
+          !rawUrl.startsWith('http://') &&
+          !rawUrl.startsWith('https://')
+        )
+          return '#';
+        return escapeHtml(rawUrl);
+      };
+
       const html = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
           <div style="background: #202020; color: white; padding: 20px;">
@@ -244,17 +168,17 @@ export class AppService {
               </tr>
               <tr>
                 <td style="padding: 8px 12px; font-weight: bold; vertical-align: top;">From:</td>
-                <td style="padding: 8px 12px;">${name} &lt;${email}&gt;</td>
+                <td style="padding: 8px 12px;">${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;</td>
               </tr>
               <tr>
                 <td style="padding: 8px 12px; font-weight: bold; vertical-align: top;">Subject:</td>
-                <td style="padding: 8px 12px;">${subject}</td>
+                <td style="padding: 8px 12px;">${escapeHtml(subject)}</td>
               </tr>
-              ${url ? `<tr><td style="padding: 8px 12px; font-weight: bold; vertical-align: top;">URL:</td><td style="padding: 8px 12px;"><a href="${url}">${url}</a></td></tr>` : ''}
+              ${url ? `<tr><td style="padding: 8px 12px; font-weight: bold; vertical-align: top;">URL:</td><td style="padding: 8px 12px;"><a href="${escapeUrl(url)}">${escapeHtml(url)}</a></td></tr>` : ''}
             </table>
             <div style="margin-top: 16px; padding: 16px; background: white; border-left: 4px solid #ac6d46;">
               <div style="font-weight: bold; margin-bottom: 8px; font-size: 12px; color: #616161;">MESSAGE</div>
-              <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${message}</div>
+              <div style="white-space: pre-wrap; font-size: 14px; line-height: 1.6;">${escapeHtml(message)}</div>
             </div>
           </div>
         </div>
@@ -264,7 +188,7 @@ export class AppService {
         event: EVENTS.SEND_EMAIL,
         data: {
           to: adminEmail,
-          subject: `[${categoryLabel}] ${subject}`,
+          subject: `[${categoryLabel}] ${escapeHtml(subject)}`,
           html,
         },
       });
