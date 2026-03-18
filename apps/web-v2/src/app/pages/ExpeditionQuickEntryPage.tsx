@@ -6,11 +6,13 @@ import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
-import { Upload, ArrowLeft, Lock, Loader2 } from 'lucide-react';
+import { Upload, ArrowLeft, Lock, Loader2, Trash2, AlertTriangle } from 'lucide-react';
+import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 import { DatePicker } from '@/app/components/DatePicker';
 import { expeditionApi, uploadApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 import { GEO_REGION_GROUPS } from '@/app/utils/geoRegions';
+import { toast } from 'sonner';
 
 export function ExpeditionQuickEntryPage() {
   const { isAuthenticated, user } = useAuth();
@@ -43,6 +45,11 @@ export function ExpeditionQuickEntryPage() {
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+
+  // Delete state (edit mode only)
+  const [entriesCount, setEntriesCount] = useState(0);
+  const [confirmingDeleteExpedition, setConfirmingDeleteExpedition] = useState(false);
+  const [isDeletingExpedition, setIsDeletingExpedition] = useState(false);
 
   // Auto-compute status based on dates
   const computeStatus = () => {
@@ -109,6 +116,7 @@ export function ExpeditionQuickEntryPage() {
         if (expAny.notesAccessThreshold && Number(expAny.notesAccessThreshold) > 0) {
           setNotesAccessThreshold(String(expAny.notesAccessThreshold));
         }
+        setEntriesCount(exp.entriesCount || 0);
       } catch {
         setSubmitError('Failed to load expedition data');
       } finally {
@@ -116,6 +124,21 @@ export function ExpeditionQuickEntryPage() {
       }
     })();
   }, [isEditMode, expeditionId]);
+
+  // Handle expedition deletion (edit mode only)
+  const handleDeleteExpedition = async () => {
+    if (!expeditionId) return;
+    setIsDeletingExpedition(true);
+    try {
+      await expeditionApi.delete(expeditionId);
+      toast.success('Expedition deleted');
+      router.push('/');
+    } catch {
+      toast.error('Failed to delete expedition');
+    } finally {
+      setIsDeletingExpedition(false);
+    }
+  };
 
   // Calculate end date from start date + duration
   const handleDurationChange = (days: string) => {
@@ -925,8 +948,58 @@ export function ExpeditionQuickEntryPage() {
               </div>
             )}
           </div>
+
+          {/* Danger Zone - Edit Mode Only, No Entries */}
+          {isEditMode && (
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#994040] p-4">
+              <h3 className="text-[#994040] font-bold text-xs mb-3">DANGER ZONE</h3>
+              <p className="text-xs text-[#202020] dark:text-[#e5e5e5] mb-3">
+                Permanently delete this expedition and all its data. This cannot be undone.
+              </p>
+              {entriesCount > 0 && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 mb-3">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-amber-800 dark:text-amber-300 text-xs">
+                      This expedition has <strong>{entriesCount} {entriesCount === 1 ? 'entry' : 'entries'}</strong>. Delete all entries before deleting the expedition.
+                    </div>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => setConfirmingDeleteExpedition(true)}
+                disabled={entriesCount > 0}
+                className="px-4 py-2 bg-[#994040] text-white hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                DELETE EXPEDITION
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Delete Expedition Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmingDeleteExpedition}
+        onClose={() => setConfirmingDeleteExpedition(false)}
+        onConfirm={handleDeleteExpedition}
+        title="DELETE EXPEDITION"
+        icon={<Trash2 size={18} />}
+        headerColor="bg-[#994040]"
+        confirmLabel={isDeletingExpedition ? 'DELETING...' : 'DELETE EXPEDITION'}
+        confirmColor="bg-[#994040] text-white hover:bg-[#7a3333]"
+        isLoading={isDeletingExpedition}
+      >
+        <p className="text-sm text-[#202020] dark:text-[#e5e5e5] mb-1">
+          Are you sure you want to delete this expedition?
+        </p>
+        <p className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-4">
+          &ldquo;{title}&rdquo;
+        </p>
+        <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+          This action cannot be undone.
+        </p>
+      </ConfirmationModal>
     </div>
   );
 }
