@@ -156,6 +156,14 @@ export function ExpeditionQuickEntryPage() {
       setSubmitError('End date or duration is required');
       return;
     }
+    if (regions.length === 0) {
+      setSubmitError('At least one region is required');
+      return;
+    }
+    if (!description.trim() || description.trim().length < 100) {
+      setSubmitError('Description is required (minimum 100 characters)');
+      return;
+    }
     if (!coverPhotoUrl) {
       setSubmitError('Cover photo is required');
       return;
@@ -168,11 +176,11 @@ export function ExpeditionQuickEntryPage() {
       const parsedTags = tags.split(',').map(t => t.trim()).filter(Boolean);
       const payload = {
         title: title.trim(),
-        description: description.trim() || undefined,
+        description: description.trim(),
         visibility: expeditionVisibility,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
-        region: regions.length > 0 ? regions.join(', ') : undefined,
+        region: regions.join(', '),
         category: category || undefined,
         tags: parsedTags.length > 0 ? parsedTags : undefined,
         goal: sponsorshipsEnabled && sponsorshipGoal ? parseInt(sponsorshipGoal) : undefined,
@@ -328,8 +336,7 @@ export function ExpeditionQuickEntryPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                    EXPEDITION REGION
-                    <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
+                    EXPEDITION REGION <span className="text-[#ac6d46]">*</span>
                   </label>
                   <select
                     value=""
@@ -470,8 +477,7 @@ export function ExpeditionQuickEntryPage() {
               {/* Description */}
               <div>
                 <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                  EXPEDITION DESCRIPTION
-                  <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>
+                  EXPEDITION DESCRIPTION <span className="text-[#ac6d46]">*</span>
                 </label>
                 <textarea
                   value={description}
@@ -480,8 +486,8 @@ export function ExpeditionQuickEntryPage() {
                   rows={6}
                   placeholder="Describe your expedition, goals, and what you plan to document..."
                 />
-                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
-                  {description.length} / 1000 characters
+                <div className={`text-xs mt-1 font-mono ${description.trim().length < 100 ? 'text-[#ac6d46]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                  {description.length} / 1000 characters {description.trim().length < 100 && `(${100 - description.trim().length} more needed)`}
                 </div>
               </div>
 
