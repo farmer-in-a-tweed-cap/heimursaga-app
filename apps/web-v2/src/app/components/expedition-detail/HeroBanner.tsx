@@ -1,6 +1,5 @@
 import type { Ref } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';

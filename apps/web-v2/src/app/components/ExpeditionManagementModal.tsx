@@ -32,7 +32,7 @@ export function ExpeditionManagementModal({
   onClose,
   expedition,
   isPro = false,
-  onStatusChange,
+  onStatusChange: _onStatusChange,
   onComplete,
   onCancel,
 }: ExpeditionManagementModalProps) {

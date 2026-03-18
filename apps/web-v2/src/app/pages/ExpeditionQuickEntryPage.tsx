@@ -78,7 +78,7 @@ export function ExpeditionQuickEntryPage() {
       try {
         const exp = await expeditionApi.getById(expeditionId);
         // Ownership check: redirect if this expedition doesn't belong to the logged-in user
-        if (user && exp.explorerUsername && exp.explorerUsername !== user.username) {
+        if (user && exp.explorer?.username && exp.explorer.username !== user.username) {
           router.replace(`/expedition/${expeditionId}`);
           return;
         }
