@@ -2982,12 +2982,26 @@ export class SponsorService {
         data: { email: user.email, name: user.username },
       });
 
-      // Try to find a saved payment method
-      const savedPm = await this.prisma.paymentMethod.findFirst({
-        where: { explorer_id: userId, deleted_at: null },
-        select: { id: true, stripe_payment_method_id: true },
-        orderBy: { created_at: 'desc' },
-      });
+      // Try to find the default payment method via Stripe, fall back to most recent
+      let savedPm: { id: number; stripe_payment_method_id: string | null } | null = null;
+      const defaultPmRef = stripeCustomer?.invoice_settings?.default_payment_method;
+      const defaultPmId = defaultPmRef
+        ? typeof defaultPmRef === 'string' ? defaultPmRef : defaultPmRef.id
+        : null;
+
+      if (defaultPmId) {
+        savedPm = await this.prisma.paymentMethod.findFirst({
+          where: { explorer_id: userId, deleted_at: null, stripe_payment_method_id: defaultPmId },
+          select: { id: true, stripe_payment_method_id: true },
+        });
+      }
+      if (!savedPm) {
+        savedPm = await this.prisma.paymentMethod.findFirst({
+          where: { explorer_id: userId, deleted_at: null },
+          select: { id: true, stripe_payment_method_id: true },
+          orderBy: { created_at: 'desc' },
+        });
+      }
 
       // Link to expedition if entry belongs to a planned/active one
       const expeditionPublicId =
