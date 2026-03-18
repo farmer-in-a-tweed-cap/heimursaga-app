@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
+import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { InlineLocationMap } from '@/app/components/InlineLocationMap';
 import { QuickSponsorButton } from '@/app/components/QuickSponsorButton';
@@ -18,6 +19,7 @@ export function JournalEntryPage() {
   const { entryId } = useParams<{ entryId: string }>();
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+  const { setIsOwnContent } = usePageOwner();
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [showCommentForm, setShowCommentForm] = useState(false);
 
@@ -382,6 +384,12 @@ export function JournalEntryPage() {
 
   // Check if user is entry owner
   const isOwner = isAuthenticated && entry && user?.username === entry.explorerId;
+
+  // Signal ownership to Header nav highlighting
+  useEffect(() => {
+    setIsOwnContent(!!isOwner);
+    return () => setIsOwnContent(false);
+  }, [isOwner, setIsOwnContent]);
 
   // Loading state
   if (loading) {

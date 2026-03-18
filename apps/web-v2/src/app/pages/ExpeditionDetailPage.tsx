@@ -9,6 +9,8 @@ import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
+import { useProFeatures } from '@/app/hooks/useProFeatures';
+import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
 import { expeditionApi, explorerApi, type ExplorerProfile } from '@/app/services/api';
@@ -45,6 +47,8 @@ export function ExpeditionDetailPage() {
   const { theme } = useTheme();
   const { mapLayer } = useMapLayer();
   const { formatDistance } = useDistanceUnit();
+  const { isPro } = useProFeatures();
+  const { setIsOwnContent } = usePageOwner();
   const [selectedView, setSelectedView] = useState<'notes' | 'entries' | 'waypoints' | 'sponsors'>('entries');
   const [showUpdateLocationModal, setShowUpdateLocationModal] = useState(false);
   const [showManagementModal, setShowManagementModal] = useState(false);
@@ -75,6 +79,12 @@ export function ExpeditionDetailPage() {
     handleBookmarkExpedition,
     handleBookmarkEntry,
   } = useExpeditionData(expeditionId, user, isAuthenticated);
+
+  // Signal ownership to Header nav highlighting
+  useEffect(() => {
+    setIsOwnContent(isOwner);
+    return () => setIsOwnContent(false);
+  }, [isOwner, setIsOwnContent]);
 
   // Derived data hooks
   const { sponsors, fundingStats } = useExpeditionSponsors(apiExpedition);
@@ -1000,6 +1010,12 @@ export function ExpeditionDetailPage() {
           explorerProfile={explorerProfile}
           onReport={() => setReportOpen(true)}
         />
+        {/* Mobile description - shown below banner since banner has limited space */}
+        {expedition.description && (
+          <div className="md:hidden px-6 py-4 border-t-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+            <p className="text-sm font-serif text-[#202020] dark:text-[#e5e5e5]" style={{ lineHeight: 1.75 }}>{expedition.description}</p>
+          </div>
+        )}
         <StatsBar
           expedition={expedition}
           showSponsorshipSection={showSponsorshipSection}
@@ -1094,6 +1110,7 @@ export function ExpeditionDetailPage() {
           totalFunding: expedition.raised,
           backers: expedition.sponsors,
         }}
+        isPro={isPro}
         onComplete={handleComplete}
         onCancel={async (reason) => {
           await expeditionApi.cancel(expedition.id, reason);

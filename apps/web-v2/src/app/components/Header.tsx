@@ -10,11 +10,13 @@ import { useTheme } from '@/app/context/ThemeContext';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { NotificationsDropdown } from '@/app/components/NotificationsDropdown';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
+import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { notificationApi, messageApi } from '@/app/services/api';
 
 export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const { isPro } = useProFeatures();
+  const { isOwnContent } = usePageOwner();
   const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const router = useRouter();
@@ -122,10 +124,12 @@ export function Header() {
     if (path === '/select-expedition') return pathname.includes('select-expedition') || pathname.includes('log-entry');
     if (path === '/sponsorship') return pathname === '/sponsorship';
 
-    // DISCOVER covers explorers, expeditions, entries pages (but not user's own journal)
+    // DISCOVER covers explorers, expeditions, entries pages (but not user's own content)
     if (path === '/discover') {
       // Exclude user's own profile from discover active state
       if (user && pathname === `/journal/${user.username}`) return false;
+      // Exclude expedition/entry pages that belong to the logged-in user
+      if (isOwnContent && (pathname.startsWith('/expedition/') || pathname.startsWith('/entry/'))) return false;
       return pathname.startsWith('/explorers') ||
              pathname.startsWith('/expeditions') ||
              pathname.startsWith('/entries') ||
@@ -134,8 +138,9 @@ export function Header() {
              pathname.startsWith('/entry/');
     }
 
-    // JOURNAL is the user's own profile
+    // JOURNAL is the user's own profile + own expedition/entry detail pages
     if (path === '/journal' && user) {
+      if (isOwnContent && (pathname.startsWith('/expedition/') || pathname.startsWith('/entry/'))) return true;
       return pathname === `/journal/${user.username}`;
     }
 

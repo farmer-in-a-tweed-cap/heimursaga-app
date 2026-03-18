@@ -6,6 +6,7 @@ import { DistanceUnitProvider } from '@/app/context/DistanceUnitContext';
 import { MapLayerProvider } from '@/app/context/MapLayerContext';
 import { AuthProvider, useAuth } from '@/app/context/AuthContext';
 import { StripeProvider } from '@/app/context/StripeContext';
+import { PageOwnerProvider } from '@/app/context/PageOwnerContext';
 import { ErrorBoundary } from '@/app/components/ErrorBoundary';
 import { Header } from '@/app/components/Header';
 import { ActiveExpeditionBanner } from '@/app/components/ActiveExpeditionBanner';
@@ -53,7 +54,9 @@ export function ClientProviders({ children }: { children: React.ReactNode }) {
           <DistanceUnitProvider>
             <AuthProvider>
               <StripeProvider>
+                <PageOwnerProvider>
                 <AppContent>{children}</AppContent>
+                </PageOwnerProvider>
                 <Suspense fallback={null}>
                   <PostHogPageviewTracker />
                 </Suspense>

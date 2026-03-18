@@ -264,6 +264,35 @@ export function DocumentationPage() {
                 Completed expeditions cannot have sponsorships enabled. Private expeditions disable expedition notes entirely.
               </p>
             </div>
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Expedition Activation</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Expeditions with a future start date are created in <strong>Planned</strong> status. A planned expedition
+                transitions to <strong>Active</strong> through one of the following methods:
+              </p>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4 mb-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span><strong>Automatic on start date:</strong> A daily process checks for planned expeditions whose start date has arrived and activates them automatically</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span><strong>Logging a journal entry:</strong> When you log an entry and update the expedition&apos;s current location, the expedition activates automatically</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span><strong>Manual activation:</strong> When submitting a journal entry for a planned expedition, you can choose to activate the expedition at that time</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span><strong>At publish time:</strong> If you publish an expedition after its start date has already passed, it is created as active rather than planned</span>
+                </li>
+              </ul>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                You can log journal entries for a planned expedition before it activates. The entry date range
+                spans from the expedition&apos;s creation date through today.
+              </p>
+            </div>
           </div>
         </section>
 

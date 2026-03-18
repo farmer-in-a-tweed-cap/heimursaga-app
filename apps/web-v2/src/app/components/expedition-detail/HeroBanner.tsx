@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
+import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import type { TransformedExpedition, CurrentLocationData } from '@/app/components/expedition-detail/types';
 import type { Expedition, ExplorerProfile } from '@/app/services/api';
 
@@ -136,7 +137,7 @@ export function HeroBanner({
               <span>{formatDate(expedition.startDate)} to {formatDate(expedition.estimatedEndDate)}</span>
             </div>
 
-            <p className="text-sm font-serif text-white/90 max-w-4xl line-clamp-3 md:line-clamp-none" style={{ lineHeight: 1.75 }}>{expedition.description}</p>
+            <p className="text-sm font-serif text-white/90 max-w-4xl hidden md:block" style={{ lineHeight: 1.75 }}>{expedition.description}</p>
           </div>
 
           {/* Explorer Info Card - hidden on mobile to prevent overlap */}
@@ -146,12 +147,10 @@ export function HeroBanner({
             <div className="flex items-center gap-3 mb-4">
               <Link href={`/journal/${expedition.explorerId}`} className="flex-shrink-0">
                 <div className={`w-16 h-16 border-2 ${expedition.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all`}>
-                  <Image
-                    src={expedition.explorerPicture || `https://api.dicebear.com/7.x/avataaars/svg?seed=${expedition.explorerId}`}
-                    alt={expedition.explorerName}
-                    className="w-full h-full object-cover"
-                    width={64}
-                    height={64}
+                  <ExplorerAvatar
+                    username={expedition.explorerId}
+                    src={expedition.explorerPicture}
+                    size={64}
                   />
                 </div>
               </Link>

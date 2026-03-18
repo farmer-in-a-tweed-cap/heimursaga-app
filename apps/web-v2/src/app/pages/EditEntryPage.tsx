@@ -77,23 +77,20 @@ export function EditEntryPage() {
   const [fullExpedition, setFullExpedition] = useState<Expedition | null>(null);
   const [markerOnCompletedSegment, setMarkerOnCompletedSegment] = useState(false);
 
-  // Date range for the date picker
-  // Past expeditions (both start & end in the past): startDate → endDate
-  // Otherwise: publishDate → min(today, endDate)
+  // Date range for the date picker: expedition creation date → today
   const { dateMin, dateMax } = useMemo(() => {
     const d = new Date();
     const todayLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const start = fullExpedition?.startDate ? fullExpedition.startDate.slice(0, 10) : undefined;
-    const end = fullExpedition?.endDate ? fullExpedition.endDate.slice(0, 10) : undefined;
-    // Both dates exist and are in the past — use the expedition's actual timeframe
-    if (start && end && start <= todayLocal && end <= todayLocal) {
-      return { dateMin: start, dateMax: end };
-    }
-    const min = fullExpedition?.createdAt ? fullExpedition.createdAt.slice(0, 10) : undefined;
+    const created = fullExpedition?.createdAt ? fullExpedition.createdAt.slice(0, 10) : todayLocal;
+    const min = created <= todayLocal ? created : todayLocal;
+    // Cap max date at endDate for completed expeditions
     let max = todayLocal;
-    if (end && end < todayLocal) max = end;
+    if (fullExpedition?.status === 'completed' && fullExpedition.endDate) {
+      const end = fullExpedition.endDate.slice(0, 10);
+      if (end < todayLocal) max = end;
+    }
     return { dateMin: min, dateMax: max };
-  }, [fullExpedition?.createdAt, fullExpedition?.startDate, fullExpedition?.endDate]);
+  }, [fullExpedition?.createdAt, fullExpedition?.status, fullExpedition?.endDate]);
 
   // Allowed image types for upload
   const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];

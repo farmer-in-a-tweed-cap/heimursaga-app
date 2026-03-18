@@ -867,8 +867,8 @@ export const expeditionApi = {
   /**
    * Activate a planned expedition early (requires auth)
    */
-  activate: (id: string) =>
-    api.put<Expedition>(`/trips/${id}`, { status: 'active' }),
+  activate: (id: string, title: string) =>
+    api.put<Expedition>(`/trips/${id}`, { title, status: 'active' }),
 
   /**
    * Cancel an expedition (requires auth)

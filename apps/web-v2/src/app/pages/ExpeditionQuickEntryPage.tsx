@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useParams } from 'next/navigation';
 import { useAuth } from '@/app/context/AuthContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { Upload, ArrowLeft, Lock, Loader2 } from 'lucide-react';
@@ -17,6 +17,10 @@ export function ExpeditionQuickEntryPage() {
   const { isPro } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
+  const params = useParams<{ expeditionId?: string }>();
+  const expeditionId = params?.expeditionId;
+  const isEditMode = !!expeditionId;
+  const [isLoading, setIsLoading] = useState(isEditMode);
   // Form state
   const [title, setTitle] = useState('');
   const [regions, setRegions] = useState<string[]>([]);
@@ -66,6 +70,51 @@ export function ExpeditionQuickEntryPage() {
       setSponsorshipsEnabled(false);
     }
   }, [status]);
+
+  // Load existing expedition data in edit mode
+  useEffect(() => {
+    if (!isEditMode || !expeditionId) return;
+    (async () => {
+      try {
+        const exp = await expeditionApi.getById(expeditionId);
+        // Ownership check: redirect if this expedition doesn't belong to the logged-in user
+        if (user && exp.explorerUsername && exp.explorerUsername !== user.username) {
+          router.replace(`/expedition/${expeditionId}`);
+          return;
+        }
+        setTitle(exp.title || '');
+        setDescription(exp.description || '');
+        setCategory(exp.category || '');
+        setRegions(exp.region ? exp.region.split(', ').filter(Boolean) : []);
+        setTags(exp.tags ? (Array.isArray(exp.tags) ? exp.tags.join(', ') : exp.tags) : '');
+        setStartDate(exp.startDate ? exp.startDate.slice(0, 10) : '');
+        setEndDate(exp.endDate ? exp.endDate.slice(0, 10) : '');
+        if (exp.startDate && exp.endDate) {
+          const s = new Date(exp.startDate);
+          const e = new Date(exp.endDate);
+          const diff = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
+          if (diff >= 0) setExpectedDuration(diff.toString());
+        }
+        setExpeditionVisibility((exp.visibility as 'public' | 'off-grid' | 'private') || 'public');
+        if (exp.coverImage) {
+          setCoverPhotoUrl(exp.coverImage);
+          setCoverPhotoPreview(exp.coverImage);
+        }
+        if (exp.goal && Number(exp.goal) > 0) {
+          setSponsorshipsEnabled(true);
+          setSponsorshipGoal(String(exp.goal));
+        }
+        setNotesVisibility((exp.notesVisibility as 'public' | 'sponsor') || 'public');
+        if (exp.notesAccessThreshold && Number(exp.notesAccessThreshold) > 0) {
+          setNotesAccessThreshold(String(exp.notesAccessThreshold));
+        }
+      } catch {
+        setSubmitError('Failed to load expedition data');
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, [isEditMode, expeditionId]);
 
   // Calculate end date from start date + duration
   const handleDurationChange = (days: string) => {
@@ -137,9 +186,7 @@ export function ExpeditionQuickEntryPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleCreate = async (createFirstEntry: boolean) => {
     if (!title.trim()) {
       setSubmitError('Title is required');
       return;
@@ -164,7 +211,7 @@ export function ExpeditionQuickEntryPage() {
       setSubmitError('Description is required (minimum 100 characters)');
       return;
     }
-    if (!coverPhotoUrl) {
+    if (!coverPhotoUrl && !isEditMode) {
       setSubmitError('Cover photo is required');
       return;
     }
@@ -187,16 +234,24 @@ export function ExpeditionQuickEntryPage() {
         notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
         notesVisibility,
         coverImage: coverPhotoUrl || undefined,
-        status,
+        ...(isEditMode ? {} : { status }),
       };
 
-      const result = await expeditionApi.create(payload);
-      const expeditionPublicId = (result as any).expeditionId || (result as any).id || (result as any).publicId;
+      if (isEditMode && expeditionId) {
+        await expeditionApi.update(expeditionId, payload);
+        router.push(`/expedition/${expeditionId}`);
+      } else {
+        const result = await expeditionApi.create(payload);
+        const expeditionPublicId = (result as any).expeditionId || (result as any).id || (result as any).publicId;
 
-      // Navigate to create the first entry
-      router.push(`/log-entry/${expeditionPublicId}`);
+        if (createFirstEntry) {
+          router.push(`/log-entry/${expeditionPublicId}`);
+        } else {
+          router.push(`/expedition/${expeditionPublicId}`);
+        }
+      }
     } catch (err: any) {
-      setSubmitError(err.message || 'Failed to create expedition');
+      setSubmitError(err.message || 'Failed to ' + (isEditMode ? 'update' : 'create') + ' expedition');
     } finally {
       setIsSubmitting(false);
     }
@@ -241,6 +296,18 @@ export function ExpeditionQuickEntryPage() {
     }
   };
 
+  // Loading state for edit mode
+  if (isLoading) {
+    return (
+      <div className="max-w-[1400px] mx-auto px-6 py-12">
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-8 text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-[#ac6d46]" />
+          <div className="text-sm text-[#616161] dark:text-[#b5bcc4] font-mono">Loading expedition data...</div>
+        </div>
+      </div>
+    );
+  }
+
   // Authentication gate
   if (!isAuthenticated) {
     return (
@@ -282,21 +349,23 @@ export function ExpeditionQuickEntryPage() {
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 mb-6">
         <div className="flex items-center gap-4 mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
           <Link
-            href="/select-expedition"
+            href={isEditMode && expeditionId ? `/expedition/${expeditionId}` : '/select-expedition'}
             className="p-2 hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
           >
             <ArrowLeft className="w-5 h-5 dark:text-[#e5e5e5]" />
           </Link>
-          <h1 className="text-2xl font-bold flex-1 dark:text-[#e5e5e5]">EXPEDITION QUICK ENTRY</h1>
+          <h1 className="text-2xl font-bold flex-1 dark:text-[#e5e5e5]">{isEditMode ? 'EDIT EXPEDITION' : 'EXPEDITION QUICK ENTRY'}</h1>
           <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
             Session: {formatDateTime(new Date())}
           </span>
         </div>
         
         <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] p-4 border-l-2 border-[#ac6d46]">
-          <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">STREAMLINED EXPEDITION CREATION:</div>
+          <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">{isEditMode ? 'UPDATE EXPEDITION DETAILS:' : 'STREAMLINED EXPEDITION CREATION:'}</div>
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-            Create a new expedition quickly with all essential fields in one form. Perfect for expeditions without complex route planning. Fill out the form below and click "CREATE EXPEDITION & LOG FIRST ENTRY" to begin documenting your journey.
+            {isEditMode
+              ? 'Update your expedition details below. Changes will be reflected immediately across all journal views.'
+              : 'Create a new expedition quickly with all essential fields in one form. Perfect for expeditions without complex route planning. Fill out the form below and launch your expedition to begin documenting your journey.'}
           </div>
         </div>
       </div>
@@ -305,7 +374,7 @@ export function ExpeditionQuickEntryPage() {
         {/* Main Form */}
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={(e) => { e.preventDefault(); handleCreate(false); }} className="space-y-6">
               {/* Error Display */}
               {submitError && (
                 <div className="bg-red-50 dark:bg-red-900/20 border-2 border-red-500 p-4 text-sm text-red-700 dark:text-red-400">
@@ -756,21 +825,46 @@ export function ExpeditionQuickEntryPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4 border-t-2 border-[#202020] dark:border-[#616161]">
-                <button
-                  type="submit"
-                  disabled={isSubmitting || uploadingCover}
-                  className="flex-1 py-4 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
-                >
-                  {(isSubmitting || uploadingCover) && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {isSubmitting ? 'CREATING...' : uploadingCover ? 'UPLOADING COVER...' : 'CREATE EXPEDITION & LOG FIRST ENTRY'}
-                </button>
-                <Link
-                  href="/select-expedition"
-                  className="px-8 py-4 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] font-bold flex items-center justify-center"
-                >
-                  CANCEL
-                </Link>
+              <div className="space-y-3 pt-4 border-t-2 border-[#202020] dark:border-[#616161]">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {isEditMode ? (
+                    <button
+                      type="submit"
+                      disabled={isSubmitting || uploadingCover}
+                      className="flex-1 py-4 bg-[#4676ac] text-white font-bold hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+                    >
+                      {(isSubmitting || uploadingCover) && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {isSubmitting ? 'SAVING...' : uploadingCover ? 'UPLOADING COVER...' : 'SAVE CHANGES'}
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || uploadingCover}
+                        className="flex-1 py-4 bg-[#4676ac] text-white font-bold hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+                      >
+                        {(isSubmitting || uploadingCover) && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {isSubmitting ? 'LAUNCHING...' : uploadingCover ? 'UPLOADING COVER...' : 'LAUNCH EXPEDITION'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCreate(true)}
+                        disabled={isSubmitting || uploadingCover}
+                        className="flex-1 py-4 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+                      >
+                        LAUNCH & LOG FIRST ENTRY
+                      </button>
+                    </>
+                  )}
+                </div>
+                <div className="text-center">
+                  <Link
+                    href={isEditMode && expeditionId ? `/expedition/${expeditionId}` : '/select-expedition'}
+                    className="text-xs text-[#4676ac] hover:underline font-bold"
+                  >
+                    {isEditMode ? 'cancel and return to expedition' : 'cancel and return to selection'}
+                  </Link>
+                </div>
               </div>
             </form>
           </div>

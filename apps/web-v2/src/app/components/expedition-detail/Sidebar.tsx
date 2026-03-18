@@ -129,12 +129,14 @@ export function Sidebar({
                 >
                   LOG NEW ENTRY
                 </Link>
-                <Link
-                  href={expedition.explorerIsPro ? `/expedition-builder/${expedition.id}` : `/log-entry/${expedition.id}?type=waypoint`}
-                  className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
-                >
-                  LOG WAYPOINT
-                </Link>
+                {expedition.explorerIsPro && (
+                  <Link
+                    href={`/expedition-builder/${expedition.id}`}
+                    className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
+                  >
+                    LOG WAYPOINT
+                  </Link>
+                )}
               </>
             )}
             <button

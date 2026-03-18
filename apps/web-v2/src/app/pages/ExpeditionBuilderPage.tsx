@@ -2236,6 +2236,48 @@ export function ExpeditionBuilderPage() {
     );
   }
 
+  if (!isPro) {
+    return (
+      <div className="max-w-lg mx-auto px-6 py-12">
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+          <div className="p-5 border-b-2 border-[#202020] dark:border-[#616161] bg-[#4676ac] text-white">
+            <div className="flex items-center gap-3">
+              <Lock size={22} strokeWidth={2} />
+              <h2 className="text-base font-bold">EXPLORER PRO FEATURE</h2>
+            </div>
+          </div>
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+              The expedition builder with interactive maps, waypoint management, and route planning is available to <strong>Explorer Pro</strong> subscribers.
+            </p>
+            <div className="bg-[#faf6f2] dark:bg-[#2a2520] border border-[#ac6d46]/30 p-4 space-y-2">
+              <p className="text-xs font-bold text-[#ac6d46]">YOU CAN STILL</p>
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                Use the <strong className="text-[#202020] dark:text-[#e5e5e5]">quick entry form</strong> to log journal entries and edit expedition details. Each entry you log automatically builds your expedition route on the map.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              {isEditMode && expeditionId && (
+                <button
+                  onClick={() => router.push(`/log-entry/${expeditionId}`)}
+                  className="w-full px-5 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm"
+                >
+                  LOG JOURNAL ENTRY
+                </button>
+              )}
+              <button
+                onClick={() => router.push(isEditMode && expeditionId ? `/expedition/${expeditionId}` : '/select-expedition')}
+                className="w-full px-5 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-sm"
+              >
+                {isEditMode ? 'VIEW EXPEDITION' : 'GO BACK'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show loading state in edit mode
   if (isLoading) {
     return (
@@ -3734,7 +3776,7 @@ export function ExpeditionBuilderPage() {
             className="px-6 py-3 bg-[#4676ac] text-white hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isSubmitting && <Loader2 size={18} className="animate-spin" />}
-            <span>{isSubmitting ? 'PUBLISHING...' : (isEditMode ? 'SAVE CHANGES' : (draftId ? 'PUBLISH EXPEDITION' : 'CREATE EXPEDITION'))}</span>
+            <span>{isSubmitting ? 'PUBLISHING...' : (isEditMode ? 'SAVE CHANGES' : 'LAUNCH EXPEDITION')}</span>
           </button>
           {!isEditMode && (
             <button
@@ -3742,7 +3784,7 @@ export function ExpeditionBuilderPage() {
               disabled={isSubmitting || uploadingCover}
               className="px-6 py-3 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <span>{draftId ? 'PUBLISH AND LOG FIRST ENTRY' : 'SAVE AND LOG FIRST ENTRY'}</span>
+              <span>LAUNCH & LOG FIRST ENTRY</span>
             </button>
           )}
           {/* Autosave indicator */}
@@ -3775,7 +3817,7 @@ export function ExpeditionBuilderPage() {
             href={isEditMode ? `/expedition/${expeditionId}` : '/select-expedition'}
             className="text-xs text-[#4676ac] hover:underline font-bold"
           >
-            {isEditMode ? '← BACK TO EXPEDITION' : '← CANCEL AND RETURN TO SELECTION'}
+            {isEditMode ? '← BACK TO EXPEDITION' : 'cancel and return to selection'}
           </Link>
         </div>
       </div>

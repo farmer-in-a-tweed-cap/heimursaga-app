@@ -21,6 +21,7 @@ interface ExpeditionManagementModalProps {
     totalFunding?: number;
     backers?: number;
   };
+  isPro?: boolean;
   onStatusChange?: (newStatus: 'active' | 'completed') => void;
   onComplete?: (actualEndDate: string) => Promise<void>;
   onCancel?: (reason: string) => Promise<void>;
@@ -30,6 +31,7 @@ export function ExpeditionManagementModal({
   isOpen,
   onClose,
   expedition,
+  isPro = false,
   onStatusChange,
   onComplete,
   onCancel,
@@ -86,24 +88,6 @@ export function ExpeditionManagementModal({
     } finally {
       setIsSubmitting(false);
       setConfirmComplete(false);
-    }
-  };
-
-  const handleActivate = async () => {
-    setIsSubmitting(true);
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-
-      if (onStatusChange) {
-        onStatusChange('active');
-      }
-
-      onClose();
-    } catch (error) {
-      console.error('Failed to activate expedition:', error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -232,7 +216,7 @@ export function ExpeditionManagementModal({
 
           {/* Status Change Options */}
           <div className="space-y-4">
-            {/* Edit Details & Waypoints - Available for non-cancelled */}
+            {/* Edit Details - Available for non-cancelled */}
             {!isCancelled && (
               <div className="border-2 border-[#ac6d46] p-4">
                 <div className="flex items-start gap-3 mb-4">
@@ -242,42 +226,39 @@ export function ExpeditionManagementModal({
                       EDIT EXPEDITION DETAILS
                     </h4>
                     <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
-                      {isCompleted
-                        ? 'Update title, description, and cover image. Dates, waypoints, route, and sponsorship settings are locked for completed expeditions.'
-                        : 'Modify expedition details, dates, description, waypoints, and route planning. Changes will be reflected immediately across all journal views.'}
+                      {isPro
+                        ? isCompleted
+                          ? 'Update title, description, and cover image. Dates, waypoints, route, and sponsorship settings are locked for completed expeditions.'
+                          : 'Modify expedition details, dates, description, waypoints, and route planning. Changes will be reflected immediately across all journal views.'
+                        : 'Update expedition details, dates, description, and cover image using the quick entry form.'}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => router.push(`/expedition-builder/${expedition.id}`)}
+                  onClick={() => router.push(isPro ? `/expedition-builder/${expedition.id}` : `/expedition-quick-entry/${expedition.id}`)}
                   className="w-full px-4 py-3 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-2"
                 >
-                  {isCompleted ? 'EDIT TITLE & DESCRIPTION' : 'EDIT DETAILS & WAYPOINTS'}
+                  {isPro
+                    ? isCompleted ? 'EDIT TITLE & DESCRIPTION' : 'EDIT DETAILS & WAYPOINTS'
+                    : 'EDIT EXPEDITION'}
                 </button>
               </div>
             )}
 
-            {/* Activate Planned Expedition */}
+            {/* Activate Planned Expedition — info only, activation is automatic */}
             {canActivate && (
               <div className="border-2 border-[#4676ac] p-4">
-                <div className="flex items-start gap-3 mb-4">
+                <div className="flex items-start gap-3">
                   <CheckCircle2 size={20} className="text-[#4676ac] mt-0.5" strokeWidth={2} />
                   <div className="flex-1">
                     <h4 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
-                      ACTIVATE EXPEDITION
+                      READY TO ACTIVATE
                     </h4>
-                    <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
-                      This expedition has reached its start date. Activate it to begin logging entries and receiving sponsorships.
+                    <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      This expedition has reached its start date and is ready to go. Log your first journal entry to activate it and start your journey.
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={handleActivate}
-                  disabled={isSubmitting}
-                  className="w-full px-4 py-3 bg-[#4676ac] text-white text-sm font-bold hover:bg-[#3a5f8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
-                >
-                  {isSubmitting ? 'ACTIVATING...' : 'ACTIVATE EXPEDITION'}
-                </button>
               </div>
             )}
 
@@ -509,7 +490,7 @@ export function ExpeditionManagementModal({
                       EXPEDITION NOT STARTED
                     </h4>
                     <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      This expedition has not reached its start date yet ({formatDate(expedition.startDate)}). You cannot complete an expedition that has not started. You can activate it manually once the start date arrives, or it will activate automatically on the start date.
+                      This expedition has not reached its start date yet ({formatDate(expedition.startDate)}). You cannot complete an expedition that has not started. It will activate automatically on its start date, or when you log a journal entry.
                     </p>
                   </div>
                 </div>

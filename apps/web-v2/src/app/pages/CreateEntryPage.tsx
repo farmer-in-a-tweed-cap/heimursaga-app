@@ -92,23 +92,20 @@ export function CreateEntryPage() {
   const [showPlanningModal, setShowPlanningModal] = useState(false);
   const pendingSubmitRef = useRef<React.FormEvent | null>(null);
 
-  // Date range for the date picker
-  // Past expeditions (both start & end in the past): startDate → endDate
-  // Otherwise: publishDate → min(today, endDate)
+  // Date range for the date picker: expedition creation date → today
   const { dateMin, dateMax } = useMemo(() => {
     const d = new Date();
     const todayLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const start = expedition?.startDate ? expedition.startDate.slice(0, 10) : undefined;
-    const end = expedition?.endDate ? expedition.endDate.slice(0, 10) : undefined;
-    // Both dates exist and are in the past — use the expedition's actual timeframe
-    if (start && end && start <= todayLocal && end <= todayLocal) {
-      return { dateMin: start, dateMax: end };
-    }
-    const min = expedition?.createdAt ? expedition.createdAt.slice(0, 10) : undefined;
+    const created = expedition?.createdAt ? expedition.createdAt.slice(0, 10) : todayLocal;
+    const min = created <= todayLocal ? created : todayLocal;
+    // Cap max date at endDate for completed expeditions
     let max = todayLocal;
-    if (end && end < todayLocal) max = end;
+    if (expedition?.status === 'completed' && expedition.endDate) {
+      const end = expedition.endDate.slice(0, 10);
+      if (end < todayLocal) max = end;
+    }
     return { dateMin: min, dateMax: max };
-  }, [expedition?.createdAt, expedition?.startDate, expedition?.endDate]);
+  }, [expedition?.createdAt, expedition?.status, expedition?.endDate]);
 
   // Auto-save state
   const [draftId, setDraftId] = useState<string | null>(null);
@@ -565,7 +562,11 @@ export function CreateEntryPage() {
     setShowPlanningModal(false);
     try {
       const expId = expedition?.publicId || expeditionId;
-      await expeditionApi.activate(expId);
+      if (!expedition?.title) {
+        toast.error('Expedition data not loaded');
+        return;
+      }
+      await expeditionApi.activate(expId, expedition.title);
       // Refresh expedition state
       const refreshed = await expeditionApi.getById(expId);
       setExpedition(refreshed);
