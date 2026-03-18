@@ -93,6 +93,15 @@ export function ExpeditionBuilderPage() {
   const routeSearchResultsRef = useRef<POIResult[]>([]);
   const searchResultRef = useRef<{ lng: number; lat: number; name: string; address: string } | null>(null);
 
+  // Mobile detection — builder requires desktop
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -2177,6 +2186,48 @@ export function ExpeditionBuilderPage() {
                 className="px-6 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
               >
                 GO TO HOMEPAGE
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isMobile) {
+    return (
+      <div className="max-w-lg mx-auto px-6 py-12">
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+          <div className="p-5 border-b-2 border-[#202020] dark:border-[#616161] bg-[#ac6d46] text-white">
+            <div className="flex items-center gap-3">
+              <MapPin size={22} strokeWidth={2} />
+              <h2 className="text-base font-bold">EXPEDITION BUILDER</h2>
+            </div>
+          </div>
+          <div className="p-6 space-y-4">
+            <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+              The expedition builder requires a desktop browser for the best experience with interactive maps, waypoint management, and route planning.
+            </p>
+            <div className="bg-[#faf6f2] dark:bg-[#2a2520] border border-[#ac6d46]/30 p-4 space-y-2">
+              <p className="text-xs font-bold text-[#ac6d46]">IN THE MEANTIME</p>
+              <p className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
+                Use the <strong className="text-[#202020] dark:text-[#e5e5e5]">quick entry form</strong> to log journal entries from your phone. Each entry you log automatically builds your expedition route on the map.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              {isEditMode && expeditionId && (
+                <button
+                  onClick={() => router.push(`/log-entry/${expeditionId}`)}
+                  className="w-full px-5 py-3 bg-[#ac6d46] text-white font-bold hover:bg-[#8a5738] transition-all text-sm"
+                >
+                  LOG JOURNAL ENTRY
+                </button>
+              )}
+              <button
+                onClick={() => router.push(isEditMode && expeditionId ? `/expedition/${expeditionId}` : '/select-expedition')}
+                className="w-full px-5 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all text-sm"
+              >
+                {isEditMode ? 'VIEW EXPEDITION' : 'GO BACK'}
               </button>
             </div>
           </div>
