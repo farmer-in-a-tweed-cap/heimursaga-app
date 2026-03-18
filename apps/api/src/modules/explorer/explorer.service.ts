@@ -429,7 +429,7 @@ export class ExplorerService {
           created_at: true,
           _count: {
             select: {
-              entries: { where: { deleted_at: null } },
+              entries: { where: { deleted_at: null, is_draft: { not: true } } },
               expeditions: { where: { deleted_at: null } },
             },
           },
@@ -505,8 +505,14 @@ export class ExplorerService {
         you: explorerId ? explorerId === explorer.id : false,
         creator: explorer.role === UserRole.CREATOR,
         stripeAccountConnected: explorer.is_stripe_account_connected,
-        locationFrom: (explorer.profile?.location_visibility || 'hidden') !== 'hidden' ? explorer.profile?.location_from : null,
-        locationLives: (explorer.profile?.location_visibility || 'hidden') !== 'hidden' ? explorer.profile?.location_lives : null,
+        locationFrom:
+          (explorer.profile?.location_visibility || 'hidden') !== 'hidden'
+            ? explorer.profile?.location_from
+            : null,
+        locationLives:
+          (explorer.profile?.location_visibility || 'hidden') !== 'hidden'
+            ? explorer.profile?.location_lives
+            : null,
         locationVisibility: explorer.profile?.location_visibility || 'hidden',
         sponsorsFund: explorer.profile?.sponsors_fund,
         sponsorsFundType: explorer.profile?.sponsors_fund_type,
@@ -627,7 +633,10 @@ export class ExplorerService {
               OR: [
                 { expedition_id: null, visibility: 'public' },
                 {
-                  expedition: { visibility: 'public', status: { not: 'cancelled' } },
+                  expedition: {
+                    visibility: 'public',
+                    status: { not: 'cancelled' },
+                  },
                   NOT: { visibility: 'private' },
                 },
               ],
@@ -869,7 +878,10 @@ export class ExplorerService {
                 OR: [
                   { expedition_id: null, visibility: 'public' },
                   {
-                    expedition: { visibility: 'public', status: { not: 'cancelled' } },
+                    expedition: {
+                      visibility: 'public',
+                      status: { not: 'cancelled' },
+                    },
                     NOT: { visibility: 'private' },
                   },
                 ],
@@ -1492,10 +1504,16 @@ export class SessionExplorerService {
             },
             OR: [
               { author: { id: explorerId }, expedition_id: null },
-              { author: { id: explorerId }, expedition: { status: { not: 'cancelled' } } },
+              {
+                author: { id: explorerId },
+                expedition: { status: { not: 'cancelled' } },
+              },
               { expedition_id: null, visibility: 'public' },
               {
-                expedition: { visibility: 'public', status: { not: 'cancelled' } },
+                expedition: {
+                  visibility: 'public',
+                  status: { not: 'cancelled' },
+                },
                 NOT: { visibility: 'private' },
               },
             ],
