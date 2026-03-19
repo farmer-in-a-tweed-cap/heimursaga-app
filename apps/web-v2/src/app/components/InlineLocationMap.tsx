@@ -41,7 +41,12 @@ export function InlineLocationMap({ lat, lng, className = '' }: InlineLocationMa
       center: [lng, lat],
       zoom: 12,
       interactive: true,
+      dragRotate: false,
+      touchPitch: false,
+      maxPitch: 0,
+      renderWorldCopies: false,
     });
+    map.touchZoomRotate.disableRotation();
 
     map.on('load', () => {
       map.resize();

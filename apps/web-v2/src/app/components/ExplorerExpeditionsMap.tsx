@@ -112,7 +112,12 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
       style: getMapStyle(mapLayer, theme),
       bounds: bounds,
       fitBoundsOptions: { padding: 50 },
+      dragRotate: false,
+      touchPitch: false,
+      maxPitch: 0,
+      renderWorldCopies: false,
     });
+    map.touchZoomRotate.disableRotation();
 
     mapRef.current = map;
 
@@ -147,7 +152,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
     map.on('load', updateGeocoderProximity);
 
     // Add navigation control (zoom buttons) below geocoder
-    map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
 
     // Track event listeners for cleanup
     const eventListeners: Array<{ element: HTMLElement; handler: () => void }> = [];

@@ -297,7 +297,12 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
       center: [30, 20],
       zoom: 1.5,
       projection: 'mercator',
+      dragRotate: false,
+      touchPitch: false,
+      maxPitch: 0,
+      renderWorldCopies: false,
     });
+    map.touchZoomRotate.disableRotation();
 
     mapRef.current = map;
 
@@ -337,7 +342,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     map.on('moveend', updateGeocoderProximity);
     map.on('load', updateGeocoderProximity);
 
-    const navControl = new mapboxgl.NavigationControl();
+    const navControl = new mapboxgl.NavigationControl({ showCompass: false });
     map.addControl(navControl, 'top-right');
     navControlRef.current = navControl;
 

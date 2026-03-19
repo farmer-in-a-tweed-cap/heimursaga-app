@@ -46,7 +46,12 @@ export function ViewLocationMap({ lat, lng, locationName, elevation, onClose }: 
       style: getMapStyle(mapLayer, theme),
       center: [lng, lat],
       zoom: 13,
+      dragRotate: false,
+      touchPitch: false,
+      maxPitch: 0,
+      renderWorldCopies: false,
     });
+    map.touchZoomRotate.disableRotation();
 
     // Resize map after it loads
     map.on('load', () => {
@@ -63,7 +68,7 @@ export function ViewLocationMap({ lat, lng, locationName, elevation, onClose }: 
     });
 
     // Add navigation controls
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
 
     // Add fullscreen control
     map.addControl(new mapboxgl.FullscreenControl(), 'top-right');

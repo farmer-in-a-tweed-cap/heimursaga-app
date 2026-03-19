@@ -225,7 +225,12 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       style: getMapStyle(mapLayer, theme),
       center: [initialLng || 0, initialLat || 20],
       zoom: zoom,
+      dragRotate: false,
+      touchPitch: false,
+      maxPitch: 0,
+      renderWorldCopies: false,
     });
+    map.touchZoomRotate.disableRotation();
 
     // Resize map after it loads and render expedition context
     map.on('load', () => {
@@ -366,7 +371,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     });
 
     // Add navigation controls
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
 
     // Add geocoder for location search
     const geocoder = new MapboxGeocoder({

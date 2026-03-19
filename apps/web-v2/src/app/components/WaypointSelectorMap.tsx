@@ -253,7 +253,12 @@ export function WaypointSelectorMap({
       style: getMapStyle(mapLayer, theme),
       center,
       zoom: firstValid ? 7 : 1.5,
+      dragRotate: false,
+      touchPitch: false,
+      maxPitch: 0,
+      renderWorldCopies: false,
     });
+    map.touchZoomRotate.disableRotation();
 
     map.on('load', () => {
       map.resize();
@@ -462,7 +467,7 @@ export function WaypointSelectorMap({
     // -----------------------------------------------------------------------
     // Controls
     // -----------------------------------------------------------------------
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
 
     const geocoder = new MapboxGeocoder({
       accessToken: MAPBOX_TOKEN,
