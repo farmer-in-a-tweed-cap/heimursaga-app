@@ -2372,40 +2372,44 @@ export class SponsorService {
         }
       }
 
-      const data = checkouts.map((checkout) => {
-        const piId = checkout.stripe_payment_intent_id!;
-        return {
-          id: piId,
-          amount: integerToDecimal(checkout.total),
-          currency: (checkout.currency || 'usd').toUpperCase(),
-          status: 'succeeded',
-          refunded: refundStatusMap.get(piId) || false,
-          created: checkout.confirmed_at!,
-          sponsorEmail: checkout.explorer?.email || undefined,
-          sponsorName: checkout.explorer?.profile?.name || undefined,
-          sponsorUsername: checkout.explorer?.username || undefined,
-          description: checkout.message || undefined,
-          sponsorshipType: checkout.sponsorship_type || undefined,
-          entry: checkout.entry_public_id
-            ? (() => {
-                const ent = checkoutEntryMap.get(checkout.entry_public_id);
-                return ent
-                  ? { id: ent.public_id, title: ent.title }
-                  : undefined;
-              })()
-            : undefined,
-          expedition: checkout.expedition_public_id
-            ? (() => {
-                const exp = checkoutExpeditionMap.get(
-                  checkout.expedition_public_id,
-                );
-                return exp
-                  ? { id: exp.public_id, title: exp.title }
-                  : undefined;
-              })()
-            : undefined,
-        };
-      });
+      // Only include checkouts whose payment intent was found in the current
+      // Stripe environment (test PIs can't be retrieved with live keys and vice versa)
+      const data = checkouts
+        .filter((checkout) => refundStatusMap.has(checkout.stripe_payment_intent_id!))
+        .map((checkout) => {
+          const piId = checkout.stripe_payment_intent_id!;
+          return {
+            id: piId,
+            amount: integerToDecimal(checkout.total),
+            currency: (checkout.currency || 'usd').toUpperCase(),
+            status: 'succeeded',
+            refunded: refundStatusMap.get(piId) || false,
+            created: checkout.confirmed_at!,
+            sponsorEmail: checkout.explorer?.email || undefined,
+            sponsorName: checkout.explorer?.profile?.name || undefined,
+            sponsorUsername: checkout.explorer?.username || undefined,
+            description: checkout.message || undefined,
+            sponsorshipType: checkout.sponsorship_type || undefined,
+            entry: checkout.entry_public_id
+              ? (() => {
+                  const ent = checkoutEntryMap.get(checkout.entry_public_id);
+                  return ent
+                    ? { id: ent.public_id, title: ent.title }
+                    : undefined;
+                })()
+              : undefined,
+            expedition: checkout.expedition_public_id
+              ? (() => {
+                  const exp = checkoutExpeditionMap.get(
+                    checkout.expedition_public_id,
+                  );
+                  return exp
+                    ? { id: exp.public_id, title: exp.title }
+                    : undefined;
+                })()
+              : undefined,
+          };
+        });
 
       return {
         results: data.length,
