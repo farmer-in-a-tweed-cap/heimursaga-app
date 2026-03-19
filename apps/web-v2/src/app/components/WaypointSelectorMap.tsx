@@ -253,6 +253,7 @@ export function WaypointSelectorMap({
       style: getMapStyle(mapLayer, theme),
       center,
       zoom: firstValid ? 7 : 1.5,
+      projection: 'mercator',
       dragRotate: false,
       touchPitch: false,
       maxPitch: 0,

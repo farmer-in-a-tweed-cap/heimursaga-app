@@ -46,6 +46,7 @@ export function ViewLocationMap({ lat, lng, locationName, elevation, onClose }: 
       style: getMapStyle(mapLayer, theme),
       center: [lng, lat],
       zoom: 13,
+      projection: 'mercator',
       dragRotate: false,
       touchPitch: false,
       maxPitch: 0,
