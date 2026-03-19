@@ -13,7 +13,12 @@ import { ActiveExpeditionBanner } from '@/app/components/ActiveExpeditionBanner'
 import { Footer } from '@/app/components/Footer';
 import { WelcomeModal } from '@/app/components/WelcomeModal';
 import { PostHogPageviewTracker } from '@/app/components/PostHogPageviewTracker';
-import { CookieConsentBanner } from '@/app/components/CookieConsentBanner';
+import dynamic from 'next/dynamic';
+
+const CookieConsentBanner = dynamic(
+  () => import('@/app/components/CookieConsentBanner').then(m => m.CookieConsentBanner),
+  { ssr: false },
+);
 import { Toaster } from '@/app/components/ui/sonner';
 import { usePathname } from 'next/navigation';
 
