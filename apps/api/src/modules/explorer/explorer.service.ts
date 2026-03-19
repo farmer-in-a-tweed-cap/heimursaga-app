@@ -162,6 +162,18 @@ export class ExplorerService {
             }
           : {}),
         entries_count: true,
+        _count: {
+          select: {
+            followers: true,
+            entries: { where: { deleted_at: null, is_draft: false } },
+            expeditions: {
+              where: {
+                deleted_at: null,
+                status: { in: ['active', 'planned', 'completed'] },
+              },
+            },
+          },
+        },
         created_at: true,
       } satisfies Prisma.ExplorerSelect;
 
@@ -217,6 +229,7 @@ export class ExplorerService {
           profile,
           blocked,
           entries_count,
+          _count,
           created_at,
           followers,
           expeditions,
@@ -264,8 +277,10 @@ export class ExplorerService {
             locationLivesLat: showLocation ? profile?.location_lives_lat : null,
             locationLivesLon: showLocation ? profile?.location_lives_lon : null,
             locationVisibility: locVis,
-            entriesCount: entries_count,
-            postsCount: entries_count,
+            entriesCount: (_count as any)?.entries ?? entries_count ?? 0,
+            expeditionsCount: (_count as any)?.expeditions ?? 0,
+            followersCount: (_count as any)?.followers ?? 0,
+            postsCount: (_count as any)?.entries ?? entries_count ?? 0,
             memberDate: created_at,
             creator: role === UserRole.CREATOR,
             activeExpeditionOffGrid,

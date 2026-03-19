@@ -329,6 +329,8 @@ export interface ExplorerListItem {
   locationLivesLon?: number;
   locationVisibility?: string;
   entriesCount?: number;
+  expeditionsCount?: number;
+  followersCount?: number;
   postsCount?: number;
   memberDate?: string;
   creator?: boolean;
