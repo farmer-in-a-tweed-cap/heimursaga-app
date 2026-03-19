@@ -91,7 +91,7 @@ export function ExpeditionDetailPage() {
   const { weatherCondition, weatherLocalTime } = useWeatherConditions(apiExpedition, expeditionId);
   const notesVisibility = (apiExpedition as any)?.notesVisibility || 'public';
   const {
-    expeditionNotes, noteCount, isSponsoring, isPublicNotes,
+    expeditionNotes, noteCount, dailyLimit, isSponsoring, isPublicNotes,
     handlePostNote, handlePostReply,
     handleEditNote, handleDeleteNote,
     handleEditReply, handleDeleteReply,
@@ -1041,6 +1041,7 @@ export function ExpeditionDetailPage() {
             sponsors={sponsors}
             expeditionNotes={expeditionNotes}
             noteCount={noteCount}
+            dailyLimit={dailyLimit}
             isSponsoring={isSponsoring}
             isPublicNotes={isPublicNotes}
             isOwner={isOwner}

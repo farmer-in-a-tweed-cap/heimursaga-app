@@ -9,6 +9,7 @@ export function useExpeditionNotes(
 ) {
   const [expeditionNotes, setExpeditionNotes] = useState<ExpeditionNote[]>([]);
   const [noteCount, setNoteCount] = useState(0);
+  const [dailyLimit, setDailyLimit] = useState<{ used: number; max: number }>({ used: 0, max: 1 });
   const [isSponsoring, setIsSponsoring] = useState(false);
 
   const isPublicNotes = notesVisibility === 'public';
@@ -39,6 +40,7 @@ export function useExpeditionNotes(
         const notesData = await expeditionApi.getNotes(expeditionId);
         if (!cancelled) {
           setExpeditionNotes(notesData.notes);
+          if (notesData.dailyLimit) setDailyLimit(notesData.dailyLimit);
           // If we got sponsor-gated notes, user has access (either owner or sponsor)
           if (!isPublicNotes && !isOwner) {
             setIsSponsoring(true);
@@ -116,7 +118,7 @@ export function useExpeditionNotes(
   };
 
   return {
-    expeditionNotes, noteCount, isSponsoring, isPublicNotes,
+    expeditionNotes, noteCount, dailyLimit, isSponsoring, isPublicNotes,
     handlePostNote, handlePostReply,
     handleEditNote, handleDeleteNote,
     handleEditReply, handleDeleteReply,

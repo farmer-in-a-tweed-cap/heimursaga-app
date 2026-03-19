@@ -21,6 +21,7 @@ interface ContentTabsProps {
   sponsors: any[];
   expeditionNotes: ExpeditionNote[];
   noteCount: number;
+  dailyLimit?: { used: number; max: number };
   isSponsoring: boolean;
   isPublicNotes: boolean;
   isOwner: boolean;
@@ -46,6 +47,7 @@ export function ContentTabs({
   sponsors,
   expeditionNotes,
   noteCount,
+  dailyLimit,
   isSponsoring,
   isPublicNotes,
   isOwner,
@@ -155,6 +157,7 @@ export function ContentTabs({
                 })),
               }))}
               noteCount={noteCount}
+              dailyLimit={dailyLimit}
               onPostNote={onPostNote}
               onPostReply={onPostReply}
               onEditNote={onEditNote}

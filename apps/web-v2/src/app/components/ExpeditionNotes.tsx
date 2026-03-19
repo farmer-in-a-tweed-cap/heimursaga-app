@@ -36,6 +36,7 @@ interface ExpeditionNotesProps {
   expeditionStatus?: string;
   notes: ExpeditionNote[];
   noteCount?: number;
+  dailyLimit?: { used: number; max: number };
   onPostNote?: (text: string) => Promise<void>;
   onPostReply?: (noteId: string, text: string) => Promise<void>;
   onEditNote?: (noteId: string, text: string) => Promise<void>;
@@ -53,6 +54,7 @@ export function ExpeditionNotes({
   expeditionStatus,
   notes,
   noteCount,
+  dailyLimit: dailyLimitProp,
   onPostNote,
   onPostReply,
   onEditNote,
@@ -63,7 +65,11 @@ export function ExpeditionNotes({
   const { user, isAuthenticated } = useAuth();
   const [noteText, setNoteText] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-  const [dailyLimit, setDailyLimit] = useState<{ used: number; max: number }>({ used: 0, max: 1 });
+  const [localPostCount, setLocalPostCount] = useState(0);
+  const dailyLimit = {
+    used: (dailyLimitProp?.used ?? 0) + localPostCount,
+    max: dailyLimitProp?.max ?? 1,
+  };
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [isPostingReply, setIsPostingReply] = useState(false);
@@ -94,7 +100,7 @@ export function ExpeditionNotes({
       if (onPostNote) await onPostNote(noteText);
       setNoteText('');
       setShowNoteForm(false);
-      setDailyLimit(prev => ({ ...prev, used: prev.used + 1 }));
+      setLocalPostCount(prev => prev + 1);
     } catch (error) {
       console.error('Failed to post note:', error);
     } finally {
@@ -228,7 +234,7 @@ export function ExpeditionNotes({
             {showNoteForm ? '✕ CANCEL' : '+ LOG NOTE'}
           </button>
         )}
-        {isOwner && !canPostToday && (
+        {isOwner && !canPostToday && !isExpeditionLocked && (
           <div className="px-3 py-1 bg-[#202020]/30 text-xs font-mono">
             DAILY LIMIT REACHED
           </div>
