@@ -420,6 +420,8 @@ export function ExplorerProfilePage() {
         raised: e.raised || 0,
         sponsorsCount: e.sponsorsCount || 0,
         entriesCount: e.entriesCount || 0,
+        waypointsCount: e.waypointsCount || 0,
+        totalDistanceKm: e.totalDistanceKm || 0,
         region: e.region || '',
       })),
 
@@ -952,7 +954,7 @@ export function ExplorerProfilePage() {
                     fundingCurrent={expedition.raised}
                     fundingPercentage={expedition.goal > 0 ? (expedition.raised / expedition.goal) * 100 : 0}
                     backers={expedition.sponsorsCount}
-                    distance={0}
+                    distance={expedition.totalDistanceKm || 0}
                     status={expedition.status}
                     visibility={expedition.visibility as 'public' | 'off-grid' | 'private'}
                     terrain=""

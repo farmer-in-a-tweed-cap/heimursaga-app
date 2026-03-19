@@ -274,8 +274,9 @@ export function useExpeditionData(
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [apiExpedition?.entries]);
 
-  // Total route distance (km)
+  // Total route distance (km) — prefer stored value, fall back to haversine for legacy data
   const totalRouteDistance = useMemo(() => {
+    if (apiExpedition?.routeDistanceKm) return apiExpedition.routeDistanceKm;
     const coords = apiExpedition?.routeGeometry;
     if (coords && coords.length >= 2) {
       let total = 0;

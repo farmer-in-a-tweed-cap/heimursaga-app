@@ -288,6 +288,7 @@ export function ExpeditionBuilderPage() {
         region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
         routeMode: routeMode !== 'straight' ? routeMode : null,
         routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
+        routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
       };
 
@@ -941,6 +942,7 @@ export function ExpeditionBuilderPage() {
           region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
           routeMode: routeMode !== 'straight' ? routeMode : null,
           routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
+          routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
           tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
         };
 

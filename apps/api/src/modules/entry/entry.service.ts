@@ -1218,6 +1218,14 @@ export class EntryService {
           data: { entries_count: { increment: 1 } },
         });
 
+        // update the expedition entry count
+        if (expeditionDbId) {
+          await tx.expedition.update({
+            where: { id: expeditionDbId },
+            data: { entries_count: { increment: 1 } },
+          });
+        }
+
         return { entry };
       });
 
@@ -1698,6 +1706,8 @@ export class EntryService {
           where,
           select: {
             id: true,
+            author_id: true,
+            expedition_id: true,
             cover_upload: {
               select: { original: true, thumbnail: true },
             },
@@ -1719,6 +1729,18 @@ export class EntryService {
         where: { id: entry.id },
         data: { deleted_at: dateformat().toDate() },
       });
+
+      // Decrement explorer and expedition entry counts
+      await this.prisma.explorer.update({
+        where: { id: entry.author_id },
+        data: { entries_count: { decrement: 1 } },
+      });
+      if (entry.expedition_id) {
+        await this.prisma.expedition.update({
+          where: { id: entry.expedition_id },
+          data: { entries_count: { decrement: 1 } },
+        });
+      }
 
       // Clean up S3 objects for cover image and media
       const s3Paths: string[] = [];

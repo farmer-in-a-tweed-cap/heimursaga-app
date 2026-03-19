@@ -130,6 +130,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
   const [isRoundTrip, setIsRoundTrip] = useState(false);
   const [routeMode, setRouteMode] = useState<RouteMode>('straight');
   const [directionsGeometry, setDirectionsGeometry] = useState<[number, number][] | null>(null);
+  const [directionsDistanceKm, setDirectionsDistanceKm] = useState<number | null>(null);
   const [directionsLoading, setDirectionsLoading] = useState(false);
   const [directionsError, setDirectionsError] = useState<string | null>(null);
   const directionsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -333,6 +334,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     try {
       const MAX_WP = 25;
       let allCoords: [number, number][] = [];
+      let totalDistanceM = 0;
 
       if (coords.length <= MAX_WP) {
         const coordStr = coords.map(c => `${c[0].toFixed(6)},${c[1].toFixed(6)}`).join(';');
@@ -344,6 +346,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
           throw new Error(data.message || 'No route found between waypoints');
         }
         allCoords = data.routes[0].geometry.coordinates;
+        totalDistanceM = data.routes[0].distance ?? 0;
       } else {
         for (let i = 0; i < coords.length - 1; i += MAX_WP - 1) {
           const chunk = coords.slice(i, Math.min(i + MAX_WP, coords.length));
@@ -358,23 +361,27 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
           }
           const chunkCoords: [number, number][] = data.routes[0].geometry.coordinates;
           allCoords = allCoords.length > 0 ? allCoords.concat(chunkCoords.slice(1)) : chunkCoords;
+          totalDistanceM += data.routes[0].distance ?? 0;
         }
       }
 
       if (!abort.signal.aborted) {
         setDirectionsGeometry(allCoords);
+        setDirectionsDistanceKm(Math.round((totalDistanceM / 1000) * 10) / 10);
       }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         if (directionsAbortRef.current === abort) {
           setDirectionsError('Route calculation timed out');
           setDirectionsGeometry(null);
+          setDirectionsDistanceKm(null);
           setDirectionsLoading(false);
         }
         return;
       }
       setDirectionsError(err instanceof Error ? err.message : 'Failed to fetch route');
       setDirectionsGeometry(null);
+      setDirectionsDistanceKm(null);
     } finally {
       clearTimeout(timeout);
       if (!abort.signal.aborted) setDirectionsLoading(false);
@@ -391,6 +398,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     if (routeMode === 'straight' || waypoints.length < 2) {
       lastDirectionsFingerprintRef.current = '';
       setDirectionsGeometry(null);
+      setDirectionsDistanceKm(null);
       setDirectionsError(null);
       setDirectionsLoading(false);
       return;
@@ -405,6 +413,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     if (fingerprint === lastDirectionsFingerprintRef.current) return;
 
     setDirectionsGeometry(null);
+    setDirectionsDistanceKm(null);
     setDirectionsLoading(true);
 
     directionsTimerRef.current = setTimeout(() => {
@@ -627,6 +636,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         isRoundTrip,
         routeMode: routeMode !== 'straight' ? routeMode : undefined,
         routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
+        routeDistanceKm: directionsDistanceKm ?? undefined,
       } as Partial<Expedition>;
 
       // Completed expeditions can only update title, description, cover image, and route

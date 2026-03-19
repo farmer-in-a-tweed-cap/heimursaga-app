@@ -50,7 +50,8 @@ interface ExpeditionCardProps {
   fundingCurrent: number;
   fundingPercentage: number;
   backers: number;
-  distance: number;
+  distance?: number;
+  waypointsCount?: number;
   status: "active" | "completed" | "planned" | "cancelled";
   region?: string;
   terrain: string;
@@ -91,6 +92,7 @@ export function ExpeditionCard({
   fundingPercentage,
   backers,
   distance,
+  waypointsCount = 0,
   status,
   region,
   visibility,

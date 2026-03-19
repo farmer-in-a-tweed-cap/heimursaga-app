@@ -225,7 +225,8 @@ export class ExpeditionService {
           is_round_trip: true,
           goal: true,
           raised: true,
-          entries_count: true,
+          route_distance_km: true,
+          _count: { select: { entries: { where: { deleted_at: null } } } },
           author_id: true,
           author: {
             select: {
@@ -297,7 +298,7 @@ export class ExpeditionService {
             tags,
             goal,
             raised,
-            entries_count,
+            _count,
             bookmarks: expeditionBookmarks,
             ...expedition
           }) => {
@@ -351,7 +352,8 @@ export class ExpeditionService {
               goal: integerToDecimal(goal ?? 0),
               raised: raised ?? 0,
               sponsorsCount: sponsorCounts.get(author_id) ?? 0,
-              entriesCount: entries_count,
+              entriesCount: _count.entries,
+              totalDistanceKm: expedition.route_distance_km ?? 0,
               author: author
                 ? {
                     username: author.username,
@@ -431,7 +433,8 @@ export class ExpeditionService {
           is_round_trip: true,
           goal: true,
           raised: true,
-          entries_count: true,
+          route_distance_km: true,
+          _count: { select: { entries: { where: { deleted_at: null } } } },
           author_id: true,
           start_date: true,
           end_date: true,
@@ -514,7 +517,6 @@ export class ExpeditionService {
             is_round_trip,
             goal,
             raised,
-            entries_count,
             author_id,
             start_date,
             end_date,
@@ -580,7 +582,8 @@ export class ExpeditionService {
             goal: integerToDecimal(goal ?? 0),
             raised: raised ?? 0,
             sponsorsCount: sponsorCounts.get(author_id) ?? 0,
-            entriesCount: entries_count,
+            entriesCount: (row as any)._count?.entries ?? 0,
+            totalDistanceKm: (row as any).route_distance_km ?? 0,
             waypointsCount: row.waypoints.filter(
               (w) => (w.waypoint as any)._count?.entries === 0,
             ).length,
@@ -673,6 +676,7 @@ export class ExpeditionService {
             is_round_trip: true,
             route_mode: true,
             route_geometry: true,
+            route_distance_km: true,
             current_location_type: true,
             current_location_id: true,
             current_location_visibility: true,
@@ -997,6 +1001,7 @@ export class ExpeditionService {
         isRoundTrip: is_round_trip ?? false,
         routeMode: route_mode || undefined,
         routeGeometry: route_geometry ? JSON.parse(route_geometry) : undefined,
+        routeDistanceKm: expedition.route_distance_km ?? undefined,
         currentLocationVisibility:
           (current_location_visibility as 'public' | 'sponsors' | 'private') ||
           'public',
@@ -1242,6 +1247,7 @@ export class ExpeditionService {
           route_geometry: payload.routeGeometry
             ? JSON.stringify(payload.routeGeometry)
             : null,
+          route_distance_km: payload.routeDistanceKm ?? null,
           goal: payload.goal ? Math.round(payload.goal * 100) : 0,
           notes_access_threshold: payload.notesAccessThreshold
             ? Math.round(payload.notesAccessThreshold * 100)
@@ -1489,6 +1495,9 @@ export class ExpeditionService {
         updateData.route_geometry = routeGeometry
           ? JSON.stringify(routeGeometry)
           : null;
+      }
+      if (payload.routeDistanceKm !== undefined) {
+        updateData.route_distance_km = payload.routeDistanceKm ?? null;
       }
       await this.prisma.expedition.update({
         where: { id: expedition.id },
@@ -2270,6 +2279,7 @@ export class ExpeditionService {
           is_round_trip: true,
           route_mode: true,
           route_geometry: true,
+          route_distance_km: true,
           goal: true,
           notes_access_threshold: true,
           notes_visibility: true,
@@ -2311,6 +2321,7 @@ export class ExpeditionService {
           routeGeometry: d.route_geometry
             ? JSON.parse(d.route_geometry)
             : undefined,
+          routeDistanceKm: d.route_distance_km ?? undefined,
           goal: integerToDecimal(d.goal ?? 0),
           notesAccessThreshold: integerToDecimal(d.notes_access_threshold ?? 0),
           notesVisibility: d.notes_visibility || 'public',

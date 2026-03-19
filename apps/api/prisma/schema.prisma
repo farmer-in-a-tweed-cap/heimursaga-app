@@ -382,6 +382,7 @@ model Expedition {
   is_round_trip  Boolean?             @default(false) // Route returns to starting point
   route_mode     String?              @db.VarChar(20) // straight, walking, cycling, driving
   route_geometry        String?              @db.Text        // JSON-encoded [[lng,lat],...] from Mapbox Directions API
+  route_distance_km     Float?               // Total route distance in km (stored by expedition builder)
   current_location_type       String?              @db.VarChar(10) // 'waypoint' or 'entry'
   current_location_id         String?              @db.VarChar(20) // waypoint ID or entry public_id
   current_location_visibility String?              @default("public") @db.VarChar(10) // 'public', 'sponsors', or 'private'

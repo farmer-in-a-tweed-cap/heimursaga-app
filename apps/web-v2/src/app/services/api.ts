@@ -409,6 +409,8 @@ export interface ExplorerExpedition {
   goal?: number;
   raised?: number;
   sponsorsCount?: number;
+  waypointsCount?: number;
+  totalDistanceKm?: number;
   region?: string;
   currentLocation?: { lat: number; lon: number; name: string; source: string };
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
@@ -757,6 +759,8 @@ export interface Expedition {
   isRoundTrip?: boolean;
   routeMode?: string;
   routeGeometry?: number[][];
+  routeDistanceKm?: number;
+  totalDistanceKm?: number;
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';

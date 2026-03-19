@@ -118,6 +118,12 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   @ApiProperty({ required: false })
   @IsOptional()
   routeGeometry?: number[][];
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  routeDistanceKm?: number;
 }
 
 export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
@@ -211,6 +217,12 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @ApiProperty({ required: false })
   @IsOptional()
   routeGeometry?: number[][];
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  routeDistanceKm?: number;
 }
 
 export class ExpeditionCompleteDto {

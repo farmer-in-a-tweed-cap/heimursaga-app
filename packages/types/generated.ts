@@ -930,6 +930,7 @@ export interface ITripDetail {
   isRoundTrip?: boolean;
   routeMode?: string;
   routeGeometry?: number[][];
+  routeDistanceKm?: number;
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
@@ -1024,6 +1025,7 @@ export interface ITripCreatePayload {
   isRoundTrip?: boolean;
   routeMode?: string;
   routeGeometry?: number[][];
+  routeDistanceKm?: number;
 }
 
 export interface ITripCreateResponse {
@@ -1048,6 +1050,7 @@ export interface ITripUpdatePayload {
   isRoundTrip?: boolean;
   routeMode?: string;
   routeGeometry?: number[][];
+  routeDistanceKm?: number;
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
