@@ -41,7 +41,7 @@ export function InlineLocationMap({ lat, lng, className = '' }: InlineLocationMa
       center: [lng, lat],
       zoom: 12,
       interactive: true,
-      projection: 'mercator',
+      projection: 'globe',
       dragRotate: false,
       touchPitch: false,
       maxPitch: 0,
