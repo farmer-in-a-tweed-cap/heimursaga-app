@@ -245,8 +245,8 @@ export function ContentTabs({
                     elevation={undefined}
                     views={0}
                     markerNumber={num}
-                    isStart={num === 1}
-                    isEnd={num === unconvertedWaypoints.length}
+                    isStart={wp.id === waypoints[0]?.id}
+                    isEnd={wp.id === waypoints[waypoints.length - 1]?.id && waypoints.length > 1}
                     isCurrent={expedition.currentLocationSource === 'waypoint' && expedition.currentLocationId === wp.id}
                     onClick={() => onWaypointClick(wp.coords)}
                   />

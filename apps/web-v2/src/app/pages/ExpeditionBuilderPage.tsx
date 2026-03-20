@@ -15,13 +15,13 @@ import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelector';
 import { toast } from 'sonner';
-import { expeditionApi, uploadApi } from '@/app/services/api';
+import { expeditionApi, entryApi, uploadApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 import { GEO_REGION_GROUPS } from '@/app/utils/geoRegions';
 import { haversineFromLatLng } from '@/app/utils/haversine';
 import { buildWaypointPayload } from '@/app/utils/waypointPayload';
 import { projectToSegment } from '@/app/utils/routeSnapping';
-import { renderClusteredMarkers } from '@/app/utils/mapClustering';
+
 import { createPOIGeocoder, searchAlongRoute, fetchPOICategories, retrievePOI, clearRouteSearchCache, clipRouteToBounds } from '@/app/utils/poiGeocoder';
 import type { POIResult, POICategory } from '@/app/utils/poiGeocoder';
 import { useBuilderDateHandlers } from '@/app/hooks/useBuilderDateHandlers';
@@ -1600,26 +1600,38 @@ export function ExpeditionBuilderPage() {
       }
     });
 
-    // Add entry markers with clustering — only for legacy entries not linked to any waypoint
+    // Add draggable entry markers — only for entries not linked to any waypoint
     // (Linked entries are already represented by converted waypoint markers above)
     const linkedEntryIds = new Set<string>();
     waypoints.forEach(wp => {
       (wp.entryIds || []).forEach(eid => linkedEntryIds.add(eid));
     });
-    const legacyEntries = expeditionEntries.filter(e => !linkedEntryIds.has(e.id));
+    const unlinkedEntries = expeditionEntries.filter(e => !linkedEntryIds.has(e.id) && (e.coords.lat !== 0 || e.coords.lng !== 0));
 
-    if (legacyEntries.length > 0) {
-      const result = renderClusteredMarkers({
-        entries: legacyEntries,
-        map: map.current!,
-        mapContainerRef: mapContainer,
-        onSingleEntryClick: () => {},
-        onClusterClick: () => {},
+    unlinkedEntries.forEach(entry => {
+      const el = document.createElement('div');
+      el.style.cssText = 'cursor: grab; width: 22px; height: 22px; border-radius: 50%; background: #ac6d46; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;';
+
+      const marker = new mapboxgl.Marker({
+        element: el,
+        anchor: 'center',
+        draggable: true,
+      })
+        .setLngLat([entry.coords.lng, entry.coords.lat])
+        .addTo(map.current!);
+
+      marker.on('dragend', () => {
+        const lngLat = marker.getLngLat();
+        setExpeditionEntries(prev => prev.map(e =>
+          e.id === entry.id ? { ...e, coords: { lat: lngLat.lat, lng: lngLat.lng } } : e
+        ));
+        entryApi.update(entry.id, { title: entry.title, lat: lngLat.lat, lon: lngLat.lng }).catch(() => {
+          toast.error('Failed to save entry location');
+        });
       });
-      entryMarkersRef.current = result.markers;
-      clusteredEntryRef.current = result;
-      map.current!.on('zoomend', result.recalculate);
-    }
+
+      entryMarkersRef.current.push(marker);
+    });
 
     // Draw route line — deferred if style is still loading
     const drawRoute = () => {

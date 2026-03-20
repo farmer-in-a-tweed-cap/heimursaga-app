@@ -1158,7 +1158,7 @@ export const entryApi = {
   /**
    * Update an entry (requires auth)
    */
-  update: (id: string, payload: EntryCreatePayload) =>
+  update: (id: string, payload: Partial<EntryCreatePayload> & { title: string }) =>
     api.put<Entry>(`/posts/${id}`, payload),
 
   /**
