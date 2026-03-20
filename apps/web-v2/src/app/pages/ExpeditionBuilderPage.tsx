@@ -105,6 +105,7 @@ export function ExpeditionBuilderPage() {
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapZoom, setMapZoom] = useState(10);
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [selectedWaypoint, setSelectedWaypoint] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -1175,6 +1176,10 @@ export function ExpeditionBuilderPage() {
       newMap.addControl(new mapboxgl.NavigationControl(), 'top-left');
 
       // Set map loaded when style is loaded
+      newMap.on('zoomend', () => {
+        setMapZoom(Math.round(newMap.getZoom()));
+      });
+
       newMap.on('load', () => {
         setMapLoaded(true);
 
@@ -1411,8 +1416,9 @@ export function ExpeditionBuilderPage() {
     clusteredEntryRef.current = null;
     entryMarkersRef.current = [];
 
-    // Group nearby waypoints into clusters for rendering
-    const CLUSTER_THRESHOLD = 0.002; // ~200m — waypoints closer than this merge visually
+    // Group nearby waypoints into clusters — threshold scales with zoom level
+    const zoom = map.current?.getZoom() ?? 10;
+    const CLUSTER_THRESHOLD = 0.002 / Math.pow(2, Math.max(0, zoom - 10)); // ~200m at z10, shrinks at higher zoom
     const clustered: { waypoints: { wp: typeof waypoints[0]; idx: number }[]; lat: number; lng: number }[] = [];
     waypoints.forEach((waypoint, wpIdx) => {
       const existing = clustered.find(c =>
@@ -1739,7 +1745,7 @@ export function ExpeditionBuilderPage() {
       entryMarkersRef.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waypoints, mapLoaded, isRoundTrip, routeMode, directionsGeometry, directionsLoading, expeditionEntries, routeOrder]);
+  }, [waypoints, mapLoaded, mapZoom, isRoundTrip, routeMode, directionsGeometry, directionsLoading, expeditionEntries, routeOrder]);
 
   // Delete waypoint
   const handleDeleteWaypoint = (id: string) => {
