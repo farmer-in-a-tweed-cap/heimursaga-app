@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { expeditionApi, explorerApi, entryApi, type Expedition } from '@/app/services/api';
 import { haversineKm } from '@/app/utils/haversine';
@@ -20,13 +20,20 @@ export function useExpeditionData(
   const [entryBookmarked, setEntryBookmarked] = useState<Set<string>>(new Set());
   const [entryBookmarkLoading, setEntryBookmarkLoading] = useState<string | null>(null);
 
+  // Track last fetched data to avoid unnecessary state updates (prevents map remount)
+  const lastDataHashRef = useRef<string>('');
+
   // Fetch expedition from API
   const fetchExpedition = useCallback(async (showLoading = true) => {
     if (!expeditionId) return;
     if (showLoading) setLoading(true);
     try {
       const data = await expeditionApi.getById(expeditionId);
-      setApiExpedition(data);
+      const hash = JSON.stringify(data);
+      if (hash !== lastDataHashRef.current) {
+        lastDataHashRef.current = hash;
+        setApiExpedition(data);
+      }
       if (data.bookmarked !== undefined) {
         setIsBookmarked(data.bookmarked);
       }

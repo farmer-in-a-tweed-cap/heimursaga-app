@@ -99,8 +99,8 @@ export function ExpeditionQuickEntryPage() {
         if (exp.startDate && exp.endDate) {
           const s = new Date(exp.startDate);
           const e = new Date(exp.endDate);
-          const diff = Math.ceil((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
-          if (diff >= 0) setExpectedDuration(diff.toString());
+          const diff = Math.floor((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24)) + 1; // inclusive
+          if (diff >= 1) setExpectedDuration(diff.toString());
         }
         setExpeditionVisibility((exp.visibility as 'public' | 'off-grid' | 'private') || 'public');
         if (exp.coverImage) {
@@ -149,7 +149,7 @@ export function ExpeditionQuickEntryPage() {
       const durationNum = parseInt(days);
       if (!isNaN(durationNum) && durationNum > 0) {
         const end = new Date(start);
-        end.setDate(end.getDate() + durationNum);
+        end.setDate(end.getDate() + durationNum - 1); // inclusive: 1 day = same date
         setEndDate(end.toISOString().split('T')[0]);
       }
     }
@@ -166,8 +166,8 @@ export function ExpeditionQuickEntryPage() {
       const start = new Date(startDate);
       const end = new Date(date);
       const diffTime = end.getTime() - start.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays >= 0) {
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // inclusive
+      if (diffDays >= 1) {
         setExpectedDuration(diffDays.toString());
       }
     }
@@ -181,7 +181,7 @@ export function ExpeditionQuickEntryPage() {
       const durationNum = parseInt(expectedDuration);
       if (!isNaN(durationNum) && durationNum > 0) {
         const end = new Date(start);
-        end.setDate(end.getDate() + durationNum);
+        end.setDate(end.getDate() + durationNum - 1); // inclusive: 1 day = same date
         setStartDate(date);
         setEndDate(end.toISOString().split('T')[0]);
         return;
@@ -203,8 +203,8 @@ export function ExpeditionQuickEntryPage() {
       const start = new Date(date);
       const end = new Date(endDate);
       const diffTime = end.getTime() - start.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      if (diffDays >= 0) {
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1; // inclusive
+      if (diffDays >= 1) {
         setExpectedDuration(diffDays.toString());
       }
     }

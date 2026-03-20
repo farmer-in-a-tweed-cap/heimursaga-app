@@ -416,3 +416,71 @@ export function findCompletedRouteCoords(
 
   return completedCoords;
 }
+
+// ---------------------------------------------------------------------------
+// 8. drawPreviewRoute
+// ---------------------------------------------------------------------------
+
+/**
+ * Draws a translucent expedition route overlay on the atlas map when an entry
+ * marker is clicked. Uses `preview-` prefixed IDs to avoid collisions with
+ * expedition detail page layers.
+ */
+export function drawPreviewRoute(
+  map: mapboxgl.Map,
+  params: { routeCoordinates: number[][]; hasDirectionsRoute: boolean; casingColor: string; theme: string },
+): void {
+  const { routeCoordinates, hasDirectionsRoute, casingColor, theme } = params;
+  if (routeCoordinates.length < 2 || !map.isStyleLoaded()) return;
+
+  // Remove stale artifacts before adding
+  removePreviewRoute(map);
+
+  map.addSource('preview-route-line', {
+    type: 'geojson',
+    data: {
+      type: 'Feature',
+      properties: {},
+      geometry: { type: 'LineString', coordinates: routeCoordinates },
+    },
+  });
+
+  map.addLayer({
+    id: 'preview-route-line-casing',
+    type: 'line',
+    source: 'preview-route-line',
+    paint: {
+      'line-color': casingColor,
+      'line-width': 6,
+      'line-opacity': 0.2,
+    },
+  });
+
+  map.addLayer({
+    id: 'preview-route-line',
+    type: 'line',
+    source: 'preview-route-line',
+    paint: {
+      'line-color': theme === 'dark' ? '#4676ac' : '#ac6d46',
+      'line-width': 3,
+      'line-opacity': 0.6,
+      ...(hasDirectionsRoute ? {} : { 'line-dasharray': [2, 2] }),
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 9. removePreviewRoute
+// ---------------------------------------------------------------------------
+
+/**
+ * Removes all preview route layers, sources, and markers from the map.
+ * Safe to call even if no preview is currently drawn.
+ */
+export function removePreviewRoute(map: mapboxgl.Map | null | undefined): void {
+  if (!map || !map.isStyleLoaded()) return;
+  ['preview-route-line', 'preview-route-line-casing'].forEach(id => {
+    if (map.getLayer(id)) map.removeLayer(id);
+  });
+  if (map.getSource('preview-route-line')) map.removeSource('preview-route-line');
+}

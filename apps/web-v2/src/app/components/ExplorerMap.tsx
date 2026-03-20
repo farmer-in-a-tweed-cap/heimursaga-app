@@ -9,14 +9,16 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { MapPin, User, X, Maximize2, Minimize2, Bookmark, UserPlus, UserCheck, BookmarkCheck, Loader2, ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/context/ThemeContext';
-import { useMapLayer, getMapStyle } from '@/app/context/MapLayerContext';
+import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
 import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
 import { useAuth } from '@/app/context/AuthContext';
-import { entryApi, explorerApi } from '@/app/services/api';
+import { entryApi, explorerApi, expeditionApi } from '@/app/services/api';
 import { getExplorerStatus } from '@/app/components/ExplorerStatusBadge';
 import { formatDate } from '@/app/utils/dateFormat';
 import { renderClusteredMarkers, type EntryCluster, type ClusteredMarkersResult } from '@/app/utils/mapClustering';
 import { ClusterTimelinePopup } from '@/app/components/ClusterTimelinePopup';
+import { drawPreviewRoute, removePreviewRoute } from '@/app/utils/mapRouteDrawing';
+import { buildMergedRouteCoords } from '@/app/utils/routeSnapping';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -124,6 +126,9 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
   const navControlRef = useRef<mapboxgl.NavigationControl | null>(null);
   const highlightMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const clusteredRef = useRef<ClusteredMarkersResult | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewExpedition, setPreviewExpedition] = useState<{ title: string; id: string } | null>(null);
+  const previewMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const { theme } = useTheme();
   const { mapLayer } = useMapLayer();
   const { isAuthenticated } = useAuth();
@@ -634,6 +639,104 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     }
   }, [clickedExplorer, mapMode]);
 
+  // Expedition route preview — fetch and draw route when an entry with an expedition is clicked
+  useEffect(() => {
+    const cleanupPreview = () => {
+      removePreviewRoute(mapRef.current);
+      previewMarkersRef.current.forEach(m => m.remove());
+      previewMarkersRef.current = [];
+      setPreviewLoading(false);
+      setPreviewExpedition(null);
+    };
+
+    const map = mapRef.current;
+    if (!clickedEntry?.expeditionId || !map) {
+      cleanupPreview();
+      return cleanupPreview;
+    }
+
+    const abortController = new AbortController();
+    setPreviewLoading(true);
+
+    expeditionApi.getById(clickedEntry.expeditionId)
+      .then((expedition) => {
+        if (abortController.signal.aborted) return;
+
+        const hasDirectionsRoute = !!(expedition.routeGeometry && expedition.routeGeometry.length > 0);
+        const sortedWaypoints = [...(expedition.waypoints ?? [])]
+          .filter(wp => wp.lat != null && wp.lon != null)
+          .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+
+        const routeCoordinates = hasDirectionsRoute
+          ? expedition.routeGeometry!
+          : buildMergedRouteCoords(
+              sortedWaypoints.map(wp => ({ lat: wp.lat!, lng: wp.lon! })),
+              (expedition.entries ?? [])
+                .filter(e => e.lat != null && e.lon != null)
+                .map(e => ({ lat: e.lat!, lng: e.lon! })),
+            );
+
+        // Set expedition title for the overlay label
+        setPreviewExpedition({ title: expedition.title, id: expedition.id ?? expedition.publicId ?? clickedEntry.expeditionId });
+
+        // Draw route line
+        if (routeCoordinates.length >= 2) {
+          drawPreviewRoute(map, {
+            routeCoordinates,
+            hasDirectionsRoute,
+            casingColor: getLineCasingColor(mapLayer, theme),
+            theme,
+          });
+        }
+
+        // Add start/end waypoint markers only (no intermediate waypoints)
+        const endpointWps = sortedWaypoints.filter(wp => !wp.entryId && !(wp.entryIds?.length));
+        const addDiamond = (lngLat: [number, number], text: string, bg: string, border: string) => {
+          const el = document.createElement('div');
+          el.style.pointerEvents = 'none';
+          const diamond = document.createElement('div');
+          Object.assign(diamond.style, {
+            width: '24px', height: '24px', backgroundColor: bg, border: `2px solid ${border}`,
+            boxShadow: '0 1px 4px rgba(0,0,0,0.3)', transform: 'rotate(45deg)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: '0.8',
+          });
+          const span = document.createElement('span');
+          Object.assign(span.style, { transform: 'rotate(-45deg)', color: 'white', fontWeight: 'bold', fontSize: '11px', lineHeight: '1' });
+          span.textContent = text;
+          diamond.appendChild(span);
+          el.appendChild(diamond);
+          const m = new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat(lngLat).addTo(map);
+          previewMarkersRef.current.push(m);
+        };
+
+        if (endpointWps.length >= 1) {
+          const first = endpointWps[0];
+          const borderColor = expedition.isRoundTrip ? '#4676ac' : 'white';
+          addDiamond([first.lon!, first.lat!], 'S', '#ac6d46', borderColor);
+          // Show end marker only for non-round-trip expeditions with 2+ waypoints
+          if (!expedition.isRoundTrip && endpointWps.length >= 2) {
+            const last = endpointWps[endpointWps.length - 1];
+            addDiamond([last.lon!, last.lat!], 'E', '#4676ac', 'white');
+          }
+        }
+      })
+      .catch((err) => {
+        if (!abortController.signal.aborted) {
+          console.error('Error fetching expedition for route preview:', err);
+        }
+      })
+      .finally(() => {
+        if (!abortController.signal.aborted) {
+          setPreviewLoading(false);
+        }
+      });
+
+    return () => {
+      abortController.abort();
+      cleanupPreview();
+    };
+  }, [clickedEntry, mapLayer, theme]);
+
   const currentItems = mapMode === 'explorer' ? allExplorers : allEntries;
 
   return (
@@ -903,6 +1006,12 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
                       </>
                     )}
                   </div>
+                  {previewLoading && clickedEntry.expeditionId && (
+                    <div className="flex items-center gap-1.5 text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-1">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      <span>Loading route...</span>
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => {
@@ -1000,6 +1109,20 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
               </>
             )}
           />
+        )}
+
+        {/* Expedition Route Preview Title */}
+        {previewExpedition && (
+          <div className="absolute top-14 left-1/2 -translate-x-1/2 z-20 animate-in fade-in slide-in-from-top-2 duration-200">
+            <button
+              onClick={() => window.open(`/expedition/${previewExpedition.id}`, '_blank')}
+              className="bg-[#202020] bg-opacity-90 text-white px-4 py-2 flex items-center gap-2 hover:bg-opacity-100 transition-all group"
+            >
+              <span className="text-[10px] font-mono text-[#b5bcc4] tracking-wider">EXPEDITION</span>
+              <span className="w-px h-3 bg-[#616161]" />
+              <span className="font-serif text-sm font-bold group-hover:text-[#ac6d46] transition-colors">{previewExpedition.title}</span>
+            </button>
+          </div>
         )}
 
         {/* Stats Overlay */}

@@ -48,13 +48,20 @@ export function useApi<T>(endpoint: string | null, options?: UseApiOptions): Use
     }
 
     let cancelled = false;
-    setLoading(true);
+    // Only show loading spinner on initial fetch, not on background refetch
+    if (!hasFetchedRef.current) setLoading(true);
     setError(null);
 
     api
       .get<T>(endpoint)
       .then((res) => {
-        if (!cancelled) setData(res);
+        if (!cancelled) {
+          // Preserve reference identity when data is unchanged (avoids unmount/remount of heavy components like maps)
+          setData(prev => {
+            if (prev !== null && JSON.stringify(prev) === JSON.stringify(res)) return prev;
+            return res;
+          });
+        }
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof ApiError ? err : new ApiError(0, String(err)));

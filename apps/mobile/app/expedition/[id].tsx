@@ -443,21 +443,39 @@ export default function ExpeditionDetailScreen() {
     return clusterMarkers(markers, mapZoom);
   }, [expedition, mapZoom]);
 
+  // ── Map data (memoized before early returns for stable references) ─────
+  const sortedWaypoints = useMemo(() => {
+    if (!expedition) return [];
+    return [...(expedition.waypoints ?? [])]
+      .filter(w => w.lat != null && w.lon != null)
+      .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
+  }, [expedition]);
+
+  const geoEntries = useMemo(() => {
+    if (!expedition) return [];
+    return (expedition.entries ?? []).filter(e => e.lat != null && e.lon != null);
+  }, [expedition]);
+
+  const straightCoords = useMemo<[number, number][]>(() => {
+    return sortedWaypoints.length > 0
+      ? sortedWaypoints.map(w => [w.lon, w.lat])
+      : geoEntries.map(e => [e.lon!, e.lat!]);
+  }, [sortedWaypoints, geoEntries]);
+
+  const hasDirectionsRoute = !!(expedition?.routeGeometry && expedition.routeGeometry.length > 0);
+
   // Fetch directions on-demand when routeMode is set but routeGeometry is missing
   const [fetchedDirections, setFetchedDirections] = useState<[number, number][] | null>(null);
   const needsDirectionsFetch = expedition
-    && !(expedition.routeGeometry && expedition.routeGeometry.length > 0)
+    && !hasDirectionsRoute
     && expedition.routeMode
     && expedition.routeMode !== 'straight'
-    && (expedition.waypoints ?? []).filter(w => w.lat != null && w.lon != null).length >= 2;
+    && sortedWaypoints.length >= 2;
 
   useEffect(() => {
     if (!needsDirectionsFetch || !expedition) return;
     let cancelled = false;
-    const wps = [...(expedition.waypoints ?? [])]
-      .filter(w => w.lat != null && w.lon != null)
-      .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
-    const coords = wps.map(w => [w.lon, w.lat] as [number, number]);
+    const coords = sortedWaypoints.map(w => [w.lon, w.lat] as [number, number]);
     if (expedition.isRoundTrip && coords.length > 1) coords.push(coords[0]);
     const coordStr = coords.map(c => `${c[0].toFixed(6)},${c[1].toFixed(6)}`).join(';');
     fetch(
@@ -471,7 +489,35 @@ export default function ExpeditionDetailScreen() {
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [needsDirectionsFetch, expedition]);
+  }, [needsDirectionsFetch, expedition, sortedWaypoints]);
+
+  const routeCoords = useMemo<[number, number][]>(() => {
+    if (hasDirectionsRoute && expedition?.routeGeometry) return expedition.routeGeometry as [number, number][];
+    return fetchedDirections ?? straightCoords;
+  }, [hasDirectionsRoute, expedition?.routeGeometry, fetchedDirections, straightCoords]);
+
+  const mapBounds = useMemo(() => {
+    const allCoords = [
+      ...sortedWaypoints.map(w => ({ lon: w.lon, lat: w.lat })),
+      ...geoEntries.map(e => ({ lon: e.lon!, lat: e.lat! })),
+    ];
+    return allCoords.length > 0
+      ? {
+          ne: [
+            Math.max(...allCoords.map(c => c.lon)),
+            Math.max(...allCoords.map(c => c.lat)),
+          ] as [number, number],
+          sw: [
+            Math.min(...allCoords.map(c => c.lon)),
+            Math.min(...allCoords.map(c => c.lat)),
+          ] as [number, number],
+        }
+      : undefined;
+  }, [sortedWaypoints, geoEntries]);
+
+  const coverMapBounds = useMemo(() => {
+    return mapBounds ? { ...mapBounds, padding: 40 } : undefined;
+  }, [mapBounds]);
 
   if (loading) {
     return (
@@ -499,50 +545,6 @@ export default function ExpeditionDetailScreen() {
 
   const statusLabel = `${expedition.status.toUpperCase()} EXPEDITION`;
   const statusRight = expedition.category?.toUpperCase();
-
-  // ── Map data ──────────────────────────────────────────────────────────────
-  // Waypoints form the route; entries are additional markers
-  const sortedWaypoints = [...(expedition.waypoints ?? [])]
-    .filter(w => w.lat != null && w.lon != null)
-    .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0));
-  const geoEntries = (expedition.entries ?? []).filter(e => e.lat != null && e.lon != null);
-
-  // Route polyline: use saved directions geometry, fetch on-demand, or straight lines
-  const straightCoords: [number, number][] = sortedWaypoints.length > 0
-    ? sortedWaypoints.map(w => [w.lon, w.lat])
-    : geoEntries.map(e => [e.lon!, e.lat!]);
-
-  const hasDirectionsRoute = expedition.routeGeometry && expedition.routeGeometry.length > 0;
-
-  const routeCoords = useMemo<[number, number][]>(() => {
-    if (hasDirectionsRoute) return expedition.routeGeometry as [number, number][];
-    return fetchedDirections ?? straightCoords;
-  }, [hasDirectionsRoute, expedition.routeGeometry, fetchedDirections, straightCoords]);
-
-  // Bounds include both waypoints and entries — memoized to prevent map re-render on refetch
-  const mapBounds = useMemo(() => {
-    const allCoords = [
-      ...sortedWaypoints.map(w => ({ lon: w.lon, lat: w.lat })),
-      ...geoEntries.map(e => ({ lon: e.lon!, lat: e.lat! })),
-    ];
-    return allCoords.length > 0
-      ? {
-          ne: [
-            Math.max(...allCoords.map(c => c.lon)),
-            Math.max(...allCoords.map(c => c.lat)),
-          ] as [number, number],
-          sw: [
-            Math.min(...allCoords.map(c => c.lon)),
-            Math.min(...allCoords.map(c => c.lat)),
-          ] as [number, number],
-        }
-      : undefined;
-  }, [sortedWaypoints, geoEntries]);
-
-  // Cover map bounds with padding — stable reference to avoid map re-render on focus
-  const coverMapBounds = useMemo(() => {
-    return mapBounds ? { ...mapBounds, padding: 40 } : undefined;
-  }, [mapBounds]);
 
   // ── Current location ────────────────────────────────────────────────────
   const currentLoc = (() => {

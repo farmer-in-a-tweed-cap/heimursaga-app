@@ -126,16 +126,16 @@ export function calculateDaysElapsed(
     return 0;
   }
 
-  // For completed expeditions, calculate days between start and end
+  // For completed expeditions, calculate days between start and end (inclusive)
   if (status === 'completed' && endDate) {
     const end = parseDate(endDate);
     if (!isNaN(end.getTime())) {
-      return Math.max(0, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      return Math.max(1, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
     }
   }
 
-  // For active expeditions (or unknown status), calculate days from start to now
-  return Math.max(0, Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+  // For active expeditions (or unknown status), calculate days from start to now (day 1 = start day)
+  return Math.max(1, Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
 }
 
 /**

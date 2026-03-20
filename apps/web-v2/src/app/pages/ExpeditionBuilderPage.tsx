@@ -81,6 +81,7 @@ export function ExpeditionBuilderPage() {
   const markers = useRef<mapboxgl.Marker[]>([]);
   const waypointsRef = useRef<Waypoint[]>([]);
   const routeOrderRef = useRef<string[]>([]);
+  const expeditionEntriesRef = useRef<Array<{ id: string; title: string; date: string; place: string; coords: { lat: number; lng: number } }>>([]);
   const entryMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const clusteredEntryRef = useRef<{ cleanup: () => void; recalculate: () => void; markers: mapboxgl.Marker[]; removeAllHighlights: () => void } | null>(null);
   const originalWaypointIdsRef = useRef<string[]>([]); // Track API waypoint IDs loaded in edit mode
@@ -303,17 +304,31 @@ export function ExpeditionBuilderPage() {
 
       let expeditionPublicId: string;
 
-      // Build waypoint payload in display order (routeItems), not array order
+      // Build waypoint payload in display order (routeItems), including entries
       const orderedWaypoints = routeItems
-        .filter((item): item is Extract<typeof item, { kind: 'waypoint' }> => item.kind === 'waypoint')
-        .map((item, i) => ({
-          lat: item.waypoint.coordinates.lat,
-          lon: item.waypoint.coordinates.lng,
-          title: item.waypoint.name || undefined,
-          date: item.waypoint.date || undefined,
-          description: item.waypoint.description || undefined,
-          sequence: i,
-        }));
+        .filter(item => item.kind === 'waypoint' || (item.kind === 'entry' && item.entry.coords?.lat != null))
+        .map((item, i) => {
+          if (item.kind === 'waypoint') {
+            return {
+              lat: item.waypoint.coordinates.lat,
+              lon: item.waypoint.coordinates.lng,
+              title: item.waypoint.name || undefined,
+              date: item.waypoint.date || undefined,
+              description: item.waypoint.description || undefined,
+              sequence: i,
+              entryIds: item.waypoint.entryIds?.length > 0 ? item.waypoint.entryIds : undefined,
+            };
+          }
+          // Entry as route item — create a waypoint at the entry's coordinates
+          return {
+            lat: item.entry.coords.lat,
+            lon: item.entry.coords.lng,
+            title: item.entry.title || undefined,
+            date: item.entry.date || undefined,
+            sequence: i,
+            entryId: item.entry.id,
+          };
+        });
 
       if (isEditMode && expeditionId) {
         await expeditionApi.update(expeditionId, finalPayload);
@@ -427,6 +442,9 @@ export function ExpeditionBuilderPage() {
   useEffect(() => {
     routeOrderRef.current = routeOrder;
   }, [routeOrder]);
+  useEffect(() => {
+    expeditionEntriesRef.current = expeditionEntries;
+  }, [expeditionEntries]);
 
   // Update distances when waypoints change
   const updateDistances = (points: Waypoint[]): Waypoint[] => {
@@ -885,7 +903,7 @@ export function ExpeditionBuilderPage() {
     if (draft.startDate && draft.endDate) {
       const start = new Date(draft.startDate);
       const end = new Date(draft.endDate);
-      const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1; // inclusive
       setExpectedDuration(diffDays.toString());
     }
     setShowDraftPrompt(false);
@@ -958,22 +976,54 @@ export function ExpeditionBuilderPage() {
         }
 
         // Sync waypoints in display order
-        if (currentDraftId && waypointsRef.current.length > 0) {
+        if (currentDraftId && (waypointsRef.current.length > 0 || expeditionEntriesRef.current.length > 0)) {
           const wps = waypointsRef.current;
+          const entries = expeditionEntriesRef.current;
           const order = routeOrderRef.current;
-          // Sort waypoints by routeOrder, falling back to array order
-          const ordered = order.length > 0
-            ? order.filter(id => wps.some(w => w.id === id)).map(id => wps.find(w => w.id === id)!)
-            : wps;
-          const wpPayload = ordered.map((w, i) => ({
-            lat: w.coordinates.lat,
-            lon: w.coordinates.lng,
-            title: w.name || undefined,
-            date: w.date || undefined,
-            description: w.description || undefined,
-            sequence: i,
-          }));
-          await expeditionApi.syncWaypoints(currentDraftId, wpPayload);
+
+          // Build linked entry set from waypoints
+          const linkedIds = new Set<string>();
+          wps.forEach(w => (w.entryIds || []).forEach(eid => linkedIds.add(eid)));
+          const unlinked = entries.filter(e => !linkedIds.has(e.id));
+
+          // Build combined items in route order
+          type DraftRouteItem =
+            | { kind: 'waypoint'; id: string; waypoint: Waypoint }
+            | { kind: 'entry'; id: string; entry: typeof entries[0] };
+          const itemMap = new Map<string, DraftRouteItem>();
+          wps.forEach(w => itemMap.set(w.id, { kind: 'waypoint', id: w.id, waypoint: w }));
+          unlinked.forEach(e => itemMap.set(e.id, { kind: 'entry', id: e.id, entry: e }));
+
+          const orderedItems = order.length > 0
+            ? order.map(id => itemMap.get(id)).filter((r): r is DraftRouteItem => r !== undefined)
+            : [...itemMap.values()];
+
+          const wpPayload = orderedItems
+            .filter(item => item.kind === 'waypoint' || (item.kind === 'entry' && item.entry.coords?.lat != null))
+            .map((item, i) => {
+              if (item.kind === 'waypoint') {
+                return {
+                  lat: item.waypoint.coordinates.lat,
+                  lon: item.waypoint.coordinates.lng,
+                  title: item.waypoint.name || undefined,
+                  date: item.waypoint.date || undefined,
+                  description: item.waypoint.description || undefined,
+                  sequence: i,
+                  entryIds: item.waypoint.entryIds?.length > 0 ? item.waypoint.entryIds : undefined,
+                };
+              }
+              return {
+                lat: item.entry.coords.lat,
+                lon: item.entry.coords.lng,
+                title: item.entry.title || undefined,
+                date: item.entry.date || undefined,
+                sequence: i,
+                entryId: item.entry.id,
+              };
+            });
+          if (wpPayload.length > 0) {
+            await expeditionApi.syncWaypoints(currentDraftId, wpPayload);
+          }
         }
 
         lastSavedContentRef.current = currentSignature;
@@ -1748,7 +1798,7 @@ export function ExpeditionBuilderPage() {
       entryMarkersRef.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waypoints, mapLoaded, mapZoom, isRoundTrip, routeMode, directionsGeometry, directionsLoading, expeditionEntries, routeOrder]);
+  }, [waypoints, mapLoaded, isRoundTrip, routeMode, directionsGeometry, directionsLoading, expeditionEntries, routeOrder]);
 
   // Delete waypoint
   const handleDeleteWaypoint = (id: string) => {

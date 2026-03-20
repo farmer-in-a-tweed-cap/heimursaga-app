@@ -392,6 +392,17 @@ class WaypointSyncItemDto {
   @ApiProperty({ required: true })
   @IsNumber()
   sequence: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  entryId?: string;
+
+  @ApiProperty({ required: false })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  entryIds?: string[];
 }
 
 export class WaypointSyncDto {

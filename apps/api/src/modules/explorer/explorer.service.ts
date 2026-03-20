@@ -445,7 +445,7 @@ export class ExplorerService {
           _count: {
             select: {
               entries: { where: { deleted_at: null, is_draft: { not: true } } },
-              expeditions: { where: { deleted_at: null } },
+              expeditions: { where: { deleted_at: null, status: { in: ['active', 'planned', 'completed', 'ACTIVE', 'PLANNED', 'COMPLETED'] } } },
             },
           },
         },
@@ -1732,7 +1732,7 @@ export class SessionExplorerService {
               _count: {
                 select: {
                   entries: { where: { deleted_at: null, is_draft: false } },
-                  expeditions: { where: { deleted_at: null } },
+                  expeditions: { where: { deleted_at: null, status: { in: ['active', 'planned', 'completed', 'ACTIVE', 'PLANNED', 'COMPLETED'] } } },
                   followers: true,
                 },
               },

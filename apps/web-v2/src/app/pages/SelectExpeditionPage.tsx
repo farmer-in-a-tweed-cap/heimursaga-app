@@ -98,7 +98,7 @@ export function SelectExpeditionPage() {
     if (!startDate) return 0;
     const start = new Date(startDate);
     const now = new Date();
-    return Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(1, Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
   };
 
   // Show loading state
@@ -308,7 +308,7 @@ export function SelectExpeditionPage() {
                 ) : (
                   completedExpeditions.map((expedition) => {
                     const duration = expedition.startDate && expedition.endDate
-                      ? Math.floor((new Date(expedition.endDate).getTime() - new Date(expedition.startDate).getTime()) / (1000 * 60 * 60 * 24))
+                      ? Math.max(1, Math.floor((new Date(expedition.endDate).getTime() - new Date(expedition.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1)
                       : 0;
                     return (
                       <div

@@ -2615,6 +2615,8 @@ export class ExpeditionService {
         date?: string;
         description?: string;
         sequence: number;
+        entryId?: string;
+        entryIds?: string[];
       }>;
     }
   >): Promise<void> {
@@ -2647,6 +2649,16 @@ export class ExpeditionService {
           select: { waypoint_id: true },
         });
 
+        // Unlink entries from old waypoints before soft-deleting them
+        if (existingJoins.length > 0) {
+          await tx.entry.updateMany({
+            where: {
+              waypoint_id: { in: existingJoins.map((j) => j.waypoint_id) },
+            },
+            data: { waypoint_id: null },
+          });
+        }
+
         await tx.expeditionWaypoint.deleteMany({
           where: { expedition_id: expedition.id },
         });
@@ -2661,28 +2673,46 @@ export class ExpeditionService {
           });
         }
 
-        // Create new waypoints
-        for (const wp of payload.waypoints) {
-          const dateTime = wp.date ? new Date(wp.date) : null;
-          await tx.expeditionWaypoint.create({
-            data: {
-              sequence: wp.sequence,
-              waypoint: {
-                create: {
-                  title: wp.title,
-                  lat: wp.lat,
-                  lon: wp.lon,
-                  date: dateTime,
-                  description: wp.description,
+        // Create new waypoints and link entries in parallel
+        await Promise.all(
+          payload.waypoints.map(async (wp) => {
+            const dateTime = wp.date ? new Date(wp.date) : null;
+            const result = await tx.expeditionWaypoint.create({
+              data: {
+                sequence: wp.sequence,
+                waypoint: {
+                  create: {
+                    title: wp.title,
+                    lat: wp.lat,
+                    lon: wp.lon,
+                    date: dateTime,
+                    description: wp.description,
+                  },
+                },
+                expedition: {
+                  connect: { id: expedition.id },
                 },
               },
-              expedition: {
-                connect: { id: expedition.id },
-              },
-            },
-          });
-        }
-      });
+              include: { waypoint: true },
+            });
+
+            // Link entries to the new waypoint
+            const idsToLink = [
+              ...(wp.entryId ? [wp.entryId] : []),
+              ...(wp.entryIds || []),
+            ];
+            if (idsToLink.length > 0) {
+              await tx.entry.updateMany({
+                where: {
+                  public_id: { in: idsToLink },
+                  expedition_id: expedition.id,
+                },
+                data: { waypoint_id: result.waypoint.id },
+              });
+            }
+          }),
+        );
+      }, { timeout: 15000 });
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

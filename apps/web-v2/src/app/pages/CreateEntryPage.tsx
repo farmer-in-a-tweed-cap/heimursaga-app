@@ -519,7 +519,7 @@ export function CreateEntryPage() {
     if (!startDate) return 0;
     const start = new Date(startDate);
     const end = status === 'completed' && endDate ? new Date(endDate) : new Date();
-    return Math.max(0, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    return Math.max(1, Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1);
   };
 
   // Authentication gate - MUST be after all hooks

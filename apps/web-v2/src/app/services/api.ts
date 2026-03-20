@@ -980,7 +980,7 @@ export const expeditionApi = {
   /**
    * Sync all waypoints for an expedition (atomic replace)
    */
-  syncWaypoints: (id: string, waypoints: Array<{ lat: number; lon: number; title?: string; date?: string; description?: string; sequence: number }>) =>
+  syncWaypoints: (id: string, waypoints: Array<{ lat: number; lon: number; title?: string; date?: string; description?: string; sequence: number; entryId?: string; entryIds?: string[] }>) =>
     api.put<void>(`/trips/${id}/waypoints/sync`, { waypoints }),
 };
 
