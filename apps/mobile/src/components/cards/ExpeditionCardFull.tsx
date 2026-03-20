@@ -18,9 +18,23 @@ interface ExpeditionCardFullProps {
 export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullProps) {
   const { colors } = useTheme();
 
-  const dayCount = expedition.startDate
-    ? Math.max(1, Math.ceil((Date.now() - new Date(expedition.startDate).getTime()) / 86400000))
-    : undefined;
+  const now = Date.now();
+  const startMs = expedition.startDate ? new Date(expedition.startDate).getTime() : null;
+  const endMs = expedition.endDate ? new Date(expedition.endDate).getTime() : null;
+  const totalPlannedDays = startMs && endMs ? Math.max(1, Math.ceil((endMs - startMs) / 86400000)) : null;
+
+  const dateStat = (() => {
+    if (expedition.status === 'completed') {
+      return { label: 'DURATION', value: totalPlannedDays ? `${totalPlannedDays}d` : '\u2014' };
+    }
+    if (expedition.status === 'active') {
+      const daysActive = startMs ? Math.max(1, Math.ceil((now - startMs) / 86400000)) : 0;
+      return { label: 'DAYS ACTIVE', value: String(daysActive) };
+    }
+    // planned
+    const startsIn = startMs ? Math.max(0, Math.ceil((startMs - now) / 86400000)) : null;
+    return { label: 'STARTS IN', value: startsIn != null ? `${startsIn}d` : 'TBD' };
+  })();
 
   const sponsorable =
     expedition.author?.creator &&
@@ -91,8 +105,8 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
           <StatsBar
             stats={[
               {
-                value: dayCount != null ? String(dayCount) : '\u2014',
-                label: expedition.status === 'active' ? 'DAYS ACTIVE' : 'DAYS',
+                value: dateStat.value,
+                label: dateStat.label,
               },
               ...(sponsorable ? [{
                 value: fmtAmount(totalRaised),

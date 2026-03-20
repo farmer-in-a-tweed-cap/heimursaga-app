@@ -18,9 +18,22 @@ export function ExpeditionListItem({ expedition }: ExpeditionListItemProps) {
   const { dark, colors } = useTheme();
   const router = useRouter();
 
-  const dayCount = expedition.startDate
-    ? Math.max(1, Math.ceil((Date.now() - new Date(expedition.startDate).getTime()) / 86400000))
-    : undefined;
+  const now = Date.now();
+  const startMs = expedition.startDate ? new Date(expedition.startDate).getTime() : null;
+  const endMs = expedition.endDate ? new Date(expedition.endDate).getTime() : null;
+
+  const headerRight = (() => {
+    if (expedition.status === 'active' && startMs) {
+      return `DAY ${Math.max(1, Math.ceil((now - startMs) / 86400000))}`;
+    }
+    if (expedition.status === 'planned' && startMs) {
+      return `IN ${Math.max(0, Math.ceil((startMs - now) / 86400000))}d`;
+    }
+    if (expedition.status === 'completed' && startMs && endMs) {
+      return `${Math.max(1, Math.ceil((endMs - startMs) / 86400000))}d`;
+    }
+    return expedition.category?.toUpperCase();
+  })();
 
   const totalRaised = (expedition.raised ?? 0) + (expedition.recurringStats?.totalCommitted ?? 0);
 
@@ -30,10 +43,7 @@ export function ExpeditionListItem({ expedition }: ExpeditionListItemProps) {
         <StatusHeader
           status={expedition.status}
           label="EXPEDITION"
-          right={
-            expedition.status === 'active' && dayCount
-              ? `DAY ${dayCount}`
-              : expedition.category?.toUpperCase()
+          right={headerRight
           }
         />
         <View style={styles.body}>

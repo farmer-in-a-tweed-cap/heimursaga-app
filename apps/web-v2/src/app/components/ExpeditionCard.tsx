@@ -42,8 +42,8 @@ interface ExpeditionCardProps {
   journalEntriesArray?: JournalEntry[];
   startDate: string;
   endDate: string | null;
-  daysElapsed: number;
-  daysRemaining: number | null;
+  daysElapsed?: number;
+  daysRemaining?: number | null;
   journalEntries: number;
   lastUpdate: string;
   fundingGoal: number;
@@ -157,9 +157,45 @@ export function ExpeditionCard({
     cancelled: "CANCELLED EXPEDITION",
   };
 
-  // Calculate timeline progress
-  const totalDays = daysElapsed + (daysRemaining || 0);
-  const timelinePercentage = totalDays > 0 ? (daysElapsed / totalDays) * 100 : 0;
+  // Status-aware date stats
+  const now = Date.now();
+  const startMs = startDate ? new Date(startDate).getTime() : null;
+  const endMs = endDate ? new Date(endDate).getTime() : null;
+  const totalPlannedDays = startMs && endMs ? Math.max(1, Math.ceil((endMs - startMs) / 86400000)) : null;
+
+  const dateStats = (() => {
+    if (status === 'completed') {
+      return {
+        gridLabel: 'Duration:',
+        gridValue: totalPlannedDays ? `${totalPlannedDays}d` : 'N/A',
+        row2Left: { label: 'Duration:', value: totalPlannedDays ? `${totalPlannedDays}d` : 'N/A' },
+        row2Right: null,
+        progress: 100,
+      };
+    }
+    if (status === 'active') {
+      const daysActive = startMs ? Math.max(1, Math.ceil((now - startMs) / 86400000)) : 0;
+      const remaining = endMs ? Math.max(0, Math.ceil((endMs - now) / 86400000)) : null;
+      const total = totalPlannedDays ?? (remaining != null ? daysActive + remaining : null);
+      const pct = total && total > 0 ? Math.min((daysActive / total) * 100, 100) : 0;
+      return {
+        gridLabel: 'Days Active:',
+        gridValue: String(daysActive),
+        row2Left: { label: 'Remaining:', value: remaining != null ? `${remaining}d` : '∞' },
+        row2Right: { label: 'Total:', value: total ? `${total}d` : 'N/A' },
+        progress: pct,
+      };
+    }
+    // planned (or cancelled)
+    const startsIn = startMs ? Math.max(0, Math.ceil((startMs - now) / 86400000)) : null;
+    return {
+      gridLabel: 'Starts In:',
+      gridValue: startsIn != null ? `${startsIn}d` : 'TBD',
+      row2Left: { label: 'Starts In:', value: startsIn != null ? `${startsIn}d` : 'TBD' },
+      row2Right: { label: 'Duration:', value: totalPlannedDays ? `${totalPlannedDays}d` : 'TBD' },
+      progress: 0,
+    };
+  })();
 
   const isFullyFunded = fundingPercentage >= 100;
 
@@ -229,8 +265,8 @@ export function ExpeditionCard({
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a] px-4 py-4">
         <div className="grid grid-cols-2 gap-x-4 gap-y-3 font-mono text-xs">
           <div>
-            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Days Elapsed:</div>
-            <div className="font-bold text-sm dark:text-[#e5e5e5]">{daysElapsed || 0}</div>
+            <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">{dateStats.gridLabel}</div>
+            <div className="font-bold text-sm dark:text-[#e5e5e5]">{dateStats.gridValue}</div>
           </div>
           <div>
             <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Distance ({distanceLabel}):</div>
@@ -262,23 +298,25 @@ export function ExpeditionCard({
               <div className="font-bold text-sm dark:text-[#e5e5e5]">{endDate ? formatDate(endDate) || endDate : "Ongoing"}</div>
             </div>
             <div>
-              <div className="text-[#616161] dark:text-[#b5bcc4]">Remaining:</div>
-              <div className="font-bold text-sm dark:text-[#e5e5e5]">{daysRemaining !== null ? `${daysRemaining}d` : "∞"}</div>
+              <div className="text-[#616161] dark:text-[#b5bcc4]">{dateStats.row2Left.label}</div>
+              <div className="font-bold text-sm dark:text-[#e5e5e5]">{dateStats.row2Left.value}</div>
             </div>
+            {dateStats.row2Right && (
             <div>
-              <div className="text-[#616161] dark:text-[#b5bcc4]">Total:</div>
-              <div className="font-bold text-sm dark:text-[#e5e5e5]">{totalDays > 0 ? `${totalDays}d` : "N/A"}</div>
+              <div className="text-[#616161] dark:text-[#b5bcc4]">{dateStats.row2Right.label}</div>
+              <div className="font-bold text-sm dark:text-[#e5e5e5]">{dateStats.row2Right.value}</div>
             </div>
+            )}
           </div>
           <div>
-            <RadialProgress 
-              value={timelinePercentage} 
+            <RadialProgress
+              value={dateStats.progress}
               size={85}
               strokeWidth={7}
               centerContent={
                 <div className="text-center">
                   <div className="text-lg font-bold font-mono text-[#4676ac]">
-                    {Math.round(timelinePercentage)}%
+                    {Math.round(dateStats.progress)}%
                   </div>
                   <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
                     Progress

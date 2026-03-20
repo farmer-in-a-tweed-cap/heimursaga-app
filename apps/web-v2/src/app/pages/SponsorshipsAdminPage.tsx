@@ -1040,7 +1040,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
               <div className="flex items-center justify-between">
                 <div className="text-sm text-[#616161] dark:text-[#b5bcc4]">
                   {stripeConnected
-                    ? 'Configure your sponsorship tiers for one-time and monthly recurring sponsorships.'
+                    ? 'Set your monthly tier prices below. One-time tiers use fixed thresholds and cannot be edited.'
                     : 'Complete Stripe onboarding to configure your sponsorship tiers.'}
                 </div>
                 <div className="flex gap-2">
@@ -1080,7 +1080,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       disabled={!stripeConnected}
                       className="px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                     >
-                      EDIT TIERS
+                      EDIT MONTHLY TIERS
                     </button>
                   )}
                 </div>
@@ -1106,7 +1106,11 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                       </div>
                     )}
 
-                    {/* Amount inputs row */}
+                    {/* Monthly tier pricing inputs */}
+                    <div>
+                      <div className="text-xs font-bold tracking-wider text-[#ac6d46]">MONTHLY TIER PRICING</div>
+                      <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mb-3">Set your recurring sponsorship prices</div>
+                    </div>
                     <div className="grid grid-cols-3 gap-4">
                       {MONTHLY_TIER_SLOTS.map((slotDef) => {
                         const monthlyTier = editedMonthlyTiers.find(t => t.priority === slotDef.slot);
@@ -1138,8 +1142,8 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                                 }}
                                 className="w-4 h-4"
                               />
-                              <span className="text-xs font-bold tracking-wider text-[#202020] dark:text-[#e5e5e5]">
-                                TIER {slotDef.slot}
+                              <span className="text-xs font-bold tracking-wider text-[#ac6d46]">
+                                {getTierLabel('MONTHLY', slotDef.slot).toUpperCase()}
                               </span>
                             </div>
                             <div className="flex items-center gap-1">
@@ -1217,7 +1221,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                     {/* ONE-TIME TIERS */}
                     <div>
                       <div className="text-xs font-bold tracking-wider text-[#4676ac]">ONE-TIME TIERS</div>
-                      <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mb-3">Perks cover the sponsored expedition only</div>
+                      <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mb-3">Fixed thresholds — perks cover the sponsored expedition only</div>
                       <div className="grid grid-cols-3 gap-4">
                         {ONE_TIME_TIER_SLOTS.map((slotDef) => {
                           const oneTimeTier = editedOneTimeTiers.find(t => t.priority === slotDef.slot);
