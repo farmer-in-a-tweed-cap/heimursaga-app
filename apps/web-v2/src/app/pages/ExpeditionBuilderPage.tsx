@@ -80,6 +80,7 @@ export function ExpeditionBuilderPage() {
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const waypointsRef = useRef<Waypoint[]>([]);
+  const routeOrderRef = useRef<string[]>([]);
   const entryMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const clusteredEntryRef = useRef<{ cleanup: () => void; recalculate: () => void; markers: mapboxgl.Marker[]; removeAllHighlights: () => void } | null>(null);
   const originalWaypointIdsRef = useRef<string[]>([]); // Track API waypoint IDs loaded in edit mode
@@ -300,21 +301,24 @@ export function ExpeditionBuilderPage() {
 
       let expeditionPublicId: string;
 
+      // Build waypoint payload in display order (routeItems), not array order
+      const orderedWaypoints = routeItems
+        .filter((item): item is Extract<typeof item, { kind: 'waypoint' }> => item.kind === 'waypoint')
+        .map((item, i) => ({
+          lat: item.waypoint.coordinates.lat,
+          lon: item.waypoint.coordinates.lng,
+          title: item.waypoint.name || undefined,
+          date: item.waypoint.date || undefined,
+          description: item.waypoint.description || undefined,
+          sequence: i,
+        }));
+
       if (isEditMode && expeditionId) {
         await expeditionApi.update(expeditionId, finalPayload);
         expeditionPublicId = expeditionId;
 
-        // Sync all waypoints in a single API call
-        if (waypoints.length > 0) {
-          const wpPayload = waypoints.map((w, i) => ({
-            lat: w.coordinates.lat,
-            lon: w.coordinates.lng,
-            title: w.name || undefined,
-            date: w.date || undefined,
-            description: w.description || undefined,
-            sequence: i,
-          }));
-          await expeditionApi.syncWaypoints(expeditionId, wpPayload);
+        if (orderedWaypoints.length > 0) {
+          await expeditionApi.syncWaypoints(expeditionId, orderedWaypoints);
         }
       } else if (draftId) {
         // Publishing from a draft — update final state, sync waypoints, then publish
@@ -322,17 +326,8 @@ export function ExpeditionBuilderPage() {
         const { status: _status, ...draftPayload } = payload;
         await expeditionApi.update(draftId, draftPayload);
 
-        // Sync waypoints atomically
-        if (waypoints.length > 0) {
-          const wpPayload = waypoints.map((w, i) => ({
-            lat: w.coordinates.lat,
-            lon: w.coordinates.lng,
-            title: w.name || undefined,
-            date: w.date || undefined,
-            description: w.description || undefined,
-            sequence: i,
-          }));
-          await expeditionApi.syncWaypoints(draftId, wpPayload);
+        if (orderedWaypoints.length > 0) {
+          await expeditionApi.syncWaypoints(draftId, orderedWaypoints);
         }
 
         // Transition from draft to planned/active/completed
@@ -341,17 +336,8 @@ export function ExpeditionBuilderPage() {
         const result = await expeditionApi.create(payload);
         expeditionPublicId = (result as any).expeditionId || (result as any).id;
 
-        // Sync all waypoints in a single API call
-        if (waypoints.length > 0) {
-          const wpPayload = waypoints.map((w, i) => ({
-            lat: w.coordinates.lat,
-            lon: w.coordinates.lng,
-            title: w.name || undefined,
-            date: w.date || undefined,
-            description: w.description || undefined,
-            sequence: i,
-          }));
-          await expeditionApi.syncWaypoints(expeditionPublicId, wpPayload);
+        if (orderedWaypoints.length > 0) {
+          await expeditionApi.syncWaypoints(expeditionPublicId, orderedWaypoints);
         }
       }
 
@@ -431,10 +417,13 @@ export function ExpeditionBuilderPage() {
     });
   }, [expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, isRoundTrip, routeMode, tags, waypoints]);
 
-  // Keep ref in sync with state
+  // Keep refs in sync with state
   useEffect(() => {
     waypointsRef.current = waypoints;
   }, [waypoints]);
+  useEffect(() => {
+    routeOrderRef.current = routeOrder;
+  }, [routeOrder]);
 
   // Update distances when waypoints change
   const updateDistances = (points: Waypoint[]): Waypoint[] => {
@@ -960,9 +949,15 @@ export function ExpeditionBuilderPage() {
           await expeditionApi.update(currentDraftId, payload as any);
         }
 
-        // Sync waypoints if any exist
+        // Sync waypoints in display order
         if (currentDraftId && waypointsRef.current.length > 0) {
-          const wpPayload = waypointsRef.current.map((w, i) => ({
+          const wps = waypointsRef.current;
+          const order = routeOrderRef.current;
+          // Sort waypoints by routeOrder, falling back to array order
+          const ordered = order.length > 0
+            ? order.filter(id => wps.some(w => w.id === id)).map(id => wps.find(w => w.id === id)!)
+            : wps;
+          const wpPayload = ordered.map((w, i) => ({
             lat: w.coordinates.lat,
             lon: w.coordinates.lng,
             title: w.name || undefined,
