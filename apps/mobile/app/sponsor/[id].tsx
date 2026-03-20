@@ -19,6 +19,7 @@ import { Svg, Path, Rect } from 'react-native-svg';
 import { sponsorshipApi, explorerApi } from '@/services/api';
 import { mono, colors as brandColors, borders } from '@/theme/tokens';
 import type { Expedition, SponsorshipTier } from '@/types/api';
+import { getPerksForSlot, getTierLabel, getTierSlotConfig, ONE_TIME_TIER_SLOTS, MONTHLY_TIER_SLOTS } from '@repo/types/sponsorship-tiers';
 
 const PRESET_AMOUNTS = [10, 25, 50, 100];
 
@@ -197,7 +198,7 @@ export default function SponsorScreen() {
             <HCard>
               <View style={styles.fundingCard}>
                 <FundingBar
-                  raised={expedition.raised ?? 0}
+                  raised={(expedition.raised ?? 0) + (expedition.recurringStats?.totalCommitted ?? 0)}
                   goal={expedition.goal}
                 />
                 <Text style={[styles.sponsorCount, { color: colors.textTertiary }]}>
@@ -286,14 +287,41 @@ export default function SponsorScreen() {
                     <Text style={[styles.tierPrice, { color: selectedTier?.id === tier.id ? brandColors.copper : colors.text }]}>
                       ${tier.price}/mo
                     </Text>
-                    {tier.description ? (
-                      <Text style={[styles.tierDesc, { color: colors.textSecondary }]} numberOfLines={2}>
-                        {tier.description}
-                      </Text>
-                    ) : null}
+                    <Text style={[styles.tierLabel, { color: brandColors.copper }]}>
+                      {getTierLabel('MONTHLY', tier.priority ?? 1)}
+                    </Text>
+                    {(() => {
+                      const config = getTierSlotConfig('MONTHLY', tier.priority ?? 1);
+                      return config ? (
+                        <Text style={[styles.tierRange, { color: colors.textTertiary }]}>
+                          ${config.minPrice}{config.maxPrice ? `–$${config.maxPrice}` : '+'}/mo
+                        </Text>
+                      ) : null;
+                    })()}
+                    <View style={[styles.perksContainer, { borderTopColor: `${colors.border}60` }]}>
+                      {getPerksForSlot('MONTHLY', tier.priority ?? 1).map((perk, i) => (
+                        <View key={i} style={styles.perkRow}>
+                          <Text style={styles.perkCheck}>*</Text>
+                          <Text style={[styles.perkText, { color: colors.textSecondary }]}>{perk}</Text>
+                        </View>
+                      ))}
+                    </View>
                   </TouchableOpacity>
                 ))
               )}
+            </View>
+          )}
+
+          {/* Perks summary for one-time */}
+          {paymentType === 0 && (
+            <View style={[styles.perksBox, { borderColor: brandColors.blue }]}>
+              <Text style={[styles.perksBoxTitle, { color: brandColors.blue }]}>YOUR PERKS:</Text>
+              {getPerksForSlot('ONE_TIME', activeAmount >= 75 ? 3 : activeAmount >= 25 ? 2 : 1).map((perk, i) => (
+                <View key={i} style={styles.perkRow}>
+                  <Text style={styles.perkCheck}>*</Text>
+                  <Text style={[styles.perkText, { color: colors.text }]}>{perk}</Text>
+                </View>
+              ))}
             </View>
           )}
 
@@ -385,8 +413,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   tierPrice: { fontFamily: mono, fontSize: 16, fontWeight: '700' },
-  tierDesc: { fontFamily: mono, fontSize: 12, marginTop: 4 },
+  tierLabel: { fontFamily: mono, fontSize: 11, fontWeight: '700', marginTop: 2 },
+  tierRange: { fontFamily: mono, fontSize: 10, marginTop: 2 },
   emptyTiers: { fontFamily: mono, fontSize: 12, textAlign: 'center', paddingVertical: 16 },
+  perksContainer: { borderTopWidth: 1, marginTop: 8, paddingTop: 6 },
+  perkRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4, marginTop: 2 },
+  perkCheck: { fontFamily: mono, fontSize: 10, color: '#598636', fontWeight: '700' },
+  perkText: { fontFamily: mono, fontSize: 10, flex: 1 },
+  perksBox: { borderWidth: 2, padding: 12, marginBottom: 16 },
+  perksBoxTitle: { fontFamily: mono, fontSize: 11, fontWeight: '700', marginBottom: 6 },
   messageInput: {
     borderWidth: borders.thick,
     padding: 12,

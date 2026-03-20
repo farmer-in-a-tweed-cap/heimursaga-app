@@ -17,7 +17,7 @@ export function ProUpgradePrompt({
   const benefits = [
     'Receive sponsorships from supporters',
     'Private messaging with explorers and sponsors',
-    'Expedition Notes (280-character updates)',
+    'Expedition Notes (500-character updates)',
     'Sponsor-only entries and content',
     'Up to 10 photos per entry (vs 2 for free)',
     'Expedition insights and analytics',

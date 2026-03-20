@@ -172,6 +172,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
   const [fundingGoal, setFundingGoal] = useState('');
   const [notesVisibility, setNotesVisibility] = useState<'public' | 'sponsor'>('public');
   const [notesAccessThreshold, setNotesAccessThreshold] = useState('');
+  const [earlyAccessEnabled, setEarlyAccessEnabled] = useState(false);
 
   // ── Load expedition data in edit mode ──
   useEffect(() => {
@@ -208,6 +209,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         }
         if (exp.notesVisibility) setNotesVisibility(exp.notesVisibility);
         if (exp.notesAccessThreshold) setNotesAccessThreshold(String(exp.notesAccessThreshold));
+        if (exp.earlyAccessEnabled) setEarlyAccessEnabled(true);
         if (exp.isRoundTrip) setIsRoundTrip(true);
         if (exp.routeMode && exp.routeMode !== 'straight') setRouteMode(exp.routeMode as RouteMode);
 
@@ -632,6 +634,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         goal: fundingEnabled && fundingGoal && !isNaN(parseFloat(fundingGoal.replace(/,/g, ''))) ? parseFloat(fundingGoal.replace(/,/g, '')) : 0,
         notesVisibility,
         notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
+        earlyAccessEnabled: fundingEnabled ? earlyAccessEnabled : false,
         coverImage: coverImageUrl || undefined,
         isRoundTrip,
         routeMode: routeMode !== 'straight' ? routeMode : undefined,
@@ -666,7 +669,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     } finally {
       setSubmitting(false);
     }
-  }, [editExpeditionId, name, description, endDateStr, visibility, fundingEnabled, fundingGoal, notesVisibility, notesAccessThreshold, waypoints, router, coverImageUrl, isRoundTrip, routeMode, directionsGeometry]);
+  }, [editExpeditionId, name, description, endDateStr, visibility, fundingEnabled, fundingGoal, notesVisibility, notesAccessThreshold, earlyAccessEnabled, waypoints, router, coverImageUrl, isRoundTrip, routeMode, directionsGeometry]);
 
   // ── Edit mode: delete expedition ──
   const handleDeleteExpedition = useCallback(() => {
@@ -738,6 +741,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         goal: fundingEnabled && fundingGoal && !isNaN(parseFloat(fundingGoal.replace(/,/g, ''))) ? parseFloat(fundingGoal.replace(/,/g, '')) : undefined,
         notesVisibility,
         notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
+        earlyAccessEnabled: fundingEnabled ? earlyAccessEnabled : false,
         status: isDraft ? 'planned' : derivedStatus,
         coverImage: coverImageUrl || undefined,
         routeMode: routeMode !== 'straight' ? routeMode : undefined,
@@ -1642,6 +1646,43 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                       )}
                     </View>
                   </HCard>
+
+                  {/* Early Entry Access */}
+                  {fundingEnabled && (
+                    <HCard>
+                      <View style={{ padding: 16 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <View style={{ flex: 1, marginRight: 12 }}>
+                            <Text style={[styles.fieldLabel, { color: colors.text }]}>EARLY ENTRY ACCESS</Text>
+                            <Text style={[styles.fieldHelp, { color: colors.textTertiary, marginTop: 4 }]}>
+                              Qualifying sponsors see new entries before the public. Tier 2: 24h, Tier 3: 48h.
+                            </Text>
+                          </View>
+                          <TouchableOpacity
+                            onPress={() => setEarlyAccessEnabled(!earlyAccessEnabled)}
+                            style={{
+                              width: 44,
+                              height: 24,
+                              borderRadius: 12,
+                              backgroundColor: earlyAccessEnabled ? brandColors.green : brandColors.lightGray,
+                              justifyContent: 'center',
+                              paddingHorizontal: 2,
+                            }}
+                          >
+                            <View
+                              style={{
+                                width: 20,
+                                height: 20,
+                                borderRadius: 10,
+                                backgroundColor: '#fff',
+                                alignSelf: earlyAccessEnabled ? 'flex-end' : 'flex-start',
+                              }}
+                            />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </HCard>
+                  )}
                 </>
               )}
 

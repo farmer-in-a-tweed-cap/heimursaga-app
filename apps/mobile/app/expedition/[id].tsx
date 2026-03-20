@@ -93,9 +93,14 @@ interface ExpeditionDetail {
   description?: string;
   startDate?: string;
   endDate?: string;
-  author?: { username: string; name?: string; picture?: string; creator?: boolean };
+  author?: { username: string; name?: string; picture?: string; creator?: boolean; stripeAccountConnected?: boolean };
   raised?: number;
   goal?: number;
+  recurringStats?: {
+    activeSponsors: number;
+    monthlyRevenue: number;
+    totalCommitted: number;
+  };
   sponsorsCount?: number;
   entriesCount?: number;
   waypointsCount?: number;
@@ -509,27 +514,35 @@ export default function ExpeditionDetailScreen() {
 
   const hasDirectionsRoute = expedition.routeGeometry && expedition.routeGeometry.length > 0;
 
-  const routeCoords: [number, number][] = hasDirectionsRoute
-    ? (expedition.routeGeometry as [number, number][])
-    : fetchedDirections ?? straightCoords;
+  const routeCoords = useMemo<[number, number][]>(() => {
+    if (hasDirectionsRoute) return expedition.routeGeometry as [number, number][];
+    return fetchedDirections ?? straightCoords;
+  }, [hasDirectionsRoute, expedition.routeGeometry, fetchedDirections, straightCoords]);
 
-  // Bounds include both waypoints and entries
-  const allCoords = [
-    ...sortedWaypoints.map(w => ({ lon: w.lon, lat: w.lat })),
-    ...geoEntries.map(e => ({ lon: e.lon!, lat: e.lat! })),
-  ];
-  const mapBounds = allCoords.length > 0
-    ? {
-        ne: [
-          Math.max(...allCoords.map(c => c.lon)),
-          Math.max(...allCoords.map(c => c.lat)),
-        ] as [number, number],
-        sw: [
-          Math.min(...allCoords.map(c => c.lon)),
-          Math.min(...allCoords.map(c => c.lat)),
-        ] as [number, number],
-      }
-    : undefined;
+  // Bounds include both waypoints and entries — memoized to prevent map re-render on refetch
+  const mapBounds = useMemo(() => {
+    const allCoords = [
+      ...sortedWaypoints.map(w => ({ lon: w.lon, lat: w.lat })),
+      ...geoEntries.map(e => ({ lon: e.lon!, lat: e.lat! })),
+    ];
+    return allCoords.length > 0
+      ? {
+          ne: [
+            Math.max(...allCoords.map(c => c.lon)),
+            Math.max(...allCoords.map(c => c.lat)),
+          ] as [number, number],
+          sw: [
+            Math.min(...allCoords.map(c => c.lon)),
+            Math.min(...allCoords.map(c => c.lat)),
+          ] as [number, number],
+        }
+      : undefined;
+  }, [sortedWaypoints, geoEntries]);
+
+  // Cover map bounds with padding — stable reference to avoid map re-render on focus
+  const coverMapBounds = useMemo(() => {
+    return mapBounds ? { ...mapBounds, padding: 40 } : undefined;
+  }, [mapBounds]);
 
   // ── Current location ────────────────────────────────────────────────────
   const currentLoc = (() => {
@@ -700,7 +713,7 @@ export default function ExpeditionDetailScreen() {
           {MapComponent && (
             <MapComponent
               style={StyleSheet.absoluteFillObject}
-              bounds={mapBounds ? { ...mapBounds, padding: 40 } : undefined}
+              bounds={coverMapBounds}
               center={[-98, 40]}
               zoom={2}
               routeCoords={routeCoords.length > 1 ? routeCoords : undefined}
@@ -790,12 +803,12 @@ export default function ExpeditionDetailScreen() {
         <View style={[styles.statsWrapper, { borderColor: colors.border }]}>
           <StatsBar
             stats={[
-              {
-                value: fmtAmount(expedition.raised ?? 0),
-                suffix: (expedition.goal ?? 0) > 0 ? `/${fmtAmount(expedition.goal!)}` : undefined,
+              ...((expedition.goal ?? 0) > 0 ? [{
+                value: fmtAmount((expedition.raised ?? 0) + (expedition.recurringStats?.totalCommitted ?? 0)),
+                suffix: `/${fmtAmount(expedition.goal!)}`,
                 label: 'RAISED',
-              },
-              { value: String(expedition.sponsorsCount ?? 0), label: 'SPONSORS' },
+              }] : []),
+              ...((expedition.goal ?? 0) > 0 ? [{ value: String(expedition.sponsorsCount ?? 0), label: 'SPONSORS' }] : []),
               { value: String(expedition.entriesCount ?? 0), label: 'ENTRIES' },
             ]}
           />
@@ -933,12 +946,12 @@ export default function ExpeditionDetailScreen() {
                       onChangeText={setNoteText}
                       placeholder="Share a quick update with your sponsors..."
                       placeholderTextColor={colors.textTertiary}
-                      maxLength={280}
+                      maxLength={500}
                       multiline
                     />
                     <View style={styles.noteFormFooter}>
-                      <Text style={[styles.noteFormCount, { color: noteText.length > 250 ? brandColors.red : colors.textTertiary }]}>
-                        {noteText.length}/280
+                      <Text style={[styles.noteFormCount, { color: noteText.length > 450 ? brandColors.red : colors.textTertiary }]}>
+                        {noteText.length}/500
                       </Text>
                       <TouchableOpacity
                         style={[styles.noteFormSubmit, { opacity: noteText.trim() ? 1 : 0.5 }]}
@@ -1000,12 +1013,12 @@ export default function ExpeditionDetailScreen() {
                             style={[styles.noteFormInput, { color: colors.text, borderColor: brandColors.blue }]}
                             value={editNoteText}
                             onChangeText={setEditNoteText}
-                            maxLength={280}
+                            maxLength={500}
                             multiline
                           />
                           <View style={styles.noteFormFooter}>
-                            <Text style={[styles.noteFormCount, { color: editNoteText.length > 250 ? brandColors.red : colors.textTertiary }]}>
-                              {editNoteText.length}/280
+                            <Text style={[styles.noteFormCount, { color: editNoteText.length > 450 ? brandColors.red : colors.textTertiary }]}>
+                              {editNoteText.length}/500
                             </Text>
                             <View style={{ flexDirection: 'row', gap: 8 }}>
                               <TouchableOpacity
@@ -1046,12 +1059,12 @@ export default function ExpeditionDetailScreen() {
                             onChangeText={setReplyText}
                             placeholder="Write a response..."
                             placeholderTextColor={colors.textTertiary}
-                            maxLength={280}
+                            maxLength={500}
                             multiline
                           />
                           <View style={styles.noteFormFooter}>
-                            <Text style={[styles.noteFormCount, { color: replyText.length > 250 ? brandColors.red : colors.textTertiary }]}>
-                              {replyText.length}/280
+                            <Text style={[styles.noteFormCount, { color: replyText.length > 450 ? brandColors.red : colors.textTertiary }]}>
+                              {replyText.length}/500
                             </Text>
                             <TouchableOpacity
                               style={[styles.noteFormSubmit, { opacity: replyText.trim() ? 1 : 0.5 }]}
@@ -1100,12 +1113,12 @@ export default function ExpeditionDetailScreen() {
                                       style={[styles.noteFormInput, { color: colors.text, borderColor: brandColors.blue, minHeight: 50, fontSize: 13 }]}
                                       value={editReplyText}
                                       onChangeText={setEditReplyText}
-                                      maxLength={280}
+                                      maxLength={500}
                                       multiline
                                     />
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                                      <Text style={[styles.noteFormCount, { color: editReplyText.length > 250 ? brandColors.red : colors.textTertiary }]}>
-                                        {editReplyText.length}/280
+                                      <Text style={[styles.noteFormCount, { color: editReplyText.length > 450 ? brandColors.red : colors.textTertiary }]}>
+                                        {editReplyText.length}/500
                                       </Text>
                                       <TouchableOpacity
                                         style={[styles.noteFormSubmit, { backgroundColor: brandColors.blue, opacity: editReplyText.trim() && editReplyText !== reply.text ? 1 : 0.5, paddingVertical: 4, paddingHorizontal: 10 }]}

@@ -252,7 +252,13 @@ export class ExpeditionNoteService {
       // Get the expedition
       const expedition = await this.prisma.expedition.findFirst({
         where: { public_id: expeditionId, deleted_at: null },
-        select: { id: true, author_id: true, status: true, visibility: true, end_date: true },
+        select: {
+          id: true,
+          author_id: true,
+          status: true,
+          visibility: true,
+          end_date: true,
+        },
       });
 
       if (!expedition)

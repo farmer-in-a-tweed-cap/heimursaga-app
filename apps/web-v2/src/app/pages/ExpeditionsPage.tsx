@@ -170,7 +170,7 @@ export function ExpeditionsPage() {
     status: (exp.status === 'active' ? 'active' : exp.status === 'completed' ? 'completed' : exp.status === 'cancelled' ? 'cancelled' : 'planned') as 'active' | 'completed' | 'planned' | 'cancelled',
     daysActive: calculateDaysElapsed(exp.startDate, exp.endDate, exp.status),
     goal: exp.goal || 0,
-    raised: exp.raised || 0,
+    raised: (exp.raised || 0) + (exp.recurringStats?.totalCommitted || 0),
     sponsors: exp.sponsorsCount || 0,
     entries: exp.entriesCount || 0,
     distance: exp.totalDistanceKm || 0,
@@ -353,7 +353,7 @@ export function ExpeditionsPage() {
         // Expedition cards grid
         <div className="grid grid-cols-[repeat(auto-fit,minmax(320px,1fr))] gap-6">
           {expeditions.map((expedition) => {
-            const percentage = Math.min((expedition.raised / expedition.goal) * 100, 100);
+            const percentage = expedition.goal > 0 ? Math.min((expedition.raised / expedition.goal) * 100, 100) : 0;
 
             return (
               <ExpeditionCard

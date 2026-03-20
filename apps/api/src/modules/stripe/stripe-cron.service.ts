@@ -30,9 +30,7 @@ export class StripeCronService {
         `[CRON] Webhook event cleanup complete. Removed ${result.count} events.`,
       );
     } catch (e) {
-      this.logger.error(
-        `[CRON] Webhook event cleanup failed: ${e.message}`,
-      );
+      this.logger.error(`[CRON] Webhook event cleanup failed: ${e.message}`);
     }
   }
 }

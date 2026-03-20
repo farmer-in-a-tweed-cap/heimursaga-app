@@ -98,10 +98,7 @@ export class BotDetectionGuard implements CanActivate {
     }
 
     // Check for programmatic indicators
-    const suspiciousHeaders = [
-      'x-python-version',
-      'x-node-version',
-    ];
+    const suspiciousHeaders = ['x-python-version', 'x-node-version'];
 
     return suspiciousHeaders.some((header) => request.headers[header]);
   }

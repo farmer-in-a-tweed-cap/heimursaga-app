@@ -71,7 +71,7 @@ export function UpgradePage() {
   const coreFeatures = [
     { title: 'Receive Sponsorships', desc: 'Accept one-time contributions and monthly subscriptions from supporters who want to fund your expeditions' },
     { title: 'Private Messages', desc: 'Direct messaging with your sponsors and other explorers for deeper connections and coordination' },
-    { title: 'Additional Entry Types', desc: 'Unlock sponsor-only entries and Expedition Notes (280-char daily updates) to keep supporters engaged' },
+    { title: 'Additional Entry Types', desc: 'Unlock sponsor-only entries and Expedition Notes (500-char daily updates) to keep supporters engaged' },
     { title: 'More Photos Per Entry', desc: 'Upload up to 10 photos per journal entry instead of the standard 2 for free accounts' },
     { title: 'Expedition Insights', desc: 'Track entry views, engagement metrics, sponsor activity, and understand your audience better' },
     { title: 'Sponsor-Only Content', desc: 'Create exclusive journal entries and updates visible only to your paying supporters' }
@@ -81,7 +81,7 @@ export function UpgradePage() {
     'Receive one-time and monthly sponsorships',
     'Private messaging with sponsors and explorers',
     'Sponsor-only journal entries',
-    'Expedition Notes (280-char sponsor updates)',
+    'Expedition Notes (500-char sponsor updates)',
     'Up to 10 photos per entry (vs 2 for free)',
     'Entry view counts and engagement insights',
     'Sponsor activity dashboard',
@@ -293,7 +293,7 @@ export function UpgradePage() {
           <div>
             <div className="font-bold text-sm mb-2 dark:text-[#e5e5e5]">What are Expedition Notes?</div>
             <div className="text-sm text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
-              Expedition Notes are short 280-character updates you can post to keep your sponsors
+              Expedition Notes are short 500-character updates you can post to keep your sponsors
               informed between full journal entries. Think of them as quick field dispatches.
             </div>
           </div>

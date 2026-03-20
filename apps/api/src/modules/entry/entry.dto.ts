@@ -22,6 +22,8 @@ import {
   ValidatorConstraintInterface,
 } from 'class-validator';
 
+import { SanitizeContent, SanitizeText } from '@/lib/sanitizer';
+
 @ValidatorConstraint({ name: 'maxJsonSize', async: false })
 class MaxJsonSizeConstraint implements ValidatorConstraintInterface {
   validate(value: unknown) {
@@ -33,8 +35,6 @@ class MaxJsonSizeConstraint implements ValidatorConstraintInterface {
     return 'Metadata must not exceed 64KB when serialized';
   }
 }
-
-import { SanitizeContent, SanitizeText } from '@/lib/sanitizer';
 
 export class EntryCreateDto implements IEntryCreatePayload {
   @ApiProperty({ required: false })

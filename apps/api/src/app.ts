@@ -13,8 +13,8 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { randomUUID } from 'crypto';
 import { execSync } from 'child_process';
+import { randomUUID } from 'crypto';
 
 import { getEnv, sleep } from '@/lib/utils';
 

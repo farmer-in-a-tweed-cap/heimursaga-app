@@ -16,7 +16,7 @@ export class ExpeditionNoteCreateDto {
   @SanitizeText()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(280)
+  @MaxLength(500)
   text: string;
 }
 
@@ -25,7 +25,7 @@ export class ExpeditionNoteReplyCreateDto {
   @SanitizeText()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(280)
+  @MaxLength(500)
   text: string;
 }
 
@@ -40,7 +40,7 @@ export class ExpeditionNoteUpdateDto {
   @SanitizeText()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(280)
+  @MaxLength(500)
   text: string;
 }
 

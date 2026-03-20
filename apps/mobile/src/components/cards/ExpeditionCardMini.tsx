@@ -33,6 +33,8 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
     expedition.author?.stripeAccountConnected &&
     (expedition.goal ?? 0) > 0;
 
+  const totalRaised = (expedition.raised ?? 0) + (expedition.recurringStats?.totalCommitted ?? 0);
+
   return (
     <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${expedition.title} expedition`} style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}>
       <HCard>
@@ -66,22 +68,22 @@ export function ExpeditionCardMini({ expedition, onPress }: ExpeditionCardMiniPr
               <Text style={[styles.stat, { color: brandColors.blue }]}>
                 {expedition.entriesCount ?? 0} entries
               </Text>
-              <Text style={[styles.stat, { color: brandColors.copper }]}>
-                {fmtAmount(expedition.raised ?? 0)}
-                {sponsorable && (
+              {sponsorable && (
+                <Text style={[styles.stat, { color: brandColors.copper }]}>
+                  {fmtAmount(totalRaised)}
                   <Text style={{ color: colors.textTertiary }}>
                     /{fmtAmount(expedition.goal!)}
                   </Text>
-                )}
-                {' raised'}
-              </Text>
+                  {' raised'}
+                </Text>
+              )}
             </View>
           </View>
         </View>
         {sponsorable && (
           <View style={[styles.fundingWrap, { borderTopColor: colors.border }]}>
             <FundingBar
-              raised={expedition.raised ?? 0}
+              raised={totalRaised}
               goal={expedition.goal!}
             />
           </View>

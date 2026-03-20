@@ -36,7 +36,7 @@ async function main() {
       features: JSON.stringify([
         'Receive sponsorships',
         'Customizable sponsorship tiers',
-        'Expedition notes (280-char updates)',
+        'Expedition notes (500-char updates)',
         'Sponsor-only content',
         'Priority support',
         'Pro badge',

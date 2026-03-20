@@ -432,7 +432,9 @@ export class AdminService {
       }
 
       if (charge.refunded) {
-        throw new ServiceBadRequestException('Charge has already been refunded');
+        throw new ServiceBadRequestException(
+          'Charge has already been refunded',
+        );
       }
 
       // Issue the refund from the platform account

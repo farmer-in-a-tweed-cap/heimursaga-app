@@ -153,6 +153,7 @@ export function ExpeditionBuilderPage() {
   const [sponsorshipGoal, setSponsorshipGoal] = useState<number | ''>('');
   const [notesAccessThreshold, setNotesAccessThreshold] = useState<number | ''>('');
   const [notesVisibility, setNotesVisibility] = useState<'public' | 'sponsor'>('public');
+  const [earlyAccessEnabled, setEarlyAccessEnabled] = useState(false);
   const [expectedDuration, setExpectedDuration] = useState('');
   const [currentLocationSource, setCurrentLocationSource] = useState<'waypoint' | 'entry'>('waypoint');
   const [currentLocationId, setCurrentLocationId] = useState('');
@@ -285,6 +286,7 @@ export function ExpeditionBuilderPage() {
         goal: sponsorshipsEnabled && sponsorshipGoal ? Number(sponsorshipGoal) : undefined,
         notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
         notesVisibility,
+        earlyAccessEnabled: sponsorshipsEnabled ? earlyAccessEnabled : false,
         isRoundTrip,
         category: expeditionData.category || undefined,
         region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
@@ -410,12 +412,13 @@ export function ExpeditionBuilderPage() {
       sponsorshipGoal,
       notesAccessThreshold,
       notesVisibility,
+      earlyAccessEnabled,
       isRoundTrip,
       routeMode,
       tags,
       wpSig,
     });
-  }, [expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, isRoundTrip, routeMode, tags, waypoints]);
+  }, [expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, earlyAccessEnabled, isRoundTrip, routeMode, tags, waypoints]);
 
   // Keep refs in sync with state
   useEffect(() => {
@@ -749,6 +752,9 @@ export function ExpeditionBuilderPage() {
         if ((expedition as any).notesVisibility) {
           setNotesVisibility((expedition as any).notesVisibility);
         }
+        if ((expedition as any).earlyAccessEnabled) {
+          setEarlyAccessEnabled(true);
+        }
 
         // Set round trip status
         if (expedition.isRoundTrip) {
@@ -859,6 +865,7 @@ export function ExpeditionBuilderPage() {
     }
     if (draft.notesAccessThreshold > 0) setNotesAccessThreshold(draft.notesAccessThreshold);
     if (draft.notesVisibility) setNotesVisibility(draft.notesVisibility);
+    if (draft.earlyAccessEnabled) setEarlyAccessEnabled(true);
     if (draft.isRoundTrip) setIsRoundTrip(true);
     if (draft.routeMode && draft.routeMode !== 'straight') setRouteMode(draft.routeMode as RouteMode);
     if (draft.waypoints?.length > 0) {
@@ -928,6 +935,7 @@ export function ExpeditionBuilderPage() {
           goal: sponsorshipsEnabled && sponsorshipGoal ? Number(sponsorshipGoal) : undefined,
           notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
           notesVisibility,
+          earlyAccessEnabled: sponsorshipsEnabled ? earlyAccessEnabled : false,
           isRoundTrip,
           category: expeditionData.category || undefined,
           region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
@@ -979,7 +987,7 @@ export function ExpeditionBuilderPage() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [isEditMode, expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, isRoundTrip, routeMode, directionsGeometry, tags, draftId, getContentSignature]);
+  }, [isEditMode, expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, earlyAccessEnabled, isRoundTrip, routeMode, directionsGeometry, tags, draftId, getContentSignature]);
 
   // Initialize map
   useEffect(() => {
@@ -3701,6 +3709,27 @@ export function ExpeditionBuilderPage() {
               </div>
             </div>
           </div>}
+
+          {/* Early Entry Access - Pro only, requires sponsorships */}
+          {isPro && sponsorshipsEnabled && (
+            <div className="mt-6 border-2 border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold dark:text-[#e5e5e5]">EARLY ENTRY ACCESS</div>
+                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                    Qualifying sponsors see new journal entries before the public. Tier 2 sponsors get 24h early access, Tier 3 gets 48h.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEarlyAccessEnabled(!earlyAccessEnabled)}
+                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${earlyAccessEnabled ? 'bg-[#598636]' : 'bg-[#b5bcc4]'}`}
+                >
+                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${earlyAccessEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Privacy Settings - Radio buttons matching quick entry */}
           <div className="mt-6 border-2 border-[#4676ac] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">

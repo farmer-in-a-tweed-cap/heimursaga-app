@@ -1,5 +1,3 @@
-import * as crypto from 'node:crypto';
-
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { JwtService } from '@nestjs/jwt';
@@ -13,6 +11,7 @@ import {
   ISignupPayload,
   UserRole,
 } from '@repo/types';
+import * as crypto from 'node:crypto';
 
 import { dateformat } from '@/lib/date-format';
 import { generator } from '@/lib/generator';

@@ -27,6 +27,8 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
     expedition.author?.stripeAccountConnected &&
     (expedition.goal ?? 0) > 0;
 
+  const totalRaised = (expedition.raised ?? 0) + (expedition.recurringStats?.totalCommitted ?? 0);
+
   const fmtDate = (d?: string) =>
     d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase() : '';
 
@@ -92,12 +94,12 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
                 value: dayCount != null ? String(dayCount) : '\u2014',
                 label: expedition.status === 'active' ? 'DAYS ACTIVE' : 'DAYS',
               },
-              {
-                value: fmtAmount(expedition.raised ?? 0),
-                suffix: sponsorable ? `/${fmtAmount(expedition.goal!)}` : undefined,
+              ...(sponsorable ? [{
+                value: fmtAmount(totalRaised),
+                suffix: `/${fmtAmount(expedition.goal!)}`,
                 label: 'RAISED',
-              },
-              { value: String(expedition.sponsorsCount ?? 0), label: 'SPONSORS' },
+              }] : []),
+              ...(sponsorable ? [{ value: String(expedition.sponsorsCount ?? 0), label: 'SPONSORS' }] : []),
               { value: String(expedition.entriesCount ?? 0), label: 'ENTRIES' },
             ]}
           />
@@ -106,7 +108,7 @@ export function ExpeditionCardFull({ expedition, onPress }: ExpeditionCardFullPr
         {sponsorable && (
           <View style={[styles.fundingWrap, { borderTopColor: colors.borderThin }]}>
             <FundingBar
-              raised={expedition.raised ?? 0}
+              raised={totalRaised}
               goal={expedition.goal!}
             />
           </View>

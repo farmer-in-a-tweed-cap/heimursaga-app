@@ -155,7 +155,7 @@ export function DocumentationPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#4676ac] mt-1">●</span>
-                    <span><strong>Expedition Notes:</strong> 280-character updates (public or sponsor-exclusive)</span>
+                    <span><strong>Expedition Notes:</strong> 500-character updates (public or sponsor-exclusive)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-[#4676ac] mt-1">●</span>
@@ -352,7 +352,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span><strong>Expedition Note</strong> (Pro): 280-character updates (visibility controlled per expedition — public or sponsor-exclusive)</span>
+                  <span><strong>Expedition Note</strong> (Pro): 500-character updates (visibility controlled per expedition — public or sponsor-exclusive)</span>
                 </li>
               </ul>
             </div>

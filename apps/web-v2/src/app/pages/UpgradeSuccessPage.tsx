@@ -338,7 +338,7 @@ export function UpgradeSuccessPage() {
               <div>
                 <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">Additional Entry Types</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
-                  Sponsor-only entries and Expedition Notes (280-char updates)
+                  Sponsor-only entries and Expedition Notes (500-char updates)
                 </div>
               </div>
             </div>

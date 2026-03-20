@@ -19,6 +19,7 @@ import { getExplorerStatus, getCurrentExpeditionInfo } from "@/app/components/Ex
 
 // Shared transform: raw API expedition -> ExpeditionCard props
 function transformExpedition(exp: Expedition) {
+  const totalRaised = (exp.raised || 0) + (exp.recurringStats?.totalCommitted || 0);
   return {
     id: exp.publicId || exp.id || '',
     title: exp.title,
@@ -35,8 +36,8 @@ function transformExpedition(exp: Expedition) {
     journalEntries: exp.entriesCount || 0,
     lastUpdate: '',
     fundingGoal: exp.goal || 0,
-    fundingCurrent: exp.raised || 0,
-    fundingPercentage: exp.goal ? ((exp.raised || 0) / exp.goal) * 100 : 0,
+    fundingCurrent: totalRaised,
+    fundingPercentage: exp.goal ? Math.min((totalRaised / exp.goal) * 100, 100) : 0,
     backers: exp.sponsorsCount || 0,
     distance: exp.totalDistanceKm || 0,
     waypointsCount: exp.waypointsCount || 0,

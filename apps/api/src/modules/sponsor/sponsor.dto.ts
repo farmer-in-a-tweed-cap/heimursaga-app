@@ -187,8 +187,8 @@ export class SponsorshipRefundDto {
 export class SponsorshipTierUpdateDto implements ISponsorshipTierUpdatePayload {
   @ApiProperty({ required: false })
   @IsNumber()
-  @Min(100)
-  @Max(99999900)
+  @Min(1)
+  @Max(999999)
   @IsOptional()
   price: number;
 
@@ -217,8 +217,8 @@ export class SponsorshipTierCreateDto implements ISponsorshipTierCreatePayload {
 
   @ApiProperty({ required: true })
   @IsNumber()
-  @Min(100)
-  @Max(99999900)
+  @Min(1)
+  @Max(999999)
   @IsNotEmpty()
   price: number;
 

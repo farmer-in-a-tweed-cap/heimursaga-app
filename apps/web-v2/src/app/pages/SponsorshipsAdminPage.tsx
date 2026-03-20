@@ -13,7 +13,6 @@ import {
   Calendar,
   HandHeart,
   Loader2,
-  Trash2,
   ExternalLink,
   X,
   ChevronDown,
@@ -38,9 +37,12 @@ import {
   MONTHLY_TIER_SLOTS,
   getTierSlotConfig,
   isValidTierPrice,
+  validateTierOrdering,
+  getTierLabel,
+  getPerksForSlot,
 } from '@repo/types';
 
-type ViewType = 'overview' | 'tiers' | 'sponsors' | 'refunds' | 'payouts' | 'stripe';
+type ViewType = 'overview' | 'tiers' | 'sponsors' | 'payouts' | 'stripe';
 
 // Stripe Connect supported countries
 // https://stripe.com/docs/connect/cross-border-payouts
@@ -189,30 +191,23 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
 
       setTiers(tiersRes.data || []);
 
-      // Separate tiers by type
-      const oneTimeTiers = (tiersRes.data || [])
-        .filter(t => t.type === 'ONE_TIME')
-        .sort((a, b) => (a.priority || 0) - (b.priority || 0))
-        .map((t, i) => ({
-          id: t.id,
-          price: t.price,
-          description: t.description,
-          isAvailable: t.isAvailable,
-          priority: t.priority || i + 1,
-          membersCount: t.membersCount,
-        }));
+      // Separate tiers by type, ensuring all 3 slots are populated
+      const apiOneTime = (tiersRes.data || []).filter(t => t.type === 'ONE_TIME');
+      const apiMonthly = (tiersRes.data || []).filter(t => t.type === 'MONTHLY');
 
-      const monthlyTiers = (tiersRes.data || [])
-        .filter(t => t.type === 'MONTHLY')
-        .sort((a, b) => (a.priority || 0) - (b.priority || 0))
-        .map((t, i) => ({
-          id: t.id,
-          price: t.price,
-          description: t.description,
-          isAvailable: t.isAvailable,
-          priority: t.priority || i + 1,
-          membersCount: t.membersCount,
-        }));
+      const oneTimeTiers = ONE_TIME_TIER_SLOTS.map(slotDef => {
+        const existing = apiOneTime.find(t => t.priority === slotDef.slot);
+        return existing
+          ? { id: existing.id, price: existing.price, description: existing.description, isAvailable: existing.isAvailable, priority: existing.priority || slotDef.slot, membersCount: existing.membersCount }
+          : { price: slotDef.defaultPrice, description: slotDef.label, isAvailable: true, priority: slotDef.slot };
+      });
+
+      const monthlyTiers = MONTHLY_TIER_SLOTS.map(slotDef => {
+        const existing = apiMonthly.find(t => t.priority === slotDef.slot);
+        return existing
+          ? { id: existing.id, price: existing.price, description: existing.description, isAvailable: existing.isAvailable, priority: existing.priority || slotDef.slot, membersCount: existing.membersCount }
+          : { price: slotDef.defaultPrice, description: slotDef.label, isAvailable: true, priority: slotDef.slot };
+      });
 
       setEditedOneTimeTiers(oneTimeTiers);
       setEditedMonthlyTiers(monthlyTiers);
@@ -228,12 +223,11 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
   };
 
   const handleSaveTiers = async () => {
-    // Validate prices before saving
+    // Validate price ranges
     for (const tier of editedOneTimeTiers) {
       if (!isValidTierPrice('ONE_TIME', tier.priority, tier.price)) {
         const config = getTierSlotConfig('ONE_TIME', tier.priority);
-        const maxText = config?.maxPrice ? `$${config.maxPrice}` : 'unlimited';
-        toast.error(`${config?.label || 'Tier'}: Price must be between $${config?.minPrice} and ${maxText}`);
+        toast.error(`${config?.label || 'Tier'}: Price must be $${config?.minPrice} – $${config?.maxPrice ?? '∞'}`);
         return;
       }
     }
@@ -241,36 +235,41 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
     for (const tier of editedMonthlyTiers) {
       if (!isValidTierPrice('MONTHLY', tier.priority, tier.price)) {
         const config = getTierSlotConfig('MONTHLY', tier.priority);
-        const maxText = config?.maxPrice ? `$${config.maxPrice}` : 'unlimited';
-        toast.error(`${config?.label || 'Tier'}: Price must be between $${config?.minPrice} and ${maxText}`);
+        toast.error(`${getTierLabel('MONTHLY', tier.priority)}: Price must be $${config?.minPrice} – $${config?.maxPrice}/mo`);
         return;
       }
+    }
+
+    // Validate ordering
+    const monthlyPrices = editedMonthlyTiers.map(t => ({ slot: t.priority, price: t.price }));
+    if (!validateTierOrdering(monthlyPrices)) {
+      toast.error('Tier prices must increase with each level');
+      return;
+    }
+
+    const oneTimePrices = editedOneTimeTiers.map(t => ({ slot: t.priority, price: t.price }));
+    if (!validateTierOrdering(oneTimePrices)) {
+      toast.error('One-time tier prices must increase with each level');
+      return;
     }
 
     setIsSavingTiers(true);
     try {
       // Save one-time tiers
       for (const tier of editedOneTimeTiers) {
+        const label = getTierLabel('ONE_TIME', tier.priority);
         if (tier.id) {
           await sponsorshipApi.updateTier(tier.id, {
             price: tier.price,
-            description: tier.description,
+            description: label,
             isAvailable: tier.isAvailable,
             priority: tier.priority,
           });
         } else {
-          // Create the tier, then immediately call update so the backend
-          // provisions the Stripe product and prices for this tier.
-          const created = await sponsorshipApi.createTier({
+          await sponsorshipApi.createTier({
             type: 'ONE_TIME',
             price: tier.price,
-            description: tier.description,
-            isAvailable: tier.isAvailable,
-            priority: tier.priority,
-          });
-          await sponsorshipApi.updateTier(created.id, {
-            price: tier.price,
-            description: tier.description,
+            description: label,
             isAvailable: tier.isAvailable,
             priority: tier.priority,
           });
@@ -279,26 +278,19 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
 
       // Save monthly tiers
       for (const tier of editedMonthlyTiers) {
+        const label = getTierLabel('MONTHLY', tier.priority);
         if (tier.id) {
           await sponsorshipApi.updateTier(tier.id, {
             price: tier.price,
-            description: tier.description,
+            description: label,
             isAvailable: tier.isAvailable,
             priority: tier.priority,
           });
         } else {
-          // Create the tier, then immediately call update so the backend
-          // provisions the Stripe product and prices for this tier.
-          const created = await sponsorshipApi.createTier({
+          await sponsorshipApi.createTier({
             type: 'MONTHLY',
             price: tier.price,
-            description: tier.description,
-            isAvailable: tier.isAvailable,
-            priority: tier.priority,
-          });
-          await sponsorshipApi.updateTier(created.id, {
-            price: tier.price,
-            description: tier.description,
+            description: label,
             isAvailable: tier.isAvailable,
             priority: tier.priority,
           });
@@ -313,11 +305,6 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
     } finally {
       setIsSavingTiers(false);
     }
-  };
-
-  const handleDeleteTier = (tierId: string) => {
-    setDeleteTierTarget(tierId);
-    setShowDeleteTierModal(true);
   };
 
   const confirmDeleteTier = async () => {
@@ -335,58 +322,6 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
       setShowDeleteTierModal(false);
       setDeleteTierTarget(null);
     }
-  };
-
-  const handleAddOneTimeTier = () => {
-    if (editedOneTimeTiers.length >= ONE_TIME_TIER_SLOTS.length) {
-      toast.error(`Maximum ${ONE_TIME_TIER_SLOTS.length} one-time tiers allowed`);
-      return;
-    }
-
-    // Find the next available slot
-    const usedSlots = new Set(editedOneTimeTiers.map(t => t.priority));
-    const nextSlot = ONE_TIME_TIER_SLOTS.find(s => !usedSlots.has(s.slot));
-
-    if (!nextSlot) {
-      toast.error('All one-time tier slots are already in use');
-      return;
-    }
-
-    setEditedOneTimeTiers([
-      ...editedOneTimeTiers,
-      {
-        price: nextSlot.defaultPrice,
-        description: nextSlot.label,
-        isAvailable: false,
-        priority: nextSlot.slot,
-      },
-    ].sort((a, b) => a.priority - b.priority));
-  };
-
-  const handleAddMonthlyTier = () => {
-    if (editedMonthlyTiers.length >= MONTHLY_TIER_SLOTS.length) {
-      toast.error(`Maximum ${MONTHLY_TIER_SLOTS.length} monthly tiers allowed`);
-      return;
-    }
-
-    // Find the next available slot
-    const usedSlots = new Set(editedMonthlyTiers.map(t => t.priority));
-    const nextSlot = MONTHLY_TIER_SLOTS.find(s => !usedSlots.has(s.slot));
-
-    if (!nextSlot) {
-      toast.error('All monthly tier slots are already in use');
-      return;
-    }
-
-    setEditedMonthlyTiers([
-      ...editedMonthlyTiers,
-      {
-        price: nextSlot.defaultPrice,
-        description: nextSlot.label,
-        isAvailable: false,
-        priority: nextSlot.slot,
-      },
-    ].sort((a, b) => a.priority - b.priority));
   };
 
   const handleStartStripeOnboarding = async () => {
@@ -534,6 +469,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
               <h2 className="text-lg font-bold dark:text-[#e5e5e5]">SELECT YOUR COUNTRY</h2>
               <button
                 onClick={() => setShowCountryModal(false)}
+                aria-label="Close"
                 className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
               >
                 <X className="w-5 h-5 dark:text-[#e5e5e5]" />
@@ -592,6 +528,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   setShowRefundModal(false);
                   setRefundTarget(null);
                 }}
+                aria-label="Close"
                 className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
               >
                 <X className="w-5 h-5 dark:text-[#e5e5e5]" />
@@ -639,6 +576,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   setShowDeleteTierModal(false);
                   setDeleteTierTarget(null);
                 }}
+                aria-label="Close"
                 className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
               >
                 <X className="w-5 h-5 dark:text-[#e5e5e5]" />
@@ -686,6 +624,7 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   setShowOnboardingGuide(false);
                   setPendingOnboardingUrl('');
                 }}
+                aria-label="Close"
                 className="p-1 hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
               >
                 <X className="w-5 h-5 dark:text-[#e5e5e5]" />
@@ -1100,7 +1039,9 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
               {/* Edit Mode Controls */}
               <div className="flex items-center justify-between">
                 <div className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-                  Configure your sponsorship tiers for one-time and monthly recurring sponsorships.
+                  {stripeConnected
+                    ? 'Configure your sponsorship tiers for one-time and monthly recurring sponsorships.'
+                    : 'Complete Stripe onboarding to configure your sponsorship tiers.'}
                 </div>
                 <div className="flex gap-2">
                   {editingTiers ? (
@@ -1136,7 +1077,8 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                   ) : (
                     <button
                       onClick={() => setEditingTiers(true)}
-                      className="px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
+                      disabled={!stripeConnected}
+                      className="px-4 py-2 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
                     >
                       EDIT TIERS
                     </button>
@@ -1144,235 +1086,174 @@ export function SponsorshipsAdminPage({ embedded = false }: { embedded?: boolean
                 </div>
               </div>
 
-              {/* ONE-TIME TIERS SECTION */}
-              <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-                <div className="bg-[#616161] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161]">
-                  <h3 className="text-sm font-bold">ONE-TIME SPONSORSHIP TIERS (Max 5)</h3>
-                  <p className="text-xs mt-1 opacity-90">Single contributions to support your current expedition</p>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-3">
-                    {editedOneTimeTiers.map((tier, index) => {
-                      const slotConfig = getTierSlotConfig('ONE_TIME', tier.priority);
-                      const priceRangeText = slotConfig
-                        ? `$${slotConfig.minPrice} - ${slotConfig.maxPrice ? `$${slotConfig.maxPrice}` : 'unlimited'}`
-                        : '';
-                      const isPriceValid = slotConfig
-                        ? isValidTierPrice('ONE_TIME', tier.priority, tier.price)
-                        : true;
+              {/* TIER AMOUNTS */}
+              {(() => {
+                const monthlyPrices = editedMonthlyTiers.map(t => ({ slot: t.priority, price: t.price }));
+                const hasOrderingError = editingTiers && monthlyPrices.length > 1 && !validateTierOrdering(monthlyPrices);
+                const oneTimePrices = editedOneTimeTiers.map(t => ({ slot: t.priority, price: t.price }));
+                const hasOneTimeOrderingError = editingTiers && oneTimePrices.length > 1 && !validateTierOrdering(oneTimePrices);
 
-                      return (
-                        <div
-                          key={tier.id || `onetime-${index}`}
-                          className={`flex items-center gap-4 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 ${
-                            !isPriceValid && editingTiers
-                              ? 'border-[#994040] dark:border-[#994040]'
-                              : 'border-[#b5bcc4] dark:border-[#616161]'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={tier.isAvailable}
-                            disabled={!editingTiers}
-                            onChange={(e) => {
-                              const updated = [...editedOneTimeTiers];
-                              updated[index].isAvailable = e.target.checked;
-                              setEditedOneTimeTiers(updated);
-                            }}
-                            className="w-5 h-5"
-                            title="Enable/disable tier"
-                          />
-                          <div className="flex-1 grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">
-                                AMOUNT ({priceRangeText})
-                              </label>
+                return (
+                  <div className="space-y-6">
+                    {hasOrderingError && (
+                      <div className="p-3 bg-[#994040]/10 border-2 border-[#994040] text-xs text-[#994040] font-bold">
+                        Tier prices must increase with each level.
+                      </div>
+                    )}
+                    {hasOneTimeOrderingError && (
+                      <div className="p-3 bg-[#994040]/10 border-2 border-[#994040] text-xs text-[#994040] font-bold">
+                        One-time tier prices must increase with each level.
+                      </div>
+                    )}
+
+                    {/* Amount inputs row */}
+                    <div className="grid grid-cols-3 gap-4">
+                      {MONTHLY_TIER_SLOTS.map((slotDef) => {
+                        const monthlyTier = editedMonthlyTiers.find(t => t.priority === slotDef.slot);
+                        const oneTimeTier = editedOneTimeTiers.find(t => t.priority === slotDef.slot);
+                        const isEnabled = (monthlyTier?.isAvailable ?? true) && (oneTimeTier?.isAvailable ?? true);
+                        const monthlyPrice = monthlyTier?.price ?? slotDef.defaultPrice;
+                        const isPriceValid = isValidTierPrice('MONTHLY', slotDef.slot, monthlyPrice);
+
+                        return (
+                          <div
+                            key={slotDef.slot}
+                            className={`bg-white dark:bg-[#202020] border-2 p-4 transition-all ${
+                              !isEnabled ? 'border-[#b5bcc4]/50 dark:border-[#616161]/50 opacity-50' : 'border-[#202020] dark:border-[#616161]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 mb-3">
+                              <input
+                                type="checkbox"
+                                checked={isEnabled}
+                                disabled={!editingTiers}
+                                onChange={(e) => {
+                                  const checked = e.target.checked;
+                                  setEditedMonthlyTiers(prev => prev.map(t =>
+                                    t.priority === slotDef.slot ? { ...t, isAvailable: checked } : t
+                                  ));
+                                  setEditedOneTimeTiers(prev => prev.map(t =>
+                                    t.priority === slotDef.slot ? { ...t, isAvailable: checked } : t
+                                  ));
+                                }}
+                                className="w-4 h-4"
+                              />
+                              <span className="text-xs font-bold tracking-wider text-[#202020] dark:text-[#e5e5e5]">
+                                TIER {slotDef.slot}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <span className="text-lg font-bold dark:text-[#e5e5e5]">$</span>
                               <input
                                 type="number"
-                                min={slotConfig?.minPrice || 1}
-                                max={slotConfig?.maxPrice || undefined}
-                                value={tier.price}
+                                min={slotDef.minPrice}
+                                max={slotDef.maxPrice ?? undefined}
+                                value={monthlyPrice}
                                 disabled={!editingTiers}
                                 onChange={(e) => {
-                                  const updated = [...editedOneTimeTiers];
-                                  updated[index].price = parseFloat(e.target.value) || 0;
-                                  setEditedOneTimeTiers(updated);
+                                  const newPrice = parseFloat(e.target.value) || 0;
+                                  setEditedMonthlyTiers(prev => prev.map(t =>
+                                    t.priority === slotDef.slot ? { ...t, price: newPrice } : t
+                                  ));
+                                  const otConfig = getTierSlotConfig('ONE_TIME', slotDef.slot);
+                                  if (otConfig) {
+                                    const otPrice = Math.max(otConfig.minPrice, newPrice);
+                                    setEditedOneTimeTiers(prev => prev.map(t =>
+                                      t.priority === slotDef.slot ? { ...t, price: otPrice } : t
+                                    ));
+                                  }
                                 }}
-                                className={`w-full px-3 py-2 border-2 dark:bg-[#202020] dark:text-[#e5e5e5] disabled:bg-[#f5f5f5] dark:disabled:bg-[#1a1a1a] disabled:cursor-not-allowed ${
-                                  !isPriceValid && editingTiers
-                                    ? 'border-[#994040] dark:border-[#994040]'
-                                    : 'border-[#b5bcc4] dark:border-[#616161]'
+                                className={`w-full px-2 py-1.5 border-2 text-lg font-bold dark:bg-[#2a2a2a] dark:text-[#e5e5e5] disabled:bg-[#f5f5f5] dark:disabled:bg-[#1a1a1a] disabled:cursor-not-allowed ${
+                                  !isPriceValid && editingTiers ? 'border-[#994040]' : 'border-[#b5bcc4] dark:border-[#616161]'
                                 }`}
                               />
-                              {!isPriceValid && editingTiers && (
-                                <p className="text-xs text-[#994040] mt-1">Price out of range</p>
-                              )}
                             </div>
-                            <div>
-                              <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">LABEL</label>
-                              <input
-                                type="text"
-                                value={tier.description}
-                                disabled={!editingTiers}
-                                onChange={(e) => {
-                                  const updated = [...editedOneTimeTiers];
-                                  updated[index].description = e.target.value;
-                                  setEditedOneTimeTiers(updated);
-                                }}
-                                className="w-full px-3 py-2 border-2 border-[#b5bcc4] dark:border-[#616161] dark:bg-[#202020] dark:text-[#e5e5e5] disabled:bg-[#f5f5f5] dark:disabled:bg-[#1a1a1a] disabled:cursor-not-allowed"
-                              />
-                            </div>
+                            <p className={`text-[10px] mt-1 ${!isPriceValid && editingTiers ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>${slotDef.minPrice} – ${slotDef.maxPrice}</p>
                           </div>
-                          {editingTiers && tier.id && (
-                            <button
-                              onClick={() => handleDeleteTier(tier.id!)}
-                              className="p-2 text-[#994040] hover:bg-[#994040]/10 transition-all"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          )}
-                          {tier.membersCount !== undefined && tier.membersCount > 0 && (
-                            <div className="text-center">
-                              <div className="text-xl font-bold text-[#4676ac]">{tier.membersCount}</div>
-                              <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">sponsors</div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {editingTiers && editedOneTimeTiers.length < ONE_TIME_TIER_SLOTS.length && (
-                    <button
-                      onClick={handleAddOneTimeTier}
-                      className="w-full mt-4 py-3 border-2 border-dashed border-[#b5bcc4] dark:border-[#616161] font-bold text-sm hover:border-[#4676ac] hover:text-[#4676ac] transition-all flex items-center justify-center gap-2 dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
-                    >
-                      ADD ONE-TIME TIER
-                    </button>
-                  )}
-                  {editedOneTimeTiers.length === 0 && !editingTiers && (
-                    <div className="text-center py-6 text-[#616161] dark:text-[#b5bcc4]">
-                      No one-time tiers configured. Click "Edit Tiers" to add some.
+                        );
+                      })}
                     </div>
-                  )}
-                </div>
-              </div>
 
-              {/* MONTHLY TIERS SECTION */}
-              <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-                <div className="bg-[#ac6d46] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161]">
-                  <h3 className="text-sm font-bold">MONTHLY SUBSCRIPTION TIERS (Max 3)</h3>
-                  <p className="text-xs mt-1 opacity-90">Recurring support that follows you across all expeditions</p>
-                </div>
-                <div className="p-6">
-                  <div className="mb-4 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] text-xs dark:text-[#b5bcc4]">
-                    <strong className="dark:text-[#e5e5e5]">Monthly billing info:</strong> Subscriptions automatically pause when you're RESTING
-                    (no active expeditions) and resume when you start a new expedition. Auto-cancels after 90 days of rest.
-                  </div>
-                  <div className="space-y-3">
-                    {editedMonthlyTiers.map((tier, index) => {
-                      const slotConfig = getTierSlotConfig('MONTHLY', tier.priority);
-                      const priceRangeText = slotConfig
-                        ? `$${slotConfig.minPrice} - ${slotConfig.maxPrice ? `$${slotConfig.maxPrice}` : 'unlimited'}/mo`
-                        : '';
-                      const isPriceValid = slotConfig
-                        ? isValidTierPrice('MONTHLY', tier.priority, tier.price)
-                        : true;
+                    {/* MONTHLY TIERS */}
+                    <div>
+                      <div className="text-xs font-bold tracking-wider text-[#ac6d46]">MONTHLY TIERS</div>
+                      <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mb-3">Perks cover current and future expeditions</div>
+                      <div className="grid grid-cols-3 gap-4">
+                        {MONTHLY_TIER_SLOTS.map((slotDef) => {
+                          const monthlyTier = editedMonthlyTiers.find(t => t.priority === slotDef.slot);
+                          const isEnabled = monthlyTier?.isAvailable ?? true;
+                          const monthlyPrice = monthlyTier?.price ?? slotDef.defaultPrice;
+                          const perks = getPerksForSlot('MONTHLY', slotDef.slot);
 
-                      return (
-                        <div
-                          key={tier.id || `monthly-${index}`}
-                          className={`flex items-center gap-4 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 ${
-                            !isPriceValid && editingTiers
-                              ? 'border-[#994040] dark:border-[#994040]'
-                              : 'border-[#b5bcc4] dark:border-[#616161]'
-                          }`}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={tier.isAvailable}
-                            disabled={!editingTiers}
-                            onChange={(e) => {
-                              const updated = [...editedMonthlyTiers];
-                              updated[index].isAvailable = e.target.checked;
-                              setEditedMonthlyTiers(updated);
-                            }}
-                            className="w-5 h-5"
-                            title="Enable/disable tier"
-                          />
-                          <div className="flex-1 grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">
-                                AMOUNT ({priceRangeText})
-                              </label>
-                              <input
-                                type="number"
-                                min={slotConfig?.minPrice || 1}
-                                max={slotConfig?.maxPrice || undefined}
-                                value={tier.price}
-                                disabled={!editingTiers}
-                                onChange={(e) => {
-                                  const updated = [...editedMonthlyTiers];
-                                  updated[index].price = parseFloat(e.target.value) || 0;
-                                  setEditedMonthlyTiers(updated);
-                                }}
-                                className={`w-full px-3 py-2 border-2 dark:bg-[#202020] dark:text-[#e5e5e5] disabled:bg-[#f5f5f5] dark:disabled:bg-[#1a1a1a] disabled:cursor-not-allowed ${
-                                  !isPriceValid && editingTiers
-                                    ? 'border-[#994040] dark:border-[#994040]'
-                                    : 'border-[#b5bcc4] dark:border-[#616161]'
-                                }`}
-                              />
-                              {!isPriceValid && editingTiers && (
-                                <p className="text-xs text-[#994040] mt-1">Price out of range</p>
-                              )}
-                            </div>
-                            <div>
-                              <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">LABEL</label>
-                              <input
-                                type="text"
-                                value={tier.description}
-                                disabled={!editingTiers}
-                                onChange={(e) => {
-                                  const updated = [...editedMonthlyTiers];
-                                  updated[index].description = e.target.value;
-                                  setEditedMonthlyTiers(updated);
-                                }}
-                                className="w-full px-3 py-2 border-2 border-[#b5bcc4] dark:border-[#616161] dark:bg-[#202020] dark:text-[#e5e5e5] disabled:bg-[#f5f5f5] dark:disabled:bg-[#1a1a1a] disabled:cursor-not-allowed"
-                              />
-                            </div>
-                          </div>
-                          {editingTiers && tier.id && (
-                            <button
-                              onClick={() => handleDeleteTier(tier.id!)}
-                              className="p-2 text-[#994040] hover:bg-[#994040]/10 transition-all"
+                          return (
+                            <div
+                              key={slotDef.slot}
+                              className={`bg-white dark:bg-[#202020] border-2 transition-all ${
+                                !isEnabled ? 'border-[#b5bcc4]/50 dark:border-[#616161]/50 opacity-50' : 'border-[#202020] dark:border-[#616161]'
+                              }`}
                             >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          )}
-                          {tier.membersCount !== undefined && tier.membersCount > 0 && (
-                            <div className="text-center">
-                              <div className="text-xl font-bold text-[#ac6d46]">{tier.membersCount}</div>
-                              <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">subscribers</div>
+                              <div className="px-4 py-2" style={{ backgroundColor: isEnabled ? '#ac6d46' : '#b5bcc4' }}>
+                                <div className="text-xs font-bold text-white tracking-wider">{getTierLabel('MONTHLY', slotDef.slot)}</div>
+                              </div>
+                              <div className="p-4">
+                                <div className="text-lg font-bold dark:text-[#e5e5e5] mb-1">${monthlyPrice}<span className="text-xs font-normal text-[#616161] dark:text-[#b5bcc4]">/mo</span></div>
+                                {!editingTiers && monthlyTier?.membersCount ? (
+                                  <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mb-2">{monthlyTier.membersCount} subscriber{monthlyTier.membersCount !== 1 ? 's' : ''}</div>
+                                ) : null}
+                                <div className="space-y-1 mt-2">
+                                  {perks.map((perk, i) => (
+                                    <div key={i} className="text-xs text-[#616161] dark:text-[#b5bcc4] flex items-start gap-1.5">
+                                      <span className="text-[#598636] mt-0.5">*</span> {perk}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {editingTiers && editedMonthlyTiers.length < MONTHLY_TIER_SLOTS.length && (
-                    <button
-                      onClick={handleAddMonthlyTier}
-                      className="w-full mt-4 py-3 border-2 border-dashed border-[#b5bcc4] dark:border-[#616161] font-bold text-sm hover:border-[#ac6d46] hover:text-[#ac6d46] transition-all flex items-center justify-center gap-2 dark:text-[#e5e5e5] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
-                    >
-                      ADD MONTHLY TIER
-                    </button>
-                  )}
-                  {editedMonthlyTiers.length === 0 && !editingTiers && (
-                    <div className="text-center py-6 text-[#616161] dark:text-[#b5bcc4]">
-                      No monthly tiers configured. Click "Edit Tiers" to add some.
+                          );
+                        })}
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
+
+                    {/* ONE-TIME TIERS */}
+                    <div>
+                      <div className="text-xs font-bold tracking-wider text-[#4676ac]">ONE-TIME TIERS</div>
+                      <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mb-3">Perks cover the sponsored expedition only</div>
+                      <div className="grid grid-cols-3 gap-4">
+                        {ONE_TIME_TIER_SLOTS.map((slotDef) => {
+                          const oneTimeTier = editedOneTimeTiers.find(t => t.priority === slotDef.slot);
+                          const isEnabled = oneTimeTier?.isAvailable ?? true;
+                          const perks = getPerksForSlot('ONE_TIME', slotDef.slot);
+
+                          return (
+                            <div
+                              key={slotDef.slot}
+                              className={`bg-white dark:bg-[#202020] border-2 transition-all ${
+                                !isEnabled ? 'border-[#b5bcc4]/50 dark:border-[#616161]/50 opacity-50' : 'border-[#202020] dark:border-[#616161]'
+                              }`}
+                            >
+                              <div className="px-4 py-2 bg-[#4676ac]" style={{ opacity: isEnabled ? 1 : 0.5 }}>
+                                <div className="text-xs font-bold text-white tracking-wider">${slotDef.minPrice}+ ONE-TIME</div>
+                              </div>
+                              <div className="p-4">
+                                {!editingTiers && oneTimeTier?.membersCount ? (
+                                  <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mb-2">{oneTimeTier.membersCount} sponsor{oneTimeTier.membersCount !== 1 ? 's' : ''}</div>
+                                ) : null}
+                                <div className="space-y-1">
+                                  {perks.map((perk, i) => (
+                                    <div key={i} className="text-xs text-[#616161] dark:text-[#b5bcc4] flex items-start gap-1.5">
+                                      <span className="text-[#598636] mt-0.5">*</span> {perk}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

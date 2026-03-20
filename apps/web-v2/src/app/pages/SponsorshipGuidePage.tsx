@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { DollarSign, Heart, TrendingUp, Shield, Users, CheckCircle, AlertCircle, Target } from 'lucide-react';
+import { MONTHLY_TIER_SLOTS, ONE_TIME_TIER_SLOTS, getPerksForSlot } from '@repo/types/sponsorship-tiers';
 
 export function SponsorshipGuidePage() {
   return (
@@ -162,7 +163,7 @@ export function SponsorshipGuidePage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">4.</span>
-                  <span>Choose a sponsorship tier or enter a custom amount (one-time or monthly, minimum $5)</span>
+                  <span>Choose a monthly tier or enter a one-time amount (minimum $5)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] font-bold">5.</span>
@@ -210,40 +211,71 @@ export function SponsorshipGuidePage() {
             </div>
 
             <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Sponsorship Tiers</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
+                When an Explorer Pro has a sponsorship-enabled planned or active expedition, sponsors can support them through two tier-based sponsorship types, each with different scope and perks:
+              </p>
+
+              {/* Monthly Tiers */}
+              <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] p-4 text-sm mb-4">
+                <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">Monthly Subscription</div>
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
+                  Perks cover current and future expeditions. Cancel anytime.
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {MONTHLY_TIER_SLOTS.map(tier => (
+                    <div key={tier.slot} className="bg-white dark:bg-[#202020] border border-[#b5bcc4] dark:border-[#616161] p-3">
+                      <div className="font-bold text-[#ac6d46] text-xs tracking-wider mb-1">{tier.label}</div>
+                      <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
+                        ${tier.minPrice}{tier.maxPrice ? `–$${tier.maxPrice}` : '+'}<span className="text-xs font-normal text-[#616161] dark:text-[#b5bcc4]">/mo</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        {getPerksForSlot('MONTHLY', tier.slot).map((perk, i) => (
+                          <div key={i} className="text-xs text-[#616161] dark:text-[#b5bcc4] flex items-start gap-1">
+                            <span className="text-[#598636]">*</span> {perk}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-3">
+                  Yearly billing available at a 10% discount.
+                </div>
+              </div>
+
+              {/* One-Time Tiers */}
+              <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac] p-4 text-sm">
+                <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-1">One-Time Sponsorship</div>
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
+                  Perks cover the sponsored expedition only. Amount-based thresholds unlock escalating perks.
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {ONE_TIME_TIER_SLOTS.map(tier => (
+                    <div key={tier.slot} className="bg-white dark:bg-[#202020] border border-[#b5bcc4] dark:border-[#616161] p-3">
+                      <div className="font-bold text-[#4676ac] text-xs tracking-wider mb-1">${tier.minPrice}+ ONE-TIME</div>
+                      <div className="space-y-0.5">
+                        {getPerksForSlot('ONE_TIME', tier.slot).map((perk, i) => (
+                          <div key={i} className="text-xs text-[#616161] dark:text-[#b5bcc4] flex items-start gap-1">
+                            <span className="text-[#598636]">*</span> {perk}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-3">
+                  Custom amounts accepted (minimum $5, maximum $10,000).
+                </div>
+              </div>
+            </div>
+
+            <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Payment Processing</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 All payments are processed through Stripe, a secure payment platform. Heimursaga never stores your
                 credit card information. You can pay with major credit cards, debit cards, or other payment methods
                 supported by Stripe in your region.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Sponsorship Tiers</h3>
-              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
-                Expeditions offer sponsorship tiers in two categories. Explorers can customize the price within each tier's range:
-              </p>
-              <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] p-4 text-sm mb-3">
-                <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">One-Time Tiers:</div>
-                <div className="space-y-1 text-[#202020] dark:text-[#e5e5e5]">
-                  <div><strong>Torchbearer:</strong> $5–$15</div>
-                  <div><strong>Trail Guide:</strong> $15–$50</div>
-                  <div><strong>Pathfinder:</strong> $50–$150</div>
-                  <div><strong>Navigator:</strong> $150–$500</div>
-                  <div><strong>Expedition Patron:</strong> $500+</div>
-                </div>
-              </div>
-              <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#4676ac] p-4 text-sm">
-                <div className="font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">Monthly Tiers:</div>
-                <div className="space-y-1 text-[#202020] dark:text-[#e5e5e5]">
-                  <div><strong>Fellow Traveler:</strong> $5–$15/month</div>
-                  <div><strong>Journey Partner:</strong> $15–$50/month</div>
-                  <div><strong>Expedition Ally:</strong> $50+/month</div>
-                </div>
-              </div>
-              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mt-3">
-                Yearly billing is available for monthly tiers at a 10% discount. Sponsors can also enter a custom amount
-                outside of the preset tiers (minimum $5, maximum $10,000).
               </p>
             </div>
 
@@ -419,11 +451,19 @@ export function SponsorshipGuidePage() {
 
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Configuring Sponsorship Tiers</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Your tiers are automatically created when you upgrade to Explorer Pro. From the TIERS tab on your
+                Sponsorship Dashboard, you can adjust the price for each tier within its allowed range and enable
+                or disable individual tiers.
+              </p>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                <strong>Monthly tiers</strong> (Fellow Traveler, Journey Partner, Expedition Patron) are subscriptions
+                that cover all of your current and future expeditions. <strong>One-time tiers</strong> are fixed
+                thresholds ($5+ / $25+ / $75+) that apply to the specific expedition being sponsored.
+              </p>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                The platform provides preset tier names (Torchbearer, Trail Guide, Pathfinder, etc.) that you can
-                customize by setting the price within each tier&apos;s allowed range. You can enable or disable individual
-                tiers to offer the right mix for your expedition. Default tiers are automatically created when you
-                upgrade to Explorer Pro.
+                Each tier level unlocks different perks. Monthly subscribers at the highest tier get exclusive perks
+                like DM access and voice note updates that are not available to one-time sponsors.
               </p>
             </div>
 
@@ -548,7 +588,7 @@ export function SponsorshipGuidePage() {
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Regular Updates</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 Sponsors support you because they want to follow your journey. Post regular entries even when things
-                don't go as planned. Use Expedition Notes (280-character updates) to keep your audience
+                don't go as planned. Use Expedition Notes (500-character updates) to keep your audience
                 engaged between full journal entries — you can make notes public for all readers or sponsor-exclusive
                 for your supporters. Authenticity builds trust — sponsors appreciate honest accounts
                 of both successes and challenges.
@@ -583,11 +623,9 @@ export function SponsorshipGuidePage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Managing Expectations</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                All sponsors receive leaderboard recognition and (for monthly subscribers) email delivery of new entries.
-                Expedition Notes can be set to public (visible to everyone) or sponsor-exclusive — for sponsor-exclusive notes,
-                access is determined by the cumulative sponsorship threshold you set. Beyond these built-in benefits, you&apos;re
-                not obligated to provide additional perks. The core value sponsors receive is access to your authentic journey
-                and contribution to meaningful exploration.
+                Perks are automatically managed by the platform. Monthly subscribers receive perks across all of your
+                expeditions, while one-time sponsors receive perks for the specific expedition they supported. The core
+                value sponsors receive is access to your authentic journey and contribution to meaningful exploration.
               </p>
             </div>
 

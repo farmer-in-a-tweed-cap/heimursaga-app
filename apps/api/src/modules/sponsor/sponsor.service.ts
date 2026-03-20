@@ -378,41 +378,19 @@ export class SponsorService {
           const isYearly = billingPeriod === SponsorshipBillingPeriod.YEARLY;
           const hasCustomAmount = customAmount && customAmount > 0;
 
+          // Reject custom amounts for subscriptions — sponsors must pick a tier
+          if (hasCustomAmount) {
+            throw new ServiceBadRequestException(
+              'Custom amounts are not supported for recurring sponsorships. Please select a tier.',
+            );
+          }
+
           let stripePriceId: string | null;
           let subscriptionAmount: number;
           const applicationFeePercent = APPLICATION_FEE;
 
-          if (hasCustomAmount) {
-            // Custom amount: create a dynamic Stripe price
-            const customAmountCents = decimalToInteger(customAmount);
-            subscriptionAmount = customAmountCents;
-
-            // Validate custom amount bounds
-            const MIN_SUBSCRIPTION = 500; // $5 minimum in cents
-            const MAX_SUBSCRIPTION = 1000000; // $10,000 maximum in cents
-            if (customAmountCents < MIN_SUBSCRIPTION) {
-              throw new ServiceBadRequestException(
-                'Subscription amount must be at least $5',
-              );
-            }
-            if (customAmountCents > MAX_SUBSCRIPTION) {
-              throw new ServiceBadRequestException(
-                'Subscription amount cannot exceed $10,000',
-              );
-            }
-
-            // Create a dynamic recurring price in Stripe
-            const dynamicPrice = await this.stripeService.prices.create({
-              unit_amount: customAmountCents,
-              currency: CurrencyCode.USD,
-              recurring: { interval: isYearly ? 'year' : 'month' },
-              product_data: {
-                name: `Sponsorship - $${customAmount}/mo`,
-              },
-            });
-            stripePriceId = dynamicPrice.id;
-          } else {
-            // Tier-based amount: use pre-set Stripe price or create dynamically
+          // Tier-based amount: use pre-set Stripe price or create dynamically
+          {
             stripePriceId = isYearly
               ? subscriptionTier.stripe_price_year_id
               : subscriptionTier.stripe_price_month_id;
@@ -494,7 +472,7 @@ export class SponsorService {
           }
 
           this.logger.log(
-            `sponsorship tier ${subscriptionTier.id} is available to use${hasCustomAmount ? ` (custom amount: $${customAmount})` : ''}`,
+            `sponsorship tier ${subscriptionTier.id} is available to use`,
           );
 
           amount = subscriptionAmount;
@@ -876,32 +854,17 @@ export class SponsorService {
           const isYearly = billingPeriod === SponsorshipBillingPeriod.YEARLY;
           const hasCustomAmount = customAmount && customAmount > 0;
 
+          // Reject custom amounts for subscriptions — sponsors must pick a tier
+          if (hasCustomAmount) {
+            throw new ServiceBadRequestException(
+              'Custom amounts are not supported for recurring sponsorships. Please select a tier.',
+            );
+          }
+
           let stripePriceId: string | null;
           let subscriptionAmount: number;
 
-          if (hasCustomAmount) {
-            const customAmountCents = decimalToInteger(customAmount);
-            subscriptionAmount = customAmountCents;
-
-            if (customAmountCents < 500) {
-              throw new ServiceBadRequestException(
-                'Subscription amount must be at least $5',
-              );
-            }
-            if (customAmountCents > 1000000) {
-              throw new ServiceBadRequestException(
-                'Subscription amount cannot exceed $10,000',
-              );
-            }
-
-            const dynamicPrice = await this.stripeService.prices.create({
-              unit_amount: customAmountCents,
-              currency: CurrencyCode.USD,
-              recurring: { interval: isYearly ? 'year' : 'month' },
-              product_data: { name: `Sponsorship - $${customAmount}/mo` },
-            });
-            stripePriceId = dynamicPrice.id;
-          } else {
+          {
             stripePriceId = isYearly
               ? subscriptionTier.stripe_price_year_id
               : subscriptionTier.stripe_price_month_id;
@@ -1584,14 +1547,11 @@ export class SponsorService {
         );
       }
 
-      // Validate price is within allowed range for this slot
+      // Validate price meets minimum for this slot
       if (!isValidTierPrice(type, slot, price)) {
         const slotConfig = getTierSlotConfig(type, slot);
-        const maxPriceText = slotConfig?.maxPrice
-          ? `$${slotConfig.maxPrice}`
-          : 'unlimited';
         throw new ServiceBadRequestException(
-          `Price must be between $${slotConfig?.minPrice} and ${maxPriceText} for the ${slotConfig?.label} tier`,
+          `Price must be between $${slotConfig?.minPrice} and $${slotConfig?.maxPrice ?? '∞'} for the ${slotConfig?.label} tier`,
         );
       }
 
@@ -1698,16 +1658,13 @@ export class SponsorService {
           throw new ServiceNotFoundException('sponsorship tier not found');
         });
 
-      // Validate price is within allowed range for this slot
+      // Validate price meets minimum for this slot
       if (price !== undefined && price !== null) {
         const tierType = tier.type as 'ONE_TIME' | 'MONTHLY';
         if (!isValidTierPrice(tierType, tier.priority, price)) {
           const slotConfig = getTierSlotConfig(tierType, tier.priority);
-          const maxPriceText = slotConfig?.maxPrice
-            ? `$${slotConfig.maxPrice}`
-            : 'unlimited';
           throw new ServiceBadRequestException(
-            `Price must be between $${slotConfig?.minPrice} and ${maxPriceText} for this tier slot`,
+            `Price must be between $${slotConfig?.minPrice} and $${slotConfig?.maxPrice ?? '∞'} for this tier slot`,
           );
         }
       }
@@ -1755,11 +1712,7 @@ export class SponsorService {
         stripePriceMonthId = stripeProduct.default_price as string;
       }
 
-      const priceChanged = price
-        ? price >= 1
-          ? tier.price !== decimalToInteger(price)
-          : false
-        : false;
+      const priceChanged = !!price && tier.price !== decimalToInteger(price);
 
       // determine the amounts for monthly and yearly pricing
       const monthlyAmount = priceChanged
@@ -2375,7 +2328,9 @@ export class SponsorService {
       // Only include checkouts whose payment intent was found in the current
       // Stripe environment (test PIs can't be retrieved with live keys and vice versa)
       const data = checkouts
-        .filter((checkout) => refundStatusMap.has(checkout.stripe_payment_intent_id!))
+        .filter((checkout) =>
+          refundStatusMap.has(checkout.stripe_payment_intent_id!),
+        )
         .map((checkout) => {
           const piId = checkout.stripe_payment_intent_id!;
           return {
@@ -2987,15 +2942,25 @@ export class SponsorService {
       });
 
       // Try to find the default payment method via Stripe, fall back to most recent
-      let savedPm: { id: number; stripe_payment_method_id: string | null } | null = null;
-      const defaultPmRef = stripeCustomer?.invoice_settings?.default_payment_method;
+      let savedPm: {
+        id: number;
+        stripe_payment_method_id: string | null;
+      } | null = null;
+      const defaultPmRef =
+        stripeCustomer?.invoice_settings?.default_payment_method;
       const defaultPmId = defaultPmRef
-        ? typeof defaultPmRef === 'string' ? defaultPmRef : defaultPmRef.id
+        ? typeof defaultPmRef === 'string'
+          ? defaultPmRef
+          : defaultPmRef.id
         : null;
 
       if (defaultPmId) {
         savedPm = await this.prisma.paymentMethod.findFirst({
-          where: { explorer_id: userId, deleted_at: null, stripe_payment_method_id: defaultPmId },
+          where: {
+            explorer_id: userId,
+            deleted_at: null,
+            stripe_payment_method_id: defaultPmId,
+          },
           select: { id: true, stripe_payment_method_id: true },
         });
       }

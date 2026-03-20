@@ -104,7 +104,7 @@ export function AboutPage() {
                                   <div className="flex items-start gap-2 mt-2">
                                     <span className="text-[#ac6d46]">└──</span>
                                     <div className="flex-1">
-                                      <span className="font-bold text-black dark:text-white">EXPEDITION NOTE</span> <span className="text-[#616161]">(Daily updates, 280 char max)</span>
+                                      <span className="font-bold text-black dark:text-white">EXPEDITION NOTE</span> <span className="text-[#616161]">(Daily updates, 500 char max)</span>
                                       <div className="ml-4 mt-1 space-y-1">
                                         <div>• Sponsor-only access</div>
                                         <div>• Single-threaded replies (1 reply per sponsor per note)</div>
@@ -136,7 +136,7 @@ export function AboutPage() {
               { name: 'JOURNAL', desc: '1:1 with Explorer', depth: 1, details: null },
               { name: 'EXPEDITION', desc: 'Many per Journal', depth: 2, details: ['Status: DRAFT | PLANNED | ACTIVE | COMPLETED | CANCELLED', 'Title, Description, Dates, Goals, Waypoints'] },
               { name: 'JOURNAL ENTRY', desc: 'Many per Expedition', depth: 3, details: ['Geo-tagged with coordinates', 'Visibility: PUBLIC | OFF-GRID | PRIVATE', 'Up to 2 images (Free) or 10 images (Pro) per entry'] },
-              { name: 'EXPEDITION NOTE', desc: 'Daily updates, 280 char max', depth: 3, details: ['Sponsor-only access', 'Single-threaded replies', 'Available during PLANNING, ACTIVE, post-COMPLETE'] },
+              { name: 'EXPEDITION NOTE', desc: 'Daily updates, 500 char max', depth: 3, details: ['Sponsor-only access', 'Single-threaded replies', 'Available during PLANNING, ACTIVE, post-COMPLETE'] },
             ].map((item) => (
               <div key={item.name} className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#202020] dark:border-[#616161] p-3 font-mono text-xs" style={{ marginLeft: `${item.depth * 12}px` }}>
                 <div className="flex items-center gap-2">
@@ -360,7 +360,7 @@ export function AboutPage() {
                 { feature: 'Private messaging (DMs)', free: false, pro: true },
                 { feature: 'RECEIVE sponsorships (one-time + monthly)', free: false, pro: true, proOnly: true, bold: true },
                 { feature: 'Create expeditions (DRAFT/PLANNED/ACTIVE/COMPLETE)', free: false, pro: true, proOnly: true },
-                { feature: 'Create Expedition Notes (280 char daily updates)', free: false, pro: true, proOnly: true },
+                { feature: 'Create Expedition Notes (500 char daily updates)', free: false, pro: true, proOnly: true },
                 { feature: 'Set custom monthly subscription tiers', free: false, pro: true, proOnly: true },
                 { feature: 'View entry analytics (views, bookmarks, notes)', free: false, pro: true, proOnly: true },
                 { feature: 'Sponsorship admin dashboard (refunds, tracking)', free: false, pro: true, proOnly: true },
@@ -407,7 +407,7 @@ export function AboutPage() {
                   'Private messaging (DMs)',
                   'Receive sponsorships (one-time + monthly)',
                   'Create expeditions',
-                  'Create Expedition Notes (280 char)',
+                  'Create Expedition Notes (500 char)',
                   'Set custom subscription tiers',
                   'View entry analytics',
                   'Sponsorship admin dashboard',
@@ -655,7 +655,7 @@ export function AboutPage() {
               </div>
               <div className="border border-[#616161] p-3">
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Expedition Note Length</div>
-                <div className="text-lg font-bold dark:text-[#e5e5e5]">280 char</div>
+                <div className="text-lg font-bold dark:text-[#e5e5e5]">500 char</div>
               </div>
               <div className="border border-[#616161] p-3">
                 <div className="text-[#616161] dark:text-[#b5bcc4] mb-1">Concurrent Active Expeditions</div>

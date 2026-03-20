@@ -22,6 +22,8 @@ export function ExpeditionListItem({ expedition }: ExpeditionListItemProps) {
     ? Math.max(1, Math.ceil((Date.now() - new Date(expedition.startDate).getTime()) / 86400000))
     : undefined;
 
+  const totalRaised = (expedition.raised ?? 0) + (expedition.recurringStats?.totalCommitted ?? 0);
+
   return (
     <TouchableOpacity onPress={() => router.push(`/expedition/${expedition.id}`)}>
       <HCard>
@@ -52,22 +54,22 @@ export function ExpeditionListItem({ expedition }: ExpeditionListItemProps) {
               <Text style={[styles.stat, { color: brandColors.blue }]}>
                 {expedition.entriesCount ?? 0} entries
               </Text>
-              <Text style={[styles.stat, { color: brandColors.copper }]}>
-                {fmtAmount(expedition.raised ?? 0)}
-                {(expedition.goal ?? 0) > 0 && (
+              {(expedition.goal ?? 0) > 0 && (
+                <Text style={[styles.stat, { color: brandColors.copper }]}>
+                  {fmtAmount(totalRaised)}
                   <Text style={{ color: colors.textTertiary }}>
                     /{fmtAmount(expedition.goal!)}
                   </Text>
-                )}
-                {' raised'}
-              </Text>
+                  {' raised'}
+                </Text>
+              )}
             </View>
           </View>
         </View>
         {expedition.goal && expedition.goal > 0 && (
           <View style={[styles.fundingWrap, { borderTopColor: colors.border }]}>
             <FundingBar
-              raised={expedition.raised ?? 0}
+              raised={totalRaised}
               goal={expedition.goal}
             />
           </View>

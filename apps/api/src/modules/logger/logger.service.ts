@@ -12,7 +12,13 @@ export class Logger implements LoggerService {
     const isDevelopment = !isStaging && !isProduction;
 
     const redactOpts = {
-      paths: ['req.headers.authorization', '*.password', '*.email', '*.token', '*.sessionSecret'],
+      paths: [
+        'req.headers.authorization',
+        '*.password',
+        '*.email',
+        '*.token',
+        '*.sessionSecret',
+      ],
       remove: true,
     };
 

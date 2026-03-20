@@ -151,10 +151,9 @@ export class StripeService {
         await this.onDisputeCreated(data as Stripe.Dispute);
         break;
       case 'charge.dispute.updated':
-        this.logger.warn(
-          `Dispute updated: ${(data as Stripe.Dispute).id}`,
-          { eventId: eventType },
-        );
+        this.logger.warn(`Dispute updated: ${(data as Stripe.Dispute).id}`, {
+          eventId: eventType,
+        });
         break;
       case 'charge.dispute.closed':
         this.logger.log(

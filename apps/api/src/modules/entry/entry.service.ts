@@ -383,6 +383,7 @@ export class EntryService {
             },
             take: 1,
           },
+          published_at: true,
           // Expedition relation
           expedition: {
             select: {
@@ -390,6 +391,7 @@ export class EntryService {
               title: true,
               status: true,
               end_date: true,
+              early_access_enabled: true,
             },
           },
           // check if the session explorer has liked this entry
@@ -426,7 +428,21 @@ export class EntryService {
             : [{ date: 'desc' }],
       });
 
-      const responseData = data.map((entry) => {
+      // Filter out entries in early access window for non-qualifying viewers
+      const filteredData = data.filter((entry) => {
+        if (!entry.expedition?.early_access_enabled || !entry.published_at)
+          return true;
+        if (explorerId && entry.author_id === explorerId) return true; // Author always sees own entries
+        const hoursSincePublish =
+          (Date.now() - new Date(entry.published_at).getTime()) /
+          (1000 * 60 * 60);
+        // Past all early access windows
+        if (hoursSincePublish >= 48) return true;
+        // Within window — exclude from public listings (sponsors see via expedition detail)
+        return false;
+      });
+
+      const responseData = filteredData.map((entry) => {
         // Calculate word count from content
         const wordCount = entry.content
           ? entry.content
@@ -1156,6 +1172,7 @@ export class EntryService {
             public: privacy.public,
             sponsored: privacy.sponsored,
             is_draft: isDraft === true,
+            published_at: isDraft ? null : new Date(), // Set on publish, not on draft creation
             email_sent: privacy.public && !isDraft, // Only send email for published, non-draft entries
             comments_enabled:
               commentsEnabled !== undefined ? commentsEnabled : true,
@@ -1441,6 +1458,8 @@ export class EntryService {
             date: payload.date ? new Date(payload.date) : undefined,
             is_draft:
               payload.isDraft !== undefined ? payload.isDraft : entry.is_draft,
+            // Set published_at when transitioning from draft to published
+            published_at: isBecomingPublished ? new Date() : undefined,
             email_sent: shouldTriggerEmail ? true : entry.email_sent,
             comments_enabled:
               payload.commentsEnabled !== undefined
@@ -1746,8 +1765,10 @@ export class EntryService {
       const s3Paths: string[] = [];
 
       if (entry.cover_upload) {
-        if (entry.cover_upload.original) s3Paths.push(entry.cover_upload.original);
-        if (entry.cover_upload.thumbnail) s3Paths.push(entry.cover_upload.thumbnail);
+        if (entry.cover_upload.original)
+          s3Paths.push(entry.cover_upload.original);
+        if (entry.cover_upload.thumbnail)
+          s3Paths.push(entry.cover_upload.thumbnail);
       }
 
       for (const m of entry.media || []) {
@@ -1755,7 +1776,9 @@ export class EntryService {
         if (m.upload?.thumbnail) s3Paths.push(m.upload.thumbnail);
       }
 
-      await Promise.all(s3Paths.map((path) => this.uploadService.deleteFromS3(path)));
+      await Promise.all(
+        s3Paths.map((path) => this.uploadService.deleteFromS3(path)),
+      );
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

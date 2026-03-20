@@ -15,6 +15,10 @@ import {
   UserNotificationContext,
   UserRole,
 } from '@repo/types';
+import {
+  getEarlyAccessHoursForAmount,
+  getEarlyAccessHoursForTier,
+} from '@repo/types/sponsorship-tiers';
 
 import { dateformat } from '@/lib/date-format';
 import { integerToDecimal, normalizeText } from '@/lib/formatter';
@@ -99,36 +103,135 @@ export class ExpeditionService {
   }
 
   /**
-   * Get unique sponsor counts for a list of explorer IDs.
-   * Returns a Map of explorerId -> unique sponsor count.
+   * Batch-compute recurring sponsorship stats AND per-expedition unique sponsor
+   * counts for a list of expeditions. One-time sponsors are scoped to a specific
+   * expedition; recurring sponsors apply to all expeditions by that author.
    */
-  private async getUniqueSponsorCounts(
-    authorIds: number[],
-  ): Promise<Map<number, number>> {
-    if (authorIds.length === 0) return new Map();
+  private async getSponsorshipStatsForExpeditions(
+    expeditions: {
+      public_id: string;
+      author_id: number;
+      created_at: Date | null;
+      end_date: Date | null;
+    }[],
+  ): Promise<
+    Map<
+      string,
+      {
+        recurringStats: {
+          activeSponsors: number;
+          monthlyRevenue: number;
+          totalCommitted: number;
+        };
+        sponsorsCount: number;
+      }
+    >
+  > {
+    const result = new Map<
+      string,
+      {
+        recurringStats: {
+          activeSponsors: number;
+          monthlyRevenue: number;
+          totalCommitted: number;
+        };
+        sponsorsCount: number;
+      }
+    >();
+    if (expeditions.length === 0) return result;
 
-    const counts = await this.prisma.sponsorship.groupBy({
-      by: ['sponsored_explorer_id', 'sponsor_id'],
+    const authorIds = [...new Set(expeditions.map((e) => e.author_id))];
+    const publicIdSet = new Set(expeditions.map((e) => e.public_id));
+
+    // Single query: all sponsorships for these authors (both one-time and recurring)
+    const allSponsorships = await this.prisma.sponsorship.findMany({
       where: {
         sponsored_explorer_id: { in: authorIds },
         deleted_at: null,
-        status: { in: ['active', 'confirmed', 'completed'] },
+        status: {
+          in: [
+            'active',
+            'confirmed',
+            'completed',
+            'ACTIVE',
+            'CONFIRMED',
+            'COMPLETED',
+          ],
+        },
+      },
+      select: {
+        sponsored_explorer_id: true,
+        sponsor_id: true,
+        type: true,
+        amount: true,
+        status: true,
+        created_at: true,
+        expedition_public_id: true,
       },
     });
 
-    // Count distinct sponsor_id per sponsored_explorer_id
-    const map = new Map<number, Set<number>>();
-    for (const row of counts) {
-      if (!map.has(row.sponsored_explorer_id)) {
-        map.set(row.sponsored_explorer_id, new Set());
+    // Partition by type
+    const recurringByAuthor = new Map<number, typeof allSponsorships>();
+    const oneTimeByExpedition = new Map<string, typeof allSponsorships>();
+
+    for (const s of allSponsorships) {
+      if (s.type?.toLowerCase() === 'subscription') {
+        if (!recurringByAuthor.has(s.sponsored_explorer_id)) {
+          recurringByAuthor.set(s.sponsored_explorer_id, []);
+        }
+        recurringByAuthor.get(s.sponsored_explorer_id)!.push(s);
+      } else if (
+        s.expedition_public_id &&
+        publicIdSet.has(s.expedition_public_id)
+      ) {
+        if (!oneTimeByExpedition.has(s.expedition_public_id)) {
+          oneTimeByExpedition.set(s.expedition_public_id, []);
+        }
+        oneTimeByExpedition.get(s.expedition_public_id)!.push(s);
       }
-      map.get(row.sponsored_explorer_id)!.add(row.sponsor_id);
     }
 
-    const result = new Map<number, number>();
-    for (const [authorId, sponsors] of map) {
-      result.set(authorId, sponsors.size);
+    const MS_PER_MONTH = 30 * 24 * 60 * 60 * 1000;
+    const now = new Date();
+
+    for (const exp of expeditions) {
+      const recurring = recurringByAuthor.get(exp.author_id) || [];
+      const oneTime = oneTimeByExpedition.get(exp.public_id) || [];
+      const expCreated = exp.created_at ?? now;
+      const expEndDate = exp.end_date ?? now;
+
+      // Recurring stats
+      const active = recurring.filter(
+        (s) => s.status?.toLowerCase() === 'active',
+      );
+      const monthlyRevenue = active.reduce(
+        (sum, s) => sum + integerToDecimal(s.amount),
+        0,
+      );
+      const totalCommitted = recurring.reduce((sum, s) => {
+        const subStart = s.created_at ?? now;
+        const overlapStart = subStart > expCreated ? subStart : expCreated;
+        if (overlapStart > expEndDate) return sum;
+        const diffMs = expEndDate.getTime() - overlapStart.getTime();
+        const months = Math.max(1, Math.ceil(diffMs / MS_PER_MONTH));
+        return sum + months * integerToDecimal(s.amount);
+      }, 0);
+
+      // Unique sponsor count: one-time for this expedition + recurring for this author
+      const uniqueSponsors = new Set<number>();
+      for (const s of oneTime) uniqueSponsors.add(s.sponsor_id);
+      for (const s of recurring) uniqueSponsors.add(s.sponsor_id);
+
+      result.set(exp.public_id, {
+        recurringStats: {
+          activeSponsors: active.length,
+          monthlyRevenue,
+          totalCommitted,
+        },
+        sponsorsCount: uniqueSponsors.size,
+      });
     }
+
     return result;
   }
 
@@ -216,6 +319,7 @@ export class ExpeditionService {
           public: true,
           visibility: true,
           status: true,
+          created_at: true,
           start_date: true,
           end_date: true,
           cover_image: true,
@@ -271,9 +375,15 @@ export class ExpeditionService {
           context === 'following' ? [{ updated_at: 'desc' }] : [{ id: 'desc' }],
       });
 
-      // Get unique sponsor counts per author
-      const authorIds = [...new Set(data.map((d) => d.author_id))];
-      const sponsorCounts = await this.getUniqueSponsorCounts(authorIds);
+      // Get per-expedition sponsor counts and recurring stats
+      const sponsorshipStats = await this.getSponsorshipStatsForExpeditions(
+        data.map((d) => ({
+          public_id: d.public_id,
+          author_id: d.author_id,
+          created_at: d.created_at,
+          end_date: d.end_date,
+        })),
+      );
 
       const response: IExpeditionGetAllResponse = {
         results,
@@ -351,7 +461,9 @@ export class ExpeditionService {
               isRoundTrip: is_round_trip ?? false,
               goal: integerToDecimal(goal ?? 0),
               raised: raised ?? 0,
-              sponsorsCount: sponsorCounts.get(author_id) ?? 0,
+              recurringStats: sponsorshipStats.get(public_id)?.recurringStats,
+              sponsorsCount:
+                sponsorshipStats.get(public_id)?.sponsorsCount ?? 0,
               entriesCount: _count.entries,
               totalDistanceKm: expedition.route_distance_km ?? 0,
               author: author
@@ -427,6 +539,7 @@ export class ExpeditionService {
           cover_image: true,
           status: true,
           visibility: true,
+          created_at: true,
           category: true,
           region: true,
           tags: true,
@@ -499,9 +612,15 @@ export class ExpeditionService {
         locationRefs,
       );
 
-      // Get unique sponsor counts per author
-      const authorIds = [...new Set(data.map((d) => d.author_id))];
-      const sponsorCounts = await this.getUniqueSponsorCounts(authorIds);
+      // Get per-expedition sponsor counts and recurring stats
+      const sponsorshipStats = await this.getSponsorshipStatsForExpeditions(
+        data.map((d) => ({
+          public_id: d.public_id,
+          author_id: d.author_id,
+          created_at: d.created_at,
+          end_date: d.end_date,
+        })),
+      );
 
       const response: IExpeditionGetAllResponse = {
         results,
@@ -581,7 +700,8 @@ export class ExpeditionService {
             endDate,
             goal: integerToDecimal(goal ?? 0),
             raised: raised ?? 0,
-            sponsorsCount: sponsorCounts.get(author_id) ?? 0,
+            recurringStats: sponsorshipStats.get(public_id)?.recurringStats,
+            sponsorsCount: sponsorshipStats.get(public_id)?.sponsorsCount ?? 0,
             entriesCount: (row as any)._count?.entries ?? 0,
             totalDistanceKm: (row as any).route_distance_km ?? 0,
             waypointsCount: row.waypoints.filter(
@@ -684,6 +804,7 @@ export class ExpeditionService {
             raised: true,
             notes_access_threshold: true,
             notes_visibility: true,
+            early_access_enabled: true,
             entries_count: true,
             cancelled_at: true,
             cancellation_reason: true,
@@ -721,6 +842,7 @@ export class ExpeditionService {
                 is_milestone: true,
                 metadata: true,
                 created_at: true,
+                published_at: true,
                 author: {
                   select: {
                     username: true,
@@ -803,6 +925,7 @@ export class ExpeditionService {
         raised,
         notes_access_threshold,
         notes_visibility,
+        early_access_enabled,
         entries_count,
         cancelled_at,
         cancellation_reason,
@@ -886,19 +1009,12 @@ export class ExpeditionService {
           ? new Date(Math.max(...allDates.map((d) => d.getTime())))
           : undefined);
 
-      // Get unique sponsor count for this explorer
-      const uniqueSponsorCounts = await this.getUniqueSponsorCounts([
-        expedition.author_id,
-      ]);
-      const uniqueSponsorsCount =
-        uniqueSponsorCounts.get(expedition.author_id) ?? 0;
-
       // Fetch all sponsorships for this explorer (public leaderboard + recurring stats)
       const allSponsorships = await this.prisma.sponsorship.findMany({
         where: {
           sponsored_explorer_id: expedition.author_id,
           deleted_at: null,
-          status: { in: ['active', 'confirmed', 'ACTIVE', 'CONFIRMED'] },
+          status: { in: ['active', 'confirmed', 'completed', 'ACTIVE', 'CONFIRMED', 'COMPLETED'] },
         },
         select: {
           public_id: true,
@@ -924,6 +1040,8 @@ export class ExpeditionService {
               public_id: true,
               description: true,
               price: true,
+              priority: true,
+              type: true,
             },
           },
         },
@@ -975,6 +1093,7 @@ export class ExpeditionService {
 
       // Calculate viewer's cumulative sponsorship for this expedition
       let viewerCumulativeSponsored = 0;
+      let viewerEarlyAccessHours = 0;
       if (explorerId && explorerId !== expedition.author_id) {
         const viewerSponsorships = allSponsorships.filter(
           (s) =>
@@ -986,6 +1105,18 @@ export class ExpeditionService {
           (sum, s) => sum + s.amount,
           0,
         );
+
+        // Determine viewer's early access hours from their best tier
+        for (const s of viewerSponsorships) {
+          let hours = 0;
+          if (s.tier?.priority) {
+            hours = getEarlyAccessHoursForTier(s.tier.priority);
+          } else {
+            // No tier (custom amount or quick-sponsor) — check amount against one-time thresholds
+            hours = getEarlyAccessHoursForAmount(integerToDecimal(s.amount));
+          }
+          if (hours > viewerEarlyAccessHours) viewerEarlyAccessHours = hours;
+        }
       }
 
       const response: IExpeditionGetByIdResponse = {
@@ -1012,6 +1143,7 @@ export class ExpeditionService {
         sponsorsCount: expeditionSponsorsCount,
         notesAccessThreshold: integerToDecimal(notes_access_threshold ?? 0),
         notesVisibility: (notes_visibility as 'public' | 'sponsor') || 'public',
+        earlyAccessEnabled: early_access_enabled ?? false,
         viewerCumulativeSponsored: integerToDecimal(viewerCumulativeSponsored),
         entriesCount: entries.length,
         recurringStats: {
@@ -1050,6 +1182,20 @@ export class ExpeditionService {
                 const isAdmin = explorerRole === ExplorerRole.ADMIN;
                 return isAuthor || isAdmin;
               }
+              // Early access filtering: hide entries within the 48h window from non-qualifying viewers
+              if (early_access_enabled && entry.published_at) {
+                const isAuthor = explorerId && entry.author_id === explorerId;
+                const isAdmin = explorerRole === ExplorerRole.ADMIN;
+                if (!isAuthor && !isAdmin) {
+                  const hoursSincePublish =
+                    (Date.now() - new Date(entry.published_at).getTime()) /
+                    (1000 * 60 * 60);
+                  if (hoursSincePublish < 48 && viewerEarlyAccessHours <= 0)
+                    return false;
+                  if (hoursSincePublish < 48 - viewerEarlyAccessHours)
+                    return false;
+                }
+              }
               return true;
             })
             .map((entry) => {
@@ -1062,14 +1208,24 @@ export class ExpeditionService {
                       | 'public'
                       | 'off-grid'
                       | 'private');
+              // Determine if entry is in early access window
+              const isEarlyAccess =
+                early_access_enabled && entry.published_at
+                  ? (Date.now() - new Date(entry.published_at).getTime()) /
+                      (1000 * 60 * 60) <
+                    48
+                  : false;
+
               return {
                 id: entry.public_id,
                 title: entry.title,
                 content: fullContent,
                 visibility: effectiveVisibility,
                 isMilestone: entry.is_milestone || false,
+                earlyAccess: isEarlyAccess,
                 metadata: entry.metadata || null,
                 createdAt: entry.created_at,
+                publishedAt: entry.published_at,
                 date: entry.date,
                 place: entry.place,
                 lat: entry.lat,
@@ -1253,6 +1409,7 @@ export class ExpeditionService {
             ? Math.round(payload.notesAccessThreshold * 100)
             : 0,
           notes_visibility: payload.notesVisibility || 'public',
+          early_access_enabled: payload.earlyAccessEnabled ?? false,
           author_id: explorerId,
         },
         select: {
@@ -1475,6 +1632,10 @@ export class ExpeditionService {
       const notesVisibility = (payload as any).notesVisibility;
       if (notesVisibility !== undefined) {
         updateData.notes_visibility = notesVisibility;
+      }
+      const earlyAccessEnabled = (payload as any).earlyAccessEnabled;
+      if (earlyAccessEnabled !== undefined) {
+        updateData.early_access_enabled = earlyAccessEnabled;
       }
       if (category !== undefined) {
         updateData.category = category;
@@ -2283,6 +2444,7 @@ export class ExpeditionService {
           goal: true,
           notes_access_threshold: true,
           notes_visibility: true,
+          early_access_enabled: true,
           updated_at: true,
           waypoints: {
             orderBy: { sequence: 'asc' },
@@ -2325,6 +2487,7 @@ export class ExpeditionService {
           goal: integerToDecimal(d.goal ?? 0),
           notesAccessThreshold: integerToDecimal(d.notes_access_threshold ?? 0),
           notesVisibility: d.notes_visibility || 'public',
+          earlyAccessEnabled: d.early_access_enabled ?? false,
           updatedAt: d.updated_at,
           waypoints: d.waypoints.map(({ sequence, waypoint }) => ({
             id: waypoint.id,

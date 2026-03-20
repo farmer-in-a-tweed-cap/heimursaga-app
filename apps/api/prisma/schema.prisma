@@ -272,6 +272,7 @@ model Entry {
   metadata              Json?
   quick_sponsors_count  Int?                   @default(0)
   quick_sponsors_total  Int?                   @default(0)
+  published_at          DateTime?
   // Relations
   bookmarks             EntryBookmark[]        @relation("entry_bookmarks")
   sponsorships          Sponsorship[]          @relation("entry_sponsorships")
@@ -390,6 +391,7 @@ model Expedition {
   raised                  Int?                 @default(0) // amount raised in cents
   notes_access_threshold  Int?                 @default(0) // minimum cumulative sponsorship (cents) for Expedition Notes access
   notes_visibility        String?              @default("public") @db.VarChar(10) // "public" or "sponsor"
+  early_access_enabled    Boolean?             @default(false) // Enable early entry access for qualifying sponsors
   sponsors_count  Int?                 @default(0)
   entries_count   Int?                 @default(0)
   bookmarks_count Int?                 @default(0)
@@ -412,7 +414,7 @@ model ExpeditionNote {
   id             Int                    @id @default(autoincrement())
   expedition_id  Int
   author_id      Int
-  text           String                 @db.VarChar(280)
+  text           String                 @db.VarChar(500)
   created_at     DateTime?              @default(now())
   deleted_at     DateTime?
   expedition     Expedition             @relation("expedition_notes", fields: [expedition_id], references: [id], onDelete: Cascade)
@@ -427,7 +429,7 @@ model ExpeditionNoteReply {
   id          Int            @id @default(autoincrement())
   note_id     Int
   author_id   Int
-  text        String         @db.VarChar(280)
+  text        String         @db.VarChar(500)
   created_at  DateTime?      @default(now())
   deleted_at  DateTime?
   note        ExpeditionNote @relation("note_replies", fields: [note_id], references: [id], onDelete: Cascade)

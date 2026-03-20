@@ -12,6 +12,7 @@ import { explorerApi, expeditionApi, sponsorshipApi, paymentMethodApi, type Spon
 import { useStripe, useElements, CardElement } from '@/app/context/StripeContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { toast } from 'sonner';
+import { getPerksForSlot, getTierLabel, getTierSlotConfig, ONE_TIME_TIER_SLOTS, MONTHLY_TIER_SLOTS } from '@repo/types/sponsorship-tiers';
 
 type PaymentType = 'one-time' | 'recurring';
 
@@ -36,6 +37,7 @@ export function SponsorshipPaymentPage() {
 
   // Form state
   const [paymentType, setPaymentType] = useState<PaymentType>('one-time');
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>('monthly');
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
   const [customAmount, setCustomAmount] = useState('');
   const [sponsorMessage, setSponsorMessage] = useState('');
@@ -135,8 +137,8 @@ export function SponsorshipPaymentPage() {
         setSelectedPaymentMethod(response.data[0].id);
         setUseNewCard(false);
       }
-    } catch (err) {
-      console.error('Failed to fetch payment methods:', err);
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to load payment methods');
     }
   };
 
@@ -144,35 +146,51 @@ export function SponsorshipPaymentPage() {
   const oneTimeTiers = tiers
     .filter(t => t.isAvailable && t.type === 'ONE_TIME')
     .sort((a, b) => (a.priority || 0) - (b.priority || 0))
-    .slice(0, 5)
-    .map(t => ({
-      id: t.id,
-      amount: t.price,
-      label: t.description || 'Supporter',
-    }));
+    .slice(0, 3)
+    .map(t => {
+      const slot = t.priority || 1;
+      const config = getTierSlotConfig('ONE_TIME', slot);
+      return {
+        id: t.id,
+        amount: t.price,
+        label: getTierLabel('ONE_TIME', slot),
+        range: config ? `$${config.minPrice}${config.maxPrice ? `–$${config.maxPrice}` : '+'}` : undefined,
+        slot,
+      };
+    });
 
   const recurringTiers = tiers
     .filter(t => t.isAvailable && t.type === 'MONTHLY')
     .sort((a, b) => (a.priority || 0) - (b.priority || 0))
     .slice(0, 3)
-    .map(t => ({
-      id: t.id,
-      amount: t.price,
-      label: t.description || 'Monthly Supporter',
-      range: `$${Math.max(1, t.price - 5)}-$${t.price + 10}/mo`,
-    }));
+    .map(t => {
+      const slot = t.priority || 1;
+      const config = getTierSlotConfig('MONTHLY', slot);
+      return {
+        id: t.id,
+        amount: t.price,
+        label: getTierLabel('MONTHLY', slot),
+        range: config ? `$${config.minPrice}${config.maxPrice ? `–$${config.maxPrice}` : '+'}/mo` : undefined,
+        slot,
+      };
+    });
 
-  // Fallback tiers if none configured
-  const defaultOneTimeTiers = [
-    { id: 'default-1', amount: 25, label: 'Supporter' },
-    { id: 'default-2', amount: 75, label: 'Backer' },
-    { id: 'default-3', amount: 200, label: 'Sponsor' },
-  ];
+  // Fallback tiers from canonical definitions
+  const defaultOneTimeTiers = ONE_TIME_TIER_SLOTS.map(t => ({
+    id: `default-ot-${t.slot}`,
+    amount: t.defaultPrice,
+    label: t.label,
+    range: `$${t.minPrice}${t.maxPrice ? `–$${t.maxPrice}` : '+'}`,
+    slot: t.slot,
+  }));
 
-  const defaultRecurringTiers = [
-    { id: 'default-r1', amount: 10, label: 'Monthly Supporter', range: '$5-$15/mo' },
-    { id: 'default-r2', amount: 30, label: 'Monthly Backer', range: '$15-$50/mo' },
-  ];
+  const defaultRecurringTiers = MONTHLY_TIER_SLOTS.map(t => ({
+    id: `default-mo-${t.slot}`,
+    amount: t.defaultPrice,
+    label: t.label,
+    range: `$${t.minPrice}${t.maxPrice ? `–$${t.maxPrice}` : '+'}/mo`,
+    slot: t.slot,
+  }));
 
   const currentTiers = paymentType === 'one-time'
     ? (oneTimeTiers.length > 0 ? oneTimeTiers : defaultOneTimeTiers)
@@ -312,7 +330,7 @@ export function SponsorshipPaymentPage() {
         sponsorshipType: paymentType === 'one-time' ? 'one_time_payment' : 'subscription',
         oneTimePaymentAmount: paymentType === 'one-time' ? finalAmount : undefined,
         customAmount: (customAmount && parseFloat(customAmount) > 0) ? finalAmount : undefined,
-        billingPeriod: paymentType === 'recurring' ? 'monthly' : undefined,
+        billingPeriod: paymentType === 'recurring' ? billingInterval : undefined,
         message: sponsorMessage || undefined,
         emailDelivery: emailUpdates,
         isPublic: namePublic,
@@ -352,8 +370,8 @@ export function SponsorshipPaymentPage() {
         // Complete checkout on backend (fallback for webhook)
         try {
           await sponsorshipApi.completeCheckout(paymentIntent.id);
-        } catch (completeErr) {
-          console.error('Failed to complete checkout:', completeErr);
+        } catch (completeErr: any) {
+          toast.error(completeErr?.message || 'Failed to complete checkout');
           // Don't throw - the webhook may still complete it
         }
 
@@ -624,6 +642,7 @@ export function SponsorshipPaymentPage() {
                       if (hasActiveSubscription) return;
                       setPaymentType('recurring');
                       setSelectedAmount(recurringTiers[0]?.amount || defaultRecurringTiers[0].amount);
+                      setCustomAmount('');
                     }}
                     className={`p-6 border-2 transition-all ${hasActiveSubscription
                       ? 'border-[#b5bcc4] dark:border-[#616161] opacity-60 cursor-not-allowed'
@@ -664,122 +683,206 @@ export function SponsorshipPaymentPage() {
                 <h2 className="text-sm font-bold">STEP 2: SELECT AMOUNT</h2>
               </div>
               <div className="p-6">
-                {/* Preset Tiers */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
-                  {currentTiers.map((tier) => (
-                    <button
-                      key={tier.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedAmount(tier.amount);
-                        setCustomAmount('');
-                      }}
-                      className={`p-4 border-2 transition-all text-left ${selectedAmount === tier.amount && !customAmount
-                        ? 'border-[#4676ac] bg-[#f5f5f5] dark:bg-[#2a2a2a]'
-                        : 'border-[#b5bcc4] dark:border-[#616161] hover:border-[#ac6d46]'
-                        }`}
-                    >
-                      <div className="font-bold text-xl mb-1 dark:text-[#e5e5e5]">
-                        ${tier.amount}
-                        {paymentType === 'recurring' && <span className="text-sm">/mo</span>}
+                {paymentType === 'one-time' ? (
+                  <>
+                    {/* One-time: preset amount buttons + custom input */}
+                    <div className="grid grid-cols-4 gap-3 mb-4">
+                      {[10, 25, 50, 100].map((amt) => (
+                        <button
+                          key={amt}
+                          type="button"
+                          onClick={() => {
+                            setSelectedAmount(amt);
+                            setCustomAmount('');
+                          }}
+                          className={`p-3 border-2 transition-all text-center ${selectedAmount === amt && !customAmount
+                            ? 'border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a]'
+                            : 'border-[#b5bcc4] dark:border-[#616161] hover:border-[#ac6d46]'
+                            }`}
+                        >
+                          <div className="font-bold text-xl dark:text-[#e5e5e5]">${amt}</div>
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Custom amount */}
+                    <div className={`border-2 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] mb-4 ${
+                      customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5
+                        ? 'border-[#994040]'
+                        : 'border-[#202020] dark:border-[#616161]'
+                    }`}>
+                      <label className="block text-sm font-medium mb-2 dark:text-[#e5e5e5]">
+                        CUSTOM AMOUNT
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold dark:text-[#e5e5e5]">$</span>
+                        <input
+                          type="number"
+                          min="5"
+                          max="10000"
+                          step="1"
+                          value={customAmount}
+                          onChange={(e) => {
+                            setCustomAmount(e.target.value);
+                            setSelectedAmount(null);
+                          }}
+                          placeholder="Enter custom amount (min $5)"
+                          className={`flex-1 px-4 py-3 border-2 outline-none text-xl font-bold bg-white dark:bg-[#202020] dark:text-[#e5e5e5] ${
+                            customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5
+                              ? 'border-[#994040] focus:border-[#994040]'
+                              : 'border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46]'
+                          }`}
+                        />
                       </div>
-                      <div className="text-xs font-bold text-[#ac6d46]">{tier.label}</div>
-                      {'range' in tier && typeof tier.range === 'string' && (
-                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono mt-1">
-                          {tier.range}
+                      {customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5 ? (
+                        <div className="mt-2 text-xs text-[#994040] font-bold">
+                          Minimum amount is $5.00 — please increase your amount to continue.
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4]">
+                          Minimum: $5.00 — Maximum: $10,000.00
                         </div>
                       )}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Custom Amount */}
-                <div className={`border-2 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] ${
-                  customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5
-                    ? 'border-[#994040]'
-                    : 'border-[#202020] dark:border-[#616161]'
-                }`}>
-                  <label className="block text-sm font-medium mb-2 dark:text-[#e5e5e5]">
-                    CUSTOM AMOUNT {paymentType === 'recurring' && '(per month)'}
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-bold dark:text-[#e5e5e5]">$</span>
-                    <input
-                      type="number"
-                      min="5"
-                      max="10000"
-                      step="1"
-                      value={customAmount}
-                      onChange={(e) => {
-                        setCustomAmount(e.target.value);
-                        setSelectedAmount(null);
-                      }}
-                      placeholder="Enter custom amount (min $5)"
-                      className={`flex-1 px-4 py-3 border-2 outline-none text-xl font-bold bg-white dark:bg-[#202020] dark:text-[#e5e5e5] ${
-                        customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5
-                          ? 'border-[#994040] focus:border-[#994040]'
-                          : 'border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46]'
-                      }`}
-                    />
-                    {paymentType === 'recurring' && (
-                      <span className="text-xl font-bold text-[#616161] dark:text-[#b5bcc4]">/month</span>
-                    )}
-                  </div>
-                  {customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5 ? (
-                    <div className="mt-2 text-xs text-[#994040] font-bold">
-                      Minimum amount is $5.00 — please increase your amount to continue.
                     </div>
-                  ) : (
-                    <div className="mt-2 text-xs text-[#616161] dark:text-[#b5bcc4]">
-                      Minimum: $5.00 — Maximum: $10,000.00
-                    </div>
-                  )}
-                </div>
 
-                {/* Sponsor Benefits */}
-                <div className="mt-6 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#4676ac]">
-                  <div className="font-bold text-sm mb-2 text-[#4676ac]">ALL SPONSORS RECEIVE:</div>
-                  <ul className="text-xs space-y-1 text-[#202020] dark:text-[#e5e5e5]">
-                    <li>* Recognition on expedition sponsorship leaderboard</li>
-                    <li>* Direct connection with the explorer</li>
-                  </ul>
-                  {(() => {
-                    const threshold = expedition?.notesAccessThreshold ?? 0;
-                    const cumulative = expedition?.viewerCumulativeSponsored ?? 0;
-                    const effectiveAmount = selectedAmount || (customAmount ? parseFloat(customAmount) : 0) || 0;
-                    const projectedTotal = cumulative + effectiveAmount;
-
-                    if (threshold > 0) {
-                      const willUnlock = projectedTotal >= threshold;
-                      const alreadyUnlocked = cumulative >= threshold;
-                      return (
-                        <div className="mt-3 pt-3 border-t border-[#4676ac]/30">
-                          <div className="font-bold text-xs mb-1 text-[#4676ac]">EXPEDITION NOTES ACCESS</div>
-                          {alreadyUnlocked ? (
-                            <p className="text-xs text-[#598636]">
-                              You&apos;ve unlocked Expedition Notes for this expedition.
-                            </p>
-                          ) : willUnlock ? (
-                            <p className="text-xs text-[#598636]">
-                              This sponsorship will unlock Expedition Notes access!
-                            </p>
-                          ) : (
-                            <p className="text-xs text-[#202020] dark:text-[#e5e5e5]">
-                              Requires ${threshold.toFixed(2)} cumulative sponsorship.
-                              {cumulative > 0 && ` Your current total: $${cumulative.toFixed(2)}.`}
-                              {effectiveAmount > 0 && ` After this sponsorship: $${projectedTotal.toFixed(2)}.`}
-                            </p>
-                          )}
-                        </div>
-                      );
-                    }
-                    return (
-                      <div className="mt-1">
-                        <li className="text-xs text-[#202020] dark:text-[#e5e5e5]">* Exclusive access to Expedition Notes</li>
+                    {/* Perk thresholds */}
+                    <div className="border-2 border-[#4676ac] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                      <div className="font-bold text-sm mb-3 text-[#4676ac]">PERK THRESHOLDS</div>
+                      <div className="space-y-3">
+                        {ONE_TIME_TIER_SLOTS.map(tier => {
+                          const effectiveAmount = selectedAmount || (customAmount ? parseFloat(customAmount) : 0) || 0;
+                          const isActive = effectiveAmount >= tier.minPrice;
+                          const perks = getPerksForSlot('ONE_TIME', tier.slot);
+                          return (
+                            <div key={tier.slot} className={`p-3 border-2 transition-all ${
+                              isActive
+                                ? 'border-[#598636] bg-[#598636]/5'
+                                : 'border-[#b5bcc4]/50 dark:border-[#616161]/50 opacity-60'
+                            }`}>
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className={`text-xs font-bold ${isActive ? 'text-[#598636]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                                  ${tier.minPrice}+
+                                </span>
+                                {isActive && (
+                                  <span className="text-[10px] font-bold text-[#598636] bg-[#598636]/10 px-1.5 py-0.5">UNLOCKED</span>
+                                )}
+                              </div>
+                              <div className="space-y-0.5">
+                                {perks.map((perk, i) => (
+                                  <div key={i} className="text-[10px] text-[#616161] dark:text-[#b5bcc4] flex items-start gap-1">
+                                    <span className={`shrink-0 ${isActive ? 'text-[#598636]' : ''}`}>*</span>
+                                    <span>{perk}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })()}
-                </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Billing interval toggle */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <button
+                        type="button"
+                        onClick={() => { setBillingInterval('monthly'); setSelectedAmount(null); setCustomAmount(''); }}
+                        className={`px-4 py-2 border-2 text-xs font-bold tracking-wider transition-all ${billingInterval === 'monthly'
+                          ? 'border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]'
+                          : 'border-[#b5bcc4] dark:border-[#616161] text-[#616161] dark:text-[#b5bcc4] hover:border-[#ac6d46]'
+                        }`}
+                      >
+                        MONTHLY
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setBillingInterval('yearly'); setSelectedAmount(null); setCustomAmount(''); }}
+                        className={`px-4 py-2 border-2 text-xs font-bold tracking-wider transition-all flex items-center gap-2 ${billingInterval === 'yearly'
+                          ? 'border-[#ac6d46] bg-[#f5f5f5] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]'
+                          : 'border-[#b5bcc4] dark:border-[#616161] text-[#616161] dark:text-[#b5bcc4] hover:border-[#ac6d46]'
+                        }`}
+                      >
+                        YEARLY
+                        <span className="text-[10px] text-[#598636] font-bold">SAVE 10%</span>
+                      </button>
+                    </div>
+
+                    {/* Recurring: tier cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                      {currentTiers.map((tier) => {
+                        const displayAmount = billingInterval === 'yearly'
+                          ? Math.round(tier.amount * 12 * 0.9 * 100) / 100
+                          : tier.amount;
+                        const monthlyEquiv = billingInterval === 'yearly'
+                          ? Math.round(displayAmount / 12 * 100) / 100
+                          : null;
+                        return (
+                          <button
+                            key={tier.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedAmount(tier.amount);
+                              setCustomAmount('');
+                            }}
+                            className={`p-4 border-2 transition-all text-left ${selectedAmount === tier.amount && !customAmount
+                              ? 'border-[#4676ac] bg-[#f5f5f5] dark:bg-[#2a2a2a]'
+                              : 'border-[#b5bcc4] dark:border-[#616161] hover:border-[#ac6d46]'
+                              }`}
+                          >
+                            <div className="font-bold text-xl mb-1 dark:text-[#e5e5e5]">
+                              ${displayAmount}<span className="text-sm">/{billingInterval === 'yearly' ? 'yr' : 'mo'}</span>
+                            </div>
+                            {monthlyEquiv && (
+                              <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4]">${monthlyEquiv}/mo equivalent</div>
+                            )}
+                            <div className="text-xs font-bold text-[#ac6d46]">{tier.label}</div>
+                            <div className="mt-2 pt-2 border-t border-[#b5bcc4]/30 dark:border-[#616161]/30 space-y-0.5">
+                              {getPerksForSlot('MONTHLY', tier.slot).map((perk, i) => (
+                                <div key={i} className="text-[10px] text-[#616161] dark:text-[#b5bcc4] flex items-start gap-1">
+                                  <span className="text-[#598636] shrink-0">*</span>
+                                  <span>{perk}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                  </>
+                )}
+
+                {/* Notes access threshold (both types) */}
+                {(() => {
+                  const effectiveAmount = selectedAmount || (customAmount ? parseFloat(customAmount) : 0) || 0;
+                  const threshold = expedition?.notesAccessThreshold ?? 0;
+                  const cumulative = expedition?.viewerCumulativeSponsored ?? 0;
+                  const projectedTotal = cumulative + effectiveAmount;
+                  if (threshold <= 0) return null;
+                  const willUnlock = projectedTotal >= threshold;
+                  const alreadyUnlocked = cumulative >= threshold;
+                  return (
+                    <div className="mt-6 p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#4676ac]">
+                      <div className="font-bold text-xs mb-1 text-[#4676ac]">NOTES ACCESS THRESHOLD</div>
+                      {alreadyUnlocked ? (
+                        <p className="text-xs text-[#598636]">
+                          You&apos;ve unlocked Expedition Notes for this expedition.
+                        </p>
+                      ) : willUnlock ? (
+                        <p className="text-xs text-[#598636]">
+                          This sponsorship will unlock Expedition Notes access!
+                        </p>
+                      ) : (
+                        <p className="text-xs text-[#202020] dark:text-[#e5e5e5]">
+                          Requires ${threshold.toFixed(2)} cumulative sponsorship.
+                          {cumulative > 0 && ` Your current total: $${cumulative.toFixed(2)}.`}
+                          {effectiveAmount > 0 && ` After this sponsorship: $${projectedTotal.toFixed(2)}.`}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -1001,10 +1104,10 @@ export function SponsorshipPaymentPage() {
                   {paymentType === 'one-time' ? (
                     <><CreditCard className="w-5 h-5" /> COMPLETE PAYMENT</>
                   ) : (
-                    <><RefreshCw className="w-5 h-5" /> START MONTHLY SPONSORSHIP</>
+                    <><RefreshCw className="w-5 h-5" /> START {billingInterval === 'yearly' ? 'YEARLY' : 'MONTHLY'} SPONSORSHIP</>
                   )}
-                  {' - '}${formatCurrency(finalAmount)}
-                  {paymentType === 'recurring' && '/month'}
+                  {' - '}${formatCurrency(paymentType === 'recurring' && billingInterval === 'yearly' ? Math.round(finalAmount * 12 * 0.9 * 100) / 100 : finalAmount)}
+                  {paymentType === 'recurring' && (billingInterval === 'yearly' ? '/year' : '/month')}
                 </>
               )}
             </button>
@@ -1021,15 +1124,15 @@ export function SponsorshipPaymentPage() {
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Payment Type:</span>
                   <span className="font-bold dark:text-[#e5e5e5]">
-                    {paymentType === 'one-time' ? 'One-Time' : 'Monthly Recurring'}
+                    {paymentType === 'one-time' ? 'One-Time' : billingInterval === 'yearly' ? 'Yearly Recurring' : 'Monthly Recurring'}
                   </span>
                 </div>
 
                 <div className="flex justify-between">
                   <span className="text-[#616161] dark:text-[#b5bcc4]">Amount:</span>
                   <span className="font-bold text-lg dark:text-[#e5e5e5]">
-                    ${formatCurrency(finalAmount)}
-                    {paymentType === 'recurring' && <span className="text-sm">/mo</span>}
+                    ${formatCurrency(paymentType === 'recurring' && billingInterval === 'yearly' ? Math.round(finalAmount * 12 * 0.9 * 100) / 100 : finalAmount)}
+                    {paymentType === 'recurring' && <span className="text-sm">/{billingInterval === 'yearly' ? 'yr' : 'mo'}</span>}
                   </span>
                 </div>
 
@@ -1062,9 +1165,9 @@ export function SponsorshipPaymentPage() {
                     <div className="text-xs font-bold mb-2 dark:text-[#e5e5e5]">RECURRING DETAILS:</div>
                     <div className="text-xs text-[#616161] dark:text-[#b5bcc4] space-y-1">
                       <p>* First charge: Today</p>
-                      <p>* Next charge: {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+                      <p>* Next charge: {new Date(Date.now() + (billingInterval === 'yearly' ? 365 : 30) * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+                      <p>* Billed {billingInterval === 'yearly' ? 'annually (10% discount)' : 'monthly'}</p>
                       <p>* Cancel anytime from dashboard</p>
-                      <p>* Pauses when explorer is resting</p>
                     </div>
                   </div>
                 )}

@@ -240,10 +240,12 @@ export function ExpeditionCard({
             <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Journal Entries:</div>
             <div className="font-bold text-sm dark:text-[#e5e5e5]">{journalEntries || 0}</div>
           </div>
+          {showSponsorshipSection && (
           <div>
             <div className="text-[#616161] dark:text-[#b5bcc4] mb-0.5">Sponsors:</div>
             <div className="font-bold text-sm dark:text-[#e5e5e5]">{backers || 0}</div>
           </div>
+          )}
         </div>
       </div>
 
@@ -350,7 +352,7 @@ export function ExpeditionCard({
             <button
               onClick={() => {
                 if (!isAuthenticated) {
-                  router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+                  router.push(`/auth?redirect=${encodeURIComponent(window.location.pathname)}`);
                 } else {
                   onSupport?.();
                 }

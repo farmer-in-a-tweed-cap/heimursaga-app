@@ -147,10 +147,7 @@ export class AppService {
         );
 
       const escapeUrl = (rawUrl: string): string => {
-        if (
-          !rawUrl.startsWith('http://') &&
-          !rawUrl.startsWith('https://')
-        )
+        if (!rawUrl.startsWith('http://') && !rawUrl.startsWith('https://'))
           return '#';
         return escapeHtml(rawUrl);
       };

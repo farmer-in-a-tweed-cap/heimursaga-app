@@ -90,6 +90,11 @@ export interface Expedition {
   visibility?: 'public' | 'off-grid' | 'private';
   goal?: number;
   raised?: number;
+  recurringStats?: {
+    activeSponsors: number;
+    monthlyRevenue: number;
+    totalCommitted: number;
+  };
   sponsorsCount?: number;
   entriesCount?: number;
   waypointsCount?: number;

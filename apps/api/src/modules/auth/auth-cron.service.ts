@@ -21,10 +21,7 @@ export class AuthCronService {
     try {
       const result = await this.prisma.explorerSession.deleteMany({
         where: {
-          OR: [
-            { expires_at: { lt: new Date() } },
-            { expired: true },
-          ],
+          OR: [{ expires_at: { lt: new Date() } }, { expired: true }],
         },
       });
 
@@ -32,9 +29,7 @@ export class AuthCronService {
         `[CRON] Expired session cleanup complete. Removed ${result.count} sessions.`,
       );
     } catch (e) {
-      this.logger.error(
-        `[CRON] Expired session cleanup failed: ${e.message}`,
-      );
+      this.logger.error(`[CRON] Expired session cleanup failed: ${e.message}`);
     }
   }
 }

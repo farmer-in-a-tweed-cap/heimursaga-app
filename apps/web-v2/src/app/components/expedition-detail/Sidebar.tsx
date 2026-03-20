@@ -5,6 +5,7 @@ import { formatCurrency } from '@/app/utils/formatCurrency';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import type { TransformedExpedition, WaypointType, FundingStats, SponsorWithTotal } from '@/app/components/expedition-detail/types';
 import type { ExpeditionCondition } from '@/app/services/api';
+import { MONTHLY_TIER_SLOTS, getPerksForSlot } from '@repo/types/sponsorship-tiers';
 
 interface SidebarProps {
   expedition: TransformedExpedition;
@@ -275,10 +276,31 @@ export function Sidebar({
             </div>
           </div>
 
+          {/* Sponsor Tiers & Perks */}
+          <div className="mb-4">
+            <div className="text-xs font-bold mb-2 text-[#202020] dark:text-[#e5e5e5] border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-3">
+              MONTHLY TIERS
+            </div>
+            {MONTHLY_TIER_SLOTS.map(tier => (
+              <div key={tier.slot} className="mb-2 text-xs">
+                <div className="font-bold text-[#4676ac]">
+                  {tier.label} <span className="font-normal text-[#616161] dark:text-[#b5bcc4]">${tier.minPrice}{tier.maxPrice ? `–$${tier.maxPrice}` : '+'}/mo</span>
+                </div>
+                <div className="ml-2 mt-0.5 space-y-0.5">
+                  {getPerksForSlot('MONTHLY', tier.slot).map((perk, i) => (
+                    <div key={i} className="text-[10px] text-[#616161] dark:text-[#b5bcc4] flex items-start gap-1">
+                      <span className="text-[#598636]">*</span> {perk}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
           {/* Sponsor Button */}
           {!isOwner && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
             <Link
-              href={isAuthenticated ? `/sponsor/${expedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
+              href={isAuthenticated ? `/sponsor/${expedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
               className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
             >
               SPONSOR

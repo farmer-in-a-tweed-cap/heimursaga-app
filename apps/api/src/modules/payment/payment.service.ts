@@ -1100,7 +1100,7 @@ export class PaymentService {
         // Create default platform sponsorship tiers for the user
         // Uses pre-defined tier slots with fixed labels and price ranges
 
-        // Create default one-time tiers (first 3 slots)
+        // Create default one-time tiers (all slots)
         for (const tierConfig of DEFAULT_ONE_TIME_TIERS) {
           await tx.sponsorshipTier.create({
             data: {
@@ -1117,7 +1117,7 @@ export class PaymentService {
           });
         }
 
-        // Create default monthly tiers (first 2 slots)
+        // Create default monthly tiers (all slots)
         for (const tierConfig of DEFAULT_MONTHLY_TIERS) {
           await tx.sponsorshipTier.create({
             data: {

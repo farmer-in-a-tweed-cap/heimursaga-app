@@ -43,7 +43,7 @@ const ANNUAL_ID = 'com.heimursaga.pro.annual';
 const FEATURES = [
   'Receive one-time and monthly sponsorships',
   'Direct messaging with other Pro explorers',
-  'Expedition Notes (280-char updates for sponsors)',
+  'Expedition Notes (500-char updates for sponsors)',
   'Emailed journal entries to sponsors',
   'Up to 10 photos per entry (vs 2 for free)',
   'Entry view counts and engagement insights',
@@ -54,7 +54,7 @@ const FEATURES = [
 const CORE_FEATURES = [
   { title: 'Receive Sponsorships', desc: 'Accept contributions and monthly subscriptions from supporters who fund your expeditions.' },
   { title: 'Direct Messages', desc: 'Private messaging with other Explorer Pro users for deeper connections on the trail.' },
-  { title: 'Expedition Notes', desc: 'Post short 280-character updates visible only to your sponsors to keep them engaged.' },
+  { title: 'Expedition Notes', desc: 'Post short 500-character updates visible only to your sponsors to keep them engaged.' },
   { title: 'More Photos Per Entry', desc: 'Upload up to 10 photos per journal entry instead of 2 for free accounts.' },
   { title: 'Expedition Insights', desc: 'Track entry views, engagement metrics, and sponsor activity.' },
   { title: 'Emailed Entries', desc: 'Journal entries are automatically emailed to your sponsors so they never miss an update.' },

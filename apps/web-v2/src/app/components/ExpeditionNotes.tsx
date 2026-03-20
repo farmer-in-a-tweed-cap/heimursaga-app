@@ -94,7 +94,7 @@ export function ExpeditionNotes({
   const remainingPosts = dailyLimit.max - dailyLimit.used;
 
   const handlePostNote = async () => {
-    if (!noteText.trim() || noteText.length > 280 || !canPostToday) return;
+    if (!noteText.trim() || noteText.length > 500 || !canPostToday) return;
     setIsPosting(true);
     try {
       if (onPostNote) await onPostNote(noteText);
@@ -109,7 +109,7 @@ export function ExpeditionNotes({
   };
 
   const handlePostReply = async (noteId: string) => {
-    if (!replyText.trim() || replyText.length > 280) return;
+    if (!replyText.trim() || replyText.length > 500) return;
     setIsPostingReply(true);
     try {
       if (onPostReply) await onPostReply(noteId, replyText);
@@ -123,7 +123,7 @@ export function ExpeditionNotes({
   };
 
   const handleSaveEditNote = async (noteId: string) => {
-    if (!editNoteText.trim() || editNoteText.length > 280) return;
+    if (!editNoteText.trim() || editNoteText.length > 500) return;
     setIsSavingNote(true);
     try {
       if (onEditNote) await onEditNote(noteId, editNoteText);
@@ -149,7 +149,7 @@ export function ExpeditionNotes({
   };
 
   const handleSaveEditReply = async (noteId: string, replyId: string) => {
-    if (!editReplyText.trim() || editReplyText.length > 280) return;
+    if (!editReplyText.trim() || editReplyText.length > 500) return;
     setIsSavingReply(true);
     try {
       if (onEditReply) await onEditReply(noteId, replyId, editReplyText);
@@ -252,12 +252,12 @@ export function ExpeditionNotes({
             rows={3}
             placeholder="Share a quick update with your sponsors..."
             value={noteText}
-            onChange={(e) => setNoteText(e.target.value.slice(0, 280))}
-            maxLength={280}
+            onChange={(e) => setNoteText(e.target.value.slice(0, 500))}
+            maxLength={500}
           />
           <div className="flex justify-between items-center mb-2">
-            <span className={`text-xs font-mono ${noteText.length > 250 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
-              {noteText.length}/280
+            <span className={`text-xs font-mono ${noteText.length > 450 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+              {noteText.length}/500
             </span>
             <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
               {remainingPosts} {remainingPosts === 1 ? 'NOTE' : 'NOTES'} REMAINING TODAY
@@ -376,8 +376,8 @@ export function ExpeditionNotes({
                       maxLength={280}
                     />
                     <div className="flex justify-between items-center mb-2">
-                      <span className={`text-xs font-mono ${editNoteText.length > 250 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
-                        {editNoteText.length}/280
+                      <span className={`text-xs font-mono ${editNoteText.length > 450 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                        {editNoteText.length}/500
                       </span>
                     </div>
                     <div className="flex gap-2">
@@ -425,8 +425,8 @@ export function ExpeditionNotes({
                       maxLength={280}
                     />
                     <div className="flex justify-between items-center mb-2">
-                      <span className={`text-xs font-mono ${replyText.length > 250 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
-                        {replyText.length}/280
+                      <span className={`text-xs font-mono ${replyText.length > 450 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                        {replyText.length}/500
                       </span>
                     </div>
                     <div className="flex gap-2">
@@ -548,8 +548,8 @@ export function ExpeditionNotes({
                                     maxLength={280}
                                   />
                                   <div className="flex items-center gap-2 mt-1">
-                                    <span className={`text-[10px] font-mono ${editReplyText.length > 250 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
-                                      {editReplyText.length}/280
+                                    <span className={`text-[10px] font-mono ${editReplyText.length > 450 ? 'text-[#994040]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
+                                      {editReplyText.length}/500
                                     </span>
                                     <button
                                       onClick={() => handleSaveEditReply(note.id, reply.id)}
