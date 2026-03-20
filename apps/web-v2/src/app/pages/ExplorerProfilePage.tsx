@@ -946,8 +946,6 @@ export function ExplorerProfilePage() {
                     coordinates=""
                     startDate={expedition.startDate}
                     endDate={expedition.endDate || null}
-                    daysElapsed={expedition.daysActive}
-                    daysRemaining={null}
                     journalEntries={expedition.entriesCount}
                     lastUpdate=""
                     fundingGoal={expedition.goal}

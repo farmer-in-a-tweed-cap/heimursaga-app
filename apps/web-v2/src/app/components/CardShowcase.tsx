@@ -46,8 +46,7 @@ export function CardShowcase() {
               coordinates="~39.6°N, ~67.0°E"
               startDate="Jan 15, 2025"
               endDate={null}
-              daysElapsed={147}
-              daysRemaining={null}
+
               journalEntries={89}
               lastUpdate="4 hours ago"
               fundingGoal={45000}
@@ -72,8 +71,7 @@ export function CardShowcase() {
               coordinates="~77.9°S, ~166.7°E"
               startDate="Nov 1, 2024"
               endDate="Feb 28, 2025"
-              daysElapsed={56}
-              daysRemaining={64}
+
               journalEntries={42}
               lastUpdate="8 hours ago"
               fundingGoal={85000}
@@ -98,8 +96,7 @@ export function CardShowcase() {
               coordinates="~3.1°S, ~60.0°W"
               startDate="Nov 20, 2024"
               endDate="Dec 24, 2024"
-              daysElapsed={34}
-              daysRemaining={0}
+
               journalEntries={28}
               lastUpdate="12 hours ago"
               fundingGoal={38000}

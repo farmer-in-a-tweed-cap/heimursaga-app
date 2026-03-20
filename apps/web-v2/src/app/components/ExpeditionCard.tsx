@@ -42,8 +42,6 @@ interface ExpeditionCardProps {
   journalEntriesArray?: JournalEntry[];
   startDate: string;
   endDate: string | null;
-  daysElapsed?: number;
-  daysRemaining?: number | null;
   journalEntries: number;
   lastUpdate: string;
   fundingGoal: number;
@@ -83,8 +81,6 @@ export function ExpeditionCard({
   journalEntriesArray = [],
   startDate,
   endDate,
-  daysElapsed,
-  daysRemaining,
   journalEntries,
   lastUpdate,
   fundingGoal,

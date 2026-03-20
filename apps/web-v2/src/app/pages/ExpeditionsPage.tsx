@@ -367,8 +367,6 @@ export function ExpeditionsPage() {
                 coordinates={expedition.coordinates}
                 startDate={expedition.startDate}
                 endDate={expedition.endDate}
-                daysElapsed={expedition.daysActive}
-                daysRemaining={expedition.daysRemaining}
                 journalEntries={expedition.entries}
                 lastUpdate={expedition.lastUpdate}
                 fundingGoal={expedition.goal}
