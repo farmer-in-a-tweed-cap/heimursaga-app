@@ -10,7 +10,7 @@ export function SponsorshipGuidePage() {
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="p-6">
           <div className="flex items-center mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
-            <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">EXPEDITION SPONSORSHIP GUIDE</h1>
+            <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">SPONSORSHIP GUIDE</h1>
           </div>
           <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
             Complete guide to supporting explorers and receiving support for your expeditions

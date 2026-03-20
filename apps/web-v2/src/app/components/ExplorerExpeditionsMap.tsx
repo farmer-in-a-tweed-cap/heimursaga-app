@@ -112,7 +112,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
       style: getMapStyle(mapLayer, theme),
       bounds: bounds,
       fitBoundsOptions: { padding: 50 },
-      projection: 'globe',
+      projection: 'mercator',
       dragRotate: false,
       touchPitch: false,
       maxPitch: 0,

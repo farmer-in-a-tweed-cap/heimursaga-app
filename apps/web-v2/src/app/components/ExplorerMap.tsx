@@ -296,7 +296,7 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
       style: getMapStyle(mapLayer, theme),
       center: [30, 20],
       zoom: 1.5,
-      projection: 'globe',
+      projection: 'mercator',
       dragRotate: false,
       touchPitch: false,
       maxPitch: 0,
