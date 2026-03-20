@@ -222,7 +222,8 @@ export default function ExpeditionDetailScreen() {
   const isCompleted = expedition?.status === 'completed';
   const isCancelled = expedition?.status === 'cancelled';
   const isExpeditionLocked = isCompleted || isCancelled;
-  const canEditNotes = isOwner && !isExpeditionLocked;
+  const isCreationLocked = isCancelled;
+  const canEditNotes = isOwner;
 
   // Update location modal
   const [locationModalVisible, setLocationModalVisible] = useState(false);
@@ -910,7 +911,7 @@ export default function ExpeditionDetailScreen() {
                       {notes.length} {notes.length === 1 ? 'NOTE' : 'NOTES'} LOGGED • SPONSOR EXCLUSIVE
                     </Text>
                   </View>
-                  {canEditNotes && dailyLimit.used < dailyLimit.max && (
+                  {isOwner && !isCreationLocked && dailyLimit.used < dailyLimit.max && (
                     <TouchableOpacity
                       style={styles.logNoteBtn}
                       onPress={() => setShowNoteForm(!showNoteForm)}
@@ -1073,8 +1074,8 @@ export default function ExpeditionDetailScreen() {
                           </Text>
                           {note.replies.map((reply) => {
                             const isReplyAuthor = user?.username === reply.authorId;
-                            const canEditReply = isReplyAuthor && !isExpeditionLocked;
-                            const canDeleteReply = (isReplyAuthor || isOwner) && !isExpeditionLocked;
+                            const canEditReply = isReplyAuthor;
+                            const canDeleteReply = isReplyAuthor || isOwner;
 
                             return (
                             <View key={reply.id} style={styles.replyRow}>

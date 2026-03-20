@@ -1616,7 +1616,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                         label="PUBLIC"
                         description="Anyone can read expedition notes"
                         selected={notesVisibility === 'public'}
-                        onSelect={() => setNotesVisibility('public')}
+                        onSelect={() => { setNotesVisibility('public'); setNotesAccessThreshold(''); }}
                         disabled={isSponsorshipLocked}
                       />
                       <RadioOption

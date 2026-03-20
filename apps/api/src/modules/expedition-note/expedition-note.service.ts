@@ -252,7 +252,7 @@ export class ExpeditionNoteService {
       // Get the expedition
       const expedition = await this.prisma.expedition.findFirst({
         where: { public_id: expeditionId, deleted_at: null },
-        select: { id: true, author_id: true, status: true, visibility: true },
+        select: { id: true, author_id: true, status: true, visibility: true, end_date: true },
       });
 
       if (!expedition)
@@ -265,14 +265,29 @@ export class ExpeditionNoteService {
         );
       }
 
-      // Block note creation for completed or cancelled expeditions
-      if (
-        expedition.status === 'completed' ||
-        expedition.status === 'cancelled'
-      ) {
+      // Block note creation for cancelled expeditions
+      if (expedition.status === 'cancelled') {
         throw new ServiceForbiddenException(
-          'Cannot create notes for a completed or cancelled expedition',
+          'Cannot create notes for a cancelled expedition',
         );
+      }
+
+      // Allow 30-day grace period for completed expeditions
+      if (expedition.status === 'completed') {
+        if (!expedition.end_date) {
+          throw new ServiceForbiddenException(
+            'Cannot create notes for a completed expedition',
+          );
+        }
+        const daysSinceEnd = Math.floor(
+          (Date.now() - new Date(expedition.end_date).getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+        if (daysSinceEnd > 30) {
+          throw new ServiceForbiddenException(
+            'Note creation window has closed (30 days post-completion)',
+          );
+        }
       }
 
       // Only owner can create notes
@@ -498,15 +513,6 @@ export class ExpeditionNoteService {
       if (!expedition)
         throw new ServiceNotFoundException('expedition not found');
 
-      if (
-        expedition.status === 'completed' ||
-        expedition.status === 'cancelled'
-      ) {
-        throw new ServiceForbiddenException(
-          'Notes cannot be modified on completed or cancelled expeditions',
-        );
-      }
-
       // Only owner can delete notes
       if (explorerId !== expedition.author_id) {
         throw new ServiceForbiddenException(
@@ -551,15 +557,6 @@ export class ExpeditionNoteService {
 
       if (!expedition)
         throw new ServiceNotFoundException('expedition not found');
-
-      if (
-        expedition.status === 'completed' ||
-        expedition.status === 'cancelled'
-      ) {
-        throw new ServiceForbiddenException(
-          'Notes cannot be modified on completed or cancelled expeditions',
-        );
-      }
 
       if (explorerId !== expedition.author_id) {
         throw new ServiceForbiddenException(

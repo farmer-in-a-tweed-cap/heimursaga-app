@@ -326,7 +326,8 @@ export function ExpeditionBuilderPage() {
       } else if (draftId) {
         // Publishing from a draft — update final state, sync waypoints, then publish
         expeditionPublicId = draftId;
-        await expeditionApi.update(draftId, payload);
+        const { status: _status, ...draftPayload } = payload;
+        await expeditionApi.update(draftId, draftPayload);
 
         // Sync waypoints atomically
         if (waypoints.length > 0) {
@@ -3602,7 +3603,7 @@ export function ExpeditionBuilderPage() {
                 </div>
               </div>
             )}
-            {sponsorshipsEnabled && isPro && (
+            {sponsorshipsEnabled && isPro && notesVisibility === 'sponsor' && (
               <div className="mt-4">
                 <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                   EXPEDITION NOTES ACCESS THRESHOLD (USD)
@@ -3633,7 +3634,7 @@ export function ExpeditionBuilderPage() {
                   name="notesVisibility"
                   className="mt-1"
                   checked={notesVisibility === 'public'}
-                  onChange={() => setNotesVisibility('public')}
+                  onChange={() => { setNotesVisibility('public'); setNotesAccessThreshold(''); }}
                 />
                 <label htmlFor="notes-public" className="text-xs">
                   <div className="font-bold text-[#202020] dark:text-[#e5e5e5]">PUBLIC</div>

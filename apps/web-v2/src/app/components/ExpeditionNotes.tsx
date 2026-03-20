@@ -88,9 +88,9 @@ export function ExpeditionNotes({
   const [confirmDeleteReplyId, setConfirmDeleteReplyId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isExpeditionLocked = expeditionStatus === 'completed' || expeditionStatus === 'cancelled';
-  const canPostToday = isOwner && dailyLimit.used < dailyLimit.max && !isExpeditionLocked;
-  const canEditNotes = isOwner && !isExpeditionLocked;
+  const isCreationLocked = expeditionStatus === 'cancelled';
+  const canPostToday = isOwner && dailyLimit.used < dailyLimit.max && !isCreationLocked;
+  const canEditNotes = isOwner;
   const remainingPosts = dailyLimit.max - dailyLimit.used;
 
   const handlePostNote = async () => {
@@ -234,7 +234,7 @@ export function ExpeditionNotes({
             {showNoteForm ? '✕ CANCEL' : '+ LOG NOTE'}
           </button>
         )}
-        {isOwner && !canPostToday && !isExpeditionLocked && (
+        {isOwner && !canPostToday && !isCreationLocked && (
           <div className="px-3 py-1 bg-[#202020]/30 text-xs font-mono">
             DAILY LIMIT REACHED
           </div>
