@@ -303,25 +303,17 @@ export function ExpeditionBuilderPage() {
         await expeditionApi.update(expeditionId, finalPayload);
         expeditionPublicId = expeditionId;
 
-        // Sync waypoints: update existing, create new, delete removed
-        const currentWaypointIds = new Set(
-          waypoints.filter(w => !w.id.startsWith('waypoint-')).map(w => w.id)
-        );
-
-        // Delete waypoints that were removed (ones from API that are no longer in state)
-        for (const originalId of originalWaypointIdsRef.current) {
-          if (!currentWaypointIds.has(originalId)) {
-            await expeditionApi.deleteWaypoint(expeditionPublicId, originalId);
-          }
-        }
-
-        // Update existing and create new waypoints
-        for (const waypoint of waypoints) {
-          if (waypoint.id.startsWith('waypoint-')) {
-            await expeditionApi.createWaypoint(expeditionPublicId, buildWaypointPayload(waypoint));
-          } else {
-            await expeditionApi.updateWaypoint(expeditionPublicId, waypoint.id, buildWaypointPayload(waypoint));
-          }
+        // Sync all waypoints in a single API call
+        if (waypoints.length > 0) {
+          const wpPayload = waypoints.map((w, i) => ({
+            lat: w.coordinates.lat,
+            lon: w.coordinates.lng,
+            title: w.name || undefined,
+            date: w.date || undefined,
+            description: w.description || undefined,
+            sequence: i,
+          }));
+          await expeditionApi.syncWaypoints(expeditionId, wpPayload);
         }
       } else if (draftId) {
         // Publishing from a draft — update final state, sync waypoints, then publish
@@ -348,9 +340,17 @@ export function ExpeditionBuilderPage() {
         const result = await expeditionApi.create(payload);
         expeditionPublicId = (result as any).expeditionId || (result as any).id;
 
-        // Create waypoints for the new expedition
-        for (const waypoint of waypoints) {
-          await expeditionApi.createWaypoint(expeditionPublicId, buildWaypointPayload(waypoint));
+        // Sync all waypoints in a single API call
+        if (waypoints.length > 0) {
+          const wpPayload = waypoints.map((w, i) => ({
+            lat: w.coordinates.lat,
+            lon: w.coordinates.lng,
+            title: w.name || undefined,
+            date: w.date || undefined,
+            description: w.description || undefined,
+            sequence: i,
+          }));
+          await expeditionApi.syncWaypoints(expeditionPublicId, wpPayload);
         }
       }
 
