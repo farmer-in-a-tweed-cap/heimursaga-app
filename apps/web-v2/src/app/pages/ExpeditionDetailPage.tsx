@@ -558,11 +558,22 @@ export function ExpeditionDetailPage() {
   useEffect(() => {
     if (!modalMapReady || !mapContainerRef.current) return;
 
+    // Compute initial center from route data so the map opens on the expedition
+    const allCoords: [number, number][] = [
+      ...waypoints.map(wp => [wp.coords.lng, wp.coords.lat] as [number, number]),
+      ...journalEntries.filter(e => e.coords.lat !== 0 || e.coords.lng !== 0).map(e => [e.coords.lng, e.coords.lat] as [number, number]),
+    ];
+    const initialCenter: [number, number] = currentLocationData?.coords
+      ? [currentLocationData.coords.lng, currentLocationData.coords.lat]
+      : allCoords.length > 0
+        ? [allCoords.reduce((s, c) => s + c[0], 0) / allCoords.length, allCoords.reduce((s, c) => s + c[1], 0) / allCoords.length]
+        : [0, 0];
+
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: getMapStyle(mapLayer, theme),
-      center: currentLocationData?.coords ? [currentLocationData.coords.lng, currentLocationData.coords.lat] : [0, 0],
-      zoom: 5,
+      center: initialCenter,
+      zoom: 10,
     });
 
     mapRef.current = map;
