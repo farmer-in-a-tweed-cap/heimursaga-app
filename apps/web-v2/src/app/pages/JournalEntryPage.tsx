@@ -358,8 +358,9 @@ export function JournalEntryPage() {
       visibility: api.visibility || (api.public ? 'public' : 'private'),
       commentsEnabled: api.commentsEnabled ?? true,
 
-      views: 0, // Not in API yet
-      reactions: { heart: api.likesCount || 0, bookmark: api.bookmarksCount || 0, share: 0 },
+      views: api.viewsCount || 0,
+      likesCount: api.likesCount || 0,
+      bookmarksCount: api.bookmarksCount || 0,
       commentsCount: api.commentsCount || 0,
 
 
@@ -607,7 +608,7 @@ export function JournalEntryPage() {
                     sponsorshipsEnabled={entry.expeditionSponsorshipsEnabled}
                     explorerIsPro={entry.explorerIsPro}
                     stripeConnected={entry.stripeAccountConnected}
-                    initialBookmarks={entry.reactions.bookmark}
+                    initialBookmarks={entry.bookmarksCount}
                     isBookmarked={entry.bookmarked || false}
                     isBookmarkLoading={entryBookmarkLoading}
                     size="md"
@@ -1543,17 +1544,19 @@ export function JournalEntryPage() {
                 <span className="font-bold dark:text-[#e5e5e5]">{entry.views.toLocaleString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Reactions</span>
-                <span className="font-bold dark:text-[#e5e5e5]">{entry.reactions.heart + entry.reactions.bookmark}</span>
+                <span className="text-[#616161] dark:text-[#b5bcc4]">Bookmarks</span>
+                <span className="font-bold dark:text-[#e5e5e5]">{entry.bookmarksCount}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Notes</span>
                 <span className="font-bold dark:text-[#e5e5e5]">{entry.commentsCount}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Shares</span>
-                <span className="font-bold dark:text-[#e5e5e5]">{entry.reactions.share}</span>
-              </div>
+              {entry.quickSponsorsCount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-[#616161] dark:text-[#b5bcc4]">Quick Sponsors</span>
+                  <span className="font-bold dark:text-[#e5e5e5]">{entry.quickSponsorsCount}</span>
+                </div>
+              )}
               <div className="flex justify-between pt-3 border-t border-[#b5bcc4] dark:border-[#3a3a3a]">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Media Files</span>
                 <span className="font-bold dark:text-[#e5e5e5]">{entry.media.length}</span>

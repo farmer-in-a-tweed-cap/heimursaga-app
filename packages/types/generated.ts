@@ -310,6 +310,7 @@ export interface IPostDetail {
   isDraft?: boolean;
   liked?: boolean;
   bookmarked?: boolean;
+  viewsCount?: number;
   likesCount?: number;
   bookmarksCount?: number;
   commentsCount?: number;
