@@ -711,7 +711,7 @@ export function ExpeditionBuilderPage() {
       
       map.current.fitBounds(bounds, {
         padding: 100,
-        maxZoom: 8,
+        maxZoom: 14,
         duration: 1000
       });
     }
@@ -1716,7 +1716,7 @@ export function ExpeditionBuilderPage() {
         skipFitBoundsRef.current = false;
       } else {
         const currentZoom = map.current.getZoom();
-        const targetZoom = 8;
+        const targetZoom = 14;
 
         // Skip fitBounds if already zoomed in past target level
         if (currentZoom <= targetZoom) {

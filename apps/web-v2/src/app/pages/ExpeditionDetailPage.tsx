@@ -210,7 +210,7 @@ export function ExpeditionDetailPage() {
 
     mapRef.current.fitBounds(bounds, {
       padding: 50,
-      maxZoom: 10,
+      maxZoom: 14,
       duration: 1000,
     });
   }, [waypoints, journalEntries]);
@@ -524,7 +524,7 @@ export function ExpeditionDetailPage() {
 
       if (allCoords.length > 0) {
         const bounds = allCoords.reduce((b, coord) => b.extend(coord), new mapboxgl.LngLatBounds(allCoords[0], allCoords[0]));
-        map.fitBounds(bounds, { padding: 80, maxZoom: 10, duration: 0 });
+        map.fitBounds(bounds, { padding: 80, maxZoom: 14, duration: 0 });
       }
     });
 
@@ -903,7 +903,7 @@ export function ExpeditionDetailPage() {
           return bounds.extend(coord);
         }, new mapboxgl.LngLatBounds(allCoords[0], allCoords[0]));
 
-        map.fitBounds(bounds, { padding: 50, maxZoom: 10, duration: 500 });
+        map.fitBounds(bounds, { padding: 50, maxZoom: 14, duration: 500 });
       }
 
       // If a pending flyTo was requested, fly there after initial bounds
