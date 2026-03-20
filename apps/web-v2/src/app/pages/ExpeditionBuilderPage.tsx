@@ -2099,8 +2099,7 @@ export function ExpeditionBuilderPage() {
     ? allCategories.filter(c => c.name.toLowerCase().includes(categoryFilter.toLowerCase()))
     : quickPickCategories;
 
-  // Calculate total statistics
-  const totalDistance = waypoints[waypoints.length - 1]?.cumulativeDistance || 0;
+  // Calculate total statistics — use route-order distances (computed after routeItems)
   const totalTravelTime = waypoints[waypoints.length - 1]?.cumulativeTravelTime || 0;
   const waypointCount = waypoints.length;
 
@@ -2157,6 +2156,30 @@ export function ExpeditionBuilderPage() {
   const routeItems: RouteItem[] = routeOrder.length > 0
     ? routeOrder.map(id => routeItemsById.get(id)).filter((r): r is RouteItem => r !== undefined)
     : dateSortedItems;
+
+  // Compute distances based on routeItems display order (not waypoints array order)
+  const routeDistances = (() => {
+    const map = new Map<string, { distFromPrev: number; cumulative: number }>();
+    let cumulative = 0;
+    let prevCoords: { lat: number; lng: number } | null = null;
+    for (const item of routeItems) {
+      if (item.kind !== 'waypoint') continue;
+      const coords = item.waypoint.coordinates;
+      if (!prevCoords) {
+        map.set(item.id, { distFromPrev: 0, cumulative: 0 });
+      } else {
+        const dist = haversineFromLatLng(prevCoords, coords);
+        cumulative += dist;
+        map.set(item.id, { distFromPrev: dist, cumulative });
+      }
+      prevCoords = coords;
+    }
+    return map;
+  })();
+
+  // Total distance from route-order computation
+  const lastWpInRoute = [...routeDistances.values()].pop();
+  const totalDistance = lastWpInRoute?.cumulative || 0;
 
   // Start/End IDs — first and last in the combined route list
   const startRouteItemId = routeItems.length > 0 ? routeItems[0].id : null;
@@ -2859,24 +2882,30 @@ export function ExpeditionBuilderPage() {
                             <span>Sequence:</span>
                             <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{selectedWaypointData.sequence + 1} of {waypoints.length}</span>
                           </div>
-                          {selectedWaypointData.distanceFromPrevious !== undefined && selectedWaypointData.distanceFromPrevious > 0 && (
-                            <div className="flex justify-between">
-                              <span>Distance from Previous:</span>
-                              <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatDistance(selectedWaypointData.distanceFromPrevious, 1)}</span>
-                            </div>
-                          )}
+                          {(() => {
+                            const rd = routeDistances.get(selectedWaypointData.id);
+                            return rd && rd.distFromPrev > 0 ? (
+                              <div className="flex justify-between">
+                                <span>Distance from Previous:</span>
+                                <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatDistance(rd.distFromPrev, 1)}</span>
+                              </div>
+                            ) : null;
+                          })()}
                           {selectedWaypointData.travelTimeFromPrevious !== undefined && selectedWaypointData.travelTimeFromPrevious > 0 && (
                             <div className="flex justify-between">
                               <span>Travel Time from Previous:</span>
                               <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatTravelTime(selectedWaypointData.travelTimeFromPrevious)}</span>
                             </div>
                           )}
-                          {selectedWaypointData.cumulativeDistance !== undefined && (
-                            <div className="flex justify-between">
-                              <span>Cumulative Distance:</span>
-                              <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatDistance(selectedWaypointData.cumulativeDistance, 1)}</span>
-                            </div>
-                          )}
+                          {(() => {
+                            const rd = routeDistances.get(selectedWaypointData.id);
+                            return rd && rd.cumulative > 0 ? (
+                              <div className="flex justify-between">
+                                <span>Cumulative Distance:</span>
+                                <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatDistance(rd.cumulative, 1)}</span>
+                              </div>
+                            ) : null;
+                          })()}
                           {selectedWaypointData.cumulativeTravelTime !== undefined && selectedWaypointData.cumulativeTravelTime > 0 && (
                             <div className="flex justify-between">
                               <span>Cumulative Travel Time:</span>
@@ -3214,15 +3243,16 @@ export function ExpeditionBuilderPage() {
                                     {waypoint.date && (
                                       <div className="text-[#ac6d46]">{waypoint.date}</div>
                                     )}
-                                    {wpIdx > 0 && waypoint.distanceFromPrevious !== undefined && (
-                                      <div className="text-[#4676ac]">
-                                        +{formatDistance(waypoint.distanceFromPrevious, 1)}
-                                        {waypoint.travelTimeFromPrevious ? ` (${formatTravelTime(waypoint.travelTimeFromPrevious)})` : ''}
-                                        {waypoint.cumulativeDistance !== undefined && (
-                                          <> • {formatDistance(waypoint.cumulativeDistance, 1)} total</>
-                                        )}
-                                      </div>
-                                    )}
+                                    {(() => {
+                                      const rd = routeDistances.get(waypoint.id);
+                                      return rd && rd.distFromPrev > 0 ? (
+                                        <div className="text-[#4676ac]">
+                                          +{formatDistance(rd.distFromPrev, 1)}
+                                          {waypoint.travelTimeFromPrevious ? ` (${formatTravelTime(waypoint.travelTimeFromPrevious)})` : ''}
+                                          <> • {formatDistance(rd.cumulative, 1)} total</>
+                                        </div>
+                                      ) : null;
+                                    })()}
                                   </div>
                                 </div>
 
