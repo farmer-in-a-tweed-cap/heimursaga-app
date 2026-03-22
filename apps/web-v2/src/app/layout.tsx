@@ -80,6 +80,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${lora.variable} ${jost.variable}`}>
       <head>
         <link rel="manifest" href="/manifest.json" />
+        <link rel="preload" href="/logo-sm-light.svg" as="image" type="image/svg+xml" />
         <link rel="preconnect" href="https://api.mapbox.com" />
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         <script
