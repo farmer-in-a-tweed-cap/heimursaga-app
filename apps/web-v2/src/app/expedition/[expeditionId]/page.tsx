@@ -7,7 +7,9 @@ export async function generateMetadata({ params }: { params: Promise<{ expeditio
   const expedition = await getExpedition(expeditionId);
   if (!expedition) return { title: 'Expedition | Heimursaga' };
 
-  const title = expedition.title;
+  const title = expedition.authorUsername
+    ? `${expedition.title} — an expedition by ${expedition.authorUsername} — Heimursaga`
+    : `${expedition.title} — Heimursaga`;
   const description = expedition.description?.slice(0, 160) || 'Follow this expedition on Heimursaga.';
   const images = expedition.coverImage ? [expedition.coverImage] : [];
 

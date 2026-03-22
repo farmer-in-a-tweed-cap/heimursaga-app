@@ -10,6 +10,7 @@ export interface ExpeditionMeta {
   description?: string;
   coverImage?: string;
   region?: string;
+  authorUsername?: string;
 }
 
 export interface EntryMeta {
@@ -38,8 +39,9 @@ export async function getExpedition(id: string): Promise<ExpeditionMeta | null> 
     return {
       title: data.title,
       description: data.description,
-      coverImage: data.cover_image,
+      coverImage: data.coverImage || data.cover_image,
       region: data.region,
+      authorUsername: data.author?.username,
     };
   } catch {
     return null;
