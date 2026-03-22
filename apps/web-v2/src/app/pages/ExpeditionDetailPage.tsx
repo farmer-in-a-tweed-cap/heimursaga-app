@@ -1040,7 +1040,7 @@ export function ExpeditionDetailPage() {
               <a href={`/journal/${expedition.explorerId}`} className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] hover:text-[#ac6d46] dark:hover:text-[#ac6d46] transition-all block truncate">
                 {expedition.explorerId}
               </a>
-              <span className="text-[10px] font-bold text-[#ac6d46]">{expedition.explorerIsPro ? 'EXPLORER PRO' : 'EXPLORER'}</span>
+              {explorerProfile?.name && <span className="text-[10px] text-[#616161] dark:text-[#b5bcc4] truncate block">{explorerProfile.name}</span>}
             </div>
             <div className="flex items-center gap-4 text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4]">
               <div className="text-center">
