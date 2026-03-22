@@ -24,6 +24,7 @@ import { StatsBar } from '@/app/components/expedition-detail/StatsBar';
 import { ContentTabs } from '@/app/components/expedition-detail/ContentTabs';
 import { Sidebar } from '@/app/components/expedition-detail/Sidebar';
 import { MapModal } from '@/app/components/expedition-detail/MapModal';
+import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import { useExpeditionData } from '@/app/hooks/useExpeditionData';
 import { useExpeditionSponsors } from '@/app/hooks/useExpeditionSponsors';
 import { useWeatherConditions } from '@/app/hooks/useWeatherConditions';
@@ -1027,6 +1028,32 @@ export function ExpeditionDetailPage() {
             <p className="text-sm font-serif text-[#202020] dark:text-[#e5e5e5]" style={{ lineHeight: 1.75 }}>{expedition.description}</p>
           </div>
         )}
+        {/* Mobile explorer info - hidden on desktop where HeroBanner shows the card */}
+        <div className="md:hidden border-t-2 border-[#202020] dark:border-[#616161] px-6 py-4 bg-white dark:bg-[#202020]">
+          <div className="flex items-center gap-3">
+            <a href={`/journal/${expedition.explorerId}`} className="flex-shrink-0">
+              <div className={`w-10 h-10 border-2 ${expedition.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020]`}>
+                <ExplorerAvatar username={expedition.explorerId} src={expedition.explorerPicture} size={40} />
+              </div>
+            </a>
+            <div className="flex-1 min-w-0">
+              <a href={`/journal/${expedition.explorerId}`} className="text-xs font-bold text-[#202020] dark:text-[#e5e5e5] hover:text-[#ac6d46] dark:hover:text-[#ac6d46] transition-all block truncate">
+                {expedition.explorerId}
+              </a>
+              <span className="text-[10px] font-bold text-[#ac6d46]">{expedition.explorerIsPro ? 'EXPLORER PRO' : 'EXPLORER'}</span>
+            </div>
+            <div className="flex items-center gap-4 text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4]">
+              <div className="text-center">
+                <div className="font-bold text-[#202020] dark:text-[#e5e5e5] text-sm">{explorerProfile?.expeditionsCount ?? '—'}</div>
+                <div>Expeditions</div>
+              </div>
+              <div className="text-center">
+                <div className="font-bold text-[#202020] dark:text-[#e5e5e5] text-sm">{explorerProfile?.entriesCount ?? '—'}</div>
+                <div>Entries</div>
+              </div>
+            </div>
+          </div>
+        </div>
         <StatsBar
           expedition={expedition}
           showSponsorshipSection={showSponsorshipSection}
