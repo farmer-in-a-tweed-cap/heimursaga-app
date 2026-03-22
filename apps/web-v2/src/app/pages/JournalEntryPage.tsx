@@ -54,7 +54,7 @@ export function JournalEntryPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Share state
-  const [shareMenuOpen, setShareMenuOpen] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
 
   // Bookmark state
   const [entryBookmarkLoading, setEntryBookmarkLoading] = useState(false);
@@ -542,54 +542,24 @@ export function JournalEntryPage() {
                       EDIT ENTRY
                     </Link>
                   )}
-                  <div className="relative">
-                    <button
-                      onClick={() => setShareMenuOpen(!shareMenuOpen)}
-                      className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] hover:bg-[#202020] hover:text-white dark:hover:bg-[#616161] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] text-xs font-bold flex items-center gap-2 dark:text-[#e5e5e5]"
-                    >
-                      <Share2 size={14} />
-                      SHARE
-                    </button>
-                    {shareMenuOpen && (
-                      <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-lg z-50 min-w-[200px]">
-                        <div className="border-b-2 border-[#202020] dark:border-[#616161] p-2 bg-[#616161] text-white">
-                          <div className="text-xs font-bold font-mono">SHARE OPTIONS:</div>
-                        </div>
-                        <div className="p-2 space-y-1">
-                          <button
-                            onClick={() => { navigator.clipboard.writeText(window.location.href); setShareMenuOpen(false); }}
-                            className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] flex items-center gap-2"
-                          >
-                            COPY LINK
-                          </button>
-                          <button
-                            onClick={() => { window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`, '_blank'); setShareMenuOpen(false); }}
-                            className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] flex items-center gap-2"
-                          >
-                            SHARE ON X/TWITTER
-                          </button>
-                          <button
-                            onClick={() => { window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank'); setShareMenuOpen(false); }}
-                            className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] flex items-center gap-2"
-                          >
-                            SHARE ON FACEBOOK
-                          </button>
-                          <button
-                            onClick={() => { window.open(`mailto:?subject=Check this out&body=${encodeURIComponent(window.location.href)}`, '_blank'); setShareMenuOpen(false); }}
-                            className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all dark:text-[#e5e5e5] flex items-center gap-2"
-                          >
-                            SHARE VIA EMAIL
-                          </button>
-                          <button
-                            onClick={() => setShareMenuOpen(false)}
-                            className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all text-[#616161] dark:text-[#b5bcc4] flex items-center gap-2"
-                          >
-                            CANCEL
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <button
+                    onClick={async () => {
+                      const url = window.location.href;
+                      try {
+                        if (navigator.share) {
+                          await navigator.share({ title: entry.title, url });
+                        } else {
+                          await navigator.clipboard.writeText(url);
+                          setShareCopied(true);
+                          setTimeout(() => setShareCopied(false), 2000);
+                        }
+                      } catch { /* user cancelled share */ }
+                    }}
+                    className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] hover:bg-[#202020] hover:text-white dark:hover:bg-[#616161] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] text-xs font-bold flex items-center gap-2 dark:text-[#e5e5e5]"
+                  >
+                    <Share2 size={14} />
+                    {shareCopied ? 'COPIED!' : 'SHARE'}
+                  </button>
                   <button
                     onClick={() => setConfirmingDeleteEntry(true)}
                     className="px-4 py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold flex items-center gap-2"

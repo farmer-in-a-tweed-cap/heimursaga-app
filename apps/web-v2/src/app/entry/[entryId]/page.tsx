@@ -8,7 +8,7 @@ export async function generateMetadata({ params }: { params: Promise<{ entryId: 
   if (!entry) return { title: 'Journal Entry | Heimursaga' };
 
   const authorLabel = entry.authorUsername || 'an explorer';
-  const title = `${entry.title} | a journal entry by ${authorLabel}`;
+  const title = `${entry.title} — a journal entry by ${authorLabel} — Heimursaga`;
   const description = entry.body?.replace(/[#*_~`>\[\]()!]/g, '').slice(0, 160) || 'Read this journal entry on Heimursaga.';
   const images = entry.coverImage
     ? [entry.coverImage]
