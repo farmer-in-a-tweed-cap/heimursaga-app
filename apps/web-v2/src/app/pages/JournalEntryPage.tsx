@@ -749,6 +749,12 @@ export function JournalEntryPage() {
               {entry.entryType === 'video' && (
                 <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">DESCRIPTION</div>
               )}
+              {entry.date && (
+                <p className="font-serif italic text-[15px] lg:text-base text-[#616161] dark:text-[#b5bcc4] mb-5" style={{ lineHeight: 1.85 }}>
+                  {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                  {entry.location && entry.location !== 'Unknown location' ? ` — ${entry.location}` : ''}
+                </p>
+              )}
               <div className="prose prose-sm max-w-none">
                 {entry.content.split('\n\n').map((paragraph, idx) => (
                   <p key={idx} className="font-serif font-normal text-[15px] lg:text-base text-[#202020] dark:text-[#e5e5e5] mb-4" style={{ lineHeight: 1.85 }}>
