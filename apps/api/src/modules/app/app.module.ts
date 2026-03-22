@@ -24,6 +24,7 @@ import { PayoutModule } from '@/modules/payout';
 import { PostHogModule } from '@/modules/posthog';
 import { PrismaModule } from '@/modules/prisma';
 import { RecaptchaModule } from '@/modules/recaptcha/recaptcha.module';
+import { RoutingModule } from '@/modules/routing';
 import { SearchModule } from '@/modules/search';
 import { SponsorModule } from '@/modules/sponsor';
 import { StripeModule } from '@/modules/stripe';
@@ -82,6 +83,7 @@ import { AppService } from './app.service';
     NotificationModule,
     SearchModule,
     RecaptchaModule,
+    RoutingModule,
     WeatherModule,
   ],
   controllers: [AppController],

@@ -15,7 +15,7 @@ import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelector';
 import { toast } from 'sonner';
-import { expeditionApi, entryApi, uploadApi } from '@/app/services/api';
+import { expeditionApi, entryApi, uploadApi, routingApi } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 import { GEO_REGION_GROUPS } from '@/app/utils/geoRegions';
 import { haversineFromLatLng } from '@/app/utils/haversine';
@@ -30,7 +30,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
-type RouteMode = 'straight' | 'walking' | 'cycling' | 'driving';
+type RouteMode = 'straight' | 'walking' | 'cycling' | 'driving' | 'trail';
 
 interface Waypoint {
   id: string;
@@ -542,6 +542,69 @@ export function ExpeditionBuilderPage() {
     setDirectionsError(null);
 
     try {
+      // Trail routing — use our Valhalla proxy API instead of Mapbox
+      if (profile === 'trail') {
+        const locations = points.map(w => ({ lat: w.coordinates.lat, lon: w.coordinates.lng }));
+        if (isRoundTrip && locations.length > 1) {
+          locations.push({ ...locations[0] });
+        }
+        const result = await routingApi.trail(locations);
+
+        if (!abortController.signal.aborted) {
+          setDirectionsGeometry(result.coordinates);
+
+          let legDistances = result.legDistances;
+          let legDurations = result.legDurations;
+
+          // Aggregate legs between waypoint stops when entries are interleaved
+          if (waypointIndices && waypointIndices.length >= 2) {
+            const aggDistances: number[] = [];
+            const aggDurations: number[] = [];
+            for (let i = 0; i < waypointIndices.length - 1; i++) {
+              let dist = 0;
+              let dur = 0;
+              for (let leg = waypointIndices[i]; leg < waypointIndices[i + 1]; leg++) {
+                dist += legDistances[leg] ?? 0;
+                dur += legDurations[leg] ?? 0;
+              }
+              aggDistances.push(dist);
+              aggDurations.push(dur);
+            }
+            legDistances = aggDistances;
+            legDurations = aggDurations;
+          }
+
+          setDirectionsLegDistances(legDistances);
+          setDirectionsLegDurations(legDurations);
+
+          // Check snap distances
+          const warnings: string[] = [];
+          const SNAP_THRESHOLD_M = 1000;
+          const snapDists = result.snapDistances;
+          if (waypointIndices) {
+            waypointIndices.forEach((wpIdx, i) => {
+              if (wpIdx < snapDists.length && snapDists[wpIdx] > SNAP_THRESHOLD_M) {
+                const name = points[wpIdx]?.name || `Waypoint ${i + 1}`;
+                const distKm = snapDists[wpIdx] / 1000;
+                warnings.push(`${name} is ${formatDistance(distKm, 1)} from the nearest trail`);
+              }
+            });
+          } else {
+            const waypointCount = isRoundTrip ? snapDists.length - 1 : snapDists.length;
+            for (let i = 0; i < waypointCount && i < points.length; i++) {
+              if (snapDists[i] > SNAP_THRESHOLD_M) {
+                const name = points[i].name || `Waypoint ${i + 1}`;
+                const distKm = snapDists[i] / 1000;
+                warnings.push(`${name} is ${formatDistance(distKm, 1)} from the nearest trail`);
+              }
+            }
+          }
+          setDirectionsWarnings(warnings);
+        }
+
+        return; // Trail routing handled — skip Mapbox flow below
+      }
+
       // Build coordinate pairs, appending start if round trip
       const coords = points.map(w => [w.coordinates.lng, w.coordinates.lat] as [number, number]);
       if (isRoundTrip && coords.length > 1) {
@@ -1711,15 +1774,16 @@ export function ExpeditionBuilderPage() {
               'line-opacity': 0.3,
             }
           });
+          const isTrail = routeMode === 'trail';
           map.current.addLayer({
             id: 'route-line',
             type: 'line',
             source: 'route',
             paint: {
-              'line-color': theme === 'dark' ? '#4676ac' : '#202020',
+              'line-color': isTrail ? '#598636' : (theme === 'dark' ? '#4676ac' : '#202020'),
               'line-width': useDirections ? 4 : 3,
               'line-opacity': 0.8,
-              ...(useDirections ? {} : { 'line-dasharray': [2, 2] })
+              ...(useDirections ? (isTrail ? { 'line-dasharray': [4, 2] } : {}) : { 'line-dasharray': [2, 2] })
             }
           });
 
@@ -2613,6 +2677,7 @@ export function ExpeditionBuilderPage() {
               <div className="flex border-2 border-[#202020] dark:border-[#616161]">
                 {([
                   { value: 'straight', label: 'Straight Line', pro: false },
+                  { value: 'trail', label: 'Trail', pro: true },
                   { value: 'walking', label: 'Walking', pro: true },
                   { value: 'cycling', label: 'Cycling', pro: true },
                   { value: 'driving', label: 'Driving', pro: true },
@@ -3937,7 +4002,7 @@ export function ExpeditionBuilderPage() {
 
         <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#616161] flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-            Expedition builder v1.0 • Route: {routeMode === 'straight' ? 'Haversine (straight-line)' : `Mapbox Directions (${routeMode})`} • {waypoints.length} waypoints defined
+            Expedition builder v1.0 • Route: {routeMode === 'straight' ? 'Haversine (straight-line)' : routeMode === 'trail' ? 'Valhalla (trail)' : `Mapbox Directions (${routeMode})`} • {waypoints.length} waypoints defined
           </div>
           <Link
             href={isEditMode ? `/expedition/${expeditionId}` : '/select-expedition'}

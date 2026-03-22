@@ -2336,4 +2336,19 @@ export const contactApi = {
     api.post<{ success: boolean }>('/contact', payload),
 };
 
+// Routing
+export interface TrailRouteResponse {
+  coordinates: [number, number][];
+  legDistances: number[];
+  legDurations: number[];
+  totalDistance: number;
+  totalDuration: number;
+  snapDistances: number[];
+}
+
+export const routingApi = {
+  trail: (locations: Array<{ lat: number; lon: number }>) =>
+    api.post<TrailRouteResponse>('/routing/trail', { locations }),
+};
+
 export default api;

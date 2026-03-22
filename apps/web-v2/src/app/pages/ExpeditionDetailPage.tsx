@@ -291,6 +291,7 @@ export function ExpeditionDetailPage() {
     map.on('load', () => {
       // Route lines — fallback merges waypoints + entries by geographic proximity
       const hasDirectionsRoute = apiExpedition?.routeGeometry && apiExpedition.routeGeometry.length > 0;
+      const isTrailRoute = apiExpedition?.routeMode === 'trail';
       const routeCoordinates = hasDirectionsRoute
         ? apiExpedition.routeGeometry!
         : buildMergedRouteCoords(
@@ -324,10 +325,12 @@ export function ExpeditionDetailPage() {
           type: 'line',
           source: 'route-line',
           paint: {
-            'line-color': theme === 'dark' ? '#4676ac' : '#202020',
+            'line-color': isTrailRoute ? '#598636' : (theme === 'dark' ? '#4676ac' : '#202020'),
             'line-width': hasDirectionsRoute ? 4 : 3,
             'line-opacity': 0.8,
-            ...(hasDirectionsRoute ? {} : { 'line-dasharray': [2, 2] }),
+            ...(hasDirectionsRoute
+              ? (isTrailRoute ? { 'line-dasharray': [4, 2] } : {})
+              : { 'line-dasharray': [2, 2] }),
           },
         });
       }
@@ -604,6 +607,7 @@ export function ExpeditionDetailPage() {
       map.resize();
 
       const hasDirectionsRoute = apiExpedition?.routeGeometry && apiExpedition.routeGeometry.length > 0;
+      const isTrailRoute2 = apiExpedition?.routeMode === 'trail';
       const isRoundTrip = apiExpedition?.isRoundTrip;
       const routeCoordinates = hasDirectionsRoute
         ? apiExpedition.routeGeometry!
@@ -639,10 +643,12 @@ export function ExpeditionDetailPage() {
           type: 'line',
           source: 'route-line',
           paint: {
-            'line-color': theme === 'dark' ? '#4676ac' : '#202020',
+            'line-color': isTrailRoute2 ? '#598636' : (theme === 'dark' ? '#4676ac' : '#202020'),
             'line-width': hasDirectionsRoute ? 4 : 3,
             'line-opacity': 0.8,
-            ...(hasDirectionsRoute ? {} : { 'line-dasharray': [2, 2] }),
+            ...(hasDirectionsRoute
+              ? (isTrailRoute2 ? { 'line-dasharray': [4, 2] } : {})
+              : { 'line-dasharray': [2, 2] }),
           },
         });
       }

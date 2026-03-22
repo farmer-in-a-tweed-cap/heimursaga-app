@@ -21,6 +21,7 @@ export type DrawRouteLinesParams = {
   hasDirectionsRoute: boolean;
   casingColor: string;
   theme: string;
+  routeMode?: string;
 };
 
 export type DrawCompletedRouteParams = {
@@ -71,9 +72,11 @@ export function drawRouteLines(
   map: mapboxgl.Map,
   params: DrawRouteLinesParams,
 ): void {
-  const { routeCoordinates, hasDirectionsRoute, casingColor, theme } = params;
+  const { routeCoordinates, hasDirectionsRoute, casingColor, theme, routeMode } = params;
 
   if (routeCoordinates.length < 2) return;
+
+  const isTrail = routeMode === 'trail';
 
   map.addSource('route-line', {
     type: 'geojson',
@@ -100,10 +103,12 @@ export function drawRouteLines(
     type: 'line',
     source: 'route-line',
     paint: {
-      'line-color': theme === 'dark' ? '#4676ac' : '#202020',
+      'line-color': isTrail ? '#598636' : (theme === 'dark' ? '#4676ac' : '#202020'),
       'line-width': hasDirectionsRoute ? 4 : 3,
       'line-opacity': 0.8,
-      ...(hasDirectionsRoute ? {} : { 'line-dasharray': [2, 2] }),
+      ...(hasDirectionsRoute
+        ? (isTrail ? { 'line-dasharray': [4, 2] } : {})
+        : { 'line-dasharray': [2, 2] }),
     },
   });
 }
