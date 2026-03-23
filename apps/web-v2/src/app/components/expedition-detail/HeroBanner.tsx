@@ -226,6 +226,24 @@ export function HeroBanner({
               </div>
             </div>
           )}
+          {/* Planned Departure Bar */}
+          {expedition.status === 'planned' && expedition.startDate && !currentLocationData?.location && (() => {
+            const daysUntil = Math.max(0, Math.ceil((new Date(expedition.startDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
+            return (
+              <div className="w-full bg-[#4676ac] px-6 py-3 flex items-center justify-center gap-4 pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                <div className="relative flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                </div>
+                <div className="font-mono text-sm">
+                  <span className="text-white/70 font-bold tracking-wide mr-3">PLANNED DEPARTURE</span>
+                  <span className="text-white font-bold">{formatDate(expedition.startDate)}</span>
+                </div>
+                <div className="text-xs text-white/70 font-mono border-l border-white/30 pl-4">
+                  {daysUntil === 0 ? 'Departing today' : `${daysUntil} day${daysUntil !== 1 ? 's' : ''} away`}
+                </div>
+              </div>
+            );
+          })()}
           {/* Current Location Bar - showing for all statuses temporarily */}
           {currentLocationData?.location && (
             <button

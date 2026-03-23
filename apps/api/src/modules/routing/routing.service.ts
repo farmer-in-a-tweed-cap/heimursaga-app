@@ -14,6 +14,8 @@ export interface RouteResult {
   totalDistance: number; // km
   totalDuration: number; // seconds
   snapDistances: number[]; // meters — how far each input was snapped
+  flowDirection?: 'downstream' | 'upstream' | 'mixed';
+  upstreamFraction?: number; // 0-1, fraction of route distance that is upstream
 }
 
 /**
@@ -129,6 +131,7 @@ export class RoutingService {
         lat: loc.lat,
         lon: loc.lon,
         type: 'break',
+        search_cutoff: 200,
       })),
       costing: 'pedestrian',
       costing_options: {

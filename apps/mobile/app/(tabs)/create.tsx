@@ -611,7 +611,12 @@ export default function CreateScreen() {
             <CalendarPicker
               visible={showDatePicker}
               value={dateStr}
-              maxDate={todayISO()}
+              maxDate={(() => {
+                const today = todayISO();
+                const exp = expDetail?.data ?? expDetail;
+                const end = exp?.endDate?.slice(0, 10);
+                return end && end > today ? end : today;
+              })()}
               onSelect={setDateStr}
               onClose={() => setShowDatePicker(false)}
             />

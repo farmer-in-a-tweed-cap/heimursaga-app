@@ -299,8 +299,14 @@ export function useExpeditionData(
       const curr = waypoints[i].coords;
       total += haversineKm([prev.lng, prev.lat], [curr.lng, curr.lat]);
     }
+    // For round trips, add the return leg (last waypoint → first waypoint)
+    if (apiExpedition?.isRoundTrip && waypoints.length >= 2) {
+      const last = waypoints[waypoints.length - 1].coords;
+      const first = waypoints[0].coords;
+      total += haversineKm([last.lng, last.lat], [first.lng, first.lat]);
+    }
     return total;
-  }, [apiExpedition?.routeGeometry, waypoints]);
+  }, [apiExpedition?.routeGeometry, apiExpedition?.routeDistanceKm, apiExpedition?.isRoundTrip, waypoints]);
 
   // Current location data
   const currentLocationData: CurrentLocationData | null = useMemo(() => {

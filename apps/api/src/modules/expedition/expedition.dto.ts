@@ -120,6 +120,11 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   routeGeometry?: number[][];
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  routeLegModes?: string[];
+
+  @ApiProperty({ required: false })
   @IsNumber()
   @Min(0)
   @IsOptional()
@@ -222,6 +227,11 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @ApiProperty({ required: false })
   @IsOptional()
   routeGeometry?: number[][];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  routeLegModes?: string[];
 
   @ApiProperty({ required: false })
   @IsNumber()

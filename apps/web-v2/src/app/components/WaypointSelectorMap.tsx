@@ -80,20 +80,14 @@ function insertPointIntoRoute(routeCoords: number[][], point: [number, number]):
 // Marker element factories
 // ---------------------------------------------------------------------------
 
-/** Blue diamond — unconverted waypoint (no entries yet) */
+/** Gray circle — unconverted waypoint (no entries yet) */
 function createUnconvertedMarkerEl(title: string): HTMLDivElement {
-  const wrapper = document.createElement('div');
-  wrapper.title = title;
-  wrapper.style.cssText =
-    'width:18px;height:18px;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-
-  const diamond = document.createElement('div');
-  diamond.style.cssText =
-    'width:14px;height:14px;transform:rotate(45deg);background:#4676ac;border:2px solid white;' +
-    'box-shadow:0 2px 4px rgba(0,0,0,0.3);';
-
-  wrapper.appendChild(diamond);
-  return wrapper;
+  const el = document.createElement('div');
+  el.title = title;
+  el.style.cssText =
+    'width:16px;height:16px;border-radius:50%;background:#616161;border:2px solid white;' +
+    'box-shadow:0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
+  return el;
 }
 
 /** Brown circle — converted waypoint (has linked entries) */
@@ -346,33 +340,24 @@ export function WaypointSelectorMap({
 
           // Reset all markers to their original appearance
           waypointMarkerMapRef.current.forEach((info) => {
-            const markerEl = info.marker.getElement().firstChild as HTMLElement;
-            if (!markerEl) return;
+            const el = info.originalEl;
             if (info.isConverted) {
-              // Reset to brown circle
-              markerEl.style.cssText =
+              el.style.cssText =
                 'width:16px;height:16px;border-radius:50%;background:#ac6d46;border:2px solid white;' +
                 'box-shadow:0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
             } else {
-              // Reset to blue diamond (the wrapper's child)
-              const diamond = markerEl as HTMLElement;
-              diamond.style.cssText =
-                'width:14px;height:14px;transform:rotate(45deg);background:#4676ac;border:2px solid white;' +
-                'box-shadow:0 2px 4px rgba(0,0,0,0.3);';
+              el.style.cssText =
+                'width:16px;height:16px;border-radius:50%;background:#616161;border:2px solid white;' +
+                'box-shadow:0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
             }
           });
 
-          // Highlight the clicked marker as a copper circle
+          // Highlight the clicked marker with copper color and ring
           if (!isConverted) {
-            // Transform diamond into copper circle
-            const diamond = el.firstChild as HTMLElement;
-            if (diamond) {
-              diamond.style.cssText =
-                'width:18px;height:18px;transform:none;border-radius:50%;background:#ac6d46;border:2px solid white;' +
-                'box-shadow:0 0 0 3px rgba(172,109,70,0.4),0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
-            }
+            el.style.cssText =
+              'width:16px;height:16px;border-radius:50%;background:#ac6d46;border:2px solid white;' +
+              'box-shadow:0 0 0 3px rgba(172,109,70,0.4),0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
           } else {
-            // Add highlight ring to already-copper circle
             el.style.boxShadow = '0 0 0 3px rgba(172,109,70,0.4),0 2px 4px rgba(0,0,0,0.3)';
           }
 
@@ -423,14 +408,13 @@ export function WaypointSelectorMap({
       waypointMarkerMapRef.current.forEach((info) => {
         const el = info.originalEl;
         if (info.isConverted) {
-          el.style.boxShadow = '';
+          el.style.cssText =
+            'width:16px;height:16px;border-radius:50%;background:#ac6d46;border:2px solid white;' +
+            'box-shadow:0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
         } else {
-          const diamond = el.firstChild as HTMLElement;
-          if (diamond) {
-            diamond.style.cssText =
-              'width:14px;height:14px;transform:rotate(45deg);background:#4676ac;border:2px solid white;' +
-              'box-shadow:0 2px 4px rgba(0,0,0,0.3);';
-          }
+          el.style.cssText =
+            'width:16px;height:16px;border-radius:50%;background:#616161;border:2px solid white;' +
+            'box-shadow:0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
         }
       });
       setPendingExisting(null);
@@ -568,14 +552,13 @@ export function WaypointSelectorMap({
     waypointMarkerMapRef.current.forEach((info) => {
       const el = info.originalEl;
       if (info.isConverted) {
-        el.style.boxShadow = '';
+        el.style.cssText =
+          'width:16px;height:16px;border-radius:50%;background:#ac6d46;border:2px solid white;' +
+          'box-shadow:0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
       } else {
-        const diamond = el.firstChild as HTMLElement;
-        if (diamond) {
-          diamond.style.cssText =
-            'width:14px;height:14px;transform:rotate(45deg);background:#4676ac;border:2px solid white;' +
-            'box-shadow:0 2px 4px rgba(0,0,0,0.3);';
-        }
+        el.style.cssText =
+          'width:16px;height:16px;border-radius:50%;background:#616161;border:2px solid white;' +
+          'box-shadow:0 2px 4px rgba(0,0,0,0.3);cursor:pointer;';
       }
     });
   }, []);
@@ -638,8 +621,8 @@ export function WaypointSelectorMap({
                     display: 'inline-block',
                     width: 12,
                     height: 12,
-                    transform: 'rotate(45deg)',
-                    background: '#4676ac',
+                    borderRadius: '50%',
+                    background: '#616161',
                     border: '1.5px solid white',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
                   }}

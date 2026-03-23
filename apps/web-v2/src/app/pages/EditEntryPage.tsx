@@ -77,17 +77,19 @@ export function EditEntryPage() {
   const [fullExpedition, setFullExpedition] = useState<Expedition | null>(null);
   const [markerOnCompletedSegment, setMarkerOnCompletedSegment] = useState(false);
 
-  // Date range for the date picker: expedition creation date → today
+  // Date range for the date picker: expedition creation/publish date → end date or today
   const { dateMin, dateMax } = useMemo(() => {
     const d = new Date();
     const todayLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const endDate = fullExpedition?.endDate ? fullExpedition.endDate.slice(0, 10) : null;
     const created = fullExpedition?.createdAt ? fullExpedition.createdAt.slice(0, 10) : todayLocal;
     const min = created <= todayLocal ? created : todayLocal;
-    // Cap max date at endDate for completed expeditions
+    // Max is the later of today and the expedition end date
     let max = todayLocal;
-    if (fullExpedition?.status === 'completed' && fullExpedition.endDate) {
-      const end = fullExpedition.endDate.slice(0, 10);
-      if (end < todayLocal) max = end;
+    if (endDate && endDate > todayLocal) {
+      max = endDate;
+    } else if (fullExpedition?.status === 'completed' && endDate && endDate < todayLocal) {
+      max = endDate;
     }
     return { dateMin: min, dateMax: max };
   }, [fullExpedition?.createdAt, fullExpedition?.status, fullExpedition?.endDate]);

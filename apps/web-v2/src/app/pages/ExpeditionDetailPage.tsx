@@ -8,6 +8,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
+import { ROUTE_MODE_STYLES } from '@/app/utils/mapRouteDrawing';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
@@ -291,7 +292,8 @@ export function ExpeditionDetailPage() {
     map.on('load', () => {
       // Route lines — fallback merges waypoints + entries by geographic proximity
       const hasDirectionsRoute = apiExpedition?.routeGeometry && apiExpedition.routeGeometry.length > 0;
-      const isTrailRoute = apiExpedition?.routeMode === 'trail';
+      const routeStyle = ROUTE_MODE_STYLES[apiExpedition?.routeMode || ''] || ROUTE_MODE_STYLES.straight;
+      const isWaterwayRoute = apiExpedition?.routeMode === 'waterway';
       const routeCoordinates = hasDirectionsRoute
         ? apiExpedition.routeGeometry!
         : buildMergedRouteCoords(
@@ -325,14 +327,35 @@ export function ExpeditionDetailPage() {
           type: 'line',
           source: 'route-line',
           paint: {
-            'line-color': isTrailRoute ? '#598636' : (theme === 'dark' ? '#4676ac' : '#202020'),
-            'line-width': hasDirectionsRoute ? 4 : 3,
+            'line-color': routeStyle.color,
+            'line-width': hasDirectionsRoute ? routeStyle.width : 3,
             'line-opacity': 0.8,
-            ...(hasDirectionsRoute
-              ? (isTrailRoute ? { 'line-dasharray': [4, 2] } : {})
-              : { 'line-dasharray': [2, 2] }),
+            ...(hasDirectionsRoute && routeStyle.dash ? { 'line-dasharray': routeStyle.dash } : !hasDirectionsRoute ? { 'line-dasharray': [2, 2] } : {}),
           },
         });
+
+        // Flow direction arrows for waterway routes
+        if (isWaterwayRoute && hasDirectionsRoute && routeCoordinates.length >= 2) {
+          map.addLayer({
+            id: 'route-arrows',
+            type: 'symbol',
+            source: 'route-line',
+            layout: {
+              'symbol-placement': 'line',
+              'symbol-spacing': 100,
+              'text-field': '▸',
+              'text-size': 18,
+              'text-keep-upright': false,
+              'text-rotation-alignment': 'map',
+              'text-allow-overlap': true,
+              'text-ignore-placement': true,
+            },
+            paint: {
+              'text-color': '#ac6d46',
+              'text-opacity': 0.7,
+            },
+          });
+        }
       }
 
       // Completed route overlay
@@ -482,8 +505,20 @@ export function ExpeditionDetailPage() {
             Object.assign(diamond.style, { width: '30px', height: '30px', backgroundColor: isStart ? '#ac6d46' : '#4676ac', border: '3px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' });
             label.style.fontSize = '13px'; label.textContent = isStart ? 'S' : 'E';
           } else {
-            Object.assign(diamond.style, { width: '24px', height: '24px', backgroundColor: '#616161', border: '2px solid white', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' });
-            label.style.fontSize = '11px'; label.textContent = String(waypointNumberMap.get(wp.id) ?? idx + 1);
+            // Intermediate waypoint — gray circle
+            Object.assign(wrapper.style, {
+              width: '22px', height: '22px', borderRadius: '50%',
+              backgroundColor: '#616161', border: '2px solid white',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            });
+            const circleLabel = document.createElement('span');
+            Object.assign(circleLabel.style, { color: 'white', fontWeight: 'bold', fontSize: '10px', lineHeight: '1' });
+            circleLabel.textContent = String(waypointNumberMap.get(wp.id) ?? idx + 1);
+            wrapper.appendChild(circleLabel);
+            if (isCurrent) wrapper.style.animation = 'wp-pulse 2s ease-out infinite';
+            new mapboxgl.Marker(wrapper).setLngLat([wp.coords.lng, wp.coords.lat]).addTo(map);
+            return; // skip the diamond append below
           }
 
           diamond.appendChild(label);
@@ -607,7 +642,8 @@ export function ExpeditionDetailPage() {
       map.resize();
 
       const hasDirectionsRoute = apiExpedition?.routeGeometry && apiExpedition.routeGeometry.length > 0;
-      const isTrailRoute2 = apiExpedition?.routeMode === 'trail';
+      const routeStyle2 = ROUTE_MODE_STYLES[apiExpedition?.routeMode || ''] || ROUTE_MODE_STYLES.straight;
+      const isWaterwayRoute2 = apiExpedition?.routeMode === 'waterway';
       const isRoundTrip = apiExpedition?.isRoundTrip;
       const routeCoordinates = hasDirectionsRoute
         ? apiExpedition.routeGeometry!
@@ -643,14 +679,35 @@ export function ExpeditionDetailPage() {
           type: 'line',
           source: 'route-line',
           paint: {
-            'line-color': isTrailRoute2 ? '#598636' : (theme === 'dark' ? '#4676ac' : '#202020'),
-            'line-width': hasDirectionsRoute ? 4 : 3,
+            'line-color': routeStyle2.color,
+            'line-width': hasDirectionsRoute ? routeStyle2.width : 3,
             'line-opacity': 0.8,
-            ...(hasDirectionsRoute
-              ? (isTrailRoute2 ? { 'line-dasharray': [4, 2] } : {})
-              : { 'line-dasharray': [2, 2] }),
+            ...(hasDirectionsRoute && routeStyle2.dash ? { 'line-dasharray': routeStyle2.dash } : !hasDirectionsRoute ? { 'line-dasharray': [2, 2] } : {}),
           },
         });
+
+        // Flow direction arrows for waterway routes
+        if (isWaterwayRoute2 && hasDirectionsRoute && routeCoordinates.length >= 2) {
+          map.addLayer({
+            id: 'route-arrows',
+            type: 'symbol',
+            source: 'route-line',
+            layout: {
+              'symbol-placement': 'line',
+              'symbol-spacing': 100,
+              'text-field': '▸',
+              'text-size': 18,
+              'text-keep-upright': false,
+              'text-rotation-alignment': 'map',
+              'text-allow-overlap': true,
+              'text-ignore-placement': true,
+            },
+            paint: {
+              'text-color': '#ac6d46',
+              'text-opacity': 0.7,
+            },
+          });
+        }
       }
 
       // Add completed route line based on current location
@@ -846,15 +903,26 @@ export function ExpeditionDetailPage() {
             diamond.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
             label.style.fontSize = '14px'; label.textContent = isStart ? 'S' : 'E';
           } else {
-            diamond.style.width = '22px'; diamond.style.height = '22px';
-            diamond.style.backgroundColor = '#616161'; diamond.style.border = '2px solid white';
-            diamond.style.boxShadow = '0 1px 4px rgba(0,0,0,0.2)';
-            label.style.fontSize = '12px'; label.textContent = String(waypointNumberMap.get(wp.id) ?? idx + 1);
+            // Intermediate waypoint — gray circle
+            Object.assign(wrapper.style, {
+              width: '22px', height: '22px', borderRadius: '50%',
+              backgroundColor: '#616161', border: '2px solid white',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            });
+            const circleLabel = document.createElement('span');
+            Object.assign(circleLabel.style, { color: 'white', fontWeight: 'bold', fontSize: '10px', lineHeight: '1' });
+            circleLabel.textContent = String(waypointNumberMap.get(wp.id) ?? idx + 1);
+            wrapper.appendChild(circleLabel);
+            if (isCurrent) wrapper.style.animation = 'wp-pulse 2s ease-out infinite';
+            // Skip diamond append — marker is added below
           }
 
-          diamond.appendChild(label);
-          wrapper.appendChild(diamond);
-          if (isCurrent) diamond.style.animation = 'wp-pulse 2s ease-out infinite';
+          if (wrapper.children.length === 0) {
+            diamond.appendChild(label);
+            wrapper.appendChild(diamond);
+            if (isCurrent) diamond.style.animation = 'wp-pulse 2s ease-out infinite';
+          }
         }
 
         if (isCurrent && entryIds.length > 0) {

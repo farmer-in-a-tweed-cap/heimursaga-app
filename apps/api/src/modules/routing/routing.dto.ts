@@ -4,7 +4,9 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsIn,
   IsNumber,
+  IsString,
   Max,
   Min,
   ValidateNested,
@@ -32,4 +34,19 @@ export class TrailRouteDto {
   @ValidateNested({ each: true })
   @Type(() => RouteLocationDto)
   locations: RouteLocationDto[];
+}
+
+export class WaterwayRouteDto {
+  @ApiProperty({ type: [RouteLocationDto] })
+  @IsArray()
+  @ArrayMinSize(2)
+  @ArrayMaxSize(50)
+  @ValidateNested({ each: true })
+  @Type(() => RouteLocationDto)
+  locations: RouteLocationDto[];
+
+  @ApiProperty({ enum: ['canoe', 'motorboat'], example: 'canoe' })
+  @IsString()
+  @IsIn(['canoe', 'motorboat'])
+  profile: 'canoe' | 'motorboat';
 }

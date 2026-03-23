@@ -70,7 +70,11 @@ export function StatsBar({
         <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
           {(() => {
             const mode = apiExpedition?.routeMode;
-            const modeLabel = mode === 'driving' ? 'Driving' : mode === 'walking' ? 'Walking' : mode === 'cycling' ? 'Cycling' : 'Haversine';
+            const modeLabels: Record<string, string> = {
+              walking: 'Walking', cycling: 'Cycling', driving: 'Driving',
+              trail: 'Trail', waterway: 'Waterway', mixed: 'Mixed', straight: 'Straight Line',
+            };
+            const modeLabel = modeLabels[mode || ''] || 'Haversine';
             const tripLabel = apiExpedition?.isRoundTrip ? 'Round Trip' : 'One Way';
             return `${modeLabel} \u2022 ${tripLabel}`;
           })()}

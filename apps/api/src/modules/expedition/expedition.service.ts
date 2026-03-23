@@ -796,6 +796,7 @@ export class ExpeditionService {
             is_round_trip: true,
             route_mode: true,
             route_geometry: true,
+            route_leg_modes: true,
             route_distance_km: true,
             current_location_type: true,
             current_location_id: true,
@@ -918,6 +919,7 @@ export class ExpeditionService {
         is_round_trip,
         route_mode,
         route_geometry,
+        route_leg_modes,
         current_location_type,
         current_location_id,
         current_location_visibility,
@@ -1014,7 +1016,16 @@ export class ExpeditionService {
         where: {
           sponsored_explorer_id: expedition.author_id,
           deleted_at: null,
-          status: { in: ['active', 'confirmed', 'completed', 'ACTIVE', 'CONFIRMED', 'COMPLETED'] },
+          status: {
+            in: [
+              'active',
+              'confirmed',
+              'completed',
+              'ACTIVE',
+              'CONFIRMED',
+              'COMPLETED',
+            ],
+          },
         },
         select: {
           public_id: true,
@@ -1132,6 +1143,7 @@ export class ExpeditionService {
         isRoundTrip: is_round_trip ?? false,
         routeMode: route_mode || undefined,
         routeGeometry: route_geometry ? JSON.parse(route_geometry) : undefined,
+        routeLegModes: route_leg_modes ? JSON.parse(route_leg_modes) : undefined,
         routeDistanceKm: expedition.route_distance_km ?? undefined,
         currentLocationVisibility:
           (current_location_visibility as 'public' | 'sponsors' | 'private') ||
@@ -1403,6 +1415,9 @@ export class ExpeditionService {
           route_geometry: payload.routeGeometry
             ? JSON.stringify(payload.routeGeometry)
             : null,
+          route_leg_modes: payload.routeLegModes
+            ? JSON.stringify(payload.routeLegModes)
+            : null,
           route_distance_km: payload.routeDistanceKm ?? null,
           goal: payload.goal ? Math.round(payload.goal * 100) : 0,
           notes_access_threshold: payload.notesAccessThreshold
@@ -1655,6 +1670,11 @@ export class ExpeditionService {
       if (routeGeometry !== undefined) {
         updateData.route_geometry = routeGeometry
           ? JSON.stringify(routeGeometry)
+          : null;
+      }
+      if (payload.routeLegModes !== undefined) {
+        updateData.route_leg_modes = payload.routeLegModes
+          ? JSON.stringify(payload.routeLegModes)
           : null;
       }
       if (payload.routeDistanceKm !== undefined) {
@@ -2440,6 +2460,7 @@ export class ExpeditionService {
           is_round_trip: true,
           route_mode: true,
           route_geometry: true,
+          route_leg_modes: true,
           route_distance_km: true,
           goal: true,
           notes_access_threshold: true,
@@ -2482,6 +2503,9 @@ export class ExpeditionService {
           routeMode: d.route_mode || undefined,
           routeGeometry: d.route_geometry
             ? JSON.parse(d.route_geometry)
+            : undefined,
+          routeLegModes: d.route_leg_modes
+            ? JSON.parse(d.route_leg_modes)
             : undefined,
           routeDistanceKm: d.route_distance_km ?? undefined,
           goal: integerToDecimal(d.goal ?? 0),
@@ -2642,77 +2666,80 @@ export class ExpeditionService {
         );
       }
 
-      await this.prisma.$transaction(async (tx) => {
-        // Delete existing waypoint joins and orphaned waypoints
-        const existingJoins = await tx.expeditionWaypoint.findMany({
-          where: { expedition_id: expedition.id },
-          select: { waypoint_id: true },
-        });
-
-        // Unlink entries from old waypoints before soft-deleting them
-        if (existingJoins.length > 0) {
-          await tx.entry.updateMany({
-            where: {
-              waypoint_id: { in: existingJoins.map((j) => j.waypoint_id) },
-            },
-            data: { waypoint_id: null },
+      await this.prisma.$transaction(
+        async (tx) => {
+          // Delete existing waypoint joins and orphaned waypoints
+          const existingJoins = await tx.expeditionWaypoint.findMany({
+            where: { expedition_id: expedition.id },
+            select: { waypoint_id: true },
           });
-        }
 
-        await tx.expeditionWaypoint.deleteMany({
-          where: { expedition_id: expedition.id },
-        });
+          // Unlink entries from old waypoints before soft-deleting them
+          if (existingJoins.length > 0) {
+            await tx.entry.updateMany({
+              where: {
+                waypoint_id: { in: existingJoins.map((j) => j.waypoint_id) },
+              },
+              data: { waypoint_id: null },
+            });
+          }
 
-        // Soft-delete orphaned waypoints
-        if (existingJoins.length > 0) {
-          await tx.waypoint.updateMany({
-            where: {
-              id: { in: existingJoins.map((j) => j.waypoint_id) },
-            },
-            data: { deleted_at: new Date() },
+          await tx.expeditionWaypoint.deleteMany({
+            where: { expedition_id: expedition.id },
           });
-        }
 
-        // Create new waypoints and link entries in parallel
-        await Promise.all(
-          payload.waypoints.map(async (wp) => {
-            const dateTime = wp.date ? new Date(wp.date) : null;
-            const result = await tx.expeditionWaypoint.create({
-              data: {
-                sequence: wp.sequence,
-                waypoint: {
-                  create: {
-                    title: wp.title,
-                    lat: wp.lat,
-                    lon: wp.lon,
-                    date: dateTime,
-                    description: wp.description,
+          // Soft-delete orphaned waypoints
+          if (existingJoins.length > 0) {
+            await tx.waypoint.updateMany({
+              where: {
+                id: { in: existingJoins.map((j) => j.waypoint_id) },
+              },
+              data: { deleted_at: new Date() },
+            });
+          }
+
+          // Create new waypoints and link entries in parallel
+          await Promise.all(
+            payload.waypoints.map(async (wp) => {
+              const dateTime = wp.date ? new Date(wp.date) : null;
+              const result = await tx.expeditionWaypoint.create({
+                data: {
+                  sequence: wp.sequence,
+                  waypoint: {
+                    create: {
+                      title: wp.title,
+                      lat: wp.lat,
+                      lon: wp.lon,
+                      date: dateTime,
+                      description: wp.description,
+                    },
+                  },
+                  expedition: {
+                    connect: { id: expedition.id },
                   },
                 },
-                expedition: {
-                  connect: { id: expedition.id },
-                },
-              },
-              include: { waypoint: true },
-            });
-
-            // Link entries to the new waypoint
-            const idsToLink = [
-              ...(wp.entryId ? [wp.entryId] : []),
-              ...(wp.entryIds || []),
-            ];
-            if (idsToLink.length > 0) {
-              await tx.entry.updateMany({
-                where: {
-                  public_id: { in: idsToLink },
-                  expedition_id: expedition.id,
-                },
-                data: { waypoint_id: result.waypoint.id },
+                include: { waypoint: true },
               });
-            }
-          }),
-        );
-      }, { timeout: 15000 });
+
+              // Link entries to the new waypoint
+              const idsToLink = [
+                ...(wp.entryId ? [wp.entryId] : []),
+                ...(wp.entryIds || []),
+              ];
+              if (idsToLink.length > 0) {
+                await tx.entry.updateMany({
+                  where: {
+                    public_id: { in: idsToLink },
+                    expedition_id: expedition.id,
+                  },
+                  data: { waypoint_id: result.waypoint.id },
+                });
+              }
+            }),
+          );
+        },
+        { timeout: 15000 },
+      );
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;
