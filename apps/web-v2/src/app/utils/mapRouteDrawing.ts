@@ -1,6 +1,19 @@
 import mapboxgl from 'mapbox-gl';
 
 // ---------------------------------------------------------------------------
+// Route mode color/style constants — consistent across builder, detail, atlas
+// ---------------------------------------------------------------------------
+
+export const ROUTE_MODE_STYLES: Record<string, { color: string; label: string; dash: number[] | null; width: number }> = {
+  straight: { color: '#999999', label: 'Straight Line', dash: [2, 2], width: 3 },
+  walking:  { color: '#4676ac', label: 'Walking', dash: null, width: 4 },
+  cycling:  { color: '#9b59b6', label: 'Cycling', dash: null, width: 4 },
+  driving:  { color: '#d35400', label: 'Driving', dash: null, width: 4 },
+  trail:    { color: '#598636', label: 'Trail', dash: [4, 2], width: 4 },
+  waterway: { color: '#ac6d46', label: 'Waterway', dash: [6, 3], width: 4 },
+};
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -76,7 +89,7 @@ export function drawRouteLines(
 
   if (routeCoordinates.length < 2) return;
 
-  const isTrail = routeMode === 'trail';
+  const style = ROUTE_MODE_STYLES[routeMode || ''] || ROUTE_MODE_STYLES.straight;
 
   map.addSource('route-line', {
     type: 'geojson',
@@ -103,12 +116,10 @@ export function drawRouteLines(
     type: 'line',
     source: 'route-line',
     paint: {
-      'line-color': isTrail ? '#598636' : (theme === 'dark' ? '#4676ac' : '#202020'),
-      'line-width': hasDirectionsRoute ? 4 : 3,
+      'line-color': style.color,
+      'line-width': hasDirectionsRoute ? style.width : 3,
       'line-opacity': 0.8,
-      ...(hasDirectionsRoute
-        ? (isTrail ? { 'line-dasharray': [4, 2] } : {})
-        : { 'line-dasharray': [2, 2] }),
+      ...(hasDirectionsRoute && style.dash ? { 'line-dasharray': style.dash } : !hasDirectionsRoute ? { 'line-dasharray': [2, 2] } : {}),
     },
   });
 }
@@ -245,15 +256,37 @@ export function addWaypointMarkers(
       label.style.fontSize = lgFont;
       label.textContent = isStart ? 'S' : 'E';
     } else {
-      Object.assign(diamond.style, {
+      // Intermediate waypoint — gray circle (no diamond)
+      Object.assign(wrapper.style, {
         width: smSize,
         height: smSize,
+        borderRadius: '50%',
         backgroundColor: '#616161',
         border: '2px solid white',
         boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       });
-      label.style.fontSize = smFont;
-      label.textContent = String(idx + 1);
+      const circleLabel = document.createElement('span');
+      Object.assign(circleLabel.style, {
+        color: 'white',
+        fontWeight: 'bold',
+        fontSize: smFont,
+        lineHeight: '1',
+      });
+      circleLabel.textContent = String(idx + 1);
+      wrapper.appendChild(circleLabel);
+
+      if (isCurrent) {
+        wrapper.style.animation = 'wp-pulse 2s ease-out infinite';
+      }
+
+      const marker = new mapboxgl.Marker(wrapper)
+        .setLngLat([wp.coords.lng, wp.coords.lat])
+        .addTo(map);
+      markers.push(marker);
+      return; // skip diamond append below
     }
 
     diamond.appendChild(label);
