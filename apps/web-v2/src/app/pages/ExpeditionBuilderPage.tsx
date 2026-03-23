@@ -4,7 +4,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, usePathname, useParams } from 'next/navigation';
-import { MapPin, Trash2, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle, Search, Plus } from 'lucide-react';
+import { MapPin, Trash2, Upload, Info, X, Locate, Lock, Loader2, ChevronUp, ChevronDown, AlertTriangle, Search, Plus, RotateCw } from 'lucide-react';
 import { Slider } from '@/app/components/ui/slider';
 import { DatePicker } from '@/app/components/DatePicker';
 import { ConfirmationModal } from '@/app/components/ConfirmationModal';
@@ -19,8 +19,8 @@ import { expeditionApi, entryApi, uploadApi, routingApi } from '@/app/services/a
 import { formatDateTime } from '@/app/utils/dateFormat';
 import { GEO_REGION_GROUPS } from '@/app/utils/geoRegions';
 import { haversineFromLatLng } from '@/app/utils/haversine';
-import { buildWaypointPayload } from '@/app/utils/waypointPayload';
-import { projectToSegment } from '@/app/utils/routeSnapping';
+
+import { ROUTE_MODE_STYLES } from '@/app/utils/mapRouteDrawing';
 
 import { createPOIGeocoder, searchAlongRoute, fetchPOICategories, retrievePOI, clearRouteSearchCache, clipRouteToBounds } from '@/app/utils/poiGeocoder';
 import type { POIResult, POICategory } from '@/app/utils/poiGeocoder';
@@ -30,7 +30,41 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
-type RouteMode = 'straight' | 'walking' | 'cycling' | 'driving' | 'trail';
+type RouteMode = 'straight' | 'walking' | 'cycling' | 'driving' | 'trail' | 'waterway';
+type WaterwayProfile = 'paddle' | 'motor';
+
+/** Split a continuous route geometry at waypoint locations to get per-leg coordinate arrays. */
+function splitGeometryAtWaypoints(
+  fullCoords: number[][],
+  waypointLngLats: [number, number][], // [lng, lat] for each waypoint
+): number[][][] {
+  if (waypointLngLats.length < 2 || fullCoords.length < 2) return [fullCoords];
+
+  const splitIndices: number[] = [0];
+  let searchFrom = 0;
+
+  for (let w = 1; w < waypointLngLats.length - 1; w++) {
+    const [wpLng, wpLat] = waypointLngLats[w];
+    let bestIdx = searchFrom;
+    let bestDist = Infinity;
+
+    for (let i = searchFrom; i < fullCoords.length; i++) {
+      const d = (fullCoords[i][0] - wpLng) ** 2 + (fullCoords[i][1] - wpLat) ** 2;
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+
+    splitIndices.push(bestIdx);
+    searchFrom = bestIdx;
+  }
+
+  splitIndices.push(fullCoords.length - 1);
+
+  const segments: number[][][] = [];
+  for (let i = 0; i < splitIndices.length - 1; i++) {
+    segments.push(fullCoords.slice(splitIndices[i], splitIndices[i + 1] + 1));
+  }
+  return segments;
+}
 
 interface Waypoint {
   id: string;
@@ -65,6 +99,77 @@ if (!MAPBOX_TOKEN) {
   console.warn('NEXT_PUBLIC_MAPBOX_TOKEN environment variable is not set');
 }
 
+// Module-scope constants (avoid re-allocation per render)
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_COVER_SIZE = 25 * 1024 * 1024; // 25MB
+const QUICK_PICK_IDS = [
+  'restaurant', 'cafe', 'hotel', 'lodging', 'gas_station', 'grocery',
+  'supermarket', 'pharmacy', 'hospital', 'campground', 'parking',
+  'atm', 'post_office', 'drinking_water', 'laundry', 'bar',
+];
+
+/** Convert an ISO date string to YYYY-MM-DD format. */
+function toDateString(d: string | Date | undefined | null): string {
+  if (!d) return '';
+  return new Date(d).toISOString().split('T')[0];
+}
+
+/** Aggregate per-segment distances/durations between waypoint indices. */
+function aggregateLegs(
+  legDistances: number[],
+  legDurations: number[],
+  waypointIndices: number[],
+): { distances: number[]; durations: number[] } {
+  const distances: number[] = [];
+  const durations: number[] = [];
+  for (let i = 0; i < waypointIndices.length - 1; i++) {
+    let dist = 0;
+    let dur = 0;
+    for (let leg = waypointIndices[i]; leg < waypointIndices[i + 1]; leg++) {
+      dist += legDistances[leg] ?? 0;
+      dur += legDurations[leg] ?? 0;
+    }
+    distances.push(dist);
+    durations.push(dur);
+  }
+  return { distances, durations };
+}
+
+/** Build snap-distance warnings for waypoints that were snapped far from their input location. */
+function buildSnapWarnings(
+  snapDists: number[],
+  points: Array<{ name?: string }>,
+  waypointIndices: number[] | undefined,
+  threshold: number,
+  label: string,
+  isRoundTrip: boolean,
+  formatDist: (km: number, dp: number) => string,
+): string[] {
+  const warnings: string[] = [];
+  if (waypointIndices) {
+    waypointIndices.forEach((wpIdx, i) => {
+      if (wpIdx < snapDists.length && snapDists[wpIdx] > threshold) {
+        const name = points[wpIdx]?.name || `Waypoint ${i + 1}`;
+        warnings.push(`${name} is ${formatDist(snapDists[wpIdx] / 1000, 1)} from the nearest ${label}`);
+      }
+    });
+  } else {
+    const waypointCount = isRoundTrip ? snapDists.length - 1 : snapDists.length;
+    for (let i = 0; i < waypointCount && i < points.length; i++) {
+      if (snapDists[i] > threshold) {
+        const name = points[i].name || `Waypoint ${i + 1}`;
+        warnings.push(`${name} is ${formatDist(snapDists[i] / 1000, 1)} from the nearest ${label}`);
+      }
+    }
+  }
+  return warnings;
+}
+
+/** Stitch per-leg coordinate arrays into a single continuous geometry. */
+function stitchLegCoords(legs: { coords: number[][] }[]): number[][] {
+  return legs.reduce<number[][]>((acc, leg, i) =>
+    i === 0 ? [...leg.coords] : [...acc, ...leg.coords.slice(1)], []);
+}
 
 export function ExpeditionBuilderPage() {
   const { user, isAuthenticated } = useAuth();
@@ -84,7 +189,6 @@ export function ExpeditionBuilderPage() {
   const expeditionEntriesRef = useRef<Array<{ id: string; title: string; date: string; place: string; coords: { lat: number; lng: number } }>>([]);
   const entryMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const clusteredEntryRef = useRef<{ cleanup: () => void; recalculate: () => void; markers: mapboxgl.Marker[]; removeAllHighlights: () => void } | null>(null);
-  const originalWaypointIdsRef = useRef<string[]>([]); // Track API waypoint IDs loaded in edit mode
   const reorderNoticeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const directionsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const directionsAbortRef = useRef<AbortController | null>(null);
@@ -93,7 +197,15 @@ export function ExpeditionBuilderPage() {
   const addWaypointRef = useRef<((lat: number, lng: number, name: string, location: string) => void) | null>(null);
   const routeSearchMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const routeSearchResultsRef = useRef<POIResult[]>([]);
+  const perLegModesRef = useRef<RouteMode[]>([]);
+  const perLegGeomsRef = useRef<number[][][]>([]);
+  /** Per-leg routing cache: key encodes endpoints + mode so unchanged legs are reused. */
+  const legCacheRef = useRef<{ key: string; coords: number[][]; distance: number; duration: number }[]>([]);
   const searchResultRef = useRef<{ lng: number; lat: number; name: string; address: string } | null>(null);
+  const isRoundTripRef = useRef(false);
+  const waterwayProfileRef = useRef<WaterwayProfile>('paddle');
+  const directionsGeometryRef = useRef<[number, number][] | null>(null);
+  const legModeAbortRef = useRef<AbortController | null>(null); // Per-leg mode change abort
 
   // Mobile detection — builder requires desktop
   const [isMobile, setIsMobile] = useState(false);
@@ -107,7 +219,6 @@ export function ExpeditionBuilderPage() {
   const [isLoading, setIsLoading] = useState(isEditMode);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapZoom, setMapZoom] = useState(10);
   const [waypoints, setWaypoints] = useState<Waypoint[]>([]);
   const [selectedWaypoint, setSelectedWaypoint] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
@@ -124,12 +235,28 @@ export function ExpeditionBuilderPage() {
 
   // Route mode / Directions API state
   const [routeMode, setRouteMode] = useState<RouteMode>('straight');
+  const [waterwayProfile, setWaterwayProfile] = useState<WaterwayProfile>('paddle');
   const [directionsGeometry, setDirectionsGeometry] = useState<[number, number][] | null>(null);
   const [directionsLegDistances, setDirectionsLegDistances] = useState<number[] | null>(null);
   const [directionsLegDurations, setDirectionsLegDurations] = useState<number[] | null>(null); // seconds per leg
   const [directionsLoading, setDirectionsLoading] = useState(false);
   const [directionsError, setDirectionsError] = useState<string | null>(null);
   const [directionsWarnings, setDirectionsWarnings] = useState<string[]>([]);
+  const [waterwayFlowDirection, setWaterwayFlowDirection] = useState<'downstream' | 'upstream' | 'mixed' | null>(null);
+  const [waterwayUpstreamFraction, setWaterwayUpstreamFraction] = useState<number | null>(null);
+  const [perLegModes, setPerLegModes] = useState<RouteMode[]>([]); // empty = all legs use routeMode
+  const [perLegGeometries, setPerLegGeometries] = useState<number[][][]>([]);
+  const [expandedLegCard, setExpandedLegCard] = useState<number | null>(null);
+
+  // Helper to keep ref in sync with state
+  const setPerLegModesAndRef = useCallback((modes: RouteMode[]) => {
+    perLegModesRef.current = modes;
+    setPerLegModes(modes);
+  }, []);
+  const setPerLegGeomsAndRef = useCallback((geoms: number[][][]) => {
+    perLegGeomsRef.current = geoms;
+    setPerLegGeometries(geoms);
+  }, []);
 
   // Route search (Find Along Route) state
   const [showRouteSearch, setShowRouteSearch] = useState(false);
@@ -183,10 +310,6 @@ export function ExpeditionBuilderPage() {
   const lastSavedContentRef = useRef<string>('');
   const isAutoSavingRef = useRef(false);
   const isSubmittingRef = useRef(false);
-
-  // Allowed image types for cover photo
-  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-  const MAX_COVER_SIZE = 25 * 1024 * 1024; // 25MB
 
   // Handle cover photo upload
   const handleCoverPhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -272,6 +395,7 @@ export function ExpeditionBuilderPage() {
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -280,7 +404,7 @@ export function ExpeditionBuilderPage() {
         title: expeditionData.title,
         description: expeditionData.description,
         visibility: expeditionData.visibility,
-        status: computeStatus(),
+        status,
         startDate: expeditionData.startDate || undefined,
         endDate: expeditionData.endDate || undefined,
         coverImage: coverPhotoUrl || undefined,
@@ -291,8 +415,9 @@ export function ExpeditionBuilderPage() {
         isRoundTrip,
         category: expeditionData.category || undefined,
         region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
-        routeMode: routeMode !== 'straight' ? routeMode : null,
-        routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
+        routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return m !== 'straight' ? m : null; })(),
+        routeGeometry: perLegModes.some(m => m !== 'straight') && directionsGeometry ? directionsGeometry : null,
+        routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
         routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
       };
@@ -333,19 +458,13 @@ export function ExpeditionBuilderPage() {
       if (isEditMode && expeditionId) {
         await expeditionApi.update(expeditionId, finalPayload);
         expeditionPublicId = expeditionId;
-
-        if (orderedWaypoints.length > 0) {
-          await expeditionApi.syncWaypoints(expeditionId, orderedWaypoints);
-        }
+        await expeditionApi.syncWaypoints(expeditionId, orderedWaypoints);
       } else if (draftId) {
         // Publishing from a draft — update final state, sync waypoints, then publish
         expeditionPublicId = draftId;
         const { status: _status, ...draftPayload } = payload;
         await expeditionApi.update(draftId, draftPayload);
-
-        if (orderedWaypoints.length > 0) {
-          await expeditionApi.syncWaypoints(draftId, orderedWaypoints);
-        }
+        await expeditionApi.syncWaypoints(draftId, orderedWaypoints);
 
         // Transition from draft to planned/active/completed
         await expeditionApi.publishDraft(draftId);
@@ -377,6 +496,7 @@ export function ExpeditionBuilderPage() {
       toast.error(msg);
       setSubmitError(msg);
     } finally {
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -412,10 +532,6 @@ export function ExpeditionBuilderPage() {
   const { handleStartDateChange, handleEndDateChange, handleDurationChange } =
     useBuilderDateHandlers(expeditionData, setExpeditionData, expectedDuration, setExpectedDuration);
 
-  // Keep isSubmittingRef in sync
-  useEffect(() => {
-    isSubmittingRef.current = isSubmitting;
-  }, [isSubmitting]);
 
   // Build a content signature string for change detection
   const getContentSignature = useCallback(() => {
@@ -435,19 +551,24 @@ export function ExpeditionBuilderPage() {
     });
   }, [expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, earlyAccessEnabled, isRoundTrip, routeMode, tags, waypoints]);
 
+  // Keep getContentSignature accessible via ref so async callbacks get latest version
+  const getContentSignatureRef = useRef(getContentSignature);
+  useEffect(() => {
+    getContentSignatureRef.current = getContentSignature;
+  }, [getContentSignature]);
+
   // Keep refs in sync with state
   useEffect(() => {
     waypointsRef.current = waypoints;
-  }, [waypoints]);
-  useEffect(() => {
     routeOrderRef.current = routeOrder;
-  }, [routeOrder]);
-  useEffect(() => {
     expeditionEntriesRef.current = expeditionEntries;
-  }, [expeditionEntries]);
+    isRoundTripRef.current = isRoundTrip;
+    waterwayProfileRef.current = waterwayProfile;
+    directionsGeometryRef.current = directionsGeometry;
+  }, [waypoints, routeOrder, expeditionEntries, isRoundTrip, waterwayProfile, directionsGeometry]);
 
   // Update distances when waypoints change
-  const updateDistances = (points: Waypoint[]): Waypoint[] => {
+  const updateDistances = useCallback((points: Waypoint[]): Waypoint[] => {
     let cumulative = 0;
     return points.map((point, index) => {
       if (index === 0) {
@@ -462,7 +583,7 @@ export function ExpeditionBuilderPage() {
         cumulativeDistance: cumulative
       };
     });
-  };
+  }, []);
 
   // Validate and format a coordinate for the Mapbox API
   const formatCoord = (lng: number, lat: number): string => {
@@ -519,6 +640,216 @@ export function ExpeditionBuilderPage() {
     return data.message || `No ${modeName} route found between waypoints`;
   };
 
+  // Fetch a single leg route between two points with a given mode
+  const fetchSingleLegRoute = async (
+    from: { lat: number; lng: number },
+    to: { lat: number; lng: number },
+    mode: RouteMode,
+    signal?: AbortSignal,
+  ): Promise<{ coords: [number, number][]; distance: number; duration: number }> => {
+    if (mode === 'straight') {
+      const dist = haversineFromLatLng(from, to);
+      return { coords: [[from.lng, from.lat], [to.lng, to.lat]], distance: dist, duration: 0 };
+    }
+    if (mode === 'trail') {
+      const result = await routingApi.trail([{ lat: from.lat, lon: from.lng }, { lat: to.lat, lon: to.lng }], { signal });
+      return { coords: result.coordinates, distance: result.totalDistance, duration: result.totalDuration };
+    }
+    if (mode === 'waterway') {
+      const profile = waterwayProfileRef.current === 'paddle' ? 'canoe' as const : 'motorboat' as const;
+      const result = await routingApi.waterway([{ lat: from.lat, lon: from.lng }, { lat: to.lat, lon: to.lng }], profile, { signal });
+      return { coords: result.coordinates, distance: result.totalDistance, duration: result.totalDuration };
+    }
+    // Mapbox Directions (walking, cycling, driving)
+    const coordString = `${formatCoord(from.lng, from.lat)};${formatCoord(to.lng, to.lat)}`;
+    const url = `https://api.mapbox.com/directions/v5/mapbox/${mode}/${coordString}?geometries=geojson&overview=full&radiuses=200;200&access_token=${MAPBOX_TOKEN}`;
+    const response = await fetch(url, { signal });
+    const data = await response.json();
+    if (data.code !== 'Ok' || !data.routes?.[0]) {
+      throw new Error(`No ${mode} route found for this leg`);
+    }
+    return {
+      coords: data.routes[0].geometry.coordinates,
+      distance: (data.routes[0].legs[0]?.distance ?? 0) / 1000,
+      duration: data.routes[0].legs[0]?.duration ?? 0,
+    };
+  };
+
+  // Build a cache key for a single leg (endpoints + mode)
+  const legCacheKey = (from: { lat: number; lng: number }, to: { lat: number; lng: number }, mode: string) =>
+    `${from.lat},${from.lng}|${to.lat},${to.lng}|${mode}`;
+
+  // Fetch legs incrementally — reuse cached results for unchanged legs
+  const fetchMixedRoute = async (
+    points: Array<{ coordinates: { lat: number; lng: number }; name?: string }>,
+    inputModes: RouteMode[],
+  ) => {
+    if (points.length < 2) return;
+    if (directionsAbortRef.current) directionsAbortRef.current.abort();
+    const abortController = new AbortController();
+    directionsAbortRef.current = abortController;
+    const timeoutId = setTimeout(() => abortController.abort(), 30000);
+
+    // Work on a copy to avoid mutating the caller's array/ref
+    const modes = [...inputModes];
+    const roundTrip = isRoundTripRef.current;
+
+    setDirectionsError(null);
+
+    try {
+      const cache = legCacheRef.current;
+      const legResults: { coords: number[][]; distance: number; duration: number }[] = [];
+      const warnings: string[] = [];
+      let fetchedAny = false;
+
+      for (let i = 0; i < modes.length; i++) {
+        if (abortController.signal.aborted) return;
+        const from = points[i].coordinates;
+        const toIdx = roundTrip && i === points.length - 1 ? 0 : i + 1;
+        const to = points[toIdx].coordinates;
+        const key = legCacheKey(from, to, modes[i]);
+
+        // Reuse cached result if endpoints + mode haven't changed
+        if (cache[i] && cache[i].key === key) {
+          legResults.push(cache[i]);
+        } else if (modes[i] === 'straight') {
+          legResults.push(await fetchSingleLegRoute(from, to, 'straight'));
+        } else {
+          if (!fetchedAny) { fetchedAny = true; setDirectionsLoading(true); }
+          try {
+            legResults.push(await fetchSingleLegRoute(from, to, modes[i], abortController.signal));
+          } catch (legErr: any) {
+            if (legErr.name === 'AbortError') throw legErr; // propagate abort
+            // Fall back to straight line for this leg, keep the rest intact
+            warnings.push(`Leg ${i + 1} (${modes[i]}): ${legErr.message} — using straight line`);
+            const dist = haversineFromLatLng(from, to);
+            legResults.push({ coords: [[from.lng, from.lat], [to.lng, to.lat]], distance: dist, duration: 0 });
+            // Update the mode to straight so the map renders correctly
+            modes[i] = 'straight';
+          }
+        }
+      }
+      if (abortController.signal.aborted) return;
+
+      // Persist any mode fallbacks
+      setPerLegModesAndRef([...modes]);
+
+      // Update cache
+      legCacheRef.current = legResults.map((r, i) => {
+        const from = points[i].coordinates;
+        const toIdx = roundTrip && i === points.length - 1 ? 0 : i + 1;
+        const to = points[toIdx].coordinates;
+        return { key: legCacheKey(from, to, modes[i]), ...r };
+      });
+
+      const allCoords = stitchLegCoords(legResults);
+
+      setDirectionsGeometry(allCoords as [number, number][]);
+      setDirectionsLegDistances(legResults.map(r => r.distance));
+      setDirectionsLegDurations(legResults.map(r => r.duration));
+      setPerLegGeomsAndRef(legResults.map(r => r.coords));
+      setDirectionsWarnings(warnings);
+      setWaterwayFlowDirection(null);
+      setWaterwayUpstreamFraction(null);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        if (directionsAbortRef.current === abortController) {
+          setDirectionsError('Route calculation timed out');
+          setDirectionsGeometry(null);
+          setDirectionsLegDistances(null);
+          setDirectionsLegDurations(null);
+        }
+        return;
+      }
+      setDirectionsError(err.message || 'Failed to fetch route');
+      setDirectionsGeometry(null);
+      setDirectionsLegDistances(null);
+      setDirectionsLegDurations(null);
+    } finally {
+      clearTimeout(timeoutId);
+      if (!abortController.signal.aborted) setDirectionsLoading(false);
+    }
+  };
+
+  // Handle changing a single leg's route mode via the map popup
+  const handleLegModeChangeRef = useRef<(legIndex: number, newMode: RouteMode) => void>(() => {});
+  handleLegModeChangeRef.current = async (legIndex: number, newMode: RouteMode) => {
+    // Abort any previous per-leg fetch
+    if (legModeAbortRef.current) legModeAbortRef.current.abort();
+    const abortController = new AbortController();
+    legModeAbortRef.current = abortController;
+
+    const wp = waypointsRef.current;
+    const roundTrip = isRoundTripRef.current;
+    const numLegs = roundTrip ? wp.length : wp.length - 1;
+
+    // Initialize per-leg modes array if needed
+    const modes: RouteMode[] = perLegModesRef.current.length > 0
+      ? [...perLegModesRef.current]
+      : Array(numLegs).fill(routeMode);
+    modes[legIndex] = newMode;
+    setPerLegModesAndRef(modes);
+
+    const from = wp[legIndex].coordinates;
+    const toIdx = roundTrip && legIndex === wp.length - 1 ? 0 : legIndex + 1;
+    const to = wp[toIdx].coordinates;
+
+    try {
+      setDirectionsLoading(true);
+      const result = await fetchSingleLegRoute(from, to, newMode, abortController.signal);
+      if (abortController.signal.aborted) return;
+
+      // Get or compute current per-leg geometries
+      const currentDirGeom = directionsGeometryRef.current;
+      const currentGeoms = perLegGeomsRef.current.length === numLegs
+        ? [...perLegGeomsRef.current]
+        : currentDirGeom
+          ? splitGeometryAtWaypoints(currentDirGeom, wp.map(w => [w.coordinates.lng, w.coordinates.lat] as [number, number]))
+          : wp.slice(0, numLegs).map((w, i) => {
+              const next = wp[roundTrip && i === wp.length - 1 ? 0 : i + 1];
+              return [[w.coordinates.lng, w.coordinates.lat], [next.coordinates.lng, next.coordinates.lat]];
+            });
+
+      currentGeoms[legIndex] = result.coords;
+      setPerLegGeomsAndRef(currentGeoms);
+
+      // Rebuild full geometry
+      const allCoords = stitchLegCoords(currentGeoms.map(c => ({ coords: c })));
+      setDirectionsGeometry(allCoords as [number, number][]);
+
+      // Update leg distances and durations
+      setDirectionsLegDistances(prev => {
+        const updated = prev ? [...prev] : Array(numLegs).fill(0);
+        updated[legIndex] = result.distance;
+        return updated;
+      });
+      setDirectionsLegDurations(prev => {
+        const updated = prev ? [...prev] : Array(numLegs).fill(0);
+        updated[legIndex] = result.duration;
+        return updated;
+      });
+
+      // Update leg cache for the changed leg
+      const cache = [...legCacheRef.current];
+      while (cache.length < numLegs) cache.push({ key: '', coords: [], distance: 0, duration: 0 });
+      cache[legIndex] = { key: legCacheKey(from, to, newMode), coords: result.coords, distance: result.distance, duration: result.duration };
+      legCacheRef.current = cache;
+
+      // Update fingerprint to prevent the debounced effect from re-fetching
+      const modeStr = modes.join(',');
+      const wpStr = wp.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|');
+      lastDirectionsCoordsRef.current = `${wpStr}::${modeStr}::${roundTrip}::${waterwayProfileRef.current}`;
+    } catch (err: any) {
+      // Revert to straight line on failure — keep existing route intact
+      modes[legIndex] = 'straight';
+      setPerLegModesAndRef(modes);
+      setDirectionsWarnings(prev => [...prev, `Leg ${legIndex + 1} (${newMode}): ${err.message} — using straight line`]);
+    } finally {
+      setDirectionsLoading(false);
+    }
+
+  };
+
   // Fetch route from Mapbox Directions API
   // waypointIndices: when entries are interleaved, tracks which indices are actual waypoints for leg aggregation
   const fetchDirectionsRoute = async (
@@ -535,6 +866,10 @@ export function ExpeditionBuilderPage() {
     const abortController = new AbortController();
     directionsAbortRef.current = abortController;
 
+    // Read from refs to avoid stale closures
+    const roundTrip = isRoundTripRef.current;
+    const wpProfile = waterwayProfileRef.current;
+
     // Auto-timeout after 15 seconds to prevent hanging requests
     const timeoutId = setTimeout(() => abortController.abort(), 15000);
 
@@ -542,13 +877,15 @@ export function ExpeditionBuilderPage() {
     setDirectionsError(null);
 
     try {
-      // Trail routing — use our Valhalla proxy API instead of Mapbox
-      if (profile === 'trail') {
+      // Custom routing — trail (Valhalla) or waterway (OSM graph)
+      if (profile === 'trail' || profile === 'waterway') {
         const locations = points.map(w => ({ lat: w.coordinates.lat, lon: w.coordinates.lng }));
-        if (isRoundTrip && locations.length > 1) {
+        if (roundTrip && locations.length > 1) {
           locations.push({ ...locations[0] });
         }
-        const result = await routingApi.trail(locations);
+        const result = profile === 'trail'
+          ? await routingApi.trail(locations, { signal: abortController.signal })
+          : await routingApi.waterway(locations, wpProfile === 'paddle' ? 'canoe' : 'motorboat', { signal: abortController.signal });
 
         if (!abortController.signal.aborted) {
           setDirectionsGeometry(result.coordinates);
@@ -556,58 +893,36 @@ export function ExpeditionBuilderPage() {
           let legDistances = result.legDistances;
           let legDurations = result.legDurations;
 
-          // Aggregate legs between waypoint stops when entries are interleaved
           if (waypointIndices && waypointIndices.length >= 2) {
-            const aggDistances: number[] = [];
-            const aggDurations: number[] = [];
-            for (let i = 0; i < waypointIndices.length - 1; i++) {
-              let dist = 0;
-              let dur = 0;
-              for (let leg = waypointIndices[i]; leg < waypointIndices[i + 1]; leg++) {
-                dist += legDistances[leg] ?? 0;
-                dur += legDurations[leg] ?? 0;
-              }
-              aggDistances.push(dist);
-              aggDurations.push(dur);
-            }
-            legDistances = aggDistances;
-            legDurations = aggDurations;
+            const agg = aggregateLegs(legDistances, legDurations, waypointIndices);
+            legDistances = agg.distances;
+            legDurations = agg.durations;
           }
 
           setDirectionsLegDistances(legDistances);
           setDirectionsLegDurations(legDurations);
 
-          // Check snap distances
-          const warnings: string[] = [];
-          const SNAP_THRESHOLD_M = 1000;
-          const snapDists = result.snapDistances;
-          if (waypointIndices) {
-            waypointIndices.forEach((wpIdx, i) => {
-              if (wpIdx < snapDists.length && snapDists[wpIdx] > SNAP_THRESHOLD_M) {
-                const name = points[wpIdx]?.name || `Waypoint ${i + 1}`;
-                const distKm = snapDists[wpIdx] / 1000;
-                warnings.push(`${name} is ${formatDistance(distKm, 1)} from the nearest trail`);
-              }
-            });
+          // Store waterway flow direction data
+          if (profile === 'waterway') {
+            setWaterwayFlowDirection(result.flowDirection ?? null);
+            setWaterwayUpstreamFraction(result.upstreamFraction ?? null);
           } else {
-            const waypointCount = isRoundTrip ? snapDists.length - 1 : snapDists.length;
-            for (let i = 0; i < waypointCount && i < points.length; i++) {
-              if (snapDists[i] > SNAP_THRESHOLD_M) {
-                const name = points[i].name || `Waypoint ${i + 1}`;
-                const distKm = snapDists[i] / 1000;
-                warnings.push(`${name} is ${formatDistance(distKm, 1)} from the nearest trail`);
-              }
-            }
+            setWaterwayFlowDirection(null);
+            setWaterwayUpstreamFraction(null);
           }
-          setDirectionsWarnings(warnings);
+
+          // Check snap distances
+          const snapLabel = profile === 'trail' ? 'trail' : 'waterway';
+          const SNAP_THRESHOLD_M = profile === 'waterway' ? 2000 : 1000;
+          setDirectionsWarnings(buildSnapWarnings(result.snapDistances, points, waypointIndices, SNAP_THRESHOLD_M, snapLabel, roundTrip, formatDistance));
         }
 
-        return; // Trail routing handled — skip Mapbox flow below
+        return; // Custom routing handled — skip Mapbox flow below
       }
 
       // Build coordinate pairs, appending start if round trip
       const coords = points.map(w => [w.coordinates.lng, w.coordinates.lat] as [number, number]);
-      if (isRoundTrip && coords.length > 1) {
+      if (roundTrip && coords.length > 1) {
         coords.push(coords[0]);
       }
 
@@ -618,12 +933,13 @@ export function ExpeditionBuilderPage() {
       let allLegDurations: number[] = []; // seconds per leg
       // Collect snap distances (meters) for each input waypoint
       const snapDistances: number[] = [];
-      // Threshold: waypoints snapped more than 1km from input are flagged
-      const SNAP_THRESHOLD_M = 1000;
+      // Threshold: waypoints snapped more than 200m from input are flagged
+      const SNAP_THRESHOLD_M = 200;
 
       if (coords.length <= MAX_WAYPOINTS) {
         const coordString = coords.map(c => formatCoord(c[0], c[1])).join(';');
-        const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordString}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
+        const radiuses = coords.map(() => '200').join(';');
+        const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordString}?geometries=geojson&overview=full&radiuses=${radiuses}&access_token=${MAPBOX_TOKEN}`;
         const response = await fetch(url, { signal: abortController.signal });
         const data = await response.json();
 
@@ -646,7 +962,8 @@ export function ExpeditionBuilderPage() {
           if (chunk.length < 2) break;
 
           const coordString = chunk.map(c => formatCoord(c[0], c[1])).join(';');
-          const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordString}?geometries=geojson&overview=full&access_token=${MAPBOX_TOKEN}`;
+          const radiuses = chunk.map(() => '200').join(';');
+          const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordString}?geometries=geojson&overview=full&radiuses=${radiuses}&access_token=${MAPBOX_TOKEN}`;
           const response = await fetch(url, { signal: abortController.signal });
           const data = await response.json();
 
@@ -685,49 +1002,16 @@ export function ExpeditionBuilderPage() {
       if (!abortController.signal.aborted) {
         setDirectionsGeometry(allCoordinates);
 
-        // Aggregate legs between waypoint stops when entries are interleaved
         if (waypointIndices && waypointIndices.length >= 2) {
-          const aggDistances: number[] = [];
-          const aggDurations: number[] = [];
-          for (let i = 0; i < waypointIndices.length - 1; i++) {
-            let dist = 0;
-            let dur = 0;
-            for (let leg = waypointIndices[i]; leg < waypointIndices[i + 1]; leg++) {
-              dist += allLegDistances[leg] ?? 0;
-              dur += allLegDurations[leg] ?? 0;
-            }
-            aggDistances.push(dist);
-            aggDurations.push(dur);
-          }
-          allLegDistances = aggDistances;
-          allLegDurations = aggDurations;
+          const agg = aggregateLegs(allLegDistances, allLegDurations, waypointIndices);
+          allLegDistances = agg.distances;
+          allLegDurations = agg.durations;
         }
 
         setDirectionsLegDistances(allLegDistances);
         setDirectionsLegDurations(allLegDurations);
 
-        // Check for waypoints that were snapped far from their input location
-        const warnings: string[] = [];
-        if (waypointIndices) {
-          // Only warn about waypoints, not entries
-          waypointIndices.forEach((wpIdx, i) => {
-            if (wpIdx < snapDistances.length && snapDistances[wpIdx] > SNAP_THRESHOLD_M) {
-              const name = points[wpIdx]?.name || `Waypoint ${i + 1}`;
-              const distKm = snapDistances[wpIdx] / 1000;
-              warnings.push(`${name} is ${formatDistance(distKm, 1)} from the nearest ${profile} route`);
-            }
-          });
-        } else {
-          const waypointCount = isRoundTrip ? snapDistances.length - 1 : snapDistances.length;
-          for (let i = 0; i < waypointCount && i < points.length; i++) {
-            if (snapDistances[i] > SNAP_THRESHOLD_M) {
-              const name = points[i].name || `Waypoint ${i + 1}`;
-              const distKm = snapDistances[i] / 1000;
-              warnings.push(`${name} is ${formatDistance(distKm, 1)} from the nearest ${profile} route`);
-            }
-          }
-        }
-        setDirectionsWarnings(warnings);
+        setDirectionsWarnings(buildSnapWarnings(snapDistances, points, waypointIndices, SNAP_THRESHOLD_M, `${profile} route`, roundTrip, formatDistance));
       }
     } catch (err: any) {
       if (err.name === 'AbortError') {
@@ -740,6 +1024,8 @@ export function ExpeditionBuilderPage() {
           setDirectionsLegDurations(null);
           setDirectionsWarnings([]);
           setDirectionsLoading(false);
+          setWaterwayFlowDirection(null);
+          setWaterwayUpstreamFraction(null);
         }
         return;
       }
@@ -748,6 +1034,8 @@ export function ExpeditionBuilderPage() {
       setDirectionsLegDistances(null);
       setDirectionsLegDurations(null);
       setDirectionsWarnings([]);
+      setWaterwayFlowDirection(null);
+      setWaterwayUpstreamFraction(null);
     } finally {
       clearTimeout(timeoutId);
       if (!abortController.signal.aborted) {
@@ -806,8 +1094,8 @@ export function ExpeditionBuilderPage() {
           regions: expedition.region ? expedition.region.split(', ').map((r: string) => r.trim()).filter(Boolean) : [],
           description: expedition.description || '',
           category: expedition.category || '',
-          startDate: expedition.startDate ? new Date(expedition.startDate).toISOString().split('T')[0] : '',
-          endDate: expedition.endDate ? new Date(expedition.endDate).toISOString().split('T')[0] : '',
+          startDate: toDateString(expedition.startDate),
+          endDate: toDateString(expedition.endDate),
           visibility: expedition.visibility || (expedition.public !== false ? 'public' : 'private')
         });
 
@@ -844,7 +1132,23 @@ export function ExpeditionBuilderPage() {
 
         // Restore route mode from saved expedition
         if (expedition.routeMode && expedition.routeMode !== 'straight') {
-          setRouteMode(expedition.routeMode as RouteMode);
+          if (expedition.routeMode === 'mixed' && (expedition as any).routeLegModes) {
+            // Mixed mode — restore per-leg modes and set the first non-straight mode as base
+            const legModes = (expedition as any).routeLegModes as RouteMode[];
+            setPerLegModesAndRef(legModes);
+            const firstNonStraight = legModes.find(m => m !== 'straight') || 'walking';
+            setRouteMode(firstNonStraight);
+          } else {
+            setRouteMode(expedition.routeMode as RouteMode);
+            // Pre-fill perLegModes so the init effect doesn't resize them,
+            // which would change the fingerprint and trigger a re-fetch
+            if (expedition.waypoints && expedition.waypoints.length > 1) {
+              const numLegs = expedition.isRoundTrip
+                ? expedition.waypoints.length
+                : expedition.waypoints.length - 1;
+              setPerLegModesAndRef(Array(numLegs).fill(expedition.routeMode) as RouteMode[]);
+            }
+          }
         }
 
         // Restore current location selection
@@ -873,12 +1177,49 @@ export function ExpeditionBuilderPage() {
             type: 'standard' as const,
             coordinates: { lat: wp.lat || 0, lng: wp.lon || 0 },
             location: '', // Not in API response
-            date: wp.date ? new Date(wp.date).toISOString().split('T')[0] : '',
+            date: toDateString(wp.date),
             description: wp.description || '',
             entryIds: wp.entryIds || (wp.entryId ? [wp.entryId] : []),
           }));
-          originalWaypointIdsRef.current = transformedWaypoints.map(wp => wp.id);
           setWaypoints(updateDistances(transformedWaypoints));
+
+          // Restore saved route geometry so the map draws the route without
+          // re-fetching, and set the fingerprint so the directions effect
+          // sees a match and skips.
+          const savedGeom = (expedition as any).routeGeometry as number[][] | null;
+          if (savedGeom && savedGeom.length >= 2) {
+            setDirectionsGeometry(savedGeom as [number, number][]);
+
+            // Split saved geometry into per-leg segments
+            const wpLngLats = transformedWaypoints.map(w => [w.coordinates.lng, w.coordinates.lat] as [number, number]);
+            const isRT = !!expedition.isRoundTrip;
+            if (isRT && wpLngLats.length > 1) wpLngLats.push(wpLngLats[0]);
+            const legGeoms = splitGeometryAtWaypoints(savedGeom, wpLngLats);
+            setPerLegGeomsAndRef(legGeoms);
+
+            // Compute per-leg distances from geometry segments
+            const legDists = legGeoms.map(coords => {
+              let d = 0;
+              for (let j = 1; j < coords.length; j++) {
+                d += haversineFromLatLng(
+                  { lat: coords[j - 1][1], lng: coords[j - 1][0] },
+                  { lat: coords[j][1], lng: coords[j][0] },
+                );
+              }
+              return d;
+            });
+            setDirectionsLegDistances(legDists);
+          }
+
+          // Build fingerprint matching what the directions effect would compute
+          // Use locally-constructed values, not refs that may not have flushed yet
+          const restoredModes = perLegModesRef.current;
+          const modeStr = restoredModes.length > 0
+            ? restoredModes.join(',')
+            : (expedition.routeMode && expedition.routeMode !== 'straight' ? expedition.routeMode : 'straight');
+          lastDirectionsCoordsRef.current = transformedWaypoints
+            .map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
+            + `::${modeStr}::${!!expedition.isRoundTrip}::${waterwayProfileRef.current}`;
         }
 
         // Load entries (read-only context for builder)
@@ -889,7 +1230,7 @@ export function ExpeditionBuilderPage() {
               .map((e: any) => ({
                 id: e.id,
                 title: e.title,
-                date: e.date ? new Date(e.date).toISOString().split('T')[0] : '',
+                date: toDateString(e.date),
                 place: e.place || '',
                 coords: { lat: e.lat!, lng: e.lon! },
               }))
@@ -931,8 +1272,8 @@ export function ExpeditionBuilderPage() {
       regions: draft.region ? draft.region.split(', ').map((r: string) => r.trim()).filter(Boolean) : [],
       description: draft.description || '',
       category: draft.category || '',
-      startDate: draft.startDate ? new Date(draft.startDate).toISOString().split('T')[0] : '',
-      endDate: draft.endDate ? new Date(draft.endDate).toISOString().split('T')[0] : '',
+      startDate: toDateString(draft.startDate),
+      endDate: toDateString(draft.endDate),
       visibility: draft.visibility || 'public',
     });
     if (draft.tags?.length) setTags(draft.tags.join(', '));
@@ -948,7 +1289,23 @@ export function ExpeditionBuilderPage() {
     if (draft.notesVisibility) setNotesVisibility(draft.notesVisibility);
     if (draft.earlyAccessEnabled) setEarlyAccessEnabled(true);
     if (draft.isRoundTrip) setIsRoundTrip(true);
-    if (draft.routeMode && draft.routeMode !== 'straight') setRouteMode(draft.routeMode as RouteMode);
+    if (draft.routeMode && draft.routeMode !== 'straight') {
+      if (draft.routeMode === 'mixed' && draft.routeLegModes) {
+        const legModes = draft.routeLegModes as RouteMode[];
+        setPerLegModesAndRef(legModes);
+        const firstNonStraight = legModes.find((m: string) => m !== 'straight') || 'walking';
+        setRouteMode(firstNonStraight as RouteMode);
+      } else {
+        setRouteMode(draft.routeMode as RouteMode);
+        // Pre-fill perLegModes so the init effect doesn't resize them
+        if (draft.waypoints?.length > 1) {
+          const numLegs = draft.isRoundTrip
+            ? draft.waypoints.length
+            : draft.waypoints.length - 1;
+          setPerLegModesAndRef(Array(numLegs).fill(draft.routeMode) as RouteMode[]);
+        }
+      }
+    }
     if (draft.waypoints?.length > 0) {
       const transformed: Waypoint[] = draft.waypoints.map((wp: any, index: number) => ({
         id: String(wp.id),
@@ -962,20 +1319,39 @@ export function ExpeditionBuilderPage() {
         entryIds: [],
       }));
       setWaypoints(updateDistances(transformed));
+
+      // Restore saved geometry and set fingerprint to skip re-fetch
+      const savedGeom = draft.routeGeometry as number[][] | null;
+      if (savedGeom && savedGeom.length >= 2) {
+        setDirectionsGeometry(savedGeom as [number, number][]);
+        const wpLngLats = transformed.map(w => [w.coordinates.lng, w.coordinates.lat] as [number, number]);
+        const isRT = !!draft.isRoundTrip;
+        if (isRT && wpLngLats.length > 1) wpLngLats.push(wpLngLats[0]);
+        const legGeoms = splitGeometryAtWaypoints(savedGeom, wpLngLats);
+        setPerLegGeomsAndRef(legGeoms);
+      }
+      const restoredModes = perLegModesRef.current;
+      const modeStr = restoredModes.length > 0
+        ? restoredModes.join(',')
+        : (draft.routeMode && draft.routeMode !== 'straight' ? draft.routeMode : 'straight');
+      lastDirectionsCoordsRef.current = transformed
+        .map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
+        + `::${modeStr}::${!!draft.isRoundTrip}::${waterwayProfileRef.current}`;
     }
     if (draft.startDate && draft.endDate) {
       const start = new Date(draft.startDate);
       const end = new Date(draft.endDate);
-      const diffDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1; // inclusive
+      const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
       setExpectedDuration(diffDays.toString());
     }
     setShowDraftPrompt(false);
     setExistingDraft(null);
     // Set the content signature after loading so autosave doesn't immediately trigger
+    // Use ref to get the latest signature after React state has flushed
     setTimeout(() => {
-      lastSavedContentRef.current = getContentSignature();
+      lastSavedContentRef.current = getContentSignatureRef.current();
     }, 100);
-  }, [getContentSignature, updateDistances]);
+  }, [updateDistances]);
 
   // Handle "Start Fresh" — delete existing draft
   const handleStartFresh = useCallback(async () => {
@@ -1020,8 +1396,9 @@ export function ExpeditionBuilderPage() {
           isRoundTrip,
           category: expeditionData.category || undefined,
           region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
-          routeMode: routeMode !== 'straight' ? routeMode : null,
-          routeGeometry: routeMode !== 'straight' && directionsGeometry ? directionsGeometry : null,
+          routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return m !== 'straight' ? m : null; })(),
+          routeGeometry: perLegModes.some(m => m !== 'straight') && directionsGeometry ? directionsGeometry : null,
+          routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
           routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
           tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
         };
@@ -1084,9 +1461,7 @@ export function ExpeditionBuilderPage() {
                 entryId: item.entry.id,
               };
             });
-          if (wpPayload.length > 0) {
-            await expeditionApi.syncWaypoints(currentDraftId, wpPayload);
-          }
+          await expeditionApi.syncWaypoints(currentDraftId, wpPayload);
         }
 
         lastSavedContentRef.current = currentSignature;
@@ -1100,7 +1475,8 @@ export function ExpeditionBuilderPage() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [isEditMode, expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, earlyAccessEnabled, isRoundTrip, routeMode, directionsGeometry, tags, draftId, getContentSignature]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, earlyAccessEnabled, isRoundTrip, routeMode, tags, draftId, getContentSignature]);
 
   // Initialize map
   useEffect(() => {
@@ -1162,7 +1538,7 @@ export function ExpeditionBuilderPage() {
       // Shared helper: create and insert a waypoint
       const addWaypoint = (lat: number, lng: number, name: string, location: string) => {
         const newWaypoint: Waypoint = {
-          id: `waypoint-${Date.now()}`,
+          id: `waypoint-${crypto.randomUUID()}`,
           sequence: 0,
           name,
           type: 'standard',
@@ -1174,23 +1550,7 @@ export function ExpeditionBuilderPage() {
         };
 
         setWaypoints(prev => {
-          let all: Waypoint[];
-          if (prev.length < 2) {
-            all = [...prev, newWaypoint];
-          } else {
-            let bestSegIdx = 0;
-            let bestDistSq = Infinity;
-            for (let i = 0; i < prev.length - 1; i++) {
-              const { distSq } = projectToSegment(
-                { lat, lng },
-                prev[i].coordinates,
-                prev[i + 1].coordinates,
-              );
-              if (distSq < bestDistSq) { bestDistSq = distSq; bestSegIdx = i; }
-            }
-            const insertIdx = bestSegIdx + 1;
-            all = [...prev.slice(0, insertIdx), newWaypoint, ...prev.slice(insertIdx)];
-          }
+          const all = [...prev, newWaypoint];
           return updateDistances(all.map((w, i) => ({ ...w, sequence: i })));
         });
       };
@@ -1290,12 +1650,9 @@ export function ExpeditionBuilderPage() {
 
       // Add navigation control
       newMap.addControl(new mapboxgl.NavigationControl(), 'top-left');
+      newMap.addControl(new mapboxgl.ScaleControl({ maxWidth: 150, unit: 'metric' }), 'bottom-left');
 
       // Set map loaded when style is loaded
-      newMap.on('zoomend', () => {
-        setMapZoom(Math.round(newMap.getZoom()));
-      });
-
       newMap.on('load', () => {
         setMapLoaded(true);
 
@@ -1384,12 +1741,14 @@ export function ExpeditionBuilderPage() {
   // Update map style when theme or map layer changes
   useEffect(() => {
     if (!map.current || !mapLoaded) return;
+    let isMounted = true;
 
     setMapLoaded(false); // Will be set back to true when new style loads
     map.current.setStyle(getMapStyle(mapLayer, theme));
 
     // Wait for new style to load
     map.current.once('styledata', () => {
+      if (!isMounted) return;
       setMapLoaded(true);
 
       // Re-enable POI labels after style change
@@ -1405,6 +1764,8 @@ export function ExpeditionBuilderPage() {
         }
       }
     });
+
+    return () => { isMounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, mapLayer]);
 
@@ -1448,6 +1809,32 @@ export function ExpeditionBuilderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeFingerprint, directionsGeometry, routeMode]);
 
+  // Initialize/resize perLegModes when waypoint count changes — preserve existing leg assignments
+  useEffect(() => {
+    const numLegs = isRoundTrip ? waypoints.length : waypoints.length - 1;
+    if (numLegs <= 0) {
+      if (perLegModesRef.current.length > 0) {
+        setPerLegModesAndRef([]);
+        setPerLegGeomsAndRef([]);
+      }
+      return;
+    }
+    const existing = perLegModesRef.current;
+    if (existing.length !== numLegs) {
+      const defaultMode = (routeMode !== 'straight' ? routeMode : 'straight') as RouteMode;
+      const existingGeoms = perLegGeomsRef.current;
+      if (numLegs > existing.length) {
+        // Leg added (waypoint added or round trip toggled on) — preserve existing, append new
+        setPerLegModesAndRef([...existing, ...Array(numLegs - existing.length).fill(defaultMode)] as RouteMode[]);
+        setPerLegGeomsAndRef([...existingGeoms.slice(0, existing.length), ...Array(numLegs - existing.length).fill([])]);
+      } else {
+        // Leg removed (waypoint removed or round trip toggled off) — trim
+        setPerLegModesAndRef(existing.slice(0, numLegs));
+        setPerLegGeomsAndRef(existingGeoms.slice(0, numLegs));
+      }
+    }
+  }, [waypoints.length, isRoundTrip, routeMode, setPerLegModesAndRef, setPerLegGeomsAndRef]);
+
   // Debounced directions fetch when waypoints or route mode changes
   useEffect(() => {
     // Clear any pending timer
@@ -1456,8 +1843,12 @@ export function ExpeditionBuilderPage() {
       directionsTimerRef.current = null;
     }
 
-    // Reset directions state when switching to straight mode or too few waypoints
-    if (routeMode === 'straight' || waypoints.length < 2 || !mapLoaded) {
+    // Wait for map — return without clearing so restored geometry/fingerprint survive
+    if (!mapLoaded) return;
+
+    // Reset directions state when all legs are straight or too few waypoints
+    const hasNonStraightLeg = perLegModesRef.current.some(m => m !== 'straight');
+    if ((routeMode === 'straight' && !hasNonStraightLeg) || waypoints.length < 2) {
       lastDirectionsCoordsRef.current = '';
       setDirectionsGeometry(null);
       setDirectionsLegDistances(null);
@@ -1465,13 +1856,17 @@ export function ExpeditionBuilderPage() {
       setDirectionsError(null);
       setDirectionsWarnings([]);
       setDirectionsLoading(false);
+      setWaterwayFlowDirection(null);
+      setWaterwayUpstreamFraction(null);
+      setPerLegGeomsAndRef([]);
       return;
     }
 
-    // Build a fingerprint from coordinates + mode + roundTrip to detect actual route changes.
-    // This prevents re-fetching when only distances were updated by applyDirectionsDistances.
+    // Build fingerprint — include per-leg modes if set, else global mode
+    const currentModes = perLegModesRef.current;
+    const modeStr = currentModes.length > 0 ? currentModes.join(',') : routeMode;
     const fingerprint = waypoints.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
-      + `::${routeMode}::${isRoundTrip}`;
+      + `::${modeStr}::${isRoundTrip}::${waterwayProfile}`;
 
     if (fingerprint === lastDirectionsCoordsRef.current) {
       return; // Coordinates haven't changed, skip fetch
@@ -1481,18 +1876,28 @@ export function ExpeditionBuilderPage() {
     // on remount: strict mode runs cleanup (clears timer) then re-runs the effect,
     // but the ref already matches so it returns early and directions never load.
 
-    // Clear stale directions data so the applyDirectionsDistances effect
-    // doesn't re-apply old distances and trigger a waypoints update that
-    // would cancel our timer before it fires.
-    setDirectionsGeometry(null);
-    setDirectionsLegDistances(null);
-    setDirectionsLegDurations(null);
+    // Don't clear existing directions data — fetchMixedRoute reuses cached
+    // legs and only fetches new/changed ones. Existing leg data stays visible
+    // while the new leg is being fetched.
     setDirectionsWarnings([]);
-    setDirectionsLoading(true);
 
     directionsTimerRef.current = setTimeout(() => {
-      lastDirectionsCoordsRef.current = fingerprint;
-      fetchDirectionsRoute(waypoints, routeMode);
+      // Read current waypoints from ref to avoid stale closure
+      const currentWaypoints = waypointsRef.current;
+      if (currentWaypoints.length < 2) return;
+
+      // Recompute fingerprint with current data to ensure consistency
+      const latestModes = perLegModesRef.current;
+      const latestModeStr = latestModes.length > 0 ? latestModes.join(',') : routeMode;
+      const latestFingerprint = currentWaypoints.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
+        + `::${latestModeStr}::${isRoundTripRef.current}::${waterwayProfileRef.current}`;
+      lastDirectionsCoordsRef.current = latestFingerprint;
+
+      if (latestModes.length > 0) {
+        fetchMixedRoute(currentWaypoints, latestModes);
+      } else {
+        fetchDirectionsRoute(currentWaypoints, routeMode);
+      }
     }, 500);
 
     return () => {
@@ -1508,7 +1913,7 @@ export function ExpeditionBuilderPage() {
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waypoints, routeMode, isRoundTrip, mapLoaded]);
+  }, [waypoints, routeMode, isRoundTrip, mapLoaded, waterwayProfile]);
 
   // Apply directions distances when they arrive from the API.
   // IMPORTANT: Only depend on directionsLegDistances — NOT routeMode.
@@ -1565,7 +1970,7 @@ export function ExpeditionBuilderPage() {
         // Single waypoint — render normally
         const el = document.createElement('div');
         el.className = 'waypoint-marker';
-        el.style.cssText = 'cursor: pointer;';
+        el.style.cssText = 'cursor: grab;';
 
         const isStart = waypoint.id === startRouteItemId;
         const isEnd = waypoint.id === endRouteItemId;
@@ -1594,12 +1999,8 @@ export function ExpeditionBuilderPage() {
             </div>
           `;
         } else {
-          el.style.cssText += ` width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;`;
-          el.innerHTML = `
-            <div style="width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; transform: rotate(45deg); background: #616161; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2);">
-              <span style="transform: rotate(-45deg); color: white; font-size: 12px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${positionNumber}</span>
-            </div>
-          `;
+          el.style.cssText += ` width: 22px; height: 22px; border-radius: 50%; background: #616161; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center;`;
+          el.innerHTML = `<span style="color: white; font-size: 10px; font-weight: bold; line-height: 1; font-family: Jost, system-ui, sans-serif;">${positionNumber}</span>`;
         }
 
         el.addEventListener('click', (e) => {
@@ -1610,24 +2011,36 @@ export function ExpeditionBuilderPage() {
         const marker = new mapboxgl.Marker({
           element: el,
           anchor: 'center',
-          draggable: !isConverted,
+          draggable: true,
         })
           .setLngLat([waypoint.coordinates.lng, waypoint.coordinates.lat])
           .addTo(map.current!);
 
-        if (!isConverted) {
-          marker.on('dragend', () => {
-            const lngLat = marker.getLngLat();
-            setWaypoints(prev => {
-              const updated = prev.map(w =>
-                w.id === waypoint.id
-                  ? { ...w, coordinates: { lat: lngLat.lat, lng: lngLat.lng } }
-                  : w
-              );
-              return updateDistances(updated);
-            });
+        marker.on('dragend', () => {
+          const lngLat = marker.getLngLat();
+          setWaypoints(prev => {
+            const updated = prev.map(w =>
+              w.id === waypoint.id
+                ? { ...w, coordinates: { lat: lngLat.lat, lng: lngLat.lng } }
+                : w
+            );
+            return updateDistances(updated);
           });
-        }
+          // Also update linked entry coordinates via API
+          if (isConverted) {
+            for (const eid of waypoint.entryIds) {
+              const entry = expeditionEntries.find(e => e.id === eid);
+              if (entry) {
+                setExpeditionEntries(prev => prev.map(e =>
+                  e.id === eid ? { ...e, coords: { lat: lngLat.lat, lng: lngLat.lng } } : e
+                ));
+                entryApi.update(eid, { title: entry.title, lat: lngLat.lat, lon: lngLat.lng }).catch(() => {
+                  toast.error('Failed to save entry location');
+                });
+              }
+            }
+          }
+        });
 
         markers.current.push(marker);
       } else {
@@ -1685,10 +2098,12 @@ export function ExpeditionBuilderPage() {
 
       marker.on('dragend', () => {
         const lngLat = marker.getLngLat();
+        // Read latest entry data from ref to avoid stale closure
+        const currentEntry = expeditionEntriesRef.current.find(e => e.id === entry.id);
         setExpeditionEntries(prev => prev.map(e =>
           e.id === entry.id ? { ...e, coords: { lat: lngLat.lat, lng: lngLat.lng } } : e
         ));
-        entryApi.update(entry.id, { title: entry.title, lat: lngLat.lat, lon: lngLat.lng }).catch(() => {
+        entryApi.update(entry.id, { title: currentEntry?.title ?? entry.title, lat: lngLat.lat, lon: lngLat.lng }).catch(() => {
           toast.error('Failed to save entry location');
         });
       });
@@ -1706,8 +2121,12 @@ export function ExpeditionBuilderPage() {
           map.current.removeSource('completed-route');
         }
         if (map.current.getSource('route')) {
-          if (map.current.getLayer('route-line')) map.current.removeLayer('route-line');
-          if (map.current.getLayer('route-line-casing')) map.current.removeLayer('route-line-casing');
+          // Remove all possible mode-specific layers
+          const allLayerIds = ['route-arrows', 'route-line', 'route-line-casing',
+            ...Object.keys(ROUTE_MODE_STYLES).map(m => `route-line-${m}`)];
+          for (const id of allLayerIds) {
+            if (map.current.getLayer(id)) map.current.removeLayer(id);
+          }
           map.current.removeSource('route');
         }
       } catch {
@@ -1716,7 +2135,8 @@ export function ExpeditionBuilderPage() {
 
       // Build route coordinates from routeItems order (matches sidebar)
       const hasWaypointRoute = waypoints.length > 1;
-      const useDirections = hasWaypointRoute && routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0;
+      const hasAnyNonStraightLeg = perLegModes.some(m => m !== 'straight');
+      const useDirections = hasWaypointRoute && (routeMode !== 'straight' || hasAnyNonStraightLeg) && directionsGeometry && directionsGeometry.length > 0;
 
       let routeCoordinates: number[][] | null = null;
 
@@ -1752,40 +2172,96 @@ export function ExpeditionBuilderPage() {
       if (routeCoordinates && routeCoordinates.length >= 2) {
 
         try {
-          map.current.addSource('route', {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'LineString',
-                coordinates: routeCoordinates
-              }
+          // Build per-leg geometries for FeatureCollection rendering
+          const orderedWpCoords = waypoints.map(w => [w.coordinates.lng, w.coordinates.lat] as [number, number]);
+          let legGeometries: number[][][];
+
+          if (perLegGeometries.length > 0 && perLegModes.length > 0) {
+            // Mixed mode — use stored per-leg geometries
+            legGeometries = perLegGeometries;
+          } else if (useDirections && orderedWpCoords.length >= 2) {
+            // Uniform mode with directions — split at waypoint locations
+            const wpLngLats = [...orderedWpCoords];
+            if (isRoundTrip && wpLngLats.length > 1) wpLngLats.push(wpLngLats[0]);
+            legGeometries = splitGeometryAtWaypoints(routeCoordinates, wpLngLats);
+          } else {
+            // Straight line fallback — each leg is two points
+            legGeometries = [];
+            const pts = [...orderedWpCoords];
+            if (isRoundTrip && pts.length > 1) pts.push(pts[0]);
+            for (let i = 0; i < pts.length - 1; i++) {
+              legGeometries.push([pts[i], pts[i + 1]]);
             }
+          }
+
+          // Build GeoJSON FeatureCollection with per-leg mode properties
+          const features = legGeometries.map((coords, i) => {
+            const mode = perLegModes.length > 0 ? (perLegModes[i] || routeMode) : routeMode;
+            return {
+              type: 'Feature' as const,
+              properties: { legIndex: i, mode },
+              geometry: { type: 'LineString' as const, coordinates: coords },
+            };
           });
 
+          map.current.addSource('route', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection' as const, features },
+          });
+
+          // Casing layer (shared across all modes)
           map.current.addLayer({
             id: 'route-line-casing',
             type: 'line',
             source: 'route',
             paint: {
               'line-color': getLineCasingColor(mapLayer, theme),
-              'line-width': useDirections ? 8 : 7,
+              'line-width': 8,
               'line-opacity': 0.3,
             }
           });
-          const isTrail = routeMode === 'trail';
-          map.current.addLayer({
-            id: 'route-line',
-            type: 'line',
-            source: 'route',
-            paint: {
-              'line-color': isTrail ? '#598636' : (theme === 'dark' ? '#4676ac' : '#202020'),
-              'line-width': useDirections ? 4 : 3,
-              'line-opacity': 0.8,
-              ...(useDirections ? (isTrail ? { 'line-dasharray': [4, 2] } : {}) : { 'line-dasharray': [2, 2] })
-            }
-          });
+
+          // Add a line layer per unique mode present for correct dash styling
+          const uniqueModes = new Set(features.map(f => f.properties.mode));
+          for (const mode of uniqueModes) {
+            const style = ROUTE_MODE_STYLES[mode as RouteMode] || ROUTE_MODE_STYLES.straight;
+            map.current.addLayer({
+              id: `route-line-${mode}`,
+              type: 'line',
+              source: 'route',
+              filter: ['==', ['get', 'mode'], mode],
+              paint: {
+                'line-color': style.color,
+                'line-width': style.width,
+                'line-opacity': 0.8,
+                ...(style.dash ? { 'line-dasharray': style.dash } : {}),
+              },
+            });
+          }
+
+          // Flow direction arrows for waterway legs
+          if (uniqueModes.has('waterway')) {
+            map.current.addLayer({
+              id: 'route-arrows',
+              type: 'symbol',
+              source: 'route',
+              filter: ['==', ['get', 'mode'], 'waterway'],
+              layout: {
+                'symbol-placement': 'line',
+                'symbol-spacing': 100,
+                'text-field': '▸',
+                'text-size': 18,
+                'text-keep-upright': false,
+                'text-rotation-alignment': 'map',
+                'text-allow-overlap': true,
+                'text-ignore-placement': true,
+              },
+              paint: {
+                'text-color': '#ac6d46',
+                'text-opacity': 0.7,
+              },
+            });
+          }
 
           // Completed route overlay
           let currentLocCoords: { lng: number; lat: number } | null = null;
@@ -1874,7 +2350,8 @@ export function ExpeditionBuilderPage() {
       entryMarkersRef.current = [];
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waypoints, mapLoaded, isRoundTrip, routeMode, directionsGeometry, directionsLoading, expeditionEntries, routeOrder]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [waypoints, mapLoaded, isRoundTrip, routeMode, directionsGeometry, expeditionEntries, routeOrder, perLegGeometries, perLegModes]);
 
   // Delete waypoint
   const handleDeleteWaypoint = (id: string) => {
@@ -1898,6 +2375,7 @@ export function ExpeditionBuilderPage() {
       sequence: index,
     }));
     setWaypoints(updateDistances(updated));
+    setRouteOrder(prev => prev.filter(rid => rid !== id));
     if (selectedWaypoint === id) setSelectedWaypoint(null);
   };
 
@@ -1966,13 +2444,61 @@ export function ExpeditionBuilderPage() {
     [updated[idx], updated[swapIdx]] = [updated[swapIdx], updated[idx]];
     setRouteOrder(updated);
 
-    // Also update waypoint array order to match route order for waypoints
-    const waypointIdsInOrder = updated.filter(id => waypoints.some(w => w.id === id));
-    const reorderedWaypoints = waypointIdsInOrder
+    // Reorder waypoints to match new routeOrder
+    const newWpOrder = updated.filter(id => waypoints.some(w => w.id === id));
+    const reorderedWaypoints = newWpOrder
       .map(id => waypoints.find(w => w.id === id)!)
       .map((w, i) => ({ ...w, sequence: i }));
     if (reorderedWaypoints.length === waypoints.length) {
       setWaypoints(updateDistances(reorderedWaypoints));
+    }
+
+    // Determine affected legs — treat entries and waypoints uniformly
+    const numLegs = isRoundTrip ? reorderedWaypoints.length : reorderedWaypoints.length - 1;
+    if (numLegs > 0) {
+      const affectedLegs = new Set<number>();
+      const wpIds = new Set(waypoints.map(w => w.id));
+
+      // For each swapped position, find which waypoint-based leg(s) it touches
+      // Use the post-swap order so we invalidate the correct legs
+      for (const pos of [idx, swapIdx]) {
+        let wpsBefore = 0;
+        for (let i = 0; i < pos; i++) {
+          if (wpIds.has(updated[i])) wpsBefore++;
+        }
+        if (wpIds.has(updated[pos])) {
+          // Item is a waypoint — affects legs before and after it
+          if (wpsBefore > 0) affectedLegs.add(wpsBefore - 1);
+          if (wpsBefore < numLegs) affectedLegs.add(wpsBefore);
+          if (isRoundTrip && wpsBefore === 0) affectedLegs.add(numLegs - 1);
+        } else {
+          // Item is an entry — affects the leg that spans over it
+          const legIdx = wpsBefore > 0 ? wpsBefore - 1 : 0;
+          if (legIdx < numLegs) affectedLegs.add(legIdx);
+        }
+      }
+
+      if (affectedLegs.size > 0) {
+        const currentModes = perLegModesRef.current.length >= numLegs
+          ? [...perLegModesRef.current]
+          : Array(numLegs).fill('straight' as RouteMode);
+        const currentGeoms = [...perLegGeomsRef.current];
+        const currentCache = [...legCacheRef.current];
+
+        for (const legIdx of affectedLegs) {
+          if (legIdx < currentModes.length) currentModes[legIdx] = 'straight';
+          if (legIdx < currentGeoms.length) currentGeoms[legIdx] = [];
+          if (legIdx < currentCache.length) currentCache[legIdx] = { key: '', coords: [], distance: 0, duration: 0 };
+        }
+
+        setPerLegModesAndRef(currentModes as RouteMode[]);
+        setPerLegGeomsAndRef(currentGeoms);
+        legCacheRef.current = currentCache;
+        setDirectionsGeometry(null);
+        setDirectionsLegDistances(null);
+        setDirectionsLegDurations(null);
+        lastDirectionsCoordsRef.current = '';
+      }
     }
 
     // Flash highlight
@@ -2015,11 +2541,11 @@ export function ExpeditionBuilderPage() {
 
   // Route search helpers
   const getRouteCoordinates = useCallback((): number[][] => {
-    if (routeMode !== 'straight' && directionsGeometry && directionsGeometry.length > 0) {
+    if (perLegModes.some(m => m !== 'straight') && directionsGeometry && directionsGeometry.length > 0) {
       return directionsGeometry;
     }
     return waypoints.map(w => [w.coordinates.lng, w.coordinates.lat]);
-  }, [routeMode, directionsGeometry, waypoints]);
+  }, [perLegModes, directionsGeometry, waypoints]);
 
   // All results from the API (unfiltered). Filtered subset goes into routeSearchResults.
   const allRouteResultsRef = useRef<POIResult[]>([]);
@@ -2100,7 +2626,7 @@ export function ExpeditionBuilderPage() {
 
   const handleRouteSearch = useCallback(async (categoryId: string) => {
     if (waypoints.length < 2) return;
-    if (routeMode !== 'straight' && directionsLoading) return;
+    if (perLegModes.some(m => m !== 'straight') && directionsLoading) return;
     setActiveCategory(categoryId);
     setRouteSearchLoading(true);
     setRouteSearchResults([]);
@@ -2219,12 +2745,6 @@ export function ExpeditionBuilderPage() {
     }
   }, []);
 
-  // Curated quick-pick categories relevant to expedition/exploration use cases
-  const QUICK_PICK_IDS = [
-    'restaurant', 'cafe', 'hotel', 'lodging', 'gas_station', 'grocery',
-    'supermarket', 'pharmacy', 'hospital', 'campground', 'parking',
-    'atm', 'post_office', 'drinking_water', 'laundry', 'bar',
-  ];
   const quickPickCategories = QUICK_PICK_IDS
     .map(id => allCategories.find(c => c.id === id))
     .filter((c): c is POICategory => c != null);
@@ -2235,7 +2755,14 @@ export function ExpeditionBuilderPage() {
     : quickPickCategories;
 
   // Calculate total statistics — use route-order distances (computed after routeItems)
-  const totalTravelTime = waypoints[waypoints.length - 1]?.cumulativeTravelTime || 0;
+  // For round trips, add the return leg travel time
+  const totalTravelTime = (() => {
+    const cumTime = waypoints[waypoints.length - 1]?.cumulativeTravelTime || 0;
+    if (!isRoundTrip || waypoints.length < 2) return cumTime;
+    const returnIdx = waypoints.length - 1;
+    const returnTime = directionsLegDurations?.[returnIdx] ?? 0;
+    return cumTime + returnTime;
+  })();
   const waypointCount = waypoints.length;
 
   const selectedWaypointData = waypoints.find(w => w.id === selectedWaypoint);
@@ -2254,7 +2781,11 @@ export function ExpeditionBuilderPage() {
   const dateSortedItems: RouteItem[] = [
     ...waypoints.map((wp, i) => ({ kind: 'waypoint' as const, id: wp.id, date: wp.date || '', waypoint: wp, wpIdx: i })),
     ...unlinkedEntryList.map(e => ({ kind: 'entry' as const, id: e.id, date: e.date || '', entry: e })),
-  ].sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime());
+  ].sort((a, b) => {
+    const aTime = a.date ? new Date(a.date).getTime() : Infinity;
+    const bTime = b.date ? new Date(b.date).getTime() : Infinity;
+    return aTime - bTime;
+  });
 
   // Sync routeOrder when items change (add/remove)
   useEffect(() => {
@@ -2265,16 +2796,18 @@ export function ExpeditionBuilderPage() {
 
     if (added.length > 0 || removed) {
       const cleaned = routeOrder.filter(id => currentIds.has(id));
-      // Insert new items at date-sorted positions
       for (const newId of added) {
         const newItem = dateSortedItems.find(r => r.id === newId);
         if (!newItem) continue;
         let insertIdx = cleaned.length;
-        for (let i = 0; i < cleaned.length; i++) {
-          const existing = dateSortedItems.find(r => r.id === cleaned[i]);
-          if (existing && newItem.date && existing.date && newItem.date < existing.date) {
-            insertIdx = i;
-            break;
+        // Entries: insert at date-sorted position; waypoints: append at end
+        if (newItem.kind === 'entry') {
+          for (let i = 0; i < cleaned.length; i++) {
+            const existing = dateSortedItems.find(r => r.id === cleaned[i]);
+            if (existing && newItem.date && existing.date && newItem.date < existing.date) {
+              insertIdx = i;
+              break;
+            }
           }
         }
         cleaned.splice(insertIdx, 0, newId);
@@ -2292,31 +2825,19 @@ export function ExpeditionBuilderPage() {
     ? routeOrder.map(id => routeItemsById.get(id)).filter((r): r is RouteItem => r !== undefined)
     : dateSortedItems;
 
-  // Compute distances based on routeItems display order (not waypoints array order)
-  const routeDistances = (() => {
-    const map = new Map<string, { distFromPrev: number; cumulative: number }>();
-    let cumulative = 0;
-    let prevCoords: { lat: number; lng: number } | null = null;
-    for (const item of routeItems) {
-      if (item.kind !== 'waypoint') continue;
-      const coords = item.waypoint.coordinates;
-      if (!prevCoords) {
-        map.set(item.id, { distFromPrev: 0, cumulative: 0 });
-      } else {
-        const dist = haversineFromLatLng(prevCoords, coords);
-        cumulative += dist;
-        map.set(item.id, { distFromPrev: dist, cumulative });
-      }
-      prevCoords = coords;
-    }
-    return map;
+  // Total distance — prefer cumulative from waypoints (includes API distances when available)
+  // For round trips, add the return leg (last waypoint → first waypoint)
+  const totalDistance = (() => {
+    const cumDist = waypoints[waypoints.length - 1]?.cumulativeDistance || 0;
+    if (!isRoundTrip || waypoints.length < 2) return cumDist;
+    const returnIdx = waypoints.length - 1;
+    const returnDist = directionsLegDistances?.[returnIdx]
+      ?? haversineFromLatLng(waypoints[returnIdx].coordinates, waypoints[0].coordinates);
+    return cumDist + returnDist;
   })();
 
-  // Total distance from route-order computation
-  const lastWpInRoute = [...routeDistances.values()].pop();
-  const totalDistance = lastWpInRoute?.cumulative || 0;
-
-  // Start/End IDs — first and last in the combined route list
+  // Derived values
+  const hasNonStraightLeg = perLegModes.some(m => m !== 'straight');
   const startRouteItemId = routeItems.length > 0 ? routeItems[0].id : null;
   const endRouteItemId = routeItems.length > 1 && !isRoundTrip ? routeItems[routeItems.length - 1].id : null;
 
@@ -2499,7 +3020,7 @@ export function ExpeditionBuilderPage() {
               <div className="text-xl md:text-2xl font-medium text-[#4676ac]">{formatDistance(totalDistance, 1)}</div>
               <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Total Distance</div>
             </div>
-            {totalTravelTime > 0 && routeMode !== 'straight' && (
+            {totalTravelTime > 0 && perLegModes.some(m => m !== 'straight') && (
               <div className="text-center">
                 <div className="text-xl md:text-2xl font-medium text-[#616161] dark:text-[#e5e5e5]">{formatTravelTime(totalTravelTime)}</div>
                 <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Travel Time</div>
@@ -2671,47 +3192,34 @@ export function ExpeditionBuilderPage() {
               </p>
             </div>
 
-            {/* Route Mode Toggle */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold dark:text-[#e5e5e5] whitespace-nowrap">ROUTE:</span>
-              <div className="flex border-2 border-[#202020] dark:border-[#616161]">
-                {([
-                  { value: 'straight', label: 'Straight Line', pro: false },
-                  { value: 'trail', label: 'Trail', pro: true },
-                  { value: 'walking', label: 'Walking', pro: true },
-                  { value: 'cycling', label: 'Cycling', pro: true },
-                  { value: 'driving', label: 'Driving', pro: true },
-                ] as { value: RouteMode; label: string; pro: boolean }[]).map(mode => {
-                  const disabled = waypoints.length < 2 || (mode.pro && !isPro);
-                  return (
-                    <button
-                      key={mode.value}
-                      onClick={() => !disabled && setRouteMode(mode.value)}
-                      disabled={disabled}
-                      className={`px-3 py-1.5 text-xs font-bold transition-all ${
-                        routeMode === mode.value
-                          ? 'bg-[#ac6d46] text-white'
-                          : 'bg-white dark:bg-[#2a2a2a] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#3a3a3a]'
-                      } ${disabled ? 'opacity-50 cursor-not-allowed' : ''} border-r border-[#202020] dark:border-[#616161] last:border-r-0`}
-                      title={mode.pro && !isPro ? 'Explorer Pro required' : undefined}
-                    >
-                      {mode.label}
-                      {mode.pro && !isPro && <Lock size={10} className="inline ml-1 -mt-0.5" />}
-                    </button>
-                  );
-                })}
+            {/* Route Type Legend */}
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold dark:text-[#e5e5e5] whitespace-nowrap">ROUTES:</span>
+                <div className="flex flex-wrap gap-x-3 gap-y-1">
+                  {Object.entries(ROUTE_MODE_STYLES).map(([mode, style]) => (
+                    <div key={mode} className="flex items-center gap-1">
+                      <svg width="16" height="4" className="flex-shrink-0">
+                        <line x1="0" y1="2" x2="16" y2="2" stroke={style.color} strokeWidth={2}
+                          strokeDasharray={style.dash ? style.dash.join(' ') : 'none'} />
+                      </svg>
+                      <span className="text-[10px] font-semibold" style={{ color: style.color }}>{style.label}</span>
+                      {mode !== 'straight' && !isPro && <Lock size={8} className="text-[#ac6d46]" />}
+                    </div>
+                  ))}
+                </div>
+                {directionsLoading && (
+                  <Loader2 size={16} className="animate-spin text-[#ac6d46]" />
+                )}
               </div>
-              {directionsLoading && (
-                <Loader2 size={16} className="animate-spin text-[#ac6d46]" />
-              )}
-              {!isPro && (
-                <span className="text-xs text-[#ac6d46] font-bold">PRO</span>
-              )}
+              <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-1">
+                Defaults to straight line — select a route leg in the sidebar to edit
+              </div>
             </div>
           </div>
 
           {/* Directions error message */}
-          {directionsError && routeMode !== 'straight' && (
+          {directionsError && perLegModes.some(m => m !== 'straight') && (
             <div className="mt-2 px-3 py-2 bg-[#fff8dc] dark:bg-[#3a2f1f] border border-[#ac6d46] text-xs text-[#ac6d46] font-bold flex items-center gap-2">
               <Info size={14} className="flex-shrink-0" />
               {directionsError} — showing straight-line fallback
@@ -2719,11 +3227,11 @@ export function ExpeditionBuilderPage() {
           )}
 
           {/* Inaccessible waypoint warnings */}
-          {directionsWarnings.length > 0 && routeMode !== 'straight' && (
+          {directionsWarnings.length > 0 && perLegModes.some(m => m !== 'straight') && (
             <div className="mt-2 px-3 py-2 bg-[#fff8dc] dark:bg-[#3a2f1f] border border-[#ac6d46] text-xs text-[#ac6d46]">
               <div className="font-bold flex items-center gap-2 mb-1">
                 <Info size={14} className="flex-shrink-0" />
-                {directionsWarnings.length === 1 ? '1 waypoint' : `${directionsWarnings.length} waypoints`} may be inaccessible by {routeMode}
+                {directionsWarnings.length === 1 ? '1 waypoint' : `${directionsWarnings.length} waypoints`} may be inaccessible
               </div>
               <ul className="ml-5 space-y-0.5 list-disc">
                 {directionsWarnings.map((w, i) => (
@@ -2743,20 +3251,41 @@ export function ExpeditionBuilderPage() {
               style={{ width: '100%', height: '100%' }}
             />
 
-            {/* Reset Map View Button */}
+            {/* Map Action Buttons */}
             {!mapError && waypoints.length > 0 && (
-              <button
-                onClick={handleResetMapView}
-                className="absolute top-4 right-4 z-10 p-2 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all"
-                aria-label="Reset map view to show all waypoints"
-                title="Reset view to show all waypoints"
-              >
-                <Locate size={20} />
-              </button>
+              <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+                <button
+                  onClick={handleResetMapView}
+                  className="p-2 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all"
+                  aria-label="Reset map view to show all waypoints"
+                  title="Reset view to show all waypoints"
+                >
+                  <Locate size={20} />
+                </button>
+                {perLegModes.some(m => m !== 'straight') && (
+                  <button
+                    onClick={() => {
+                      legCacheRef.current = [];
+                      const currentWp = waypointsRef.current;
+                      const modes = [...perLegModesRef.current];
+                      const modeStr = modes.length > 0 ? modes.join(',') : routeMode;
+                      lastDirectionsCoordsRef.current = currentWp.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
+                        + `::${modeStr}::${isRoundTripRef.current}::${waterwayProfileRef.current}`;
+                      fetchMixedRoute(currentWp, modes as RouteMode[]);
+                    }}
+                    disabled={directionsLoading}
+                    className="p-2 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all disabled:opacity-50"
+                    aria-label="Recalculate all routes"
+                    title="Recalculate all routes"
+                  >
+                    <RotateCw size={20} className={directionsLoading ? 'animate-spin' : ''} />
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Directions Loading Overlay */}
-            {directionsLoading && routeMode !== 'straight' && (
+            {directionsLoading && perLegModes.some(m => m !== 'straight') && (
               <div className="absolute bottom-4 left-4 z-10 px-3 py-2 bg-white/90 dark:bg-[#202020]/90 border-2 border-[#ac6d46] flex items-center gap-2">
                 <Loader2 size={14} className="animate-spin text-[#ac6d46]" />
                 <span className="text-xs font-bold text-[#ac6d46]">Calculating route...</span>
@@ -2825,7 +3354,7 @@ export function ExpeditionBuilderPage() {
                   <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4] text-left space-y-2 border-t border-[#b5bcc4] dark:border-[#616161] pt-4">
                     <div>• First click creates your <span className="text-[#ac6d46] font-bold">START POINT</span></div>
                     <div>• Additional clicks add waypoints along your route</div>
-                    <div>• Toggle route mode for road/trail distances</div>
+                    <div>• Set route type per leg in the sidebar route cards</div>
                     <div>• Configure details in the waypoints panel</div>
                   </div>
                 </div>
@@ -3018,30 +3547,24 @@ export function ExpeditionBuilderPage() {
                             <span>Sequence:</span>
                             <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{selectedWaypointData.sequence + 1} of {waypoints.length}</span>
                           </div>
-                          {(() => {
-                            const rd = routeDistances.get(selectedWaypointData.id);
-                            return rd && rd.distFromPrev > 0 ? (
+                          {(selectedWaypointData.distanceFromPrevious ?? 0) > 0 && (
                               <div className="flex justify-between">
                                 <span>Distance from Previous:</span>
-                                <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatDistance(rd.distFromPrev, 1)}</span>
+                                <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatDistance(selectedWaypointData.distanceFromPrevious!, 1)}</span>
                               </div>
-                            ) : null;
-                          })()}
+                          )}
                           {selectedWaypointData.travelTimeFromPrevious !== undefined && selectedWaypointData.travelTimeFromPrevious > 0 && (
                             <div className="flex justify-between">
                               <span>Travel Time from Previous:</span>
                               <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatTravelTime(selectedWaypointData.travelTimeFromPrevious)}</span>
                             </div>
                           )}
-                          {(() => {
-                            const rd = routeDistances.get(selectedWaypointData.id);
-                            return rd && rd.cumulative > 0 ? (
+                          {(selectedWaypointData.cumulativeDistance ?? 0) > 0 && (
                               <div className="flex justify-between">
                                 <span>Cumulative Distance:</span>
-                                <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatDistance(rd.cumulative, 1)}</span>
+                                <span className="text-[#202020] dark:text-[#e5e5e5] font-bold">{formatDistance(selectedWaypointData.cumulativeDistance!, 1)}</span>
                               </div>
-                            ) : null;
-                          })()}
+                          )}
                           {selectedWaypointData.cumulativeTravelTime !== undefined && selectedWaypointData.cumulativeTravelTime > 0 && (
                             <div className="flex justify-between">
                               <span>Cumulative Travel Time:</span>
@@ -3139,7 +3662,7 @@ export function ExpeditionBuilderPage() {
                   {totalDistance > 0 && (
                     <div className="text-[10px] text-[#4676ac] font-mono">
                       {formatDistance(totalDistance, 1)} total
-                      {totalTravelTime > 0 && routeMode !== 'straight' && (
+                      {totalTravelTime > 0 && perLegModes.some(m => m !== 'straight') && (
                         <> • {formatTravelTime(totalTravelTime)}</>
                       )}
                     </div>
@@ -3194,12 +3717,12 @@ export function ExpeditionBuilderPage() {
                           <button
                             key={cat.id}
                             onClick={() => handleRouteSearch(cat.id)}
-                            disabled={routeSearchLoading || (routeMode !== 'straight' && directionsLoading)}
+                            disabled={routeSearchLoading || (perLegModes.some(m => m !== 'straight') && directionsLoading)}
                             className={`px-2.5 py-1 text-[10px] font-bold border transition-all ${
                               activeCategory === cat.id
                                 ? 'bg-[#4676ac] text-white border-[#4676ac]'
                                 : 'bg-white dark:bg-[#2a2a2a] text-[#202020] dark:text-[#e5e5e5] border-[#b5bcc4] dark:border-[#616161] hover:border-[#4676ac] hover:text-[#4676ac]'
-                            } ${routeSearchLoading || (routeMode !== 'straight' && directionsLoading) ? 'opacity-50 cursor-wait' : ''}`}
+                            } ${routeSearchLoading || (perLegModes.some(m => m !== 'straight') && directionsLoading) ? 'opacity-50 cursor-wait' : ''}`}
                           >
                             {cat.name}
                           </button>
@@ -3340,23 +3863,37 @@ export function ExpeditionBuilderPage() {
                                   >
                                     {waypoint.entryIds.length > 1 ? waypoint.entryIds.length : positionNumber}
                                   </div>
-                                ) : (
-                                  <div className="flex items-center justify-center flex-shrink-0" style={{ width: isStart || isEnd ? '32px' : '28px', height: isStart || isEnd ? '32px' : '28px' }}>
+                                ) : isStart || isEnd ? (
+                                  <div className="flex items-center justify-center flex-shrink-0" style={{ width: '32px', height: '32px' }}>
                                     <div
                                       className="flex items-center justify-center text-white font-bold"
                                       style={{
-                                        width: isStart || isEnd ? '24px' : '20px',
-                                        height: isStart || isEnd ? '24px' : '20px',
+                                        width: '24px',
+                                        height: '24px',
                                         transform: 'rotate(45deg)',
-                                        backgroundColor: isStart ? '#ac6d46' : isEnd ? '#4676ac' : '#616161',
+                                        backgroundColor: isStart ? '#ac6d46' : '#4676ac',
                                         border: isStart && isRoundTrip ? '2px solid #4676ac' : '2px solid white',
                                         boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
                                       }}
                                     >
-                                      <span style={{ transform: 'rotate(-45deg)', fontSize: isStart || isEnd ? '12px' : '10px', lineHeight: '1' }}>
-                                        {isStart ? 'S' : isEnd ? 'E' : positionNumber}
+                                      <span style={{ transform: 'rotate(-45deg)', fontSize: '12px', lineHeight: '1' }}>
+                                        {isStart ? 'S' : 'E'}
                                       </span>
                                     </div>
+                                  </div>
+                                ) : (
+                                  <div
+                                    className="rounded-full flex items-center justify-center text-white font-bold flex-shrink-0"
+                                    style={{
+                                      width: '22px',
+                                      height: '22px',
+                                      fontSize: '10px',
+                                      backgroundColor: '#616161',
+                                      border: '2px solid white',
+                                      boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                                    }}
+                                  >
+                                    {positionNumber}
                                   </div>
                                 )}
 
@@ -3379,16 +3916,6 @@ export function ExpeditionBuilderPage() {
                                     {waypoint.date && (
                                       <div className="text-[#ac6d46]">{waypoint.date}</div>
                                     )}
-                                    {(() => {
-                                      const rd = routeDistances.get(waypoint.id);
-                                      return rd && rd.distFromPrev > 0 ? (
-                                        <div className="text-[#4676ac]">
-                                          +{formatDistance(rd.distFromPrev, 1)}
-                                          {waypoint.travelTimeFromPrevious ? ` (${formatTravelTime(waypoint.travelTimeFromPrevious)})` : ''}
-                                          <> • {formatDistance(rd.cumulative, 1)} total</>
-                                        </div>
-                                      ) : null;
-                                    })()}
                                   </div>
                                 </div>
 
@@ -3405,7 +3932,125 @@ export function ExpeditionBuilderPage() {
                                 )}
                               </div>
                             </div>
-                            <div className="h-px bg-[#202020] dark:bg-[#616161]" />
+
+                            {/* Route Leg Card — shows route type between this item and the next in sidebar */}
+                            {(() => {
+                              // Determine visibility from SIDEBAR position, not waypoints-array index
+                              const isLastInSidebar = routeIdx === routeItems.length - 1;
+                              if (isLastInSidebar && !isRoundTrip) return <div className="h-px bg-[#202020] dark:bg-[#616161]" />;
+
+                              // Use route-order position for leg index, not waypoints-array index
+                              const wpRouteIdx = waypoints.findIndex(w => w.id === waypoint.id);
+                              const legIdx = wpRouteIdx >= 0 ? wpRouteIdx : wpIdx;
+                              const numLegs = isRoundTrip ? waypoints.length : waypoints.length - 1;
+                              const hasRoutingLeg = legIdx < numLegs;
+                              const legMode = hasRoutingLeg ? (perLegModes[legIdx] || 'straight') : 'straight';
+                              const legStyle = ROUTE_MODE_STYLES[legMode] || ROUTE_MODE_STYLES.straight;
+                              const legDur = hasRoutingLeg ? (directionsLegDurations?.[legIdx] ?? null) : null;
+                              const isLegExpanded = hasRoutingLeg && expandedLegCard === legIdx;
+
+                              // Use waypoint distances so leg + cumulative are consistent
+                              const isReturnLeg = isRoundTrip && legIdx === waypoints.length - 1;
+                              let displayDist: number;
+                              let cumDist: number;
+                              if (isReturnLeg) {
+                                // Round-trip return leg — not stored on any waypoint
+                                const fallback = haversineFromLatLng(waypoint.coordinates, waypoints[0].coordinates);
+                                displayDist = directionsLegDistances?.[legIdx] ?? fallback;
+                                cumDist = (waypoint.cumulativeDistance ?? 0) + displayDist;
+                              } else {
+                                const nextWp = waypoints[legIdx + 1];
+                                displayDist = nextWp?.distanceFromPrevious ?? 0;
+                                cumDist = nextWp?.cumulativeDistance ?? 0;
+                              }
+
+                              return (
+                                <>
+                                  <div
+                                    onClick={() => hasRoutingLeg ? setExpandedLegCard(isLegExpanded ? null : legIdx) : undefined}
+                                    className={`px-4 py-1.5 bg-[#f5f5f5] dark:bg-[#1a1a1a] transition-all border-y border-[#b5bcc4]/50 dark:border-[#616161]/50 ${
+                                      hasRoutingLeg ? 'cursor-pointer hover:bg-[#eee] dark:hover:bg-[#252525]' : ''
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <svg width="20" height="4" className="flex-shrink-0">
+                                        <line x1="0" y1="2" x2="20" y2="2" stroke={legStyle.color} strokeWidth={2}
+                                          strokeDasharray={legStyle.dash ? legStyle.dash.join(' ') : 'none'} />
+                                      </svg>
+                                      <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: legStyle.color }}>
+                                        {legStyle.label}
+                                      </span>
+                                      {displayDist > 0 && (
+                                        <span className="text-[10px] text-[#4676ac] font-mono ml-auto">
+                                          {formatDistance(displayDist, 1)}
+                                          {legDur ? ` (${formatTravelTime(legDur)})` : ''}
+                                          {cumDist > 0 && <> · {formatDistance(cumDist, 1)} total</>}
+                                        </span>
+                                      )}
+                                      {directionsLoading && legMode !== 'straight' && (
+                                        <Loader2 size={10} className="animate-spin text-[#ac6d46] ml-auto" />
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {isLegExpanded && (
+                                    <div className="px-4 py-2 bg-white dark:bg-[#202020] border-b border-[#b5bcc4]/50 dark:border-[#616161]/50">
+                                      <div className="text-[10px] font-bold text-[#616161] dark:text-[#b5bcc4] uppercase tracking-wider mb-2">
+                                        LEG {legIdx + 1} ROUTE TYPE
+                                      </div>
+                                      <div className="grid grid-cols-3 gap-1.5">
+                                        {(['straight', 'walking', 'cycling', 'driving', 'trail', 'waterway'] as RouteMode[]).map(mode => {
+                                          const mStyle = ROUTE_MODE_STYLES[mode];
+                                          const isActive = legMode === mode;
+                                          const disabled = mode !== 'straight' && !isPro;
+                                          return (
+                                            <button
+                                              key={mode}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (!disabled && mode !== legMode) {
+                                                  handleLegModeChangeRef.current(wpIdx, mode);
+                                                  setExpandedLegCard(null);
+                                                }
+                                              }}
+                                              disabled={disabled}
+                                              className={`px-2 py-1.5 text-[10px] font-bold border-2 transition-all ${
+                                                disabled ? 'opacity-40 cursor-not-allowed' : ''
+                                              }`}
+                                              style={{
+                                                borderColor: mStyle.color,
+                                                backgroundColor: isActive ? mStyle.color : 'transparent',
+                                                color: isActive ? 'white' : mStyle.color,
+                                              }}
+                                            >
+                                              {mode === 'straight' ? 'Line' : mStyle.label}
+                                              {disabled && <Lock size={8} className="inline ml-0.5 -mt-0.5" />}
+                                            </button>
+                                          );
+                                        })}
+                                      </div>
+                                      {legMode === 'waterway' && (
+                                        <div className="mt-2 flex gap-1.5">
+                                          {(['paddle', 'motor'] as WaterwayProfile[]).map(p => (
+                                            <button
+                                              key={p}
+                                              onClick={() => setWaterwayProfile(p)}
+                                              className={`px-2 py-1 text-[10px] font-bold border transition-all ${
+                                                waterwayProfile === p
+                                                  ? 'bg-[#4676ac] text-white border-[#4676ac]'
+                                                  : 'text-[#4676ac] border-[#4676ac] hover:bg-[#4676ac]/10'
+                                              }`}
+                                            >
+                                              {p === 'paddle' ? 'Paddle' : 'Motor'}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
                           </div>
                         );
                       } else {
@@ -3533,13 +4178,13 @@ export function ExpeditionBuilderPage() {
               <div>
                 <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
                   CATEGORY <span className="text-[#ac6d46]">*</span>
-                  {/* isEditMode && <span className="ml-2 text-xs text-[#616161] dark:text-[#b5bcc4]">(LOCKED)</span> - DISABLED FOR TESTING */}
+                  {isEditMode && <span className="ml-2 text-xs text-[#616161] dark:text-[#b5bcc4]">(LOCKED)</span>}
                 </label>
                 <select
                   value={expeditionData.category}
                   onChange={(e) => setExpeditionData({ ...expeditionData, category: e.target.value })}
                   className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
-                  /* disabled={isEditMode} - DISABLED FOR TESTING */
+                  disabled={isEditMode}
                 >
                   <option value="">Select category...</option>
                   <option>Culture & Photography</option>
@@ -4002,7 +4647,7 @@ export function ExpeditionBuilderPage() {
 
         <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#616161] flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-            Expedition builder v1.0 • Route: {routeMode === 'straight' ? 'Haversine (straight-line)' : routeMode === 'trail' ? 'Valhalla (trail)' : `Mapbox Directions (${routeMode})`} • {waypoints.length} waypoints defined
+            Expedition builder v1.0 • Route: {(() => { const u = new Set(perLegModes); if (u.size > 1) return `Mixed (${u.size} modes)`; const m = perLegModes[0] || 'straight'; return m === 'straight' ? 'Straight-line' : m === 'trail' ? 'Trail' : m === 'waterway' ? `Waterway (${waterwayProfile})` : m.charAt(0).toUpperCase() + m.slice(1); })()} • {waypoints.length} waypoints defined
           </div>
           <Link
             href={isEditMode ? `/expedition/${expeditionId}` : '/select-expedition'}

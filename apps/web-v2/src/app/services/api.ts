@@ -188,7 +188,7 @@ export interface SessionUser {
   isPremium: boolean;
   stripeAccountConnected?: boolean;
   createdAt?: string;
-  activeExpedition?: { id: number; publicId: string; title: string } | null;
+  activeExpedition?: { id: number; publicId: string; title: string; status?: 'active' | 'planned' } | null;
 }
 
 export interface LoginPayload {
@@ -2344,11 +2344,15 @@ export interface TrailRouteResponse {
   totalDistance: number;
   totalDuration: number;
   snapDistances: number[];
+  flowDirection?: 'downstream' | 'upstream' | 'mixed';
+  upstreamFraction?: number;
 }
 
 export const routingApi = {
-  trail: (locations: Array<{ lat: number; lon: number }>) =>
-    api.post<TrailRouteResponse>('/routing/trail', { locations }),
+  trail: (locations: Array<{ lat: number; lon: number }>, options?: { signal?: AbortSignal }) =>
+    api.post<TrailRouteResponse>('/routing/trail', { locations }, options),
+  waterway: (locations: Array<{ lat: number; lon: number }>, profile: 'canoe' | 'motorboat', options?: { signal?: AbortSignal }) =>
+    api.post<TrailRouteResponse>('/routing/waterway', { locations, profile }, options),
 };
 
 export default api;
