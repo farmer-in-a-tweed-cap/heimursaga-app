@@ -2338,6 +2338,13 @@ export const contactApi = {
 };
 
 // Routing
+export interface RouteObstacle {
+  lat: number;
+  lon: number;
+  type: 'dam' | 'weir' | 'waterfall' | 'lock_gate' | 'rapids';
+  name: string | null;
+}
+
 export interface TrailRouteResponse {
   coordinates: [number, number][];
   legDistances: number[];
@@ -2347,6 +2354,7 @@ export interface TrailRouteResponse {
   snapDistances: number[];
   flowDirection?: 'downstream' | 'upstream' | 'mixed';
   upstreamFraction?: number;
+  obstacles?: RouteObstacle[];
 }
 
 export const routingApi = {

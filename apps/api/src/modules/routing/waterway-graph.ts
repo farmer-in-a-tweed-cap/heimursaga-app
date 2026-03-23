@@ -25,9 +25,18 @@ export interface GraphEdge {
   motorboatAllowed: boolean;
 }
 
+export interface WaterwayObstacle {
+  nodeId: number;
+  lat: number;
+  lon: number;
+  type: 'dam' | 'weir' | 'waterfall' | 'lock_gate' | 'rapids';
+  name: string | null;
+}
+
 export interface WaterwayGraph {
   nodes: Map<number, GraphNode>;
   adjacency: Map<number, GraphEdge[]>; // node ID → outgoing edges
+  obstacles: Map<number, WaterwayObstacle>; // barrier nodes keyed by OSM node ID
   builtAt: number;
 }
 
@@ -151,6 +160,8 @@ export async function fetchOverpassTile(
   way["waterway"~"river|canal|fairway"](${bbox});
   way["waterway"="stream"]["canoe"="yes"](${bbox});
   way["waterway"="stream"]["boat"="yes"](${bbox});
+  node["waterway"~"dam|weir|waterfall|lock_gate|rapids"](${bbox});
+  node["lock"="yes"](${bbox});
 );
 out body;
 >;
@@ -210,11 +221,31 @@ export function buildGraph(
 ): WaterwayGraph {
   const nodes = new Map<number, GraphNode>();
   const adjacency = new Map<number, GraphEdge[]>();
+  const obstacles = new Map<number, WaterwayObstacle>();
 
-  // Phase 1: Index all nodes by ID
+  // Phase 1: Index all nodes by ID and extract obstacle nodes
+  const OBSTACLE_TYPES = new Set(['dam', 'weir', 'waterfall', 'lock_gate', 'rapids']);
   for (const el of elements) {
     if (el.type === 'node' && el.lat !== undefined && el.lon !== undefined) {
       nodes.set(el.id, { id: el.id, lat: el.lat, lon: el.lon });
+
+      // Check if this node is a barrier/obstacle
+      if (el.tags) {
+        const wType = el.tags.waterway;
+        if (wType && OBSTACLE_TYPES.has(wType)) {
+          obstacles.set(el.id, {
+            nodeId: el.id, lat: el.lat, lon: el.lon,
+            type: wType as WaterwayObstacle['type'],
+            name: el.tags.name || null,
+          });
+        } else if (el.tags.lock === 'yes') {
+          obstacles.set(el.id, {
+            nodeId: el.id, lat: el.lat, lon: el.lon,
+            type: 'lock_gate',
+            name: el.tags.name || null,
+          });
+        }
+      }
     }
   }
 
@@ -377,7 +408,7 @@ export function buildGraph(
     }
   }
 
-  return { nodes, adjacency, builtAt: Date.now() };
+  return { nodes, adjacency, obstacles, builtAt: Date.now() };
 }
 
 /**

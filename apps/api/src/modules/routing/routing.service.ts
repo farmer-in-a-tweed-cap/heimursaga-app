@@ -7,6 +7,13 @@ interface RouteLocation {
   lon: number;
 }
 
+export interface RouteObstacle {
+  lat: number;
+  lon: number;
+  type: 'dam' | 'weir' | 'waterfall' | 'lock_gate' | 'rapids';
+  name: string | null;
+}
+
 export interface RouteResult {
   coordinates: [number, number][]; // [lng, lat][]
   legDistances: number[]; // km per leg
@@ -16,6 +23,7 @@ export interface RouteResult {
   snapDistances: number[]; // meters — how far each input was snapped
   flowDirection?: 'downstream' | 'upstream' | 'mixed';
   upstreamFraction?: number; // 0-1, fraction of route distance that is upstream
+  obstacles?: RouteObstacle[]; // waterway obstacles detected along route
 }
 
 /**

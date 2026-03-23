@@ -15,7 +15,7 @@ import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelector';
 import { toast } from 'sonner';
-import { expeditionApi, entryApi, uploadApi, routingApi } from '@/app/services/api';
+import { expeditionApi, entryApi, uploadApi, routingApi, type RouteObstacle } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
 import { GEO_REGION_GROUPS } from '@/app/utils/geoRegions';
 import { haversineFromLatLng } from '@/app/utils/haversine';
@@ -195,6 +195,7 @@ export function ExpeditionBuilderPage() {
   const lastDirectionsCoordsRef = useRef<string>(''); // Fingerprint to prevent re-fetch loops
   const skipFitBoundsRef = useRef(false); // Skip fitBounds after geocoder/POI waypoint placement
   const addWaypointRef = useRef<((lat: number, lng: number, name: string, location: string) => void) | null>(null);
+  const obstacleMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const routeSearchMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const routeSearchResultsRef = useRef<POIResult[]>([]);
   const perLegModesRef = useRef<RouteMode[]>([]);
@@ -244,6 +245,7 @@ export function ExpeditionBuilderPage() {
   const [directionsWarnings, setDirectionsWarnings] = useState<string[]>([]);
   const [waterwayFlowDirection, setWaterwayFlowDirection] = useState<'downstream' | 'upstream' | 'mixed' | null>(null);
   const [waterwayUpstreamFraction, setWaterwayUpstreamFraction] = useState<number | null>(null);
+  const [waterwayObstacles, setWaterwayObstacles] = useState<RouteObstacle[]>([]);
   const [perLegModes, setPerLegModes] = useState<RouteMode[]>([]); // empty = all legs use routeMode
   const [perLegGeometries, setPerLegGeometries] = useState<number[][][]>([]);
   const [expandedLegCard, setExpandedLegCard] = useState<number | null>(null);
@@ -646,7 +648,7 @@ export function ExpeditionBuilderPage() {
     to: { lat: number; lng: number },
     mode: RouteMode,
     signal?: AbortSignal,
-  ): Promise<{ coords: [number, number][]; distance: number; duration: number }> => {
+  ): Promise<{ coords: [number, number][]; distance: number; duration: number; obstacles?: RouteObstacle[] }> => {
     if (mode === 'straight') {
       const dist = haversineFromLatLng(from, to);
       return { coords: [[from.lng, from.lat], [to.lng, to.lat]], distance: dist, duration: 0 };
@@ -658,7 +660,7 @@ export function ExpeditionBuilderPage() {
     if (mode === 'waterway') {
       const profile = waterwayProfileRef.current === 'paddle' ? 'canoe' as const : 'motorboat' as const;
       const result = await routingApi.waterway([{ lat: from.lat, lon: from.lng }, { lat: to.lat, lon: to.lng }], profile, { signal });
-      return { coords: result.coordinates, distance: result.totalDistance, duration: result.totalDuration };
+      return { coords: result.coordinates, distance: result.totalDistance, duration: result.totalDuration, obstacles: result.obstacles };
     }
     // Mapbox Directions (walking, cycling, driving)
     const coordString = `${formatCoord(from.lng, from.lat)};${formatCoord(to.lng, to.lat)}`;
@@ -749,6 +751,9 @@ export function ExpeditionBuilderPage() {
       setDirectionsLegDurations(legResults.map(r => r.duration));
       setPerLegGeomsAndRef(legResults.map(r => r.coords));
       setDirectionsWarnings(warnings);
+      // Collect obstacles from all waterway legs
+      const allObstacles = legResults.flatMap(r => (r as any).obstacles ?? []);
+      setWaterwayObstacles(allObstacles);
       setWaterwayFlowDirection(null);
       setWaterwayUpstreamFraction(null);
     } catch (err: any) {
@@ -902,13 +907,15 @@ export function ExpeditionBuilderPage() {
           setDirectionsLegDistances(legDistances);
           setDirectionsLegDurations(legDurations);
 
-          // Store waterway flow direction data
+          // Store waterway flow direction and obstacle data
           if (profile === 'waterway') {
             setWaterwayFlowDirection(result.flowDirection ?? null);
             setWaterwayUpstreamFraction(result.upstreamFraction ?? null);
+            setWaterwayObstacles(result.obstacles ?? []);
           } else {
             setWaterwayFlowDirection(null);
             setWaterwayUpstreamFraction(null);
+            setWaterwayObstacles([]);
           }
 
           // Check snap distances
@@ -1858,6 +1865,7 @@ export function ExpeditionBuilderPage() {
       setDirectionsLoading(false);
       setWaterwayFlowDirection(null);
       setWaterwayUpstreamFraction(null);
+      setWaterwayObstacles([]);
       setPerLegGeomsAndRef([]);
       return;
     }
@@ -2263,6 +2271,28 @@ export function ExpeditionBuilderPage() {
             });
           }
 
+          // Obstacle markers for waterway routes
+          obstacleMarkersRef.current.forEach(m => m.remove());
+          obstacleMarkersRef.current = [];
+          if (waterwayObstacles.length > 0 && map.current) {
+            for (const obs of waterwayObstacles) {
+              const el = document.createElement('div');
+              Object.assign(el.style, {
+                width: '22px', height: '22px',
+                backgroundColor: '#994040', border: '2px solid white',
+                borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)', cursor: 'pointer',
+                fontSize: '12px', color: 'white', fontWeight: 'bold',
+              });
+              el.textContent = '!';
+              el.title = `${obs.type.replace('_', ' ')}${obs.name ? `: ${obs.name}` : ''}`;
+              const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+                .setLngLat([obs.lon, obs.lat])
+                .addTo(map.current);
+              obstacleMarkersRef.current.push(marker);
+            }
+          }
+
           // Completed route overlay
           let currentLocCoords: { lng: number; lat: number } | null = null;
           if (currentLocationSource === 'waypoint' && currentLocationId) {
@@ -2351,7 +2381,7 @@ export function ExpeditionBuilderPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [waypoints, mapLoaded, isRoundTrip, routeMode, directionsGeometry, expeditionEntries, routeOrder, perLegGeometries, perLegModes]);
+  }, [waypoints, mapLoaded, isRoundTrip, routeMode, directionsGeometry, expeditionEntries, routeOrder, perLegGeometries, perLegModes, waterwayObstacles]);
 
   // Delete waypoint
   const handleDeleteWaypoint = (id: string) => {
@@ -3238,6 +3268,27 @@ export function ExpeditionBuilderPage() {
                   <li key={i}>{w}</li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {/* Waterway obstacle warnings */}
+          {waterwayObstacles.length > 0 && (
+            <div className="mt-2 px-3 py-2 bg-[#fdf2f2] dark:bg-[#3a1f1f] border border-[#994040] text-xs text-[#994040]">
+              <div className="font-bold flex items-center gap-2 mb-1">
+                <AlertTriangle size={14} className="flex-shrink-0" />
+                {waterwayObstacles.length === 1 ? '1 obstacle' : `${waterwayObstacles.length} obstacles`} detected on route
+              </div>
+              <ul className="ml-5 space-y-0.5 list-disc">
+                {waterwayObstacles.map((obs, i) => (
+                  <li key={i}>
+                    {obs.type.replace('_', ' ').replace(/^\w/, c => c.toUpperCase())}
+                    {obs.name ? ` — ${obs.name}` : ''}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-1 text-[10px] opacity-75">
+                Portage may be required — consider splitting into water/walking legs
+              </div>
             </div>
           )}
         </div>

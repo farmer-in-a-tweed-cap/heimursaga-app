@@ -4,15 +4,15 @@
  * A* pathfinding on an OSM waterway graph with in-memory tile caching.
  * Supports canoe (bidirectional) and motorboat (downstream + canals) profiles.
  */
-
 import { Injectable } from '@nestjs/common';
 
 import { Logger } from '@/modules/logger';
 
-import type { RouteResult } from './routing.service';
+import type { RouteResult, RouteObstacle } from './routing.service';
 import {
   type GraphEdge,
   type WaterwayGraph,
+  type WaterwayObstacle,
   buildGraph,
   fetchOverpassTile,
   findNearestNode,
@@ -93,6 +93,7 @@ export class WaterwayRoutingService {
 
     // Route between each consecutive pair of locations
     let allCoordinates: [number, number][] = [];
+    const allNodeIds: number[] = [];
     const legDistances: number[] = [];
     const legDurations: number[] = [];
     const snapDistances: number[] = [];
@@ -152,7 +153,12 @@ export class WaterwayRoutingService {
       for (let j = 0; j < path.edgeIsUpstream.length; j++) {
         const fromNode = mergedGraph.nodes.get(path.nodeIds[j])!;
         const toNode = mergedGraph.nodes.get(path.nodeIds[j + 1])!;
-        const segKm = haversineKm(fromNode.lat, fromNode.lon, toNode.lat, toNode.lon);
+        const segKm = haversineKm(
+          fromNode.lat,
+          fromNode.lon,
+          toNode.lat,
+          toNode.lon,
+        );
         if (path.edgeIsUpstream[j]) {
           totalUpstreamKm += segKm;
         } else {
@@ -162,8 +168,10 @@ export class WaterwayRoutingService {
 
       if (allCoordinates.length > 0) {
         allCoordinates = allCoordinates.concat(coords.slice(1));
+        allNodeIds.push(...path.nodeIds.slice(1));
       } else {
         allCoordinates = coords;
+        allNodeIds.push(...path.nodeIds);
       }
 
       legDistances.push(path.distanceKm);
@@ -181,7 +189,30 @@ export class WaterwayRoutingService {
 
     const totalDistance = legDistances.reduce((a, b) => a + b, 0);
     const totalDuration = legDurations.reduce((a, b) => a + b, 0);
-    const upstreamFraction = totalDistance > 0 ? totalUpstreamKm / totalDistance : 0;
+    const upstreamFraction =
+      totalDistance > 0 ? totalUpstreamKm / totalDistance : 0;
+
+    // Detect obstacles along the computed route
+    const routeObstacles: RouteObstacle[] = [];
+    if (mergedGraph.obstacles.size > 0) {
+      const routeNodeSet = new Set(allNodeIds);
+      for (const [nodeId, obs] of mergedGraph.obstacles) {
+        if (routeNodeSet.has(nodeId)) {
+          routeObstacles.push({
+            lat: obs.lat,
+            lon: obs.lon,
+            type: obs.type,
+            name: obs.name,
+          });
+        }
+      }
+
+      if (routeObstacles.length > 0) {
+        this.logger.log(
+          `Waterway route: ${routeObstacles.length} obstacle(s) detected — ${routeObstacles.map(o => o.type).join(', ')}`,
+        );
+      }
+    }
 
     return {
       coordinates: allCoordinates,
@@ -190,8 +221,14 @@ export class WaterwayRoutingService {
       totalDistance,
       totalDuration,
       snapDistances,
-      flowDirection: upstreamFraction < 0.1 ? 'downstream' as const : upstreamFraction > 0.9 ? 'upstream' as const : 'mixed' as const,
+      flowDirection:
+        upstreamFraction < 0.1
+          ? ('downstream' as const)
+          : upstreamFraction > 0.9
+            ? ('upstream' as const)
+            : ('mixed' as const),
       upstreamFraction,
+      ...(routeObstacles.length > 0 ? { obstacles: routeObstacles } : {}),
     };
   }
 
@@ -203,7 +240,11 @@ export class WaterwayRoutingService {
     startId: number,
     goalId: number,
     profile: 'canoe' | 'motorboat',
-  ): { nodeIds: number[]; distanceKm: number; edgeIsUpstream: boolean[] } | null {
+  ): {
+    nodeIds: number[];
+    distanceKm: number;
+    edgeIsUpstream: boolean[];
+  } | null {
     const goalNode = graph.nodes.get(goalId);
     if (!goalNode) return null;
 
@@ -247,7 +288,12 @@ export class WaterwayRoutingService {
     };
 
     const startNode = graph.nodes.get(startId)!;
-    const h0 = haversineKm(startNode.lat, startNode.lon, goalNode.lat, goalNode.lon);
+    const h0 = haversineKm(
+      startNode.lat,
+      startNode.lon,
+      goalNode.lat,
+      goalNode.lon,
+    );
     gScore.set(startId, 0);
     realDist.set(startId, 0);
     push(h0, startId);
@@ -269,7 +315,11 @@ export class WaterwayRoutingService {
           c = cameFrom.get(c)!;
           path.unshift(c);
         }
-        return { nodeIds: path, distanceKm: realDist.get(goalId)!, edgeIsUpstream: pathUpstream };
+        return {
+          nodeIds: path,
+          distanceKm: realDist.get(goalId)!,
+          edgeIsUpstream: pathUpstream,
+        };
       }
 
       if (closed.has(current)) continue;
@@ -356,13 +406,16 @@ export class WaterwayRoutingService {
         fetchedAt: Date.now(),
       };
     } catch (err: any) {
-      this.logger.error(`Failed to fetch waterway tile [${key}]: ${err.message}`);
+      this.logger.error(
+        `Failed to fetch waterway tile [${key}]: ${err.message}`,
+      );
       // Return empty graphs so the route fails gracefully at the pathfinding stage
       return {
-        canoe: { nodes: new Map(), adjacency: new Map(), builtAt: Date.now() },
+        canoe: { nodes: new Map(), adjacency: new Map(), obstacles: new Map(), builtAt: Date.now() },
         motorboat: {
           nodes: new Map(),
           adjacency: new Map(),
+          obstacles: new Map(),
           builtAt: Date.now(),
         },
         fetchedAt: Date.now(),
@@ -377,6 +430,7 @@ export class WaterwayRoutingService {
     const merged: WaterwayGraph = {
       nodes: new Map(),
       adjacency: new Map(),
+      obstacles: new Map(),
       builtAt: Date.now(),
     };
 
@@ -387,6 +441,9 @@ export class WaterwayRoutingService {
       for (const [id, edges] of graph.adjacency) {
         const existing = merged.adjacency.get(id) || [];
         merged.adjacency.set(id, existing.concat(edges));
+      }
+      for (const [id, obstacle] of graph.obstacles) {
+        merged.obstacles.set(id, obstacle);
       }
     }
 
