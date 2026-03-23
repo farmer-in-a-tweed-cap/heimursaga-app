@@ -8,7 +8,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
 import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
-import { ROUTE_MODE_STYLES } from '@/app/utils/mapRouteDrawing';
+import { ROUTE_MODE_STYLES, drawPerLegRouteLines } from '@/app/utils/mapRouteDrawing';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
@@ -304,57 +304,69 @@ export function ExpeditionDetailPage() {
       const casingColor = getLineCasingColor(mapLayer, theme);
 
       if (routeCoordinates.length >= 2) {
-        map.addSource('route-line', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'LineString', coordinates: routeCoordinates },
-          },
-        });
-        map.addLayer({
-          id: 'route-line-casing',
-          type: 'line',
-          source: 'route-line',
-          paint: {
-            'line-color': casingColor,
-            'line-width': hasDirectionsRoute ? 8 : 7,
-            'line-opacity': 0.3,
-          },
-        });
-        map.addLayer({
-          id: 'route-line',
-          type: 'line',
-          source: 'route-line',
-          paint: {
-            'line-color': routeStyle.color,
-            'line-width': hasDirectionsRoute ? routeStyle.width : 3,
-            'line-opacity': 0.8,
-            ...(hasDirectionsRoute && routeStyle.dash ? { 'line-dasharray': routeStyle.dash } : !hasDirectionsRoute ? { 'line-dasharray': [2, 2] } : {}),
-          },
-        });
+        const isMixedRoute = apiExpedition?.routeMode === 'mixed' && apiExpedition?.routeLegModes?.length && hasDirectionsRoute;
 
-        // Flow direction arrows for waterway routes
-        if (isWaterwayRoute && hasDirectionsRoute && routeCoordinates.length >= 2) {
-          map.addLayer({
-            id: 'route-arrows',
-            type: 'symbol',
-            source: 'route-line',
-            layout: {
-              'symbol-placement': 'line',
-              'symbol-spacing': 100,
-              'text-field': '▸',
-              'text-size': 18,
-              'text-keep-upright': false,
-              'text-rotation-alignment': 'map',
-              'text-allow-overlap': true,
-              'text-ignore-placement': true,
-            },
-            paint: {
-              'text-color': '#ac6d46',
-              'text-opacity': 0.7,
+        if (isMixedRoute) {
+          drawPerLegRouteLines(map, {
+            routeCoordinates,
+            waypointLngLats: waypoints.map(w => [w.coords.lng, w.coords.lat] as [number, number]),
+            legModes: apiExpedition.routeLegModes!,
+            casingColor,
+            isRoundTrip: apiExpedition?.isRoundTrip,
+          });
+        } else {
+          map.addSource('route-line', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: { type: 'LineString', coordinates: routeCoordinates },
             },
           });
+          map.addLayer({
+            id: 'route-line-casing',
+            type: 'line',
+            source: 'route-line',
+            paint: {
+              'line-color': casingColor,
+              'line-width': hasDirectionsRoute ? 8 : 7,
+              'line-opacity': 0.3,
+            },
+          });
+          map.addLayer({
+            id: 'route-line',
+            type: 'line',
+            source: 'route-line',
+            paint: {
+              'line-color': routeStyle.color,
+              'line-width': hasDirectionsRoute ? routeStyle.width : 3,
+              'line-opacity': 0.8,
+              ...(hasDirectionsRoute && routeStyle.dash ? { 'line-dasharray': routeStyle.dash } : !hasDirectionsRoute ? { 'line-dasharray': [2, 2] } : {}),
+            },
+          });
+
+          // Flow direction arrows for waterway routes
+          if (isWaterwayRoute && hasDirectionsRoute) {
+            map.addLayer({
+              id: 'route-arrows',
+              type: 'symbol',
+              source: 'route-line',
+              layout: {
+                'symbol-placement': 'line',
+                'symbol-spacing': 100,
+                'text-field': '▸',
+                'text-size': 18,
+                'text-keep-upright': false,
+                'text-rotation-alignment': 'map',
+                'text-allow-overlap': true,
+                'text-ignore-placement': true,
+              },
+              paint: {
+                'text-color': '#ac6d46',
+                'text-opacity': 0.7,
+              },
+            });
+          }
         }
       }
 
@@ -656,57 +668,69 @@ export function ExpeditionDetailPage() {
       const casingColor = getLineCasingColor(mapLayer, theme);
 
       if (routeCoordinates.length >= 2) {
-        map.addSource('route-line', {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            properties: {},
-            geometry: { type: 'LineString', coordinates: routeCoordinates },
-          },
-        });
-        map.addLayer({
-          id: 'route-line-casing',
-          type: 'line',
-          source: 'route-line',
-          paint: {
-            'line-color': casingColor,
-            'line-width': hasDirectionsRoute ? 8 : 7,
-            'line-opacity': 0.3,
-          },
-        });
-        map.addLayer({
-          id: 'route-line',
-          type: 'line',
-          source: 'route-line',
-          paint: {
-            'line-color': routeStyle2.color,
-            'line-width': hasDirectionsRoute ? routeStyle2.width : 3,
-            'line-opacity': 0.8,
-            ...(hasDirectionsRoute && routeStyle2.dash ? { 'line-dasharray': routeStyle2.dash } : !hasDirectionsRoute ? { 'line-dasharray': [2, 2] } : {}),
-          },
-        });
+        const isMixedRoute2 = apiExpedition?.routeMode === 'mixed' && apiExpedition?.routeLegModes?.length && hasDirectionsRoute;
 
-        // Flow direction arrows for waterway routes
-        if (isWaterwayRoute2 && hasDirectionsRoute && routeCoordinates.length >= 2) {
-          map.addLayer({
-            id: 'route-arrows',
-            type: 'symbol',
-            source: 'route-line',
-            layout: {
-              'symbol-placement': 'line',
-              'symbol-spacing': 100,
-              'text-field': '▸',
-              'text-size': 18,
-              'text-keep-upright': false,
-              'text-rotation-alignment': 'map',
-              'text-allow-overlap': true,
-              'text-ignore-placement': true,
-            },
-            paint: {
-              'text-color': '#ac6d46',
-              'text-opacity': 0.7,
+        if (isMixedRoute2) {
+          drawPerLegRouteLines(map, {
+            routeCoordinates,
+            waypointLngLats: waypoints.map(w => [w.coords.lng, w.coords.lat] as [number, number]),
+            legModes: apiExpedition.routeLegModes!,
+            casingColor,
+            isRoundTrip,
+          });
+        } else {
+          map.addSource('route-line', {
+            type: 'geojson',
+            data: {
+              type: 'Feature',
+              properties: {},
+              geometry: { type: 'LineString', coordinates: routeCoordinates },
             },
           });
+          map.addLayer({
+            id: 'route-line-casing',
+            type: 'line',
+            source: 'route-line',
+            paint: {
+              'line-color': casingColor,
+              'line-width': hasDirectionsRoute ? 8 : 7,
+              'line-opacity': 0.3,
+            },
+          });
+          map.addLayer({
+            id: 'route-line',
+            type: 'line',
+            source: 'route-line',
+            paint: {
+              'line-color': routeStyle2.color,
+              'line-width': hasDirectionsRoute ? routeStyle2.width : 3,
+              'line-opacity': 0.8,
+              ...(hasDirectionsRoute && routeStyle2.dash ? { 'line-dasharray': routeStyle2.dash } : !hasDirectionsRoute ? { 'line-dasharray': [2, 2] } : {}),
+            },
+          });
+
+          // Flow direction arrows for waterway routes
+          if (isWaterwayRoute2 && hasDirectionsRoute) {
+            map.addLayer({
+              id: 'route-arrows',
+              type: 'symbol',
+              source: 'route-line',
+              layout: {
+                'symbol-placement': 'line',
+                'symbol-spacing': 100,
+                'text-field': '▸',
+                'text-size': 18,
+                'text-keep-upright': false,
+                'text-rotation-alignment': 'map',
+                'text-allow-overlap': true,
+                'text-ignore-placement': true,
+              },
+              paint: {
+                'text-color': '#ac6d46',
+                'text-opacity': 0.7,
+              },
+            });
+          }
         }
       }
 
@@ -1236,6 +1260,8 @@ export function ExpeditionDetailPage() {
       <MapModal
         isOpen={isMapModalOpen}
         expedition={expedition}
+        routeMode={apiExpedition?.routeMode}
+        routeLegModes={apiExpedition?.routeLegModes}
         mapContainerRef={mapContainerRef}
         isDebriefMode={isDebriefMode}
         debriefIndex={debriefIndex}

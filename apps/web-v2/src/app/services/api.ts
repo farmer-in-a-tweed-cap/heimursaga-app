@@ -761,6 +761,7 @@ export interface Expedition {
   isRoundTrip?: boolean;
   routeMode?: string;
   routeGeometry?: number[][];
+  routeLegModes?: string[];
   routeDistanceKm?: number;
   totalDistanceKm?: number;
   currentLocationSource?: 'waypoint' | 'entry';

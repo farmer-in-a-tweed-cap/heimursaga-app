@@ -4,12 +4,15 @@ import { X, Maximize2, ChevronLeft, ChevronRight, Bookmark, BookmarkCheck, Loade
 import { ClusterTimelinePopup } from '@/app/components/ClusterTimelinePopup';
 import type { DebriefStop, JournalEntryType, TransformedExpedition, CurrentLocationData } from '@/app/components/expedition-detail/types';
 import type { EntryCluster, PopupPosition, ClusteredMarkersResult } from '@/app/utils/mapClustering';
+import { ROUTE_MODE_STYLES } from '@/app/utils/mapRouteDrawing';
 import { formatShortDate } from '@/app/utils/dateFormat';
 import type { RefObject } from 'react';
 
 interface MapModalProps {
   isOpen: boolean;
   expedition: TransformedExpedition;
+  routeMode?: string;
+  routeLegModes?: string[];
   mapContainerRef: RefObject<HTMLDivElement | null>;
   isDebriefMode: boolean;
   debriefIndex: number;
@@ -42,6 +45,8 @@ interface MapModalProps {
 export function MapModal({
   isOpen,
   expedition,
+  routeMode,
+  routeLegModes,
   mapContainerRef,
   isDebriefMode,
   debriefIndex,
@@ -191,12 +196,39 @@ export function MapModal({
                 </div>
                 <span>Completed Route</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-6 flex items-center justify-center shrink-0">
-                  <div className="w-6 h-0.5 bg-[#202020] dark:bg-[#4676ac]"></div>
-                </div>
-                <span>Planned Route</span>
-              </div>
+              {(() => {
+                const modes = routeLegModes && routeLegModes.length > 0
+                  ? [...new Set(routeLegModes)]
+                  : routeMode && routeMode !== 'straight' && routeMode !== 'mixed'
+                    ? [routeMode]
+                    : null;
+
+                if (modes) {
+                  return modes.map(mode => {
+                    const style = ROUTE_MODE_STYLES[mode] || ROUTE_MODE_STYLES.straight;
+                    return (
+                      <div key={mode} className="flex items-center gap-2">
+                        <div className="w-6 flex items-center justify-center shrink-0">
+                          <svg width="24" height="4">
+                            <line x1="0" y1="2" x2="24" y2="2" stroke={style.color} strokeWidth={2}
+                              strokeDasharray={style.dash ? style.dash.join(' ') : undefined} />
+                          </svg>
+                        </div>
+                        <span style={{ color: style.color }}>{style.label}</span>
+                      </div>
+                    );
+                  });
+                }
+
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 flex items-center justify-center shrink-0">
+                      <div className="w-6 h-0.5 bg-[#202020] dark:bg-[#4676ac]"></div>
+                    </div>
+                    <span>Planned Route</span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}

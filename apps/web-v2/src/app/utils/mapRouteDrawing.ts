@@ -14,6 +14,131 @@ export const ROUTE_MODE_STYLES: Record<string, { color: string; label: string; d
 };
 
 // ---------------------------------------------------------------------------
+// splitGeometryAtWaypoints
+// ---------------------------------------------------------------------------
+
+/** Split a continuous route geometry at waypoint locations to get per-leg coordinate arrays. */
+export function splitGeometryAtWaypoints(
+  fullCoords: number[][],
+  waypointLngLats: [number, number][],
+): number[][][] {
+  if (waypointLngLats.length < 2 || fullCoords.length < 2) return [fullCoords];
+
+  const splitIndices: number[] = [0];
+  let searchFrom = 0;
+
+  for (let w = 1; w < waypointLngLats.length - 1; w++) {
+    const [wpLng, wpLat] = waypointLngLats[w];
+    let bestIdx = searchFrom;
+    let bestDist = Infinity;
+
+    for (let i = searchFrom; i < fullCoords.length; i++) {
+      const d = (fullCoords[i][0] - wpLng) ** 2 + (fullCoords[i][1] - wpLat) ** 2;
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+
+    splitIndices.push(bestIdx);
+    searchFrom = bestIdx;
+  }
+
+  splitIndices.push(fullCoords.length - 1);
+
+  const segments: number[][][] = [];
+  for (let i = 0; i < splitIndices.length - 1; i++) {
+    const seg = fullCoords.slice(splitIndices[i], splitIndices[i + 1] + 1);
+    // Ensure each segment has at least 2 points (Mapbox rejects single-point LineStrings)
+    if (seg.length < 2 && i > 0 && segments.length > 0) {
+      const prev = segments[segments.length - 1];
+      seg.unshift(prev[prev.length - 1]);
+    }
+    segments.push(seg);
+  }
+  return segments;
+}
+
+// ---------------------------------------------------------------------------
+// drawPerLegRouteLines
+// ---------------------------------------------------------------------------
+
+/**
+ * Draws route lines with per-leg mode coloring for mixed-mode expeditions.
+ * Splits the geometry at waypoint positions and draws each leg with its
+ * own color/style from ROUTE_MODE_STYLES.
+ */
+export function drawPerLegRouteLines(
+  map: mapboxgl.Map,
+  params: {
+    routeCoordinates: number[][];
+    waypointLngLats: [number, number][];
+    legModes: string[];
+    casingColor: string;
+    isRoundTrip?: boolean;
+  },
+): void {
+  const { routeCoordinates, waypointLngLats, legModes, casingColor, isRoundTrip } = params;
+  if (routeCoordinates.length < 2) return;
+
+  const wpLngLats = [...waypointLngLats];
+  if (isRoundTrip && wpLngLats.length > 1) wpLngLats.push(wpLngLats[0]);
+  const legGeometries = splitGeometryAtWaypoints(routeCoordinates, wpLngLats);
+
+  const features = legGeometries.map((coords, i) => ({
+    type: 'Feature' as const,
+    properties: { legIndex: i, mode: legModes[i] || 'straight' },
+    geometry: { type: 'LineString' as const, coordinates: coords },
+  }));
+
+  map.addSource('route-line', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection' as const, features },
+  });
+
+  map.addLayer({
+    id: 'route-line-casing',
+    type: 'line',
+    source: 'route-line',
+    paint: { 'line-color': casingColor, 'line-width': 8, 'line-opacity': 0.3 },
+  });
+
+  const uniqueModes = new Set(features.map(f => f.properties.mode));
+  for (const mode of uniqueModes) {
+    const style = ROUTE_MODE_STYLES[mode] || ROUTE_MODE_STYLES.straight;
+    map.addLayer({
+      id: `route-line-${mode}`,
+      type: 'line',
+      source: 'route-line',
+      filter: ['==', ['get', 'mode'], mode],
+      paint: {
+        'line-color': style.color,
+        'line-width': style.width,
+        'line-opacity': 0.8,
+        ...(style.dash ? { 'line-dasharray': style.dash } : {}),
+      },
+    });
+  }
+
+  if (uniqueModes.has('waterway')) {
+    map.addLayer({
+      id: 'route-arrows',
+      type: 'symbol',
+      source: 'route-line',
+      filter: ['==', ['get', 'mode'], 'waterway'],
+      layout: {
+        'symbol-placement': 'line',
+        'symbol-spacing': 100,
+        'text-field': '▸',
+        'text-size': 18,
+        'text-keep-upright': false,
+        'text-rotation-alignment': 'map',
+        'text-allow-overlap': true,
+        'text-ignore-placement': true,
+      },
+      paint: { 'text-color': '#ac6d46', 'text-opacity': 0.7 },
+    });
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
