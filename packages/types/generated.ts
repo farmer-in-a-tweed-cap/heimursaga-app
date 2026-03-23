@@ -49,7 +49,7 @@ export interface ISessionUser {
   isPremium: boolean;
   stripeAccountConnected?: boolean;
   createdAt?: Date;
-  activeExpedition?: { id: number; publicId: string; title: string } | null;
+  activeExpedition?: { id: number; publicId: string; title: string; status?: 'active' | 'planned' } | null;
 }
 
 export interface ISessionUserGetResponse extends ISessionUser {}
@@ -932,6 +932,7 @@ export interface ITripDetail {
   routeMode?: string;
   routeGeometry?: number[][];
   routeDistanceKm?: number;
+  routeLegModes?: string[];
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
@@ -1029,6 +1030,7 @@ export interface ITripCreatePayload {
   routeMode?: string;
   routeGeometry?: number[][];
   routeDistanceKm?: number;
+  routeLegModes?: string[];
 }
 
 export interface ITripCreateResponse {
@@ -1055,6 +1057,7 @@ export interface ITripUpdatePayload {
   routeMode?: string;
   routeGeometry?: number[][];
   routeDistanceKm?: number;
+  routeLegModes?: string[];
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';

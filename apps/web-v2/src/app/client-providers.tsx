@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { ThemeProvider } from '@/app/context/ThemeContext';
 import { DistanceUnitProvider } from '@/app/context/DistanceUnitContext';
 import { MapLayerProvider } from '@/app/context/MapLayerContext';
@@ -26,6 +26,11 @@ function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isHomePage = pathname === '/';
   const { user, isNewSignup, clearNewSignup, refreshUser } = useAuth();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
 
   return (
     <>

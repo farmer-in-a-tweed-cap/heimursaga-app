@@ -127,18 +127,15 @@ export class AuthService {
         }
       }
 
-      // Check for an active expedition owned by this user
-      const activeExpedition = await this.prisma.expedition.findFirst({
+      // Check for an active or planned expedition owned by this user
+      const currentExpedition = await this.prisma.expedition.findFirst({
         where: {
           author_id: userId,
-          status: 'active',
+          status: { in: ['active', 'planned'] },
           deleted_at: null,
         },
-        select: {
-          id: true,
-          public_id: true,
-          title: true,
-        },
+        select: { id: true, public_id: true, title: true, status: true },
+        orderBy: { status: 'asc' }, // 'active' sorts before 'planned'
       });
 
       return {
@@ -153,11 +150,12 @@ export class AuthService {
         isPremium,
         stripeAccountConnected: isStripeAccountConnected,
         createdAt,
-        activeExpedition: activeExpedition
+        activeExpedition: currentExpedition
           ? {
-              id: activeExpedition.id,
-              publicId: activeExpedition.public_id,
-              title: activeExpedition.title,
+              id: currentExpedition.id,
+              publicId: currentExpedition.public_id,
+              title: currentExpedition.title,
+              status: currentExpedition.status as 'active' | 'planned',
             }
           : null,
       };

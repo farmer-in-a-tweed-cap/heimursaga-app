@@ -7,16 +7,21 @@ export function ActiveExpeditionBanner() {
   const { user } = useAuth();
   if (!user?.activeExpedition) return null;
 
-  const { publicId, title } = user.activeExpedition;
+  const { publicId, title, status } = user.activeExpedition;
+  const isPlanned = status === 'planned';
 
   return (
     <Link
       href={`/expedition/${publicId}`}
-      className="block bg-[#ac6d46] text-white hover:bg-[#9a6140] transition-colors"
+      className={`block text-white transition-colors ${
+        isPlanned
+          ? 'bg-[#4676ac] hover:bg-[#365a87]'
+          : 'bg-[#ac6d46] hover:bg-[#9a6140]'
+      }`}
     >
       <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center text-sm font-mono gap-2">
         <span className="truncate min-w-0">
-          Active Expedition: <span className="font-bold">{title}</span>
+          {isPlanned ? 'Planned' : 'Active'} Expedition: <span className="font-bold">{title}</span>
         </span>
         <span className="shrink-0 opacity-75">&rarr;</span>
       </div>
