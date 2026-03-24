@@ -9,6 +9,10 @@
  * For motorboat routing, edges follow flow direction only.
  */
 
+// Bump this when the Overpass query or graph-building logic changes
+// to auto-invalidate cached tiles without a server restart.
+export const GRAPH_VERSION = 3;
+
 export interface GraphNode {
   id: number; // OSM node ID
   lat: number;
@@ -29,7 +33,7 @@ export interface WaterwayObstacle {
   nodeId: number;
   lat: number;
   lon: number;
-  type: 'dam' | 'weir' | 'waterfall' | 'lock_gate' | 'rapids';
+  type: 'dam' | 'weir' | 'waterfall' | 'lock_gate' | 'sluice_gate' | 'rapids';
   name: string | null;
 }
 
@@ -79,7 +83,7 @@ export function haversineKm(
 }
 
 // Snap tolerance for connecting nearby waterway endpoints (meters)
-const SNAP_TOLERANCE_M = 25;
+const SNAP_TOLERANCE_M = 75;
 
 interface OverpassElement {
   type: 'node' | 'way';
@@ -160,7 +164,9 @@ export async function fetchOverpassTile(
   way["waterway"~"river|canal|fairway"](${bbox});
   way["waterway"="stream"]["canoe"="yes"](${bbox});
   way["waterway"="stream"]["boat"="yes"](${bbox});
-  node["waterway"~"dam|weir|waterfall|lock_gate|rapids"](${bbox});
+  way["waterway"="stream"]["name"](${bbox});
+  node["waterway"~"dam|weir|waterfall|lock_gate|sluice_gate|rapids"](${bbox});
+  way["waterway"~"dam|weir|lock_gate|sluice_gate"](${bbox});
   node["lock"="yes"](${bbox});
 );
 out body;
@@ -171,15 +177,29 @@ out skel qt;
   const endpoints = [
     'https://overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
   ];
   const encodedQuery = `data=${encodeURIComponent(query)}`;
 
-  for (let attempt = 0; attempt < endpoints.length; attempt++) {
+  // Build attempt list: cycle endpoints with backoff on retries
+  const attempts: { endpoint: string; delayMs: number }[] = [
+    { endpoint: endpoints[0], delayMs: 0 },
+    { endpoint: endpoints[1], delayMs: 0 },
+    { endpoint: endpoints[2], delayMs: 0 },
+    { endpoint: endpoints[0], delayMs: 5000 }, // retry primary after backoff
+  ];
+
+  for (let i = 0; i < attempts.length; i++) {
+    const { endpoint, delayMs } = attempts[i];
+    if (delayMs > 0) {
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 120000);
 
     try {
-      const response = await fetch(endpoints[attempt], {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: encodedQuery,
@@ -187,20 +207,24 @@ out skel qt;
       });
 
       if (!response.ok) {
-        if (
-          (response.status === 504 || response.status === 429) &&
-          attempt < endpoints.length - 1
-        ) {
-          continue; // Try next endpoint
-        }
+        if (i < attempts.length - 1) continue;
         throw new Error(`Overpass API error: ${response.status}`);
+      }
+
+      // Guard against XML error pages returned with 200 status
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('json')) {
+        if (i < attempts.length - 1) continue;
+        throw new Error(
+          `Overpass API returned non-JSON response: ${contentType}`,
+        );
       }
 
       const data = await response.json();
       return data.elements || [];
     } catch (err: any) {
-      if (attempt < endpoints.length - 1 && err.name !== 'AbortError') {
-        continue; // Try next endpoint
+      if (i < attempts.length - 1 && err.name !== 'AbortError') {
+        continue;
       }
       throw err;
     } finally {
@@ -224,7 +248,14 @@ export function buildGraph(
   const obstacles = new Map<number, WaterwayObstacle>();
 
   // Phase 1: Index all nodes by ID and extract obstacle nodes
-  const OBSTACLE_TYPES = new Set(['dam', 'weir', 'waterfall', 'lock_gate', 'rapids']);
+  const OBSTACLE_TYPES = new Set([
+    'dam',
+    'weir',
+    'waterfall',
+    'lock_gate',
+    'sluice_gate',
+    'rapids',
+  ]);
   for (const el of elements) {
     if (el.type === 'node' && el.lat !== undefined && el.lon !== undefined) {
       nodes.set(el.id, { id: el.id, lat: el.lat, lon: el.lon });
@@ -234,18 +265,52 @@ export function buildGraph(
         const wType = el.tags.waterway;
         if (wType && OBSTACLE_TYPES.has(wType)) {
           obstacles.set(el.id, {
-            nodeId: el.id, lat: el.lat, lon: el.lon,
+            nodeId: el.id,
+            lat: el.lat,
+            lon: el.lon,
             type: wType as WaterwayObstacle['type'],
             name: el.tags.name || null,
           });
         } else if (el.tags.lock === 'yes') {
           obstacles.set(el.id, {
-            nodeId: el.id, lat: el.lat, lon: el.lon,
+            nodeId: el.id,
+            lat: el.lat,
+            lon: el.lon,
             type: 'lock_gate',
             name: el.tags.name || null,
           });
         }
       }
+    }
+  }
+
+  // Phase 1b: Extract way-type obstacles (dams, weirs mapped as lines/polygons)
+  for (const el of elements) {
+    if (el.type !== 'way' || !el.nodes || !el.tags) continue;
+    const wType = el.tags.waterway;
+    if (!wType || !OBSTACLE_TYPES.has(wType)) continue;
+
+    // Compute centroid from constituent nodes
+    let sumLat = 0,
+      sumLon = 0,
+      count = 0;
+    for (const nid of el.nodes) {
+      const n = nodes.get(nid);
+      if (n) {
+        sumLat += n.lat;
+        sumLon += n.lon;
+        count++;
+      }
+    }
+    if (count > 0) {
+      const centroidId = -el.id; // negative to avoid collision with node IDs
+      obstacles.set(centroidId, {
+        nodeId: centroidId,
+        lat: sumLat / count,
+        lon: sumLon / count,
+        type: wType as WaterwayObstacle['type'],
+        name: el.tags.name || null,
+      });
     }
   }
 
@@ -315,6 +380,57 @@ export function buildGraph(
         adjacency.get(toId)!.push(upstreamEdge);
       }
     }
+  }
+
+  // Phase 2b: Create portage edges across obstacle ways (dams, sluices, weirs, lock gates)
+  // These ways often replace the river way at that point, creating a graph gap.
+  // By adding a bidirectional edge between the first and last node of the obstacle way,
+  // we bridge the gap (representing portaging around the obstacle).
+  for (const el of elements) {
+    if (el.type !== 'way' || !el.nodes || !el.tags) continue;
+    const wType = el.tags.waterway;
+    if (!wType || !OBSTACLE_TYPES.has(wType)) continue;
+    if (el.nodes.length < 2) continue;
+
+    const firstId = el.nodes[0];
+    const lastId = el.nodes[el.nodes.length - 1];
+    const firstNode = nodes.get(firstId);
+    const lastNode = nodes.get(lastId);
+    if (!firstNode || !lastNode || firstId === lastId) continue;
+
+    const dist = haversineKm(
+      firstNode.lat,
+      firstNode.lon,
+      lastNode.lat,
+      lastNode.lon,
+    );
+
+    // Only bridge if the obstacle is reasonably sized (< 500m)
+    if (dist > 0.5) continue;
+
+    const portageFwd: GraphEdge = {
+      from: firstId,
+      to: lastId,
+      distanceKm: dist,
+      waterwayType: 'portage',
+      waterwayName: el.tags.name || null,
+      isUpstream: false,
+      motorboatAllowed: false,
+    };
+    const portageRev: GraphEdge = {
+      from: lastId,
+      to: firstId,
+      distanceKm: dist,
+      waterwayType: 'portage',
+      waterwayName: el.tags.name || null,
+      isUpstream: false,
+      motorboatAllowed: false,
+    };
+
+    if (!adjacency.has(firstId)) adjacency.set(firstId, []);
+    adjacency.get(firstId)!.push(portageFwd);
+    if (!adjacency.has(lastId)) adjacency.set(lastId, []);
+    adjacency.get(lastId)!.push(portageRev);
   }
 
   // Phase 3: Snap-tolerance merging for imperfect confluences

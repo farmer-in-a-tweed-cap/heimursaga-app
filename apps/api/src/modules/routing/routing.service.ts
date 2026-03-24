@@ -10,7 +10,7 @@ interface RouteLocation {
 export interface RouteObstacle {
   lat: number;
   lon: number;
-  type: 'dam' | 'weir' | 'waterfall' | 'lock_gate' | 'rapids';
+  type: 'dam' | 'weir' | 'waterfall' | 'lock_gate' | 'sluice_gate' | 'rapids';
   name: string | null;
 }
 

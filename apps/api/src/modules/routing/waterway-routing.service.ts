@@ -8,8 +8,9 @@ import { Injectable } from '@nestjs/common';
 
 import { Logger } from '@/modules/logger';
 
-import type { RouteResult, RouteObstacle } from './routing.service';
+import type { RouteObstacle, RouteResult } from './routing.service';
 import {
+  GRAPH_VERSION,
   type GraphEdge,
   type WaterwayGraph,
   type WaterwayObstacle,
@@ -25,7 +26,7 @@ import {
 const TILE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 // Max snap distance from input waypoint to nearest waterway node
-const MAX_SNAP_KM = 0.2;
+const MAX_SNAP_KM = 0.5;
 
 // A* cost multiplier for upstream paddling (canoe)
 const UPSTREAM_PENALTY = 1.4;
@@ -34,6 +35,8 @@ interface CachedTile {
   canoe: WaterwayGraph;
   motorboat: WaterwayGraph;
   fetchedAt: number;
+  graphVersion: number; // auto-invalidate when graph logic changes
+  failed?: boolean; // true if tile fetch failed (cached briefly for dedup, not long-term)
 }
 
 @Injectable()
@@ -70,11 +73,41 @@ export class WaterwayRoutingService {
       );
     }
 
-    // Fetch tiles sequentially to avoid Overpass rate limits
+    // Fetch tiles sequentially with delay to avoid Overpass rate limits
     const tileData: CachedTile[] = [];
-    for (const key of tiles) {
-      tileData.push(await this.getTile(key));
+    for (let i = 0; i < tiles.length; i++) {
+      if (i > 0) {
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      tileData.push(await this.getTile(tiles[i]));
     }
+
+    // Retry any failed tiles once (they may have been transient Overpass errors)
+    const failedTileIndices = tileData
+      .map((t, i) => (t.failed ? i : -1))
+      .filter((i) => i >= 0);
+    if (failedTileIndices.length > 0) {
+      this.logger.log(
+        `Retrying ${failedTileIndices.length} failed tile(s): ${failedTileIndices.map((i) => tiles[i]).join(', ')}`,
+      );
+      await new Promise((r) => setTimeout(r, 3000)); // backoff before retry
+      for (let fi = 0; fi < failedTileIndices.length; fi++) {
+        const idx = failedTileIndices[fi];
+        // Evict from cache so getTile actually re-fetches
+        this.tileCache.delete(tiles[idx]);
+        tileData[idx] = await this.getTile(tiles[idx]);
+        if (fi < failedTileIndices.length - 1) {
+          await new Promise((r) => setTimeout(r, 2000));
+        }
+      }
+    }
+
+    // Track which tiles still failed after retry
+    const failedTileKeys = new Set(
+      tileData
+        .map((t, i) => (t.failed ? tiles[i] : null))
+        .filter((k): k is string => k !== null),
+    );
 
     // Merge all tile graphs into one
     const mergedGraph = this.mergeGraphs(
@@ -82,6 +115,11 @@ export class WaterwayRoutingService {
     );
 
     if (mergedGraph.nodes.size === 0) {
+      if (failedTileKeys.size > 0) {
+        throw new Error(
+          'Waterway data could not be loaded for this area — the map data service may be temporarily unavailable. Please try again in a few minutes.',
+        );
+      }
       throw new Error(
         'No navigable waterways found in this area — the region may not have mapped waterway data',
       );
@@ -109,10 +147,27 @@ export class WaterwayRoutingService {
         MAX_SNAP_KM,
       );
       if (!nearest) {
+        // Log diagnostic info: find nearest node at any distance for debugging
+        const anyNearest = findNearestNode(mergedGraph, loc.lat, loc.lon, 50);
+        this.logger.warn(
+          `Waypoint ${i + 1} snap failed at [${loc.lat}, ${loc.lon}] (tile ${tileKey(loc.lat, loc.lon)}). ` +
+            `Nearest graph node: ${anyNearest ? `${(anyNearest.distanceKm * 1000).toFixed(0)}m away (node ${anyNearest.nodeId})` : 'none in 50km'}`,
+        );
+
+        // Check if the waypoint's tile was one that failed to fetch
+        const wpTileKey = tileKey(loc.lat, loc.lon);
+        if (failedTileKeys.has(wpTileKey)) {
+          throw new Error(
+            `Waterway data could not be loaded for the area around waypoint ${i + 1} — the map data service may be temporarily unavailable. Please try again in a few minutes.`,
+          );
+        }
         throw new Error(
           `No waterway found within ${MAX_SNAP_KM}km of waypoint ${i + 1} — it may be too far from any river or canal`,
         );
       }
+      this.logger.log(
+        `Waypoint ${i + 1} snapped to node ${nearest.nodeId} (${(nearest.distanceKm * 1000).toFixed(0)}m away)`,
+      );
       snapDistances.push(nearest.distanceKm * 1000); // convert to meters
     }
 
@@ -193,9 +248,13 @@ export class WaterwayRoutingService {
       totalDistance > 0 ? totalUpstreamKm / totalDistance : 0;
 
     // Detect obstacles along the computed route
+    // Two passes: exact node match, then proximity-based for obstacles near the route
     const routeObstacles: RouteObstacle[] = [];
     if (mergedGraph.obstacles.size > 0) {
       const routeNodeSet = new Set(allNodeIds);
+      const matchedObstacleIds = new Set<number>();
+
+      // Pass 1: exact node ID match (obstacle node is on the route)
       for (const [nodeId, obs] of mergedGraph.obstacles) {
         if (routeNodeSet.has(nodeId)) {
           routeObstacles.push({
@@ -204,14 +263,35 @@ export class WaterwayRoutingService {
             type: obs.type,
             name: obs.name,
           });
+          matchedObstacleIds.add(nodeId);
         }
       }
 
-      if (routeObstacles.length > 0) {
-        this.logger.log(
-          `Waterway route: ${routeObstacles.length} obstacle(s) detected — ${routeObstacles.map(o => o.type).join(', ')}`,
-        );
+      // Pass 2: proximity-based — obstacles within 100m of any route point
+      const OBSTACLE_PROXIMITY_KM = 0.1; // 100 meters
+      for (const [nodeId, obs] of mergedGraph.obstacles) {
+        if (matchedObstacleIds.has(nodeId)) continue;
+
+        for (const nid of allNodeIds) {
+          const routeNode = mergedGraph.nodes.get(nid);
+          if (!routeNode) continue;
+          const d = haversineKm(obs.lat, obs.lon, routeNode.lat, routeNode.lon);
+          if (d < OBSTACLE_PROXIMITY_KM) {
+            routeObstacles.push({
+              lat: obs.lat,
+              lon: obs.lon,
+              type: obs.type,
+              name: obs.name,
+            });
+            matchedObstacleIds.add(nodeId);
+            break;
+          }
+        }
       }
+
+      this.logger.log(
+        `Waterway obstacles: ${mergedGraph.obstacles.size} in area, ${routeObstacles.length} on/near route`,
+      );
     }
 
     return {
@@ -361,8 +441,12 @@ export class WaterwayRoutingService {
    */
   private async getTile(key: string): Promise<CachedTile> {
     const cached = this.tileCache.get(key);
-    if (cached && Date.now() - cached.fetchedAt < TILE_CACHE_TTL_MS) {
-      return cached;
+    if (cached && cached.graphVersion === GRAPH_VERSION) {
+      // Don't serve failed tiles from long-term cache — allow retry
+      const ttl = cached.failed ? 30_000 : TILE_CACHE_TTL_MS;
+      if (Date.now() - cached.fetchedAt < ttl) {
+        return cached;
+      }
     }
 
     // Prevent duplicate fetches for the same tile
@@ -404,21 +488,25 @@ export class WaterwayRoutingService {
         canoe: canoeGraph,
         motorboat: motorboatGraph,
         fetchedAt: Date.now(),
+        graphVersion: GRAPH_VERSION,
       };
     } catch (err: any) {
       this.logger.error(
         `Failed to fetch waterway tile [${key}]: ${err.message}`,
       );
-      // Return empty graphs so the route fails gracefully at the pathfinding stage
+      // Return empty graphs marked as failed — short TTL so they get retried
+      const emptyGraph: WaterwayGraph = {
+        nodes: new Map(),
+        adjacency: new Map(),
+        obstacles: new Map(),
+        builtAt: Date.now(),
+      };
       return {
-        canoe: { nodes: new Map(), adjacency: new Map(), obstacles: new Map(), builtAt: Date.now() },
-        motorboat: {
-          nodes: new Map(),
-          adjacency: new Map(),
-          obstacles: new Map(),
-          builtAt: Date.now(),
-        },
+        canoe: emptyGraph,
+        motorboat: emptyGraph,
         fetchedAt: Date.now(),
+        graphVersion: GRAPH_VERSION,
+        failed: true,
       };
     }
   }

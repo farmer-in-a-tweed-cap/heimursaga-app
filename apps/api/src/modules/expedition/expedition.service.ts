@@ -1143,7 +1143,9 @@ export class ExpeditionService {
         isRoundTrip: is_round_trip ?? false,
         routeMode: route_mode || undefined,
         routeGeometry: route_geometry ? JSON.parse(route_geometry) : undefined,
-        routeLegModes: route_leg_modes ? JSON.parse(route_leg_modes) : undefined,
+        routeLegModes: route_leg_modes
+          ? JSON.parse(route_leg_modes)
+          : undefined,
         routeDistanceKm: expedition.route_distance_km ?? undefined,
         currentLocationVisibility:
           (current_location_visibility as 'public' | 'sponsors' | 'private') ||
@@ -2479,6 +2481,10 @@ export class ExpeditionService {
                   lon: true,
                   date: true,
                   description: true,
+                  entries: {
+                    where: { deleted_at: null },
+                    select: { public_id: true },
+                  },
                 },
               },
             },
@@ -2521,6 +2527,8 @@ export class ExpeditionService {
             date: waypoint.date,
             description: waypoint.description,
             sequence,
+            entryIds:
+              (waypoint as any).entries?.map((e: any) => e.public_id) || [],
           })),
         })),
       };

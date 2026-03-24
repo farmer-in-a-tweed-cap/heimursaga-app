@@ -1,4 +1,11 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 
@@ -18,17 +25,23 @@ export class RoutingController {
   @Post('trail')
   @HttpCode(HttpStatus.OK)
   async getTrailRoute(@Body() body: TrailRouteDto): Promise<RouteResult> {
-    return this.routingService.getTrailRoute(body.locations);
+    try {
+      return await this.routingService.getTrailRoute(body.locations);
+    } catch (err: any) {
+      throw new BadRequestException(err.message || 'Trail routing failed');
+    }
   }
 
   @Post('waterway')
   @HttpCode(HttpStatus.OK)
-  async getWaterwayRoute(
-    @Body() body: WaterwayRouteDto,
-  ): Promise<RouteResult> {
-    return this.waterwayRoutingService.getWaterwayRoute(
-      body.locations,
-      body.profile,
-    );
+  async getWaterwayRoute(@Body() body: WaterwayRouteDto): Promise<RouteResult> {
+    try {
+      return await this.waterwayRoutingService.getWaterwayRoute(
+        body.locations,
+        body.profile,
+      );
+    } catch (err: any) {
+      throw new BadRequestException(err.message || 'Waterway routing failed');
+    }
   }
 }
