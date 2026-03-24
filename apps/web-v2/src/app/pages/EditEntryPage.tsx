@@ -84,11 +84,9 @@ export function EditEntryPage() {
     const endDate = fullExpedition?.endDate ? fullExpedition.endDate.slice(0, 10) : null;
     const created = fullExpedition?.createdAt ? fullExpedition.createdAt.slice(0, 10) : todayLocal;
     const min = created <= todayLocal ? created : todayLocal;
-    // Max is the later of today and the expedition end date
+    // Max is today, or the expedition end date if completed and ended before today
     let max = todayLocal;
-    if (endDate && endDate > todayLocal) {
-      max = endDate;
-    } else if (fullExpedition?.status === 'completed' && endDate && endDate < todayLocal) {
+    if (fullExpedition?.status === 'completed' && endDate && endDate < todayLocal) {
       max = endDate;
     }
     return { dateMin: min, dateMax: max };
