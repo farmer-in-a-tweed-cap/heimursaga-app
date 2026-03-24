@@ -115,7 +115,6 @@ export const MONTHLY_TIER_PERKS: TierPerk[] = [
   { label: 'Name on sponsor wall', slots: [1, 2, 3] },
   { label: '24h early entry access', slots: [2, 3] },
   { label: '48h early entry access', slots: [3] },
-  { label: 'DM the explorer', slots: [3] },
   { label: 'Voice note updates', slots: [3] },
 ];
 
