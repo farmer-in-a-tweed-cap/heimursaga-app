@@ -852,6 +852,10 @@ export function SponsorshipPaymentPage() {
                       })}
                     </div>
 
+                    <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] -mt-3 mb-4">
+                      Monthly perks apply to this explorer&apos;s current and all future expeditions while your sponsorship is active.
+                    </div>
+
                   </>
                 )}
 
