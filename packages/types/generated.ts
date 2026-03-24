@@ -352,6 +352,10 @@ export interface IPostDetail {
   // Quick sponsor stats
   quickSponsorsCount?: number;
   quickSponsorsTotal?: number;
+  // Early access
+  earlyAccess?: boolean;
+  publishedAt?: Date;
+  embargoLiftsAt?: Date;
 }
 
 export interface IPostGetAllResponse {
@@ -942,6 +946,7 @@ export interface ITripDetail {
   notesAccessThreshold?: number;
   notesVisibility?: 'public' | 'sponsor';
   earlyAccessEnabled?: boolean;
+  viewerEarlyAccessHours?: number;
   viewerCumulativeSponsored?: number;
   recurringStats?: {
     activeSponsors: number;

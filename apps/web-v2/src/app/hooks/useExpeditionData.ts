@@ -171,6 +171,7 @@ export function useExpeditionData(
       privacy: api.visibility || (api.public !== false ? 'public' : 'private'),
       commentsEnabled: true,
       imageUrl: api.coverImage || '',
+      earlyAccessEnabled: (api as any).earlyAccessEnabled ?? false,
     };
   }, [apiExpedition, expeditionId]);
 
@@ -277,6 +278,8 @@ export function useExpeditionData(
         isMilestone: entry.isMilestone || false,
         loggedDuringPlanning: (entry as any).metadata?.loggedDuringPlanning === true,
         createdAt: (entry as any).createdAt || '',
+        earlyAccess: (entry as any).earlyAccess || false,
+        embargoLiftsAt: (entry as any).embargoLiftsAt || undefined,
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [apiExpedition?.entries]);

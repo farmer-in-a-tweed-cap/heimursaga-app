@@ -21,7 +21,6 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const [overflowMenuOpen, setOverflowMenuOpen] = useState(false);
-  const [badgeLoaded, setBadgeLoaded] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -435,7 +434,7 @@ export function Header() {
               }}
             />
           </div>
-          <div className="relative" style={{ visibility: badgeLoaded ? 'visible' : 'hidden' }}>
+          <div className="relative">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[28px] h-[28px] bg-[#202020]"></div>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -444,7 +443,6 @@ export function Header() {
               className="h-20 w-auto px-6 relative z-10"
               width={80}
               height={80}
-              onLoad={() => setBadgeLoaded(true)}
             />
           </div>
           <div className="flex-1 relative h-[2px]">

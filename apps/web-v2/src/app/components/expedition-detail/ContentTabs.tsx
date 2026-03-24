@@ -212,6 +212,7 @@ export function ContentTabs({
                     visibility={entry.visibility}
                     isMilestone={entry.isMilestone}
                     isCurrent={expedition.currentLocationSource === 'entry' && expedition.currentLocationId === entry.id}
+                    earlyAccess={entry.earlyAccess}
                     onClick={() => router.push(`/entry/${entry.id}`)}
                   />
                 ))}
@@ -350,6 +351,7 @@ export function ContentTabs({
                           visibility={item.entry.visibility}
                           isMilestone={item.entry.isMilestone}
                           isCurrent={expedition.currentLocationSource === 'entry' && expedition.currentLocationId === item.entry.id}
+                          earlyAccess={item.entry.earlyAccess}
                           onClick={() => router.push(`/entry/${item.entry.id}`)}
                         />
                       ) : (

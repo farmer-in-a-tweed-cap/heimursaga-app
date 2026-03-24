@@ -1096,6 +1096,10 @@ export interface Entry {
   // Quick sponsor stats
   quickSponsorsCount?: number;
   quickSponsorsTotal?: number;
+  // Early access
+  earlyAccess?: boolean;
+  publishedAt?: string;
+  embargoLiftsAt?: string;
 }
 
 export interface EntryCreatePayload {

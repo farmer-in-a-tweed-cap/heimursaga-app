@@ -9,7 +9,7 @@ import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
 import { InlineLocationMap } from '@/app/components/InlineLocationMap';
 import { QuickSponsorButton } from '@/app/components/QuickSponsorButton';
-import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, Share2, ShieldAlert } from 'lucide-react';
+import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, Share2, ShieldAlert, Clock } from 'lucide-react';
 import { ReportModal } from '@/app/components/ReportModal';
 import { toast } from 'sonner';
 import { entryApi, commentApi, explorerApi, type Entry, type Comment } from '@/app/services/api';
@@ -314,7 +314,7 @@ export function JournalEntryPage() {
       entryNumber: api.entryNumber || 1,
       title: api.title,
       date: api.date || api.createdAt || '',
-      publishedAt: api.createdAt || '',
+      publishedAt: api.publishedAt || api.createdAt || '',
       lastModified: api.updatedAt || api.createdAt || '',
 
       explorerId: author?.username || '',
@@ -377,6 +377,10 @@ export function JournalEntryPage() {
       // Quick sponsor
       quickSponsorsCount: api.quickSponsorsCount || 0,
       quickSponsorsTotal: api.quickSponsorsTotal || 0,
+
+      // Early access
+      earlyAccess: api.earlyAccess || false,
+      embargoLiftsAt: api.embargoLiftsAt || undefined,
     };
   };
 
@@ -493,6 +497,22 @@ export function JournalEntryPage() {
                     <span className="px-2 py-1 bg-[#4676ac] text-white text-xs rounded-full">SPONSORED</span>
                   )}
                 </div>
+
+                {/* Early Access Banner */}
+                {entry.earlyAccess && (
+                  <div className="border-2 border-[#4676ac] bg-[#4676ac]/10 px-4 py-3 mb-4 flex items-center gap-3">
+                    <Clock className="h-5 w-5 text-[#4676ac] shrink-0" />
+                    <div>
+                      <div className="text-sm font-bold text-[#4676ac]" style={{ fontFamily: 'Jost, system-ui, sans-serif', letterSpacing: '0.14em' }}>
+                        EARLY ACCESS
+                      </div>
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4]" style={{ fontFamily: 'Lora, serif' }}>
+                        You&apos;re viewing this entry before the public.
+                        {entry.embargoLiftsAt && ` Available to all readers on ${formatDateTime(entry.embargoLiftsAt)}.`}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Title */}
                 <h1 className="font-serif text-2xl lg:text-3xl font-bold mb-4 drop-shadow-lg" style={{ lineHeight: 1.15 }}>{entry.title}</h1>

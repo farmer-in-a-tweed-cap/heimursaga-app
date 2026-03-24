@@ -14,7 +14,7 @@ import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
-import { expeditionApi, explorerApi, type ExplorerProfile } from '@/app/services/api';
+import { expeditionApi, explorerApi, sponsorshipApi, type ExplorerProfile, type SponsorshipTierFull } from '@/app/services/api';
 import { ReportModal } from '@/app/components/ReportModal';
 import { formatDate } from '@/app/utils/dateFormat';
 import { formatCoords } from '@/app/utils/formatCoords';
@@ -101,9 +101,13 @@ export function ExpeditionDetailPage() {
 
   // Explorer profile data (for global stats in HeroBanner)
   const [explorerProfile, setExplorerProfile] = useState<ExplorerProfile | null>(null);
+  const [monthlyTiers, setMonthlyTiers] = useState<SponsorshipTierFull[]>([]);
   useEffect(() => {
     if (!expedition?.explorerId) return;
     explorerApi.getByUsername(expedition.explorerId).then(setExplorerProfile).catch(() => {});
+    sponsorshipApi.getExplorerTiers(expedition.explorerId)
+      .then(res => setMonthlyTiers((res.data || []).filter(t => t.type === 'MONTHLY')))
+      .catch(() => {});
   }, [expedition?.explorerId]);
 
   // Total raised = one-time sponsorships + recurring committed during expedition lifetime
@@ -1216,6 +1220,7 @@ export function ExpeditionDetailPage() {
           onShowManagementModal={() => setShowManagementModal(true)}
           sponsors={sponsors}
           onSponsorUpdate={handleSponsorUpdate}
+          monthlyTiers={monthlyTiers}
         />
       </div>
 

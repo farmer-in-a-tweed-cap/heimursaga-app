@@ -26,6 +26,8 @@ export type JournalEntryType = {
   loggedDuringPlanning?: boolean;
   createdAt?: string;
   timelinePosition?: number;
+  earlyAccess?: boolean;
+  embargoLiftsAt?: string;
 };
 
 export type DebriefStop = {
@@ -72,6 +74,7 @@ export type TransformedExpedition = {
   privacy: string;
   commentsEnabled: boolean;
   imageUrl: string;
+  earlyAccessEnabled?: boolean;
 };
 
 export type CurrentLocationData = {

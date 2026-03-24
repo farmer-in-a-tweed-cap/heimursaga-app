@@ -5,7 +5,8 @@ import { formatCurrency } from '@/app/utils/formatCurrency';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import type { TransformedExpedition, WaypointType, FundingStats, SponsorWithTotal } from '@/app/components/expedition-detail/types';
 import type { ExpeditionCondition } from '@/app/services/api';
-import { MONTHLY_TIER_SLOTS, getPerksForSlot } from '@repo/types/sponsorship-tiers';
+import { getPerksForSlot, getTierLabel } from '@repo/types/sponsorship-tiers';
+import type { SponsorshipTierFull } from '@/app/services/api';
 
 interface SidebarProps {
   expedition: TransformedExpedition;
@@ -25,6 +26,7 @@ interface SidebarProps {
   onShowManagementModal: () => void;
   sponsors: SponsorWithTotal[];
   onSponsorUpdate: () => void;
+  monthlyTiers: SponsorshipTierFull[];
 }
 
 function WeatherCard({
@@ -104,6 +106,7 @@ export function Sidebar({
   onShowManagementModal,
   sponsors,
   onSponsorUpdate,
+  monthlyTiers,
 }: SidebarProps) {
   const oneTimeSponsorsCount = new Set(
     sponsors.filter(s => s.type?.toLowerCase() !== 'subscription').map(s => s.user?.username)
@@ -277,25 +280,34 @@ export function Sidebar({
           </div>
 
           {/* Sponsor Tiers & Perks */}
+          {monthlyTiers.length > 0 && (
           <div className="mb-4">
             <div className="text-xs font-bold mb-2 text-[#202020] dark:text-[#e5e5e5] border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-3">
               MONTHLY TIERS
             </div>
-            {MONTHLY_TIER_SLOTS.map(tier => (
-              <div key={tier.slot} className="mb-2 text-xs">
-                <div className="font-bold text-[#4676ac]">
-                  {tier.label} <span className="font-normal text-[#616161] dark:text-[#b5bcc4]">${tier.minPrice}{tier.maxPrice ? `–$${tier.maxPrice}` : '+'}/mo</span>
-                </div>
-                <div className="ml-2 mt-0.5 space-y-0.5">
-                  {getPerksForSlot('MONTHLY', tier.slot).map((perk, i) => (
-                    <div key={i} className="text-[10px] text-[#616161] dark:text-[#b5bcc4] flex items-start gap-1">
-                      <span className="text-[#598636]">*</span> {perk}
+            {monthlyTiers
+              .sort((a, b) => (a.priority ?? 0) - (b.priority ?? 0))
+              .map(tier => {
+                const slot = tier.priority ?? 1;
+                const label = getTierLabel('MONTHLY', slot);
+                const perks = getPerksForSlot('MONTHLY', slot);
+                return (
+                  <div key={tier.id} className="mb-2 text-xs">
+                    <div className="font-bold text-[#4676ac]">
+                      {label} <span className="font-normal text-[#616161] dark:text-[#b5bcc4]">${formatCurrency(tier.price)}/mo</span>
                     </div>
-                  ))}
-                </div>
-              </div>
-            ))}
+                    <div className="ml-2 mt-0.5 space-y-0.5">
+                      {perks.map((perk, i) => (
+                        <div key={i} className="text-[10px] text-[#616161] dark:text-[#b5bcc4] flex items-start gap-1">
+                          <span className="text-[#598636]">*</span> {perk}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
           </div>
+          )}
 
           {/* Sponsor Button */}
           {!isOwner && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (

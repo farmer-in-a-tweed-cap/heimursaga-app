@@ -1158,6 +1158,7 @@ export class ExpeditionService {
         notesAccessThreshold: integerToDecimal(notes_access_threshold ?? 0),
         notesVisibility: (notes_visibility as 'public' | 'sponsor') || 'public',
         earlyAccessEnabled: early_access_enabled ?? false,
+        viewerEarlyAccessHours,
         viewerCumulativeSponsored: integerToDecimal(viewerCumulativeSponsored),
         entriesCount: entries.length,
         recurringStats: {
@@ -1237,6 +1238,9 @@ export class ExpeditionService {
                 visibility: effectiveVisibility,
                 isMilestone: entry.is_milestone || false,
                 earlyAccess: isEarlyAccess,
+                embargoLiftsAt: isEarlyAccess && entry.published_at
+                  ? new Date(new Date(entry.published_at).getTime() + 48 * 60 * 60 * 1000)
+                  : undefined,
                 metadata: entry.metadata || null,
                 createdAt: entry.created_at,
                 publishedAt: entry.published_at,

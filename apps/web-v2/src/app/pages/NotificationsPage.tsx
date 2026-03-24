@@ -165,6 +165,13 @@ function formatNotification(apiNotif: ApiNotification): { titleText: string; mes
           : 'logged a new entry',
         message: '',
       };
+    case 'new_entry_early_access':
+      return {
+        titleText: apiNotif.body
+          ? `logged a new entry (early access): "${apiNotif.body}"`
+          : 'logged a new entry (early access)',
+        message: 'You have early access to this entry as a sponsor.',
+      };
     case 'new_expedition':
       return {
         titleText: apiNotif.body
@@ -440,6 +447,7 @@ export function NotificationsPage() {
         return undefined;
 
       case 'new_entry':
+      case 'new_entry_early_access':
         if (metadata?.postId && metadata?.entryTitle) {
           return { type: 'entry', id: metadata.postId, title: metadata.entryTitle };
         }

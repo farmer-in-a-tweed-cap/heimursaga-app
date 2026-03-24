@@ -1,4 +1,4 @@
-import { MapPin, FileText, User, Calendar, Bookmark, EyeOff, Lock } from "lucide-react";
+import { MapPin, FileText, User, Calendar, Bookmark, EyeOff, Lock, Clock } from "lucide-react";
 import { formatDateWithOptionalTime } from "@/app/utils/dateFormat";
 
 interface EntryCardLandscapeProps {
@@ -14,6 +14,7 @@ interface EntryCardLandscapeProps {
   visibility?: 'public' | 'off-grid' | 'private';
   isMilestone?: boolean;
   isCurrent?: boolean;
+  earlyAccess?: boolean;
   onClick?: () => void;
   onUnbookmark?: () => void;
 }
@@ -30,6 +31,7 @@ export function EntryCardLandscape({
   visibility,
   isMilestone = false,
   isCurrent = false,
+  earlyAccess = false,
   onClick,
   onUnbookmark,
 }: EntryCardLandscapeProps) {
@@ -65,6 +67,12 @@ export function EntryCardLandscape({
               }`}>
                 {visibility === 'off-grid' ? <EyeOff className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
                 {visibility === 'off-grid' ? 'OFF-GRID' : 'PRIVATE'}
+              </div>
+            )}
+            {earlyAccess && (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold bg-[#4676ac] text-white rounded-full">
+                <Clock className="h-3 w-3" />
+                EARLY ACCESS
               </div>
             )}
           </div>

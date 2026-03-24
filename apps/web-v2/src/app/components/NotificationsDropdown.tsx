@@ -68,6 +68,10 @@ function formatNotification(apiNotif: ApiNotification): string {
       return apiNotif.body
         ? `${actor} logged a new entry: "${apiNotif.body}"`
         : `${actor} logged a new entry`;
+    case 'new_entry_early_access':
+      return apiNotif.body
+        ? `${actor} logged a new entry (early access): "${apiNotif.body}"`
+        : `${actor} logged a new entry (early access)`;
     case 'new_expedition':
       return apiNotif.body
         ? `${actor} started a new expedition: "${apiNotif.body}"`

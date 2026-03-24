@@ -13,7 +13,7 @@ import { ImagePlaceholder } from '@/components/ui/ImagePlaceholder';
 import { MetadataGrid } from '@/components/ui/MetadataGrid';
 import { SectionDivider } from '@/components/ui/SectionDivider';
 import { commentsApi, bookmarksApi, ApiError } from '@/services/api';
-import { Svg, Path } from 'react-native-svg';
+import { Svg, Path, Circle } from 'react-native-svg';
 import { QuickSponsorButton } from '@/components/ui/QuickSponsorButton';
 import { TopoBackground } from '@/components/ui/TopoBackground';
 import { mono, heading, colors as brandColors, borders } from '@/theme/tokens';
@@ -196,6 +196,22 @@ export default function EntryDetailScreen() {
             )}
           </View>
         </View>
+
+        {/* Early Access Banner */}
+        {entry.earlyAccess && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 12, backgroundColor: 'rgba(70, 118, 172, 0.1)', borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
+            <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#4676ac" strokeWidth={2}>
+              <Circle cx={12} cy={12} r={10} />
+              <Path d="M12 6v6l4 2" />
+            </Svg>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontFamily: 'Jost_700Bold', fontSize: 11, color: '#4676ac', letterSpacing: 1.5 }}>EARLY ACCESS</Text>
+              <Text style={{ fontFamily: 'Lora_400Regular', fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                You&apos;re viewing this entry before the public.
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Action bar */}
         <View style={[styles.actionBar, { borderTopColor: colors.border, borderBottomColor: colors.border, backgroundColor: colors.card }]}>

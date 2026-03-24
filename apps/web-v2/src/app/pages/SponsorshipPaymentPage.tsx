@@ -750,8 +750,10 @@ export function SponsorshipPaymentPage() {
                       <div className="font-bold text-sm mb-3 text-[#4676ac]">PERK THRESHOLDS</div>
                       <div className="space-y-3">
                         {ONE_TIME_TIER_SLOTS.map(tier => {
-                          const effectiveAmount = selectedAmount || (customAmount ? parseFloat(customAmount) : 0) || 0;
-                          const isActive = effectiveAmount >= tier.minPrice;
+                          const currentAmount = selectedAmount || (customAmount ? parseFloat(customAmount) : 0) || 0;
+                          const cumulative = expedition?.viewerCumulativeSponsored ?? 0;
+                          const projectedTotal = cumulative + currentAmount;
+                          const isActive = projectedTotal >= tier.minPrice;
                           const perks = getPerksForSlot('ONE_TIME', tier.slot);
                           return (
                             <div key={tier.slot} className={`p-3 border-2 transition-all ${

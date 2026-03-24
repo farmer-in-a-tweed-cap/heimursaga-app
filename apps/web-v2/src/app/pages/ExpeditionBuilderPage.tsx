@@ -4658,20 +4658,18 @@ export function ExpeditionBuilderPage() {
           {/* Early Entry Access - Pro only, requires sponsorships */}
           {isPro && sponsorshipsEnabled && (
             <div className="mt-6 border-2 border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-bold dark:text-[#e5e5e5]">EARLY ENTRY ACCESS</div>
-                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                    Qualifying sponsors see new journal entries before the public. Tier 2 sponsors get 24h early access, Tier 3 gets 48h.
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEarlyAccessEnabled(!earlyAccessEnabled)}
-                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${earlyAccessEnabled ? 'bg-[#598636]' : 'bg-[#b5bcc4]'}`}
-                >
-                  <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${earlyAccessEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                </button>
+              <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">EARLY ENTRY ACCESS</div>
+              <div className="flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  id="early-access-enabled"
+                  className="mt-1"
+                  checked={earlyAccessEnabled}
+                  onChange={(e) => setEarlyAccessEnabled(e.target.checked)}
+                />
+                <label htmlFor="early-access-enabled" className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                  Qualifying sponsors see new journal entries before the public. Tier 2 sponsors get 24h early access, Tier 3 gets 48h.
+                </label>
               </div>
             </div>
           )}

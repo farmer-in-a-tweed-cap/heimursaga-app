@@ -1,11 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { UserNotificationContext } from '@repo/types';
+import {
+  getEarlyAccessHoursForAmount,
+  getEarlyAccessHoursForTier,
+} from '@repo/types/sponsorship-tiers';
 
 import { EVENTS } from '@/modules/event';
 import { EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
+import { integerToDecimal } from '@/lib/formatter';
 
 import { IUserNotificationCreatePayload } from './notification.interface';
 
@@ -23,6 +28,8 @@ export class FollowerNotificationListener {
     entryInternalId: number;
     creatorId: number;
     entryTitle?: string;
+    earlyAccessEnabled?: boolean;
+    expeditionPublicId?: string;
   }) {
     try {
       const followers = await this.prisma.explorerFollow.findMany({
@@ -39,6 +46,32 @@ export class FollowerNotificationListener {
         },
       });
 
+      // If early access is enabled, look up qualifying sponsors
+      let sponsorHours: Map<number, number> | undefined;
+      if (data.earlyAccessEnabled && data.expeditionPublicId) {
+        sponsorHours = new Map();
+        const sponsorships = await this.prisma.sponsorship.findMany({
+          where: {
+            OR: [
+              { expedition_public_id: data.expeditionPublicId, status: { in: ['active', 'confirmed'] } },
+              { sponsor: { followers: { some: { followee_id: data.creatorId } } }, type: 'subscription', status: 'active' },
+            ],
+          },
+          select: {
+            sponsor_id: true,
+            amount: true,
+            tier: { select: { priority: true } },
+          },
+        });
+        for (const s of sponsorships) {
+          const hours = s.tier?.priority
+            ? getEarlyAccessHoursForTier(s.tier.priority)
+            : getEarlyAccessHoursForAmount(integerToDecimal(s.amount));
+          const current = sponsorHours.get(s.sponsor_id) ?? 0;
+          if (hours > current) sponsorHours.set(s.sponsor_id, hours);
+        }
+      }
+
       for (const follow of followers) {
         // Respect notification preferences
         const prefs =
@@ -48,14 +81,28 @@ export class FollowerNotificationListener {
           >) || {};
         if (prefs.entries_following === false) continue;
 
+        // Determine notification context based on early access
+        let context = UserNotificationContext.NEW_ENTRY;
+        let body = data.entryTitle;
+        if (data.earlyAccessEnabled && sponsorHours) {
+          const hours = sponsorHours.get(follow.follower_id) ?? 0;
+          if (hours > 0) {
+            // Sponsor with early access — send immediately with early access context
+            context = UserNotificationContext.NEW_ENTRY_EARLY_ACCESS;
+          } else {
+            // Non-qualifying follower — skip notification now (they'll get it when embargo lifts)
+            continue;
+          }
+        }
+
         this.eventService.trigger<IUserNotificationCreatePayload>({
           event: EVENTS.NOTIFICATION_CREATE,
           data: {
-            context: UserNotificationContext.NEW_ENTRY,
+            context,
             userId: follow.follower_id,
             mentionUserId: data.creatorId,
             mentionPostId: data.entryInternalId,
-            body: data.entryTitle,
+            body,
           },
         });
       }

@@ -185,6 +185,9 @@ export interface Entry {
   expeditionDay?: number;
   quickSponsorsCount?: number;
   quickSponsorsTotal?: number;
+  earlyAccess?: boolean;
+  publishedAt?: string;
+  embargoLiftsAt?: string;
 }
 
 // ─── Comment ───

@@ -51,6 +51,8 @@ export function NotificationCard({
       case "entry_milestone":
       case "new_entry":
         return <FileText className="w-4 h-4" />;
+      case "new_entry_early_access":
+        return <Clock className="w-4 h-4" />;
       case "expedition_started":
       case "new_expedition":
         return <Map className="w-4 h-4" />;
@@ -96,6 +98,7 @@ export function NotificationCard({
       case "expedition_note_created":
       case "expedition_note_reply":
       case "new_entry":
+      case "new_entry_early_access":
       case "new_expedition":
         return "bg-[#4676ac]"; // Blue
       case "expedition_cancelled":
@@ -133,6 +136,8 @@ export function NotificationCard({
         return "ENTRY MILESTONE";
       case "new_entry":
         return "NEW ENTRY";
+      case "new_entry_early_access":
+        return "EARLY ACCESS";
       case "expedition_started":
       case "new_expedition":
         return "NEW EXPEDITION";

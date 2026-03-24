@@ -1,4 +1,4 @@
-import { User, DollarSign, MessageSquare, FileText, Map, MapPin, Bell, Flag, Globe, Award, EyeOff, AlertTriangle, CheckCircle, XCircle, Calendar } from "lucide-react";
+import { User, DollarSign, MessageSquare, FileText, Map, MapPin, Bell, Flag, Globe, Award, EyeOff, AlertTriangle, CheckCircle, XCircle, Calendar, Clock } from "lucide-react";
 import { UserNotificationContext } from "@repo/types";
 
 type NotificationType = `${UserNotificationContext}`;
@@ -39,6 +39,8 @@ export function NotificationCardCompact({
       case "entry_milestone":
       case "new_entry":
         return <FileText className="w-3.5 h-3.5" />;
+      case "new_entry_early_access":
+        return <Clock className="w-3.5 h-3.5" />;
       case "expedition_started":
       case "new_expedition":
         return <Map className="w-3.5 h-3.5" />;
@@ -79,6 +81,7 @@ export function NotificationCardCompact({
       case "expedition_note_created":
       case "expedition_note_reply":
       case "new_entry":
+      case "new_entry_early_access":
       case "new_expedition":
         return "text-[#4676ac]";
       case "expedition_started":

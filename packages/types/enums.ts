@@ -62,6 +62,7 @@ export enum UserNotificationContext {
   PASSPORT_STAMP = 'passport_stamp',
   // Follower notifications
   NEW_ENTRY = 'new_entry',
+  NEW_ENTRY_EARLY_ACCESS = 'new_entry_early_access',
   NEW_EXPEDITION = 'new_expedition',
 }
 

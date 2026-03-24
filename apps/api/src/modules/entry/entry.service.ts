@@ -12,6 +12,11 @@ import {
 } from '@repo/types';
 import { IEntryBookmarkResponse, IEntryLikeResponse } from '@repo/types';
 
+import {
+  getEarlyAccessHoursForAmount,
+  getEarlyAccessHoursForTier,
+} from '@repo/types/sponsorship-tiers';
+
 import { dateformat } from '@/lib/date-format';
 import { integerToDecimal, normalizeText } from '@/lib/formatter';
 import { generator } from '@/lib/generator';
@@ -612,6 +617,7 @@ export class EntryService {
           metadata: true,
           quick_sponsors_count: true,
           quick_sponsors_total: true,
+          published_at: true,
           cover_upload: {
             select: {
               original: true,
@@ -631,6 +637,7 @@ export class EntryService {
               end_date: true,
               goal: true,
               author_id: true,
+              early_access_enabled: true,
             },
           },
           // check if the session explorer has liked this entry
@@ -709,6 +716,59 @@ export class EntryService {
           const isAdmin = explorerRole === ExplorerRole.ADMIN;
           if (!isAuthor && !isAdmin) {
             throw new ServiceNotFoundException('Entry not found');
+          }
+        }
+      }
+
+      // Early access gating: check if viewer qualifies to see this entry
+      let viewerEarlyAccessHours = 0;
+      if (entry.expedition?.early_access_enabled && entry.published_at) {
+        const hoursSincePublish =
+          (Date.now() - new Date(entry.published_at).getTime()) /
+          (1000 * 60 * 60);
+        if (hoursSincePublish < 48) {
+          const isAuthor = explorerId && entry.author_id === explorerId;
+          const isAdmin = explorerRole === ExplorerRole.ADMIN;
+          if (!isAuthor && !isAdmin) {
+            // Look up viewer's sponsorships for this expedition / explorer
+            if (explorerId) {
+              const viewerSponsorships =
+                await this.prisma.sponsorship.findMany({
+                  where: {
+                    sponsor_id: explorerId,
+                    status: { in: ['active', 'confirmed'] },
+                    OR: [
+                      {
+                        expedition_public_id: entry.expedition.public_id,
+                      },
+                      {
+                        type: 'subscription',
+                        sponsored_explorer_id: entry.author_id,
+                      },
+                    ],
+                  },
+                  select: {
+                    amount: true,
+                    tier: { select: { priority: true } },
+                  },
+                });
+              for (const s of viewerSponsorships) {
+                const hours = s.tier?.priority
+                  ? getEarlyAccessHoursForTier(s.tier.priority)
+                  : getEarlyAccessHoursForAmount(
+                      integerToDecimal(s.amount),
+                    );
+                if (hours > viewerEarlyAccessHours)
+                  viewerEarlyAccessHours = hours;
+              }
+            }
+            // Block access if viewer doesn't qualify
+            if (
+              viewerEarlyAccessHours <= 0 ||
+              hoursSincePublish < 48 - viewerEarlyAccessHours
+            ) {
+              throw new ServiceNotFoundException('Entry not found');
+            }
           }
         }
       }
@@ -916,6 +976,25 @@ export class EntryService {
         expeditionDay,
         quickSponsorsCount: entry.quick_sponsors_count || 0,
         quickSponsorsTotal: entry.quick_sponsors_total || 0,
+        // Early access
+        ...(entry.expedition?.early_access_enabled && entry.published_at
+          ? (() => {
+              const hoursSincePublish =
+                (Date.now() - new Date(entry.published_at).getTime()) /
+                (1000 * 60 * 60);
+              const isEarlyAccess = hoursSincePublish < 48;
+              return {
+                earlyAccess: isEarlyAccess,
+                publishedAt: entry.published_at,
+                embargoLiftsAt: isEarlyAccess
+                  ? new Date(
+                      new Date(entry.published_at).getTime() +
+                        48 * 60 * 60 * 1000,
+                    )
+                  : undefined,
+              };
+            })()
+          : {}),
       };
 
       // Track view asynchronously (fire and forget)
@@ -1056,6 +1135,7 @@ export class EntryService {
       // Look up expedition if provided
       let expeditionDbId: number | undefined;
       let expeditionStatus: string | undefined;
+      let expeditionEarlyAccess = false;
       if (expeditionId) {
         const expedition = await this.prisma.expedition.findFirst({
           where: {
@@ -1063,7 +1143,7 @@ export class EntryService {
             author_id: explorerId,
             deleted_at: null,
           },
-          select: { id: true, status: true },
+          select: { id: true, status: true, early_access_enabled: true },
         });
         if (expedition) {
           if (expedition.status === 'cancelled') {
@@ -1073,6 +1153,7 @@ export class EntryService {
           }
           expeditionDbId = expedition.id;
           expeditionStatus = expedition.status;
+          expeditionEarlyAccess = expedition.early_access_enabled ?? false;
         }
       }
 
@@ -1262,6 +1343,8 @@ export class EntryService {
             entryContent: content,
             entryPlace: place,
             entryDate: date,
+            earlyAccessEnabled: expeditionEarlyAccess,
+            expeditionPublicId: expeditionId,
           },
         });
       }
@@ -1338,7 +1421,7 @@ export class EntryService {
             comments_enabled: true,
             metadata: true,
             expedition: {
-              select: { status: true },
+              select: { status: true, public_id: true, early_access_enabled: true },
             },
             media: {
               select: {
@@ -1671,6 +1754,8 @@ export class EntryService {
             entryContent: result.entryData.content,
             entryPlace: result.entryData.place,
             entryDate: result.entryData.date,
+            earlyAccessEnabled: entry.expedition?.early_access_enabled ?? false,
+            expeditionPublicId: entry.expedition?.public_id,
           },
         });
       }
