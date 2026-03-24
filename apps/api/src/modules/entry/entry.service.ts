@@ -749,18 +749,27 @@ export class EntryService {
                   },
                   select: {
                     amount: true,
+                    type: true,
                     tier: { select: { priority: true } },
                   },
                 });
+              // For monthly subscriptions, use the best tier
+              // For one-time payments, use cumulative amount
+              let cumulativeOneTime = 0;
               for (const s of viewerSponsorships) {
-                const hours = s.tier?.priority
-                  ? getEarlyAccessHoursForTier(s.tier.priority)
-                  : getEarlyAccessHoursForAmount(
-                      integerToDecimal(s.amount),
-                    );
-                if (hours > viewerEarlyAccessHours)
-                  viewerEarlyAccessHours = hours;
+                if (s.type === 'subscription' && s.tier?.priority) {
+                  const hours = getEarlyAccessHoursForTier(s.tier.priority);
+                  if (hours > viewerEarlyAccessHours)
+                    viewerEarlyAccessHours = hours;
+                } else {
+                  cumulativeOneTime += s.amount;
+                }
               }
+              const oneTimeHours = getEarlyAccessHoursForAmount(
+                integerToDecimal(cumulativeOneTime),
+              );
+              if (oneTimeHours > viewerEarlyAccessHours)
+                viewerEarlyAccessHours = oneTimeHours;
             }
             // Block access if viewer doesn't qualify
             if (

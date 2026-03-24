@@ -1117,17 +1117,19 @@ export class ExpeditionService {
           0,
         );
 
-        // Determine viewer's early access hours from their best tier
+        // Determine viewer's early access hours
+        // Monthly subscriptions: use best tier; one-time: use cumulative amount
+        let cumulativeOneTime = 0;
         for (const s of viewerSponsorships) {
-          let hours = 0;
-          if (s.tier?.priority) {
-            hours = getEarlyAccessHoursForTier(s.tier.priority);
+          if (s.type?.toLowerCase() === 'subscription' && s.tier?.priority) {
+            const hours = getEarlyAccessHoursForTier(s.tier.priority);
+            if (hours > viewerEarlyAccessHours) viewerEarlyAccessHours = hours;
           } else {
-            // No tier (custom amount or quick-sponsor) — check amount against one-time thresholds
-            hours = getEarlyAccessHoursForAmount(integerToDecimal(s.amount));
+            cumulativeOneTime += s.amount;
           }
-          if (hours > viewerEarlyAccessHours) viewerEarlyAccessHours = hours;
         }
+        const oneTimeHours = getEarlyAccessHoursForAmount(integerToDecimal(cumulativeOneTime));
+        if (oneTimeHours > viewerEarlyAccessHours) viewerEarlyAccessHours = oneTimeHours;
       }
 
       const response: IExpeditionGetByIdResponse = {

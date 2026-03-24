@@ -1131,7 +1131,7 @@ export function CreateEntryPage() {
                     />
                   </div>
                 </div>
-                {entryDate && entryDate < dateMax && (
+                {entryDate && entryDate < new Date().toISOString().slice(0, 10) && (
                   <div className="mt-2 px-2 py-1 bg-[#4676ac]/10 border-l-2 border-[#4676ac] text-xs text-[#4676ac] inline-block">
                     <Clock size={12} className="inline mr-1" />
                     Retrospective entry

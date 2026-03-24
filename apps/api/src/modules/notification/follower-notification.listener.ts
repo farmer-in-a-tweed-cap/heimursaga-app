@@ -60,15 +60,25 @@ export class FollowerNotificationListener {
           select: {
             sponsor_id: true,
             amount: true,
+            type: true,
             tier: { select: { priority: true } },
           },
         });
+        // Accumulate cumulative one-time amounts per sponsor
+        const oneTimeTotals = new Map<number, number>();
         for (const s of sponsorships) {
-          const hours = s.tier?.priority
-            ? getEarlyAccessHoursForTier(s.tier.priority)
-            : getEarlyAccessHoursForAmount(integerToDecimal(s.amount));
-          const current = sponsorHours.get(s.sponsor_id) ?? 0;
-          if (hours > current) sponsorHours.set(s.sponsor_id, hours);
+          if (s.type === 'subscription' && s.tier?.priority) {
+            const hours = getEarlyAccessHoursForTier(s.tier.priority);
+            const current = sponsorHours.get(s.sponsor_id) ?? 0;
+            if (hours > current) sponsorHours.set(s.sponsor_id, hours);
+          } else {
+            oneTimeTotals.set(s.sponsor_id, (oneTimeTotals.get(s.sponsor_id) ?? 0) + s.amount);
+          }
+        }
+        for (const [sponsorId, total] of oneTimeTotals) {
+          const hours = getEarlyAccessHoursForAmount(integerToDecimal(total));
+          const current = sponsorHours.get(sponsorId) ?? 0;
+          if (hours > current) sponsorHours.set(sponsorId, hours);
         }
       }
 
