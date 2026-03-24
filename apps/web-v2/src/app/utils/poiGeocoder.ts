@@ -19,22 +19,35 @@ export type POICategory = {
 };
 
 /**
- * Stable session token — reused across geocoder re-instantiations to avoid
- * Mapbox billing each map re-init as a new session. Rotated only after 2 min
- * of inactivity (matching Mapbox's session expiry window).
+ * Stable session token — persisted in sessionStorage so hot reloads during
+ * development don't burn a new Mapbox Search Box session each time.
+ * Rotated only after 2 min of inactivity (matching Mapbox's session expiry).
  */
-let _sessionToken = crypto.randomUUID();
-let _sessionLastUsed = Date.now();
+const SESSION_KEY = 'mapbox_search_session';
+const SESSION_TS_KEY = 'mapbox_search_session_ts';
 
 function getSessionToken(): string {
   const now = Date.now();
+  let token = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(SESSION_KEY) : null;
+  const lastUsed = typeof sessionStorage !== 'undefined' ? Number(sessionStorage.getItem(SESSION_TS_KEY) || '0') : 0;
+
   // Rotate token after 2 min inactivity to match Mapbox session boundaries
-  if (now - _sessionLastUsed > 2 * 60 * 1000) {
-    _sessionToken = crypto.randomUUID();
+  if (!token || now - lastUsed > 2 * 60 * 1000) {
+    token = crypto.randomUUID();
   }
-  _sessionLastUsed = now;
-  return _sessionToken;
+
+  if (typeof sessionStorage !== 'undefined') {
+    sessionStorage.setItem(SESSION_KEY, token);
+    sessionStorage.setItem(SESSION_TS_KEY, String(now));
+  }
+  return token;
 }
+
+/**
+ * In-memory cache for /suggest results. Avoids re-fetching the same query
+ * within the same page session. Keyed by query + proximity (rounded).
+ */
+const _suggestCache = new Map<string, any[]>();
 
 /**
  * Creates an externalGeocoder function for @mapbox/mapbox-gl-geocoder that
@@ -50,6 +63,13 @@ export function createPOIGeocoder(map: mapboxgl.Map) {
     if (query.length < 2) return [];
 
     const center = map.getCenter();
+    // Round proximity to ~1km grid so small map pans don't bust the cache
+    const proxKey = `${center.lng.toFixed(2)},${center.lat.toFixed(2)}`;
+    const cacheKey = `${query.toLowerCase()}|${proxKey}`;
+
+    const cached = _suggestCache.get(cacheKey);
+    if (cached) return cached;
+
     const sessionToken = getSessionToken();
 
     try {
@@ -72,7 +92,7 @@ export function createPOIGeocoder(map: mapboxgl.Map) {
 
       // Return v5-compatible features using suggest data only (no /retrieve call).
       // We store mapbox_id so the geocoder result handler can /retrieve on selection.
-      return suggestions.map((s: any) => ({
+      const results = suggestions.map((s: any) => ({
         type: 'Feature',
         geometry: { type: 'Point', coordinates: [0, 0] }, // placeholder — resolved on select
         center: [0, 0],
@@ -85,6 +105,12 @@ export function createPOIGeocoder(map: mapboxgl.Map) {
           place_formatted: s.place_formatted,
         },
       }));
+
+      // Cache results (cap size to prevent memory growth)
+      if (_suggestCache.size > 100) _suggestCache.clear();
+      _suggestCache.set(cacheKey, results);
+
+      return results;
     } catch {
       return [];
     }

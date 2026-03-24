@@ -3,10 +3,11 @@ import {
   HttpCode,
   HttpStatus,
   Post,
-  Session,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+
+import { Session } from '@/common/decorators';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { MediaUploadContext } from '@repo/types';
@@ -45,6 +46,28 @@ export class UploadController {
         file,
         context: MediaUploadContext.UPLOAD,
       },
+      session,
+    });
+  }
+
+  @Post('audio')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        files: 1,
+        fileSize: 5 * 1024 * 1024, // 5MB
+      },
+    }),
+  )
+  async uploadAudio(
+    @UploadedFile() file: IUploadedFile,
+    @Session() session: ISession,
+  ) {
+    return this.uploadService.uploadAudio({
+      query: {},
+      payload: { file },
       session,
     });
   }

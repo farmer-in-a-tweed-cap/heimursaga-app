@@ -7,6 +7,7 @@ import { Users, ArrowDown, ArrowUp } from 'lucide-react';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
 import { WaypointCardLandscape } from '@/app/components/WaypointCardLandscape';
 import { ExpeditionNotes } from '@/app/components/ExpeditionNotes';
+import { VoiceNoteSection } from '@/app/components/expedition-detail/VoiceNoteSection';
 import { ROUTE_MODE_STYLES } from '@/app/utils/mapRouteDrawing';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import type { TransformedExpedition, WaypointType, JournalEntryType } from '@/app/components/expedition-detail/types';
@@ -73,6 +74,7 @@ export function ContentTabs({
   const { formatDistance } = useDistanceUnit();
   // 'asc' = earliest first (route order), 'desc' = latest first
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [notesSubTab, setNotesSubTab] = useState<'text' | 'voice'>('text');
   const showSortToggle = selectedView === 'entries';
 
   return (
@@ -147,33 +149,71 @@ export function ContentTabs({
 
         {selectedView === 'notes' && expedition.explorerIsPro && expedition.privacy !== 'private' && (
           <div ref={notesSectionRef}>
-            <ExpeditionNotes
-              expeditionId={expedition.id}
-              explorerId={expedition.explorerId}
-              explorerName={expedition.explorerName}
-              explorerPicture={expedition.explorerPicture}
-              isOwner={isOwner}
-              isSponsoring={isSponsoring}
-              isPublicNotes={isPublicNotes}
-              expeditionStatus={expedition.status}
-              notes={expeditionNotes.map(note => ({
-                ...note,
-                id: String(note.id),
-                replies: note.replies?.map(reply => ({
-                  ...reply,
-                  id: String(reply.id),
-                  noteId: String(reply.noteId),
-                })),
-              }))}
-              noteCount={noteCount}
-              dailyLimit={dailyLimit}
-              onPostNote={onPostNote}
-              onPostReply={onPostReply}
-              onEditNote={onEditNote}
-              onDeleteNote={onDeleteNote}
-              onEditReply={onEditReply}
-              onDeleteReply={onDeleteReply}
-            />
+            {/* Sub-tabs: Text Notes / Voice Notes */}
+            <div className="flex mb-4 border-2 border-[#202020] dark:border-[#616161]">
+              <button
+                onClick={() => setNotesSubTab('text')}
+                className={`flex-1 py-2 text-xs font-bold transition-colors ${
+                  notesSubTab === 'text'
+                    ? 'bg-[#ac6d46] text-white'
+                    : 'bg-[#f5f5f5] dark:bg-[#2a2a2a] text-[#616161] dark:text-[#b5bcc4] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a]'
+                }`}
+                style={{ fontFamily: 'Jost, system-ui, sans-serif', letterSpacing: '0.14em' }}
+              >
+                TEXT NOTES
+              </button>
+              <button
+                onClick={() => setNotesSubTab('voice')}
+                className={`flex-1 py-2 text-xs font-bold border-l-2 border-[#202020] dark:border-[#616161] transition-colors ${
+                  notesSubTab === 'voice'
+                    ? 'bg-[#4676ac] text-white'
+                    : 'bg-[#f5f5f5] dark:bg-[#2a2a2a] text-[#616161] dark:text-[#b5bcc4] hover:bg-[#e5e5e5] dark:hover:bg-[#3a3a3a]'
+                }`}
+                style={{ fontFamily: 'Jost, system-ui, sans-serif', letterSpacing: '0.14em' }}
+              >
+                VOICE NOTES
+              </button>
+            </div>
+
+            {notesSubTab === 'text' && (
+              <ExpeditionNotes
+                expeditionId={expedition.id}
+                explorerId={expedition.explorerId}
+                explorerName={expedition.explorerName}
+                explorerPicture={expedition.explorerPicture}
+                isOwner={isOwner}
+                isSponsoring={isSponsoring}
+                isPublicNotes={isPublicNotes}
+                expeditionStatus={expedition.status}
+                notes={expeditionNotes.map(note => ({
+                  ...note,
+                  id: String(note.id),
+                  replies: note.replies?.map(reply => ({
+                    ...reply,
+                    id: String(reply.id),
+                    noteId: String(reply.noteId),
+                  })),
+                }))}
+                noteCount={noteCount}
+                dailyLimit={dailyLimit}
+                onPostNote={onPostNote}
+                onPostReply={onPostReply}
+                onEditNote={onEditNote}
+                onDeleteNote={onDeleteNote}
+                onEditReply={onEditReply}
+                onDeleteReply={onDeleteReply}
+              />
+            )}
+
+            {notesSubTab === 'voice' && (
+              <VoiceNoteSection
+                expeditionId={expedition.id}
+                isOwner={isOwner}
+                isAuthenticated={isAuthenticated}
+                explorerUsername={expedition.explorerName}
+                expeditionStatus={expedition.status}
+              />
+            )}
           </div>
         )}
 
@@ -213,7 +253,13 @@ export function ContentTabs({
                     isMilestone={entry.isMilestone}
                     isCurrent={expedition.currentLocationSource === 'entry' && expedition.currentLocationId === entry.id}
                     earlyAccess={entry.earlyAccess}
-                    onClick={() => router.push(`/entry/${entry.id}`)}
+                    preview={entry.preview}
+                    embargoLiftsAt={entry.embargoLiftsAt}
+                    coverImage={entry.coverImage}
+                    onClick={() => entry.preview
+                      ? router.push(isAuthenticated ? `/sponsor/${expedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`)
+                      : router.push(`/entry/${entry.id}`)
+                    }
                   />
                 ))}
               </>
@@ -352,7 +398,13 @@ export function ContentTabs({
                           isMilestone={item.entry.isMilestone}
                           isCurrent={expedition.currentLocationSource === 'entry' && expedition.currentLocationId === item.entry.id}
                           earlyAccess={item.entry.earlyAccess}
-                          onClick={() => router.push(`/entry/${item.entry.id}`)}
+                          preview={item.entry.preview}
+                          embargoLiftsAt={item.entry.embargoLiftsAt}
+                          coverImage={item.entry.coverImage}
+                          onClick={() => item.entry.preview
+                            ? router.push(isAuthenticated ? `/sponsor/${expedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`)
+                            : router.push(`/entry/${item.entry.id}`)
+                          }
                         />
                       ) : (
                         <WaypointCardLandscape

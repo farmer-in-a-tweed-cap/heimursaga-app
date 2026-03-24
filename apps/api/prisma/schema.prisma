@@ -62,6 +62,7 @@ model Explorer {
   flags_target                Flag[]                @relation("explorer_flags_target")
   expedition_notes            ExpeditionNote[]      @relation("explorer_expedition_notes")
   expedition_note_replies     ExpeditionNoteReply[] @relation("explorer_expedition_note_replies")
+  voice_notes                 ExpeditionVoiceNote[] @relation("explorer_voice_notes")
   entry_views                 EntryView[]           @relation("explorer_views")
 
   @@index([stripe_customer_id])
@@ -400,6 +401,7 @@ model Expedition {
   entries         Entry[]
   bookmarks       ExpeditionBookmark[] @relation("expedition_bookmarks")
   notes           ExpeditionNote[]     @relation("expedition_notes")
+  voice_notes     ExpeditionVoiceNote[] @relation("expedition_voice_notes")
   author          Explorer             @relation(fields: [author_id], references: [id], onDelete: Cascade)
   flags           Flag[]               @relation("expedition_flags")
 
@@ -424,6 +426,22 @@ model ExpeditionNote {
 
   @@index([expedition_id])
   @@map("expedition_notes")
+}
+
+model ExpeditionVoiceNote {
+  id               Int       @id @default(autoincrement())
+  public_id        String    @unique @default(cuid())
+  expedition_id    Int
+  author_id        Int
+  audio_url        String
+  duration_seconds Int
+  caption          String?   @db.VarChar(200)
+  created_at       DateTime  @default(now())
+  expedition       Expedition @relation("expedition_voice_notes", fields: [expedition_id], references: [id], onDelete: Cascade)
+  author           Explorer   @relation("explorer_voice_notes", fields: [author_id], references: [id], onDelete: Cascade)
+
+  @@index([expedition_id, created_at(sort: Desc)])
+  @@map("expedition_voice_notes")
 }
 
 model ExpeditionNoteReply {

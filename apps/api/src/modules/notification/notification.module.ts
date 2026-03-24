@@ -10,7 +10,11 @@ import { NotificationService } from './notification.service';
 @Module({
   imports: [ConfigModule, PrismaModule],
   controllers: [],
-  providers: [NotificationService, FollowerNotificationListener, EmbargoLiftCronService],
+  providers: [
+    NotificationService,
+    FollowerNotificationListener,
+    EmbargoLiftCronService,
+  ],
   exports: [NotificationService],
 })
 export class NotificationModule {}

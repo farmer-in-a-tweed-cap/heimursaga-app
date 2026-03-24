@@ -285,9 +285,19 @@ export function LocationAutocompleteInput({
 }
 
 /**
+ * In-memory cache for geocoding results. Prevents duplicate API calls
+ * when the user types the same query again or navigates back to the page.
+ */
+const _geocodingCache = new Map<string, GeocodingResult[]>();
+
+/**
  * Fetch geocoding results from Mapbox Geocoding API
  */
 async function fetchMapboxGeocodingResults(query: string): Promise<GeocodingResult[]> {
+  const cacheKey = query.toLowerCase().trim();
+  const cached = _geocodingCache.get(cacheKey);
+  if (cached) return cached;
+
   const encodedQuery = encodeURIComponent(query);
   const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodedQuery}.json?access_token=${MAPBOX_TOKEN}&types=place,locality,region,country&limit=5`;
 
@@ -299,7 +309,7 @@ async function fetchMapboxGeocodingResults(query: string): Promise<GeocodingResu
   const data = await response.json();
 
   // Parse Mapbox response into our GeocodingResult format
-  return data.features.map((feature: any) => {
+  const results = data.features.map((feature: any) => {
     // Extract context (city, region, country, etc.)
     const context = feature.context || [];
 
@@ -345,6 +355,12 @@ async function fetchMapboxGeocodingResults(query: string): Promise<GeocodingResu
       },
     };
   });
+
+  // Cache results (cap size to prevent memory growth)
+  if (_geocodingCache.size > 50) _geocodingCache.clear();
+  _geocodingCache.set(cacheKey, results);
+
+  return results;
 }
 
 /**

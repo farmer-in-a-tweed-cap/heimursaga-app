@@ -15,8 +15,22 @@ interface EntryCardLandscapeProps {
   isMilestone?: boolean;
   isCurrent?: boolean;
   earlyAccess?: boolean;
+  preview?: boolean;
+  embargoLiftsAt?: string;
+  coverImage?: string;
   onClick?: () => void;
   onUnbookmark?: () => void;
+}
+
+function getCountdownText(embargoLiftsAt: string): string {
+  const now = Date.now();
+  const lifts = new Date(embargoLiftsAt).getTime();
+  const diff = lifts - now;
+  if (diff <= 0) return 'Available now';
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  if (hours > 0) return `Available to public in ${hours}h ${minutes}m`;
+  return `Available to public in ${minutes}m`;
 }
 
 export function EntryCardLandscape({
@@ -32,13 +46,18 @@ export function EntryCardLandscape({
   isMilestone = false,
   isCurrent = false,
   earlyAccess = false,
+  preview = false,
+  embargoLiftsAt,
+  coverImage,
   onClick,
   onUnbookmark,
 }: EntryCardLandscapeProps) {
   return (
     <div
       onClick={onClick}
-      className={`bg-white dark:bg-[#202020] cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.99] ${isCurrent ? 'border-2 border-[#ac6d46] ring-2 ring-[#ac6d46]/30' : 'border-2 border-[#202020] dark:border-[#616161]'}`}
+      className={`bg-white dark:bg-[#202020] cursor-pointer hover:border-[#ac6d46] transition-all active:scale-[0.99] ${
+        preview ? 'opacity-80 ' : ''
+      }${isCurrent ? 'border-2 border-[#ac6d46] ring-2 ring-[#ac6d46]/30' : 'border-2 border-[#202020] dark:border-[#616161]'}`}
       style={isMilestone && !isCurrent ? { borderLeftWidth: '4px', borderLeftColor: '#ac6d46' } : undefined}
     >
       {/* Header */}
@@ -55,7 +74,7 @@ export function EntryCardLandscape({
             <span className={`text-xs font-mono font-semibold tracking-wide ${isCurrent ? 'text-white' : 'text-[#202020] dark:text-[#e5e5e5]'}`}>
               {isCurrent ? 'CURRENT LOCATION' : 'ENTRY'}
             </span>
-            {type && (
+            {type && !preview && (
               <span className={`text-xs font-mono ${isCurrent ? 'text-white/70' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
                 {type}
               </span>
@@ -69,12 +88,17 @@ export function EntryCardLandscape({
                 {visibility === 'off-grid' ? 'OFF-GRID' : 'PRIVATE'}
               </div>
             )}
-            {earlyAccess && (
+            {preview ? (
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold bg-[#616161] text-white rounded-full">
+                <Lock className="h-3 w-3" />
+                LOCKED
+              </div>
+            ) : earlyAccess ? (
               <div className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold bg-[#4676ac] text-white rounded-full">
                 <Clock className="h-3 w-3" />
                 EARLY ACCESS
               </div>
-            )}
+            ) : null}
           </div>
         </div>
         <div className={`flex items-center gap-1.5 text-xs font-mono ${isCurrent ? 'text-white/80' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
@@ -84,13 +108,28 @@ export function EntryCardLandscape({
       </div>
 
       <div className="flex">
+        {/* Cover image (blurred for preview) */}
+        {preview && coverImage && (
+          <div className="relative w-24 shrink-0 border-r-2 border-[#202020] dark:border-[#616161] overflow-hidden">
+            <img
+              src={coverImage}
+              alt=""
+              className="w-full h-full object-cover"
+              style={{ filter: 'blur(8px)', transform: 'scale(1.1)' }}
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+              <Lock className="w-5 h-5 text-white" />
+            </div>
+          </div>
+        )}
+
         {/* Content */}
         <div className="flex-1 flex flex-col">
           {/* Title & Attribution */}
           <div className="border-b-2 border-[#202020] dark:border-[#616161] px-3 py-3 bg-white dark:bg-[#202020]">
             <div className="flex items-baseline gap-2 mb-2">
               <h3 className="font-serif font-bold text-sm dark:text-[#e5e5e5] line-clamp-2" style={{ lineHeight: 1.3 }}>{title}</h3>
-              {isMilestone && (
+              {isMilestone && !preview && (
                 <span className="shrink-0 px-2 py-0.5 bg-[#ac6d46] text-white text-[10px] font-bold font-mono rounded-full leading-none">
                   MILESTONE
                 </span>
@@ -105,32 +144,48 @@ export function EntryCardLandscape({
                 <FileText className="w-3 h-3 text-[#616161] dark:text-[#b5bcc4]" />
                 <span className="text-[#4676ac]">{expeditionName}</span>
               </div>
-              <div className="flex items-center gap-1.5 text-[#616161] dark:text-[#b5bcc4]">
-                <MapPin className="w-3 h-3" />
-                <span>{location}</span>
-              </div>
+              {location && (
+                <div className="flex items-center gap-1.5 text-[#616161] dark:text-[#b5bcc4]">
+                  <MapPin className="w-3 h-3" />
+                  <span>{location}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Excerpt */}
+          {/* Excerpt / Preview CTA */}
           <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] px-3 py-2 flex-grow">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-serif text-[#202020] dark:text-[#e5e5e5] line-clamp-2 flex-1" style={{ lineHeight: 1.75 }}>
-                {excerpt}
-              </p>
-              {onUnbookmark && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onUnbookmark();
-                  }}
-                  className="flex-shrink-0 ml-3 px-3 py-1.5 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
-                  title="Remove bookmark"
-                >
-                  <Bookmark className="w-3 h-3" fill="currentColor" />
-                </button>
-              )}
-            </div>
+            {preview ? (
+              <div className="space-y-1.5">
+                <p className="text-xs font-serif text-[#616161] dark:text-[#b5bcc4] italic" style={{ lineHeight: 1.75 }}>
+                  Sponsor this expedition to unlock early access
+                </p>
+                {embargoLiftsAt && (
+                  <p className="text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4]" style={{ fontFamily: 'Jost, system-ui, sans-serif', letterSpacing: '0.14em' }}>
+                    <Clock className="w-3 h-3 inline mr-1" />
+                    {getCountdownText(embargoLiftsAt)}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-serif text-[#202020] dark:text-[#e5e5e5] line-clamp-2 flex-1" style={{ lineHeight: 1.75 }}>
+                  {excerpt}
+                </p>
+                {onUnbookmark && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onUnbookmark();
+                    }}
+                    className="flex-shrink-0 ml-3 px-3 py-1.5 bg-[#ac6d46] text-white text-xs font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46]"
+                    title="Remove bookmark"
+                  >
+                    <Bookmark className="w-3 h-3" fill="currentColor" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

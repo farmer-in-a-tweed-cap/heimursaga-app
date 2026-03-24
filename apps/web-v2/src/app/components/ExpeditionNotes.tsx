@@ -302,16 +302,16 @@ export function ExpeditionNotes({
               {/* Note Card Header */}
               <div className="flex items-center justify-between px-3 py-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-b-2 border-[#202020] dark:border-[#616161]">
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-mono font-bold">
+                  <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-mono font-bold rounded-full">
                     NOTE #{notes.length - index}
                   </span>
-                  <span className={`px-1.5 py-0.5 text-xs font-mono font-bold text-white ${getStatusBadgeColor(note.expeditionStatus)}`}>
+                  <span className={`px-1.5 py-0.5 text-xs font-mono font-bold text-white rounded-full ${getStatusBadgeColor(note.expeditionStatus)}`}>
                     {note.expeditionStatus}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
-                    {new Date(note.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()}
+                    {new Date(note.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).toUpperCase()} {new Date(note.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toUpperCase()}
                   </span>
                   {canEditNotes && (
                     <div className="flex items-center gap-1">
@@ -486,7 +486,7 @@ export function ExpeditionNotes({
                                   <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-mono font-bold rounded-full">EXPLORER</span>
                                 )}
                                 <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-                                  {new Date(reply.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()}
+                                  {new Date(reply.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()} {new Date(reply.timestamp).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toUpperCase()}
                                 </span>
                                 {(canEditReply || canDeleteReply) && editingReplyId !== reply.id && confirmDeleteReplyId !== reply.id && (
                                   <span className="flex items-center gap-1 ml-auto">

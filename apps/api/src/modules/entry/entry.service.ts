@@ -11,7 +11,6 @@ import {
   UserRole,
 } from '@repo/types';
 import { IEntryBookmarkResponse, IEntryLikeResponse } from '@repo/types';
-
 import {
   getEarlyAccessHoursForAmount,
   getEarlyAccessHoursForTier,
@@ -732,8 +731,8 @@ export class EntryService {
           if (!isAuthor && !isAdmin) {
             // Look up viewer's sponsorships for this expedition / explorer
             if (explorerId) {
-              const viewerSponsorships =
-                await this.prisma.sponsorship.findMany({
+              const viewerSponsorships = await this.prisma.sponsorship.findMany(
+                {
                   where: {
                     sponsor_id: explorerId,
                     status: { in: ['active', 'confirmed'] },
@@ -752,7 +751,8 @@ export class EntryService {
                     type: true,
                     tier: { select: { priority: true } },
                   },
-                });
+                },
+              );
               // For monthly subscriptions, use the best tier
               // For one-time payments, use cumulative amount
               let cumulativeOneTime = 0;
@@ -1430,7 +1430,11 @@ export class EntryService {
             comments_enabled: true,
             metadata: true,
             expedition: {
-              select: { status: true, public_id: true, early_access_enabled: true },
+              select: {
+                status: true,
+                public_id: true,
+                early_access_enabled: true,
+              },
             },
             media: {
               select: {

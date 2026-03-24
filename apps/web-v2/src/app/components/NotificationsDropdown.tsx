@@ -16,6 +16,7 @@ interface Notification {
   title: string;
   timestamp: string;
   isRead: boolean;
+  href: string;
 }
 
 interface NotificationsDropdownProps {
@@ -111,6 +112,63 @@ function formatNotification(apiNotif: ApiNotification): string {
   }
 }
 
+// Resolve the primary content URL for a notification
+function getNotificationHref(apiNotif: ApiNotification): string {
+  const context = apiNotif.context as NotificationType;
+  const actor = apiNotif.mentionUser?.username;
+
+  switch (context) {
+    // Entry-related: link to the entry
+    case 'comment':
+    case 'comment_reply':
+    case 'new_entry':
+    case 'new_entry_early_access':
+    case 'entry_milestone':
+      if (apiNotif.postId) return `/entry/${apiNotif.postId}`;
+      if (apiNotif.expeditionPublicId) return `/expedition/${apiNotif.expeditionPublicId}`;
+      break;
+
+    // Expedition-related: link to the expedition
+    case 'expedition_note_created':
+    case 'expedition_note_reply':
+    case 'new_expedition':
+    case 'expedition_started':
+    case 'expedition_completed':
+    case 'expedition_off_grid':
+    case 'expedition_cancelled':
+    case 'expedition_date_changed':
+    case 'sponsorship_milestone':
+      if (apiNotif.expeditionPublicId) return `/expedition/${apiNotif.expeditionPublicId}`;
+      break;
+
+    // Social: link to the actor's profile
+    case 'follow':
+      if (actor) return `/journal/${actor}`;
+      break;
+
+    // Sponsorship: link to the actor's profile (the sponsor)
+    case 'sponsorship':
+    case 'quick_sponsor':
+      if (apiNotif.expeditionPublicId) return `/expedition/${apiNotif.expeditionPublicId}`;
+      if (actor) return `/journal/${actor}`;
+      break;
+
+    // Passport: link to own journal
+    case 'passport_country':
+    case 'passport_continent':
+    case 'passport_stamp':
+      return '/notifications';
+
+    // System/Stripe: notifications page
+    case 'stripe_action_required':
+    case 'stripe_verified':
+    case 'system':
+      return '/notifications';
+  }
+
+  return '/notifications';
+}
+
 // Map API notification to component format
 function mapApiNotification(apiNotif: ApiNotification, index: number): Notification {
   return {
@@ -119,6 +177,7 @@ function mapApiNotification(apiNotif: ApiNotification, index: number): Notificat
     title: formatNotification(apiNotif),
     timestamp: formatRelativeTime(apiNotif.date),
     isRead: apiNotif.read || false,
+    href: getNotificationHref(apiNotif),
   };
 }
 
@@ -166,8 +225,8 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
     }
   };
 
-  const handleNotificationClick = () => {
-    router.push('/notifications');
+  const handleNotificationClick = (href: string) => {
+    router.push(href);
     onClose();
   };
 
@@ -232,7 +291,7 @@ export function NotificationsDropdown({ onClose }: NotificationsDropdownProps) {
                 title={notification.title}
                 timestamp={notification.timestamp}
                 isRead={notification.isRead}
-                onClick={handleNotificationClick}
+                onClick={() => handleNotificationClick(notification.href)}
                 onMarkAsRead={handleMarkAsRead}
               />
             ))}

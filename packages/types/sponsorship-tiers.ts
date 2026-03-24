@@ -46,10 +46,7 @@ export function isValidTierPrice(type: 'ONE_TIME' | 'MONTHLY', slot: number, pri
   const config = slots.find(s => s.slot === slot);
   if (!config) return false;
   if (price < config.minPrice) return false;
-  if (config.maxPrice !== null) {
-    const isLastSlot = slot === Math.max(...slots.map(s => s.slot));
-    if (isLastSlot ? price > config.maxPrice : price >= config.maxPrice) return false;
-  }
+  if (config.maxPrice !== null && price > config.maxPrice) return false;
   return true;
 }
 

@@ -57,7 +57,9 @@ export class EmbargoLiftCronService {
           where: { mention_entry_id: entry.id },
           select: { explorer_id: true },
         });
-        const alreadyNotified = new Set(existingNotifs.map((n) => n.explorer_id));
+        const alreadyNotified = new Set(
+          existingNotifs.map((n) => n.explorer_id),
+        );
 
         const followers = await this.prisma.explorerFollow.findMany({
           where: { followee_id: entry.author_id },

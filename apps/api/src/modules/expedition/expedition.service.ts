@@ -1128,8 +1128,11 @@ export class ExpeditionService {
             cumulativeOneTime += s.amount;
           }
         }
-        const oneTimeHours = getEarlyAccessHoursForAmount(integerToDecimal(cumulativeOneTime));
-        if (oneTimeHours > viewerEarlyAccessHours) viewerEarlyAccessHours = oneTimeHours;
+        const oneTimeHours = getEarlyAccessHoursForAmount(
+          integerToDecimal(cumulativeOneTime),
+        );
+        if (oneTimeHours > viewerEarlyAccessHours)
+          viewerEarlyAccessHours = oneTimeHours;
       }
 
       const response: IExpeditionGetByIdResponse = {
@@ -1199,32 +1202,12 @@ export class ExpeditionService {
                 const isAdmin = explorerRole === ExplorerRole.ADMIN;
                 return isAuthor || isAdmin;
               }
-              // Early access filtering: hide entries within the 48h window from non-qualifying viewers
-              if (early_access_enabled && entry.published_at) {
-                const isAuthor = explorerId && entry.author_id === explorerId;
-                const isAdmin = explorerRole === ExplorerRole.ADMIN;
-                if (!isAuthor && !isAdmin) {
-                  const hoursSincePublish =
-                    (Date.now() - new Date(entry.published_at).getTime()) /
-                    (1000 * 60 * 60);
-                  if (hoursSincePublish < 48 && viewerEarlyAccessHours <= 0)
-                    return false;
-                  if (hoursSincePublish < 48 - viewerEarlyAccessHours)
-                    return false;
-                }
-              }
               return true;
             })
             .map((entry) => {
-              const fullContent = normalizeText(entry.content);
-              // Derive visibility from expedition (except private entries stay private)
-              const effectiveVisibility =
-                entry.visibility === 'private'
-                  ? 'private'
-                  : ((expedition.visibility || 'public') as
-                      | 'public'
-                      | 'off-grid'
-                      | 'private');
+              const isAuthor = explorerId && entry.author_id === explorerId;
+              const isAdmin = explorerRole === ExplorerRole.ADMIN;
+
               // Determine if entry is in early access window
               const isEarlyAccess =
                 early_access_enabled && entry.published_at
@@ -1233,6 +1216,90 @@ export class ExpeditionService {
                     48
                   : false;
 
+              // Determine if viewer is embargoed (can't see full content)
+              let isPreview = false;
+              if (
+                isEarlyAccess &&
+                !isAuthor &&
+                !isAdmin &&
+                early_access_enabled &&
+                entry.published_at
+              ) {
+                const hoursSincePublish =
+                  (Date.now() - new Date(entry.published_at).getTime()) /
+                  (1000 * 60 * 60);
+                if (hoursSincePublish < 48 && viewerEarlyAccessHours <= 0) {
+                  isPreview = true;
+                } else if (hoursSincePublish < 48 - viewerEarlyAccessHours) {
+                  isPreview = true;
+                }
+              }
+
+              const embargoLiftsAt =
+                isEarlyAccess && entry.published_at
+                  ? new Date(
+                      new Date(entry.published_at).getTime() +
+                        48 * 60 * 60 * 1000,
+                    )
+                  : undefined;
+
+              // Derive visibility from expedition (except private entries stay private)
+              const effectiveVisibility =
+                entry.visibility === 'private'
+                  ? 'private'
+                  : ((expedition.visibility || 'public') as
+                      | 'public'
+                      | 'off-grid'
+                      | 'private');
+
+              // Preview entries: strip content and media, keep title/date/place
+              if (isPreview) {
+                const coverMedia = entry.media?.[0];
+                return {
+                  id: entry.public_id,
+                  title: entry.title,
+                  content: undefined,
+                  visibility: effectiveVisibility,
+                  isMilestone: entry.is_milestone || false,
+                  earlyAccess: true,
+                  preview: true,
+                  coverImageBlurred: true,
+                  embargoLiftsAt,
+                  metadata: null,
+                  createdAt: entry.created_at,
+                  publishedAt: entry.published_at,
+                  date: entry.date,
+                  place: entry.place,
+                  lat: undefined,
+                  lon: undefined,
+                  mediaCount: 0,
+                  media: coverMedia
+                    ? [
+                        {
+                          id: coverMedia.upload?.public_id,
+                          thumbnail: getStaticMediaUrl(
+                            coverMedia.upload?.thumbnail,
+                          ),
+                          original: getStaticMediaUrl(
+                            coverMedia.upload?.thumbnail,
+                          ), // intentionally thumbnail for blur
+                          caption: undefined,
+                        },
+                      ]
+                    : [],
+                  author: entry.author
+                    ? {
+                        username: entry.author.username,
+                        name: entry.author.profile?.name,
+                        picture: getStaticMediaUrl(
+                          entry.author.profile?.picture,
+                        ),
+                      }
+                    : undefined,
+                };
+              }
+
+              const fullContent = normalizeText(entry.content);
               return {
                 id: entry.public_id,
                 title: entry.title,
@@ -1240,9 +1307,8 @@ export class ExpeditionService {
                 visibility: effectiveVisibility,
                 isMilestone: entry.is_milestone || false,
                 earlyAccess: isEarlyAccess,
-                embargoLiftsAt: isEarlyAccess && entry.published_at
-                  ? new Date(new Date(entry.published_at).getTime() + 48 * 60 * 60 * 1000)
-                  : undefined,
+                preview: false,
+                embargoLiftsAt,
                 metadata: entry.metadata || null,
                 createdAt: entry.created_at,
                 publishedAt: entry.published_at,

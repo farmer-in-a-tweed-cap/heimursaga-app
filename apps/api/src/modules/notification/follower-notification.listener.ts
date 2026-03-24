@@ -6,11 +6,12 @@ import {
   getEarlyAccessHoursForTier,
 } from '@repo/types/sponsorship-tiers';
 
+import { integerToDecimal } from '@/lib/formatter';
+
 import { EVENTS } from '@/modules/event';
 import { EventService } from '@/modules/event';
 import { Logger } from '@/modules/logger';
 import { PrismaService } from '@/modules/prisma';
-import { integerToDecimal } from '@/lib/formatter';
 
 import { IUserNotificationCreatePayload } from './notification.interface';
 
@@ -53,8 +54,17 @@ export class FollowerNotificationListener {
         const sponsorships = await this.prisma.sponsorship.findMany({
           where: {
             OR: [
-              { expedition_public_id: data.expeditionPublicId, status: { in: ['active', 'confirmed'] } },
-              { sponsor: { followers: { some: { followee_id: data.creatorId } } }, type: 'subscription', status: 'active' },
+              {
+                expedition_public_id: data.expeditionPublicId,
+                status: { in: ['active', 'confirmed'] },
+              },
+              {
+                sponsor: {
+                  followers: { some: { followee_id: data.creatorId } },
+                },
+                type: 'subscription',
+                status: 'active',
+              },
             ],
           },
           select: {
@@ -72,7 +82,10 @@ export class FollowerNotificationListener {
             const current = sponsorHours.get(s.sponsor_id) ?? 0;
             if (hours > current) sponsorHours.set(s.sponsor_id, hours);
           } else {
-            oneTimeTotals.set(s.sponsor_id, (oneTimeTotals.get(s.sponsor_id) ?? 0) + s.amount);
+            oneTimeTotals.set(
+              s.sponsor_id,
+              (oneTimeTotals.get(s.sponsor_id) ?? 0) + s.amount,
+            );
           }
         }
         for (const [sponsorId, total] of oneTimeTotals) {
@@ -93,7 +106,7 @@ export class FollowerNotificationListener {
 
         // Determine notification context based on early access
         let context = UserNotificationContext.NEW_ENTRY;
-        let body = data.entryTitle;
+        const body = data.entryTitle;
         if (data.earlyAccessEnabled && sponsorHours) {
           const hours = sponsorHours.get(follow.follower_id) ?? 0;
           if (hours > 0) {

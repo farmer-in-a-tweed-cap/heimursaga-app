@@ -13,6 +13,7 @@ import { EntryModule } from '@/modules/entry';
 import { EventModule } from '@/modules/event';
 import { ExpeditionModule } from '@/modules/expedition';
 import { ExpeditionNoteModule } from '@/modules/expedition-note';
+import { ExpeditionVoiceNoteModule } from '@/modules/expedition-voice-note';
 import { ExplorerModule } from '@/modules/explorer';
 import { FlagModule } from '@/modules/flag';
 import { LoggerModule } from '@/modules/logger';
@@ -80,6 +81,7 @@ import { AppService } from './app.service';
     PayoutModule,
     ExpeditionModule,
     ExpeditionNoteModule,
+    ExpeditionVoiceNoteModule,
     NotificationModule,
     SearchModule,
     RecaptchaModule,

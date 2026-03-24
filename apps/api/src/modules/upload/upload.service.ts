@@ -503,6 +503,79 @@ export class UploadService {
     }
   }
 
+  async uploadAudio({
+    payload,
+    session,
+  }: ISessionQueryWithPayload<{}, { file: any }>) {
+    try {
+      const { file } = payload;
+      const { userId } = session;
+
+      if (!userId) throw new ServiceForbiddenException();
+      if (!file) throw new ServiceBadRequestException('No file provided');
+      if (!file.buffer)
+        throw new ServiceBadRequestException('Invalid file data');
+
+      const SUPPORTED_AUDIO_PREFIXES = [
+        'audio/webm',
+        'audio/mp4',
+        'audio/mpeg',
+        'audio/ogg',
+      ];
+      const baseMime = (file.mimetype || '').split(';')[0].trim();
+      if (!SUPPORTED_AUDIO_PREFIXES.some((p) => baseMime === p)) {
+        this.logger.error(`Unsupported audio mimetype: ${file.mimetype}`);
+        throw new ServiceBadRequestException(
+          'Unsupported audio format. Please use WebM, MP4, MPEG, or OGG.',
+        );
+      }
+
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.buffer.length > maxSize) {
+        throw new ServiceBadRequestException(
+          `Audio file size ${Math.round(file.buffer.length / 1024 / 1024)}MB exceeds maximum of 5MB`,
+        );
+      }
+
+      const ext =
+        baseMime === 'audio/webm'
+          ? 'webm'
+          : baseMime === 'audio/mp4'
+            ? 'm4a'
+            : baseMime === 'audio/mpeg'
+              ? 'mp3'
+              : 'ogg';
+      const hash = crypto.randomBytes(24).toString('hex');
+      const key = `voice-notes/${hash}.${ext}`;
+      const bucket = UPLOAD_BUCKETS.AUDIO;
+      const path = `${bucket}/${key}`;
+
+      this.logger.debug(`Uploading audio: ${key}, mime=${baseMime}, size=${file.buffer.length}`);
+
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: bucket,
+          ContentType: baseMime,
+          Key: key,
+          Body: file.buffer,
+        }),
+      );
+
+      return { audioUrl: getStaticMediaUrl(path) };
+    } catch (e) {
+      this.logger.error(`Audio upload error: ${e?.message || JSON.stringify(e)} | stack: ${e?.stack || 'none'}`);
+      if (
+        e instanceof ServiceBadRequestException ||
+        e instanceof ServiceForbiddenException
+      )
+        throw e;
+      if (e.status) throw e;
+      throw new ServiceBadRequestException(
+        'Audio upload failed. Please try again.',
+      );
+    }
+  }
+
   getFileType(mimeType: string): UploadedFileType {
     if (!mimeType) return null;
     if (mimeType.includes('image/')) return UploadedFileType.IMAGE;

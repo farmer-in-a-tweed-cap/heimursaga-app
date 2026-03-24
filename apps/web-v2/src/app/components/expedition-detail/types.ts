@@ -28,6 +28,8 @@ export type JournalEntryType = {
   timelinePosition?: number;
   earlyAccess?: boolean;
   embargoLiftsAt?: string;
+  preview?: boolean;
+  coverImage?: string;
 };
 
 export type DebriefStop = {

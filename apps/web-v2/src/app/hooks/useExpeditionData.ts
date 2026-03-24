@@ -280,6 +280,8 @@ export function useExpeditionData(
         createdAt: (entry as any).createdAt || '',
         earlyAccess: (entry as any).earlyAccess || false,
         embargoLiftsAt: (entry as any).embargoLiftsAt || undefined,
+        preview: (entry as any).preview || false,
+        coverImage: (entry as any).media?.[0]?.thumbnail || undefined,
       }))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [apiExpedition?.entries]);

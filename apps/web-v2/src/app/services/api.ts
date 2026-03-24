@@ -985,6 +985,51 @@ export const expeditionApi = {
     api.put<void>(`/trips/${id}/waypoints/sync`, { waypoints }),
 };
 
+// Voice note types
+export interface VoiceNote {
+  id: string;
+  audioUrl: string;
+  durationSeconds: number;
+  caption?: string;
+  createdAt: string;
+  author: {
+    username: string;
+    name?: string;
+    picture?: string;
+  };
+}
+
+export interface VoiceNotesResponse {
+  voiceNotes: VoiceNote[];
+  dailyLimit: { used: number; max: number };
+}
+
+// Voice note API endpoints
+export const voiceNoteApi = {
+  list: (expeditionId: string) =>
+    api.get<VoiceNotesResponse>(`/trips/${expeditionId}/voice-notes`),
+
+  create: (expeditionId: string, data: { audioUrl: string; durationSeconds: number; caption?: string }) =>
+    api.post<{ voiceNoteId: string }>(`/trips/${expeditionId}/voice-notes`, data),
+
+  delete: (expeditionId: string, noteId: string) =>
+    api.delete<void>(`/trips/${expeditionId}/voice-notes/${noteId}`),
+};
+
+// Upload audio
+export const uploadAudio = async (file: Blob): Promise<{ audioUrl: string }> => {
+  const formData = new FormData();
+  formData.append('file', file, 'voice-note.' + (file.type.includes('webm') ? 'webm' : file.type.includes('mp4') ? 'm4a' : 'ogg'));
+  const csrfToken = await getCsrfToken();
+  const response = await fetch(`${API_BASE_URL}/upload/audio`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+    headers: { 'x-csrf-token': csrfToken },
+  });
+  return handleResponse<{ audioUrl: string }>(response);
+};
+
 // Entry metadata types
 export interface StandardMetadata {
   weather?: string;
@@ -1098,6 +1143,8 @@ export interface Entry {
   quickSponsorsTotal?: number;
   // Early access
   earlyAccess?: boolean;
+  preview?: boolean;
+  coverImageBlurred?: boolean;
   publishedAt?: string;
   embargoLiftsAt?: string;
 }
