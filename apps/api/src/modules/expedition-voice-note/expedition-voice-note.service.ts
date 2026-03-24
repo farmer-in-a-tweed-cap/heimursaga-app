@@ -1,6 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { ExplorerRole } from '@repo/types';
+import { ONE_TIME_TIER_SLOTS } from '@repo/types/sponsorship-tiers';
 
+import { integerToDecimal } from '@/lib/formatter';
 import {
   ServiceBadRequestException,
   ServiceForbiddenException,
@@ -39,7 +41,8 @@ export class ExpeditionVoiceNoteService {
   /**
    * List voice notes for an expedition.
    * Author/admin: always see all.
-   * Others: must have active Tier 3 monthly subscription for the explorer.
+   * Others: must have Tier 3 access — either an active monthly subscription
+   * or cumulative one-time donations reaching the Tier 3 threshold for this expedition.
    */
   async getVoiceNotes({
     session,
@@ -54,7 +57,7 @@ export class ExpeditionVoiceNoteService {
 
       const expedition = await this.prisma.expedition.findFirst({
         where: { public_id: expeditionId, deleted_at: null },
-        select: { id: true, author_id: true, status: true, visibility: true },
+        select: { id: true, public_id: true, author_id: true, status: true, visibility: true },
       });
 
       if (!expedition)
@@ -64,6 +67,7 @@ export class ExpeditionVoiceNoteService {
       const isAdmin = explorerRole === ExplorerRole.ADMIN;
 
       // Check tier 3 access for non-owner/non-admin
+      // Grants access to: Tier 3 monthly subscribers OR cumulative Tier 3 one-time donors for this expedition
       if (!isOwner && !isAdmin) {
         if (!explorerId) {
           throw new ServiceForbiddenException(
@@ -71,7 +75,8 @@ export class ExpeditionVoiceNoteService {
           );
         }
 
-        const hasTier3 = await this.prisma.sponsorship.findFirst({
+        // Check for active Tier 3 monthly subscription
+        const hasTier3Monthly = await this.prisma.sponsorship.findFirst({
           where: {
             sponsor_id: explorerId,
             sponsored_explorer_id: expedition.author_id,
@@ -81,10 +86,29 @@ export class ExpeditionVoiceNoteService {
           },
         });
 
-        if (!hasTier3) {
-          throw new ServiceForbiddenException(
-            JSON.stringify({ requiresTier: 3 }),
+        if (!hasTier3Monthly) {
+          // Check cumulative one-time donations for this expedition
+          const oneTimeDonations = await this.prisma.sponsorship.findMany({
+            where: {
+              sponsor_id: explorerId,
+              expedition_public_id: expedition.public_id,
+              type: 'one_time_payment',
+              status: { in: ['active', 'ACTIVE', 'confirmed'] },
+            },
+            select: { amount: true },
+          });
+
+          const cumulativeDollars = oneTimeDonations.reduce(
+            (sum, s) => sum + integerToDecimal(s.amount),
+            0,
           );
+
+          const tier3Threshold = ONE_TIME_TIER_SLOTS[2].minPrice; // $75
+          if (cumulativeDollars < tier3Threshold) {
+            throw new ServiceForbiddenException(
+              JSON.stringify({ requiresTier: 3 }),
+            );
+          }
         }
       }
 

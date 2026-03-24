@@ -78,7 +78,7 @@ export function VoiceNoteSection({
           </p>
           {explorerUsername && (
             <a
-              href={`/explorer/${explorerUsername}/sponsor`}
+              href={isAuthenticated ? `/sponsor/${expeditionId}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expeditionId}`)}`}
               className="inline-block px-6 py-3 bg-[#4676ac] text-white font-bold font-mono text-sm border-2 border-[#202020] hover:bg-[#3a6596] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
             >
               BECOME AN EXPEDITION PATRON

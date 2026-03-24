@@ -462,8 +462,8 @@ export function SponsorshipGuidePage() {
                 thresholds ($5+ / $25+ / $75+) that apply to the specific expedition being sponsored.
               </p>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                Each tier level unlocks different perks. Monthly subscribers at the highest tier get exclusive perks
-                like DM access and voice note updates that are not available to one-time sponsors.
+                Each tier level unlocks different perks. The highest tier in both monthly and one-time channels
+                unlocks voice note updates and early access. DM access is exclusive to Expedition Patron monthly subscribers.
               </p>
             </div>
 
