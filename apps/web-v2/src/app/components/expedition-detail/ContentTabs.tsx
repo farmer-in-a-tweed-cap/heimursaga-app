@@ -255,7 +255,6 @@ export function ContentTabs({
                     earlyAccess={entry.earlyAccess}
                     preview={entry.preview}
                     embargoLiftsAt={entry.embargoLiftsAt}
-                    coverImage={entry.coverImage}
                     onClick={() => entry.preview
                       ? router.push(isAuthenticated ? `/sponsor/${expedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`)
                       : router.push(`/entry/${entry.id}`)
@@ -400,7 +399,6 @@ export function ContentTabs({
                           earlyAccess={item.entry.earlyAccess}
                           preview={item.entry.preview}
                           embargoLiftsAt={item.entry.embargoLiftsAt}
-                          coverImage={item.entry.coverImage}
                           onClick={() => item.entry.preview
                             ? router.push(isAuthenticated ? `/sponsor/${expedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`)
                             : router.push(`/entry/${item.entry.id}`)

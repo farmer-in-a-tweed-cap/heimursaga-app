@@ -17,7 +17,6 @@ interface EntryCardLandscapeProps {
   earlyAccess?: boolean;
   preview?: boolean;
   embargoLiftsAt?: string;
-  coverImage?: string;
   onClick?: () => void;
   onUnbookmark?: () => void;
 }
@@ -48,7 +47,6 @@ export function EntryCardLandscape({
   earlyAccess = false,
   preview = false,
   embargoLiftsAt,
-  coverImage,
   onClick,
   onUnbookmark,
 }: EntryCardLandscapeProps) {
@@ -108,21 +106,6 @@ export function EntryCardLandscape({
       </div>
 
       <div className="flex">
-        {/* Cover image (blurred for preview) */}
-        {preview && coverImage && (
-          <div className="relative w-24 shrink-0 border-r-2 border-[#202020] dark:border-[#616161] overflow-hidden">
-            <img
-              src={coverImage}
-              alt=""
-              className="w-full h-full object-cover"
-              style={{ filter: 'blur(8px)', transform: 'scale(1.1)' }}
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-              <Lock className="w-5 h-5 text-white" />
-            </div>
-          </div>
-        )}
-
         {/* Content */}
         <div className="flex-1 flex flex-col">
           {/* Title & Attribution */}
