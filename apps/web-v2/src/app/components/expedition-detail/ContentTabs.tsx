@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { formatCurrency } from '@/app/utils/formatCurrency';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import { Users, ArrowDown, ArrowUp } from 'lucide-react';
 import { EntryCardLandscape } from '@/app/components/EntryCardLandscape';
 import { WaypointCardLandscape } from '@/app/components/WaypointCardLandscape';
 import { ExpeditionNotes } from '@/app/components/ExpeditionNotes';
+import { ROUTE_MODE_STYLES } from '@/app/utils/mapRouteDrawing';
+import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import type { TransformedExpedition, WaypointType, JournalEntryType } from '@/app/components/expedition-detail/types';
 import type { ExpeditionNote } from '@/app/services/api';
 import type { Ref } from 'react';
@@ -35,6 +37,9 @@ interface ContentTabsProps {
   onDeleteReply: (noteId: string, replyId: string) => Promise<void>;
   onWaypointClick: (coords: { lat: number; lng: number }) => void;
   router: { push: (url: string) => void };
+  routeMode?: string;
+  routeLegModes?: string[];
+  isRoundTrip?: boolean;
 }
 
 export function ContentTabs({
@@ -61,10 +66,14 @@ export function ContentTabs({
   onDeleteReply,
   onWaypointClick,
   router,
+  routeMode,
+  routeLegModes,
+  isRoundTrip,
 }: ContentTabsProps) {
+  const { formatDistance } = useDistanceUnit();
   // 'asc' = earliest first (route order), 'desc' = latest first
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-  const showSortToggle = selectedView === 'entries' || selectedView === 'waypoints';
+  const showSortToggle = selectedView === 'entries';
 
   return (
     <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
@@ -100,7 +109,7 @@ export function ContentTabs({
               : 'bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#4676ac]'
           } transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border-l-2 border-[#202020] dark:border-[#616161]`}
         >
-          WAYPOINTS ({expedition.totalWaypoints})
+          ROUTE
         </button>
         {/* Sponsors tab - only show if sponsorships enabled */}
         {showSponsorshipSection && (
@@ -221,42 +230,180 @@ export function ContentTabs({
           );
         })()}
 
-        {/* Waypoints View — only unconverted waypoints (entries replace their waypoints) */}
+        {/* Route View — entries and waypoints interspersed in route order with leg connectors */}
         {selectedView === 'waypoints' && (() => {
-            const unconvertedWaypoints = waypoints
-              .filter((wp) => !(wp.entryIds && wp.entryIds.length > 0));
-            // Number in route order, then optionally reverse for display
-            const numbered = unconvertedWaypoints.map((wp, i) => ({ wp, num: i + 1 }));
-            const displayWaypoints = sortDirection === 'asc' ? numbered : [...numbered].reverse();
+            // Compute entry numbers (same logic as journal entries tab)
+            const entryRoutePosition = new Map<string, number>();
+            waypoints.forEach((wp, wpIdx) => {
+              (wp.entryIds || []).forEach((eid: string) => entryRoutePosition.set(eid, wpIdx));
+            });
+            const sortedEntries = [...journalEntries].sort((a, b) => {
+              const da = new Date(a.date).getTime(), db = new Date(b.date).getTime();
+              if (da !== db) return da - db;
+              const ra = entryRoutePosition.get(a.id) ?? Infinity, rb = entryRoutePosition.get(b.id) ?? Infinity;
+              if (ra !== rb) return ra - rb;
+              return (a.createdAt ? new Date(a.createdAt).getTime() : 0) - (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+            });
+            const entryNumberMap = new Map(sortedEntries.map((e, i) => [e.id, i + 1]));
+            const entryById = new Map(journalEntries.map(e => [e.id, e]));
+
+            // Build merged route items with waypoint index
+            type RouteItem =
+              | { kind: 'waypoint'; wp: WaypointType; markerNum: number; wpIdx: number }
+              | { kind: 'entry'; entry: JournalEntryType; entryNumber: number; wpIdx: number };
+
+            const routeItems: RouteItem[] = [];
+            let wpNum = 0;
+            for (let wpIdx = 0; wpIdx < waypoints.length; wpIdx++) {
+              const wp = waypoints[wpIdx];
+              if (wp.entryIds && wp.entryIds.length > 0) {
+                for (const eid of wp.entryIds) {
+                  const entry = entryById.get(eid);
+                  if (entry) {
+                    routeItems.push({ kind: 'entry', entry, entryNumber: entryNumberMap.get(eid) ?? 0, wpIdx });
+                  }
+                }
+              } else {
+                wpNum++;
+                routeItems.push({ kind: 'waypoint', wp, markerNum: wpNum, wpIdx });
+              }
+            }
+
+            // Add entries not linked to any waypoint at the end
+            const linkedEntryIds = new Set(waypoints.flatMap(wp => wp.entryIds || []));
+            for (const entry of sortedEntries) {
+              if (!linkedEntryIds.has(entry.id)) {
+                routeItems.push({ kind: 'entry', entry, entryNumber: entryNumberMap.get(entry.id) ?? 0, wpIdx: waypoints.length });
+              }
+            }
+
+            // Haversine helper (km)
+            const haversine = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+              const R = 6371;
+              const toRad = (d: number) => (d * Math.PI) / 180;
+              const dLat = toRad(b.lat - a.lat), dLon = toRad(b.lng - a.lng);
+              const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+              return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+            };
+
+            // Per-leg distances (haversine between consecutive waypoints)
+            const legDistances: number[] = [];
+            for (let i = 0; i < waypoints.length - 1; i++) {
+              legDistances.push(haversine(waypoints[i].coords, waypoints[i + 1].coords));
+            }
+
+            // Leg mode style lookup
+            const getLegStyle = (legIdx: number) => {
+              let mode = routeMode || 'straight';
+              if (routeMode === 'mixed' && routeLegModes?.[legIdx]) mode = routeLegModes[legIdx];
+              return ROUTE_MODE_STYLES[mode] || ROUTE_MODE_STYLES.straight;
+            };
+
             return (
-              <div className="space-y-4">
-                {displayWaypoints.length > 0 ? displayWaypoints.map(({ wp, num }) => (
-                  <WaypointCardLandscape
-                    key={wp.id}
-                    id={wp.id}
-                    title={wp.title}
-                    explorerUsername={expedition.explorerName}
-                    expeditionName={expedition.title}
-                    location={wp.location}
-                    description={wp.description}
-                    date={wp.date}
-                    latitude={wp.coords.lat}
-                    longitude={wp.coords.lng}
-                    elevation={undefined}
-                    views={0}
-                    markerNumber={num}
-                    isStart={wp.id === waypoints[0]?.id}
-                    isEnd={wp.id === waypoints[waypoints.length - 1]?.id && waypoints.length > 1}
-                    isCurrent={expedition.currentLocationSource === 'waypoint' && expedition.currentLocationId === wp.id}
-                    onClick={() => onWaypointClick(wp.coords)}
-                  />
-                )) : (
-                  <div className="p-8 text-center">
+              <div>
+                {routeItems.length > 0 ? routeItems.map((item, i) => {
+                  const prev = i > 0 ? routeItems[i - 1] : null;
+                  const isNewLeg = prev && prev.wpIdx !== item.wpIdx
+                    && prev.wpIdx < waypoints.length && item.wpIdx <= waypoints.length;
+
+                  // Sum distances for legs between previous and current waypoint positions
+                  let legDist = 0;
+                  let legStyle = ROUTE_MODE_STYLES.straight;
+                  if (isNewLeg) {
+                    const from = prev!.wpIdx;
+                    const to = Math.min(item.wpIdx, waypoints.length - 1);
+                    for (let l = from; l < to; l++) legDist += legDistances[l] || 0;
+                    legStyle = getLegStyle(from);
+                  }
+
+                  return (
+                    <Fragment key={item.kind === 'entry' ? item.entry.id : item.wp.id}>
+                      {/* Leg connector between waypoint positions */}
+                      {isNewLeg && (
+                        <div className="flex flex-col items-center py-1">
+                          <div className="w-px h-3" style={{ backgroundColor: legStyle.color, opacity: 0.4 }} />
+                          <div
+                            className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono font-bold tracking-[0.14em] whitespace-nowrap"
+                            style={{ color: legStyle.color }}
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: legStyle.color }} />
+                            {legStyle.label.toUpperCase()} · {formatDistance(legDist, 1).toUpperCase()}
+                          </div>
+                          <div className="w-px h-2" style={{ backgroundColor: legStyle.color, opacity: 0.4 }} />
+                          <div style={{ color: legStyle.color, opacity: 0.6 }} className="text-[10px] leading-none -mt-0.5">▼</div>
+                        </div>
+                      )}
+                      {/* Same-waypoint spacing */}
+                      {prev && prev.wpIdx === item.wpIdx && <div className="h-3" />}
+                      {/* Card */}
+                      {item.kind === 'entry' ? (
+                        <EntryCardLandscape
+                          id={item.entry.id}
+                          title={item.entry.title}
+                          explorerUsername={expedition.explorerName}
+                          expeditionName={expedition.title}
+                          location={item.entry.location}
+                          date={item.entry.date}
+                          excerpt={item.entry.excerpt}
+                          type={item.entry.type}
+                          entryNumber={item.entryNumber}
+                          visibility={item.entry.visibility}
+                          isMilestone={item.entry.isMilestone}
+                          isCurrent={expedition.currentLocationSource === 'entry' && expedition.currentLocationId === item.entry.id}
+                          onClick={() => router.push(`/entry/${item.entry.id}`)}
+                        />
+                      ) : (
+                        <WaypointCardLandscape
+                          id={item.wp.id}
+                          title={item.wp.title}
+                          explorerUsername={expedition.explorerName}
+                          expeditionName={expedition.title}
+                          location={item.wp.location}
+                          description={item.wp.description}
+                          date={item.wp.date}
+                          latitude={item.wp.coords.lat}
+                          longitude={item.wp.coords.lng}
+                          elevation={undefined}
+                          views={0}
+                          markerNumber={item.markerNum}
+                          isStart={item.wp.id === waypoints[0]?.id}
+                          isEnd={item.wp.id === waypoints[waypoints.length - 1]?.id && waypoints.length > 1}
+                          isCurrent={expedition.currentLocationSource === 'waypoint' && expedition.currentLocationId === item.wp.id}
+                          onClick={() => onWaypointClick(item.wp.coords)}
+                        />
+                      )}
+                    </Fragment>
+                  );
+                }) : (
+                  <div className="border border-dashed border-[#b5bcc4] dark:border-[#3a3a3a] bg-[#f5f5f5] dark:bg-[#1a1a1a] p-8 text-center">
+                    <div className="text-sm font-bold font-mono text-[#616161] dark:text-[#b5bcc4] mb-1">
+                      NO ROUTE DATA YET
+                    </div>
                     <div className="text-xs text-[#b5bcc4] dark:text-[#616161]">
-                      No standalone waypoints. All route points have been converted to journal entries.
+                      Waypoints and journal entries for this expedition will appear here.
                     </div>
                   </div>
                 )}
+                {/* Round-trip return leg */}
+                {isRoundTrip && routeItems.length > 0 && waypoints.length >= 2 && (() => {
+                  const returnLegIdx = waypoints.length - 1;
+                  const returnDist = haversine(waypoints[waypoints.length - 1].coords, waypoints[0].coords);
+                  const returnStyle = getLegStyle(returnLegIdx);
+                  return (
+                    <div className="flex flex-col items-center py-1">
+                      <div className="w-px h-3" style={{ backgroundColor: returnStyle.color, opacity: 0.4 }} />
+                      <div
+                        className="flex items-center gap-1.5 px-3 py-1 text-[10px] font-mono font-bold tracking-[0.14em] whitespace-nowrap"
+                        style={{ color: returnStyle.color }}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: returnStyle.color }} />
+                        RETURN TO START · {returnStyle.label.toUpperCase()} · {formatDistance(returnDist, 1).toUpperCase()}
+                      </div>
+                      <div className="w-px h-2" style={{ backgroundColor: returnStyle.color, opacity: 0.4 }} />
+                      <div style={{ color: returnStyle.color, opacity: 0.6 }} className="text-[10px] leading-none -mt-0.5">▼</div>
+                    </div>
+                  );
+                })()}
               </div>
             );
         })()}

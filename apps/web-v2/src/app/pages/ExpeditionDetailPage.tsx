@@ -1191,6 +1191,9 @@ export function ExpeditionDetailPage() {
             onDeleteReply={handleDeleteReply}
             onWaypointClick={handleWaypointClick}
             router={router}
+            routeMode={apiExpedition?.routeMode}
+            routeLegModes={apiExpedition?.routeLegModes}
+            isRoundTrip={apiExpedition?.isRoundTrip}
           />
         </div>
 
