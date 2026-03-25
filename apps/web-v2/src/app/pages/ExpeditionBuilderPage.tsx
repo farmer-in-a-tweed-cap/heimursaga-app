@@ -3381,7 +3381,7 @@ export function ExpeditionBuilderPage() {
             {/* Route Type Legend */}
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-bold dark:text-[#e5e5e5] whitespace-nowrap">ROUTES:</span>
+                <span className="text-xs font-bold dark:text-[#e5e5e5] whitespace-nowrap">ROUTE MODES:</span>
                 <div className="flex flex-wrap gap-x-3 gap-y-1">
                   {Object.entries(ROUTE_MODE_STYLES).map(([mode, style]) => (
                     <div key={mode} className="flex items-center gap-1">
