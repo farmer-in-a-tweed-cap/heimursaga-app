@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Play, Pause, Trash2 } from 'lucide-react';
 import type { VoiceNote } from '@/app/services/api';
+import { extractPeaks } from '@/app/hooks/useAudioRecorder';
 
 interface VoiceNotePlayerProps {
   voiceNote: VoiceNote;
@@ -46,33 +47,66 @@ function getStatusLabel(status?: string): string {
 export function VoiceNotePlayer({ voiceNote, noteNumber, expeditionStatus, isOwner, onDelete }: VoiceNotePlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [waveformPeaks, setWaveformPeaks] = useState<number[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const waveformRef = useRef<HTMLDivElement | null>(null);
+
+  // Fetch and decode audio to extract waveform peaks
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(voiceNote.audioUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const audioCtx = new AudioContext();
+        const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+        if (!cancelled) {
+          setWaveformPeaks(extractPeaks(decoded, 60));
+        }
+        audioCtx.close();
+      } catch {
+        if (!cancelled) {
+          setWaveformPeaks(Array.from({ length: 60 }, () => 0.1 + Math.random() * 0.3));
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [voiceNote.audioUrl]);
+
+  const getOrCreateAudio = useCallback(() => {
+    if (audioRef.current) return audioRef.current;
+    const audio = new Audio(voiceNote.audioUrl);
+    audioRef.current = audio;
+
+    audio.onended = () => {
+      setPlaying(false);
+      setProgress(0);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+
+    audio.onerror = () => {
+      console.error('Audio playback error:', audio.error);
+      setPlaying(false);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+
+    return audio;
+  }, [voiceNote.audioUrl]);
 
   const togglePlay = useCallback(() => {
-    if (!audioRef.current) {
-      const audio = new Audio(voiceNote.audioUrl);
-      audioRef.current = audio;
-
-      audio.onended = () => {
-        setPlaying(false);
-        setProgress(0);
-        if (intervalRef.current) clearInterval(intervalRef.current);
-      };
-
-      audio.onerror = () => {
-        console.error('Audio playback error:', audio.error);
-        setPlaying(false);
-        if (intervalRef.current) clearInterval(intervalRef.current);
-      };
-    }
+    const audio = getOrCreateAudio();
 
     if (playing) {
-      audioRef.current.pause();
+      audio.pause();
       if (intervalRef.current) clearInterval(intervalRef.current);
       setPlaying(false);
     } else {
-      audioRef.current.play().catch((err) => {
+      if (progress >= 0.99) {
+        audio.currentTime = 0;
+        setProgress(0);
+      }
+      audio.play().catch((err) => {
         console.error('Audio play failed:', err);
         setPlaying(false);
       });
@@ -80,10 +114,24 @@ export function VoiceNotePlayer({ voiceNote, noteNumber, expeditionStatus, isOwn
         if (audioRef.current) {
           setProgress(audioRef.current.currentTime / (voiceNote.durationSeconds || 1));
         }
-      }, 100);
+      }, 50);
       setPlaying(true);
     }
-  }, [playing, voiceNote.audioUrl, voiceNote.durationSeconds]);
+  }, [playing, getOrCreateAudio, progress, voiceNote.durationSeconds]);
+
+  const handleScrub = (e: React.MouseEvent<HTMLDivElement>) => {
+    const audio = getOrCreateAudio();
+    if (!waveformRef.current) return;
+
+    const rect = waveformRef.current.getBoundingClientRect();
+    const fraction = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audio.currentTime = fraction * (audio.duration || voiceNote.durationSeconds);
+    setProgress(fraction);
+  };
+
+  const playedBars = waveformPeaks.length > 0
+    ? Math.floor(progress * waveformPeaks.length)
+    : 0;
 
   return (
     <div className="border-2 border-[#202020] dark:border-[#616161] border-l-4 border-l-[#4676ac] bg-white dark:bg-[#1a1a1a]">
@@ -128,16 +176,37 @@ export function VoiceNotePlayer({ voiceNote, noteNumber, expeditionStatus, isOwn
           </button>
 
           <div className="flex-1 min-w-0">
-            {/* Progress bar */}
-            <div className="w-full h-1.5 bg-[#b5bcc4] dark:bg-[#616161]">
-              <div
-                className="h-full bg-[#4676ac] transition-all"
-                style={{ width: `${progress * 100}%` }}
-              />
+            {/* Waveform */}
+            <div
+              ref={waveformRef}
+              className="flex items-center gap-px h-8 cursor-pointer"
+              onClick={handleScrub}
+            >
+              {waveformPeaks.length > 0 ? (
+                waveformPeaks.map((peak, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 rounded-sm transition-colors"
+                    style={{
+                      height: `${peak * 100}%`,
+                      minHeight: 2,
+                      backgroundColor: i < playedBars ? '#4676ac' : '#b5bcc4',
+                    }}
+                  />
+                ))
+              ) : (
+                Array.from({ length: 60 }, (_, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 rounded-sm bg-[#b5bcc4] dark:bg-[#616161]"
+                    style={{ height: '20%', minHeight: 2 }}
+                  />
+                ))
+              )}
             </div>
-            {/* Duration + author */}
+            {/* Time + author */}
             <div className="flex items-center gap-2 mt-1 text-[10px] font-mono text-[#616161] dark:text-[#b5bcc4]" style={{ fontFamily: 'Jost, system-ui, sans-serif', letterSpacing: '0.14em' }}>
-              <span>{formatDuration(voiceNote.durationSeconds)}</span>
+              <span>{formatDuration(Math.floor(progress * voiceNote.durationSeconds))}/{formatDuration(voiceNote.durationSeconds)}</span>
               <span className="uppercase">{voiceNote.author.username}</span>
             </div>
           </div>

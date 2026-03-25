@@ -14,7 +14,7 @@ interface UseAudioRecorderReturn {
 }
 
 /** Downsample audio buffer into N normalized peak values (0–1). */
-function extractPeaks(audioBuffer: AudioBuffer, barCount: number): number[] {
+export function extractPeaks(audioBuffer: AudioBuffer, barCount: number): number[] {
   const rawData = audioBuffer.getChannelData(0);
   const samplesPerBar = Math.floor(rawData.length / barCount);
   const peaks: number[] = [];
