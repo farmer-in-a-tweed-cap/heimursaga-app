@@ -13,6 +13,7 @@ interface MapModalProps {
   expedition: TransformedExpedition;
   routeMode?: string;
   routeLegModes?: string[];
+  hasObstacles?: boolean;
   mapContainerRef: RefObject<HTMLDivElement | null>;
   isDebriefMode: boolean;
   debriefIndex: number;
@@ -47,6 +48,7 @@ export function MapModal({
   expedition,
   routeMode,
   routeLegModes,
+  hasObstacles,
   mapContainerRef,
   isDebriefMode,
   debriefIndex,
@@ -190,6 +192,14 @@ export function MapModal({
                 </div>
                 <span>Current Location</span>
               </div>
+              {hasObstacles && (
+                <div className="flex items-center gap-2">
+                  <div className="w-6 flex items-center justify-center shrink-0">
+                    <div className="w-[18px] h-[18px] bg-[#994040] border-2 border-white rounded-sm flex items-center justify-center" style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.3)', fontSize: '10px', color: 'white', fontWeight: 'bold' }}>!</div>
+                  </div>
+                  <span>Obstacle</span>
+                </div>
+              )}
               <div className="flex items-center gap-2 mt-1 pt-1.5 border-t border-[#b5bcc4] dark:border-[#3a3a3a]">
                 <div className="w-6 flex items-center justify-center shrink-0">
                   <div className="w-6 h-0.5 bg-[#ac6d46]"></div>

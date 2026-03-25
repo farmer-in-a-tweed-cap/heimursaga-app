@@ -422,6 +422,7 @@ export function ExpeditionBuilderPage() {
         routeGeometry: perLegModes.some(m => m !== 'straight') && directionsGeometry ? directionsGeometry : null,
         routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
         routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
+        routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
       };
 
@@ -1265,6 +1266,11 @@ export function ExpeditionBuilderPage() {
             + `::${modeStr}::${!!expedition.isRoundTrip}::${waterwayProfileRef.current}`;
         }
 
+        // Restore waterway obstacles
+        if (expedition.routeObstacles?.length) {
+          setWaterwayObstacles(expedition.routeObstacles);
+        }
+
         // Load entries (read-only context for builder)
         if (expedition.entries && expedition.entries.length > 0) {
           setExpeditionEntries(
@@ -1386,6 +1392,9 @@ export function ExpeditionBuilderPage() {
         .map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
         + `::${modeStr}::${!!draft.isRoundTrip}::${waterwayProfileRef.current}`;
     }
+    if (draft.routeObstacles?.length) {
+      setWaterwayObstacles(draft.routeObstacles);
+    }
     if (draft.startDate && draft.endDate) {
       const start = new Date(draft.startDate);
       const end = new Date(draft.endDate);
@@ -1448,6 +1457,7 @@ export function ExpeditionBuilderPage() {
           routeGeometry: perLegModes.some(m => m !== 'straight') && directionsGeometry ? directionsGeometry : null,
           routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
           routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
+          routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
           tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
         };
 

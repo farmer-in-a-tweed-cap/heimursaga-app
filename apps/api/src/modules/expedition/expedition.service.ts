@@ -798,6 +798,7 @@ export class ExpeditionService {
             route_geometry: true,
             route_leg_modes: true,
             route_distance_km: true,
+            route_obstacles: true,
             current_location_type: true,
             current_location_id: true,
             current_location_visibility: true,
@@ -920,6 +921,7 @@ export class ExpeditionService {
         route_mode,
         route_geometry,
         route_leg_modes,
+        route_obstacles,
         current_location_type,
         current_location_id,
         current_location_visibility,
@@ -1152,6 +1154,7 @@ export class ExpeditionService {
           ? JSON.parse(route_leg_modes)
           : undefined,
         routeDistanceKm: expedition.route_distance_km ?? undefined,
+        routeObstacles: route_obstacles ? JSON.parse(route_obstacles) : undefined,
         currentLocationVisibility:
           (current_location_visibility as 'public' | 'sponsors' | 'private') ||
           'public',
@@ -1493,6 +1496,9 @@ export class ExpeditionService {
             ? JSON.stringify(payload.routeLegModes)
             : null,
           route_distance_km: payload.routeDistanceKm ?? null,
+          route_obstacles: payload.routeObstacles
+            ? JSON.stringify(payload.routeObstacles)
+            : null,
           goal: payload.goal ? Math.round(payload.goal * 100) : 0,
           notes_access_threshold: payload.notesAccessThreshold
             ? Math.round(payload.notesAccessThreshold * 100)
@@ -1753,6 +1759,11 @@ export class ExpeditionService {
       }
       if (payload.routeDistanceKm !== undefined) {
         updateData.route_distance_km = payload.routeDistanceKm ?? null;
+      }
+      if (payload.routeObstacles !== undefined) {
+        updateData.route_obstacles = payload.routeObstacles
+          ? JSON.stringify(payload.routeObstacles)
+          : null;
       }
       await this.prisma.expedition.update({
         where: { id: expedition.id },
@@ -2536,6 +2547,7 @@ export class ExpeditionService {
           route_geometry: true,
           route_leg_modes: true,
           route_distance_km: true,
+          route_obstacles: true,
           goal: true,
           notes_access_threshold: true,
           notes_visibility: true,
@@ -2586,6 +2598,7 @@ export class ExpeditionService {
             ? JSON.parse(d.route_leg_modes)
             : undefined,
           routeDistanceKm: d.route_distance_km ?? undefined,
+          routeObstacles: d.route_obstacles ? JSON.parse(d.route_obstacles) : undefined,
           goal: integerToDecimal(d.goal ?? 0),
           notesAccessThreshold: integerToDecimal(d.notes_access_threshold ?? 0),
           notesVisibility: d.notes_visibility || 'public',

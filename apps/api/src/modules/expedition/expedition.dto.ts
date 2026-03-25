@@ -131,6 +131,11 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   routeDistanceKm?: number;
 
   @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
+
+  @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
   earlyAccessEnabled?: boolean;
@@ -238,6 +243,11 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @Min(0)
   @IsOptional()
   routeDistanceKm?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsArray()
+  routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
 
   @ApiProperty({ required: false })
   @IsBoolean()

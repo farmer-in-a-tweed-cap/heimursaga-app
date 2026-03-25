@@ -132,6 +132,7 @@ export function ExpeditionDetailPage() {
   // Mapbox map reference (modal)
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const obstacleMarkersRef = useRef<mapboxgl.Marker[]>([]);
 
   // Handler for waypoint click - open modal and fly to waypoint
   const handleWaypointClick = (coords: { lat: number; lng: number }) => {
@@ -738,6 +739,52 @@ export function ExpeditionDetailPage() {
         }
       }
 
+      // Obstacle markers for waterway routes
+      obstacleMarkersRef.current.forEach(m => m.remove());
+      obstacleMarkersRef.current = [];
+      const obstacles = apiExpedition?.routeObstacles;
+      if (obstacles && obstacles.length > 0) {
+        for (const obs of obstacles) {
+          const el = document.createElement('div');
+          Object.assign(el.style, {
+            width: '22px', height: '22px',
+            backgroundColor: '#994040', border: '2px solid white',
+            borderRadius: '3px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.3)', cursor: 'pointer',
+            fontSize: '12px', color: 'white', fontWeight: 'bold',
+          });
+          el.textContent = '!';
+          const label = obs.type.replace(/_/g, ' ');
+          el.title = `${label}${obs.name ? `: ${obs.name}` : ''}`;
+          const popupEl = document.createElement('div');
+          const typeEl = document.createElement('div');
+          Object.assign(typeEl.style, { fontFamily: 'Jost,sans-serif', fontSize: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#994040' });
+          typeEl.textContent = label;
+          popupEl.appendChild(typeEl);
+          if (obs.name) {
+            const nameEl = document.createElement('div');
+            Object.assign(nameEl.style, { fontFamily: 'Lora,serif', fontSize: '13px', marginTop: '2px' });
+            nameEl.textContent = obs.name;
+            popupEl.appendChild(nameEl);
+          }
+          const popup = new mapboxgl.Popup({ offset: 14, closeButton: false, maxWidth: '200px' })
+            .setDOMContent(popupEl);
+          el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            markerClickedRef.current = true;
+            if (popup.isOpen()) {
+              popup.remove();
+            } else {
+              popup.setLngLat([obs.lon, obs.lat]).addTo(map);
+            }
+          });
+          const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+            .setLngLat([obs.lon, obs.lat])
+            .addTo(map);
+          obstacleMarkersRef.current.push(marker);
+        }
+      }
+
       // Add completed route line based on current location
       let currentLocCoords: { lng: number; lat: number } | null = null;
       const curSrc = apiExpedition?.currentLocationSource;
@@ -1033,6 +1080,8 @@ export function ExpeditionDetailPage() {
     return () => {
       waypointMarkersRef.current.forEach(marker => marker.remove());
       waypointMarkersRef.current = [];
+      obstacleMarkersRef.current.forEach(marker => marker.remove());
+      obstacleMarkersRef.current = [];
       clusteredRef.current?.cleanup();
       clusteredRef.current = null;
       markersRef.current = [];
@@ -1270,6 +1319,7 @@ export function ExpeditionDetailPage() {
         expedition={expedition}
         routeMode={apiExpedition?.routeMode}
         routeLegModes={apiExpedition?.routeLegModes}
+        hasObstacles={(apiExpedition?.routeObstacles?.length ?? 0) > 0}
         mapContainerRef={mapContainerRef}
         isDebriefMode={isDebriefMode}
         debriefIndex={debriefIndex}

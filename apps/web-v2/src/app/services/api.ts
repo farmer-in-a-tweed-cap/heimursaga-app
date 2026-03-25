@@ -762,6 +762,7 @@ export interface Expedition {
   routeMode?: string;
   routeGeometry?: number[][];
   routeLegModes?: string[];
+  routeObstacles?: RouteObstacle[];
   routeDistanceKm?: number;
   totalDistanceKm?: number;
   currentLocationSource?: 'waypoint' | 'entry';
@@ -802,6 +803,7 @@ export interface ExpeditionCreatePayload {
   isRoundTrip?: boolean;
   routeMode?: string | null;
   routeGeometry?: number[][] | null;
+  routeObstacles?: RouteObstacle[] | null;
 }
 
 // Expedition Note types

@@ -937,6 +937,7 @@ export interface ITripDetail {
   routeGeometry?: number[][];
   routeDistanceKm?: number;
   routeLegModes?: string[];
+  routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
@@ -1036,6 +1037,7 @@ export interface ITripCreatePayload {
   routeGeometry?: number[][];
   routeDistanceKm?: number;
   routeLegModes?: string[];
+  routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
 }
 
 export interface ITripCreateResponse {
@@ -1063,6 +1065,7 @@ export interface ITripUpdatePayload {
   routeGeometry?: number[][];
   routeDistanceKm?: number;
   routeLegModes?: string[];
+  routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
