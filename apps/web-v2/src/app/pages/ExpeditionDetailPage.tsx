@@ -285,6 +285,7 @@ export function ExpeditionDetailPage() {
       zoom: 2,
       interactive: false,
       attributionControl: false,
+      projection: 'mercator',
     });
 
     bannerMapRef.current = map;
@@ -630,6 +631,7 @@ export function ExpeditionDetailPage() {
       style: getMapStyle(mapLayer, theme),
       center: initialCenter,
       zoom: 10,
+      projection: 'mercator',
     });
 
     mapRef.current = map;
