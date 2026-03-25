@@ -460,7 +460,7 @@ export class ExpeditionService {
               coverImage: getStaticMediaUrl(cover_image),
               isRoundTrip: is_round_trip ?? false,
               goal: integerToDecimal(goal ?? 0),
-              raised: raised ?? 0,
+              raised: integerToDecimal(raised ?? 0),
               recurringStats: sponsorshipStats.get(public_id)?.recurringStats,
               sponsorsCount:
                 sponsorshipStats.get(public_id)?.sponsorsCount ?? 0,
@@ -699,7 +699,7 @@ export class ExpeditionService {
             startDate,
             endDate,
             goal: integerToDecimal(goal ?? 0),
-            raised: raised ?? 0,
+            raised: integerToDecimal(raised ?? 0),
             recurringStats: sponsorshipStats.get(public_id)?.recurringStats,
             sponsorsCount: sponsorshipStats.get(public_id)?.sponsorsCount ?? 0,
             entriesCount: (row as any)._count?.entries ?? 0,

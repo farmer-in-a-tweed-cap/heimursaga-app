@@ -31,7 +31,7 @@ export function SponsorshipGuidePage() {
           <a href="#sending-sponsorships" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Sending Sponsorships
           </a>
-          <a href="#quick-sponsor" className="text-xs text-[#4676ac] hover:text-[#ac6d46] font-mono">
+          <a href="#quick-sponsor" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Quick Sponsor
           </a>
           <a href="#receiving-sponsorships" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
@@ -39,6 +39,9 @@ export function SponsorshipGuidePage() {
           </a>
           <a href="#setting-up" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Setting Up for Success
+          </a>
+          <a href="#early-access" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
+            → Early Access
           </a>
           <a href="#sponsor-best-practices" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Sponsor Best Practices
@@ -512,6 +515,43 @@ export function SponsorshipGuidePage() {
                   <span>Sponsors can see the threshold and their progress toward it on the sponsorship checkout page</span>
                 </li>
               </ul>
+            </div>
+
+            <div>
+              <h3 id="early-access" className="font-bold mb-2 mt-4 text-[#202020] dark:text-white">Early Access</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Early access gives higher-tier sponsors a head start on new journal entries before they become publicly
+                visible. When you publish an entry, it enters an embargo window during which only qualifying sponsors can
+                read it.
+              </p>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-6 mb-3">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span><strong>Tier 2 sponsors</strong> get access 24 hours before public release</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span><strong>Tier 3 sponsors</strong> get access 48 hours before public release</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span>Applies to both monthly subscribers and one-time donors who reach the tier threshold</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46] mt-1">•</span>
+                  <span>One-time thresholds are cumulative per expedition — multiple donations add up</span>
+                </li>
+              </ul>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-2">
+                Early access is enabled per expedition. Toggle it on in the expedition builder or expedition settings
+                alongside your sponsorship configuration. Once enabled, any new entry you publish enters the embargo
+                window — qualifying sponsors are notified immediately while non-qualifying viewers see a locked preview
+                card with a countdown timer. The entry becomes publicly visible after the 48-hour embargo window.
+              </p>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                Non-qualifying followers are notified when the entry becomes available to them, so they never miss content
+                — they simply see it later.
+              </p>
             </div>
           </div>
         </section>
