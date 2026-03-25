@@ -14,6 +14,8 @@ export function PostHogPageviewTracker() {
 
   useEffect(() => {
     if (!posthog.__loaded) return;
+    // Skip tracking for embed routes — they load on third-party sites and would skew analytics
+    if (pathname === '/embed' || pathname.startsWith('/embed/')) return;
     const url = pathname + (searchParams?.toString() ? `?${searchParams.toString()}` : '');
     posthog.capture('$pageview', { $current_url: url });
   }, [pathname, searchParams]);

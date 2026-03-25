@@ -1,5 +1,3 @@
-'use client';
-
 import { CheckCircle, XCircle, Minus } from 'lucide-react';
 
 export type CompareRow = {

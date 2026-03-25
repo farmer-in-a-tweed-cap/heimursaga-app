@@ -127,6 +127,7 @@ export function ExpeditionDetailPage() {
   const [modalMapReady, setModalMapReady] = useState(false);
   const [pendingFlyTo, setPendingFlyTo] = useState<{ lat: number; lng: number } | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
   // Mapbox map reference (modal)
@@ -180,6 +181,20 @@ export function ExpeditionDetailPage() {
       }
     } catch {
       // User cancelled share dialog
+    }
+  };
+
+  // Handler for copying embed snippet
+  const handleCopyEmbed = async () => {
+    const embedUrl = `${window.location.origin}/embed/expedition/${expeditionId}`;
+    const title = expedition?.title ? expedition.title.replace(/"/g, '&quot;') : 'Expedition Map';
+    const snippet = `<iframe src="${embedUrl}" title="${title}" width="100%" height="400" frameborder="0" style="border:none;" loading="lazy"></iframe>`;
+    try {
+      await navigator.clipboard.writeText(snippet);
+      setEmbedCopied(true);
+      setTimeout(() => setEmbedCopied(false), 2000);
+    } catch {
+      // Clipboard write failed
     }
   };
 
@@ -1160,6 +1175,8 @@ export function ExpeditionDetailPage() {
           isBookmarked={isBookmarked}
           bookmarkLoading={bookmarkLoading}
           shareCopied={shareCopied}
+          embedCopied={embedCopied}
+          isPro={isPro}
           apiExpedition={apiExpedition}
           totalDuration={totalDuration}
           formatDate={formatDate}
@@ -1168,6 +1185,7 @@ export function ExpeditionDetailPage() {
           onFollow={handleFollowExplorer}
           onBookmark={handleBookmarkExpedition}
           onShare={handleShare}
+          onCopyEmbed={handleCopyEmbed}
           onCurrentLocationClick={(coords) => {
             setPendingFlyTo(coords);
             setIsMapModalOpen(true);

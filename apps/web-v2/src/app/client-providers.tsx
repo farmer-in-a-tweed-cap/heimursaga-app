@@ -25,12 +25,18 @@ import { usePathname } from 'next/navigation';
 function AppContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isHomePage = pathname === '/';
+  const isEmbed = pathname === '/embed' || pathname.startsWith('/embed/');
   const { user, isNewSignup, clearNewSignup, refreshUser } = useAuth();
 
-  // Scroll to top on route change
+  // Scroll to top on route change (skip for embeds)
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+    if (!isEmbed) window.scrollTo(0, 0);
+  }, [pathname, isEmbed]);
+
+  // Embed pages: render children only, no chrome
+  if (isEmbed) {
+    return <div className="w-full h-screen">{children}</div>;
+  }
 
   return (
     <>

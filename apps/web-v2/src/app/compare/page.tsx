@@ -2,14 +2,16 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 
 export const metadata: Metadata = {
-  title: 'Compare Platforms',
+  title: 'Compare Platforms for Expedition Creators',
   description:
-    'See how Heimursaga compares to Patreon, Substack, and other creator platforms for expedition creators.',
+    'See how Heimursaga compares to Patreon, Substack, Ko-fi, and other creator platforms — fees, features, and expedition tools side by side.',
+  alternates: { canonical: '/compare' },
   openGraph: {
     title: 'Compare Platforms | Heimursaga',
     description:
-      'See how Heimursaga compares to Patreon, Substack, and other creator platforms for expedition creators.',
+      'See how Heimursaga compares to Patreon, Substack, Ko-fi, and other creator platforms — fees, features, and expedition tools side by side.',
     url: 'https://heimursaga.com/compare',
+    type: 'website',
   },
 };
 
@@ -25,31 +27,45 @@ export default function Page() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <Link
-          href="/compare/patreon"
-          className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 hover:border-[#ac6d46] transition-colors group"
-        >
-          <h2 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-2 group-hover:text-[#ac6d46] transition-colors">
-            PATREON vs HEIMURSAGA
-          </h2>
-          <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-            General-purpose creator platform vs purpose-built expedition tools. Same fees, different experience.
-          </p>
-        </Link>
+      <nav aria-label="Platform comparisons">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Link
+            href="/compare/patreon"
+            className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 hover:border-[#ac6d46] transition-colors group"
+          >
+            <h2 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-2 group-hover:text-[#ac6d46] transition-colors">
+              PATREON vs HEIMURSAGA
+            </h2>
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+              General-purpose creator platform vs purpose-built expedition tools. Same fees, different experience.
+            </p>
+          </Link>
 
-        <Link
-          href="/compare/substack"
-          className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 hover:border-[#ac6d46] transition-colors group"
-        >
-          <h2 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-2 group-hover:text-[#ac6d46] transition-colors">
-            SUBSTACK vs HEIMURSAGA
-          </h2>
-          <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
-            Newsletter-first platform vs expedition storytelling. Both let you write and get paid — the tools around that writing are very different.
-          </p>
-        </Link>
-      </div>
+          <Link
+            href="/compare/substack"
+            className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 hover:border-[#ac6d46] transition-colors group"
+          >
+            <h2 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-2 group-hover:text-[#ac6d46] transition-colors">
+              SUBSTACK vs HEIMURSAGA
+            </h2>
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+              Newsletter-first platform vs expedition storytelling. Both let you write and get paid — the tools around that writing are very different.
+            </p>
+          </Link>
+
+          <Link
+            href="/compare/ko-fi"
+            className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-6 hover:border-[#ac6d46] transition-colors group"
+          >
+            <h2 className="text-lg font-bold text-[#202020] dark:text-[#e5e5e5] mb-2 group-hover:text-[#ac6d46] transition-colors">
+              KO-FI vs HEIMURSAGA
+            </h2>
+            <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+              Lightweight tipping platform with 0% fees vs expedition-specific tools. Ko-fi wins on price — Heimursaga wins on purpose.
+            </p>
+          </Link>
+        </div>
+      </nav>
     </div>
   );
 }

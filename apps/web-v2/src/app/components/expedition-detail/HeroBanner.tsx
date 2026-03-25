@@ -1,4 +1,4 @@
-import type { Ref } from 'react';
+import { type Ref } from 'react';
 import Link from 'next/link';
 import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
@@ -20,6 +20,8 @@ interface HeroBannerProps {
   isBookmarked: boolean;
   bookmarkLoading: boolean;
   shareCopied: boolean;
+  embedCopied: boolean;
+  isPro: boolean;
   apiExpedition: Expedition | null;
   totalDuration: number | null;
   formatDate: (date: string | undefined) => string;
@@ -28,6 +30,7 @@ interface HeroBannerProps {
   onFollow: (explorerId: string) => void;
   onBookmark: () => void;
   onShare: () => void;
+  onCopyEmbed: () => void;
   onCurrentLocationClick: (coords: { lat: number; lng: number }) => void;
   explorerProfile: ExplorerProfile | null;
   onReport?: () => void;
@@ -46,6 +49,8 @@ export function HeroBanner({
   isBookmarked,
   bookmarkLoading,
   shareCopied,
+  embedCopied,
+  isPro,
   apiExpedition,
   totalDuration,
   formatDate,
@@ -54,6 +59,7 @@ export function HeroBanner({
   onFollow,
   onBookmark,
   onShare,
+  onCopyEmbed,
   onCurrentLocationClick,
   explorerProfile,
   onReport,
@@ -311,7 +317,7 @@ export function HeroBanner({
               {/* Sponsor button */}
               {!isOwner && showSponsorshipSection && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
                 <Link
-                  href={isAuthenticated ? `/sponsor/${expedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
+                  href={isAuthenticated ? `/sponsor/${expedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
                   className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap flex items-center gap-2"
                 >
                   SPONSOR
@@ -338,8 +344,17 @@ export function HeroBanner({
                 onClick={onShare}
                 className="px-4 py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2"
               >
-                {shareCopied ? 'COPIED' : 'SHARE'}
+                {shareCopied ? 'COPIED!' : 'SHARE'}
               </button>
+              {/* Embed button - Explorer Pro owners only */}
+              {isOwner && isPro && (
+                <button
+                  onClick={onCopyEmbed}
+                  className="px-4 py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-xs font-bold whitespace-nowrap"
+                >
+                  {embedCopied ? 'COPIED!' : 'EMBED'}
+                </button>
+              )}
               {/* Report button - non-owners only */}
               {!isOwner && onReport && (
                 <button

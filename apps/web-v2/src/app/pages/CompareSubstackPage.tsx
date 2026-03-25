@@ -1,12 +1,17 @@
-'use client';
-
 import Link from 'next/link';
-import { Anchor, Map, DollarSign, Video, Users, Navigation, BookOpen, Mic, Heart, Mail, Pen, TrendingUp } from 'lucide-react';
+import { Anchor, Map, DollarSign, Video, Users, Navigation, BookOpen, Mic, Heart, Mail, Pen, TrendingUp, Gift } from 'lucide-react';
 import { CompareTable, FeeTable } from '@/app/components/CompareTable';
 
 export function CompareSubstackPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-4 sm:px-6 py-12">
+      {/* Breadcrumb */}
+      <nav aria-label="Breadcrumb" className="text-xs mb-4">
+        <Link href="/compare" className="text-[#ac6d46] hover:text-[#4676ac]">Compare</Link>
+        <span className="mx-2 text-[#b5bcc4] dark:text-[#616161]">/</span>
+        <span className="text-[#202020] dark:text-[#e5e5e5] font-semibold">Substack vs Heimursaga</span>
+      </nav>
+
       {/* Page Header */}
       <div className="bg-[#202020] text-white border-2 border-[#616161] mb-8">
         <div className="bg-[#ac6d46] p-6 sm:p-8 border-b-2 border-[#616161]">
@@ -41,7 +46,7 @@ export function CompareSubstackPage() {
               rows={[
                 { label: 'Platform fee', a: '10% of paid revenue', b: '10% of sponsorships' },
                 { label: 'Payment processing', a: '2.9% + $0.30', b: '~2.9% + $0.30 (Stripe)' },
-                { label: 'Recurring billing fee', a: '+0.5–0.7% on subscriptions', b: 'None', aColor: 'text-[#994040]', bColor: 'text-[#598636]' },
+                { label: 'Recurring billing fee', a: '+0.7% on subscriptions', b: 'None', aColor: 'text-[#994040]', bColor: 'text-[#598636]' },
                 { label: 'Effective total fee', a: '~13–16% per transaction', b: '~13% per transaction' },
                 { label: 'Creator subscription', a: 'Free to start', b: '$7/mo or $50/yr for Explorer Pro', aColor: 'text-[#598636]' },
               ]}
@@ -67,7 +72,7 @@ export function CompareSubstackPage() {
                 </div>
               </div>
               <p className="text-[10px] sm:text-xs text-[#616161] dark:text-[#b5bcc4] mt-3">
-                At small amounts, fees are nearly identical. Substack's extra recurring billing fee (0.5–0.7%) adds up at scale.
+                At small amounts, fees are nearly identical. Substack's extra 0.7% recurring billing fee adds up at scale.
                 Heimursaga requires Explorer Pro ($7/mo or $50/yr) to receive sponsorships — Substack has no upfront cost.
               </p>
             </div>
@@ -87,13 +92,95 @@ export function CompareSubstackPage() {
               rows={[
                 { feature: 'Monthly subscriptions', a: true, b: true },
                 { feature: 'Annual subscriptions', a: true, b: true, note: 'Heimursaga: 10% discount for annual sponsors' },
-                { feature: 'One-time payments', a: 'partial', b: true, note: 'Substack: limited to pledges. Heimursaga: $5–$10,000 per expedition' },
+                { feature: 'One-time payments', a: false, b: true, note: 'Substack pledges convert to subscriptions. Heimursaga: $5–$10,000 per expedition' },
                 { feature: 'Micro-sponsorships ($3 one-tap)', a: false, b: true },
                 { feature: 'Expedition-scoped funding', a: false, b: true, note: 'Sponsors fund specific journeys, not just a creator' },
                 { feature: 'Public funding progress', a: false, b: true },
-                { feature: 'Founding member / premium tiers', a: true, b: true, note: 'Substack: founding tier. Heimursaga: 3 custom tiers ($5–$150/mo)' },
+                { feature: 'Founding member / premium tiers', a: true, b: true, note: 'Substack: founding tier with creator-defined perks. Heimursaga: 3 structured tiers ($5–$150/mo)' },
               ]}
             />
+          </div>
+        </section>
+
+        {/* Sponsor / Donor Perks */}
+        <section className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+          <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
+            <Gift className="w-5 h-5" />
+            <h2 className="text-lg font-bold">SPONSOR / SUBSCRIBER PERKS</h2>
+          </div>
+          <div className="p-4 sm:p-6">
+            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
+              What supporters get in return for their money — and how much control creators have over the perk structure.
+            </p>
+            <CompareTable
+              headerA="Substack"
+              headerB="Heimursaga"
+              rows={[
+                { feature: 'Subscriber-only posts', a: true, b: false, note: 'Heimursaga uses early access and exclusive content types instead' },
+                { feature: 'Early access to content', a: 'partial', b: true, note: 'Substack: manual (schedule unlock). Heimursaga: automatic — Tier 2: 24hrs, Tier 3: 48hrs' },
+                { feature: 'Sponsor wall / public recognition', a: false, b: true, note: 'Heimursaga: name on sponsor wall, highlighted at top tier' },
+                { feature: 'Expedition notes access', a: false, b: true, note: 'All sponsor tiers get access to 500-character daily expedition updates' },
+                { feature: 'Voice note updates', a: false, b: true, note: 'Tier 3 sponsors get exclusive audio updates from the explorer' },
+                { feature: 'Direct messaging with creator', a: true, b: true, note: 'Substack: can restrict to paid/founding. Heimursaga: available with Explorer Pro' },
+                { feature: 'Founding member tier', a: true, b: false, note: 'Substack: optional higher-priced tier for superfans with creator-defined perks' },
+                { feature: 'Tiered perk structure', a: true, b: true, note: 'Substack: free / paid / founding with creator-defined perks. Heimursaga: 3 tiers with automatic escalating perks' },
+              ]}
+            />
+
+            {/* Heimursaga tier breakdown */}
+            <div className="mt-6 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-2 border-[#202020] dark:border-[#616161] p-4">
+              <h3 className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4] uppercase tracking-wider mb-4">
+                HEIMURSAGA TIER STRUCTURE
+              </h3>
+
+              {/* Monthly tiers */}
+              <div className="mb-4">
+                <h4 className="text-xs font-bold text-[#ac6d46] uppercase tracking-wider mb-2">MONTHLY SUBSCRIPTIONS</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { name: 'Fellow Traveler', price: '$5–$15/mo', perks: ['Expedition notes access', 'Name on sponsor wall'] },
+                    { name: 'Journey Partner', price: '$15–$50/mo', perks: ['Everything below, plus:', '24hr early entry access'] },
+                    { name: 'Expedition Patron', price: '$50–$150/mo', perks: ['Everything below, plus:', '48hr early entry access', 'Voice note updates'] },
+                  ].map((tier) => (
+                    <div key={tier.name} className="border border-[#b5bcc4]/40 dark:border-[#616161]/40 p-3">
+                      <div className="font-semibold text-sm text-[#202020] dark:text-[#e5e5e5]">{tier.name}</div>
+                      <div className="text-[10px] text-[#ac6d46] font-bold mb-2">{tier.price}</div>
+                      <ul className="space-y-1">
+                        {tier.perks.map((perk) => (
+                          <li key={perk} className="text-[10px] text-[#616161] dark:text-[#b5bcc4]">{perk}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* One-time tiers */}
+              <div>
+                <h4 className="text-xs font-bold text-[#ac6d46] uppercase tracking-wider mb-2">ONE-TIME SPONSORSHIPS</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {[
+                    { name: 'Tier 1', price: '$5–$25', perks: ['Sponsor wall listing', 'Funding goal contribution', 'Expedition notes access'] },
+                    { name: 'Tier 2', price: '$25–$75', perks: ['Everything below, plus:', '24hr early entry access'] },
+                    { name: 'Tier 3', price: '$75+', perks: ['Everything below, plus:', '48hr early entry access', 'Voice note updates', 'Highlighted on sponsor wall'] },
+                  ].map((tier) => (
+                    <div key={tier.name} className="border border-[#b5bcc4]/40 dark:border-[#616161]/40 p-3">
+                      <div className="font-semibold text-sm text-[#202020] dark:text-[#e5e5e5]">{tier.name}</div>
+                      <div className="text-[10px] text-[#ac6d46] font-bold mb-2">{tier.price}</div>
+                      <ul className="space-y-1">
+                        {tier.perks.map((perk) => (
+                          <li key={perk} className="text-[10px] text-[#616161] dark:text-[#b5bcc4]">{perk}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <p className="text-[10px] sm:text-xs text-[#616161] dark:text-[#b5bcc4] mt-4">
+                Explorers set their own prices within each tier's range. One-time sponsorships are expedition-scoped. Monthly subscriptions cover all of an explorer's expeditions.
+              </p>
+            </div>
           </div>
         </section>
 
@@ -108,18 +195,18 @@ export function CompareSubstackPage() {
               headerA="Substack"
               headerB="Heimursaga"
               rows={[
-                { feature: 'Long-form writing', a: true, b: true, note: 'Substack: newsletter editor. Heimursaga: journal entries with rich text' },
+                { feature: 'Long-form writing', a: true, b: true, note: 'Substack: newsletter editor. Heimursaga: journal entries' },
                 { feature: 'Photo galleries', a: 'partial', b: true, note: 'Substack: inline images. Heimursaga: up to 10 photos per entry (Pro)' },
                 { feature: 'Native video hosting', a: true, b: false, note: 'Substack: recording studio, livestreaming, TV app' },
                 { feature: 'YouTube video embeds', a: true, b: true, note: 'Dedicated video entry type on Heimursaga' },
                 { feature: 'Podcasting / audio', a: true, b: true, note: 'Substack: RSS distribution to Apple/Spotify. Heimursaga: voice notes per expedition' },
-                { feature: 'Email delivery to subscribers', a: true, b: 'partial', note: 'Substack: core feature. Heimursaga: opt-in for monthly sponsors' },
-                { feature: 'Subscriber-only content', a: true, b: true },
+                { feature: 'Email delivery to subscribers', a: true, b: 'partial', note: 'Substack: core feature. Heimursaga: enabled by default for monthly sponsors' },
+                { feature: 'Sponsor-only content', a: true, b: 'partial', note: 'Heimursaga: expedition notes and voice notes are sponsor-exclusive; entries use early access instead of permanent paywalls' },
                 { feature: 'Automatic early access by tier', a: false, b: true, note: 'Tier 2: 24hrs early. Tier 3: 48hrs early' },
                 { feature: 'Content tied to GPS location', a: false, b: true },
                 { feature: 'Expedition narrative arc', a: false, b: true, note: 'Entries form a chronological journey with route — not a newsletter archive' },
                 { feature: 'Notes (short-form social feed)', a: true, b: false },
-                { feature: 'Email automations', a: true, b: false },
+                { feature: 'Email automations', a: 'partial', b: false, note: 'Substack: drip campaigns rolling out to creators in 2026' },
               ]}
             />
           </div>
@@ -165,11 +252,11 @@ export function CompareSubstackPage() {
               headerB="Heimursaga"
               rows={[
                 { feature: 'Built-in audience network', a: true, b: false, note: 'Substack has millions of readers and cross-recommendation network' },
-                { feature: 'Email newsletter delivery', a: true, b: 'partial', note: 'Substack: core distribution. Heimursaga: opt-in for monthly sponsors' },
+                { feature: 'Email newsletter delivery', a: true, b: 'partial', note: 'Substack: core distribution. Heimursaga: enabled by default for monthly sponsors' },
                 { feature: 'Recommendation engine', a: true, b: false, note: 'Substack creators can recommend each other to grow subscribers' },
                 { feature: 'Custom domain support', a: true, b: false },
                 { feature: 'Threaded comments on entries', a: true, b: true },
-                { feature: 'Direct messaging', a: false, b: true },
+                { feature: 'Direct messaging', a: true, b: true, note: 'Substack: launched 2024, can restrict to paid subscribers' },
                 { feature: 'Follow / bookmark system', a: true, b: true },
                 { feature: 'Public sponsor wall', a: false, b: true, note: 'Public recognition creates social proof and incentivizes sponsorship' },
                 { feature: 'Expedition notes', a: false, b: true, note: '500-character daily updates — public or sponsor-exclusive' },
@@ -231,7 +318,7 @@ export function CompareSubstackPage() {
                   </li>
                   <li className="flex items-start gap-2">
                     <DollarSign className="w-4 h-4 text-[#ac6d46] mt-0.5 flex-shrink-0" />
-                    <span><strong>Lower recurring fees</strong> — no extra billing fee on subscriptions. At scale, Substack's 0.5–0.7% recurring surcharge adds up.</span>
+                    <span><strong>Lower recurring fees</strong> — no extra billing fee on subscriptions. At scale, Substack's 0.7% recurring surcharge adds up.</span>
                   </li>
                 </ul>
               </div>
@@ -267,6 +354,15 @@ export function CompareSubstackPage() {
           </div>
         </section>
 
+      </div>
+
+      {/* Cross-links */}
+      <div className="mt-8 text-center">
+        <p className="text-xs font-bold text-[#616161] dark:text-[#b5bcc4] uppercase tracking-wider mb-3">MORE COMPARISONS</p>
+        <div className="flex justify-center gap-4 sm:gap-6 flex-wrap">
+          <Link href="/compare/patreon" className="text-sm text-[#ac6d46] hover:text-[#4676ac]">Patreon vs Heimursaga</Link>
+          <Link href="/compare/ko-fi" className="text-sm text-[#ac6d46] hover:text-[#4676ac]">Ko-fi vs Heimursaga</Link>
+        </div>
       </div>
     </div>
   );
