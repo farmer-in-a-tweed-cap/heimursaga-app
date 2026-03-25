@@ -49,6 +49,7 @@ export class WaterwayRoutingService {
   async getWaterwayRoute(
     locations: Array<{ lat: number; lon: number }>,
     profile: 'canoe' | 'motorboat',
+    onProgress?: (step: string, current: number, total: number) => void,
   ): Promise<RouteResult> {
     if (locations.length < 2) {
       throw new Error('At least 2 locations are required');
@@ -76,6 +77,7 @@ export class WaterwayRoutingService {
     // Fetch tiles sequentially with delay to avoid Overpass rate limits
     const tileData: CachedTile[] = [];
     for (let i = 0; i < tiles.length; i++) {
+      onProgress?.('Fetching map data', i + 1, tiles.length);
       if (i > 0) {
         await new Promise((r) => setTimeout(r, 1000));
       }
@@ -90,9 +92,11 @@ export class WaterwayRoutingService {
       this.logger.log(
         `Retrying ${failedTileIndices.length} failed tile(s): ${failedTileIndices.map((i) => tiles[i]).join(', ')}`,
       );
+      onProgress?.('Retrying failed tiles', 0, failedTileIndices.length);
       await new Promise((r) => setTimeout(r, 2000)); // backoff before retry
       for (let fi = 0; fi < failedTileIndices.length; fi++) {
         const idx = failedTileIndices[fi];
+        onProgress?.('Retrying failed tiles', fi + 1, failedTileIndices.length);
         // Evict from cache so getTile actually re-fetches
         this.tileCache.delete(tiles[idx]);
         tileData[idx] = await this.getTile(tiles[idx]);
@@ -110,6 +114,7 @@ export class WaterwayRoutingService {
     );
 
     // Merge all tile graphs into one
+    onProgress?.('Building waterway graph', 0, 0);
     const mergedGraph = this.mergeGraphs(
       tileData.map((t) => (profile === 'canoe' ? t.canoe : t.motorboat)),
     );
@@ -130,6 +135,11 @@ export class WaterwayRoutingService {
     );
 
     // Route between each consecutive pair of locations
+    onProgress?.(
+      'Finding route',
+      0,
+      locations.length - 1,
+    );
     let allCoordinates: [number, number][] = [];
     const allNodeIds: number[] = [];
     const legDistances: number[] = [];
@@ -172,6 +182,7 @@ export class WaterwayRoutingService {
     }
 
     for (let i = 0; i < locations.length - 1; i++) {
+      onProgress?.('Finding route', i + 1, locations.length - 1);
       const startSnap = findNearestNode(
         mergedGraph,
         locations[i].lat,

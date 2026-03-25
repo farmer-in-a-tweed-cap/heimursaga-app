@@ -242,6 +242,7 @@ export function ExpeditionBuilderPage() {
   const [directionsLegDistances, setDirectionsLegDistances] = useState<number[] | null>(null);
   const [directionsLegDurations, setDirectionsLegDurations] = useState<number[] | null>(null); // seconds per leg
   const [directionsLoading, setDirectionsLoading] = useState(false);
+  const [directionsProgress, setDirectionsProgress] = useState<string | null>(null);
   const [directionsError, setDirectionsError] = useState<string | null>(null);
   const [directionsWarnings, setDirectionsWarnings] = useState<string[]>([]);
   const [waterwayFlowDirection, setWaterwayFlowDirection] = useState<'downstream' | 'upstream' | 'mixed' | null>(null);
@@ -662,7 +663,16 @@ export function ExpeditionBuilderPage() {
     }
     if (mode === 'waterway') {
       const profile = waterwayProfileRef.current === 'paddle' ? 'canoe' as const : 'motorboat' as const;
-      const result = await routingApi.waterway([{ lat: from.lat, lon: from.lng }, { lat: to.lat, lon: to.lng }], profile, { signal });
+      const result = await routingApi.waterwayStream(
+        [{ lat: from.lat, lon: from.lng }, { lat: to.lat, lon: to.lng }],
+        profile,
+        (evt) => {
+          const pct = evt.total > 0 ? ` (${evt.current}/${evt.total})` : '';
+          setDirectionsProgress(`${evt.step}${pct}`);
+        },
+        { signal },
+      );
+      setDirectionsProgress(null);
       return { coords: result.coordinates, distance: result.totalDistance, duration: result.totalDuration, obstacles: result.obstacles };
     }
     // Mapbox Directions (walking, cycling, driving)
@@ -777,7 +787,7 @@ export function ExpeditionBuilderPage() {
     } finally {
       clearTimeout(timeoutId);
       // Clear loading if this is still the active request (not superseded by a newer one)
-      if (directionsAbortRef.current === abortController) setDirectionsLoading(false);
+      if (directionsAbortRef.current === abortController) { setDirectionsLoading(false); setDirectionsProgress(null); }
     }
   };
 
@@ -878,7 +888,7 @@ export function ExpeditionBuilderPage() {
 
       setDirectionsWarnings(prev => [...prev, `Leg ${legIndex + 1} (${newMode}): ${err.message} — using straight line`]);
     } finally {
-      setDirectionsLoading(false);
+      setDirectionsLoading(false); setDirectionsProgress(null);
     }
 
   };
@@ -920,7 +930,15 @@ export function ExpeditionBuilderPage() {
         }
         const result = profile === 'trail'
           ? await routingApi.trail(locations, { signal: abortController.signal })
-          : await routingApi.waterway(locations, wpProfile === 'paddle' ? 'canoe' : 'motorboat', { signal: abortController.signal });
+          : await routingApi.waterwayStream(
+              locations,
+              wpProfile === 'paddle' ? 'canoe' : 'motorboat',
+              (evt) => {
+                const pct = evt.total > 0 ? ` (${evt.current}/${evt.total})` : '';
+                setDirectionsProgress(`${evt.step}${pct}`);
+              },
+              { signal: abortController.signal },
+            );
 
         if (!abortController.signal.aborted) {
           setDirectionsGeometry(result.coordinates);
@@ -1060,7 +1078,7 @@ export function ExpeditionBuilderPage() {
           setDirectionsLegDistances(null);
           setDirectionsLegDurations(null);
           setDirectionsWarnings([]);
-          setDirectionsLoading(false);
+          setDirectionsLoading(false); setDirectionsProgress(null);
           setWaterwayFlowDirection(null);
           setWaterwayUpstreamFraction(null);
           // Reset leg modes to straight so map doesn't render failed route with old styling
@@ -1082,7 +1100,7 @@ export function ExpeditionBuilderPage() {
     } finally {
       clearTimeout(timeoutId);
       if (directionsAbortRef.current === abortController) {
-        setDirectionsLoading(false);
+        setDirectionsLoading(false); setDirectionsProgress(null);
       }
     }
   };
@@ -1917,7 +1935,7 @@ export function ExpeditionBuilderPage() {
       setDirectionsLegDurations(null);
       setDirectionsError(null);
       setDirectionsWarnings([]);
-      setDirectionsLoading(false);
+      setDirectionsLoading(false); setDirectionsProgress(null);
       setWaterwayFlowDirection(null);
       setWaterwayUpstreamFraction(null);
       setWaterwayObstacles([]);
@@ -3376,9 +3394,6 @@ export function ExpeditionBuilderPage() {
                     </div>
                   ))}
                 </div>
-                {directionsLoading && (
-                  <Loader2 size={16} className="animate-spin text-[#ac6d46]" />
-                )}
               </div>
               <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-1">
                 Defaults to straight line — select a route leg in the sidebar to edit
@@ -4175,7 +4190,12 @@ export function ExpeditionBuilderPage() {
                                         </span>
                                       )}
                                       {directionsLoading && legMode !== 'straight' && (
-                                        <Loader2 size={10} className="animate-spin text-[#ac6d46] ml-auto" />
+                                        <div className="flex items-center gap-1 ml-auto">
+                                          <Loader2 size={10} className="animate-spin text-[#ac6d46]" />
+                                          {directionsProgress && legMode === 'waterway' && (
+                                            <span className="text-[9px] text-[#ac6d46]">{directionsProgress}</span>
+                                          )}
+                                        </div>
                                       )}
                                     </div>
                                   </div>

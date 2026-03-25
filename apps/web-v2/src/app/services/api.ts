@@ -2410,11 +2410,76 @@ export interface TrailRouteResponse {
   obstacles?: RouteObstacle[];
 }
 
+export interface WaterwayProgressEvent {
+  type: 'progress';
+  step: string;
+  current: number;
+  total: number;
+}
+
 export const routingApi = {
   trail: (locations: Array<{ lat: number; lon: number }>, options?: { signal?: AbortSignal }) =>
     api.post<TrailRouteResponse>('/routing/trail', { locations }, options),
   waterway: (locations: Array<{ lat: number; lon: number }>, profile: 'canoe' | 'motorboat', options?: { signal?: AbortSignal }) =>
     api.post<TrailRouteResponse>('/routing/waterway', { locations, profile }, options),
+
+  /** Streaming waterway route with progress events */
+  waterwayStream: async (
+    locations: Array<{ lat: number; lon: number }>,
+    profile: 'canoe' | 'motorboat',
+    onProgress: (event: WaterwayProgressEvent) => void,
+    options?: { signal?: AbortSignal },
+  ): Promise<TrailRouteResponse> => {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    try {
+      headers['x-csrf-token'] = await getCsrfToken();
+    } catch { /* proceed without */ }
+
+    const response = await fetch(`${API_BASE_URL}/routing/waterway?stream=1`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ locations, profile }),
+      credentials: 'include',
+      signal: options?.signal,
+    });
+
+    if (!response.ok) {
+      let msg = 'Waterway routing failed';
+      try { const d = await response.json(); msg = d.message || msg; } catch {}
+      throw new Error(msg);
+    }
+
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let result: TrailRouteResponse | null = null;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop()!; // keep incomplete line in buffer
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const event = JSON.parse(line);
+          if (event.type === 'progress') {
+            onProgress(event as WaterwayProgressEvent);
+          } else if (event.type === 'result') {
+            result = event.data;
+          } else if (event.type === 'error') {
+            throw new Error(event.message);
+          }
+        } catch (e) {
+          if (e instanceof Error && e.message !== 'Unexpected end of JSON input') throw e;
+        }
+      }
+    }
+
+    if (!result) throw new Error('No route result received');
+    return result;
+  },
 };
 
 export default api;
