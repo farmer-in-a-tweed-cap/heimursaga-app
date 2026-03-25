@@ -693,7 +693,8 @@ export function ExpeditionBuilderPage() {
     if (directionsAbortRef.current) directionsAbortRef.current.abort();
     const abortController = new AbortController();
     directionsAbortRef.current = abortController;
-    const timeoutId = setTimeout(() => abortController.abort(), 30000);
+    const hasSlowLeg = inputModes.some(m => m === 'waterway' || m === 'trail');
+    const timeoutId = setTimeout(() => abortController.abort(), hasSlowLeg ? 90000 : 30000);
 
     // Work on a copy to avoid mutating the caller's array/ref
     const modes = [...inputModes];
@@ -775,7 +776,8 @@ export function ExpeditionBuilderPage() {
       setDirectionsLegDurations(null);
     } finally {
       clearTimeout(timeoutId);
-      if (!abortController.signal.aborted) setDirectionsLoading(false);
+      // Clear loading if this is still the active request (not superseded by a newer one)
+      if (directionsAbortRef.current === abortController) setDirectionsLoading(false);
     }
   };
 
@@ -901,8 +903,10 @@ export function ExpeditionBuilderPage() {
     const roundTrip = isRoundTripRef.current;
     const wpProfile = waterwayProfileRef.current;
 
-    // Auto-timeout after 15 seconds to prevent hanging requests
-    const timeoutId = setTimeout(() => abortController.abort(), 15000);
+    // Auto-timeout — waterway/trail routes need longer because the backend
+    // fetches OSM tiles sequentially on first request (cold cache)
+    const timeoutMs = (profile === 'waterway' || profile === 'trail') ? 60000 : 15000;
+    const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
 
     setDirectionsLoading(true);
     setDirectionsError(null);
@@ -1077,7 +1081,7 @@ export function ExpeditionBuilderPage() {
       setPerLegModesAndRef(Array(numLegs).fill('straight' as RouteMode));
     } finally {
       clearTimeout(timeoutId);
-      if (!abortController.signal.aborted) {
+      if (directionsAbortRef.current === abortController) {
         setDirectionsLoading(false);
       }
     }

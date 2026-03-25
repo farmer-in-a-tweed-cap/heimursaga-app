@@ -77,7 +77,7 @@ export class WaterwayRoutingService {
     const tileData: CachedTile[] = [];
     for (let i = 0; i < tiles.length; i++) {
       if (i > 0) {
-        await new Promise((r) => setTimeout(r, 1500));
+        await new Promise((r) => setTimeout(r, 1000));
       }
       tileData.push(await this.getTile(tiles[i]));
     }
@@ -90,14 +90,14 @@ export class WaterwayRoutingService {
       this.logger.log(
         `Retrying ${failedTileIndices.length} failed tile(s): ${failedTileIndices.map((i) => tiles[i]).join(', ')}`,
       );
-      await new Promise((r) => setTimeout(r, 3000)); // backoff before retry
+      await new Promise((r) => setTimeout(r, 2000)); // backoff before retry
       for (let fi = 0; fi < failedTileIndices.length; fi++) {
         const idx = failedTileIndices[fi];
         // Evict from cache so getTile actually re-fetches
         this.tileCache.delete(tiles[idx]);
         tileData[idx] = await this.getTile(tiles[idx]);
         if (fi < failedTileIndices.length - 1) {
-          await new Promise((r) => setTimeout(r, 2000));
+          await new Promise((r) => setTimeout(r, 1000));
         }
       }
     }

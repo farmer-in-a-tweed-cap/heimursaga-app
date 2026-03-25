@@ -159,7 +159,7 @@ export async function fetchOverpassTile(
   const bbox = `${latFloor},${lonFloor},${latFloor + 1},${lonFloor + 1}`;
 
   const query = `
-[out:json][timeout:90];
+[out:json][timeout:15];
 (
   way["waterway"~"river|canal|fairway"](${bbox});
   way["waterway"="stream"]["canoe"="yes"](${bbox});
@@ -196,7 +196,7 @@ out skel qt;
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 120000);
+    const timeout = setTimeout(() => controller.abort(), 20000);
 
     try {
       const response = await fetch(endpoint, {
