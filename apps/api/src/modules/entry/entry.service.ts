@@ -1827,6 +1827,7 @@ export class EntryService {
             id: true,
             author_id: true,
             expedition_id: true,
+            waypoint_id: true,
             cover_upload: {
               select: { original: true, thumbnail: true },
             },
@@ -1843,11 +1844,21 @@ export class EntryService {
           throw new ServiceForbiddenException();
         });
 
+      const now = dateformat().toDate();
+
       // update the entry
       await this.prisma.entry.update({
         where: { id: entry.id },
-        data: { deleted_at: dateformat().toDate() },
+        data: { deleted_at: now },
       });
+
+      // If this entry was converted from a waypoint, soft-delete the waypoint too
+      if (entry.waypoint_id) {
+        await this.prisma.waypoint.update({
+          where: { id: entry.waypoint_id },
+          data: { deleted_at: now },
+        });
+      }
 
       // Decrement explorer and expedition entry counts
       await this.prisma.explorer.update({

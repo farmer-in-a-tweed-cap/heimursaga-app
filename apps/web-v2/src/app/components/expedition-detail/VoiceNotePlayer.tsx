@@ -59,6 +59,12 @@ export function VoiceNotePlayer({ voiceNote, noteNumber, expeditionStatus, isOwn
         setProgress(0);
         if (intervalRef.current) clearInterval(intervalRef.current);
       };
+
+      audio.onerror = () => {
+        console.error('Audio playback error:', audio.error);
+        setPlaying(false);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+      };
     }
 
     if (playing) {
@@ -66,7 +72,10 @@ export function VoiceNotePlayer({ voiceNote, noteNumber, expeditionStatus, isOwn
       if (intervalRef.current) clearInterval(intervalRef.current);
       setPlaying(false);
     } else {
-      audioRef.current.play();
+      audioRef.current.play().catch((err) => {
+        console.error('Audio play failed:', err);
+        setPlaying(false);
+      });
       intervalRef.current = setInterval(() => {
         if (audioRef.current) {
           setProgress(audioRef.current.currentTime / (voiceNote.durationSeconds || 1));
