@@ -82,10 +82,9 @@ export class ExplorerService {
         Math.max(1, parseInt(query.limit, 10) || 20),
       );
 
-      // Admin gets all explorers, public/users get only non-blocked explorers
-      const isAdmin = !!explorerId && (await this.isAdmin(explorerId));
-
-      let where: Prisma.ExplorerWhereInput = isAdmin ? {} : { blocked: false };
+      // Always exclude blocked explorers from public listings
+      // (admin dashboard has its own endpoint that shows blocked users)
+      let where: Prisma.ExplorerWhereInput = { blocked: false };
 
       // Filter to followed explorers
       if (context === 'following') {
@@ -365,11 +364,8 @@ export class ExplorerService {
 
       let where = { username } as Prisma.ExplorerWhereInput;
 
-      // Admins can see all explorers, others only see non-blocked
-      const isAdmin = !!explorerId && (await this.isAdmin(explorerId));
-      if (!isAdmin) {
-        where = { ...where, blocked: false };
-      }
+      // Always exclude blocked explorers from public profiles
+      where = { ...where, blocked: false };
 
       // Check if the viewing explorer is the profile owner (for bypassing visibility filters)
       const isOwnerProfile = explorerId

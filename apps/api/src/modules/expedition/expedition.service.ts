@@ -256,6 +256,7 @@ export class ExpeditionService {
       let where: Prisma.ExpeditionWhereInput = {
         deleted_at: null,
         status: { notIn: ['cancelled', 'draft'] },
+        author: { blocked: false }, // Never show expeditions from blocked explorers
       };
 
       // query based on the explorer role (or public access for unauthenticated users)
@@ -517,7 +518,7 @@ export class ExpeditionService {
 
       // get expeditions (owner sees all their own, others see only public and non-cancelled)
       const where = {
-        author: { username },
+        author: { username, blocked: false },
         ...(isOwner
           ? {}
           : {
@@ -771,6 +772,7 @@ export class ExpeditionService {
       const where: Prisma.ExpeditionWhereInput = {
         public_id: id,
         deleted_at: null,
+        author: { blocked: false },
         ...visibilityFilter,
       };
 

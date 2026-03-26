@@ -72,6 +72,7 @@ export class MapService {
             is_draft: false,
             public: true,
             deleted_at: null,
+            author: { blocked: false },
           },
           select: {
             public_id: true,
@@ -147,6 +148,7 @@ export class MapService {
                 is_draft: false,
                 deleted_at: null,
                 waypoint_id: { not: null },
+                author: { blocked: false },
                 OR: [
                   ...(userId ? [{ author_id: userId }] : []),
                   { expedition_id: null, NOT: { visibility: 'off-grid' } },
@@ -179,6 +181,7 @@ export class MapService {
                     },
                   ],
                   author: {
+                    blocked: false,
                     followers: {
                       some: {
                         follower_id: userId,
@@ -209,6 +212,7 @@ export class MapService {
                 ],
                 author: {
                   username,
+                  blocked: false,
                 },
               },
             },

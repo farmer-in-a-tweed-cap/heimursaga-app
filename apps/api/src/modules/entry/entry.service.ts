@@ -265,6 +265,7 @@ export class EntryService {
       let where = {
         public_id: { not: null },
         is_draft: false, // Exclude drafts from public views
+        author: { blocked: false }, // Never show entries from blocked explorers
       } as Prisma.EntryWhereInput;
 
       // filter based on role
@@ -540,6 +541,7 @@ export class EntryService {
 
       let where = {
         public_id: publicId,
+        author: { blocked: false }, // Never show entries from blocked explorers
       } as Prisma.EntryWhereInput;
 
       // filter based on explorer role
