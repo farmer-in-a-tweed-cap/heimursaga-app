@@ -131,8 +131,19 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
   const previewMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const { theme } = useTheme();
   const { mapLayer } = useMapLayer();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const router = useRouter();
+
+  // Load current user's followed explorers
+  useEffect(() => {
+    if (!isAuthenticated || !user?.username) return;
+    explorerApi.getFollowing(user.username)
+      .then(res => {
+        const usernames = new Set((res.data || []).map(f => f.username));
+        setFollowedExplorers(usernames);
+      })
+      .catch(() => {});
+  }, [isAuthenticated, user?.username]);
 
   // Handle follow/unfollow explorer
   const handleFollowExplorer = async (username: string) => {
