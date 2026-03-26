@@ -379,9 +379,9 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
       }
     }
 
-    map.on('load', () => {
-      updateVisibleItems();
-    });
+    // Stats are updated by the markers effect and moveend/zoomend listeners.
+    // Avoid calling updateVisibleItems here — the closure captures stale data
+    // and would overwrite correct stats if the API responds before map tiles load.
 
     return () => {
       markersRef.current.forEach(marker => marker.remove());
