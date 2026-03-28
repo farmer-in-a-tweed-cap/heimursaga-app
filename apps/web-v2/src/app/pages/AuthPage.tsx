@@ -42,7 +42,11 @@ export function AuthPage() {
       router.push(getSafeRedirect());
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        if (err.status === 429) {
+          setError('Too many login attempts. Please wait a minute and try again.');
+        } else {
+          setError(err.message);
+        }
       } else {
         setError('An unexpected error occurred. Please try again.');
       }
@@ -107,8 +111,9 @@ export function AuthPage() {
       router.push(getSafeRedirect());
     } catch (err) {
       if (err instanceof ApiError) {
-        // Map API error codes to user-friendly messages
-        if (err.message.includes('EMAIL_ALREADY_IN_USE')) {
+        if (err.status === 429) {
+          setError('Too many attempts. Please wait a few minutes and try again.');
+        } else if (err.message.includes('EMAIL_ALREADY_IN_USE')) {
           setError('This email address is already registered');
         } else if (err.message.includes('USERNAME_ALREADY_IN_USE')) {
           setError('This username is already taken');

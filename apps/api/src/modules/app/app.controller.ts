@@ -6,10 +6,9 @@ import {
   HttpStatus,
   Post,
   Res,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Throttle } from '@nestjs/throttler';
 import { FastifyReply } from 'fastify';
 
 import { Public } from '@/common/decorators';
@@ -68,8 +67,7 @@ export class AppController {
   @Public()
   @Post('contact')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(ThrottlerGuard)
-  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 submissions per 5 minutes
+  @Throttle({ short: { limit: 3, ttl: 300000 }, medium: { limit: 3, ttl: 300000 }, long: { limit: 3, ttl: 300000 } })
   async contact(
     @Body('name') name: string,
     @Body('email') email: string,

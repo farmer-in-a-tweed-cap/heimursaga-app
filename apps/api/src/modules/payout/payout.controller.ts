@@ -97,7 +97,7 @@ export class PayoutController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 3600000 } }) // 5 payout requests per hour
+  @Throttle({ short: { limit: 5, ttl: 3600000 }, medium: { limit: 5, ttl: 3600000 }, long: { limit: 5, ttl: 3600000 } })
   async createPayout(
     @Session() session: ISession,
     @Body() body: PayoutCreateDto,

@@ -13,7 +13,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { SkipThrottle, Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
 import { SESSION_KEYS } from '@/common/constants';
 import { Public, Session } from '@/common/decorators';
@@ -34,7 +34,6 @@ import { AuthService } from './auth.service';
 
 @ApiTags('auth')
 @Controller('auth')
-@UseGuards(ThrottlerGuard)
 export class AuthController {
   constructor(
     private authService: AuthService,
@@ -51,7 +50,7 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
+  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } })
   async login(
     @Req() req: IRequest,
     @Res() res: IResponse,
@@ -71,7 +70,7 @@ export class AuthController {
   @Public()
   @Post('signup')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 2, ttl: 300000 } }) // 2 registrations per 5 minutes
+  @Throttle({ short: { limit: 2, ttl: 300000 }, medium: { limit: 2, ttl: 300000 }, long: { limit: 2, ttl: 300000 } })
   @UseGuards(BotDetectionGuard)
   async signup(
     @Req() req: IRequest,
@@ -103,7 +102,7 @@ export class AuthController {
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 reset attempts per 5 minutes
+  @Throttle({ short: { limit: 3, ttl: 300000 }, medium: { limit: 3, ttl: 300000 }, long: { limit: 3, ttl: 300000 } })
   async resetPassword(@Body() body: PasswordResetDto) {
     return this.authService.resetPassword(body);
   }
@@ -111,7 +110,7 @@ export class AuthController {
   @Public()
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 password change attempts per 5 minutes
+  @Throttle({ short: { limit: 3, ttl: 300000 }, medium: { limit: 3, ttl: 300000 }, long: { limit: 3, ttl: 300000 } })
   async updatePassword(@Body() body: PasswordUpdateDto) {
     return this.authService.updatePassword(body);
   }
@@ -120,7 +119,7 @@ export class AuthController {
   @Public()
   @Post('mobile/login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 attempts per minute
+  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } })
   async mobileLogin(
     @Req() req: IRequest,
     @Body() body: LoginDto,
@@ -141,7 +140,7 @@ export class AuthController {
   @Public()
   @Get('mobile/user')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 requests per minute
+  @Throttle({ short: { limit: 30, ttl: 60000 }, medium: { limit: 30, ttl: 60000 }, long: { limit: 30, ttl: 60000 } })
   async getMobileUser(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -161,7 +160,7 @@ export class AuthController {
   @Public()
   @Post('mobile/refresh')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 refresh attempts per minute
+  @Throttle({ short: { limit: 10, ttl: 60000 }, medium: { limit: 10, ttl: 60000 }, long: { limit: 10, ttl: 60000 } })
   async mobileRefresh(@Body() body: MobileRefreshDto) {
     const result = await this.authService.mobileRefresh(body.refreshToken);
 
@@ -174,7 +173,7 @@ export class AuthController {
   @Public()
   @Get('mobile/bookmarks')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 requests per minute
+  @Throttle({ short: { limit: 30, ttl: 60000 }, medium: { limit: 30, ttl: 60000 }, long: { limit: 30, ttl: 60000 } })
   async getMobileBookmarks(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -203,7 +202,7 @@ export class AuthController {
   @Public()
   @Get('mobile/notifications')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 requests per minute
+  @Throttle({ short: { limit: 30, ttl: 60000 }, medium: { limit: 30, ttl: 60000 }, long: { limit: 30, ttl: 60000 } })
   async getMobileNotifications(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -237,7 +236,7 @@ export class AuthController {
   @Public()
   @Post('mobile/notifications/mark-read')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 requests per minute
+  @Throttle({ short: { limit: 10, ttl: 60000 }, medium: { limit: 10, ttl: 60000 }, long: { limit: 10, ttl: 60000 } })
   async markMobileNotificationsAsRead(
     @Headers('authorization') authHeader?: string,
   ) {
@@ -272,7 +271,7 @@ export class AuthController {
   @Public()
   @Get('mobile/badge-count')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 30, ttl: 60000 } }) // 30 requests per minute
+  @Throttle({ short: { limit: 30, ttl: 60000 }, medium: { limit: 30, ttl: 60000 }, long: { limit: 30, ttl: 60000 } })
   async getMobileBadgeCount(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -306,7 +305,7 @@ export class AuthController {
   @Public()
   @Get('tokens/:token')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 10, ttl: 60000 } }) // 10 token validations per minute
+  @Throttle({ short: { limit: 10, ttl: 60000 }, medium: { limit: 10, ttl: 60000 }, long: { limit: 10, ttl: 60000 } })
   async validateToken(@Param('token') token: string) {
     return this.authService.validateToken(token);
   }
@@ -314,7 +313,7 @@ export class AuthController {
   @Public()
   @Post('send-email-verification')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 3, ttl: 300000 } }) // 3 verification emails per 5 minutes
+  @Throttle({ short: { limit: 3, ttl: 300000 }, medium: { limit: 3, ttl: 300000 }, long: { limit: 3, ttl: 300000 } })
   async sendEmailVerification(@Body() body: SendEmailVerificationDto) {
     return this.authService.sendEmailVerification(body.email);
   }
@@ -322,14 +321,14 @@ export class AuthController {
   @Public()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 verification attempts per minute
+  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } })
   async verifyEmail(@Body() body: VerifyEmailDto) {
     return this.authService.verifyEmail(body.token);
   }
 
   @Post('resend-email-verification')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 2, ttl: 300000 } }) // 2 resend attempts per 5 minutes
+  @Throttle({ short: { limit: 2, ttl: 300000 }, medium: { limit: 2, ttl: 300000 }, long: { limit: 2, ttl: 300000 } })
   async resendEmailVerification(@Session() session: ISession) {
     return this.authService.resendEmailVerification(session);
   }

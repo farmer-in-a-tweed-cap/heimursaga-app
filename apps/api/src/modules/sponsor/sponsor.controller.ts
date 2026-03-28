@@ -37,7 +37,7 @@ export class SponsorController {
 
   @Post('checkout')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 checkout attempts per minute
+  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } }) // 5 checkout attempts per minute
   async checkout(
     @Session() session: ISession,
     @Body() body: SponsorCheckoutDto,
@@ -51,7 +51,7 @@ export class SponsorController {
 
   @Post('quick')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } })
   async quickSponsor(
     @Session() session: ISession,
     @Body() body: QuickSponsorDto,
@@ -64,7 +64,7 @@ export class SponsorController {
 
   @Post('quick/confirm')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } })
   async confirmQuickSponsor(
     @Session() session: ISession,
     @Body() body: ConfirmQuickSponsorDto,
@@ -78,7 +78,7 @@ export class SponsorController {
 
   @Post('checkout/prepare')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } })
   async prepareCheckout(
     @Session() session: ISession,
     @Body() body: SponsorPrepareCheckoutDto,
@@ -145,7 +145,7 @@ export class SponsorshipController {
 
   @Post('refund')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 refunds per minute
+  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } }) // 5 refunds per minute
   async issueRefund(
     @Session() session: ISession,
     @Body() body: SponsorshipRefundDto,

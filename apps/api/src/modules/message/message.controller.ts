@@ -29,7 +29,7 @@ export class MessageController {
   constructor(private readonly messageService: MessageService) {}
 
   @Post('send')
-  @Throttle({ default: { limit: 20, ttl: 60000 } }) // 20 messages per minute
+  @Throttle({ short: { limit: 20, ttl: 60000 }, medium: { limit: 20, ttl: 60000 }, long: { limit: 20, ttl: 60000 } })
   @ApiOperation({
     summary: 'Send message to another Explorer Pro member',
     description: 'Send a private message to another Explorer Pro member',

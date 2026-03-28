@@ -145,8 +145,6 @@ export function Header() {
       return pathname === `/journal/${user.username}`;
     }
 
-    if (path === '/admin') return pathname === '/admin';
-
     return pathname === path;
   };
 
@@ -303,18 +301,6 @@ export function Header() {
                 >
                   LOG ENTRY
                 </Link>
-                {user.admin && (
-                  <Link
-                    href="/admin"
-                    className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] relative ${
-                      isActive('/admin')
-                        ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-12 after:h-0.5 after:bg-[#4676ac]'
-                        : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
-                    }`}
-                  >
-                    ADMIN
-                  </Link>
-                )}
               </>
             )}
           </nav>
@@ -610,18 +596,6 @@ export function Header() {
                     >
                       LOG ENTRY
                     </Link>
-                    {user.admin && (
-                      <Link
-                        href="/admin"
-                        className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
-                          isActive('/admin')
-                            ? 'bg-[#4676ac] text-white'
-                            : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
-                        }`}
-                      >
-                        ADMIN
-                      </Link>
-                    )}
                   </>
                 )}
               </div>
