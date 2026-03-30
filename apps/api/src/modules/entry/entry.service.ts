@@ -555,7 +555,8 @@ export class EntryService {
             deleted_at: null,
             OR: [
               { author_id: explorerId }, // Authors can see their own drafts
-              { public: true, is_draft: false }, // Everyone can see published public entries
+              { public: true, is_draft: false }, // Public entries
+              { visibility: 'off-grid', is_draft: false }, // Off-grid: direct link access for authenticated users
             ],
           };
           break;
@@ -565,7 +566,8 @@ export class EntryService {
             deleted_at: null,
             OR: [
               { author_id: explorerId }, // Explorers can see their own drafts
-              { public: true, is_draft: false }, // Everyone can see published public entries
+              { public: true, is_draft: false }, // Public entries
+              { visibility: 'off-grid', is_draft: false }, // Off-grid: direct link access for authenticated users
             ],
           };
           break;
