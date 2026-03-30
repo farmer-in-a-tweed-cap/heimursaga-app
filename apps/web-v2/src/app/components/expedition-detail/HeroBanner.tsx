@@ -315,7 +315,7 @@ export function HeroBanner({
               {!isOwner && showSponsorshipSection && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
                 <Link
                   href={isAuthenticated ? `/sponsor/${expedition.id}` : `/auth?redirect=${encodeURIComponent(`/sponsor/${expedition.id}`)}`}
-                  className="px-4 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs font-bold whitespace-nowrap flex items-center gap-2"
+                  className="px-3 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold font-mono whitespace-nowrap flex items-center gap-2 min-h-[44px]"
                 >
                   SPONSOR
                 </Link>
@@ -326,7 +326,7 @@ export function HeroBanner({
                 <button
                   onClick={onBookmark}
                   disabled={bookmarkLoading}
-                  className={`px-4 py-2 border-2 transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2 ${
+                  className={`px-3 py-2 border-2 transition-all text-sm font-bold font-mono whitespace-nowrap flex items-center gap-2 min-h-[44px] ${
                     isBookmarked
                       ? 'border-[#4676ac] bg-[#4676ac] text-white hover:bg-[#365a87]'
                       : 'border-white/30 text-white hover:bg-white/10'
@@ -338,13 +338,13 @@ export function HeroBanner({
               )}
               {/* Share button - Always visible (public action) */}
               <ShareButton
-                className="px-4 py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2"
+                className="px-3 py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-sm font-bold font-mono whitespace-nowrap flex items-center gap-2 min-h-[44px]"
               />
               {/* Embed button - Explorer Pro owners only */}
               {isOwner && isPro && (
                 <button
                   onClick={onCopyEmbed}
-                  className="px-4 py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-xs font-bold whitespace-nowrap"
+                  className="px-3 py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-sm font-bold font-mono whitespace-nowrap flex items-center min-h-[44px]"
                 >
                   {embedCopied ? 'COPIED!' : 'EMBED'}
                 </button>

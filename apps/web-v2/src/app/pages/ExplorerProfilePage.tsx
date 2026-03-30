@@ -594,7 +594,7 @@ export function ExplorerProfilePage() {
                 <div className="space-y-0.5 md:space-y-1 text-xs md:text-sm text-white">
                   <div className="flex items-center gap-2">
                     <span className="text-white/60 text-xs md:text-xs uppercase">From:</span>
-                    <span className="font-bold truncate">{explorer.fromLocation || 'Not set'}</span>
+                    <span className="font-bold truncate">{explorer.fromLocation || 'Unknown'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-white/60 text-xs md:text-xs uppercase">Currently:</span>
@@ -611,7 +611,7 @@ export function ExplorerProfilePage() {
                         ON EXPEDITION
                       </span>
                     )}
-                    <span className="font-bold truncate">{explorer.currentLocation || 'Not set'}</span>
+                    <span className="font-bold truncate">{explorer.currentLocation || 'Unknown'}</span>
                     {explorer.currentCoordinates && (
                       <span className="text-white/40 text-xs flex-shrink-0">({explorer.currentCoordinates})</span>
                     )}
@@ -782,13 +782,13 @@ export function ExplorerProfilePage() {
             <>
               <Link
                 href="/select-expedition"
-                className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs md:text-sm font-bold font-mono inline-flex items-center leading-none"
+                className="px-3 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-sm font-bold font-mono flex items-center min-h-[44px]"
               >
                 LOG JOURNAL ENTRY
               </Link>
               <Link
                 href="/edit-profile"
-                className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs md:text-sm font-bold font-mono inline-flex items-center leading-none"
+                className="px-3 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-sm font-bold font-mono flex items-center min-h-[44px]"
               >
                 EDIT PROFILE
               </Link>
@@ -799,7 +799,7 @@ export function ExplorerProfilePage() {
             <button
               onClick={handleFollowExplorer}
               disabled={followLoading}
-              className={`px-2 py-1.5 md:px-3 md:py-2 border-2 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:active:scale-100 text-xs md:text-sm font-bold font-mono gap-1.5 md:gap-2 flex items-center ${
+              className={`px-3 py-2 border-2 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:active:scale-100 text-sm font-bold font-mono gap-2 flex items-center min-h-[44px] ${
                 isFollowing
                   ? 'bg-[#4676ac] border-[#4676ac] text-white hover:bg-[#365a87] hover:border-[#365a87] focus-visible:ring-[#4676ac]'
                   : 'border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#616161] hover:border-[#616161] hover:text-white focus-visible:ring-[#616161]'
@@ -813,14 +813,14 @@ export function ExplorerProfilePage() {
           {!isOwnProfile && profile.creator && profile.stripeAccountConnected && sponsorableExpedition && (
             <Link
               href={isAuthenticated ? `/sponsor/${sponsorableExpedition.id}` : `/login?redirect=${encodeURIComponent(`/sponsor/${sponsorableExpedition.id}`)}`}
-              className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs md:text-sm font-bold font-mono inline-flex items-center leading-none"
+              className="px-3 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold font-mono flex items-center min-h-[44px]"
             >
               SPONSOR
             </Link>
           )}
           {/* Share button - Always visible (public action) */}
           <ShareButton
-            className="px-2 py-1.5 md:px-3 md:py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:border-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] dark:hover:border-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs md:text-sm font-bold font-mono inline-flex items-center leading-none"
+            className="px-3 py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:border-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] dark:hover:border-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm font-bold font-mono flex items-center min-h-[44px]"
           />
           {/* Bookmark button - Hidden on own profile */}
           {!isOwnProfile && (

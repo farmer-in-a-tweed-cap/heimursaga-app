@@ -218,11 +218,11 @@ export class UploadService {
       );
 
       // Calculate optimal sizes while preserving aspect ratio
-      // HD quality limits - much higher resolution
-      const maxOriginalWidth = 4096; // 4K width
-      const maxOriginalHeight = 3072; // 4K height
-      const maxThumbnailWidth = 1200; // HD thumbnail
-      const maxThumbnailHeight = 900; // HD thumbnail
+      // Balanced for quality vs memory usage on 512MB dynos
+      const maxOriginalWidth = 2560; // QHD width
+      const maxOriginalHeight = 1920; // QHD height
+      const maxThumbnailWidth = 800; // Thumbnail
+      const maxThumbnailHeight = 600; // Thumbnail
 
       // Calculate resize dimensions preserving aspect ratio
       const originalAspectRatio = originalWidth / originalHeight;
@@ -230,8 +230,8 @@ export class UploadService {
       let originalSize, thumbnailSize;
 
       if (aspect === 'square') {
-        // For square aspect, crop to square but use higher resolution
-        originalSize = { width: 1200, height: 1200 };
+        // For square aspect (avatars), crop to square
+        originalSize = { width: 800, height: 800 };
         thumbnailSize = { width: 300, height: 300 };
       } else {
         // Preserve original aspect ratio - only resize if image is larger than limits
@@ -315,92 +315,77 @@ export class UploadService {
           );
         }
 
-        let originalPromise;
+        // Apply format-specific encoding
         if (outputFormat === 'jpeg') {
-          originalPromise = sharpInstance
-            .jpeg({
-              quality: 98, // High quality JPEG
-              progressive: true,
-              mozjpeg: true, // Better compression
-            })
-            .toBuffer();
+          sharpInstance = sharpInstance.jpeg({
+            quality: 85,
+            progressive: true,
+            mozjpeg: true,
+          });
         } else if (outputFormat === 'png') {
-          originalPromise = sharpInstance
-            .png({
-              quality: 100, // Lossless PNG
-              compressionLevel: 6,
-              progressive: true,
-            })
-            .toBuffer();
+          sharpInstance = sharpInstance.png({
+            quality: 90,
+            compressionLevel: 8,
+            progressive: true,
+          });
         } else {
-          // WebP fallback
-          originalPromise = sharpInstance
-            .webp({
-              quality: 100, // Lossless WebP
-              lossless: true,
-              effort: 6,
-            })
-            .toBuffer();
+          sharpInstance = sharpInstance.webp({
+            quality: 85,
+            effort: 4,
+          });
         }
 
-        // Process thumbnail
-        let thumbnailPromise;
+        // Process original first
+        const timeoutMs = 30000;
+        const originalBuffer = await Promise.race([
+          sharpInstance.toBuffer(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Image processing timeout')), timeoutMs),
+          ),
+        ]);
+
+        // Process thumbnail sequentially to avoid doubling peak memory
+        let thumbnailBuffer: Buffer | null = null;
         if (thumbnail) {
-          const thumbnailSharp = sharp(file.buffer)
-            .rotate() // Auto-rotate based on EXIF orientation data
+          let thumbnailSharp = sharp(file.buffer)
+            .rotate()
             .resize(
               Math.round(thumbnailSize.width),
               Math.round(thumbnailSize.height),
               {
-                fit: aspect === 'square' ? 'cover' : 'inside', // Preserve aspect ratio unless square
+                fit: aspect === 'square' ? 'cover' : 'inside',
                 position: 'center',
                 withoutEnlargement: true,
               },
             );
 
           if (outputFormat === 'jpeg') {
-            thumbnailPromise = thumbnailSharp
-              .jpeg({
-                quality: 95, // High quality thumbnail
-                progressive: true,
-                mozjpeg: true,
-              })
-              .toBuffer();
+            thumbnailSharp = thumbnailSharp.jpeg({
+              quality: 80,
+              progressive: true,
+              mozjpeg: true,
+            });
           } else if (outputFormat === 'png') {
-            thumbnailPromise = thumbnailSharp
-              .png({
-                quality: 100,
-                compressionLevel: 6,
-              })
-              .toBuffer();
+            thumbnailSharp = thumbnailSharp.png({
+              quality: 80,
+              compressionLevel: 8,
+            });
           } else {
-            thumbnailPromise = thumbnailSharp
-              .webp({
-                quality: 95, // High quality WebP thumbnail
-                effort: 4,
-              })
-              .toBuffer();
+            thumbnailSharp = thumbnailSharp.webp({
+              quality: 80,
+              effort: 3,
+            });
           }
-        } else {
-          thumbnailPromise = Promise.resolve(null);
+
+          thumbnailBuffer = await Promise.race([
+            thumbnailSharp.toBuffer(),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('Thumbnail processing timeout')), timeoutMs),
+            ),
+          ]);
         }
 
-        // Process both images in parallel with timeout
-        const timeoutMs = 30000; // 30 second timeout
-        buffers = await Promise.race([
-          Promise.all([originalPromise, thumbnailPromise]).then(
-            ([original, thumbnail]) => ({
-              original,
-              thumbnail,
-            }),
-          ),
-          new Promise<never>((_, reject) =>
-            setTimeout(
-              () => reject(new Error('Image processing timeout')),
-              timeoutMs,
-            ),
-          ),
-        ]);
+        buffers = { original: originalBuffer, thumbnail: thumbnailBuffer };
 
         const processingTime = Date.now() - startTime;
         this.logger.debug(`Sharp processing completed in ${processingTime}ms`);
