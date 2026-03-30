@@ -127,6 +127,14 @@ export class AuthService {
         }
       }
 
+      // Sync DB column if live Stripe status disagrees with cached value
+      if (user.is_stripe_account_connected !== isStripeAccountConnected) {
+        await this.prisma.explorer.update({
+          where: { id: userId },
+          data: { is_stripe_account_connected: isStripeAccountConnected },
+        });
+      }
+
       // Check for an active or planned expedition owned by this user
       const currentExpedition = await this.prisma.expedition.findFirst({
         where: {
@@ -314,6 +322,12 @@ export class AuthService {
         }
       }
 
+      // Sync DB column if live Stripe status disagrees with cached value
+      await this.prisma.explorer.update({
+        where: { id: user.id },
+        data: { is_stripe_account_connected: stripeConnected },
+      });
+
       // Format user response
       const userResponse: ISessionUserGetResponse = {
         id: user.id,
@@ -471,6 +485,12 @@ export class AuthService {
           stripeConnected = false;
         }
       }
+
+      // Sync DB column if live Stripe status disagrees with cached value
+      await this.prisma.explorer.update({
+        where: { id: user.id },
+        data: { is_stripe_account_connected: stripeConnected },
+      });
 
       return {
         id: user.id,

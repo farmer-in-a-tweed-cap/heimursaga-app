@@ -718,7 +718,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         </div>
 
         {/* Map Container */}
-        <div className="flex-1 relative" style={{ minHeight: '250px' }}>
+        <div className="flex-1 relative [&_.mapboxgl-ctrl-geocoder]:z-20" style={{ minHeight: '250px' }}>
           <div ref={mapContainerRef} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }} />
 
           {/* Map Instructions Overlay - hidden on mobile */}
