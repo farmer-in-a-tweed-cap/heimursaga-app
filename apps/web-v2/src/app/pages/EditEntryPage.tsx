@@ -72,6 +72,7 @@ export function EditEntryPage() {
   const [entryDate, setEntryDate] = useState('');
 
   const [entryTime, setEntryTime] = useState('');
+  const [visibility, setVisibility] = useState<'public' | 'off-grid' | 'private'>('public');
   const [commentsEnabled, setCommentsEnabled] = useState(true);
 
   // Auto-save state
@@ -292,7 +293,8 @@ export function EditEntryPage() {
           }
         }
 
-        // Set comments enabled state (default to true if not specified)
+        // Set visibility and comments state
+        setVisibility((entry.visibility as 'public' | 'off-grid' | 'private') || 'public');
         setCommentsEnabled(entry.commentsEnabled !== false);
 
         setIsLoading(false);
@@ -393,9 +395,11 @@ export function EditEntryPage() {
         Object.entries(mediaMetadata).map(([id, data]) => [id, data.credit])
       ),
       coverUploadId: coverPhotoId || undefined,
+      public: visibility === 'public',
+      visibility,
       commentsEnabled,
     };
-  }, [entryTitle, standardContent, photoContent, videoContent, videoUrl, dataContent, locationName, coordinates, entryDate, entryTime, entryType, uploadedMedia, mediaMetadata, coverPhotoId, commentsEnabled, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
+  }, [entryTitle, standardContent, photoContent, videoContent, videoUrl, dataContent, locationName, coordinates, entryDate, entryTime, entryType, uploadedMedia, mediaMetadata, coverPhotoId, visibility, commentsEnabled, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
 
   // Auto-save function
   const performAutoSave = useCallback(async () => {
@@ -405,7 +409,7 @@ export function EditEntryPage() {
     const mediaIds = uploadedMedia.map(m => m.id).join(',');
     const captionsStr = JSON.stringify(mediaMetadata);
     const dataLogStr = `${dlTemperature}|${dlHumidity}|${dlWindSpeed}|${dlPressure}|${dlDistanceCovered}|${dlElevationGain}|${dlDuration}|${dlAvgSpeed}`;
-    const contentSignature = `${entryTitle}|${content}|${locationName}|${coordinates?.lat}|${coordinates?.lng}|${entryType}|${videoUrl}|${mediaIds}|${captionsStr}|${coverPhotoId}|${dataLogStr}`;
+    const contentSignature = `${entryTitle}|${content}|${locationName}|${coordinates?.lat}|${coordinates?.lng}|${entryType}|${videoUrl}|${mediaIds}|${captionsStr}|${coverPhotoId}|${dataLogStr}|${visibility}`;
 
     // Skip if no changes
     if (contentSignature === lastSavedContentRef.current) return;
@@ -424,7 +428,7 @@ export function EditEntryPage() {
       setIsAutoSaving(false);
       isAutoSavingRef.current = false;
     }
-  }, [entryId, apiEntry, entryTitle, standardContent, photoContent, videoContent, videoUrl, dataContent, locationName, coordinates, buildSavePayload, uploadedMedia, mediaMetadata, coverPhotoId, entryType, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
+  }, [entryId, apiEntry, entryTitle, standardContent, photoContent, videoContent, videoUrl, dataContent, locationName, coordinates, buildSavePayload, uploadedMedia, mediaMetadata, coverPhotoId, entryType, visibility, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
 
   // Auto-save interval (every 30 seconds)
   useEffect(() => {
@@ -1386,7 +1390,8 @@ Remember: Your sponsors and followers are reading this to understand your journe
                         name="visibility"
                         id="vis-public"
                         className="mt-1"
-                        defaultChecked={apiEntry?.visibility === 'public'}
+                        checked={visibility === 'public'}
+                        onChange={() => setVisibility('public')}
                       />
                       <label htmlFor="vis-public" className="text-xs">
                         <strong className="text-[#202020] dark:text-[#e5e5e5]">Public:</strong>{' '}
@@ -1399,7 +1404,8 @@ Remember: Your sponsors and followers are reading this to understand your journe
                         name="visibility"
                         id="vis-offgrid"
                         className="mt-1"
-                        defaultChecked={apiEntry?.visibility === 'off-grid'}
+                        checked={visibility === 'off-grid'}
+                        onChange={() => setVisibility('off-grid')}
                       />
                       <label htmlFor="vis-offgrid" className="text-xs">
                         <strong className="text-[#202020] dark:text-[#e5e5e5]">Off-Grid:</strong>{' '}
@@ -1412,7 +1418,8 @@ Remember: Your sponsors and followers are reading this to understand your journe
                         name="visibility"
                         id="vis-private"
                         className="mt-1"
-                        defaultChecked={apiEntry?.visibility === 'private'}
+                        checked={visibility === 'private'}
+                        onChange={() => setVisibility('private')}
                       />
                       <label htmlFor="vis-private" className="text-xs">
                         <strong className="text-[#202020] dark:text-[#e5e5e5]">Private:</strong>{' '}

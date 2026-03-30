@@ -28,16 +28,21 @@ export function ShareButton({ className, label = 'SHARE', onShare }: ShareButton
     ? window.location.origin + window.location.pathname
     : '';
 
+  // Use native share on mobile (touch devices), dropdown on desktop
+  const isMobile = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
   const handleClick = async () => {
-    if (navigator.share) {
+    // Mobile: always use native share sheet, never show dropdown
+    if (isMobile && navigator.share) {
       try {
         await navigator.share({ title: document.title, url });
         onShare?.();
-        return;
       } catch {
-        // User cancelled or share failed — fall through to dropdown
+        // User cancelled — do nothing
       }
+      return;
     }
+    // Desktop: toggle dropdown
     setMenuOpen(!menuOpen);
     onShare?.();
   };
