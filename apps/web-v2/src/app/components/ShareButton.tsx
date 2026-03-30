@@ -53,7 +53,7 @@ export function ShareButton({ className, label = 'SHARE', onShare, dropdownDirec
     setMenuOpen(false);
   };
 
-  const menuButtonClass = 'w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] dark:text-[#e5e5e5] flex items-center gap-2';
+  const menuButtonClass = 'w-full text-left px-3 py-2 text-xs font-mono text-[#202020] dark:text-[#e5e5e5] hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] flex items-center gap-2';
 
   return (
     <div className="relative" ref={menuRef}>
