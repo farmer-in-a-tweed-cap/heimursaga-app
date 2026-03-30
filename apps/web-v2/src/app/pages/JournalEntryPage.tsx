@@ -763,12 +763,6 @@ export function JournalEntryPage() {
               {entry.entryType === 'data' && (
                 <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">TECHNICAL NOTES</div>
               )}
-              {entry.entryType === 'photo' && (
-                <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">ESSAY NARRATIVE</div>
-              )}
-              {entry.entryType === 'video' && (
-                <div className="text-xs font-bold mb-3 text-[#616161] dark:text-[#b5bcc4]">DESCRIPTION</div>
-              )}
               {entry.date && (
                 <p className="font-serif italic text-[15px] lg:text-base text-[#616161] dark:text-[#b5bcc4] mb-8" style={{ lineHeight: 1.85 }}>
                   {new Date(entry.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
