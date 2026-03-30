@@ -283,60 +283,14 @@ export class PayoutService {
         }
 
         // get a stripe platform account link
-        let accountId = payoutMethod.stripe_account_id;
-        try {
-          url = await this.stripeService.accountLinks
-            .create({
-              account: accountId,
-              return_url: backUrl,
-              refresh_url: backUrl,
-              type: stripeMode,
-            })
-            .then(({ url }) => url);
-        } catch (linkErr: any) {
-          // Handle test/live mode mismatch: re-create account in current mode
-          if (
-            linkErr?.type === 'StripeInvalidRequestError' &&
-            (linkErr?.message?.includes('test mode') ||
-             linkErr?.message?.includes('live mode'))
-          ) {
-            this.logger.warn(
-              `Stripe account ${accountId} was created in wrong mode, re-creating...`,
-            );
-            const newAccount = await this.stripeService.createAccount({
-              country: 'US',
-              userId,
-            });
-            accountId = newAccount.accountId;
-
-            // Update the payout method with the new account ID
-            await this.prisma.payoutMethod.update({
-              where: { id: payoutMethod.id },
-              data: {
-                stripe_account_id: accountId,
-                is_verified: false,
-              },
-            });
-
-            // Reset explorer stripe connected status
-            await this.prisma.explorer.update({
-              where: { id: userId },
-              data: { is_stripe_account_connected: false },
-            });
-
-            // Retry with the new account
-            url = await this.stripeService.accountLinks
-              .create({
-                account: accountId,
-                return_url: backUrl,
-                refresh_url: backUrl,
-                type: stripeMode,
-              })
-              .then(({ url }) => url);
-          } else {
-            throw linkErr;
-          }
-        }
+        url = await this.stripeService.accountLinks
+          .create({
+            account: payoutMethod.stripe_account_id,
+            return_url: backUrl,
+            refresh_url: backUrl,
+            type: stripeMode,
+          })
+          .then(({ url }) => url);
       } else {
         throw new ServiceNotFoundException('payout method not found');
       }
