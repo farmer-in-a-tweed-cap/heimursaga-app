@@ -548,8 +548,7 @@ export function RegionReport() {
   // ── Header info ─────────────────────────────────────────────────────────
 
   const locationName = regionData
-    ? [regionData.location.name, regionData.location.region, regionData.location.country]
-        .filter(Boolean)
+    ? [...new Set([regionData.location.name, regionData.location.region, regionData.location.country].filter(Boolean))]
         .join(', ')
     : locationQuery || '';
   const coordsDisplay = regionData
