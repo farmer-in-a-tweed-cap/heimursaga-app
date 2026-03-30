@@ -92,20 +92,26 @@ export function CreateEntryPage() {
   const [showPlanningModal, setShowPlanningModal] = useState(false);
   const pendingSubmitRef = useRef<React.FormEvent | null>(null);
 
-  // Date range for the date picker: expedition creation/publish date → end date or today
+  // Date range for the date picker
+  // Standalone entries: no min, max = today
+  // Expedition entries: expedition creation date → end date or today
   const { dateMin, dateMax } = useMemo(() => {
     const d = new Date();
     const todayLocal = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const endDate = expedition?.endDate ? expedition.endDate.slice(0, 10) : null;
-    const created = expedition?.createdAt ? expedition.createdAt.slice(0, 10) : todayLocal;
+
+    if (!expedition) {
+      return { dateMin: undefined, dateMax: todayLocal };
+    }
+
+    const endDate = expedition.endDate ? expedition.endDate.slice(0, 10) : null;
+    const created = expedition.createdAt ? expedition.createdAt.slice(0, 10) : todayLocal;
     const min = created <= todayLocal ? created : todayLocal;
-    // Max is today, or the expedition end date if completed and ended before today
     let max = todayLocal;
-    if (expedition?.status === 'completed' && endDate && endDate < todayLocal) {
+    if (expedition.status === 'completed' && endDate && endDate < todayLocal) {
       max = endDate;
     }
     return { dateMin: min, dateMax: max };
-  }, [expedition?.createdAt, expedition?.status, expedition?.endDate]);
+  }, [expedition]);
 
   // Auto-save state
   const [draftId, setDraftId] = useState<string | null>(null);
