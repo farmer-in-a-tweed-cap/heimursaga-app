@@ -78,6 +78,13 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
   const [zoom, setZoom] = useState(initialLat && initialLng ? 13 : 1.5);
   const [mapReady, setMapReady] = useState(false);
 
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    const original = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = original; };
+  }, []);
+
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
@@ -675,7 +682,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     position.lng === currentLocation.lng;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 sm:p-4 overflow-hidden overscroll-contain">
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 sm:p-4 overscroll-contain">
       <div className="bg-white dark:bg-[#202020] border-4 border-[#202020] dark:border-[#616161] w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-[#4676ac] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center justify-between">
@@ -730,7 +737,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         </div>
 
         {/* Map Container */}
-        <div className="flex-1 relative" style={{ minHeight: '250px' }}>
+        <div className="flex-1 relative [&_.mapboxgl-ctrl-geocoder_.suggestions]:!overflow-y-auto [&_.mapboxgl-ctrl-geocoder_.suggestions]:!max-h-[40vh]" style={{ minHeight: '250px' }}>
           <div ref={mapContainerRef} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }} />
 
           {/* Map Instructions Overlay - rendered here then moved into the map container
