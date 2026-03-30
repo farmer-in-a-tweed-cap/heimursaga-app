@@ -4,6 +4,7 @@ import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert } from 'l
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
+import { ShareButton } from '@/app/components/ShareButton';
 import type { TransformedExpedition, CurrentLocationData } from '@/app/components/expedition-detail/types';
 import type { Expedition, ExplorerProfile } from '@/app/services/api';
 
@@ -19,7 +20,6 @@ interface HeroBannerProps {
   followLoading: boolean;
   isBookmarked: boolean;
   bookmarkLoading: boolean;
-  shareCopied: boolean;
   embedCopied: boolean;
   isPro: boolean;
   apiExpedition: Expedition | null;
@@ -29,7 +29,6 @@ interface HeroBannerProps {
   onOpenMapModal: () => void;
   onFollow: (explorerId: string) => void;
   onBookmark: () => void;
-  onShare: () => void;
   onCopyEmbed: () => void;
   onCurrentLocationClick: (coords: { lat: number; lng: number }) => void;
   explorerProfile: ExplorerProfile | null;
@@ -48,7 +47,6 @@ export function HeroBanner({
   followLoading,
   isBookmarked,
   bookmarkLoading,
-  shareCopied,
   embedCopied,
   isPro,
   apiExpedition,
@@ -58,7 +56,6 @@ export function HeroBanner({
   onOpenMapModal,
   onFollow,
   onBookmark,
-  onShare,
   onCopyEmbed,
   onCurrentLocationClick,
   explorerProfile,
@@ -340,12 +337,9 @@ export function HeroBanner({
                 </button>
               )}
               {/* Share button - Always visible (public action) */}
-              <button
-                onClick={onShare}
+              <ShareButton
                 className="px-4 py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-xs font-bold whitespace-nowrap flex items-center gap-2"
-              >
-                {shareCopied ? 'COPIED!' : 'SHARE'}
-              </button>
+              />
               {/* Embed button - Explorer Pro owners only */}
               {isOwner && isPro && (
                 <button

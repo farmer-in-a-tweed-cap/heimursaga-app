@@ -5,6 +5,7 @@ import { ExternalLink, Globe, Twitter, Instagram, Youtube, Linkedin, Camera, Ale
 import { ReportModal } from '@/app/components/ReportModal';
 import { ExplorerExpeditionsMap } from '@/app/components/ExplorerExpeditionsMap';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
+import { ShareButton } from '@/app/components/ShareButton';
 import { ExpeditionCard } from '@/app/components/ExpeditionCard';
 import { EntryCard } from '@/app/components/EntryCard';
 import { useParams, useRouter } from 'next/navigation';
@@ -818,9 +819,9 @@ export function ExplorerProfilePage() {
             </Link>
           )}
           {/* Share button - Always visible (public action) */}
-          <button className="px-2 py-1.5 md:px-3 md:py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:border-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] dark:hover:border-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs md:text-sm font-bold font-mono inline-flex items-center leading-none">
-            SHARE
-          </button>
+          <ShareButton
+            className="px-2 py-1.5 md:px-3 md:py-2 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:border-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] dark:hover:border-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-xs md:text-sm font-bold font-mono inline-flex items-center leading-none"
+          />
           {/* Bookmark button - Hidden on own profile */}
           {!isOwnProfile && (
             <InteractionButtons

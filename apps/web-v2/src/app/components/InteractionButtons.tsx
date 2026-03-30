@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
+import { ShareButton } from '@/app/components/ShareButton';
 
 interface InteractionButtonsProps {
   type: 'entry' | 'expedition' | 'journal';
@@ -46,7 +47,6 @@ export function InteractionButtons({
   const router = useRouter();
 
   const [bookmarked, setBookmarked] = useState(isBookmarked);
-  const [shareMenuOpen, setShareMenuOpen] = useState(false);
 
   // Sync local bookmark state when the prop changes (e.g., after API refetch)
   useEffect(() => { setBookmarked(isBookmarked); }, [isBookmarked]);
@@ -87,28 +87,6 @@ export function InteractionButtons({
 
   const showSponsorButton = sponsorshipsEnabled && expeditionStatus !== 'completed' && expeditionStatus !== 'cancelled';
 
-  const handleShare = async () => {
-    const url = window.location.origin + window.location.pathname;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: document.title, url });
-        onShare?.();
-        return;
-      } catch {
-        // User cancelled or share failed — fall through to dropdown
-      }
-    }
-    setShareMenuOpen(!shareMenuOpen);
-    onShare?.();
-  };
-
-  const copyLink = () => {
-    const url = window.location.origin + window.location.pathname;
-    navigator.clipboard.writeText(url);
-    // You could add a toast notification here instead of alert
-    setShareMenuOpen(false);
-  };
-
   const containerClass = layout === 'horizontal' 
     ? `flex ${config.gap} items-center flex-wrap`
     : `flex flex-col ${config.gap}`;
@@ -145,64 +123,10 @@ export function InteractionButtons({
 
       {/* Share Button (Entries Only) - Always visible (public action) */}
       {type === 'entry' && (
-        <div className="relative">
-          <button
-            onClick={handleShare}
-            className={`${config.button} border-2 font-bold font-mono transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] dark:focus-visible:ring-[#616161] ${config.gap} flex items-center bg-white dark:bg-[#202020] text-[#202020] dark:text-[#e5e5e5] border-[#202020] dark:border-[#616161] hover:border-[#0a0a0a] hover:bg-[#0a0a0a] dark:hover:border-[#4a4a4a] dark:hover:bg-[#4a4a4a] hover:text-white`}
-          >
-            {showLabels && <span>SHARE</span>}
-          </button>
-
-          {/* Share Menu */}
-          {shareMenuOpen && (
-            <div className="absolute top-full mt-2 left-0 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] shadow-lg z-50 min-w-[200px] max-w-[calc(100vw-2rem)]">
-              <div className="border-b-2 border-[#202020] dark:border-[#616161] p-2 bg-[#616161] text-white">
-                <div className="text-xs font-bold font-mono">SHARE OPTIONS:</div>
-              </div>
-              <div className="p-2 space-y-1">
-                <button
-                  onClick={copyLink}
-                  className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] dark:text-[#e5e5e5] flex items-center gap-2"
-                >
-                  COPY LINK
-                </button>
-                <button
-                  onClick={() => {
-                    window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(window.location.href)}`, '_blank');
-                    setShareMenuOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] dark:text-[#e5e5e5] flex items-center gap-2"
-                >
-                  SHARE ON X/TWITTER
-                </button>
-                <button
-                  onClick={() => {
-                    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`, '_blank');
-                    setShareMenuOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] dark:text-[#e5e5e5] flex items-center gap-2"
-                >
-                  SHARE ON FACEBOOK
-                </button>
-                <button
-                  onClick={() => {
-                    window.open(`mailto:?subject=Check this out&body=${encodeURIComponent(window.location.href)}`, '_blank');
-                    setShareMenuOpen(false);
-                  }}
-                  className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] dark:text-[#e5e5e5] flex items-center gap-2"
-                >
-                  SHARE VIA EMAIL
-                </button>
-                <button
-                  onClick={() => setShareMenuOpen(false)}
-                  className="w-full text-left px-3 py-2 text-xs font-mono hover:bg-[#b5bcc4] dark:hover:bg-[#3a3a3a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#616161] border border-transparent hover:border-[#202020] dark:hover:border-[#616161] text-[#616161] dark:text-[#b5bcc4] flex items-center gap-2"
-                >
-                  CANCEL
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+        <ShareButton
+          className={`${config.button} border-2 font-bold font-mono transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] dark:focus-visible:ring-[#616161] ${config.gap} flex items-center bg-white dark:bg-[#202020] text-[#202020] dark:text-[#e5e5e5] border-[#202020] dark:border-[#616161] hover:border-[#0a0a0a] hover:bg-[#0a0a0a] dark:hover:border-[#4a4a4a] dark:hover:bg-[#4a4a4a] hover:text-white`}
+          onShare={onShare}
+        />
       )}
 
       {/* Sponsor Button (Expeditions Only) */}

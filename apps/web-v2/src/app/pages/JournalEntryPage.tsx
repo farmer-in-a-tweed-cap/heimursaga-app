@@ -7,9 +7,10 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/app/context/AuthContext';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { InteractionButtons } from '@/app/components/InteractionButtons';
+import { ShareButton } from '@/app/components/ShareButton';
 import { InlineLocationMap } from '@/app/components/InlineLocationMap';
 import { QuickSponsorButton } from '@/app/components/QuickSponsorButton';
-import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, Share2, ShieldAlert, Clock } from 'lucide-react';
+import { UserPlus, UserCheck, ExternalLink, Loader2, AlertTriangle, Trash2, ShieldAlert, Clock } from 'lucide-react';
 import { ReportModal } from '@/app/components/ReportModal';
 import { toast } from 'sonner';
 import { entryApi, commentApi, explorerApi, type Entry, type Comment } from '@/app/services/api';
@@ -52,9 +53,6 @@ export function JournalEntryPage() {
   // Delete state
   const [confirmingDeleteEntry, setConfirmingDeleteEntry] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-
-  // Share state
-  const [shareCopied, setShareCopied] = useState(false);
 
   // Bookmark state
   const [entryBookmarkLoading, setEntryBookmarkLoading] = useState(false);
@@ -562,24 +560,9 @@ export function JournalEntryPage() {
                       EDIT ENTRY
                     </Link>
                   )}
-                  <button
-                    onClick={async () => {
-                      const url = window.location.href;
-                      try {
-                        if (navigator.share) {
-                          await navigator.share({ title: entry.title, url });
-                        } else {
-                          await navigator.clipboard.writeText(url);
-                          setShareCopied(true);
-                          setTimeout(() => setShareCopied(false), 2000);
-                        }
-                      } catch { /* user cancelled share */ }
-                    }}
+                  <ShareButton
                     className="px-4 py-2 border-2 border-[#202020] dark:border-[#616161] hover:bg-[#202020] hover:text-white dark:hover:bg-[#616161] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] text-xs font-bold flex items-center gap-2 dark:text-[#e5e5e5]"
-                  >
-                    <Share2 size={14} />
-                    {shareCopied ? 'COPIED!' : 'SHARE'}
-                  </button>
+                  />
                   <button
                     onClick={() => setConfirmingDeleteEntry(true)}
                     className="px-4 py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs font-bold flex items-center gap-2"
