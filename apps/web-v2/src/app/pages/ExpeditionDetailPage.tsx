@@ -1321,7 +1321,7 @@ export function ExpeditionDetailPage() {
           estimatedEndDate: expedition.estimatedEndDate,
           daysActive: expedition.daysActive,
           journalEntries: expedition.totalEntries,
-          totalFunding: expedition.raised,
+          totalFunding: totalRaised,
           backers: expedition.sponsors,
         }}
         isPro={isPro}
