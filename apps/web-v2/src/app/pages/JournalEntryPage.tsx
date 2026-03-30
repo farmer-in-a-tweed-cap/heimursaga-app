@@ -555,17 +555,17 @@ export function JournalEntryPage() {
                   {entry.expeditionStatus !== 'cancelled' && (
                     <Link
                       href={`/edit-entry/${entry.id}`}
-                      className="px-3 py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold font-mono flex items-center min-h-[44px]"
+                      className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs md:text-sm font-bold font-mono flex items-center min-h-[36px] md:min-h-[44px]"
                     >
                       EDIT ENTRY
                     </Link>
                   )}
                   <ShareButton
-                    className="px-3 py-2 border-2 border-[#202020] dark:border-[#616161] hover:bg-[#202020] hover:text-white dark:hover:bg-[#616161] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] text-sm font-bold font-mono flex items-center gap-2 dark:text-[#e5e5e5] min-h-[44px]"
+                    className="px-2 py-1.5 md:px-3 md:py-2 border-2 border-[#202020] dark:border-[#616161] hover:bg-[#202020] hover:text-white dark:hover:bg-[#616161] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#202020] text-xs md:text-sm font-bold font-mono flex items-center gap-1.5 md:gap-2 dark:text-[#e5e5e5] min-h-[36px] md:min-h-[44px]"
                   />
                   <button
                     onClick={() => setConfirmingDeleteEntry(true)}
-                    className="px-3 py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-sm font-bold font-mono flex items-center gap-2 min-h-[44px]"
+                    className="px-2 py-1.5 md:px-3 md:py-2 border-2 border-[#994040] text-[#994040] hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] text-xs md:text-sm font-bold font-mono flex items-center gap-1.5 md:gap-2 min-h-[36px] md:min-h-[44px]"
                   >
                     <Trash2 size={14} />
                     DELETE

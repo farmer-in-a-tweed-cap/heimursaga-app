@@ -339,6 +339,7 @@ export function HeroBanner({
               {/* Share button - Always visible (public action) */}
               <ShareButton
                 className="px-3 py-2 border-2 border-white/30 text-white hover:bg-white/10 transition-all text-sm font-bold font-mono whitespace-nowrap flex items-center gap-2 min-h-[44px]"
+                dropdownDirection="up"
               />
               {/* Embed button - Explorer Pro owners only */}
               {isOwner && isPro && (

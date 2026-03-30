@@ -59,9 +59,9 @@ export function InteractionButtons({
       gap: 'gap-1',
     },
     md: {
-      button: 'px-3 py-2 text-sm min-h-[44px] min-w-[44px]',
+      button: 'px-2 py-1.5 md:px-3 md:py-2 text-xs md:text-sm min-h-[36px] md:min-h-[44px] min-w-[36px] md:min-w-[44px]',
       icon: 16,
-      gap: 'gap-2',
+      gap: 'gap-1.5 md:gap-2',
     },
     lg: {
       button: 'px-4 py-3 text-base',
