@@ -81,6 +81,8 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const instructionsRef = useRef<HTMLDivElement>(null);
+  const zoomIndicatorRef = useRef<HTMLDivElement>(null);
   const expeditionMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const originalRouteCoordsRef = useRef<number[][]>([]);
   const completedEndIdxRef = useRef<number>(-1);
@@ -386,6 +388,16 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       externalGeocoder: createPOIGeocoder(map),
     } as any);
     map.addControl(geocoder as any, 'top-left');
+
+    // Move instruction and zoom overlays into the map container so they share
+    // the same stacking context as the geocoder (fixes results hidden behind overlays)
+    const mapContainer = map.getContainer();
+    if (instructionsRef.current) {
+      mapContainer.appendChild(instructionsRef.current);
+    }
+    if (zoomIndicatorRef.current) {
+      mapContainer.appendChild(zoomIndicatorRef.current);
+    }
 
     // Manually manage proximity bias at all zoom levels
     const updateGeocoderProximity = () => {
@@ -718,11 +730,12 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
         </div>
 
         {/* Map Container */}
-        <div className="flex-1 relative [&_.mapboxgl-ctrl-geocoder]:z-20" style={{ minHeight: '250px' }}>
+        <div className="flex-1 relative" style={{ minHeight: '250px' }}>
           <div ref={mapContainerRef} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' }} />
 
-          {/* Map Instructions Overlay - hidden on mobile */}
-          <div className="absolute bottom-4 left-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 max-w-xs z-10 shadow-lg hidden sm:block">
+          {/* Map Instructions Overlay - rendered here then moved into the map container
+              via appendChild so it shares the geocoder's stacking context */}
+          <div ref={instructionsRef} className="absolute bottom-4 left-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-3 max-w-xs shadow-lg hidden sm:block" style={{ zIndex: 1 }}>
             <div className="text-xs font-bold mb-2 text-[#202020] dark:text-[#e5e5e5]">
               MAP INSTRUCTIONS:
             </div>
@@ -735,8 +748,8 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
             </div>
           </div>
 
-          {/* Zoom Level & Map Info Indicator - hidden on mobile */}
-          <div className="absolute bottom-4 right-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] px-3 py-2 z-10 font-mono text-xs hidden sm:block">
+          {/* Zoom Level & Map Info Indicator */}
+          <div ref={zoomIndicatorRef} className="absolute bottom-4 right-4 bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] px-3 py-2 font-mono text-xs hidden sm:block" style={{ zIndex: 1 }}>
             <div className="space-y-1">
               <div>
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Zoom:</span>{' '}
