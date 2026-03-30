@@ -87,7 +87,17 @@ export function InteractionButtons({
 
   const showSponsorButton = sponsorshipsEnabled && expeditionStatus !== 'completed' && expeditionStatus !== 'cancelled';
 
-  const handleShare = () => {
+  const handleShare = async () => {
+    const url = window.location.origin + window.location.pathname;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: document.title, url });
+        onShare?.();
+        return;
+      } catch {
+        // User cancelled or share failed — fall through to dropdown
+      }
+    }
     setShareMenuOpen(!shareMenuOpen);
     onShare?.();
   };
