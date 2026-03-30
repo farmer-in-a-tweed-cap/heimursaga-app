@@ -87,8 +87,8 @@ export function InteractionButtons({
 
   const showSponsorButton = sponsorshipsEnabled && expeditionStatus !== 'completed' && expeditionStatus !== 'cancelled';
 
-  const containerClass = layout === 'horizontal' 
-    ? `flex ${config.gap} items-center flex-wrap`
+  const containerClass = layout === 'horizontal'
+    ? `flex ${config.gap} items-center flex-nowrap`
     : `flex flex-col ${config.gap}`;
 
   return (
@@ -98,7 +98,7 @@ export function InteractionButtons({
         <button
           onClick={handleBookmark}
           disabled={isBookmarkLoading}
-          className={`${config.button} border-2 font-bold font-mono transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:active:scale-100 ${config.gap} flex items-center ${
+          className={`${config.button} border-2 font-bold font-mono transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:active:scale-100 ${config.gap} flex items-center whitespace-nowrap flex-shrink-0 ${
             bookmarked
               ? 'bg-[#4676ac] text-white border-[#4676ac] hover:bg-[#365a87] hover:border-[#365a87] focus-visible:ring-[#4676ac]'
               : 'bg-white dark:bg-[#202020] text-[#202020] dark:text-[#e5e5e5] border-[#202020] dark:border-[#616161] hover:border-[#4a4a4a] hover:bg-[#616161] hover:text-white focus-visible:ring-[#202020] dark:focus-visible:ring-[#616161]'

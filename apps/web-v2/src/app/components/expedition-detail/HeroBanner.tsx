@@ -292,10 +292,10 @@ export function HeroBanner({
           )}
 
           {/* Action Bar - Always visible */}
-          <div className="bg-[#202020]/90 px-6 py-3 border-t-2 border-[#616161] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-          <div className="flex items-center justify-between gap-6">
-            {/* Expedition Status */}
-            <div className="flex items-center gap-3">
+          <div className="bg-[#202020]/90 px-3 md:px-6 py-2 md:py-3 border-t-2 border-[#616161] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between gap-2 md:gap-6">
+            {/* Expedition Status - hidden on mobile to give buttons room */}
+            <div className="hidden md:flex items-center gap-3">
               <div className="font-mono text-sm text-[#b5bcc4]">
                 {expedition.status === 'cancelled' ? 'CANCELLED EXPEDITION' : expedition.status === 'completed' ? 'COMPLETED EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'ACTIVE EXPEDITION'}
               </div>
@@ -310,7 +310,7 @@ export function HeroBanner({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 md:gap-2 flex-nowrap">
               {/* Sponsor button */}
               {!isOwner && showSponsorshipSection && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
                 <Link
