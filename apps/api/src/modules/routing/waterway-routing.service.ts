@@ -300,6 +300,20 @@ export class WaterwayRoutingService {
         }
       }
 
+      // Sort obstacles in route order (start → finish) by closest route coordinate index
+      if (routeObstacles.length > 1) {
+        const obstacleRouteIndex = (obs: RouteObstacle) => {
+          let bestIdx = 0;
+          let bestDist = Infinity;
+          for (let i = 0; i < allCoordinates.length; i++) {
+            const d = haversineKm(obs.lat, obs.lon, allCoordinates[i][1], allCoordinates[i][0]);
+            if (d < bestDist) { bestDist = d; bestIdx = i; }
+          }
+          return bestIdx;
+        };
+        routeObstacles.sort((a, b) => obstacleRouteIndex(a) - obstacleRouteIndex(b));
+      }
+
       this.logger.log(
         `Waterway obstacles: ${mergedGraph.obstacles.size} in area, ${routeObstacles.length} on/near route`,
       );
