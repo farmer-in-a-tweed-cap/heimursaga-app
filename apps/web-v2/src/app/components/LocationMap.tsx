@@ -675,7 +675,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     position.lng === currentLocation.lng;
 
   return (
-    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-0 sm:p-4 overflow-hidden overscroll-contain">
       <div className="bg-white dark:bg-[#202020] border-4 border-[#202020] dark:border-[#616161] w-full max-w-5xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="bg-[#4676ac] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center justify-between">
