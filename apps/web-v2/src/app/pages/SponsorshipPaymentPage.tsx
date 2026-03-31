@@ -727,7 +727,7 @@ export function SponsorshipPaymentPage() {
                             setSelectedAmount(null);
                           }}
                           placeholder="Enter custom amount (min $5)"
-                          className={`flex-1 px-4 py-3 border-2 outline-none text-xl font-bold bg-white dark:bg-[#202020] dark:text-[#e5e5e5] ${
+                          className={`flex-1 px-4 py-3 border-2 outline-none text-xl font-bold bg-white dark:bg-[#202020] dark:text-[#e5e5e5] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
                             customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5
                               ? 'border-[#994040] focus:border-[#994040]'
                               : 'border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46]'
