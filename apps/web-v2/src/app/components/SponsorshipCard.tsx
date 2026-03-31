@@ -94,9 +94,9 @@ export function SponsorshipCard({
       </div>
 
       {/* Section: Funding — Raised → [ring] → Goal */}
-      <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] px-4 py-3 flex flex-col items-center justify-center">
+      <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] px-4 py-3 flex flex-col justify-center">
         <div className="flex items-center gap-3 mb-1 w-full">
-          <div className="flex-1 font-mono text-center">
+          <div className="flex-1 font-mono">
             <div className={`text-base font-bold ${
               fundingPercentage >= 100 ? 'text-[#616161] dark:text-[#b5bcc4]' : 'dark:text-[#e5e5e5]'
             }`}>
@@ -119,7 +119,7 @@ export function SponsorshipCard({
               }
             />
           </div>
-          <div className="flex-1 font-mono text-center">
+          <div className="flex-1 font-mono text-right">
             <div className={`text-base font-bold ${
               fundingPercentage >= 100 ? 'text-[#616161] dark:text-[#b5bcc4]' : 'dark:text-[#e5e5e5]'
             }`}>
@@ -128,9 +128,11 @@ export function SponsorshipCard({
             <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-0.5">Goal</div>
           </div>
         </div>
-        <span className="text-[10px] font-mono font-semibold tracking-wider text-[#616161] dark:text-[#b5bcc4]">
-          {fundingPercentage >= 100 ? 'FUNDING COMPLETE' : 'FUNDED'}
-        </span>
+        <div className="text-center">
+          <span className="text-[10px] font-mono font-semibold tracking-wider text-[#616161] dark:text-[#b5bcc4]">
+            {fundingPercentage >= 100 ? 'FUNDING COMPLETE' : 'FUNDED'}
+          </span>
+        </div>
       </div>
 
       {/* Section: Key Stats with Timeline Progress */}
