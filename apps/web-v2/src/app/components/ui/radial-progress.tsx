@@ -5,6 +5,7 @@ interface RadialProgressProps {
   className?: string;
   showValue?: boolean;
   centerContent?: React.ReactNode;
+  color?: string;
 }
 
 export function RadialProgress({
@@ -14,6 +15,7 @@ export function RadialProgress({
   className = "",
   showValue = true,
   centerContent,
+  color = "#4676ac",
 }: RadialProgressProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
@@ -41,7 +43,7 @@ export function RadialProgress({
           cx={size / 2}
           cy={size / 2}
           r={radius}
-          stroke="#4676ac"
+          stroke={color}
           strokeWidth={strokeWidth}
           fill="none"
           strokeDasharray={circumference}

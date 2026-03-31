@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { DollarSign, Clock } from "lucide-react";
 import { Progress } from "@/app/components/ui/progress";
+import { RadialProgress } from "@/app/components/ui/radial-progress";
 import { formatDate } from "@/app/utils/dateFormat";
 
 interface SponsorshipCardProps {
@@ -93,26 +93,44 @@ export function SponsorshipCard({
         </div>
       </div>
 
-      {/* Section: Funding Progress */}
-      <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] px-4 py-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-[#202020] dark:text-[#e5e5e5]" />
-            <span className="text-xs font-semibold font-mono dark:text-[#e5e5e5]">FUNDING PROGRESS</span>
+      {/* Section: Funding — Raised → [ring] → Goal */}
+      <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] px-4 py-3 flex flex-col items-center justify-center">
+        <div className="flex items-center gap-3 mb-1 w-full">
+          <div className="flex-1 font-mono text-center">
+            <div className={`text-base font-bold ${
+              fundingPercentage >= 100 ? 'text-[#616161] dark:text-[#b5bcc4]' : 'dark:text-[#e5e5e5]'
+            }`}>
+              ${(fundingCurrent || 0).toLocaleString()}
+            </div>
+            <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-0.5">Raised</div>
           </div>
-          <span className="font-mono text-sm font-bold text-[#ac6d46]">
-            {fundingPercentage.toFixed(1)}%
-          </span>
+          <div className="shrink-0">
+            <RadialProgress
+              value={Math.min(fundingPercentage || 0, 100)}
+              size={56}
+              strokeWidth={8}
+              color={fundingPercentage >= 100 ? '#616161' : '#ac6d46'}
+              centerContent={
+                <div className={`text-xs font-bold font-mono ${
+                  fundingPercentage >= 100 ? 'text-[#616161] dark:text-[#b5bcc4]' : 'text-[#ac6d46]'
+                }`}>
+                  {(fundingPercentage || 0).toFixed(0)}%
+                </div>
+              }
+            />
+          </div>
+          <div className="flex-1 font-mono text-center">
+            <div className={`text-base font-bold ${
+              fundingPercentage >= 100 ? 'text-[#616161] dark:text-[#b5bcc4]' : 'dark:text-[#e5e5e5]'
+            }`}>
+              {fundingGoal ? `$${fundingGoal.toLocaleString()}` : 'None'}
+            </div>
+            <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-0.5">Goal</div>
+          </div>
         </div>
-        <Progress value={fundingPercentage} className="mb-3 h-2.5" />
-        <div className="flex items-center justify-between font-mono text-xs">
-          <div className="text-[#616161] dark:text-[#b5bcc4]">
-            ${fundingCurrent.toLocaleString()} raised
-          </div>
-          <div className="text-[#616161] dark:text-[#b5bcc4]">
-            ${fundingGoal.toLocaleString()} goal
-          </div>
-        </div>
+        <span className="text-[10px] font-mono font-semibold tracking-wider text-[#616161] dark:text-[#b5bcc4]">
+          {fundingPercentage >= 100 ? 'FUNDING COMPLETE' : 'FUNDED'}
+        </span>
       </div>
 
       {/* Section: Key Stats with Timeline Progress */}
@@ -139,30 +157,22 @@ export function SponsorshipCard({
           </div>
         </div>
 
-        {/* Timeline Progress */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-[#202020] dark:text-[#e5e5e5]" />
-              <span className="text-xs font-semibold font-mono dark:text-[#e5e5e5]">TIMELINE PROGRESS</span>
-            </div>
-            <span className="font-mono text-sm font-bold text-[#4676ac]">
-              {Math.round(timelinePercentage)}%
-            </span>
+        {/* Timeline — Start → [bar] → End */}
+        <div className="flex items-center gap-3 mb-1.5">
+          <div className="w-[5.5rem] shrink-0 font-mono text-xs font-bold dark:text-[#e5e5e5] text-right">
+            {startDate || 'TBD'}
           </div>
-          <Progress 
-            value={timelinePercentage} 
-            className="mb-3 h-2.5"
-            indicatorColor="bg-[#4676ac]"
-          />
-          <div className="flex items-center justify-between font-mono text-xs">
-            <div className="text-[#616161] dark:text-[#b5bcc4]">
-              Start: {startDate}
-            </div>
-            <div className="text-[#616161] dark:text-[#b5bcc4]">
-              {endDate !== null ? `End: ${endDate}` : "Ongoing"}
-            </div>
+          <div className="flex-1">
+            <Progress value={timelinePercentage} indicatorColor="bg-[#4676ac]" className="h-2 w-full" />
           </div>
+          <div className="w-[5.5rem] shrink-0 font-mono text-xs font-bold dark:text-[#e5e5e5]">
+            {endDate !== null ? endDate : "Ongoing"}
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-3 font-mono text-[10px] text-[#616161] dark:text-[#b5bcc4]">
+          <span>Active: <span className="font-bold text-[#202020] dark:text-[#e5e5e5]">{daysActive}d</span></span>
+          <span className="text-xs font-bold text-[#4676ac]">{Math.round(timelinePercentage)}%</span>
+          <span>Left: <span className="font-bold text-[#202020] dark:text-[#e5e5e5]">{daysLeft !== null ? `${daysLeft}d` : '∞'}</span></span>
         </div>
       </div>
 

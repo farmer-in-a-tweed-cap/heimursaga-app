@@ -1,6 +1,6 @@
 'use client';
 
-import { MapPin, DollarSign, Bookmark, Clock, Loader2, EyeOff, Lock } from "lucide-react";
+import { MapPin, Bookmark, Clock, Loader2, EyeOff, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { RadialProgress } from "@/app/components/ui/radial-progress";
 import { Progress } from "@/app/components/ui/progress";
@@ -281,91 +281,78 @@ export function ExpeditionCard({
         </div>
       </div>
 
-      {/* Section: Timeline Progress */}
+      {/* Section: Timeline — Start → [bar] → End */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] px-4 py-3">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 grid grid-cols-2 gap-x-4 gap-y-1.5 font-mono text-xs">
-            <div>
-              <div className="text-[#616161] dark:text-[#b5bcc4]">Start:</div>
-              <div className="font-bold text-sm dark:text-[#e5e5e5]">{formatDate(startDate) || startDate}</div>
-            </div>
-            <div>
-              <div className="text-[#616161] dark:text-[#b5bcc4]">End:</div>
-              <div className="font-bold text-sm dark:text-[#e5e5e5]">{endDate ? formatDate(endDate) || endDate : "Ongoing"}</div>
-            </div>
-            <div>
-              <div className="text-[#616161] dark:text-[#b5bcc4]">{dateStats.row2Left.label}</div>
-              <div className="font-bold text-sm dark:text-[#e5e5e5]">{dateStats.row2Left.value}</div>
-            </div>
-            {dateStats.row2Right && (
-            <div>
-              <div className="text-[#616161] dark:text-[#b5bcc4]">{dateStats.row2Right.label}</div>
-              <div className="font-bold text-sm dark:text-[#e5e5e5]">{dateStats.row2Right.value}</div>
-            </div>
-            )}
+        <div className="flex items-center gap-3 mb-1.5">
+          <div className="shrink-0 font-mono text-xs font-bold dark:text-[#e5e5e5]">
+            {startDate ? (formatDate(startDate) || startDate) : 'TBD'}
           </div>
-          <div>
-            <RadialProgress
-              value={dateStats.progress}
-              size={85}
-              strokeWidth={7}
-              centerContent={
-                <div className="text-center">
-                  <div className="text-lg font-bold font-mono text-[#4676ac]">
-                    {Math.round(dateStats.progress)}%
-                  </div>
-                  <div className="text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
-                    Progress
-                  </div>
-                </div>
-              }
-            />
+          <div className="flex-1">
+            <Progress value={dateStats.progress} indicatorColor="bg-[#4676ac]" className="h-2 w-full" />
           </div>
+          <div className="shrink-0 font-mono text-xs font-bold dark:text-[#e5e5e5]">
+            {endDate ? (formatDate(endDate) || endDate) : 'Ongoing'}
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-3 font-mono text-[10px] text-[#616161] dark:text-[#b5bcc4]">
+          {dateStats.row2Left && (
+            <span>{dateStats.row2Left.label} <span className="font-bold text-[#202020] dark:text-[#e5e5e5]">{dateStats.row2Left.value}</span></span>
+          )}
+          <span className="text-xs font-bold text-[#4676ac]">{Math.round(dateStats.progress)}%</span>
+          {dateStats.row2Right && (
+            <span>{dateStats.row2Right.label} <span className="font-bold text-[#202020] dark:text-[#e5e5e5]">{dateStats.row2Right.value}</span></span>
+          )}
         </div>
       </div>
 
-      {/* Section: Funding Progress OR Expedition Details */}
+      {/* Section: Funding — Raised → [ring] → Goal */}
       {showSponsorshipSection ? (
-        <div className={`px-4 py-4 ${
-          isFullyFunded 
-            ? 'bg-[#f5f5f5] dark:bg-[#2a2a2a]' 
+        <div className={`px-4 py-3 flex-1 flex flex-col items-center justify-center ${
+          isFullyFunded
+            ? 'bg-[#f5f5f5] dark:bg-[#2a2a2a]'
             : 'bg-white dark:bg-[#202020]'
         }`}>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <DollarSign className={`h-4 w-4 ${
-                isFullyFunded 
-                  ? 'text-[#616161] dark:text-[#b5bcc4]' 
-                  : 'text-[#202020] dark:text-[#e5e5e5]'
-              }`} />
-              <span className={`text-xs font-semibold font-mono ${
-                isFullyFunded 
-                  ? 'text-[#616161] dark:text-[#b5bcc4]' 
-                  : 'dark:text-[#e5e5e5]'
+          <div className="flex items-center gap-3 mb-1 w-full">
+            <div className="flex-1 font-mono text-center">
+              <div className={`text-base font-bold ${
+                isFullyFunded ? 'text-[#616161] dark:text-[#b5bcc4]' : 'dark:text-[#e5e5e5]'
               }`}>
-                {isFullyFunded ? 'FUNDING COMPLETE' : 'FUNDING'}
-              </span>
+                ${(fundingCurrent || 0).toLocaleString()}
+              </div>
+              <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-0.5">Raised</div>
             </div>
-            <span className={`font-mono text-sm font-bold ${
-              isFullyFunded 
-                ? 'text-[#616161] dark:text-[#b5bcc4]' 
-                : 'text-[#ac6d46]'
-            }`}>
-              {fundingPercentage.toFixed(0)}%
-            </span>
-          </div>
-          <Progress 
-            value={fundingPercentage} 
-            className={`mb-3 h-2.5 ${isFullyFunded ? 'opacity-50' : ''}`}
-          />
-          <div className="flex items-center justify-between font-mono text-xs">
-            <div className="text-[#616161] dark:text-[#b5bcc4]">
-              ${(fundingCurrent || 0).toLocaleString()} / ${(fundingGoal || 0).toLocaleString()}
+            <div className="shrink-0">
+              <RadialProgress
+                value={Math.min(fundingPercentage || 0, 100)}
+                size={56}
+                strokeWidth={8}
+                color={isFullyFunded ? '#616161' : '#ac6d46'}
+                centerContent={
+                  <div className={`text-xs font-bold font-mono ${
+                    isFullyFunded ? 'text-[#616161] dark:text-[#b5bcc4]' : 'text-[#ac6d46]'
+                  }`}>
+                    {(fundingPercentage || 0).toFixed(0)}%
+                  </div>
+                }
+              />
+            </div>
+            <div className="flex-1 font-mono text-center">
+              <div className={`text-base font-bold ${
+                isFullyFunded ? 'text-[#616161] dark:text-[#b5bcc4]' : 'dark:text-[#e5e5e5]'
+              }`}>
+                {fundingGoal ? `$${fundingGoal.toLocaleString()}` : 'None'}
+              </div>
+              <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-0.5">Goal</div>
             </div>
           </div>
+          <span className={`text-[10px] font-mono font-semibold tracking-wider ${
+            isFullyFunded ? 'text-[#616161] dark:text-[#b5bcc4]' : 'text-[#616161] dark:text-[#b5bcc4]'
+          }`}>
+            {isFullyFunded ? 'FUNDING COMPLETE' : 'FUNDED'}
+          </span>
         </div>
       ) : (
-        <div className="px-4 py-4 bg-white dark:bg-[#202020]">
+        <div className="px-4 py-3 flex-1 flex items-center bg-white dark:bg-[#202020]">
           <div className="font-mono text-xs text-[#616161] dark:text-[#b5bcc4]">
             Self-funded expedition. Explorer is not accepting sponsorships for this journey.
           </div>
