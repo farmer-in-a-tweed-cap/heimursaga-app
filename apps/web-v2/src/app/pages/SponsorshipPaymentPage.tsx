@@ -717,17 +717,18 @@ export function SponsorshipPaymentPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-2xl font-bold dark:text-[#e5e5e5]">$</span>
                         <input
-                          type="number"
-                          min="5"
-                          max="10000"
-                          step="1"
+                          type="text"
+                          inputMode="decimal"
                           value={customAmount}
                           onChange={(e) => {
-                            setCustomAmount(e.target.value);
-                            setSelectedAmount(null);
+                            const val = e.target.value;
+                            if (val === '' || /^\d*\.?\d{0,2}$/.test(val)) {
+                              setCustomAmount(val);
+                              setSelectedAmount(null);
+                            }
                           }}
                           placeholder="Enter custom amount (min $5)"
-                          className={`flex-1 px-4 py-3 border-2 outline-none text-xl font-bold bg-white dark:bg-[#202020] dark:text-[#e5e5e5] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                          className={`flex-1 px-4 py-3 border-2 outline-none text-xl font-bold bg-white dark:bg-[#202020] dark:text-[#e5e5e5] ${
                             customAmount && parseFloat(customAmount) > 0 && parseFloat(customAmount) < 5
                               ? 'border-[#994040] focus:border-[#994040]'
                               : 'border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46]'
