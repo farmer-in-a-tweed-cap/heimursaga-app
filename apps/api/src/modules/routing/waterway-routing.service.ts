@@ -11,9 +11,7 @@ import { Logger } from '@/modules/logger';
 import type { RouteObstacle, RouteResult } from './routing.service';
 import {
   GRAPH_VERSION,
-  type GraphEdge,
   type WaterwayGraph,
-  type WaterwayObstacle,
   buildGraph,
   fetchOverpassTile,
   findNearestNode,
@@ -25,6 +23,9 @@ import {
 // Cache tiles for 6 hours — waterway data changes very rarely
 const TILE_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
+// Max cached tiles — LRU eviction keeps memory bounded on small dynos
+const MAX_CACHED_TILES = 30;
+
 // Max snap distance from input waypoint to nearest waterway node
 const MAX_SNAP_KM = 0.5;
 
@@ -32,8 +33,7 @@ const MAX_SNAP_KM = 0.5;
 const UPSTREAM_PENALTY = 1.4;
 
 interface CachedTile {
-  canoe: WaterwayGraph;
-  motorboat: WaterwayGraph;
+  elements: any[]; // Raw OSM elements — graphs built lazily per profile
   fetchedAt: number;
   graphVersion: number; // auto-invalidate when graph logic changes
   failed?: boolean; // true if tile fetch failed (cached briefly for dedup, not long-term)
@@ -113,10 +113,10 @@ export class WaterwayRoutingService {
         .filter((k): k is string => k !== null),
     );
 
-    // Merge all tile graphs into one
+    // Build graphs lazily from cached elements and merge into one
     onProgress?.('Building waterway graph', 0, 0);
     const mergedGraph = this.mergeGraphs(
-      tileData.map((t) => (profile === 'canoe' ? t.canoe : t.motorboat)),
+      tileData.map((t) => t.failed ? this.emptyGraph() : buildGraph(t.elements, profile)),
     );
 
     if (mergedGraph.nodes.size === 0) {
@@ -470,6 +470,9 @@ export class WaterwayRoutingService {
       // Don't serve failed tiles from long-term cache — allow retry
       const ttl = cached.failed ? 30_000 : TILE_CACHE_TTL_MS;
       if (Date.now() - cached.fetchedAt < ttl) {
+        // LRU: move to end (most recently used)
+        this.tileCache.delete(key);
+        this.tileCache.set(key, cached);
         return cached;
       }
     }
@@ -483,7 +486,13 @@ export class WaterwayRoutingService {
 
     try {
       const result = await fetchPromise;
+      // LRU: insert at end, evict oldest if over cap
+      this.tileCache.delete(key);
       this.tileCache.set(key, result);
+      while (this.tileCache.size > MAX_CACHED_TILES) {
+        const oldest = this.tileCache.keys().next().value;
+        if (oldest !== undefined) this.tileCache.delete(oldest);
+      }
       return result;
     } finally {
       this.pendingFetches.delete(key);
@@ -506,12 +515,8 @@ export class WaterwayRoutingService {
         `Waterway tile [${latFloor}, ${lonFloor}]: ${elements.length} OSM elements`,
       );
 
-      const canoeGraph = buildGraph(elements, 'canoe');
-      const motorboatGraph = buildGraph(elements, 'motorboat');
-
       return {
-        canoe: canoeGraph,
-        motorboat: motorboatGraph,
+        elements,
         fetchedAt: Date.now(),
         graphVersion: GRAPH_VERSION,
       };
@@ -519,21 +524,22 @@ export class WaterwayRoutingService {
       this.logger.error(
         `Failed to fetch waterway tile [${key}]: ${err.message}`,
       );
-      // Return empty graphs marked as failed — short TTL so they get retried
-      const emptyGraph: WaterwayGraph = {
-        nodes: new Map(),
-        adjacency: new Map(),
-        obstacles: new Map(),
-        builtAt: Date.now(),
-      };
       return {
-        canoe: emptyGraph,
-        motorboat: emptyGraph,
+        elements: [],
         fetchedAt: Date.now(),
         graphVersion: GRAPH_VERSION,
         failed: true,
       };
     }
+  }
+
+  private emptyGraph(): WaterwayGraph {
+    return {
+      nodes: new Map(),
+      adjacency: new Map(),
+      obstacles: new Map(),
+      builtAt: Date.now(),
+    };
   }
 
   /**
