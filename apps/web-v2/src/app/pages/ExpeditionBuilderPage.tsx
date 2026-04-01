@@ -750,6 +750,11 @@ export function ExpeditionBuilderPage() {
       // Persist any mode fallbacks
       setPerLegModesAndRef([...modes]);
 
+      // Update fingerprint to prevent debounced effect from re-triggering after mode fallbacks
+      const modeStr = modes.join(',');
+      const wpStr = points.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|');
+      lastDirectionsCoordsRef.current = `${wpStr}::${modeStr}::${roundTrip}::${waterwayProfileRef.current}`;
+
       // Update cache
       legCacheRef.current = legResults.map((r, i) => {
         const from = points[i].coordinates;
@@ -1083,7 +1088,11 @@ export function ExpeditionBuilderPage() {
           setWaterwayUpstreamFraction(null);
           // Reset leg modes to straight so map doesn't render failed route with old styling
           const numLegs = roundTrip ? points.length : points.length - 1;
-          setPerLegModesAndRef(Array(numLegs).fill('straight' as RouteMode));
+          const straightModes = Array(numLegs).fill('straight' as RouteMode);
+          setPerLegModesAndRef(straightModes);
+          // Update fingerprint so debounced effect doesn't re-trigger and clear the error
+          const wpStr = points.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|');
+          lastDirectionsCoordsRef.current = `${wpStr}::${straightModes.join(',')}::${roundTrip}::${waterwayProfileRef.current}`;
         }
         return;
       }
@@ -1096,7 +1105,11 @@ export function ExpeditionBuilderPage() {
       setWaterwayUpstreamFraction(null);
       // Reset leg modes to straight so map doesn't render failed route with old styling
       const numLegs = roundTrip ? points.length : points.length - 1;
-      setPerLegModesAndRef(Array(numLegs).fill('straight' as RouteMode));
+      const straightModes = Array(numLegs).fill('straight' as RouteMode);
+      setPerLegModesAndRef(straightModes);
+      // Update fingerprint so debounced effect doesn't re-trigger and clear the error
+      const wpStr = points.map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|');
+      lastDirectionsCoordsRef.current = `${wpStr}::${straightModes.join(',')}::${roundTrip}::${waterwayProfileRef.current}`;
     } finally {
       clearTimeout(timeoutId);
       if (directionsAbortRef.current === abortController) {

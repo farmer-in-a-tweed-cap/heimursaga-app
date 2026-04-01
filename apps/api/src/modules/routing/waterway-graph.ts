@@ -11,7 +11,7 @@
 
 // Bump this when the Overpass query or graph-building logic changes
 // to auto-invalidate cached tiles without a server restart.
-export const GRAPH_VERSION = 4;
+export const GRAPH_VERSION = 5;
 
 export interface GraphNode {
   id: number; // OSM node ID
@@ -325,7 +325,7 @@ export function buildGraph(
     const waterwayType = el.tags.waterway;
     const waterwayName = el.tags.name || null;
     const isCanalOrFairway =
-      waterwayType === 'canal' || waterwayType === 'fairway';
+      waterwayType === 'canal' || waterwayType === 'fairway' || waterwayType === 'link';
 
     // Motorboat check for this specific way
     const motorboatAllowed =
@@ -333,7 +333,7 @@ export function buildGraph(
       el.tags.ship === 'yes' ||
       (el.tags.boat === 'yes' && el.tags.motorboat !== 'no') ||
       (el.tags.CEMT !== undefined && el.tags.CEMT !== '0') ||
-      (waterwayType === 'canal' &&
+      ((waterwayType === 'canal' || waterwayType === 'link') &&
         el.tags.motorboat !== 'no' &&
         el.tags.boat !== 'no');
 
