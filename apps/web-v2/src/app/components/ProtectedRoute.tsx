@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, sessionExpired } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -37,12 +37,14 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
           <div className="p-6 border-b-2 border-[#202020] dark:border-[#616161] bg-[#616161] text-white">
             <div className="flex items-center gap-3">
               <Lock size={24} strokeWidth={2} />
-              <h2 className="text-lg font-bold">AUTHENTICATION REQUIRED</h2>
+              <h2 className="text-lg font-bold">{sessionExpired ? 'SESSION EXPIRED' : 'AUTHENTICATION REQUIRED'}</h2>
             </div>
           </div>
           <div className="p-8 text-center">
             <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mb-6">
-              You must be logged in to access this page. Please log in or create an account to continue.
+              {sessionExpired
+                ? 'Your session has expired. Please log in again to continue.'
+                : 'You must be logged in to access this page. Please log in or create an account to continue.'}
             </p>
             <div className="flex gap-3 justify-center">
               <button

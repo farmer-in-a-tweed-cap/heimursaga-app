@@ -23,6 +23,12 @@ const getApiBaseUrl = (): string => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+// Session expiry — notify auth context when any request gets a 401
+let sessionExpiredHandler: (() => void) | null = null;
+export function onSessionExpired(handler: (() => void) | null) {
+  sessionExpiredHandler = handler;
+}
+
 // CSRF token management — fetched once per session, refreshed on 403
 let csrfToken: string | null = null;
 
@@ -138,9 +144,10 @@ async function request<T>(
 
   let response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
-  // If we get a 401 (session expired), clear cached CSRF token and let the response propagate
+  // If we get a 401 (session expired), clear CSRF and notify auth context
   if (response.status === 401) {
     csrfToken = null;
+    sessionExpiredHandler?.();
   }
 
   // If we get a 403 (CSRF token expired), refresh CSRF token and retry once

@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
-import { authApi, SessionUser, ApiError, clearCsrfToken } from '@/app/services/api';
+import { authApi, SessionUser, ApiError, clearCsrfToken, onSessionExpired } from '@/app/services/api';
 import { posthog } from '@/lib/posthog';
 
 // Re-export SessionUser as User for backwards compatibility
@@ -12,6 +12,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   isNewSignup: boolean;
+  sessionExpired: boolean;
   login: (login: string, password: string, remember?: boolean) => Promise<void>;
   signup: (email: string, username: string, password: string, recaptchaToken?: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isNewSignup, setIsNewSignup] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const isAuthenticated = user !== null;
 
@@ -41,6 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // User is not authenticated or session expired
       setUser(null);
     }
+  }, []);
+
+  // Clear auth state immediately when any API call gets a 401
+  useEffect(() => {
+    onSessionExpired(() => {
+      setUser(prev => {
+        if (prev !== null) setSessionExpired(true);
+        return null;
+      });
+    });
+    return () => onSessionExpired(null);
   }, []);
 
   // Check for existing session on mount
@@ -83,12 +96,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (loginInput: string, password: string, remember?: boolean) => {
     await authApi.login({ login: loginInput, password, remember });
     await refreshUser();
+    setSessionExpired(false);
     if (posthog.__loaded) posthog.capture('login', { method: 'password' });
   };
 
   const signup = async (email: string, username: string, password: string, recaptchaToken?: string) => {
     await authApi.signup({ email, username, password, recaptchaToken });
     await refreshUser();
+    setSessionExpired(false);
     if (posthog.__loaded) posthog.capture('signup', { method: 'email' });
     setIsNewSignup(true);
   };
@@ -98,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authApi.logout();
     } finally {
       setUser(null);
+      setSessionExpired(false);
       clearCsrfToken();
       if (posthog.__loaded) posthog.reset();
     }
@@ -109,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated,
       isLoading,
       isNewSignup,
+      sessionExpired,
       login,
       signup,
       logout,
