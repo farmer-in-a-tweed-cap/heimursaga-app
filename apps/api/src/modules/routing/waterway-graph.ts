@@ -11,7 +11,7 @@
 
 // Bump this when the Overpass query or graph-building logic changes
 // to auto-invalidate cached tiles without a server restart.
-export const GRAPH_VERSION = 3;
+export const GRAPH_VERSION = 4;
 
 export interface GraphNode {
   id: number; // OSM node ID
@@ -117,9 +117,10 @@ function isNavigable(
   // CEMT classification implies navigability
   if (tags.CEMT && tags.CEMT !== '0') return true;
 
-  // Canals are built for navigation
+  // Canals, fairways, and links are built for navigation
   if (type === 'canal') return true;
   if (type === 'fairway') return true;
+  if (type === 'link') return true;
 
   // Rivers: use heuristics
   if (type === 'river') {
@@ -161,7 +162,7 @@ export async function fetchOverpassTile(
   const query = `
 [out:json][timeout:15];
 (
-  way["waterway"~"river|canal|fairway"](${bbox});
+  way["waterway"~"river|canal|fairway|link"](${bbox});
   way["waterway"="stream"]["canoe"="yes"](${bbox});
   way["waterway"="stream"]["boat"="yes"](${bbox});
   way["waterway"="stream"]["name"](${bbox});
