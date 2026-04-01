@@ -3410,7 +3410,7 @@ export function ExpeditionBuilderPage() {
           )}
 
           {/* Inaccessible waypoint warnings */}
-          {directionsWarnings.length > 0 && perLegModes.some(m => m !== 'straight') && (
+          {directionsWarnings.length > 0 && (
             <div className="mt-2 px-3 py-2 bg-[#fff8dc] dark:bg-[#3a2f1f] border border-[#ac6d46] text-xs text-[#ac6d46]">
               <div className="font-bold flex items-center gap-2 mb-1">
                 <Info size={14} className="flex-shrink-0" />

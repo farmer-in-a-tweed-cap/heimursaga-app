@@ -88,7 +88,7 @@ export function PaymentSuccessPage() {
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
           <div className="bg-[#ac6d46] text-white p-8 border-b-2 border-[#202020] dark:border-[#616161] text-center">
             <div className="text-6xl mb-4">✓</div>
-            <h1 className="text-3xl font-bold mb-2">PAYMENT SUCCESSFUL</h1>
+            <h1 className="text-3xl font-bold mb-2">SPONSORSHIP CONFIRMED</h1>
             <p className="text-lg text-[#f5f5f5]">
               Thank you for supporting {displayExplorerName}'s exploration work!
             </p>
