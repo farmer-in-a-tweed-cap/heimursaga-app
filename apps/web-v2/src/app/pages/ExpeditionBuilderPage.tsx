@@ -1163,6 +1163,11 @@ export function ExpeditionBuilderPage() {
       try {
         const expedition = await expeditionApi.getById(expeditionId);
 
+        if (!expedition.isOwner) {
+          router.push(`/expedition/${expeditionId}`);
+          return;
+        }
+
         setExpeditionData({
           title: expedition.title || '',
           regions: expedition.region ? expedition.region.split(', ').map((r: string) => r.trim()).filter(Boolean) : [],

@@ -791,6 +791,7 @@ export interface Expedition {
   entries?: ExpeditionEntry[];
   cancelledAt?: string;
   cancellationReason?: string;
+  isOwner?: boolean;
   bookmarked?: boolean;
   followingAuthor?: boolean;
 }

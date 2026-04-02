@@ -16,8 +16,8 @@ import { RadioOption } from '@/components/ui/RadioOption';
 import { ImagePlaceholder } from '@/components/ui/ImagePlaceholder';
 import { CalendarPicker, fmtDateDisplay, todayISO } from '@/components/ui/CalendarPicker';
 import HeimuMap, { WaypointMarker, HeimuMapRef, clusterMarkers } from '@/components/map/HeimuMap';
-import { Svg, Path, Circle } from 'react-native-svg';
-import { expeditionApi, uploadApi, ApiError } from '@/services/api';
+import { Svg, Path, Circle, Line } from 'react-native-svg';
+import { expeditionApi, uploadApi, routingApi, ApiError } from '@/services/api';
 let ExpoLocation: typeof import('expo-location') | null = null;
 try { ExpoLocation = require('expo-location'); } catch { /* not available */ }
 let ImagePicker: typeof import('expo-image-picker') | null = null;
@@ -35,13 +35,38 @@ import {
   QUICK_PICK_CATEGORIES, type POIResult,
 } from '@/utils/poiSearch';
 
-type RouteMode = 'straight' | 'walking' | 'cycling' | 'driving';
+type RouteMode = 'straight' | 'walking' | 'cycling' | 'driving' | 'trail' | 'waterway';
 const ROUTE_MODES: { value: RouteMode; label: string }[] = [
   { value: 'straight', label: 'LINE' },
   { value: 'walking', label: 'WALK' },
   { value: 'cycling', label: 'CYCLE' },
   { value: 'driving', label: 'DRIVE' },
+  { value: 'trail', label: 'TRAIL' },
+  { value: 'waterway', label: 'WATER' },
 ];
+
+const ROUTE_MODE_STYLES: Record<RouteMode, { color: string; label: string; dash: number[] | null }> = {
+  straight: { color: '#999999', label: 'Straight Line', dash: [2, 2] },
+  walking:  { color: '#4676ac', label: 'Walking', dash: null },
+  cycling:  { color: '#9b59b6', label: 'Cycling', dash: null },
+  driving:  { color: '#d35400', label: 'Driving', dash: null },
+  trail:    { color: '#598636', label: 'Trail', dash: [4, 2] },
+  waterway: { color: '#ac6d46', label: 'Waterway', dash: [6, 3] },
+};
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatDistanceKm(km: number): string {
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  return km < 100 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
+}
 
 const STEPS = ['DETAILS', 'ROUTE', 'FUNDING', 'REVIEW'];
 const VISIBILITY_OPTIONS = [
@@ -129,6 +154,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
   const [selectedWpIdx, setSelectedWpIdx] = useState<number | null>(null);
   const [isRoundTrip, setIsRoundTrip] = useState(false);
   const [routeMode, setRouteMode] = useState<RouteMode>('straight');
+  const [waterwayProfile, setWaterwayProfile] = useState<'canoe' | 'motorboat'>('canoe');
   const [directionsGeometry, setDirectionsGeometry] = useState<[number, number][] | null>(null);
   const [directionsDistanceKm, setDirectionsDistanceKm] = useState<number | null>(null);
   const [directionsLoading, setDirectionsLoading] = useState(false);
@@ -183,6 +209,12 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
         const res = await expeditionApi.getExpedition(editExpeditionId);
         const exp = (res as any)?.data ?? res;
         if (cancelled) return;
+
+        if (!exp.isOwner) {
+          router.replace(`/expedition/${editExpeditionId}`);
+          return;
+        }
+
         setEditExpedition(exp);
 
         // Pre-populate form state
@@ -303,6 +335,24 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     return coords;
   }, [waypoints, isRoundTrip]);
 
+  // Pre-compute leg distances for the list view route cards (O(n) instead of O(n²) in render)
+  const legDistances = useMemo(() => {
+    const numLegs = isRoundTrip ? waypoints.length : waypoints.length - 1;
+    const result: { legDist: number; cumDist: number }[] = [];
+    let cum = 0;
+    for (let i = 0; i < numLegs; i++) {
+      const a = waypoints[i];
+      const b = isRoundTrip && i === waypoints.length - 1 ? waypoints[0] : waypoints[i + 1];
+      let leg = 0;
+      if (a?.lng != null && a?.lat != null && b?.lng != null && b?.lat != null) {
+        leg = haversineKm(a.lat!, a.lng!, b.lat!, b.lng!);
+      }
+      cum += leg;
+      result.push({ legDist: leg, cumDist: cum });
+    }
+    return result;
+  }, [waypoints, isRoundTrip]);
+
   const routeBounds = useMemo(() => {
     const coords = waypoints.filter(wp => wp.lng != null && wp.lat != null);
     if (coords.length < 2) return undefined;
@@ -328,12 +378,30 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     if (directionsAbortRef.current) directionsAbortRef.current.abort();
     const abort = new AbortController();
     directionsAbortRef.current = abort;
-    const timeout = setTimeout(() => abort.abort(), 15000);
+    const timeoutMs = profile === 'trail' || profile === 'waterway' ? 60000 : 15000;
+    const timeout = setTimeout(() => abort.abort(), timeoutMs);
 
     setDirectionsLoading(true);
     setDirectionsError(null);
 
     try {
+      // Trail and waterway use our backend API
+      if (profile === 'trail' || profile === 'waterway') {
+        const locations = coords.map(c => ({ lat: c[1], lon: c[0] }));
+        const res = profile === 'trail'
+          ? await routingApi.trail(locations, { signal: abort.signal })
+          : await routingApi.waterway(locations, waterwayProfile, { signal: abort.signal });
+
+        if (!abort.signal.aborted) {
+          setDirectionsGeometry(res.coordinates);
+          setDirectionsDistanceKm(Math.round(res.totalDistance * 10) / 10);
+        }
+        clearTimeout(timeout);
+        if (!abort.signal.aborted) setDirectionsLoading(false);
+        return;
+      }
+
+      // Mapbox modes: walking, cycling, driving
       const MAX_WP = 25;
       let allCoords: [number, number][] = [];
       let totalDistanceM = 0;
@@ -388,7 +456,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
       clearTimeout(timeout);
       if (!abort.signal.aborted) setDirectionsLoading(false);
     }
-  }, []);
+  }, [waterwayProfile]);
 
   // Debounced directions fetch
   useEffect(() => {
@@ -410,7 +478,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
     if (validWps.length < 2) return;
 
     const fingerprint = validWps.map(w => `${w.lat},${w.lng}`).join('|')
-      + `::${routeMode}::${isRoundTrip}`;
+      + `::${routeMode}::${isRoundTrip}::${routeMode === 'waterway' ? waterwayProfile : ''}`;
 
     if (fingerprint === lastDirectionsFingerprintRef.current) return;
 
@@ -431,7 +499,7 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
       directionsAbortRef.current = null;
       controller?.abort();
     };
-  }, [waypoints, routeMode, isRoundTrip, fetchDirectionsRoute]);
+  }, [waypoints, routeMode, isRoundTrip, waterwayProfile, fetchDirectionsRoute]);
 
   // Effective route coords: directions geometry when available, else straight line
   const effectiveRouteCoords = useMemo(() => {
@@ -909,23 +977,24 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                 </TouchableOpacity>
               </View>
 
-              {/* Route mode selector */}
-              <View style={[styles.routeModeBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                {ROUTE_MODES.map((m) => (
-                  <TouchableOpacity
-                    key={m.value}
-                    style={[styles.routeModeBtn, routeMode === m.value && styles.routeModeBtnActive]}
-                    onPress={() => setRouteMode(m.value)}
-                  >
-                    <Text style={[styles.routeModeBtnText, { color: routeMode === m.value ? '#fff' : colors.textSecondary }]}>
-                      {m.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-                {directionsLoading && (
-                  <ActivityIndicator size="small" color={brandColors.copper} style={{ marginLeft: 4 }} />
-                )}
-              </View>
+            </View>
+
+            {/* Route mode selector */}
+            <View style={[styles.routeModeRow, { borderColor: colors.border }]}>
+              {ROUTE_MODES.map((m) => (
+                <TouchableOpacity
+                  key={m.value}
+                  style={[styles.routeModeChip, routeMode === m.value && styles.routeModeChipActive]}
+                  onPress={() => setRouteMode(m.value)}
+                >
+                  <Text style={[styles.routeModeChipText, { color: routeMode === m.value ? '#fff' : colors.textSecondary }]}>
+                    {m.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              {directionsLoading && (
+                <ActivityIndicator size="small" color={brandColors.copper} style={{ position: 'absolute', right: -20 }} />
+              )}
             </View>
 
             {/* Find along route + waypoint count */}
@@ -1100,20 +1169,41 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                 </View>
               )}
 
-              {/* Geolocate button */}
-              <TouchableOpacity
-                style={[styles.geolocateBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-                onPress={handleGeolocate}
-                disabled={geolocating}
-              >
-                {geolocating
-                  ? <ActivityIndicator size="small" color={brandColors.copper} />
-                  : <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={brandColors.copper} strokeWidth={2}>
-                      <Circle cx={12} cy={12} r={3} />
-                      <Path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+              {/* Map action buttons */}
+              <View style={styles.mapActionBtns}>
+                <TouchableOpacity
+                  style={[styles.mapActionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                  onPress={handleGeolocate}
+                  disabled={geolocating}
+                >
+                  {geolocating
+                    ? <ActivityIndicator size="small" color={brandColors.copper} />
+                    : <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={brandColors.copper} strokeWidth={2}>
+                        <Circle cx={12} cy={12} r={3} />
+                        <Path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+                      </Svg>
+                  }
+                </TouchableOpacity>
+                {waypoints.filter(wp => wp.lng != null && wp.lat != null).length >= 1 && (
+                  <TouchableOpacity
+                    style={[styles.mapActionBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
+                    onPress={() => {
+                      const coords = waypoints
+                        .filter(wp => wp.lng != null && wp.lat != null)
+                        .map(wp => [wp.lng!, wp.lat!] as [number, number]);
+                      if (coords.length === 1) {
+                        mapRef.current?.flyTo(coords[0], 10);
+                      } else {
+                        mapRef.current?.fitBounds(coords);
+                      }
+                    }}
+                  >
+                    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={brandColors.copper} strokeWidth={2}>
+                      <Path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
                     </Svg>
-                }
-              </TouchableOpacity>
+                  </TouchableOpacity>
+                )}
+              </View>
 
               {/* Compact legend */}
               <View style={[styles.routeLegend, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -1159,58 +1249,93 @@ export function ExpeditionBuilder({ editExpeditionId }: ExpeditionBuilderProps) 
                   const typeLabel = isStart
                     ? (isRoundTrip && waypoints.length > 1 ? 'START / END' : 'START')
                     : (isEnd && !isRoundTrip) ? 'END' : 'WAYPOINT';
+
+                  const showLeg = i < legDistances.length;
+                  const legStyle = ROUTE_MODE_STYLES[routeMode];
+                  const leg = showLeg ? legDistances[i] : null;
+
                   return (
-                    <View
-                      key={i}
-                      style={[styles.routeWpRow, { backgroundColor: colors.card }, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderThin }]}
-                    >
-                      {/* Reorder */}
-                      <View style={styles.routeWpReorder}>
-                        <TouchableOpacity onPress={() => moveWaypoint(i, -1)} disabled={i === 0} hitSlop={6}>
-                          <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={i === 0 ? colors.borderThin : colors.textTertiary} strokeWidth={2.5}>
-                            <Path d="M18 15l-6-6-6 6" />
-                          </Svg>
+                    <React.Fragment key={i}>
+                      <View
+                        style={[styles.routeWpRow, { backgroundColor: colors.card }, i > 0 && { borderTopWidth: 1, borderTopColor: colors.borderThin }]}
+                      >
+                        {/* Reorder */}
+                        <View style={styles.routeWpReorder}>
+                          <TouchableOpacity onPress={() => moveWaypoint(i, -1)} disabled={i === 0} hitSlop={6}>
+                            <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={i === 0 ? colors.borderThin : colors.textTertiary} strokeWidth={2.5}>
+                              <Path d="M18 15l-6-6-6 6" />
+                            </Svg>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => moveWaypoint(i, 1)} disabled={i === waypoints.length - 1} hitSlop={6}>
+                            <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={i === waypoints.length - 1 ? colors.borderThin : colors.textTertiary} strokeWidth={2.5}>
+                              <Path d="M6 9l6 6 6-6" />
+                            </Svg>
+                          </TouchableOpacity>
+                        </View>
+                        {/* Dot */}
+                        <View style={[styles.routeWpDot, { backgroundColor: dotColor, borderColor: dotBorder }]}>
+                          <Text style={styles.routeWpDotText}>{String(i + 1)}</Text>
+                        </View>
+                        {/* Info — tap to edit */}
+                        <TouchableOpacity style={styles.routeWpInfo} onPress={() => setSelectedWpIdx(i)}>
+                          <Text style={[styles.routeWpName, { color: colors.text }]} numberOfLines={1}>{wp.name}</Text>
+                          <Text style={[styles.routeWpType, { color: dotColor }]}>{typeLabel}</Text>
+                          {wp.lng != null && (
+                            <Text style={[styles.routeWpCoords, { color: colors.textTertiary }]}>
+                              {wp.lat!.toFixed(4)}, {wp.lng!.toFixed(4)}
+                            </Text>
+                          )}
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => moveWaypoint(i, 1)} disabled={i === waypoints.length - 1} hitSlop={6}>
-                          <Svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke={i === waypoints.length - 1 ? colors.borderThin : colors.textTertiary} strokeWidth={2.5}>
-                            <Path d="M6 9l6 6 6-6" />
-                          </Svg>
-                        </TouchableOpacity>
-                      </View>
-                      {/* Dot */}
-                      <View style={[styles.routeWpDot, { backgroundColor: dotColor, borderColor: dotBorder }]}>
-                        <Text style={styles.routeWpDotText}>{String(i + 1)}</Text>
-                      </View>
-                      {/* Info — tap to edit */}
-                      <TouchableOpacity style={styles.routeWpInfo} onPress={() => setSelectedWpIdx(i)}>
-                        <Text style={[styles.routeWpName, { color: colors.text }]} numberOfLines={1}>{wp.name}</Text>
-                        <Text style={[styles.routeWpType, { color: dotColor }]}>{typeLabel}</Text>
+                        {/* Fly to on map */}
                         {wp.lng != null && (
-                          <Text style={[styles.routeWpCoords, { color: colors.textTertiary }]}>
-                            {wp.lat!.toFixed(4)}, {wp.lng!.toFixed(4)}
-                          </Text>
+                          <TouchableOpacity
+                            onPress={() => { setRouteView('map'); mapRef.current?.flyTo([wp.lng!, wp.lat!], 10); }}
+                            hitSlop={8}
+                            style={styles.routeWpAction}
+                          >
+                            <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
+                              <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <Circle cx={12} cy={12} r={3} />
+                            </Svg>
+                          </TouchableOpacity>
                         )}
-                      </TouchableOpacity>
-                      {/* Fly to on map */}
-                      {wp.lng != null && (
-                        <TouchableOpacity
-                          onPress={() => { setRouteView('map'); mapRef.current?.flyTo([wp.lng!, wp.lat!], 10); }}
-                          hitSlop={8}
-                          style={styles.routeWpAction}
-                        >
-                          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
-                            <Path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                            <Circle cx={12} cy={12} r={3} />
+                        {/* Delete */}
+                        <TouchableOpacity onPress={() => removeWaypoint(i)} hitSlop={8} style={styles.routeWpAction}>
+                          <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={brandColors.red} strokeWidth={2}>
+                            <Path d="M18 6L6 18M6 6l12 12" />
                           </Svg>
                         </TouchableOpacity>
+                      </View>
+
+                      {/* Route leg card between waypoints */}
+                      {leg && (
+                        <View style={[styles.routeLegCard, { backgroundColor: colors.inputBackground, borderColor: colors.borderThin }]}>
+                          <View style={styles.routeLegCardRow}>
+                            <Svg width={20} height={4} style={{ flexShrink: 0 }}>
+                              <Line
+                                x1={0} y1={2} x2={20} y2={2}
+                                stroke={legStyle.color}
+                                strokeWidth={2}
+                                strokeDasharray={legStyle.dash ? legStyle.dash.join(',') : undefined}
+                              />
+                            </Svg>
+                            <Text style={[styles.routeLegLabel, { color: legStyle.color }]}>
+                              {legStyle.label}
+                            </Text>
+                            <View style={{ flex: 1 }} />
+                            {leg.legDist > 0 && (
+                              <Text style={styles.routeLegDist}>
+                                {formatDistanceKm(leg.legDist)}
+                                {i > 0 && leg.cumDist > 0 ? ` · ${formatDistanceKm(leg.cumDist)} total` : ''}
+                              </Text>
+                            )}
+                            {directionsLoading && routeMode !== 'straight' && (
+                              <ActivityIndicator size="small" color={brandColors.copper} />
+                            )}
+                          </View>
+                        </View>
                       )}
-                      {/* Delete */}
-                      <TouchableOpacity onPress={() => removeWaypoint(i)} hitSlop={8} style={styles.routeWpAction}>
-                        <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={brandColors.red} strokeWidth={2}>
-                          <Path d="M18 6L6 18M6 6l12 12" />
-                        </Svg>
-                      </TouchableOpacity>
-                    </View>
+                    </React.Fragment>
                   );
                 })
               )}
@@ -2215,10 +2340,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
-  geolocateBtn: {
+  mapActionBtns: {
     position: 'absolute',
     top: 10,
     right: 10,
+    gap: 8,
+  },
+  mapActionBtn: {
     width: 36,
     height: 36,
     borderWidth: borders.thick,
@@ -2288,6 +2416,29 @@ const styles = StyleSheet.create({
   routeWpName: { fontSize: 13, fontWeight: '600' },
   routeWpType: { fontFamily: mono, fontSize: 10, fontWeight: '700', letterSpacing: 0.4, marginTop: 1 },
   routeWpAction: { padding: 4 },
+  routeLegCard: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+  },
+  routeLegCardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  routeLegLabel: {
+    fontFamily: mono,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  routeLegDist: {
+    fontFamily: mono,
+    fontSize: 10,
+    color: brandColors.blue,
+  },
   routeNavRow: {
     flexDirection: 'row',
     gap: 8,
@@ -2314,20 +2465,20 @@ const styles = StyleSheet.create({
   checklistLabel: { fontSize: 12, flex: 1 },
   checklistAdd: { fontFamily: mono, fontSize: 12, fontWeight: '700', color: brandColors.copper },
   // ── Route mode selector ──
-  routeModeBar: {
+  routeModeRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     borderWidth: borders.thick,
-    overflow: 'hidden',
+    padding: 2,
   },
-  routeModeBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 10,
+  routeModeChip: {
+    flex: 1,
+    paddingVertical: 5,
+    alignItems: 'center',
   },
-  routeModeBtnActive: {
+  routeModeChipActive: {
     backgroundColor: brandColors.copper,
   },
-  routeModeBtnText: {
+  routeModeChipText: {
     fontFamily: mono,
     fontSize: 10,
     fontWeight: '700',
@@ -2349,7 +2500,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: brandColors.blue,
-    paddingVertical: 4,
+    paddingVertical: 8,
     paddingHorizontal: 8,
   },
   findRouteBtnText: {
@@ -2550,5 +2701,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     marginBottom: 12,
+  },
+  fieldLabel: {
+    fontFamily: mono,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+  },
+  fieldHelp: {
+    fontSize: 12,
+    lineHeight: 17,
   },
 });

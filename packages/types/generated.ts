@@ -982,6 +982,7 @@ export interface ITripDetail {
   };
   cancelledAt?: Date;
   cancellationReason?: string;
+  isOwner?: boolean;
   bookmarked?: boolean;
   followingAuthor?: boolean;
   sponsors?: {

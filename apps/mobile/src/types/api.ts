@@ -112,6 +112,7 @@ export interface Expedition {
     stripeAccountConnected?: boolean;
   };
   waypoints?: Waypoint[];
+  isOwner?: boolean;
   bookmarked?: boolean;
 }
 

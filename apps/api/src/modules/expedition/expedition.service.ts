@@ -1156,7 +1156,9 @@ export class ExpeditionService {
           ? JSON.parse(route_leg_modes)
           : undefined,
         routeDistanceKm: expedition.route_distance_km ?? undefined,
-        routeObstacles: route_obstacles ? JSON.parse(route_obstacles) : undefined,
+        routeObstacles: route_obstacles
+          ? JSON.parse(route_obstacles)
+          : undefined,
         currentLocationVisibility:
           (current_location_visibility as 'public' | 'sponsors' | 'private') ||
           'public',
@@ -1359,6 +1361,7 @@ export class ExpeditionService {
             entryIds: entries?.map((e) => e.public_id) || [],
           }),
         ),
+        isOwner: !!explorerId && explorerId === expedition.author_id,
         sponsors: allSponsorships
           .filter(
             (s) =>
@@ -2600,7 +2603,9 @@ export class ExpeditionService {
             ? JSON.parse(d.route_leg_modes)
             : undefined,
           routeDistanceKm: d.route_distance_km ?? undefined,
-          routeObstacles: d.route_obstacles ? JSON.parse(d.route_obstacles) : undefined,
+          routeObstacles: d.route_obstacles
+            ? JSON.parse(d.route_obstacles)
+            : undefined,
           goal: integerToDecimal(d.goal ?? 0),
           notesAccessThreshold: integerToDecimal(d.notes_access_threshold ?? 0),
           notesVisibility: d.notes_visibility || 'public',

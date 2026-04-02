@@ -11,7 +11,7 @@
 
 // Bump this when the Overpass query or graph-building logic changes
 // to auto-invalidate cached tiles without a server restart.
-export const GRAPH_VERSION = 5;
+export const GRAPH_VERSION = 6;
 
 export interface GraphNode {
   id: number; // OSM node ID
@@ -83,7 +83,7 @@ export function haversineKm(
 }
 
 // Snap tolerance for connecting nearby waterway endpoints (meters)
-const SNAP_TOLERANCE_M = 75;
+const SNAP_TOLERANCE_M = 150;
 
 interface OverpassElement {
   type: 'node' | 'way';
@@ -325,7 +325,9 @@ export function buildGraph(
     const waterwayType = el.tags.waterway;
     const waterwayName = el.tags.name || null;
     const isCanalOrFairway =
-      waterwayType === 'canal' || waterwayType === 'fairway' || waterwayType === 'link';
+      waterwayType === 'canal' ||
+      waterwayType === 'fairway' ||
+      waterwayType === 'link';
 
     // Motorboat check for this specific way
     const motorboatAllowed =
