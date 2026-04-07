@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { BookOpen, Compass, Users, DollarSign, Edit3, MapPin, Settings, Shield, MessageSquare, Award } from 'lucide-react';
+import { BookOpen, Compass, Users, DollarSign, Edit3, MapPin, Settings, Shield, MessageSquare, Award, Rocket } from 'lucide-react';
 
 export function DocumentationPage() {
   return (
@@ -33,6 +33,9 @@ export function DocumentationPage() {
           </a>
           <a href="#journals-expeditions" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Your Journal & Expeditions
+          </a>
+          <a href="#launching-blueprints" className="text-xs text-[#598636] hover:text-[#4676ac] font-mono">
+            → Launching Expedition Blueprints
           </a>
           <a href="#creating-entries" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Creating Entries
@@ -291,6 +294,87 @@ export function DocumentationPage() {
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 You can log journal entries for a planned expedition before it activates. The entry date range
                 spans from the expedition&apos;s creation date through today.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Launching Expedition Blueprints */}
+        <section id="launching-blueprints" className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
+          <div className="bg-[#598636] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
+            <Rocket className="w-5 h-5" />
+            <h2 className="text-lg font-bold">LAUNCHING EXPEDITION BLUEPRINTS</h2>
+          </div>
+          <div className="p-6 space-y-4">
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">How Explorers Use Blueprints</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                Expedition Guides create blueprints&mdash;pre-planned routes with waypoints that any explorer can adopt.
+                When you find a blueprint you want to experience, press
+                <strong> Launch Expedition</strong>. This creates a new expedition in your own account based on
+                the blueprint&apos;s route. You then set your own dates, plan your own timeline, and
+                log journal entries along the way&mdash;just like any other expedition on Heimursaga.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">What Gets Copied</h3>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>The complete route geometry and all waypoints</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Mode of travel for each route leg</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Distance and elevation data</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">What You Control</h3>
+              <ul className="space-y-1 text-sm text-[#202020] dark:text-[#e5e5e5] ml-4">
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Start and end dates</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Title, description, and cover image</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Journal entries, photos, and expedition notes</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Sponsorship settings (if Explorer Pro)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Privacy and visibility settings</span>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Route Locking</h3>
+              <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
+                The route on a launched expedition is locked&mdash;waypoints, route geometry, and travel modes
+                cannot be changed. This preserves the integrity of the guide&apos;s curated route. You
+                experience the expedition as the guide designed it, while still having full control over your
+                own timeline, journal, and storytelling.
+              </p>
+            </div>
+
+            <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#598636]">
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
+                Each launched expedition includes a visible attribution link back to the original blueprint and
+                its guide, so the source of the route is always transparent.
               </p>
             </div>
           </div>
