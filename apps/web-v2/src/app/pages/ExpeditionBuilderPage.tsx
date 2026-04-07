@@ -769,7 +769,7 @@ export function ExpeditionBuilderPage() {
       const payload = {
         title: expeditionData.title || 'Untitled Blueprint',
         description: expeditionData.description,
-        visibility: 'public',
+        visibility: 'public' as const,
         status: 'draft' as const,
         isRoundTrip,
         region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
