@@ -34,7 +34,7 @@ export function DocumentationPage() {
           <a href="#journals-expeditions" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Your Journal & Expeditions
           </a>
-          <a href="#launching-blueprints" className="text-xs text-[#598636] hover:text-[#4676ac] font-mono">
+          <a href="#launching-blueprints" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
             → Launching Expedition Blueprints
           </a>
           <a href="#creating-entries" className="text-xs text-[#ac6d46] hover:text-[#4676ac] font-mono">
@@ -301,7 +301,7 @@ export function DocumentationPage() {
 
         {/* Launching Expedition Blueprints */}
         <section id="launching-blueprints" className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
-          <div className="bg-[#598636] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
+          <div className="bg-[#616161] dark:bg-[#3a3a3a] text-white p-4 border-b-2 border-[#202020] dark:border-[#616161] flex items-center gap-3">
             <Rocket className="w-5 h-5" />
             <h2 className="text-lg font-bold">LAUNCHING EXPEDITION BLUEPRINTS</h2>
           </div>
