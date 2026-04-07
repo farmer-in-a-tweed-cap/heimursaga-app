@@ -3,6 +3,9 @@ import { Prisma } from '@prisma/client';
 // force recompile
 import {
   ExplorerRole,
+  IBlueprintAdoptResponse,
+  IBlueprintReviewCreatePayload,
+  IBlueprintReviewDetail,
   IExpeditionBookmarkResponse,
   IExpeditionCreatePayload,
   IExpeditionCreateResponse,
@@ -326,11 +329,24 @@ export class ExpeditionService {
           cover_image: true,
           category: true,
           region: true,
+          location_name: true,
+          country_code: true,
+          country_name: true,
+          state_province: true,
           tags: true,
           is_round_trip: true,
+          is_blueprint: true,
+          mode: true,
+          adoptions_count: true,
+          average_rating: true,
+          ratings_count: true,
           goal: true,
           raised: true,
           route_distance_km: true,
+          elevation_min_m: true,
+          elevation_max_m: true,
+          elevation_gain_m: true,
+          estimated_duration_h: true,
           _count: { select: { entries: { where: { deleted_at: null } } } },
           author_id: true,
           author: {
@@ -442,6 +458,10 @@ export class ExpeditionService {
 
             const category = (expedition as any).category;
             const region = (expedition as any).region;
+            const location_name = (expedition as any).location_name;
+            const country_code = (expedition as any).country_code;
+            const country_name = (expedition as any).country_name;
+            const state_province = (expedition as any).state_province;
 
             return {
               id: public_id,
@@ -456,6 +476,10 @@ export class ExpeditionService {
               status,
               category,
               region,
+              locationName: location_name || undefined,
+              countryCode: country_code || undefined,
+              countryName: country_name || undefined,
+              stateProvince: state_province || undefined,
               startDate,
               endDate,
               coverImage: getStaticMediaUrl(cover_image),
@@ -467,6 +491,10 @@ export class ExpeditionService {
                 sponsorshipStats.get(public_id)?.sponsorsCount ?? 0,
               entriesCount: _count.entries,
               totalDistanceKm: expedition.route_distance_km ?? 0,
+              elevationMinM: expedition.elevation_min_m ?? undefined,
+              elevationMaxM: expedition.elevation_max_m ?? undefined,
+              elevationGainM: expedition.elevation_gain_m ?? undefined,
+              estimatedDurationH: expedition.estimated_duration_h ?? undefined,
               author: author
                 ? {
                     username: author.username,
@@ -476,11 +504,26 @@ export class ExpeditionService {
                       author?.is_stripe_account_connected === true,
                   }
                 : undefined,
+              isBlueprint: (expedition as any).is_blueprint === true,
+              mode: (expedition as any).mode || undefined,
+              adoptionsCount: (expedition as any).adoptions_count ?? 0,
+              averageRating: (expedition as any).average_rating ?? undefined,
+              ratingsCount: (expedition as any).ratings_count ?? 0,
               tags: tags ? JSON.parse(tags) : [],
-              waypointsCount: expedition.waypoints.filter(
-                (w) => (w.waypoint as any)._count?.entries === 0,
-              ).length,
-              waypoints: [],
+              waypointsCount: (expedition as any).is_blueprint
+                ? expedition.waypoints.length
+                : expedition.waypoints.filter(
+                    (w) => (w.waypoint as any)._count?.entries === 0,
+                  ).length,
+              waypoints: (expedition as any).is_blueprint
+                ? expedition.waypoints.map((ew) => ({
+                    id: (ew.waypoint as any).id,
+                    title: (ew.waypoint as any).title || '',
+                    lat: (ew.waypoint as any).lat,
+                    lon: (ew.waypoint as any).lon,
+                    sequence: ew.sequence,
+                  }))
+                : [],
               bookmarked: explorerId
                 ? (expeditionBookmarks?.length ?? 0) > 0
                 : false,
@@ -512,13 +555,16 @@ export class ExpeditionService {
       // Check if the viewing explorer is the profile owner
       const owner = await this.prisma.explorer.findFirst({
         where: { username },
-        select: { id: true },
+        select: { id: true, is_guide: true },
       });
       const isOwner = !!explorerId && !!owner && owner.id === explorerId;
+      const isGuide = owner?.is_guide === true;
 
       // get expeditions (owner sees all their own, others see only public and non-cancelled)
+      // For guide profiles: show only blueprints; for regular profiles: exclude blueprints
       const where = {
         author: { username, blocked: false },
+        ...(isGuide ? { is_blueprint: true } : { is_blueprint: { not: true } }),
         ...(isOwner
           ? {}
           : {
@@ -543,11 +589,22 @@ export class ExpeditionService {
           created_at: true,
           category: true,
           region: true,
+          location_name: true,
+          country_code: true,
+          country_name: true,
+          state_province: true,
           tags: true,
           is_round_trip: true,
           goal: true,
           raised: true,
           route_distance_km: true,
+          elevation_min_m: true,
+          elevation_max_m: true,
+          is_blueprint: true,
+          mode: true,
+          adoptions_count: true,
+          average_rating: true,
+          ratings_count: true,
           _count: { select: { entries: { where: { deleted_at: null } } } },
           author_id: true,
           start_date: true,
@@ -646,9 +703,13 @@ export class ExpeditionService {
             author,
             bookmarks: expeditionBookmarks,
           } = row;
-          // Access category/region directly to avoid destructuring issues
+          // Access category/region/location directly to avoid destructuring issues
           const category = (row as any).category;
           const region = (row as any).region;
+          const location_name = (row as any).location_name;
+          const country_code = (row as any).country_code;
+          const country_name = (row as any).country_name;
+          const state_province = (row as any).state_province;
           // Waypoints already ordered by sequence from query
           const waypoints = row.waypoints.map(({ sequence, waypoint }) => ({
             ...waypoint,
@@ -695,6 +756,10 @@ export class ExpeditionService {
               | 'private',
             category,
             region,
+            locationName: location_name || undefined,
+            countryCode: country_code || undefined,
+            countryName: country_name || undefined,
+            stateProvince: state_province || undefined,
             tags: tags ? JSON.parse(tags) : [],
             isRoundTrip: is_round_trip ?? false,
             startDate,
@@ -705,9 +770,15 @@ export class ExpeditionService {
             sponsorsCount: sponsorshipStats.get(public_id)?.sponsorsCount ?? 0,
             entriesCount: (row as any)._count?.entries ?? 0,
             totalDistanceKm: (row as any).route_distance_km ?? 0,
-            waypointsCount: row.waypoints.filter(
-              (w) => (w.waypoint as any)._count?.entries === 0,
-            ).length,
+            elevationMinM: (row as any).elevation_min_m ?? undefined,
+            elevationMaxM: (row as any).elevation_max_m ?? undefined,
+            elevationGainM: (row as any).elevation_gain_m ?? undefined,
+            estimatedDurationH: (row as any).estimated_duration_h ?? undefined,
+            waypointsCount: (row as any).is_blueprint
+              ? row.waypoints.length
+              : row.waypoints.filter(
+                  (w) => (w.waypoint as any)._count?.entries === 0,
+                ).length,
             waypoints: [],
             currentLocation:
               resolvedLoc && isPublicLoc
@@ -720,6 +791,11 @@ export class ExpeditionService {
                 : undefined,
             currentLocationVisibility: (current_location_visibility ||
               'public') as 'public' | 'sponsors' | 'private',
+            isBlueprint: (row as any).is_blueprint || false,
+            mode: (row as any).mode || undefined,
+            adoptionsCount: (row as any).adoptions_count ?? 0,
+            averageRating: (row as any).average_rating ?? undefined,
+            ratingsCount: (row as any).ratings_count ?? 0,
             author: author
               ? {
                   username: author.username,
@@ -794,12 +870,20 @@ export class ExpeditionService {
             cover_image: true,
             category: true,
             region: true,
+            location_name: true,
+            country_code: true,
+            country_name: true,
+            state_province: true,
             tags: true,
             is_round_trip: true,
             route_mode: true,
             route_geometry: true,
             route_leg_modes: true,
             route_distance_km: true,
+            elevation_min_m: true,
+            elevation_max_m: true,
+            elevation_gain_m: true,
+            estimated_duration_h: true,
             route_obstacles: true,
             current_location_type: true,
             current_location_id: true,
@@ -810,13 +894,36 @@ export class ExpeditionService {
             notes_visibility: true,
             early_access_enabled: true,
             entries_count: true,
+            is_blueprint: true,
+            blueprint_id: true,
+            is_route_locked: true,
+            mode: true,
+            adoptions_count: true,
+            average_rating: true,
+            ratings_count: true,
             cancelled_at: true,
             cancellation_reason: true,
             author_id: true,
+            source_blueprint: {
+              select: {
+                public_id: true,
+                title: true,
+                author: {
+                  select: {
+                    username: true,
+                    is_stripe_account_connected: true,
+                    profile: {
+                      select: { name: true, picture: true },
+                    },
+                  },
+                },
+              },
+            },
             author: {
               select: {
                 username: true,
                 role: true,
+                is_guide: true,
                 is_stripe_account_connected: true,
                 profile: {
                   select: {
@@ -918,6 +1025,10 @@ export class ExpeditionService {
         cover_image,
         category,
         region,
+        location_name,
+        country_code,
+        country_name,
+        state_province,
         tags,
         is_round_trip,
         route_mode,
@@ -935,6 +1046,14 @@ export class ExpeditionService {
         entries_count,
         cancelled_at,
         cancellation_reason,
+        is_blueprint,
+        blueprint_id,
+        is_route_locked,
+        mode,
+        adoptions_count,
+        average_rating,
+        ratings_count,
+        source_blueprint,
         public: isPublic,
         waypoints,
         entries,
@@ -1148,6 +1267,10 @@ export class ExpeditionService {
         coverImage: getStaticMediaUrl(cover_image),
         category,
         region,
+        locationName: location_name || undefined,
+        countryCode: country_code || undefined,
+        countryName: country_name || undefined,
+        stateProvince: state_province || undefined,
         tags: tags ? JSON.parse(tags) : [],
         isRoundTrip: is_round_trip ?? false,
         routeMode: route_mode || undefined,
@@ -1156,6 +1279,10 @@ export class ExpeditionService {
           ? JSON.parse(route_leg_modes)
           : undefined,
         routeDistanceKm: expedition.route_distance_km ?? undefined,
+        elevationMinM: expedition.elevation_min_m ?? undefined,
+        elevationMaxM: expedition.elevation_max_m ?? undefined,
+        elevationGainM: expedition.elevation_gain_m ?? undefined,
+        estimatedDurationH: expedition.estimated_duration_h ?? undefined,
         routeObstacles: route_obstacles
           ? JSON.parse(route_obstacles)
           : undefined,
@@ -1188,6 +1315,31 @@ export class ExpeditionService {
         endDate,
         cancelledAt: cancelled_at || undefined,
         cancellationReason: cancellation_reason || undefined,
+        isBlueprint: is_blueprint || false,
+        blueprintId: source_blueprint?.public_id || undefined,
+        isRouteLocked: is_route_locked || false,
+        mode: mode || undefined,
+        adoptionsCount: adoptions_count ?? 0,
+        averageRating: average_rating ?? undefined,
+        ratingsCount: ratings_count ?? 0,
+        sourceBlueprint: source_blueprint
+          ? {
+              id: source_blueprint.public_id,
+              title: source_blueprint.title,
+              author: source_blueprint.author
+                ? {
+                    username: source_blueprint.author.username,
+                    name: source_blueprint.author.profile?.name,
+                    picture: getStaticMediaUrl(
+                      source_blueprint.author.profile?.picture,
+                    ),
+                    stripeAccountConnected:
+                      source_blueprint.author.is_stripe_account_connected ||
+                      false,
+                  }
+                : undefined,
+            }
+          : undefined,
         bookmarked: isBookmarked,
         followingAuthor: isFollowingAuthor,
         author: author
@@ -1195,6 +1347,7 @@ export class ExpeditionService {
               username: author.username,
               picture: getStaticMediaUrl(author.profile.picture),
               creator: author.role === ExplorerRole.CREATOR,
+              isGuide: author.is_guide || false,
               stripeAccountConnected:
                 author?.is_stripe_account_connected === true,
             }
@@ -1452,8 +1605,41 @@ export class ExpeditionService {
       // check access - any authenticated user can create expeditions
       if (!explorerId) throw new ServiceForbiddenException();
 
-      // Sponsorship goal requires Explorer Pro
+      const isBlueprint = (payload as any).isBlueprint === true;
+
+      // Blueprint creation requires guide account
+      if (isBlueprint) {
+        const explorer = await this.prisma.explorer.findUnique({
+          where: { id: explorerId },
+          select: { is_guide: true },
+        });
+        if (!explorer?.is_guide) {
+          throw new ServiceForbiddenException(
+            'Only expedition guides can create blueprints',
+          );
+        }
+      }
+
+      // Enforce single draft per explorer
+      if (payload.status === 'draft' || (isBlueprint && !payload.status)) {
+        const existingDraft = await this.prisma.expedition.findFirst({
+          where: {
+            author_id: explorerId,
+            status: 'draft',
+            deleted_at: null,
+          },
+          select: { id: true },
+        });
+        if (existingDraft) {
+          throw new ServiceBadRequestException(
+            'You already have an existing draft. Please finish or delete it before creating a new one.',
+          );
+        }
+      }
+
+      // Sponsorship goal requires Explorer Pro (not applicable to blueprints)
       if (
+        !isBlueprint &&
         payload.goal &&
         payload.goal > 0 &&
         !matchRoles(userRole, [UserRole.CREATOR])
@@ -1465,6 +1651,7 @@ export class ExpeditionService {
 
       // Notes access threshold requires Explorer Pro
       if (
+        !isBlueprint &&
         payload.notesAccessThreshold &&
         payload.notesAccessThreshold > 0 &&
         !matchRoles(userRole, [UserRole.CREATOR])
@@ -1480,17 +1667,33 @@ export class ExpeditionService {
           public_id: generator.publicId(),
           title: payload.title,
           description: payload.description,
-          public:
-            payload.visibility === 'private' ? false : payload.public ?? true,
-          visibility:
-            payload.visibility ||
-            (payload.public === false ? 'private' : 'public'),
-          status: payload.status ?? 'planned',
-          start_date: payload.startDate ? new Date(payload.startDate) : null,
-          end_date: payload.endDate ? new Date(payload.endDate) : null,
+          public: isBlueprint
+            ? true
+            : payload.visibility === 'private'
+              ? false
+              : payload.public ?? true,
+          visibility: isBlueprint
+            ? 'public'
+            : payload.visibility ||
+              (payload.public === false ? 'private' : 'public'),
+          status: isBlueprint ? 'draft' : payload.status ?? 'planned',
+          start_date: isBlueprint
+            ? null
+            : payload.startDate
+              ? new Date(payload.startDate)
+              : null,
+          end_date: isBlueprint
+            ? null
+            : payload.endDate
+              ? new Date(payload.endDate)
+              : null,
           cover_image: payload.coverImage,
           category: payload.category,
           region: payload.region,
+          location_name: payload.locationName || null,
+          country_code: payload.countryCode || null,
+          country_name: payload.countryName || null,
+          state_province: payload.stateProvince || null,
           tags: payload.tags ? JSON.stringify(payload.tags) : null,
           is_round_trip: payload.isRoundTrip ?? false,
           route_mode: payload.routeMode || null,
@@ -1504,12 +1707,23 @@ export class ExpeditionService {
           route_obstacles: payload.routeObstacles
             ? JSON.stringify(payload.routeObstacles)
             : null,
-          goal: payload.goal ? Math.round(payload.goal * 100) : 0,
-          notes_access_threshold: payload.notesAccessThreshold
-            ? Math.round(payload.notesAccessThreshold * 100)
-            : 0,
+          goal: isBlueprint
+            ? 0
+            : payload.goal
+              ? Math.round(payload.goal * 100)
+              : 0,
+          notes_access_threshold: isBlueprint
+            ? 0
+            : payload.notesAccessThreshold
+              ? Math.round(payload.notesAccessThreshold * 100)
+              : 0,
           notes_visibility: payload.notesVisibility || 'public',
-          early_access_enabled: payload.earlyAccessEnabled ?? false,
+          early_access_enabled: isBlueprint
+            ? false
+            : payload.earlyAccessEnabled ?? false,
+          is_blueprint: isBlueprint,
+          mode: (payload as any).mode || null,
+          estimated_duration_h: (payload as any).estimatedDurationH ?? null,
           author_id: explorerId,
         },
         select: {
@@ -1524,13 +1738,13 @@ export class ExpeditionService {
         },
       });
 
-      // Drafts don't affect resting status
-      if (payload.status !== 'draft') {
+      // Drafts and blueprints don't affect resting status
+      if (!isBlueprint && payload.status !== 'draft') {
         await this.checkAndUpdateRestingStatus(explorerId);
       }
 
-      // Notify followers when a non-draft expedition is created
-      if (payload.status && payload.status !== 'draft') {
+      // Notify followers when a non-draft expedition is created (not blueprints — those notify on publish)
+      if (!isBlueprint && payload.status && payload.status !== 'draft') {
         this.eventService.trigger({
           event: EVENTS.EXPEDITION_PUBLISHED,
           data: {
@@ -1580,8 +1794,30 @@ export class ExpeditionService {
           public_id: true,
           title: true,
           author_id: true,
+          is_route_locked: true,
+          is_blueprint: true,
         },
       });
+
+      // Route locking: adopted expeditions cannot change route fields
+      if (expedition.is_route_locked) {
+        const routeFields = {
+          routeMode: (payload as any).routeMode,
+          routeGeometry: (payload as any).routeGeometry,
+          routeLegModes: (payload as any).routeLegModes,
+          routeDistanceKm: (payload as any).routeDistanceKm,
+          routeObstacles: (payload as any).routeObstacles,
+          isRoundTrip: (payload as any).isRoundTrip,
+        };
+        const hasRouteChange = Object.values(routeFields).some(
+          (v) => v !== undefined,
+        );
+        if (hasRouteChange) {
+          throw new ServiceForbiddenException(
+            'Route is locked on adopted expeditions and cannot be modified',
+          );
+        }
+      }
 
       // Status-based edit restrictions
       const isCancelled = expedition.status === 'cancelled';
@@ -1605,6 +1841,10 @@ export class ExpeditionService {
         goal,
         category,
         region,
+        locationName,
+        countryCode,
+        countryName,
+        stateProvince,
         tags,
         isRoundTrip,
         routeMode,
@@ -1659,6 +1899,14 @@ export class ExpeditionService {
       }
       if (status !== undefined) {
         updateData.status = status;
+        // When activating early, update start_date to today
+        if (status === 'active' && expedition.status === 'planned') {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (!expedition.start_date || expedition.start_date > today) {
+            updateData.start_date = today;
+          }
+        }
       }
       if (startDate !== undefined) {
         if (startDate) {
@@ -1743,6 +1991,18 @@ export class ExpeditionService {
       if (region !== undefined) {
         updateData.region = region;
       }
+      if (locationName !== undefined) {
+        updateData.location_name = locationName;
+      }
+      if (countryCode !== undefined) {
+        updateData.country_code = countryCode;
+      }
+      if (countryName !== undefined) {
+        updateData.country_name = countryName;
+      }
+      if (stateProvince !== undefined) {
+        updateData.state_province = stateProvince;
+      }
       if (tags !== undefined) {
         updateData.tags = tags ? JSON.stringify(tags) : null;
       }
@@ -1769,6 +2029,12 @@ export class ExpeditionService {
         updateData.route_obstacles = payload.routeObstacles
           ? JSON.stringify(payload.routeObstacles)
           : null;
+      }
+      if ((payload as any).mode !== undefined) {
+        updateData.mode = (payload as any).mode || null;
+      }
+      if ((payload as any).estimatedDurationH !== undefined) {
+        updateData.estimated_duration_h = (payload as any).estimatedDurationH ?? null;
       }
       await this.prisma.expedition.update({
         where: { id: expedition.id },
@@ -2546,17 +2812,28 @@ export class ExpeditionService {
           cover_image: true,
           category: true,
           region: true,
+          location_name: true,
+          country_code: true,
+          country_name: true,
+          state_province: true,
           tags: true,
           is_round_trip: true,
           route_mode: true,
           route_geometry: true,
           route_leg_modes: true,
           route_distance_km: true,
+          elevation_min_m: true,
+          elevation_max_m: true,
+          elevation_gain_m: true,
+          estimated_duration_h: true,
           route_obstacles: true,
           goal: true,
           notes_access_threshold: true,
           notes_visibility: true,
           early_access_enabled: true,
+          is_blueprint: true,
+          is_route_locked: true,
+          mode: true,
           updated_at: true,
           waypoints: {
             orderBy: { sequence: 'asc' },
@@ -2593,6 +2870,10 @@ export class ExpeditionService {
           coverImage: getStaticMediaUrl(d.cover_image),
           category: d.category,
           region: d.region,
+          locationName: d.location_name || undefined,
+          countryCode: d.country_code || undefined,
+          countryName: d.country_name || undefined,
+          stateProvince: d.state_province || undefined,
           tags: d.tags ? JSON.parse(d.tags) : [],
           isRoundTrip: d.is_round_trip ?? false,
           routeMode: d.route_mode || undefined,
@@ -2603,6 +2884,10 @@ export class ExpeditionService {
             ? JSON.parse(d.route_leg_modes)
             : undefined,
           routeDistanceKm: d.route_distance_km ?? undefined,
+          elevationMinM: d.elevation_min_m ?? undefined,
+          elevationMaxM: d.elevation_max_m ?? undefined,
+          elevationGainM: d.elevation_gain_m ?? undefined,
+          estimatedDurationH: d.estimated_duration_h ?? undefined,
           routeObstacles: d.route_obstacles
             ? JSON.parse(d.route_obstacles)
             : undefined,
@@ -2610,6 +2895,9 @@ export class ExpeditionService {
           notesAccessThreshold: integerToDecimal(d.notes_access_threshold ?? 0),
           notesVisibility: d.notes_visibility || 'public',
           earlyAccessEnabled: d.early_access_enabled ?? false,
+          isBlueprint: (d as any).is_blueprint || false,
+          isRouteLocked: (d as any).is_route_locked || false,
+          mode: (d as any).mode || undefined,
           updatedAt: d.updated_at,
           waypoints: d.waypoints.map(({ sequence, waypoint }) => ({
             id: waypoint.id,
@@ -2651,12 +2939,23 @@ export class ExpeditionService {
             title: true,
             description: true,
             region: true,
+            location_name: true,
+            country_code: true,
+            country_name: true,
+            state_province: true,
             category: true,
             start_date: true,
             cover_image: true,
             end_date: true,
             goal: true,
             notes_access_threshold: true,
+            is_blueprint: true,
+            _count: { select: { waypoints: true } },
+            waypoints: {
+              select: { waypoint: { select: { lat: true, lon: true } } },
+              orderBy: { sequence: 'asc' as const },
+              take: 1,
+            },
           },
         })
         .catch(() => {
@@ -2669,55 +2968,102 @@ export class ExpeditionService {
         );
       }
 
-      // Validation
+      const isBlueprint = expedition.is_blueprint === true;
+
+      // Validation — different rules for blueprints vs regular expeditions
       const errors: string[] = [];
       if (!expedition.title?.trim()) errors.push('Title is required');
       if (!expedition.description?.trim())
         errors.push('Description is required');
-      if (!expedition.region?.trim()) errors.push('Region is required');
-      if (!expedition.category?.trim()) errors.push('Category is required');
-      if (!expedition.start_date) errors.push('Start date is required');
-      if (!expedition.cover_image) errors.push('Cover image is required');
 
-      // Pro checks
-      if (
-        expedition.goal &&
-        expedition.goal > 0 &&
-        !matchRoles(userRole, [UserRole.CREATOR])
-      ) {
-        errors.push('Setting a sponsorship goal requires Explorer Pro');
-      }
-      if (
-        expedition.notes_access_threshold &&
-        expedition.notes_access_threshold > 0 &&
-        !matchRoles(userRole, [UserRole.CREATOR])
-      ) {
-        errors.push('Setting a notes access threshold requires Explorer Pro');
+      if (isBlueprint) {
+        // Blueprints require at least 2 waypoints (route is the core value)
+        if (expedition._count.waypoints < 2)
+          errors.push('Blueprints require at least 2 waypoints');
+      } else {
+        if (!expedition.region?.trim()) errors.push('Region is required');
+        if (!expedition.category?.trim()) errors.push('Category is required');
+        if (!expedition.start_date) errors.push('Start date is required');
+        if (!expedition.cover_image) errors.push('Cover image is required');
+
+        // Pro checks
+        if (
+          expedition.goal &&
+          expedition.goal > 0 &&
+          !matchRoles(userRole, [UserRole.CREATOR])
+        ) {
+          errors.push('Setting a sponsorship goal requires Explorer Pro');
+        }
+        if (
+          expedition.notes_access_threshold &&
+          expedition.notes_access_threshold > 0 &&
+          !matchRoles(userRole, [UserRole.CREATOR])
+        ) {
+          errors.push('Setting a notes access threshold requires Explorer Pro');
+        }
       }
 
       if (errors.length > 0) {
         throw new ServiceBadRequestException(errors.join('; '));
       }
 
-      // Compute status from dates
-      const now = new Date();
-      let newStatus = 'planned';
-      if (expedition.start_date) {
-        if (expedition.end_date && expedition.end_date <= now) {
-          newStatus = 'completed';
-        } else if (expedition.start_date <= now) {
-          newStatus = 'active';
+      let newStatus: string;
+      if (isBlueprint) {
+        newStatus = 'published';
+      } else {
+        // Compute status from dates
+        const now = new Date();
+        newStatus = 'planned';
+        if (expedition.start_date) {
+          if (expedition.end_date && expedition.end_date <= now) {
+            newStatus = 'completed';
+          } else if (expedition.start_date <= now) {
+            newStatus = 'active';
+          }
+        }
+      }
+
+      // Auto-geocode location from first waypoint if not already set
+      let locationUpdate: Record<string, string | null> = {};
+      if (!expedition.location_name && expedition.waypoints?.length > 0) {
+        const firstWp = expedition.waypoints[0].waypoint;
+        if (firstWp.lat && firstWp.lon) {
+          const { reverseGeocodeLocation } = await import(
+            '../../lib/geocoding'
+          );
+          const geo = await reverseGeocodeLocation(firstWp.lat, firstWp.lon);
+          if (geo) {
+            locationUpdate = {
+              location_name: geo.locationName,
+              country_code: geo.countryCode,
+              country_name: geo.countryName,
+              state_province: geo.stateProvince,
+            };
+          }
         }
       }
 
       await this.prisma.$transaction(async (tx) => {
         await tx.expedition.update({
           where: { id: expedition.id },
-          data: { status: newStatus },
+          data: { status: newStatus, ...locationUpdate },
         });
       });
 
-      await this.checkAndUpdateRestingStatus(explorerId);
+      // Notify followers
+      this.eventService.trigger({
+        event: EVENTS.EXPEDITION_PUBLISHED,
+        data: {
+          expeditionPublicId: id,
+          creatorId: explorerId,
+          expeditionTitle: expedition.title,
+          isBlueprint,
+        },
+      });
+
+      if (!isBlueprint) {
+        await this.checkAndUpdateRestingStatus(explorerId);
+      }
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;
@@ -2754,7 +3100,15 @@ export class ExpeditionService {
       const expedition = await this.prisma.expedition
         .findFirstOrThrow({
           where: { public_id: id, author_id: explorerId, deleted_at: null },
-          select: { id: true, status: true },
+          select: {
+            id: true,
+            status: true,
+            is_route_locked: true,
+            is_blueprint: true,
+            mode: true,
+            route_mode: true,
+            route_distance_km: true,
+          },
         })
         .catch(() => {
           throw new ServiceNotFoundException('expedition not found');
@@ -2763,6 +3117,12 @@ export class ExpeditionService {
       if (expedition.status === 'cancelled') {
         throw new ServiceForbiddenException(
           'Waypoints cannot be modified on cancelled expeditions',
+        );
+      }
+
+      if (expedition.is_route_locked) {
+        throw new ServiceForbiddenException(
+          'Waypoints cannot be modified on adopted expeditions with locked routes',
         );
       }
 
@@ -2840,6 +3200,645 @@ export class ExpeditionService {
         },
         { timeout: 15000 },
       );
+
+      // Fetch elevation data for all waypoints and compute stats
+      if (payload.waypoints.length >= 1) {
+        try {
+          const lats = payload.waypoints.map((w) => w.lat).join(',');
+          const lons = payload.waypoints.map((w) => w.lon).join(',');
+          const elevRes = await fetch(
+            `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`,
+          );
+          if (elevRes.ok) {
+            const elevData = await elevRes.json();
+            const elevations: number[] = elevData.elevation || [];
+            if (elevations.length > 0) {
+              // Cumulative ascent
+              let gain = 0;
+              for (let i = 1; i < elevations.length; i++) {
+                const diff = elevations[i] - elevations[i - 1];
+                if (diff > 0) gain += diff;
+              }
+
+              const updateData: Record<string, unknown> = {
+                elevation_min_m: Math.min(...elevations),
+                elevation_max_m: Math.max(...elevations),
+                elevation_gain_m: gain,
+              };
+
+              await this.prisma.expedition.update({
+                where: { id: expedition.id },
+                data: updateData,
+              });
+            }
+          }
+        } catch (elevErr) {
+          this.logger.warn(`Elevation fetch failed: ${elevErr.message}`);
+        }
+      }
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async getBlueprints({
+    query,
+    session,
+  }: IQueryWithSession<{
+    page?: string;
+    limit?: string;
+    mode?: string;
+    region?: string;
+  }>): Promise<IExpeditionGetAllResponse> {
+    try {
+      const parsedPage = Math.max(1, parseInt(query.page, 10) || 1);
+      const parsedLimit = Math.min(
+        50,
+        Math.max(1, parseInt(query.limit, 10) || 20),
+      );
+      const { explorerId } = session;
+
+      const where: Prisma.ExpeditionWhereInput = {
+        deleted_at: null,
+        is_blueprint: true,
+        status: 'published',
+        author: { blocked: false },
+        ...(query.mode ? { mode: query.mode } : {}),
+        ...(query.region ? { region: query.region } : {}),
+      };
+
+      const [results, data] = await Promise.all([
+        this.prisma.expedition.count({ where }),
+        this.prisma.expedition.findMany({
+          where,
+          select: {
+            public_id: true,
+            title: true,
+            description: true,
+            cover_image: true,
+            status: true,
+            visibility: true,
+            created_at: true,
+            category: true,
+            region: true,
+            location_name: true,
+            country_code: true,
+            country_name: true,
+            state_province: true,
+            tags: true,
+            is_round_trip: true,
+            goal: true,
+            raised: true,
+            route_distance_km: true,
+            elevation_min_m: true,
+            elevation_max_m: true,
+            elevation_gain_m: true,
+            estimated_duration_h: true,
+            is_blueprint: true,
+            mode: true,
+            adoptions_count: true,
+            average_rating: true,
+            ratings_count: true,
+            author_id: true,
+            start_date: true,
+            end_date: true,
+            waypoints: {
+              where: { waypoint: { deleted_at: null } },
+              orderBy: { sequence: 'asc' },
+              select: {
+                sequence: true,
+                waypoint: {
+                  select: {
+                    id: true,
+                    title: true,
+                    lat: true,
+                    lon: true,
+                    date: true,
+                    description: true,
+                  },
+                },
+              },
+            },
+            author: {
+              select: {
+                username: true,
+                is_stripe_account_connected: true,
+                profile: { select: { picture: true, name: true } },
+              },
+            },
+            bookmarks: explorerId
+              ? {
+                  where: { explorer_id: explorerId },
+                  select: { expedition_id: true },
+                }
+              : undefined,
+          },
+          skip: (parsedPage - 1) * parsedLimit,
+          take: parsedLimit,
+          orderBy: [{ adoptions_count: 'desc' }, { id: 'desc' }],
+        }),
+      ]);
+
+      const totalPages = Math.ceil(results / parsedLimit);
+
+      return {
+        results,
+        data: data.map((row) => {
+          const { author, bookmarks: expeditionBookmarks } = row;
+          return {
+            id: row.public_id,
+            title: row.title,
+            description: row.description,
+            coverImage: getStaticMediaUrl(row.cover_image),
+            status: row.status,
+            visibility: (row.visibility || 'public') as
+              | 'public'
+              | 'off-grid'
+              | 'private',
+            category: row.category,
+            region: row.region,
+            locationName: row.location_name || undefined,
+            countryCode: row.country_code || undefined,
+            countryName: row.country_name || undefined,
+            stateProvince: row.state_province || undefined,
+            tags: row.tags ? JSON.parse(row.tags) : [],
+            isRoundTrip: row.is_round_trip ?? false,
+            startDate: row.start_date,
+            endDate: row.end_date,
+            goal: integerToDecimal(row.goal ?? 0),
+            raised: integerToDecimal(row.raised ?? 0),
+            entriesCount: 0,
+            totalDistanceKm: row.route_distance_km ?? 0,
+            elevationMinM: row.elevation_min_m ?? undefined,
+            elevationMaxM: row.elevation_max_m ?? undefined,
+            elevationGainM: row.elevation_gain_m ?? undefined,
+            estimatedDurationH: row.estimated_duration_h ?? undefined,
+            waypointsCount: row.waypoints.length,
+            waypoints: [],
+            isBlueprint: true,
+            mode: row.mode || undefined,
+            adoptionsCount: row.adoptions_count ?? 0,
+            averageRating: row.average_rating ?? undefined,
+            ratingsCount: row.ratings_count ?? 0,
+            author: author
+              ? {
+                  username: author.username,
+                  picture: getStaticMediaUrl(author.profile.picture),
+                  name: author.profile.name,
+                  stripeAccountConnected:
+                    author?.is_stripe_account_connected === true,
+                }
+              : undefined,
+            bookmarked: explorerId
+              ? (expeditionBookmarks?.length ?? 0) > 0
+              : false,
+          };
+        }),
+        page: parsedPage,
+        limit: parsedLimit,
+        totalPages,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async adoptBlueprint({
+    session,
+    query,
+  }: ISessionQuery<{ id: string }>): Promise<IBlueprintAdoptResponse> {
+    try {
+      const { id } = query;
+      const { explorerId } = session;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      // Verify user is not a guide
+      const explorer = await this.prisma.explorer.findUnique({
+        where: { id: explorerId },
+        select: { is_guide: true },
+      });
+      if (explorer?.is_guide) {
+        throw new ServiceForbiddenException(
+          'Guide accounts cannot adopt blueprints',
+        );
+      }
+
+      // Check for existing adoption (prevent duplicates)
+      const existingAdoption = await this.prisma.expedition.findFirst({
+        where: {
+          author_id: explorerId,
+          blueprint_id: { not: null },
+          deleted_at: null,
+        },
+        select: { public_id: true, blueprint_id: true },
+      });
+
+      // Fetch the blueprint with waypoints
+      const blueprint = await this.prisma.expedition
+        .findFirstOrThrow({
+          where: {
+            public_id: id,
+            is_blueprint: true,
+            status: 'published',
+            deleted_at: null,
+          },
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            cover_image: true,
+            category: true,
+            region: true,
+            location_name: true,
+            country_code: true,
+            country_name: true,
+            state_province: true,
+            tags: true,
+            is_round_trip: true,
+            route_mode: true,
+            route_geometry: true,
+            route_leg_modes: true,
+            route_distance_km: true,
+            elevation_min_m: true,
+            elevation_max_m: true,
+            elevation_gain_m: true,
+            route_obstacles: true,
+            mode: true,
+            waypoints: {
+              where: { waypoint: { deleted_at: null } },
+              orderBy: { sequence: 'asc' },
+              select: {
+                sequence: true,
+                waypoint: {
+                  select: {
+                    title: true,
+                    lat: true,
+                    lon: true,
+                    description: true,
+                  },
+                },
+              },
+            },
+          },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('Blueprint not found');
+        });
+
+      // Return existing adoption if this user already adopted this blueprint
+      if (
+        existingAdoption &&
+        existingAdoption.blueprint_id === blueprint.id
+      ) {
+        return { expeditionId: existingAdoption.public_id };
+      }
+
+      // Create adopted expedition in a transaction
+      const newExpedition = await this.prisma.$transaction(
+        async (tx) => {
+          const expedition = await tx.expedition.create({
+            data: {
+              public_id: generator.publicId(),
+              title: blueprint.title,
+              description: blueprint.description,
+              cover_image: blueprint.cover_image,
+              category: blueprint.category,
+              region: blueprint.region,
+              location_name: blueprint.location_name,
+              country_code: blueprint.country_code,
+              country_name: blueprint.country_name,
+              state_province: blueprint.state_province,
+              tags: blueprint.tags,
+              is_round_trip: blueprint.is_round_trip,
+              route_mode: blueprint.route_mode,
+              route_geometry: blueprint.route_geometry,
+              route_leg_modes: blueprint.route_leg_modes,
+              route_distance_km: blueprint.route_distance_km,
+              elevation_min_m: blueprint.elevation_min_m,
+              elevation_max_m: blueprint.elevation_max_m,
+              elevation_gain_m: blueprint.elevation_gain_m,
+              route_obstacles: blueprint.route_obstacles,
+              mode: blueprint.mode,
+              author_id: explorerId,
+              blueprint_id: blueprint.id,
+              is_route_locked: true,
+              is_blueprint: false,
+              status: 'draft',
+              visibility: 'public',
+              public: true,
+            },
+          });
+
+          // Copy waypoints
+          for (const wp of blueprint.waypoints) {
+            await tx.expeditionWaypoint.create({
+              data: {
+                sequence: wp.sequence,
+                waypoint: {
+                  create: {
+                    title: wp.waypoint.title,
+                    lat: wp.waypoint.lat,
+                    lon: wp.waypoint.lon,
+                    description: wp.waypoint.description,
+                  },
+                },
+                expedition: { connect: { id: expedition.id } },
+              },
+            });
+          }
+
+          // Increment adoptions count on source blueprint
+          await tx.expedition.update({
+            where: { id: blueprint.id },
+            data: { adoptions_count: { increment: 1 } },
+          });
+
+          return expedition;
+        },
+        { timeout: 15000 },
+      );
+
+      return { expeditionId: newExpedition.public_id };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async getBlueprintReviews({
+    query,
+  }: IQueryWithSession<{
+    id: string;
+    page?: string;
+    limit?: string;
+  }>): Promise<{ results: number; data: IBlueprintReviewDetail[] }> {
+    try {
+      const { id } = query;
+      const parsedPage = Math.max(1, parseInt(query.page, 10) || 1);
+      const parsedLimit = Math.min(
+        50,
+        Math.max(1, parseInt(query.limit, 10) || 20),
+      );
+
+      const blueprint = await this.prisma.expedition
+        .findFirstOrThrow({
+          where: {
+            public_id: id,
+            is_blueprint: true,
+            deleted_at: null,
+          },
+          select: { id: true },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('Blueprint not found');
+        });
+
+      const where = {
+        blueprint_id: blueprint.id,
+        deleted_at: null,
+      };
+
+      const [results, reviews] = await Promise.all([
+        this.prisma.blueprintReview.count({ where }),
+        this.prisma.blueprintReview.findMany({
+          where,
+          select: {
+            public_id: true,
+            rating: true,
+            text: true,
+            created_at: true,
+            explorer: {
+              select: {
+                username: true,
+                profile: { select: { name: true, picture: true } },
+              },
+            },
+          },
+          skip: (parsedPage - 1) * parsedLimit,
+          take: parsedLimit,
+          orderBy: { created_at: 'desc' },
+        }),
+      ]);
+
+      return {
+        results,
+        data: reviews.map((r) => ({
+          id: r.public_id,
+          rating: r.rating,
+          text: r.text,
+          createdAt: r.created_at,
+          explorer: r.explorer
+            ? {
+                username: r.explorer.username,
+                name: r.explorer.profile?.name,
+                picture: getStaticMediaUrl(r.explorer.profile?.picture),
+              }
+            : undefined,
+        })),
+      };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async createBlueprintReview({
+    session,
+    query,
+    payload,
+  }: ISessionQueryWithPayload<
+    { id: string },
+    IBlueprintReviewCreatePayload
+  >): Promise<IBlueprintReviewDetail> {
+    try {
+      const { id } = query;
+      const { explorerId } = session;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      // Verify user is not a guide
+      const explorer = await this.prisma.explorer.findUnique({
+        where: { id: explorerId },
+        select: {
+          is_guide: true,
+          username: true,
+          profile: { select: { name: true, picture: true } },
+        },
+      });
+      if (explorer?.is_guide) {
+        throw new ServiceForbiddenException(
+          'Guide accounts cannot review blueprints',
+        );
+      }
+
+      const blueprint = await this.prisma.expedition
+        .findFirstOrThrow({
+          where: {
+            public_id: id,
+            is_blueprint: true,
+            deleted_at: null,
+          },
+          select: { id: true, author_id: true },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('Blueprint not found');
+        });
+
+      // Can't review own blueprint
+      if (blueprint.author_id === explorerId) {
+        throw new ServiceBadRequestException(
+          'You cannot review your own blueprint',
+        );
+      }
+
+      // Must have adopted this blueprint to review it
+      const adoption = await this.prisma.expedition.findFirst({
+        where: {
+          author_id: explorerId,
+          blueprint_id: blueprint.id,
+          deleted_at: null,
+        },
+        select: { id: true },
+      });
+      if (!adoption) {
+        throw new ServiceForbiddenException(
+          'You must adopt this blueprint before reviewing it',
+        );
+      }
+
+      // Upsert review + recalculate rating in a single transaction
+      const review = await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.blueprintReview.findUnique({
+          where: {
+            blueprint_id_explorer_id: {
+              blueprint_id: blueprint.id,
+              explorer_id: explorerId,
+            },
+          },
+        });
+
+        let r;
+        if (existing) {
+          r = await tx.blueprintReview.update({
+            where: { id: existing.id },
+            data: {
+              rating: payload.rating,
+              text: payload.text,
+              deleted_at: null,
+            },
+          });
+        } else {
+          r = await tx.blueprintReview.create({
+            data: {
+              public_id: generator.publicId(),
+              blueprint_id: blueprint.id,
+              explorer_id: explorerId,
+              rating: payload.rating,
+              text: payload.text,
+            },
+          });
+        }
+
+        // Recalculate average rating atomically
+        const stats = await tx.blueprintReview.aggregate({
+          where: { blueprint_id: blueprint.id, deleted_at: null },
+          _avg: { rating: true },
+          _count: { rating: true },
+        });
+        await tx.expedition.update({
+          where: { id: blueprint.id },
+          data: {
+            average_rating: stats._avg.rating,
+            ratings_count: stats._count.rating,
+          },
+        });
+
+        return r;
+      });
+
+      return {
+        id: review.public_id,
+        rating: review.rating,
+        text: review.text,
+        createdAt: review.created_at,
+        explorer: explorer
+          ? {
+              username: explorer.username,
+              name: explorer.profile?.name,
+              picture: getStaticMediaUrl(explorer.profile?.picture),
+            }
+          : undefined,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async deleteBlueprintReview({
+    session,
+    query,
+  }: ISessionQuery<{ id: string }>): Promise<void> {
+    try {
+      const { id } = query;
+      const { explorerId } = session;
+
+      if (!explorerId) throw new ServiceForbiddenException();
+
+      const blueprint = await this.prisma.expedition
+        .findFirstOrThrow({
+          where: {
+            public_id: id,
+            is_blueprint: true,
+            deleted_at: null,
+          },
+          select: { id: true },
+        })
+        .catch(() => {
+          throw new ServiceNotFoundException('Blueprint not found');
+        });
+
+      const review = await this.prisma.blueprintReview.findUnique({
+        where: {
+          blueprint_id_explorer_id: {
+            blueprint_id: blueprint.id,
+            explorer_id: explorerId,
+          },
+        },
+      });
+
+      if (!review) {
+        throw new ServiceNotFoundException('Review not found');
+      }
+
+      // Soft-delete + recalculate rating in a single transaction
+      await this.prisma.$transaction(async (tx) => {
+        await tx.blueprintReview.update({
+          where: { id: review.id },
+          data: { deleted_at: new Date() },
+        });
+
+        const stats = await tx.blueprintReview.aggregate({
+          where: { blueprint_id: blueprint.id, deleted_at: null },
+          _avg: { rating: true },
+          _count: { rating: true },
+        });
+        await tx.expedition.update({
+          where: { id: blueprint.id },
+          data: {
+            average_rating: stats._avg.rating ?? null,
+            ratings_count: stats._count.rating,
+          },
+        });
+      });
     } catch (e) {
       this.logger.error(e);
       if (e.status) throw e;

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -18,6 +19,7 @@ import { ParamPublicIdDto, ParamUsernameDto } from '@/common/dto';
 import { ISession } from '@/common/interfaces';
 
 import {
+  AdminCreateInviteCodeDto,
   AdminExplorerQueryDto,
   AdminPaginationDto,
   AdminRefundDto,
@@ -105,7 +107,11 @@ export class AdminController {
 
   @Post('refund')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 5, ttl: 3600000 }, medium: { limit: 5, ttl: 3600000 }, long: { limit: 5, ttl: 3600000 } })
+  @Throttle({
+    short: { limit: 5, ttl: 3600000 },
+    medium: { limit: 5, ttl: 3600000 },
+    long: { limit: 5, ttl: 3600000 },
+  })
   async refundPayment(
     @Body() body: AdminRefundDto,
     @Session() session: ISession,
@@ -115,5 +121,48 @@ export class AdminController {
       body.chargeId,
       body.reason,
     );
+  }
+
+  @Get('invite-codes')
+  @HttpCode(HttpStatus.OK)
+  async getInviteCodes(
+    @Query() query: AdminPaginationDto,
+    @Session() session: ISession,
+  ) {
+    return await this.adminService.getInviteCodes(session, query);
+  }
+
+  @Post('invite-codes')
+  @HttpCode(HttpStatus.CREATED)
+  async createInviteCodes(
+    @Body() body: AdminCreateInviteCodeDto,
+    @Session() session: ISession,
+  ) {
+    return await this.adminService.createInviteCodes(session, body);
+  }
+
+  @Delete('invite-codes/:id')
+  @HttpCode(HttpStatus.OK)
+  async revokeInviteCode(
+    @Param('id') id: string,
+    @Session() session: ISession,
+  ) {
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId) || numericId <= 0) {
+      throw new BadRequestException('Invalid invite code ID');
+    }
+    await this.adminService.revokeInviteCode(session, numericId);
+    return { success: true };
+  }
+
+  @Post('backfill-locations')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 1, ttl: 60000 },
+    medium: { limit: 1, ttl: 60000 },
+    long: { limit: 1, ttl: 60000 },
+  })
+  async backfillLocations(@Session() session: ISession) {
+    return await this.adminService.backfillExpeditionLocations(session);
   }
 }

@@ -107,7 +107,8 @@ export function AuthPage() {
       if (recaptchaConfigured) {
         recaptchaToken = (await executeRecaptcha('signup')) || undefined;
       }
-      await signup(email, username, password, recaptchaToken);
+      const inviteCode = (formData.get('inviteCode') as string)?.trim() || undefined;
+      await signup(email, username, password, recaptchaToken, inviteCode);
       router.push(getSafeRedirect());
     } catch (err) {
       if (err instanceof ApiError) {
@@ -318,6 +319,25 @@ export function AuthPage() {
                       • Verification email sent after registration
                       • Used for password recovery and notifications
                       • Never displayed publicly
+                    </div>
+                  </div>
+
+                  {/* Invite Code */}
+                  <div>
+                    <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                      INVITE CODE
+                      <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">OPTIONAL</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="inviteCode"
+                      className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#598636] outline-none text-sm font-mono bg-white dark:bg-[#1a1a1a] dark:text-[#e5e5e5]"
+                      placeholder="Enter invite code (if you have one)"
+                      disabled={loading}
+                      maxLength={40}
+                    />
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
+                      • Have an invite code? Enter it to register as a Guide
                     </div>
                   </div>
 

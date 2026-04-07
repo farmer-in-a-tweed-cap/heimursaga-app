@@ -92,6 +92,39 @@ function groupNotifications(items: Notification[]) {
   return groups.filter((g) => g.items.length > 0);
 }
 
+function getNotificationRoute(n: Notification): string | null {
+  switch (n.context) {
+    case 'follow':
+      return n.mentionUser?.username ? `/explorer/${n.mentionUser.username}` : null;
+    case 'comment':
+    case 'comment_reply':
+    case 'like':
+      return n.postId ? `/entry/${n.postId}` : null;
+    case 'new_entry':
+      if (n.postId) return `/entry/${n.postId}`;
+      if (n.expeditionPublicId) return `/expedition/${n.expeditionPublicId}`;
+      return null;
+    case 'sponsorship':
+      if (n.expeditionPublicId) return `/expedition/${n.expeditionPublicId}`;
+      return n.mentionUser?.username ? `/explorer/${n.mentionUser.username}` : null;
+    case 'expedition_note_created':
+    case 'expedition_note_reply':
+    case 'new_expedition':
+    case 'expedition_started':
+    case 'expedition_completed':
+    case 'expedition_off_grid':
+    case 'expedition_cancelled':
+    case 'expedition_date_changed':
+      return n.expeditionPublicId ? `/expedition/${n.expeditionPublicId}` : null;
+    case 'passport_country':
+    case 'passport_continent':
+    case 'passport_stamp':
+      return '/(tabs)/profile';
+    default:
+      return null;
+  }
+}
+
 function formatTimeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -156,6 +189,7 @@ export default function NotificationsScreen() {
                 {group.items.map((notif, i) => {
                   const { action, detail, amount } = formatNotification(notif);
                   const username = notif.mentionUser?.username ?? '';
+                  const route = getNotificationRoute(notif);
                   return (
                     <View
                       key={`${notif.context}-${notif.date}-${i}`}
@@ -168,6 +202,7 @@ export default function NotificationsScreen() {
                         detail={detail}
                         time={formatTimeAgo(notif.date)}
                         unread={!notif.read}
+                        onPress={route ? () => router.push(route as any) : undefined}
                       />
                     </View>
                   );

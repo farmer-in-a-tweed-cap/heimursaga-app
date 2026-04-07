@@ -58,6 +58,7 @@ export type TransformedExpedition = {
   status: 'active' | 'planned' | 'completed' | 'cancelled';
   category: string;
   region: string;
+  locationName?: string;
   description: string;
   startDate: string;
   estimatedEndDate: string;

@@ -53,9 +53,10 @@ export class RoutingController {
         );
         return res.status(200).send(result);
       } catch (err: any) {
-        return res
-          .status(400)
-          .send({ statusCode: 400, message: err.message || 'Waterway routing failed' });
+        return res.status(400).send({
+          statusCode: 400,
+          message: err.message || 'Waterway routing failed',
+        });
       }
     }
 
@@ -66,10 +67,12 @@ export class RoutingController {
       'Content-Type': 'application/x-ndjson',
       'Cache-Control': 'no-cache',
       'Transfer-Encoding': 'chunked',
-      ...(origin ? {
-        'Access-Control-Allow-Origin': origin,
-        'Access-Control-Allow-Credentials': 'true',
-      } : {}),
+      ...(origin
+        ? {
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true',
+          }
+        : {}),
     });
 
     const write = (obj: Record<string, unknown>) => {

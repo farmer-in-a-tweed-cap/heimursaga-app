@@ -11,7 +11,7 @@ interface ExplorerCardProps {
   journalName: string;
   imageUrl: string;
   location: string;
-  accountType: "explorer" | "explorer-pro";
+  accountType: "explorer" | "explorer-pro" | "expedition-guide";
   joined: string;
   activeExpeditions: number;
   totalEntries: number;
@@ -60,9 +60,9 @@ export function ExplorerCard({
       {/* Header: Account Type Bar */}
       <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] bg-[#b5bcc4] dark:bg-[#3a3a3a] px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <div className={`h-2.5 w-2.5 ${accountType === 'explorer-pro' ? 'bg-[#ac6d46]' : 'bg-[#4676ac]'}`} />
+          <div className={`h-2.5 w-2.5 ${accountType === 'expedition-guide' ? 'bg-[#598636]' : accountType === 'explorer-pro' ? 'bg-[#ac6d46]' : 'bg-[#4676ac]'}`} />
           <span className="text-xs font-mono font-semibold tracking-wide text-[#202020] dark:text-[#e5e5e5]">
-            {accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
+            {accountType === 'expedition-guide' ? 'EXPEDITION GUIDE' : accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
           </span>
         </div>
         {explorerStatus && (
@@ -73,7 +73,7 @@ export function ExplorerCard({
       {/* Section: Avatar & Location */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] px-4 py-6">
         <div className="flex flex-col items-center">
-          <div className={`w-32 h-32 border-4 ${accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#b5bcc4] mb-4`}>
+          <div className={`w-32 h-32 border-4 ${accountType === 'expedition-guide' ? 'border-[#598636]' : accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#b5bcc4] mb-4`}>
             <ExplorerAvatar username={username} src={imageUrl} size={128} className="w-full h-full" />
           </div>
           <div className="flex items-center gap-2 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
@@ -119,7 +119,7 @@ export function ExplorerCard({
             onClick={onViewJournal}
             className="flex-1 px-4 py-2 text-xs font-bold bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] whitespace-nowrap"
           >
-            VIEW JOURNAL
+            {accountType === 'expedition-guide' ? 'VIEW PORTFOLIO' : 'VIEW JOURNAL'}
           </button>
           {/* Follow button - Hidden when not authenticated */}
           {isAuthenticated && (

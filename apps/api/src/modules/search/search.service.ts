@@ -49,6 +49,7 @@ export class SearchService {
           id: true,
           username: true,
           role: true,
+          is_guide: true,
           profile: {
             select: {
               picture: true,
@@ -131,6 +132,7 @@ export class SearchService {
             username: user.username,
             picture: user.profile?.picture || null,
             role: user.role,
+            isGuide: user.is_guide ?? false,
           })),
           entries: entries.map((entry) => ({
             id: entry.public_id,

@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { Star } from 'lucide-react';
 import { formatCurrency } from '@/app/utils/formatCurrency';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
+import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
 import type { TransformedExpedition, WaypointType, FundingStats, SponsorWithTotal } from '@/app/components/expedition-detail/types';
-import type { ExpeditionCondition } from '@/app/services/api';
+import type { ExpeditionCondition, BlueprintReview } from '@/app/services/api';
 import { getPerksForSlot, getTierLabel } from '@repo/types/sponsorship-tiers';
 import type { SponsorshipTierFull } from '@/app/services/api';
 
@@ -27,6 +29,11 @@ interface SidebarProps {
   sponsors: SponsorWithTotal[];
   onSponsorUpdate: () => void;
   monthlyTiers: SponsorshipTierFull[];
+  isRouteLocked?: boolean;
+  isBlueprint?: boolean;
+  reviews?: BlueprintReview[];
+  averageRating?: number;
+  ratingsCount?: number;
 }
 
 function WeatherCard({
@@ -107,6 +114,11 @@ export function Sidebar({
   sponsors,
   onSponsorUpdate,
   monthlyTiers,
+  isRouteLocked,
+  isBlueprint,
+  reviews = [],
+  averageRating,
+  ratingsCount,
 }: SidebarProps) {
   const oneTimeSponsorsCount = new Set(
     sponsors.filter(s => s.type?.toLowerCase() !== 'subscription').map(s => s.user?.username)
@@ -114,8 +126,8 @@ export function Sidebar({
 
   return (
     <div className="space-y-6">
-      {/* Quick Actions */}
-      {isOwner && (
+      {/* Quick Actions — hidden for blueprints (edit button is in the action bar) */}
+      {isOwner && !isBlueprint && (
         <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
           <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
             QUICK ACTIONS
@@ -133,7 +145,7 @@ export function Sidebar({
                 >
                   LOG NEW ENTRY
                 </Link>
-                {expedition.explorerIsPro && (
+                {expedition.explorerIsPro && !isRouteLocked && (
                   <Link
                     href={`/expedition-builder/${expedition.id}`}
                     className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-sm font-bold"
@@ -183,6 +195,9 @@ export function Sidebar({
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Status:</span> {expedition.status}</div>
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Category:</span> {expedition.category || 'Not set'}</div>
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Region:</span> {expedition.region || 'Not set'}</div>
+          {expedition.locationName && (
+            <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Location:</span> {expedition.locationName}</div>
+          )}
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Started:</span> {formatDate(expedition.startDate)}</div>
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Est. End:</span> {formatDate(expedition.estimatedEndDate)}</div>
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Duration:</span> {expedition.daysActive} / {totalDuration || '?'} days</div>
@@ -345,23 +360,27 @@ export function Sidebar({
             <span className="text-[#616161] dark:text-[#b5bcc4]">Total Waypoints</span>
             <span className="font-bold dark:text-[#e5e5e5]">{expedition.totalWaypoints}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-[#616161] dark:text-[#b5bcc4]">Completed</span>
-            <span className="font-bold text-[#ac6d46]">{waypoints.filter(w => w.status === 'completed').length}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[#616161] dark:text-[#b5bcc4]">Current</span>
-            <span className="font-bold text-[#4676ac]">{waypoints.filter(w => w.status === 'current').length}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-[#616161] dark:text-[#b5bcc4]">Planned</span>
-            <span className="font-bold dark:text-[#e5e5e5]">{waypoints.filter(w => w.status === 'planned').length}</span>
-          </div>
+          {!isBlueprint && (
+            <>
+              <div className="flex justify-between">
+                <span className="text-[#616161] dark:text-[#b5bcc4]">Completed</span>
+                <span className="font-bold text-[#ac6d46]">{waypoints.filter(w => w.status === 'completed').length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#616161] dark:text-[#b5bcc4]">Current</span>
+                <span className="font-bold text-[#4676ac]">{waypoints.filter(w => w.status === 'current').length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[#616161] dark:text-[#b5bcc4]">Planned</span>
+                <span className="font-bold dark:text-[#e5e5e5]">{waypoints.filter(w => w.status === 'planned').length}</span>
+              </div>
+            </>
+          )}
           <div className="flex justify-between border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
             <span className="text-[#616161] dark:text-[#b5bcc4]">Estimated Distance</span>
             <span className="font-bold dark:text-[#e5e5e5]">~{formatDistance(totalRouteDistance, 0)}</span>
           </div>
-          {expedition.daysActive > 0 && (
+          {!isBlueprint && expedition.daysActive > 0 && (
             <div className="flex justify-between">
               <span className="text-[#616161] dark:text-[#b5bcc4]">Avg. Daily Distance</span>
               <span className="font-bold dark:text-[#e5e5e5]">~{formatDistance(totalRouteDistance / expedition.daysActive, 1)}</span>
@@ -369,6 +388,73 @@ export function Sidebar({
           )}
         </div>
       </div>
+
+      {/* Blueprint Reviews */}
+      {isBlueprint && (
+        <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
+          <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
+            REVIEWS {(ratingsCount ?? 0) > 0 && `(${ratingsCount})`}
+          </h3>
+
+          {(ratingsCount ?? 0) > 0 ? (
+            <>
+              {/* Average rating summary */}
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#b5bcc4] dark:border-[#3a3a3a]">
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      size={16}
+                      className={s <= Math.round(averageRating || 0) ? 'fill-[#ac6d46] text-[#ac6d46]' : 'text-[#b5bcc4] dark:text-[#616161]'}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm font-bold dark:text-[#e5e5e5]">{(averageRating || 0).toFixed(1)}</span>
+                <span className="text-xs text-[#616161] dark:text-[#b5bcc4]">({ratingsCount} {ratingsCount === 1 ? 'review' : 'reviews'})</span>
+              </div>
+
+              {/* Individual reviews feed */}
+              <div className="space-y-4 max-h-[400px] overflow-y-auto">
+                {reviews.map((review) => (
+                  <div key={review.id} className="text-xs">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Link href={`/journal/${review.explorer?.username}`} className="flex-shrink-0">
+                        <ExplorerAvatar
+                          username={review.explorer?.username || ''}
+                          src={review.explorer?.picture}
+                          size={24}
+                        />
+                      </Link>
+                      <Link href={`/journal/${review.explorer?.username}`} className="font-bold text-[#202020] dark:text-[#e5e5e5] hover:text-[#ac6d46] transition-colors">
+                        {review.explorer?.username}
+                      </Link>
+                      <div className="flex gap-0.5 ml-auto">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Star
+                            key={s}
+                            size={12}
+                            className={s <= review.rating ? 'fill-[#ac6d46] text-[#ac6d46]' : 'text-[#b5bcc4] dark:text-[#616161]'}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {review.text && (
+                      <p className="text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-1">{review.text}</p>
+                    )}
+                    {review.createdAt && (
+                      <span className="text-[10px] text-[#b5bcc4] dark:text-[#616161]">
+                        {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">No reviews yet.</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

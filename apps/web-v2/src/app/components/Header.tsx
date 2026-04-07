@@ -254,10 +254,10 @@ export function Header() {
                       : 'text-[#ac6d46] hover:text-[#8a5738] hover:scale-105'
                   }`}
                 >
-                  JOURNAL
+                  {user.isGuide ? 'PORTFOLIO' : 'JOURNAL'}
                 </Link>
-                <Link 
-                  href="/sponsorship" 
+                <Link
+                  href="/sponsorship"
                   className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] relative ${
                     isActive('/sponsorship') 
                       ? 'text-[#4676ac] scale-105 after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-20 after:h-0.5 after:bg-[#4676ac]' 
@@ -292,14 +292,14 @@ export function Header() {
                   BOOKMARK
                 </Link>
                 <Link
-                  href="/select-expedition"
+                  href={user.isGuide ? '/expedition-builder' : '/select-expedition'}
                   className={`px-2 2xl:px-4 py-3 whitespace-nowrap transition-all text-sm font-bold tracking-[0.14em] ${
-                    isActive('/select-expedition')
+                    isActive(user.isGuide ? '/expedition-builder' : '/select-expedition')
                       ? 'bg-[#4676ac] text-white'
                       : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
                   }`}
                 >
-                  LOG ENTRY
+                  {user.isGuide ? 'PUBLISH' : 'LOG ENTRY'}
                 </Link>
               </>
             )}
@@ -321,7 +321,7 @@ export function Header() {
                   </Link>
                 </div>
                 <div>
-                  {user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}
+                  {user.isGuide ? 'EXPEDITION GUIDE' : user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}
                 </div>
                 <div className="text-xs">
                   <button className="hover:text-[#ac6d46] transition-all focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:outline-none focus-visible:ring-[#ac6d46]" onClick={handleLogout}>
@@ -392,7 +392,7 @@ export function Header() {
             {/* User Avatar */}
             {isAuthenticated && user && (
               <Link href={`/journal/${user.username}`} className="flex-shrink-0 flex items-center">
-                <div className={`w-[66px] h-[66px] border-2 ${user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden hover:border-[#4676ac] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4676ac]`}>
+                <div className={`w-[66px] h-[66px] border-2 ${user.isGuide ? 'border-[#598636]' : user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden hover:border-[#4676ac] transition-all focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4676ac]`}>
                   <ExplorerAvatar username={user.username} src={user.picture} size={66} className="w-full h-full" />
                 </div>
               </Link>
@@ -461,7 +461,7 @@ export function Header() {
                       </Link>
                     </div>
                     <div className="text-xs font-mono text-[#b5bcc4]">
-                      {user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}
+                      {user.isGuide ? 'EXPEDITION GUIDE' : user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}
                     </div>
                   </div>
                   <button className="text-xs text-[#ac6d46] hover:text-white transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:underline" onClick={handleLogout}>
@@ -529,10 +529,10 @@ export function Header() {
                           : 'bg-[#202020] text-white hover:bg-[#ac6d46]'
                       }`}
                     >
-                      JOURNAL
+                      {user.isGuide ? 'PORTFOLIO' : 'JOURNAL'}
                     </Link>
-                    <Link 
-                      href="/sponsorship" 
+                    <Link
+                      href="/sponsorship"
                       className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
                         isActive('/sponsorship') 
                           ? 'bg-[#4676ac] text-white' 
@@ -587,14 +587,14 @@ export function Header() {
                       SETTINGS
                     </Link>
                     <Link
-                      href="/select-expedition"
+                      href={user.isGuide ? '/expedition-builder' : '/select-expedition'}
                       className={`px-4 py-3 text-center transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold tracking-[0.14em] ${
-                        isActive('/select-expedition')
+                        isActive(user.isGuide ? '/expedition-builder' : '/select-expedition')
                           ? 'bg-[#4676ac] text-white'
                           : 'bg-[#ac6d46] text-white hover:bg-[#8a5738]'
                       }`}
                     >
-                      LOG ENTRY
+                      {user.isGuide ? 'PUBLISH' : 'LOG ENTRY'}
                     </Link>
                   </>
                 )}

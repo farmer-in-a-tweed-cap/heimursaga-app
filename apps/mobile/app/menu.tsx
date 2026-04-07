@@ -48,10 +48,11 @@ export default function MenuScreen() {
         },
         {
           label: 'Messages',
-          detail: messageBadge > 0 ? `${messageBadge} unread` : 'Conversations',
+          detail: !user?.is_pro ? 'Explorer Pro' : messageBadge > 0 ? `${messageBadge} unread` : 'Conversations',
           route: '/messages',
           badge: messageBadge,
-          icon: <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={iconColor} strokeWidth={1.5}><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>,
+          accent: !user?.is_pro ? brandColors.copper : undefined,
+          icon: <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={!user?.is_pro ? brandColors.copper : iconColor} strokeWidth={1.5}><Path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></Svg>,
         },
         {
           label: 'Notifications',
@@ -61,10 +62,10 @@ export default function MenuScreen() {
         },
         {
           label: 'Sponsorships',
-          detail: 'Manage & track',
+          detail: !user?.is_pro ? 'Explorer Pro' : 'Manage & track',
           route: '/sponsorships',
-          accent: brandColors.green,
-          icon: <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={brandColors.green} strokeWidth={1.5}><Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></Svg>,
+          accent: !user?.is_pro ? brandColors.copper : brandColors.green,
+          icon: <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={!user?.is_pro ? brandColors.copper : brandColors.green} strokeWidth={1.5}><Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></Svg>,
         },
         {
           label: 'Expedition Builder',
@@ -109,14 +110,19 @@ export default function MenuScreen() {
     },
   ];
 
+  const proOnlyRoutes = ['/messages', '/sponsorships'];
+
   const handleItemPress = (item: MenuItem) => {
     if (item.label === 'Log Out') {
       logout().then(() => router.replace('/(auth)/login')).catch(() => {});
       return;
     }
     if (item.route) {
-      router.back();
-      router.push(item.route as any);
+      if (!user?.is_pro && proOnlyRoutes.includes(item.route)) {
+        router.replace('/upgrade' as any);
+      } else {
+        router.replace(item.route as any);
+      }
     }
   };
 
@@ -130,7 +136,7 @@ export default function MenuScreen() {
           <HCard>
             <TouchableOpacity
               style={styles.userCard}
-              onPress={() => { router.back(); router.push('/(tabs)/profile' as any); }}
+              onPress={() => router.replace('/(tabs)/profile' as any)}
             >
               <Avatar size={48} name={user?.username ?? 'U'} pro={user?.is_pro} imageUrl={user?.avatar_url || user?.picture} />
               <View style={styles.userInfo}>
@@ -153,7 +159,7 @@ export default function MenuScreen() {
           <View style={styles.sectionContent}>
             <TouchableOpacity
               style={[styles.upgradeBanner, { backgroundColor: colors.card, borderColor: brandColors.copper }]}
-              onPress={() => { router.back(); router.push('/upgrade' as any); }}
+              onPress={() => router.replace('/upgrade' as any)}
             >
               <View style={styles.menuText}>
                 <Text style={[styles.menuLabel, { color: brandColors.copper }]}>Upgrade to Explorer Pro</Text>

@@ -1,6 +1,6 @@
 import { type Ref } from 'react';
 import Link from 'next/link';
-import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert } from 'lucide-react';
+import { Users, Maximize2, Loader2, Lock, EyeOff, XCircle, ShieldAlert, MapPin } from 'lucide-react';
 import { ImageWithFallback } from '@/app/components/figma/ImageWithFallback';
 import { CoverPhotoFallback } from '@/app/components/CoverPhotoFallback';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
@@ -33,6 +33,7 @@ interface HeroBannerProps {
   onCurrentLocationClick: (coords: { lat: number; lng: number }) => void;
   explorerProfile: ExplorerProfile | null;
   onReport?: () => void;
+  onAdopt?: () => void;
 }
 
 export function HeroBanner({
@@ -60,6 +61,7 @@ export function HeroBanner({
   onCurrentLocationClick,
   explorerProfile,
   onReport,
+  onAdopt,
 }: HeroBannerProps) {
   return (
     <div
@@ -92,14 +94,21 @@ export function HeroBanner({
 
       {/* Expedition Status Banner - Top Border */}
       <div className={`absolute top-0 left-0 right-0 py-2 px-6 ${
-        expedition.status === 'active'
+        apiExpedition?.isBlueprint
+          ? 'bg-[#598636]'
+          : expedition.status === 'active'
           ? 'bg-[#ac6d46]'
           : expedition.status === 'planned'
           ? 'bg-[#4676ac]'
           : 'bg-[#616161]'
       } z-10 flex items-center justify-between pointer-events-auto`} onClick={(e) => e.stopPropagation()}>
-        <div className="text-white font-bold text-sm tracking-wide">
-          {expedition.status === 'cancelled' ? 'CANCELLED EXPEDITION' : expedition.status === 'active' ? 'ACTIVE EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'COMPLETED EXPEDITION'}
+        <div className="text-white font-bold text-sm tracking-wide flex items-center gap-3">
+          {apiExpedition?.isBlueprint
+            ? 'EXPEDITION BLUEPRINT'
+            : expedition.status === 'cancelled' ? 'CANCELLED EXPEDITION' : expedition.status === 'active' ? 'ACTIVE EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'COMPLETED EXPEDITION'}
+          {apiExpedition?.mode && (
+            <span className="px-2 py-0.5 text-xs font-bold bg-white/20 tracking-wide uppercase">{apiExpedition.mode}</span>
+          )}
         </div>
         {expedition.privacy !== 'public' && (
           <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-bold tracking-wide ${
@@ -118,37 +127,70 @@ export function HeroBanner({
           <div className="flex-1">
             <div className="mb-3">
               <h1 className="text-2xl md:text-4xl font-serif font-bold" style={{ lineHeight: 1.15 }}>{expedition.title}</h1>
+              {expedition.locationName && (
+                <div className="flex items-center gap-2 mt-2.5">
+                  <MapPin size={16} className="text-[#ac6d46] flex-shrink-0" strokeWidth={2.5} />
+                  <span className="text-sm md:text-base text-white/90 font-serif" style={{ lineHeight: 1.3 }}>{expedition.locationName}</span>
+                </div>
+              )}
               {(expedition.category || expedition.region) && (
-                <div className="flex flex-wrap items-center gap-2 mt-2">
+                <div className="flex flex-wrap items-center gap-2 mt-2.5">
                   {expedition.region && expedition.region.split(', ').map(r => (
-                    <span key={r} className="px-3 py-1 bg-[#4676ac] text-white text-xs font-semibold whitespace-nowrap rounded-full">
+                    <span key={r} className="px-2.5 py-0.5 bg-white/15 text-white/80 text-xs font-bold tracking-wide whitespace-nowrap rounded-full">
                       {r.toUpperCase()}
                     </span>
                   ))}
                   {expedition.category && (
-                    <span className="px-3 py-1 bg-[#616161] text-white text-xs font-semibold whitespace-nowrap rounded-full">
+                    <span className="px-2.5 py-0.5 bg-white/15 text-white/80 text-xs font-bold tracking-wide whitespace-nowrap rounded-full">
                       {expedition.category.toUpperCase()}
                     </span>
                   )}
                 </div>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm text-[#b5bcc4] mb-3 font-mono">
-              <span>Day {expedition.daysActive} of {totalDuration || '?'}</span>
-              <span>&bull;</span>
-              <span>{formatDate(expedition.startDate)} to {formatDate(expedition.estimatedEndDate)}</span>
-            </div>
+            {!apiExpedition?.isBlueprint && (
+              <div className="flex flex-wrap items-center gap-3 text-xs md:text-sm text-[#b5bcc4] mb-3 font-mono">
+                <span>Day {expedition.daysActive} of {totalDuration || '?'}</span>
+                <span>&bull;</span>
+                <span>{formatDate(expedition.startDate)} to {formatDate(expedition.estimatedEndDate)}</span>
+              </div>
+            )}
 
             <p className="text-sm font-serif text-white/90 max-w-4xl hidden md:block" style={{ lineHeight: 1.75 }}>{expedition.description}</p>
+
+            {/* Source blueprint attribution */}
+            {apiExpedition?.sourceBlueprint && (
+              <div className="mt-3 pointer-events-auto">
+                <Link href={`/expedition/${apiExpedition.sourceBlueprint.id}`} className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#598636]/80 text-white text-xs font-bold hover:bg-[#598636] transition-all">
+                  Based on &ldquo;{apiExpedition.sourceBlueprint.title}&rdquo;
+                  {apiExpedition.sourceBlueprint.author && (
+                    <span className="text-white/70">by {apiExpedition.sourceBlueprint.author.username}</span>
+                  )}
+                </Link>
+              </div>
+            )}
+
+            {/* Blueprint stats */}
+            {apiExpedition?.isBlueprint && (
+              <div className="flex items-center gap-4 mt-3 text-xs text-white/80 font-mono pointer-events-auto">
+                {(apiExpedition.ratingsCount ?? 0) > 0 && (
+                  <span className="flex items-center gap-1">
+                    {'★'.repeat(Math.round(apiExpedition.averageRating || 0))}{'☆'.repeat(5 - Math.round(apiExpedition.averageRating || 0))}
+                    <span className="ml-1">({apiExpedition.ratingsCount})</span>
+                  </span>
+                )}
+                <span>{apiExpedition.adoptionsCount ?? 0} launches</span>
+              </div>
+            )}
           </div>
 
           {/* Explorer Info Card - hidden on mobile to prevent overlap */}
           <div className="hidden md:block text-xs font-mono bg-[#202020]/80 border-2 border-[#ac6d46] p-4 min-w-[280px] pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="text-[#b5bcc4] mb-3 font-bold border-b-2 border-[#616161] pb-2">EXPLORER INFORMATION</div>
+            <div className="text-[#b5bcc4] mb-3 font-bold border-b-2 border-[#616161] pb-2">{apiExpedition?.isBlueprint ? 'GUIDE INFORMATION' : 'EXPLORER INFORMATION'}</div>
 
             <div className="flex items-center gap-3 mb-4">
               <Link href={`/journal/${expedition.explorerId}`} className="flex-shrink-0">
-                <div className={`w-16 h-16 border-2 ${expedition.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all`}>
+                <div className={`w-16 h-16 border-2 ${apiExpedition?.isBlueprint ? 'border-[#598636]' : expedition.explorerIsPro ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020] hover:border-[#4676ac] transition-all`}>
                   <ExplorerAvatar
                     username={expedition.explorerId}
                     src={expedition.explorerPicture}
@@ -169,16 +211,18 @@ export function HeroBanner({
             <div className="space-y-2 border-t-2 border-[#616161] pt-3">
               <div className="flex justify-between gap-4">
                 <span className="text-[#b5bcc4]">Account Type:</span>
-                <span className="text-[#ac6d46] font-bold">{expedition.explorerIsPro ? 'EXPLORER PRO' : 'EXPLORER'}</span>
+                <span className={`font-bold ${apiExpedition?.isBlueprint ? 'text-[#598636]' : 'text-[#ac6d46]'}`}>{apiExpedition?.isBlueprint ? 'EXPEDITION GUIDE' : expedition.explorerIsPro ? 'EXPLORER PRO' : 'EXPLORER'}</span>
               </div>
               <div className="flex justify-between gap-4">
-                <span className="text-[#b5bcc4]">Total Expeditions:</span>
+                <span className="text-[#b5bcc4]">{apiExpedition?.isBlueprint ? 'Total Blueprints:' : 'Total Expeditions:'}</span>
                 <span className="text-white font-bold">{explorerProfile?.expeditionsCount ?? '—'}</span>
               </div>
+              {!apiExpedition?.isBlueprint && (
               <div className="flex justify-between gap-4">
                 <span className="text-[#b5bcc4]">Total Entries:</span>
                 <span className="text-white font-bold">{explorerProfile?.entriesCount ?? '—'}</span>
               </div>
+              )}
             </div>
 
             <div className="mt-4 space-y-2">
@@ -186,7 +230,7 @@ export function HeroBanner({
                 href={`/journal/${expedition.explorerId}`}
                 className="block w-full py-2 bg-[#ac6d46] text-white text-center hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] font-bold"
               >
-                VIEW JOURNAL
+                {apiExpedition?.isBlueprint ? 'VIEW PORTFOLIO' : 'VIEW JOURNAL'}
               </Link>
               {!isOwner && (
                 <button
@@ -297,7 +341,9 @@ export function HeroBanner({
             {/* Expedition Status - hidden on mobile to give buttons room */}
             <div className="hidden md:flex items-center gap-3">
               <div className="font-mono text-sm text-[#b5bcc4]">
-                {expedition.status === 'cancelled' ? 'CANCELLED EXPEDITION' : expedition.status === 'completed' ? 'COMPLETED EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'ACTIVE EXPEDITION'}
+                {apiExpedition?.isBlueprint
+                  ? 'EXPEDITION BLUEPRINT'
+                  : expedition.status === 'cancelled' ? 'CANCELLED EXPEDITION' : expedition.status === 'completed' ? 'COMPLETED EXPEDITION' : expedition.status === 'planned' ? 'PLANNED EXPEDITION' : 'ACTIVE EXPEDITION'}
               </div>
               {expedition.privacy !== 'public' && (
                 <div className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-bold ${
@@ -310,7 +356,16 @@ export function HeroBanner({
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-1.5 md:gap-2 flex-nowrap">
+            <div className="flex items-stretch gap-1.5 md:gap-2 flex-nowrap">
+              {/* Edit Blueprint button — owner only */}
+              {isOwner && apiExpedition?.isBlueprint && (
+                <Link
+                  href={`/expedition-builder/${expedition.id}`}
+                  className="px-2 py-1.5 md:px-3 md:py-2 bg-[#598636] text-white hover:bg-[#476b2b] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#598636] text-xs md:text-sm font-bold font-mono whitespace-nowrap flex items-center gap-1.5 md:gap-2 min-h-[36px] md:min-h-[44px]"
+                >
+                  EDIT BLUEPRINT
+                </Link>
+              )}
               {/* Sponsor button */}
               {!isOwner && showSponsorshipSection && expedition.status !== 'completed' && expedition.status !== 'cancelled' && (
                 <Link
@@ -320,7 +375,15 @@ export function HeroBanner({
                   SPONSOR
                 </Link>
               )}
-              {/* Follow button moved to Explorer Information card */}
+              {/* Launch button for blueprints — non-owners only */}
+              {!isOwner && apiExpedition?.isBlueprint && onAdopt && (
+                <button
+                  onClick={onAdopt}
+                  className="px-2 py-1.5 md:px-3 md:py-2 border-2 border-[#ac6d46] bg-[#ac6d46] text-white hover:bg-[#8a5738] hover:border-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] text-xs md:text-sm font-bold font-mono whitespace-nowrap flex items-center gap-1.5 md:gap-2 min-h-[36px] md:min-h-[44px]"
+                >
+                  LAUNCH EXPEDITION
+                </button>
+              )}
               {/* Bookmark button - Hidden when not authenticated */}
               {isAuthenticated && (
                 <button

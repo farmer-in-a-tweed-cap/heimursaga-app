@@ -5,7 +5,7 @@
  * requires changes only here.
  */
 
-import PostHog from 'posthog-react-native';
+import { PostHog } from 'posthog-react-native';
 
 type EventProperties = Record<string, string | number | boolean | undefined>;
 
@@ -22,7 +22,7 @@ export async function initAnalytics(): Promise<PostHog | null> {
   if (client) return client;
 
   try {
-    client = await PostHog.initAsync(POSTHOG_KEY, {
+    client = new PostHog(POSTHOG_KEY, {
       host: POSTHOG_HOST,
     });
     if (__DEV__) console.log('[analytics] PostHog initialized');

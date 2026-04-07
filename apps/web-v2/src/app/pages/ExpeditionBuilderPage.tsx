@@ -17,6 +17,7 @@ import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelecto
 import { toast } from 'sonner';
 import { expeditionApi, entryApi, uploadApi, routingApi, type RouteObstacle } from '@/app/services/api';
 import { formatDateTime } from '@/app/utils/dateFormat';
+import { formatDuration } from '@/app/utils/formatDuration';
 import { GEO_REGION_GROUPS } from '@/app/utils/geoRegions';
 import { haversineFromLatLng } from '@/app/utils/haversine';
 
@@ -176,7 +177,7 @@ export function ExpeditionBuilderPage() {
   const { theme } = useTheme();
   const { mapLayer } = useMapLayer();
   const { formatDistance } = useDistanceUnit();
-  const { isPro } = useProFeatures();
+  const { isPro, isGuide, canCreateBlueprints } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
   const { expeditionId } = useParams<{ expeditionId: string }>();
@@ -281,6 +282,19 @@ export function ExpeditionBuilderPage() {
     visibility: 'public'
   });
 
+  const [locationName, setLocationName] = useState('');
+  const [countryCode, setCountryCode] = useState('');
+  const [countryName, setCountryName] = useState('');
+  const [stateProvince, setStateProvince] = useState('');
+  const [locationAutoFilled, setLocationAutoFilled] = useState(false);
+  const [locationManuallyEdited, setLocationManuallyEdited] = useState(false);
+  const lastGeocodedCoords = useRef<string | null>(null);
+
+  const [estimatedDurationH, setEstimatedDurationH] = useState<string>('');
+  const [durationAutoFilled, setDurationAutoFilled] = useState(false);
+  const [durationManuallyEdited, setDurationManuallyEdited] = useState(false);
+
+  const [expeditionMode, setExpeditionMode] = useState<string>('');
   const [sponsorshipsEnabled, setSponsorshipsEnabled] = useState(false);
   const [sponsorshipGoal, setSponsorshipGoal] = useState<number | ''>('');
   const [notesAccessThreshold, setNotesAccessThreshold] = useState<number | ''>('');
@@ -294,6 +308,226 @@ export function ExpeditionBuilderPage() {
   const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null); // Uploaded URL for API
   const [uploadingCover, setUploadingCover] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-geocode location from first waypoint
+  // Re-triggers when the first waypoint coordinates change (unless user manually edited)
+  useEffect(() => {
+    if (waypoints.length === 0) return;
+    // Never overwrite a manually edited location
+    if (locationManuallyEdited) return;
+
+    const firstWp = waypoints[0];
+    if (!firstWp?.coordinates?.lat || !firstWp?.coordinates?.lng) return;
+
+    const { lat, lng } = firstWp.coordinates;
+    // Round to ~11m precision to avoid re-geocoding on sub-pixel map drags
+    const coordKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+    if (coordKey === lastGeocodedCoords.current) return;
+
+    const controller = new AbortController();
+
+    // Per-category rules: [importance score, max distance meters]
+    const POINT_RULES: Record<string, [number, number]> = {
+      volcano: [100, 5000], glacier: [95, 3000], mountain: [70, 2000],
+      waterfall: [65, 200], hot_spring: [60, 200],
+      lake: [50, 500], river: [45, 500], beach: [40, 300],
+    };
+    const AREA_RULES: Record<string, [number, number]> = {
+      national_park: [100, 10000], national_forest: [90, 8000],
+      state_park: [80, 5000], nature_reserve: [70, 1000],
+    };
+
+    const pickBest = (features: any[], rules: Record<string, [number, number]>) => {
+      let best: { name: string; type: string; score: number } | null = null;
+      for (const f of features) {
+        const { name, distance, poi_category_ids } = f.properties || {};
+        if (!name || distance == null) continue;
+        let topCat = '';
+        let catScore = 0;
+        for (const cat of (poi_category_ids || [])) {
+          const rule = rules[cat];
+          if (!rule) continue;
+          const [score, maxDist] = rule;
+          if (distance > maxDist) continue;
+          if (score > catScore) { catScore = score; topCat = cat; }
+        }
+        if (!catScore) continue;
+        const finalScore = catScore - distance / 100;
+        if (!best || finalScore > best.score) best = { name, type: topCat, score: finalScore };
+      }
+      return best;
+    };
+
+    const pointCats = Object.keys(POINT_RULES).join(',');
+    const areaCats = Object.keys(AREA_RULES).join(',');
+
+    // Tilequery: find named features AT the exact coordinates (rivers, mountains, lakes)
+    const tilequeryPromise = fetch(
+      `https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/tilequery/${lng},${lat}.json?radius=100&layers=natural_label&limit=5&access_token=${MAPBOX_TOKEN}`,
+      { signal: controller.signal },
+    ).then(r => r.ok ? r.json() : null).catch(() => null);
+
+    const pointPromise = fetch(
+      `https://api.mapbox.com/search/searchbox/v1/category/${pointCats}?proximity=${lng},${lat}&limit=10&access_token=${MAPBOX_TOKEN}`,
+      { signal: controller.signal },
+    ).then(r => r.json()).catch(() => null);
+
+    const areaPromise = fetch(
+      `https://api.mapbox.com/search/searchbox/v1/category/${areaCats}?proximity=${lng},${lat}&limit=5&access_token=${MAPBOX_TOKEN}`,
+      { signal: controller.signal },
+    ).then(r => r.json()).catch(() => null);
+
+    const mapboxPromise = fetch(
+      `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=locality,place,district,region,country&limit=1&access_token=${MAPBOX_TOKEN}`,
+      { signal: controller.signal },
+    ).then(r => r.json()).catch(() => null);
+
+    Promise.all([tilequeryPromise, pointPromise, areaPromise, mapboxPromise]).then(([tileData, pointData, areaData, mapboxData]) => {
+      if (!mapboxData?.features?.length) return;
+      const feature = mapboxData.features[0];
+
+      let cc = '';
+      let cn = '';
+      let sp = '';
+
+      if (feature.place_type?.includes('country')) {
+        cc = (feature.properties?.short_code || '').toUpperCase();
+        cn = feature.text || '';
+      }
+      if (feature.context) {
+        for (const ctx of feature.context) {
+          if (ctx.id?.startsWith('country.')) {
+            cc = (ctx.short_code || '').toUpperCase();
+            cn = ctx.text || '';
+          } else if (ctx.id?.startsWith('region.')) {
+            sp = ctx.text || '';
+          }
+        }
+      }
+
+      setCountryCode(cc);
+      setCountryName(cn);
+      setStateProvince(sp);
+
+      // Tilequery: pick the closest named natural feature at the point
+      let atPoint: { name: string; type: string } | null = null;
+      if (tileData?.features?.length) {
+        let bestDist = Infinity;
+        for (const f of tileData.features) {
+          const props = f.properties || {};
+          const name = props.name || props.name_en;
+          if (!name) continue;
+          const dist = props.tilequery?.distance ?? 999;
+          if (dist > 100) continue;
+          if (dist < bestDist) {
+            atPoint = { name, type: props.class || 'natural' };
+            bestDist = dist;
+          }
+        }
+      }
+
+      const searchPoint = pointData ? pickBest(pointData.features || [], POINT_RULES) : null;
+      const area = areaData ? pickBest(areaData.features || [], AREA_RULES) : null;
+
+      // Tilequery result (feature the waypoint is ON) takes precedence
+      const point = atPoint || searchPoint;
+
+      const parts: string[] = [];
+      if (point) parts.push(point.name);
+      if (area && area.name !== point?.name) parts.push(area.name);
+
+      if (parts.length > 0) {
+        if (sp) parts.push(sp);
+        if (cn) parts.push(cn);
+        setLocationName(parts.join(', '));
+      } else {
+        setLocationName(feature.place_name || '');
+      }
+      setLocationAutoFilled(true);
+      lastGeocodedCoords.current = coordKey;
+    });
+
+    return () => controller.abort();
+  }, [waypoints, locationManuallyEdited]);
+
+  // Auto-calculate estimated duration from route distance, elevation, and mode
+  // Fetches elevation data from Open Meteo for Naismith-style ascent penalties
+  useEffect(() => {
+    if (durationManuallyEdited) return;
+    if (waypoints.length < 2) {
+      if (estimatedDurationH) {
+        setEstimatedDurationH('');
+        setDurationAutoFilled(false);
+      }
+      return;
+    }
+
+    const lastWp = waypoints[waypoints.length - 1];
+    const distKm = lastWp?.cumulativeDistance || 0;
+    if (distKm <= 0) return;
+
+    const controller = new AbortController();
+
+    const lats = waypoints.map(w => w.coordinates.lat).join(',');
+    const lons = waypoints.map(w => w.coordinates.lng).join(',');
+
+    fetch(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lons}`, {
+      signal: controller.signal,
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (durationManuallyEdited) return;
+
+        let gain = 0;
+        const elevations: number[] = data?.elevation || [];
+        if (elevations.length > 1) {
+          for (let i = 1; i < elevations.length; i++) {
+            const diff = elevations[i] - elevations[i - 1];
+            if (diff > 0) gain += diff;
+          }
+        }
+
+        const mode = expeditionMode || routeMode || 'hike';
+        const speeds: Record<string, { base: number; ascentPenalty: number }> = {
+          hike: { base: 4.5, ascentPenalty: 1.67 },
+          paddle: { base: 5, ascentPenalty: 0 },
+          bike: { base: 15, ascentPenalty: 3.33 },
+          sail: { base: 8, ascentPenalty: 0 },
+          drive: { base: 50, ascentPenalty: 0 },
+          mixed: { base: 4.5, ascentPenalty: 1.67 },
+          walking: { base: 4.5, ascentPenalty: 1.67 },
+          trail: { base: 4, ascentPenalty: 1.67 },
+          cycling: { base: 15, ascentPenalty: 3.33 },
+          driving: { base: 50, ascentPenalty: 0 },
+          waterway: { base: 5, ascentPenalty: 0 },
+        };
+        const s = speeds[mode] || speeds.hike;
+        const baseHours = distKm / s.base;
+        const ascentHours = (gain / 1000) * s.ascentPenalty;
+        const totalHours = baseHours + ascentHours;
+
+        if (totalHours > 0) {
+          setEstimatedDurationH(String(Math.round(totalHours * 10) / 10));
+          setDurationAutoFilled(true);
+        }
+      })
+      .catch(() => {
+        // Fallback: distance-only calculation if elevation fetch fails
+        if (durationManuallyEdited) return;
+        const mode = expeditionMode || routeMode || 'hike';
+        const baseSpeeds: Record<string, number> = {
+          hike: 4.5, paddle: 5, bike: 15, sail: 8, drive: 50, mixed: 4.5,
+          walking: 4.5, trail: 4, cycling: 15, driving: 50, waterway: 5,
+        };
+        const hours = distKm / (baseSpeeds[mode] || 4.5);
+        if (hours > 0) {
+          setEstimatedDurationH(String(Math.round(hours * 10) / 10));
+          setDurationAutoFilled(true);
+        }
+      });
+
+    return () => controller.abort();
+  }, [waypoints, expeditionMode, routeMode, durationManuallyEdited]);
 
   // Entries loaded from expedition (read-only context in builder)
   const [expeditionEntries, setExpeditionEntries] = useState<Array<{
@@ -384,14 +618,24 @@ export function ExpeditionBuilderPage() {
     if (!expeditionData.description.trim()) {
       errors.push('Expedition description is required');
     }
-    if (!expeditionData.startDate) {
-      errors.push('Start date is required');
+    // Blueprints don't require dates or category
+    if (!canCreateBlueprints) {
+      if (!expeditionData.startDate) {
+        errors.push('Start date is required');
+      }
+      if (!expeditionData.category) {
+        errors.push('Category is required');
+      }
     }
-    if (!expeditionData.category) {
-      errors.push('Category is required');
-    }
-    if (!coverPhotoUrl && !isEditMode) {
+    if (!canCreateBlueprints && !coverPhotoUrl && !isEditMode) {
       errors.push('Cover photo is required');
+    }
+    if (!estimatedDurationH || Number(estimatedDurationH) <= 0) {
+      errors.push('Travel time is required');
+    }
+    // Blueprints require at least 2 waypoints
+    if (canCreateBlueprints && waypoints.length < 2) {
+      errors.push('Blueprints require at least 2 waypoints');
     }
 
     if (errors.length > 0) {
@@ -407,24 +651,31 @@ export function ExpeditionBuilderPage() {
       const payload = {
         title: expeditionData.title,
         description: expeditionData.description,
-        visibility: expeditionData.visibility,
+        visibility: canCreateBlueprints ? 'public' : expeditionData.visibility,
         status,
-        startDate: expeditionData.startDate || undefined,
-        endDate: expeditionData.endDate || undefined,
+        startDate: canCreateBlueprints ? undefined : (expeditionData.startDate || undefined),
+        endDate: canCreateBlueprints ? undefined : (expeditionData.endDate || undefined),
         coverImage: coverPhotoUrl || undefined,
-        goal: sponsorshipsEnabled && sponsorshipGoal ? Number(sponsorshipGoal) : undefined,
-        notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
-        notesVisibility,
-        earlyAccessEnabled: sponsorshipsEnabled ? earlyAccessEnabled : false,
+        goal: canCreateBlueprints ? undefined : (sponsorshipsEnabled && sponsorshipGoal ? Number(sponsorshipGoal) : undefined),
+        notesAccessThreshold: canCreateBlueprints ? undefined : (notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0),
+        notesVisibility: canCreateBlueprints ? undefined : notesVisibility,
+        earlyAccessEnabled: canCreateBlueprints ? undefined : (sponsorshipsEnabled ? earlyAccessEnabled : false),
         isRoundTrip,
-        category: expeditionData.category || undefined,
+        category: canCreateBlueprints ? undefined : (expeditionData.category || undefined),
         region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
+        locationName: locationName || undefined,
+        countryCode: countryCode || undefined,
+        countryName: countryName || undefined,
+        stateProvince: stateProvince || undefined,
         routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return m !== 'straight' ? m : null; })(),
         routeGeometry: perLegModes.some(m => m !== 'straight') && directionsGeometry ? directionsGeometry : null,
         routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
         routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
         routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+        isBlueprint: canCreateBlueprints ? true : undefined,
+        mode: expeditionMode || undefined,
+        estimatedDurationH: estimatedDurationH ? Number(estimatedDurationH) : undefined,
       };
 
       // Completed expeditions: only send allowed fields (title, description, cover, waypoints)
@@ -506,6 +757,95 @@ export function ExpeditionBuilderPage() {
     }
   };
 
+  // Save blueprint as draft without publishing
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const handleSaveDraft = async () => {
+    if (!canCreateBlueprints) return;
+
+    setIsSavingDraft(true);
+    setSubmitError(null);
+
+    try {
+      const payload = {
+        title: expeditionData.title || 'Untitled Blueprint',
+        description: expeditionData.description,
+        visibility: 'public',
+        status: 'draft' as const,
+        isRoundTrip,
+        region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
+        locationName: locationName || undefined,
+        countryCode: countryCode || undefined,
+        countryName: countryName || undefined,
+        stateProvince: stateProvince || undefined,
+        routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return m !== 'straight' ? m : null; })(),
+        routeGeometry: perLegModes.some(m => m !== 'straight') && directionsGeometry ? directionsGeometry : null,
+        routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
+        routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
+        routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
+        tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+        isBlueprint: true,
+        mode: expeditionMode || undefined,
+        estimatedDurationH: estimatedDurationH ? Number(estimatedDurationH) : undefined,
+      };
+
+      const orderedWaypoints = routeItems
+        .filter(item => item.kind === 'waypoint' || (item.kind === 'entry' && item.entry.coords?.lat != null))
+        .map((item, i) => {
+          if (item.kind === 'waypoint') {
+            return {
+              lat: item.waypoint.coordinates.lat,
+              lon: item.waypoint.coordinates.lng,
+              title: item.waypoint.name || undefined,
+              date: item.waypoint.date || undefined,
+              description: item.waypoint.description || undefined,
+              sequence: i,
+              entryIds: item.waypoint.entryIds?.length > 0 ? item.waypoint.entryIds : undefined,
+            };
+          }
+          return {
+            lat: item.entry.coords.lat,
+            lon: item.entry.coords.lng,
+            title: item.entry.title || undefined,
+            date: item.entry.date || undefined,
+            sequence: i,
+            entryId: item.entry.id,
+          };
+        });
+
+      let savedId: string;
+
+      if (isEditMode && expeditionId) {
+        // Editing an existing blueprint
+        await expeditionApi.update(expeditionId, payload);
+        savedId = expeditionId;
+        await expeditionApi.syncWaypoints(expeditionId, orderedWaypoints);
+      } else if (draftId) {
+        // Updating existing draft
+        await expeditionApi.update(draftId, payload);
+        savedId = draftId;
+        await expeditionApi.syncWaypoints(draftId, orderedWaypoints);
+      } else {
+        // Creating new draft
+        const result = await expeditionApi.create(payload);
+        savedId = (result as any).expeditionId || (result as any).id;
+        setDraftId(savedId);
+        if (orderedWaypoints.length > 0) {
+          await expeditionApi.syncWaypoints(savedId, orderedWaypoints);
+        }
+      }
+
+      lastSavedContentRef.current = getContentSignature();
+      setLastSaved(new Date());
+      toast.success('Blueprint saved as draft');
+    } catch (err: any) {
+      const msg = err.message || 'Failed to save draft';
+      toast.error(msg);
+      setSubmitError(msg);
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
   // Auto-compute status based on dates
   const computeStatus = () => {
     const now = new Date();
@@ -553,9 +893,10 @@ export function ExpeditionBuilderPage() {
       routeMode,
       tags,
       wpSig,
+      estimatedDurationH,
       routeOrderSig: routeOrder.join(','),
     });
-  }, [expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, earlyAccessEnabled, isRoundTrip, routeMode, tags, waypoints, routeOrder]);
+  }, [expeditionData, coverPhotoUrl, sponsorshipsEnabled, sponsorshipGoal, notesAccessThreshold, notesVisibility, earlyAccessEnabled, isRoundTrip, routeMode, tags, waypoints, routeOrder, estimatedDurationH]);
 
   // Keep getContentSignature accessible via ref so async callbacks get latest version
   const getContentSignatureRef = useRef(getContentSignature);
@@ -1178,9 +1519,37 @@ export function ExpeditionBuilderPage() {
           visibility: expedition.visibility || (expedition.public !== false ? 'public' : 'private')
         });
 
+        // Load location fields — mark as auto-filled so waypoint drags
+        // will re-geocode. Only typing in the field sets locationManuallyEdited.
+        // Seed lastGeocodedCoords so we don't re-geocode on initial mount.
+        if (expedition.locationName) {
+          setLocationName(expedition.locationName);
+          setLocationAutoFilled(true);
+          if (expedition.waypoints?.[0]) {
+            const wp0 = expedition.waypoints[0] as any;
+            if (wp0.lat && wp0.lon) {
+              lastGeocodedCoords.current = `${wp0.lat.toFixed(4)},${wp0.lon.toFixed(4)}`;
+            }
+          }
+        }
+        if (expedition.countryCode) setCountryCode(expedition.countryCode);
+        if (expedition.countryName) setCountryName(expedition.countryName);
+        if (expedition.stateProvince) setStateProvince(expedition.stateProvince);
+
         // Load tags
         if (expedition.tags?.length) {
           setTags(expedition.tags.join(', '));
+        }
+
+        // Load estimated duration
+        if (expedition.estimatedDurationH) {
+          setEstimatedDurationH(String(expedition.estimatedDurationH));
+          setDurationAutoFilled(true);
+        }
+
+        // Load mode
+        if (expedition.mode) {
+          setExpeditionMode(expedition.mode);
         }
 
         // Set cover photo from API (already full URL)
@@ -1366,6 +1735,18 @@ export function ExpeditionBuilderPage() {
       visibility: draft.visibility || 'public',
     });
     if (draft.tags?.length) setTags(draft.tags.join(', '));
+    if ((draft as any).mode) setExpeditionMode((draft as any).mode);
+    if (draft.locationName) {
+      setLocationName(draft.locationName);
+      setLocationAutoFilled(true);
+    }
+    if (draft.estimatedDurationH) {
+      setEstimatedDurationH(String(draft.estimatedDurationH));
+      setDurationAutoFilled(true);
+    }
+    if (draft.countryCode) setCountryCode(draft.countryCode);
+    if (draft.countryName) setCountryName(draft.countryName);
+    if (draft.stateProvince) setStateProvince(draft.stateProvince);
     if (draft.coverImage) {
       setCoverPhotoPreview(draft.coverImage);
       setCoverPhotoUrl(draft.coverImage);
@@ -1481,7 +1862,7 @@ export function ExpeditionBuilderPage() {
         const payload = {
           title: expeditionData.title,
           description: expeditionData.description,
-          visibility: expeditionData.visibility,
+          visibility: canCreateBlueprints ? 'public' : expeditionData.visibility,
           status: 'draft' as const,
           startDate: expeditionData.startDate || undefined,
           endDate: expeditionData.endDate || undefined,
@@ -1493,12 +1874,19 @@ export function ExpeditionBuilderPage() {
           isRoundTrip,
           category: expeditionData.category || undefined,
           region: expeditionData.regions.length > 0 ? expeditionData.regions.join(', ') : undefined,
+          locationName: locationName || undefined,
+          countryCode: countryCode || undefined,
+          countryName: countryName || undefined,
+          stateProvince: stateProvince || undefined,
           routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return m !== 'straight' ? m : null; })(),
           routeGeometry: perLegModes.some(m => m !== 'straight') && directionsGeometry ? directionsGeometry : null,
           routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
           routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
           routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
           tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+          isBlueprint: canCreateBlueprints ? true : undefined,
+          mode: expeditionMode || undefined,
+          estimatedDurationH: estimatedDurationH ? Number(estimatedDurationH) : undefined,
         };
 
         let currentDraftId = draftId;
@@ -3185,9 +3573,15 @@ export function ExpeditionBuilderPage() {
         {' > '}
         {isEditMode ? (
           <>
-            <Link href={`/expedition/${expeditionId}`} className="hover:text-[#ac6d46]">{expeditionData.title || 'EXPEDITION'}</Link>
+            <Link href={`/expedition/${expeditionId}`} className="hover:text-[#ac6d46]">{expeditionData.title || (canCreateBlueprints ? 'BLUEPRINT' : 'EXPEDITION')}</Link>
             {' > '}
             <span className="text-[#e5e5e5]">EDIT DETAILS & WAYPOINTS</span>
+          </>
+        ) : canCreateBlueprints ? (
+          <>
+            <Link href={`/explorer/${user?.username}`} className="hover:text-[#ac6d46]">MY PORTFOLIO</Link>
+            {' > '}
+            <span className="text-[#e5e5e5]">CREATE NEW BLUEPRINT</span>
           </>
         ) : (
           <>
@@ -3205,6 +3599,9 @@ export function ExpeditionBuilderPage() {
             <h1 className="text-lg md:text-2xl font-bold dark:text-[#e5e5e5]">
               EXPEDITION BUILDER
             </h1>
+            {canCreateBlueprints && (
+              <span className="px-2 py-1 text-xs font-bold rounded-full bg-[#598636] text-white">BLUEPRINT</span>
+            )}
             <span className={`px-2 py-1 text-xs font-bold rounded-full ${isEditMode ? 'bg-[#4676ac] text-white' : 'bg-[#ac6d46] text-white'}`}>
               {isEditMode ? 'EDIT' : (draftId ? 'DRAFT' : 'CREATE')}
             </span>
@@ -3255,9 +3652,9 @@ export function ExpeditionBuilderPage() {
               </button>
               <button
                 onClick={handleStartFresh}
-                className="px-5 py-2 border-2 border-[#616161] text-[#202020] dark:text-[#e5e5e5] font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] text-xs"
+                className="px-5 py-2 border-2 border-[#994040] text-[#994040] font-bold hover:bg-[#994040] hover:text-white transition-all active:scale-[0.98] text-xs"
               >
-                START FRESH
+                DELETE & START FRESH
               </button>
             </div>
           </div>
@@ -3292,7 +3689,7 @@ export function ExpeditionBuilderPage() {
               value={expeditionData.title}
               onChange={(e) => setExpeditionData({ ...expeditionData, title: e.target.value })}
               placeholder="e.g., Trans-Siberian Railway Journey"
-              maxLength={200}
+              maxLength={100}
               className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161]"
             />
             <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
@@ -3338,7 +3735,79 @@ export function ExpeditionBuilderPage() {
             </p>
           </div>
 
-          {/* Start Date */}
+          {/* Location */}
+          <div>
+            <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
+              LOCATION
+              <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+              {(locationManuallyEdited || locationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{locationManuallyEdited ? '(manually set)' : '(auto-detected)'}</span>}
+            </label>
+            <input
+              type="text"
+              value={locationName}
+              onChange={(e) => { setLocationName(e.target.value); setLocationManuallyEdited(true); }}
+              disabled={waypoints.length === 0}
+              placeholder={waypoints.length > 0 ? 'Detecting from waypoints...' : 'Drop waypoints on the map to auto-detect'}
+              maxLength={200}
+              className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161]"
+            />
+            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+              Auto-detected from first waypoint coordinates • Edit to override
+            </p>
+          </div>
+
+          {/* Estimated Duration */}
+          <div>
+            <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
+              TRAVEL TIME (HOURS)
+              <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
+              {(durationManuallyEdited || durationAutoFilled) && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">{durationManuallyEdited ? '(manually set)' : '(auto-calculated)'}</span>}
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={estimatedDurationH}
+                onChange={(e) => { setEstimatedDurationH(e.target.value); setDurationManuallyEdited(true); }}
+                placeholder={waypoints.length >= 2 ? 'Calculated from route...' : 'Add waypoints to auto-calculate'}
+                min={0}
+                step={0.5}
+                className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161] font-mono"
+              />
+              {estimatedDurationH && Number(estimatedDurationH) > 0 && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#4676ac] font-bold pointer-events-none">
+                  ≈ {formatDuration(Number(estimatedDurationH))}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+              Auto-calculated from route distance, elevation, and mode • Edit to override
+            </p>
+          </div>
+
+          {/* Mode selector - shown for all users */}
+          <div>
+            <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
+              MODE
+              {canCreateBlueprints && <span className="text-[#ac6d46] ml-1">*REQUIRED</span>}
+              {!canCreateBlueprints && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>}
+            </label>
+            <select
+              value={expeditionMode}
+              onChange={(e) => setExpeditionMode(e.target.value)}
+              className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
+            >
+              <option value="">Select mode...</option>
+              <option value="hike">Hike</option>
+              <option value="paddle">Paddle</option>
+              <option value="bike">Bike</option>
+              <option value="sail">Sail</option>
+              <option value="drive">Drive</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
+
+          {/* Start Date - hidden for guide/blueprint accounts */}
+          {!canCreateBlueprints && (
           <div>
             <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
               START DATE <span className="text-[#ac6d46]">*</span>
@@ -3352,8 +3821,10 @@ export function ExpeditionBuilderPage() {
               disabled={isEditMode}
             />
           </div>
+          )}
 
-          {/* End Date / Duration - same layout as start date */}
+          {/* End Date / Duration - hidden for guide/blueprint accounts */}
+          {!canCreateBlueprints && (
           <div>
             <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
               END DATE <span className="text-[#ac6d46]">*</span>
@@ -3382,6 +3853,7 @@ export function ExpeditionBuilderPage() {
               />
             </div>
           </div>
+          )}
         </div>
       </div>
 
@@ -3660,7 +4132,8 @@ export function ExpeditionBuilderPage() {
                           </p>
                         </div>
 
-                        {/* Date */}
+                        {/* Date — hidden for blueprint builders */}
+                        {!canCreateBlueprints && (
                         <div>
                           <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">
                             DATE
@@ -3705,6 +4178,7 @@ export function ExpeditionBuilderPage() {
                                 : 'Waypoints are automatically ordered by date'}
                           </p>
                         </div>
+                        )}
 
                         {/* Coordinates Display */}
                         <div>
@@ -4127,7 +4601,7 @@ export function ExpeditionBuilderPage() {
                                   )}
                                   <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono space-y-0.5">
                                     <div className="truncate">{Math.abs(waypoint.coordinates.lat).toFixed(4)}°{waypoint.coordinates.lat >= 0 ? 'N' : 'S'}, {Math.abs(waypoint.coordinates.lng).toFixed(4)}°{waypoint.coordinates.lng >= 0 ? 'E' : 'W'}</div>
-                                    {waypoint.date && (
+                                    {!canCreateBlueprints && waypoint.date && (
                                       <div className="text-[#ac6d46]">{waypoint.date}</div>
                                     )}
                                   </div>
@@ -4399,7 +4873,8 @@ export function ExpeditionBuilderPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column */}
             <div className="space-y-4">
-              {/* Category */}
+              {/* Category - not applicable to blueprints */}
+              {!canCreateBlueprints && (
               <div>
                 <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
                   CATEGORY <span className="text-[#ac6d46]">*</span>
@@ -4424,12 +4899,14 @@ export function ExpeditionBuilderPage() {
                   Primary activity type • Helps organize and filter expeditions
                 </p>
               </div>
+              )}
 
             </div>
 
             {/* Right Column */}
             <div className="space-y-4">
-              {/* Status */}
+              {/* Status - not applicable to blueprints */}
+              {!canCreateBlueprints && (
               <div>
                 <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
                   STATUS (AUTO-COMPUTED)
@@ -4438,6 +4915,7 @@ export function ExpeditionBuilderPage() {
                   {status}
                 </div>
               </div>
+              )}
 
               {/* Current Location - Only for ACTIVE expeditions and Edit Mode */}
               {status === 'active' && isEditMode && (
@@ -4492,14 +4970,16 @@ export function ExpeditionBuilderPage() {
               onChange={(e) => setExpeditionData({ ...expeditionData, description: e.target.value })}
               placeholder="Describe your expedition, goals, and what you plan to document..."
               rows={6}
+              maxLength={500}
               className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5] placeholder:text-[#b5bcc4] dark:placeholder:text-[#616161]"
             />
             <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1 font-mono">
-              Min 100 characters • Max 1000 characters
+              Min 100 characters • Max 500 characters
             </p>
           </div>
 
-          {/* Cover Photo */}
+          {/* Cover Photo — not applicable to blueprints */}
+          {!canCreateBlueprints && (
           <div className="mt-6">
             <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
               COVER PHOTO
@@ -4553,6 +5033,7 @@ export function ExpeditionBuilderPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* Tags */}
           <div className="mt-6">
@@ -4572,7 +5053,8 @@ export function ExpeditionBuilderPage() {
             </div>
           </div>
 
-          {/* Sponsorships */}
+          {/* Sponsorships - hidden for guide accounts */}
+          {!canCreateBlueprints && (
           <div className="mt-6 border-2 border-[#ac6d46] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
             <label className="block text-xs font-medium mb-3 text-[#202020] dark:text-[#e5e5e5] flex items-center gap-2">
               ENABLE SPONSORSHIPS
@@ -4658,9 +5140,10 @@ export function ExpeditionBuilderPage() {
               </div>
             )}
           </div>
+          )}
 
-          {/* Expedition Notes Visibility - Pro only */}
-          {isPro && expeditionData.visibility !== 'private' && <div className="mt-6 border-2 border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+          {/* Expedition Notes Visibility - Pro only, hidden for guides */}
+          {!canCreateBlueprints && isPro && expeditionData.visibility !== 'private' && <div className="mt-6 border-2 border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
             <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">EXPEDITION NOTES VISIBILITY</div>
             <div className="space-y-2">
               <div className="flex items-start gap-2">
@@ -4707,8 +5190,8 @@ export function ExpeditionBuilderPage() {
             </div>
           </div>}
 
-          {/* Early Entry Access - Pro only, requires sponsorships */}
-          {isPro && sponsorshipsEnabled && (
+          {/* Early Entry Access - Pro only, requires sponsorships, hidden for guides */}
+          {!canCreateBlueprints && isPro && sponsorshipsEnabled && (
             <div className="mt-6 border-2 border-[#616161] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
               <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">EARLY ENTRY ACCESS</div>
               <div className="flex items-start gap-2">
@@ -4726,7 +5209,8 @@ export function ExpeditionBuilderPage() {
             </div>
           )}
 
-          {/* Privacy Settings - Radio buttons matching quick entry */}
+          {/* Privacy Settings - Radio buttons matching quick entry, hidden for guides (blueprints always public) */}
+          {!canCreateBlueprints && (
           <div className="mt-6 border-2 border-[#4676ac] p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
             <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">
               VISIBILITY:
@@ -4823,21 +5307,36 @@ export function ExpeditionBuilderPage() {
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
 
       {/* Action Buttons - Bottom */}
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mt-6 p-4 md:p-6">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          {canCreateBlueprints && (
+            <button
+              onClick={handleSaveDraft}
+              disabled={isSavingDraft || isSubmitting || uploadingCover}
+              className="px-6 py-3 border-2 border-[#598636] text-[#598636] hover:bg-[#598636] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#598636] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isSavingDraft && <Loader2 size={18} className="animate-spin" />}
+              <span>{isSavingDraft ? 'SAVING...' : 'SAVE DRAFT'}</span>
+            </button>
+          )}
           <button
             onClick={() => handleCreateExpedition(false)}
-            disabled={isSubmitting || uploadingCover}
-            className="px-6 py-3 bg-[#4676ac] text-white hover:bg-[#365a8a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+            disabled={isSubmitting || isSavingDraft || uploadingCover}
+            className={`px-6 py-3 text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 ${
+              canCreateBlueprints
+                ? 'bg-[#598636] hover:bg-[#4a7029] focus-visible:ring-[#598636]'
+                : 'bg-[#4676ac] hover:bg-[#365a8a] focus-visible:ring-[#4676ac]'
+            }`}
           >
             {isSubmitting && <Loader2 size={18} className="animate-spin" />}
-            <span>{isSubmitting ? 'PUBLISHING...' : (isEditMode ? 'SAVE CHANGES' : 'LAUNCH EXPEDITION')}</span>
+            <span>{isSubmitting ? 'PUBLISHING...' : canCreateBlueprints ? (isEditMode ? 'SAVE & PUBLISH' : 'PUBLISH BLUEPRINT') : (isEditMode ? 'SAVE CHANGES' : 'LAUNCH EXPEDITION')}</span>
           </button>
-          {!isEditMode && (
+          {!isEditMode && !canCreateBlueprints && (
             <button
               onClick={() => handleCreateExpedition(true)}
               disabled={isSubmitting || uploadingCover}
@@ -4870,14 +5369,16 @@ export function ExpeditionBuilderPage() {
 
         <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#616161] flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-            Expedition builder v1.0 • Route: {(() => { const u = new Set(perLegModes); if (u.size > 1) return `Mixed (${u.size} modes)`; const m = perLegModes[0] || 'straight'; return m === 'straight' ? 'Straight-line' : m === 'trail' ? 'Trail' : m === 'waterway' ? `Waterway (${waterwayProfile})` : m.charAt(0).toUpperCase() + m.slice(1); })()} • {waypoints.length} waypoints defined
+            {canCreateBlueprints ? 'Expedition builder • Blueprint mode' : 'Expedition builder v1.0'} • Route: {(() => { const u = new Set(perLegModes); if (u.size > 1) return `Mixed (${u.size} modes)`; const m = perLegModes[0] || 'straight'; return m === 'straight' ? 'Straight-line' : m === 'trail' ? 'Trail' : m === 'waterway' ? `Waterway (${waterwayProfile})` : m.charAt(0).toUpperCase() + m.slice(1); })()} • {waypoints.length} waypoints defined
           </div>
+          {!canCreateBlueprints && (
           <Link
             href={isEditMode ? `/expedition/${expeditionId}` : '/select-expedition'}
             className="text-xs text-[#4676ac] hover:underline font-bold"
           >
             {isEditMode ? '← BACK TO EXPEDITION' : 'cancel and return to selection'}
           </Link>
+          )}
         </div>
       </div>
 

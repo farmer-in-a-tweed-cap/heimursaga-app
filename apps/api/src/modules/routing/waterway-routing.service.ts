@@ -116,7 +116,9 @@ export class WaterwayRoutingService {
     // Build graphs lazily from cached elements and merge into one
     onProgress?.('Building waterway graph', 0, 0);
     const mergedGraph = this.mergeGraphs(
-      tileData.map((t) => t.failed ? this.emptyGraph() : buildGraph(t.elements, profile)),
+      tileData.map((t) =>
+        t.failed ? this.emptyGraph() : buildGraph(t.elements, profile),
+      ),
     );
 
     if (mergedGraph.nodes.size === 0) {
@@ -135,11 +137,7 @@ export class WaterwayRoutingService {
     );
 
     // Route between each consecutive pair of locations
-    onProgress?.(
-      'Finding route',
-      0,
-      locations.length - 1,
-    );
+    onProgress?.('Finding route', 0, locations.length - 1);
     let allCoordinates: [number, number][] = [];
     const allNodeIds: number[] = [];
     const legDistances: number[] = [];
@@ -306,12 +304,22 @@ export class WaterwayRoutingService {
           let bestIdx = 0;
           let bestDist = Infinity;
           for (let i = 0; i < allCoordinates.length; i++) {
-            const d = haversineKm(obs.lat, obs.lon, allCoordinates[i][1], allCoordinates[i][0]);
-            if (d < bestDist) { bestDist = d; bestIdx = i; }
+            const d = haversineKm(
+              obs.lat,
+              obs.lon,
+              allCoordinates[i][1],
+              allCoordinates[i][0],
+            );
+            if (d < bestDist) {
+              bestDist = d;
+              bestIdx = i;
+            }
           }
           return bestIdx;
         };
-        routeObstacles.sort((a, b) => obstacleRouteIndex(a) - obstacleRouteIndex(b));
+        routeObstacles.sort(
+          (a, b) => obstacleRouteIndex(a) - obstacleRouteIndex(b),
+        );
       }
 
       this.logger.log(

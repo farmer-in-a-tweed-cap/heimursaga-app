@@ -193,7 +193,7 @@ function ComposeModal({
                           onClick={() => handleSelectUser(user)}
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-colors text-left border-b border-[#b5bcc4] dark:border-[#616161] last:border-b-0"
                         >
-                          <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border-2 ${user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'}`}>
+                          <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border-2 ${user.isGuide ? 'border-[#598636]' : user.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161]'}`}>
                             {user.picture ? (
                               <Image src={user.picture} alt={`${user.username}'s avatar`} className="w-full h-full object-cover" width={32} height={32} />
                             ) : (
@@ -205,7 +205,7 @@ function ComposeModal({
                           <div>
                             <div className="font-bold text-sm dark:text-[#e5e5e5]">{user.username}</div>
                             {user.role === 'creator' && (
-                              <div className="text-xs text-[#ac6d46]">EXPLORER PRO</div>
+                              <div className={`text-xs ${user.isGuide ? 'text-[#598636]' : 'text-[#ac6d46]'}`}>{user.isGuide ? 'EXPEDITION GUIDE' : 'EXPLORER PRO'}</div>
                             )}
                           </div>
                         </button>

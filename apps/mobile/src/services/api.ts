@@ -239,6 +239,12 @@ export const notificationsApi = {
   getBadgeCount() {
     return api.get<ApiResponse<{ count: number }>>('/auth/mobile/badge-count');
   },
+  registerPushToken(token: string, platform: string) {
+    return api.post<{ success: boolean }>('/auth/mobile/push-token', { token, platform });
+  },
+  removePushToken(token: string) {
+    return api.post<{ success: boolean }>('/auth/mobile/push-token/remove', { token });
+  },
 };
 
 export const messagesApi = {
@@ -490,6 +496,35 @@ export interface UploadResult {
   original: string;
   thumbnail: string;
 }
+
+// Routing
+export interface TrailRouteResponse {
+  coordinates: [number, number][];
+  legDistances: number[];
+  legDurations: number[];
+  totalDistance: number;
+  totalDuration: number;
+  snapDistances: number[];
+  flowDirection?: 'downstream' | 'upstream' | 'mixed';
+  upstreamFraction?: number;
+  obstacles?: RouteObstacle[];
+}
+
+export interface RouteObstacle {
+  lat: number;
+  lon: number;
+  type: 'dam' | 'weir' | 'waterfall' | 'lock_gate' | 'sluice_gate' | 'rapids';
+  name: string | null;
+}
+
+export const routingApi = {
+  trail(locations: Array<{ lat: number; lon: number }>, options?: { signal?: AbortSignal }) {
+    return api.post<TrailRouteResponse>('/routing/trail', { locations }, options);
+  },
+  waterway(locations: Array<{ lat: number; lon: number }>, profile: 'canoe' | 'motorboat', options?: { signal?: AbortSignal }) {
+    return api.post<TrailRouteResponse>('/routing/waterway', { locations, profile }, options);
+  },
+};
 
 export const uploadApi = {
   async upload(uri: string, type: string = 'image/jpeg'): Promise<UploadResult> {

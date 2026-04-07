@@ -67,7 +67,11 @@ export class AppController {
   @Public()
   @Post('contact')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 3, ttl: 300000 }, medium: { limit: 3, ttl: 300000 }, long: { limit: 3, ttl: 300000 } })
+  @Throttle({
+    short: { limit: 3, ttl: 300000 },
+    medium: { limit: 3, ttl: 300000 },
+    long: { limit: 3, ttl: 300000 },
+  })
   async contact(
     @Body('name') name: string,
     @Body('email') email: string,

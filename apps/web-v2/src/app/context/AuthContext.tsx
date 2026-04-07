@@ -14,7 +14,7 @@ interface AuthContextType {
   isNewSignup: boolean;
   sessionExpired: boolean;
   login: (login: string, password: string, remember?: boolean) => Promise<void>;
-  signup: (email: string, username: string, password: string, recaptchaToken?: string) => Promise<void>;
+  signup: (email: string, username: string, password: string, recaptchaToken?: string, inviteCode?: string) => Promise<void>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   clearNewSignup: () => void;
@@ -100,8 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (posthog.__loaded) posthog.capture('login', { method: 'password' });
   };
 
-  const signup = async (email: string, username: string, password: string, recaptchaToken?: string) => {
-    await authApi.signup({ email, username, password, recaptchaToken });
+  const signup = async (email: string, username: string, password: string, recaptchaToken?: string, inviteCode?: string) => {
+    await authApi.signup({ email, username, password, recaptchaToken, inviteCode });
     await refreshUser();
     setSessionExpired(false);
     if (posthog.__loaded) posthog.capture('signup', { method: 'email' });

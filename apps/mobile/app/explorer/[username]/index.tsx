@@ -45,7 +45,7 @@ export default function ExplorerProfileScreen() {
     username ? `/users/${username}/posts` : null,
   );
 
-  const expeditions = tripsData?.data ?? [];
+  const expeditions = (tripsData?.data ?? []).filter(e => e.status !== 'cancelled');
   const entries = postsData?.data ?? [];
 
   useEffect(() => {
@@ -278,7 +278,7 @@ export default function ExplorerProfileScreen() {
                       )}
                       <TouchableOpacity
                         style={styles.popupBtn}
-                        onPress={() => { setSelectedEntry(null); router.push(`/entry/${selectedEntry.id}`); }}
+                        onPress={() => { setSelectedEntry(null); router.replace(`/entry/${selectedEntry.id}`); }}
                       >
                         <Text style={styles.popupBtnText}>VIEW ENTRY</Text>
                       </TouchableOpacity>
@@ -305,7 +305,7 @@ export default function ExplorerProfileScreen() {
                 <ExpeditionCardFull
                   key={exp.id}
                   expedition={exp}
-                  onPress={() => router.push(`/expedition/${exp.id}`)}
+                  onPress={() => router.replace(`/expedition/${exp.id}`)}
                 />
               ))}
             </View>
@@ -321,7 +321,7 @@ export default function ExplorerProfileScreen() {
                 <EntryCardFull
                   key={entry.id}
                   entry={entry}
-                  onPress={() => router.push(`/entry/${entry.id}`)}
+                  onPress={() => router.replace(`/entry/${entry.id}`)}
                   showAuthor={false}
                 />
               ))}

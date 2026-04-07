@@ -28,6 +28,12 @@ import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { initAnalytics, analytics } from '@/services/analytics';
+import {
+  registerForPushNotifications,
+  sendPushTokenToServer,
+  removePushTokenFromServer,
+} from '@/services/pushNotifications';
+import * as Notifications from 'expo-notifications';
 import { mono, colors as brandColors } from '@/theme/tokens';
 
 // Keep the native splash visible until we explicitly hide it
@@ -474,6 +480,40 @@ function RootNav() {
       .replace(/\d{3,}/g, ':id');
     analytics.screen(screenName);
   }, [currentSegment]);
+
+  // Register push notifications when user is authenticated
+  const pushTokenRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!user) {
+      // On logout, remove the token from server
+      if (pushTokenRef.current) {
+        removePushTokenFromServer(pushTokenRef.current);
+        pushTokenRef.current = null;
+      }
+      return;
+    }
+    registerForPushNotifications().then((token) => {
+      if (token) {
+        pushTokenRef.current = token;
+        sendPushTokenToServer(token);
+      }
+    });
+  }, [user]);
+
+  // Handle notification tap — navigate to deep link
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener(
+      (response) => {
+        const url = response.notification.request.content.data?.url;
+        if (typeof url === 'string' && url) {
+          router.push(`/${url}` as any);
+        } else {
+          router.push('/notifications');
+        }
+      },
+    );
+    return () => subscription.remove();
+  }, [router]);
 
   // Enforce minimum 1.5-second splash duration
   useEffect(() => {

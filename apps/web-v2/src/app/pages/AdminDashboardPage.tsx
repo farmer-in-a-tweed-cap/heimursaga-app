@@ -5,15 +5,18 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   AlertTriangle,
+  Check,
   CheckCircle,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  Copy,
   Eye,
   FileText,
   Filter,
   Flag,
+  Key,
   Loader2,
   Map,
   Search,
@@ -32,10 +35,11 @@ import {
   AdminExpeditionListItem,
   AdminExplorerListItem,
   AdminFlag,
+  AdminInviteCode,
   AdminStats,
 } from '@/app/services/api';
 
-type ViewMode = 'flags' | 'entries' | 'expeditions' | 'explorers';
+type ViewMode = 'flags' | 'entries' | 'expeditions' | 'explorers' | 'inviteCodes';
 
 const PAGE_SIZE = 50;
 
@@ -85,6 +89,16 @@ export function AdminDashboardPage() {
   const [explorersTotal, setExplorersTotal] = useState(0);
   const [explorersOffset, setExplorersOffset] = useState(0);
   const [explorersLoading, setExplorersLoading] = useState(false);
+
+  // Invite Codes
+  const [inviteCodes, setInviteCodes] = useState<AdminInviteCode[]>([]);
+  const [inviteCodesTotal, setInviteCodesTotal] = useState(0);
+  const [inviteCodesOffset, setInviteCodesOffset] = useState(0);
+  const [inviteCodesLoading, setInviteCodesLoading] = useState(false);
+  const [newCodeLabel, setNewCodeLabel] = useState('');
+  const [newCodeCount, setNewCodeCount] = useState(1);
+  const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Confirmation modal
   const [confirmModal, setConfirmModal] = useState<{
@@ -204,6 +218,27 @@ export function AdminDashboardPage() {
   useEffect(() => {
     if (viewMode === 'explorers' && isAdmin) loadExplorers();
   }, [viewMode, user, loadExplorers, isAdmin]);
+
+  // Load invite codes
+  const loadInviteCodes = useCallback(async () => {
+    setInviteCodesLoading(true);
+    try {
+      const res = await adminApi.getInviteCodes({
+        limit: PAGE_SIZE,
+        offset: inviteCodesOffset,
+      });
+      setInviteCodes(res.data);
+      setInviteCodesTotal(res.total);
+    } catch (e) {
+      console.error('Failed to load invite codes', e);
+    } finally {
+      setInviteCodesLoading(false);
+    }
+  }, [inviteCodesOffset]);
+
+  useEffect(() => {
+    if (viewMode === 'inviteCodes' && isAdmin) loadInviteCodes();
+  }, [viewMode, user, loadInviteCodes, isAdmin]);
 
   // Reset offset when search changes
   useEffect(() => {
@@ -435,6 +470,7 @@ export function AdminDashboardPage() {
               { key: 'entries' as const, icon: FileText, label: 'ENTRIES' },
               { key: 'expeditions' as const, icon: Map, label: 'EXPEDITIONS' },
               { key: 'explorers' as const, icon: Users, label: 'EXPLORERS' },
+              { key: 'inviteCodes' as const, icon: Key, label: 'INVITE CODES' },
             ]).map(({ key, icon: Icon, label, badge }) => (
               <button
                 key={key}
@@ -1032,11 +1068,13 @@ export function AdminDashboardPage() {
                           <span className={`text-xs font-bold px-2 py-1 ${
                             explorer.admin
                               ? 'bg-[#ac6d46] text-white'
+                              : explorer.isGuide
+                              ? 'bg-[#598636] text-white'
                               : explorer.role === 'creator'
                               ? 'bg-[#4676ac] text-white'
                               : 'bg-[#b5bcc4] text-[#202020] dark:bg-[#616161] dark:text-[#e5e5e5]'
                           }`}>
-                            {explorer.admin ? 'ADMIN' : explorer.role === 'creator' ? 'EXPLORER PRO' : explorer.role.toUpperCase()}
+                            {explorer.admin ? 'ADMIN' : explorer.isGuide ? 'EXPEDITION GUIDE' : explorer.role === 'creator' ? 'EXPLORER PRO' : explorer.role.toUpperCase()}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
@@ -1088,6 +1126,170 @@ export function AdminDashboardPage() {
             )}
 
             <Pagination total={explorersTotal} offset={explorersOffset} setOffset={setExplorersOffset} loading={explorersLoading} />
+          </div>
+        )}
+
+        {/* INVITE CODES VIEW */}
+        {viewMode === 'inviteCodes' && (
+          <div>
+            {/* Generate Codes Form */}
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4 mb-6">
+              <h3 className="text-sm font-bold mb-3 text-[#202020] dark:text-[#e5e5e5]">GENERATE INVITE CODES</h3>
+              <div className="flex flex-wrap gap-3 items-end">
+                <div className="flex-1 min-w-[200px]">
+                  <label className="block text-xs font-medium mb-1 text-[#616161] dark:text-[#b5bcc4]">LABEL (OPTIONAL)</label>
+                  <input
+                    type="text"
+                    value={newCodeLabel}
+                    onChange={(e) => setNewCodeLabel(e.target.value)}
+                    className="w-full px-3 py-2 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#4676ac] outline-none text-sm font-mono bg-white dark:bg-[#1a1a1a] dark:text-[#e5e5e5]"
+                    placeholder="e.g. Guide batch - April 2026"
+                    maxLength={100}
+                  />
+                </div>
+                <div className="w-24">
+                  <label className="block text-xs font-medium mb-1 text-[#616161] dark:text-[#b5bcc4]">COUNT</label>
+                  <input
+                    type="number"
+                    value={newCodeCount}
+                    onChange={(e) => setNewCodeCount(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
+                    className="w-full px-3 py-2 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#4676ac] outline-none text-sm font-mono bg-white dark:bg-[#1a1a1a] dark:text-[#e5e5e5]"
+                    min={1}
+                    max={50}
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await adminApi.createInviteCodes({
+                        label: newCodeLabel || undefined,
+                        count: newCodeCount,
+                      });
+                      setGeneratedCodes(res.codes);
+                      setNewCodeLabel('');
+                      setNewCodeCount(1);
+                      loadInviteCodes();
+                    } catch (e) {
+                      console.error('Failed to create invite codes', e);
+                    }
+                  }}
+                  className="px-4 py-2 bg-[#4676ac] text-white text-xs font-bold hover:bg-[#365a8a] transition-colors"
+                >
+                  GENERATE
+                </button>
+              </div>
+
+              {/* Show generated codes */}
+              {generatedCodes.length > 0 && (
+                <div className="mt-4 p-3 bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#3a3a3a]">
+                  <div className="text-xs font-bold mb-2 text-[#598636]">GENERATED {generatedCodes.length} CODE(S):</div>
+                  <div className="space-y-1">
+                    {generatedCodes.map((code) => (
+                      <div key={code} className="flex items-center gap-2">
+                        <code className="text-sm font-mono text-[#202020] dark:text-[#e5e5e5]">{code}</code>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(code);
+                            setCopiedCode(code);
+                            setTimeout(() => setCopiedCode(null), 2000);
+                          }}
+                          className="p-1 text-[#616161] hover:text-[#4676ac] transition-colors"
+                          title="Copy code"
+                        >
+                          {copiedCode === code ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Codes Table */}
+            {inviteCodesLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="animate-spin text-[#ac6d46]" size={24} />
+              </div>
+            ) : inviteCodes.length === 0 ? (
+              <div className="bg-white dark:bg-[#202020] border-2 border-[#b5bcc4] dark:border-[#3a3a3a] p-8 text-center">
+                <Key size={32} className="mx-auto mb-3 text-[#b5bcc4]" strokeWidth={1.5} />
+                <div className="text-sm font-bold text-[#616161] dark:text-[#b5bcc4]">
+                  NO INVITE CODES FOUND
+                </div>
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">Generate codes above to invite guides</div>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b-2 border-[#202020] dark:border-[#616161] bg-[#f5f5f5] dark:bg-[#2a2a2a]">
+                      <th className="px-4 py-3 text-xs font-bold text-[#202020] dark:text-[#e5e5e5]">CODE</th>
+                      <th className="px-4 py-3 text-xs font-bold text-[#202020] dark:text-[#e5e5e5]">LABEL</th>
+                      <th className="px-4 py-3 text-xs font-bold text-[#202020] dark:text-[#e5e5e5]">STATUS</th>
+                      <th className="px-4 py-3 text-xs font-bold text-[#202020] dark:text-[#e5e5e5]">CREATED BY</th>
+                      <th className="px-4 py-3 text-xs font-bold text-[#202020] dark:text-[#e5e5e5]">USED BY</th>
+                      <th className="px-4 py-3 text-xs font-bold text-[#202020] dark:text-[#e5e5e5]">CREATED</th>
+                      <th className="px-4 py-3 text-xs font-bold text-[#202020] dark:text-[#e5e5e5] text-center">ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inviteCodes.map((code) => (
+                      <tr key={code.id} className="border-b border-[#b5bcc4] dark:border-[#3a3a3a] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a]">
+                        <td className="px-4 py-3">
+                          <code className="text-xs font-mono text-[#202020] dark:text-[#e5e5e5]">{code.code}</code>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-[#616161] dark:text-[#b5bcc4]">
+                          {code.label || '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-bold px-2 py-1 ${
+                            code.status === 'available'
+                              ? 'bg-[#598636] text-white'
+                              : code.status === 'used'
+                              ? 'bg-[#b5bcc4] text-[#202020] dark:bg-[#616161] dark:text-[#e5e5e5]'
+                              : 'bg-[#994040] text-white'
+                          }`}>
+                            {code.status.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
+                          {code.createdBy}
+                        </td>
+                        <td className="px-4 py-3 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
+                          {code.usedBy || '—'}
+                        </td>
+                        <td className="px-4 py-3 text-xs font-mono text-[#616161] dark:text-[#b5bcc4]">
+                          {new Date(code.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {code.status === 'available' && (
+                            <button
+                              onClick={() => showConfirm(
+                                `Revoke invite code ${code.code}?`,
+                                async () => {
+                                  try {
+                                    await adminApi.revokeInviteCode(code.id);
+                                    loadInviteCodes();
+                                  } catch (e) {
+                                    console.error('Failed to revoke invite code', e);
+                                  }
+                                },
+                              )}
+                              className="p-2 bg-[#994040] text-white hover:bg-[#7a3333] transition-colors"
+                              title="Revoke Code"
+                            >
+                              <Trash2 size={14} strokeWidth={2.5} />
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <Pagination total={inviteCodesTotal} offset={inviteCodesOffset} setOffset={setInviteCodesOffset} loading={inviteCodesLoading} />
           </div>
         )}
       </div>

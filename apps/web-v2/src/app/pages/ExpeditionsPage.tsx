@@ -5,16 +5,19 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { ExpeditionCard } from '@/app/components/ExpeditionCard';
 import { Compass, Loader2 } from 'lucide-react';
-import { expeditionApi, type Expedition } from '@/app/services/api';
+import { expeditionApi, explorerApi, type Expedition } from '@/app/services/api';
 import { calculateDaysElapsed } from '@/app/utils/dateFormat';
 import { useAuth } from '@/app/context/AuthContext';
+import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { ExpeditionCardSkeleton, SKELETON_COUNT } from '@/app/components/skeletons/CardSkeletons';
 import { ErrorState } from '@/app/components/ErrorState';
+import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 
 export function ExpeditionsPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { canAdoptBlueprints } = useProFeatures();
 
   // API data state
   const [apiExpeditions, setApiExpeditions] = useState<Expedition[]>([]);
@@ -34,6 +37,31 @@ export function ExpeditionsPage() {
 
   // Loading state for async actions
   const [bookmarkingInProgress, setBookmarkingInProgress] = useState<Set<string>>(new Set());
+  const [showActiveExpeditionModal, setShowActiveExpeditionModal] = useState(false);
+
+  // Handle adopt blueprint — block if user has active/planned expedition
+  const handleAdoptBlueprint = async (expeditionId: string) => {
+    if (!isAuthenticated) {
+      router.push('/auth');
+      return;
+    }
+    if (!canAdoptBlueprints) return;
+    try {
+      // Check if user has any active or planned expeditions
+      const userExps = await explorerApi.getExpeditions(user!.username);
+      const hasActiveOrPlanned = userExps.data.some(
+        (e: any) => (e.status === 'active' || e.status === 'planned'),
+      );
+      if (hasActiveOrPlanned) {
+        setShowActiveExpeditionModal(true);
+        return;
+      }
+      const res = await expeditionApi.adopt(expeditionId);
+      router.push(`/expedition-quick-entry/${res.expeditionId}`);
+    } catch (err) {
+      console.error('Error launching blueprint:', err);
+    }
+  };
 
   // Handle bookmark expedition with loading state
   const handleBookmarkExpedition = async (expeditionId: string) => {
@@ -165,6 +193,7 @@ export function ExpeditionsPage() {
     description: exp.description || '',
     category: exp.category || '',
     region: exp.region || '',
+    locationName: exp.locationName || '',
     startDate: exp.startDate || '',
     endDate: exp.endDate || '',
     status: (exp.status === 'active' ? 'active' : exp.status === 'completed' ? 'completed' : exp.status === 'cancelled' ? 'cancelled' : 'planned') as 'active' | 'completed' | 'planned' | 'cancelled',
@@ -187,6 +216,17 @@ export function ExpeditionsPage() {
     sponsorshipsEnabled: (exp.goal || 0) > 0,
     explorerIsPro: (exp.goal || 0) > 0,
     stripeConnected: exp.author?.stripeAccountConnected === true,
+    isBlueprint: exp.isBlueprint === true,
+    mode: exp.mode,
+    adoptionsCount: exp.adoptionsCount ?? 0,
+    averageRating: exp.averageRating,
+    ratingsCount: exp.ratingsCount ?? 0,
+    elevationMinM: exp.elevationMinM,
+    elevationMaxM: exp.elevationMaxM,
+    estimatedDurationH: exp.estimatedDurationH,
+    waypointCoords: (exp.waypoints || [])
+      .filter(w => w.lat != null && w.lon != null)
+      .map(w => ({ lat: w.lat!, lng: w.lon! })),
   })), [apiExpeditions]);
 
   // Apply filters and search
@@ -202,6 +242,8 @@ export function ExpeditionsPage() {
       result = result.filter(e => e.status === 'completed');
     } else if (activeFilter === 'sponsored') {
       result = result.filter(e => e.sponsorshipsEnabled && e.explorerIsPro && e.stripeConnected && e.raised < e.goal);
+    } else if (activeFilter === 'blueprints') {
+      result = result.filter(e => e.isBlueprint);
     }
 
     // Apply search
@@ -266,7 +308,7 @@ export function ExpeditionsPage() {
           <div className="flex items-center justify-between mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2">
             <h1 className="text-2xl font-bold dark:text-[#e5e5e5]">EXPEDITION DIRECTORY</h1>
             <span className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-              {loading ? 'LOADING...' : error ? 'ERROR' : expeditions.length !== transformedExpeditions.length ? `${expeditions.length} / ${transformedExpeditions.length} EXPEDITIONS` : `${expeditions.length} EXPEDITIONS`}
+              {loading ? 'LOADING...' : error ? 'ERROR' : expeditions.length !== transformedExpeditions.length ? `${expeditions.length} / ${transformedExpeditions.length} RESULTS` : `${expeditions.length} RESULTS`}
             </span>
           </div>
 
@@ -308,6 +350,16 @@ export function ExpeditionsPage() {
                 {label}
               </button>
             ))}
+            <button
+              onClick={() => setActiveFilter('blueprints')}
+              className={`px-3 py-1.5 whitespace-nowrap font-bold transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none ${
+                activeFilter === 'blueprints'
+                  ? 'bg-[#4676ac] text-white hover:bg-[#365a87] focus-visible:ring-[#4676ac]'
+                  : 'border border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#95a2aa] dark:hover:bg-[#3a3a3a] focus-visible:ring-[#616161]'
+              }`}
+            >
+              BLUEPRINTS
+            </button>
           </div>
         </div>
       </div>
@@ -376,14 +428,25 @@ export function ExpeditionsPage() {
                 distance={expedition.distance}
                 status={expedition.status}
                 region={expedition.region}
+                locationName={expedition.locationName}
                 visibility={expedition.visibility}
                 terrain={expedition.terrain}
                 averageSpeed={expedition.averageSpeed}
                 sponsorshipsEnabled={expedition.sponsorshipsEnabled}
                 explorerIsPro={expedition.explorerIsPro}
                 stripeConnected={expedition.stripeConnected}
+                isBlueprint={expedition.isBlueprint}
+                mode={expedition.mode}
+                adoptionsCount={expedition.adoptionsCount}
+                averageRating={expedition.averageRating}
+                ratingsCount={expedition.ratingsCount}
+                elevationMinM={expedition.elevationMinM}
+                elevationMaxM={expedition.elevationMaxM}
+                estimatedDurationH={expedition.estimatedDurationH}
+                waypointCoords={expedition.waypointCoords}
                 onViewJournal={() => router.push(`/expedition/${expedition.id}`)}
                 onSupport={() => router.push(`/sponsor/${expedition.id}`)}
+                onAdopt={() => handleAdoptBlueprint(expedition.id)}
                 isBookmarked={bookmarkedExpeditions.has(expedition.id)}
                 isBookmarkLoading={bookmarkingInProgress.has(expedition.id)}
                 onBookmark={() => handleBookmarkExpedition(expedition.id)}
@@ -405,6 +468,17 @@ export function ExpeditionsPage() {
           </button>
         </div>
       )}
+      <ConfirmationModal
+        isOpen={showActiveExpeditionModal}
+        onClose={() => setShowActiveExpeditionModal(false)}
+        onConfirm={() => setShowActiveExpeditionModal(false)}
+        title="Cannot Launch Blueprint"
+        confirmLabel="OK"
+      >
+        <p className="text-sm text-[#616161] dark:text-[#b5bcc4]">
+          You already have an active or planned expedition. Complete or cancel your current expedition before launching a new one from a blueprint.
+        </p>
+      </ConfirmationModal>
     </div>
   );
 }

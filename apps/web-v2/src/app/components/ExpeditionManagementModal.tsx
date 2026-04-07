@@ -1,10 +1,13 @@
 'use client';
 
-import { X, CheckCircle2, Calendar, AlertTriangle, Edit, XCircle } from 'lucide-react';
+import { X, CheckCircle2, Calendar, AlertTriangle, Edit, XCircle, Star, Loader2, CreditCard } from 'lucide-react';
 import { DatePicker } from '@/app/components/DatePicker';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatDate } from '@/app/utils/dateFormat';
+import { expeditionApi, sponsorshipApi, paymentMethodApi, type PaymentMethodFull } from '@/app/services/api';
+import { useStripe, useElements, CardElement } from '@/app/context/StripeContext';
+import { toast } from 'sonner';
 
 interface ExpeditionManagementModalProps {
   isOpen: boolean;
@@ -20,11 +23,17 @@ interface ExpeditionManagementModalProps {
     totalDistance?: number;
     totalFunding?: number;
     backers?: number;
+    isRouteLocked?: boolean;
   };
   isPro?: boolean;
   onStatusChange?: (newStatus: 'active' | 'completed') => void;
   onComplete?: (actualEndDate: string) => Promise<void>;
   onCancel?: (reason: string) => Promise<void>;
+  sourceBlueprint?: {
+    id: string;
+    title: string;
+    author?: { username: string; name?: string; picture?: string; stripeAccountConnected?: boolean };
+  };
 }
 
 export function ExpeditionManagementModal({
@@ -35,6 +44,7 @@ export function ExpeditionManagementModal({
   onStatusChange: _onStatusChange,
   onComplete,
   onCancel,
+  sourceBlueprint,
 }: ExpeditionManagementModalProps) {
   const router = useRouter();
   const [confirmComplete, setConfirmComplete] = useState(false);
@@ -44,6 +54,42 @@ export function ExpeditionManagementModal({
   const [completeError, setCompleteError] = useState('');
   const [actualEndDate, setActualEndDate] = useState(new Date().toISOString().split('T')[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Review/tip state (for blueprint-derived expeditions)
+  const [showReviewStep, setShowReviewStep] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [reviewText, setReviewText] = useState('');
+  const [tipAmount, setTipAmount] = useState('');
+  const [savedCard, setSavedCard] = useState<PaymentMethodFull | null>(null);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewError, setReviewError] = useState('');
+
+  const stripe = useStripe();
+  const elements = useElements();
+
+  // Load saved payment method for tipping
+  useEffect(() => {
+    if (isOpen && sourceBlueprint) {
+      paymentMethodApi.getAll()
+        .then((res) => {
+          if (res.data?.length > 0) setSavedCard(res.data[0]);
+        })
+        .catch(() => {});
+    }
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Reset review state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowReviewStep(false);
+      setRating(0);
+      setHoverRating(0);
+      setReviewText('');
+      setTipAmount('');
+      setReviewError('');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -80,7 +126,11 @@ export function ExpeditionManagementModal({
       if (onComplete) {
         await onComplete(actualEndDate);
       }
-      onClose();
+      if (sourceBlueprint) {
+        setShowReviewStep(true);
+      } else {
+        onClose();
+      }
     } catch (error: any) {
       console.error('Failed to complete expedition:', error);
       const message = error?.response?.data?.message || error?.message || 'Failed to complete expedition. Please try again.';
@@ -88,6 +138,91 @@ export function ExpeditionManagementModal({
     } finally {
       setIsSubmitting(false);
       setConfirmComplete(false);
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    setIsSubmittingReview(true);
+    setReviewError('');
+
+    try {
+      // Submit review if rating provided
+      if (rating > 0 && sourceBlueprint) {
+        await expeditionApi.createReview(sourceBlueprint.id, {
+          rating,
+          text: reviewText.trim() || undefined,
+        });
+      }
+
+      // Submit tip if amount entered
+      const tipValue = parseFloat(tipAmount);
+      if (tipAmount && tipValue > 0) {
+        if (tipValue < 5 || tipValue > 100) {
+          setReviewError('Tip amount must be between $5 and $100');
+          setIsSubmittingReview(false);
+          return;
+        }
+        if (!sourceBlueprint?.author?.username || !sourceBlueprint?.author?.stripeAccountConnected) {
+          setReviewError('This guide is not set up to receive tips');
+          setIsSubmittingReview(false);
+          return;
+        }
+      }
+      if (tipValue >= 5 && tipValue <= 100 && sourceBlueprint?.author?.stripeAccountConnected) {
+        let pmId: string | undefined;
+        let stripePmId: string | undefined;
+
+        if (savedCard) {
+          pmId = savedCard.id;
+        } else if (stripe && elements) {
+          const cardEl = elements.getElement(CardElement);
+          if (cardEl) {
+            const { paymentMethod, error } = await stripe.createPaymentMethod({
+              type: 'card',
+              card: cardEl,
+            });
+            if (error) {
+              setReviewError(error.message || 'Card error');
+              setIsSubmittingReview(false);
+              return;
+            }
+            stripePmId = paymentMethod.id;
+          }
+        }
+
+        if (pmId || stripePmId) {
+          const result = await sponsorshipApi.checkout({
+            sponsorshipType: 'tip',
+            creatorId: sourceBlueprint.author.username,
+            oneTimePaymentAmount: tipValue,
+            paymentMethodId: pmId,
+            stripePaymentMethodId: stripePmId,
+          });
+
+          if (stripe && result.clientSecret) {
+            const { error } = await stripe.confirmCardPayment(result.clientSecret);
+            if (error) {
+              setReviewError(error.message || 'Payment failed');
+              setIsSubmittingReview(false);
+              return;
+            }
+          }
+        }
+      }
+
+      // Success toast
+      const hasReview = rating > 0;
+      const hasTip = tipValue >= 5 && tipValue <= 100;
+      if (hasReview && hasTip) toast.success('Review submitted and tip sent!');
+      else if (hasReview) toast.success('Review submitted!');
+      else if (hasTip) toast.success('Tip sent!');
+
+      onClose();
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || 'Failed to submit. Please try again.';
+      setReviewError(message);
+    } finally {
+      setIsSubmittingReview(false);
     }
   };
 
@@ -117,8 +252,8 @@ export function ExpeditionManagementModal({
     <div className="fixed inset-0 bg-[#202020]/80 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="p-6 border-b-2 border-[#202020] dark:border-[#616161] bg-[#616161] text-white flex items-center justify-between">
-          <h2 className="text-lg font-bold">MANAGE EXPEDITION</h2>
+        <div className={`p-6 border-b-2 border-[#202020] dark:border-[#616161] ${showReviewStep ? 'bg-[#598636]' : 'bg-[#616161]'} text-white flex items-center justify-between`}>
+          <h2 className="text-lg font-bold">{showReviewStep ? 'RATE & REVIEW' : 'MANAGE EXPEDITION'}</h2>
           <button
             onClick={onClose}
             className="hover:text-[#ac6d46] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-white/50 disabled:opacity-50 disabled:active:scale-100"
@@ -130,6 +265,148 @@ export function ExpeditionManagementModal({
 
         {/* Content */}
         <div className="p-6">
+          {showReviewStep && sourceBlueprint ? (
+            <>
+              {/* Completion success banner */}
+              <div className="mb-6">
+                <div className="p-4 bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-2 border-[#598636]">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle2 size={16} className="text-[#598636]" />
+                    <span className="text-xs font-bold text-[#598636]">EXPEDITION COMPLETED</span>
+                  </div>
+                  <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                    You completed an expedition based on &ldquo;{sourceBlueprint.title}&rdquo;
+                    {sourceBlueprint.author && ` by ${sourceBlueprint.author.name || sourceBlueprint.author.username}`}.
+                  </p>
+                </div>
+              </div>
+
+              {/* Star Rating */}
+              <div className="mb-6">
+                <h3 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-3">YOUR RATING</h3>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <button
+                      key={star}
+                      type="button"
+                      onClick={() => setRating(star)}
+                      onMouseEnter={() => setHoverRating(star)}
+                      onMouseLeave={() => setHoverRating(0)}
+                      className="p-1 transition-transform hover:scale-110"
+                    >
+                      <Star
+                        size={28}
+                        className={`transition-colors ${
+                          star <= (hoverRating || rating)
+                            ? 'fill-[#ac6d46] text-[#ac6d46]'
+                            : 'text-[#b5bcc4] dark:text-[#616161]'
+                        }`}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Review Text */}
+              <div className="mb-6">
+                <label className="block text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
+                  REVIEW <span className="text-[#b5bcc4] font-normal">(OPTIONAL)</span>
+                </label>
+                <textarea
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                  placeholder="Share your experience with this blueprint..."
+                  rows={3}
+                  maxLength={2000}
+                  className="w-full px-3 py-2 border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#2a2a2a] text-[#202020] dark:text-[#e5e5e5] text-xs font-mono resize-none"
+                />
+                <div className="text-right text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                  {reviewText.length}/2000
+                </div>
+              </div>
+
+              {/* Tip Section — only if guide has Stripe Connect */}
+              {sourceBlueprint.author?.stripeAccountConnected && (
+              <div className="mb-6 border-2 border-[#598636] p-4">
+                <h3 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">
+                  TIP THE GUIDE <span className="text-[#b5bcc4] font-normal">(OPTIONAL)</span>
+                </h3>
+                <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
+                  Show your appreciation with a tip to {sourceBlueprint.author?.name || sourceBlueprint.author?.username || 'the guide'}.
+                </p>
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5]">$</span>
+                  <input
+                    type="number"
+                    min={5}
+                    max={100}
+                    step={1}
+                    value={tipAmount}
+                    onChange={(e) => setTipAmount(e.target.value)}
+                    placeholder="0"
+                    className="w-24 px-3 py-2 border-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#2a2a2a] text-[#202020] dark:text-[#e5e5e5] text-sm font-mono"
+                  />
+                  <span className="text-xs text-[#616161] dark:text-[#b5bcc4]">$5–$100</span>
+                </div>
+
+                {tipAmount && parseFloat(tipAmount) >= 5 && (
+                  <>
+                    {savedCard ? (
+                      <div className="p-3 border-2 border-[#616161] mb-3 flex items-center gap-3">
+                        <CreditCard size={16} className="text-[#616161]" />
+                        <span className="text-xs font-mono text-[#202020] dark:text-[#e5e5e5]">
+                          {(savedCard.label || 'Card').replace(` ${savedCard.last4}`, '').toUpperCase()} ending in {savedCard.last4}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="border-2 border-[#202020] dark:border-[#616161] p-3 mb-3">
+                        <CardElement
+                          options={{
+                            style: {
+                              base: {
+                                fontSize: '14px',
+                                fontFamily: 'Jost, system-ui, sans-serif',
+                                color: '#202020',
+                                '::placeholder': { color: '#b5bcc4' },
+                              },
+                            },
+                          }}
+                        />
+                      </div>
+                    )}
+                    <p className="text-[10px] text-[#616161] dark:text-[#b5bcc4]">
+                      Guide receives 90% after platform fees. Payments processed securely by Stripe.
+                    </p>
+                  </>
+                )}
+              </div>
+              )}
+
+              {reviewError && (
+                <div className="text-xs text-[#994040] mb-4">{reviewError}</div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={onClose}
+                  disabled={isSubmittingReview}
+                  className="flex-1 px-4 py-3 border-2 border-[#202020] dark:border-[#616161] text-[#202020] dark:text-[#e5e5e5] text-sm font-bold hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] disabled:opacity-50"
+                >
+                  SKIP
+                </button>
+                <button
+                  onClick={handleSubmitReview}
+                  disabled={isSubmittingReview || (rating === 0 && !(tipAmount && parseFloat(tipAmount) > 0))}
+                  className="flex-1 px-4 py-3 bg-[#598636] text-white text-sm font-bold hover:bg-[#476b2b] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isSubmittingReview && <Loader2 size={14} className="animate-spin" />}
+                  {isSubmittingReview ? 'SUBMITTING...' : 'SUBMIT'}
+                </button>
+              </div>
+            </>
+          ) : (
+          <>
           {/* Expedition Summary */}
           <div className="mb-6">
             <h3 className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-3">
@@ -226,21 +503,25 @@ export function ExpeditionManagementModal({
                       EDIT EXPEDITION DETAILS
                     </h4>
                     <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-3">
-                      {isPro
-                        ? isCompleted
-                          ? 'Update title, description, and cover image. Dates, waypoints, route, and sponsorship settings are locked for completed expeditions.'
-                          : 'Modify expedition details, dates, description, waypoints, and route planning. Changes will be reflected immediately across all journal views.'
-                        : 'Update expedition details, dates, description, and cover image using the quick entry form.'}
+                      {expedition.isRouteLocked
+                        ? 'Update expedition details, dates, description, and cover image. Route and waypoints are locked from the original blueprint.'
+                        : isPro
+                          ? isCompleted
+                            ? 'Update title, description, and cover image. Dates, waypoints, route, and sponsorship settings are locked for completed expeditions.'
+                            : 'Modify expedition details, dates, description, waypoints, and route planning. Changes will be reflected immediately across all journal views.'
+                          : 'Update expedition details, dates, description, and cover image using the quick entry form.'}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => router.push(isPro ? `/expedition-builder/${expedition.id}` : `/expedition-quick-entry/${expedition.id}`)}
+                  onClick={() => router.push(expedition.isRouteLocked || !isPro ? `/expedition-quick-entry/${expedition.id}` : `/expedition-builder/${expedition.id}`)}
                   className="w-full px-4 py-3 bg-[#ac6d46] text-white text-sm font-bold hover:bg-[#8a5738] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#ac6d46] flex items-center justify-center gap-2"
                 >
-                  {isPro
-                    ? isCompleted ? 'EDIT TITLE & DESCRIPTION' : 'EDIT DETAILS & WAYPOINTS'
-                    : 'EDIT EXPEDITION'}
+                  {expedition.isRouteLocked
+                    ? 'EDIT EXPEDITION DETAILS'
+                    : isPro
+                      ? isCompleted ? 'EDIT TITLE & DESCRIPTION' : 'EDIT DETAILS & WAYPOINTS'
+                      : 'EDIT EXPEDITION'}
                 </button>
               </div>
             )}
@@ -529,6 +810,8 @@ export function ExpeditionManagementModal({
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
       </div>
     </div>

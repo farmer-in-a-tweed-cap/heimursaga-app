@@ -193,6 +193,7 @@ export interface SessionUser {
   picture?: string;
   isEmailVerified: boolean;
   isPremium: boolean;
+  isGuide?: boolean;
   stripeAccountConnected?: boolean;
   createdAt?: string;
   activeExpedition?: { id: number; publicId: string; title: string; status?: 'active' | 'planned' } | null;
@@ -209,6 +210,7 @@ export interface SignupPayload {
   username: string;
   password: string;
   recaptchaToken?: string;
+  inviteCode?: string;
 }
 
 export interface PasswordResetPayload {
@@ -311,6 +313,7 @@ export interface ExplorerProfile {
   bookmarked?: boolean;
   you?: boolean;
   creator?: boolean;
+  isGuide?: boolean;
   stripeAccountConnected?: boolean;
   activeExpeditionLocation?: {
     lat: number; lon: number; name: string;
@@ -341,6 +344,7 @@ export interface ExplorerListItem {
   postsCount?: number;
   memberDate?: string;
   creator?: boolean;
+  isGuide?: boolean;
   blocked?: boolean;
   followed?: boolean;
   bookmarked?: boolean;
@@ -421,6 +425,10 @@ export interface ExplorerExpedition {
   waypointsCount?: number;
   totalDistanceKm?: number;
   region?: string;
+  locationName?: string;
+  countryCode?: string;
+  countryName?: string;
+  stateProvince?: string;
   currentLocation?: { lat: number; lon: number; name: string; source: string };
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
   author?: {
@@ -431,6 +439,21 @@ export interface ExplorerExpedition {
   };
   bookmarked?: boolean;
   updatedAt?: string;
+  isBlueprint?: boolean;
+  blueprintId?: string;
+  isRouteLocked?: boolean;
+  mode?: string;
+  adoptionsCount?: number;
+  averageRating?: number;
+  ratingsCount?: number;
+  elevationMinM?: number;
+  elevationMaxM?: number;
+  elevationGainM?: number;
+  estimatedDurationH?: number;
+  category?: string;
+  tags?: string[];
+  isRoundTrip?: boolean;
+  waypoints?: Array<{ id?: string; title?: string; lat: number; lon: number; sequence?: number }>;
 }
 
 export interface ExplorerFollower {
@@ -439,6 +462,7 @@ export interface ExplorerFollower {
   bio?: string;
   followed?: boolean;
   creator?: boolean;
+  isGuide?: boolean;
 }
 
 // Explorer API endpoints
@@ -764,6 +788,10 @@ export interface Expedition {
   visibility?: 'public' | 'off-grid' | 'private';
   category?: string;
   region?: string;
+  locationName?: string;
+  countryCode?: string;
+  countryName?: string;
+  stateProvince?: string;
   tags?: string[];
   isRoundTrip?: boolean;
   routeMode?: string;
@@ -771,6 +799,10 @@ export interface Expedition {
   routeLegModes?: string[];
   routeObstacles?: RouteObstacle[];
   routeDistanceKm?: number;
+  elevationMinM?: number;
+  elevationMaxM?: number;
+  elevationGainM?: number;
+  estimatedDurationH?: number;
   totalDistanceKm?: number;
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
@@ -785,6 +817,7 @@ export interface Expedition {
     name?: string;
     picture?: string;
     creator?: boolean;
+    isGuide?: boolean;
     stripeAccountConnected?: boolean;
   };
   waypoints?: ExpeditionWaypoint[];
@@ -792,6 +825,18 @@ export interface Expedition {
   cancelledAt?: string;
   cancellationReason?: string;
   isOwner?: boolean;
+  isBlueprint?: boolean;
+  blueprintId?: string;
+  isRouteLocked?: boolean;
+  mode?: string;
+  adoptionsCount?: number;
+  averageRating?: number;
+  ratingsCount?: number;
+  sourceBlueprint?: {
+    id: string;
+    title: string;
+    author?: { username: string; name?: string; picture?: string; stripeAccountConnected?: boolean };
+  };
   bookmarked?: boolean;
   followingAuthor?: boolean;
 }
@@ -807,11 +852,26 @@ export interface ExpeditionCreatePayload {
   coverImage?: string;
   category?: string;
   region?: string;
+  locationName?: string;
+  countryCode?: string;
+  countryName?: string;
+  stateProvince?: string;
   tags?: string[];
   isRoundTrip?: boolean;
   routeMode?: string | null;
   routeGeometry?: number[][] | null;
   routeObstacles?: RouteObstacle[] | null;
+  estimatedDurationH?: number;
+  isBlueprint?: boolean;
+  mode?: string;
+}
+
+export interface BlueprintReview {
+  id: string;
+  rating: number;
+  text?: string;
+  createdAt?: string;
+  explorer?: { username: string; name?: string; picture?: string };
 }
 
 // Expedition Note types
@@ -993,6 +1053,33 @@ export const expeditionApi = {
    */
   syncWaypoints: (id: string, waypoints: Array<{ lat: number; lon: number; title?: string; date?: string; description?: string; sequence: number; entryId?: string; entryIds?: string[] }>) =>
     api.put<void>(`/trips/${id}/waypoints/sync`, { waypoints }),
+
+  getBlueprints: (params?: { page?: number; limit?: number; mode?: string; region?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    if (params?.mode) searchParams.set('mode', params.mode);
+    if (params?.region) searchParams.set('region', params.region);
+    const qs = searchParams.toString();
+    return api.get<{ data: Expedition[]; results: number; page?: number; limit?: number; totalPages?: number }>(`/trips/blueprints${qs ? `?${qs}` : ''}`);
+  },
+
+  adopt: (id: string) =>
+    api.post<{ expeditionId: string }>(`/trips/${id}/adopt`),
+
+  getReviews: (id: string, params?: { page?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.limit) searchParams.set('limit', String(params.limit));
+    const qs = searchParams.toString();
+    return api.get<{ results: number; data: BlueprintReview[] }>(`/trips/${id}/reviews${qs ? `?${qs}` : ''}`);
+  },
+
+  createReview: (id: string, payload: { rating: number; text?: string }) =>
+    api.post<BlueprintReview>(`/trips/${id}/reviews`, payload),
+
+  deleteReview: (id: string) =>
+    api.delete<void>(`/trips/${id}/reviews`),
 };
 
 // Voice note types
@@ -1369,6 +1456,7 @@ export interface SearchUser {
   username: string;
   picture: string | null;
   role: string;
+  isGuide?: boolean;
 }
 
 export interface SearchEntry {
@@ -1819,11 +1907,11 @@ export const paymentMethodApi = {
 // ============================================
 
 export interface SponsorshipCheckoutPayload {
-  sponsorshipTierId: string;
+  sponsorshipTierId?: string;
   creatorId: string; // username of the explorer to sponsor
   paymentMethodId?: string;
   stripePaymentMethodId?: string;
-  sponsorshipType: 'one_time_payment' | 'subscription';
+  sponsorshipType: 'one_time_payment' | 'subscription' | 'tip';
   oneTimePaymentAmount?: number;
   customAmount?: number;
   billingPeriod?: 'monthly' | 'yearly';
@@ -1842,7 +1930,7 @@ export interface SponsorshipCheckoutResponse {
 export interface SponsorshipFull {
   id: string;
   status: 'ACTIVE' | 'PENDING' | 'CONFIRMED' | 'CANCELED' | 'EXPIRED';
-  type: 'ONE_TIME_PAYMENT' | 'SUBSCRIPTION' | 'QUICK_SPONSOR';
+  type: 'ONE_TIME_PAYMENT' | 'SUBSCRIPTION' | 'QUICK_SPONSOR' | 'TIP';
   amount: number;
   currency: string;
   message?: string;
@@ -2158,8 +2246,21 @@ export interface AdminExplorerListItem {
   role: string;
   admin: boolean;
   blocked: boolean;
+  isGuide?: boolean;
   createdAt: string;
   picture?: string;
+}
+
+export interface AdminInviteCode {
+  id: number;
+  code: string;
+  label?: string;
+  createdBy: string;
+  usedBy?: string;
+  usedAt?: string;
+  expiresAt?: string;
+  createdAt: string;
+  status: 'available' | 'used' | 'expired';
 }
 
 export interface AdminFlag {
@@ -2263,6 +2364,23 @@ export const adminApi = {
 
   unblockExplorer: (username: string) =>
     api.post<void>(`/admin/explorers/${username}/unblock`),
+
+  getInviteCodes: (params?: { limit?: number; offset?: number }) => {
+    const qs = params
+      ? '?' + new URLSearchParams(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined)
+            .map(([k, v]) => [k, String(v)])
+        ).toString()
+      : '';
+    return api.get<{ data: AdminInviteCode[]; total: number }>(`/admin/invite-codes${qs}`);
+  },
+
+  createInviteCodes: (payload: { label?: string; expiresAt?: string; count?: number }) =>
+    api.post<{ codes: string[] }>('/admin/invite-codes', payload),
+
+  revokeInviteCode: (id: number) =>
+    api.delete<void>(`/admin/invite-codes/${id}`),
 };
 
 // --- Weather / Live Conditions ---

@@ -11,13 +11,14 @@ import {
   RefreshControl,
   Alert,
   StyleSheet,
+  LayoutChangeEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
-import { notificationsApi } from '@/services/api';
+import { notificationsApi, expeditionApi } from '@/services/api';
 import { colors as brandColors, mono, borders } from '@/theme/tokens';
 import { Svg, Path, Circle } from 'react-native-svg';
 import { HCard } from '@/components/ui/HCard';
@@ -28,7 +29,6 @@ import { SectionDivider } from '@/components/ui/SectionDivider';
 import type { ForwardRefExoticComponent, RefAttributes } from 'react';
 import type { HeimuMapProps, HeimuMapRef, WaypointMarker } from '@/components/map/HeimuMap';
 import { clusterMarkers, getClusterExpansionZoom, spreadCoincidentMarkers } from '@/components/map/HeimuMap';
-import { getExplorerStatus, explorerStatusConfig } from '@/utils/explorerStatus';
 import { ExpeditionCardFull } from '@/components/cards/ExpeditionCardFull';
 import { ExplorerCardMini } from '@/components/cards/ExplorerCardMini';
 import { EntryCardFull } from '@/components/cards/EntryCardFull';
@@ -44,6 +44,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const router = useRouter();
+  const [contentAreaHeight, setContentAreaHeight] = useState(0);
   const [feedTab, setFeedTabRaw] = useState(0);
   const setFeedTab = useCallback((tab: number) => {
     setFeedTabRaw(tab);
@@ -55,14 +56,52 @@ export default function HomeScreen() {
       if (val === '1') setFeedTabRaw(1);
     }).catch(() => {});
   }, [user]);
-  const [atlasTab, setAtlasTab] = useState(0); // 0 = EXPLORERS, 1 = ENTRIES
   const [atlasExpanded, setAtlasExpanded] = useState(false);
   const [selectedAtlasEntry, setSelectedAtlasEntry] = useState<Entry | null>(null);
-  const [selectedExplorer, setSelectedExplorer] = useState<ExplorerProfile | null>(null);
   const [atlasZoom, setAtlasZoom] = useState(1.5);
+  const [visibleEntryCount, setVisibleEntryCount] = useState<number | null>(null);
+  const [previewRoute, setPreviewRoute] = useState<[number, number][] | undefined>(undefined);
+  const [previewExpedition, setPreviewExpedition] = useState<{ id: string; title: string } | null>(null);
   const [badgeCount, setBadgeCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const atlasMapRef = useRef<HeimuMapRef>(null);
+  const previewAbortRef = useRef<AbortController | null>(null);
+
+  // Fetch expedition route when an entry with an expedition is selected
+  useEffect(() => {
+    previewAbortRef.current?.abort();
+    setPreviewRoute(undefined);
+    setPreviewExpedition(null);
+
+    const expId = selectedAtlasEntry?.expedition?.id || selectedAtlasEntry?.trip?.id;
+    if (!selectedAtlasEntry || !expId) return;
+
+    const abort = new AbortController();
+    previewAbortRef.current = abort;
+
+    expeditionApi.getExpedition(expId)
+      .then((res) => {
+        if (abort.signal.aborted) return;
+        const exp: Expedition = (res as any)?.data ?? res;
+        if (exp.routeGeometry && exp.routeGeometry.length >= 2) {
+          setPreviewRoute(exp.routeGeometry as [number, number][]);
+          setPreviewExpedition({ id: expId, title: exp.title || '' });
+        } else if (exp.waypoints && exp.waypoints.length >= 2) {
+          const coords = exp.waypoints
+            .filter(wp => wp.lat != null && wp.lon != null)
+            .sort((a, b) => (a.sequence ?? 0) - (b.sequence ?? 0))
+            .map(wp => [wp.lon!, wp.lat!] as [number, number]);
+          if (exp.isRoundTrip && coords.length > 1) coords.push(coords[0]);
+          if (coords.length >= 2) {
+            setPreviewRoute(coords);
+            setPreviewExpedition({ id: expId, title: exp.title || '' });
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => { abort.abort(); };
+  }, [selectedAtlasEntry]);
 
   const handleGeolocate = useCallback(async () => {
     try {
@@ -98,7 +137,7 @@ export default function HomeScreen() {
 
   // Global feed
   const { data, loading, error, refetch } = useApi<TripsResponse>('/trips');
-  const allExpeditions = data?.data ?? [];
+  const allExpeditions = (data?.data ?? []).filter(e => e.status !== 'cancelled');
   const expeditions = allExpeditions.slice(0, 5);
 
   const { data: usersData } = useApi<{ data: ExplorerProfile[]; results: number }>('/users');
@@ -111,7 +150,7 @@ export default function HomeScreen() {
   const { data: followTrips, loading: followLoading, refetch: refetchFollowTrips } = useApi<TripsResponse>(
     user ? '/trips?context=following' : null,
   );
-  const followExpeditions = (followTrips?.data ?? []).slice(0, 5);
+  const followExpeditions = (followTrips?.data ?? []).filter(e => e.status !== 'cancelled').slice(0, 5);
 
   const { data: followUsers, refetch: refetchFollowUsers } = useApi<{ data: ExplorerProfile[]; results: number }>(
     user ? '/users?context=following' : null,
@@ -136,35 +175,48 @@ export default function HomeScreen() {
   // Count active expeditions for atlas stats
   const activeExpeditions = allExpeditions.filter((e) => e.status === 'active').length;
 
-  // Explorer markers — activeExpeditionLocation → locationLives → locationFrom
-  const geoExplorers: ExplorerProfile[] = [];
-  const explorerMarkers: WaypointMarker[] = [];
-  for (const e of usersData?.data ?? []) {
-    let coords: [number, number] | null = null;
-    if (e.activeExpeditionLocation) {
-      coords = [e.activeExpeditionLocation.lon, e.activeExpeditionLocation.lat];
-    } else if (e.locationLivesLat != null && e.locationLivesLon != null) {
-      coords = [e.locationLivesLon, e.locationLivesLat];
-    } else if (e.locationFromLat != null && e.locationFromLon != null) {
-      coords = [e.locationFromLon, e.locationFromLat];
-    }
-    if (coords) {
-      geoExplorers.push(e);
-      explorerMarkers.push({ coordinates: coords, type: 'origin' as const, label: e.username });
-    }
-  }
-
   // Entry markers — only entries with coordinates
   const geoEntries = (postsData?.data ?? []).filter(e => e.lat != null && e.lon != null);
   const entryMarkers: WaypointMarker[] = geoEntries.map(e => ({
     coordinates: [e.lon!, e.lat!],
-    type: 'waypoint' as const,
+    type: 'entry' as const,
     label: e.place,
   }));
 
-  const rawAtlasMarkers = atlasTab === 0 ? explorerMarkers : entryMarkers;
-  const spreadMarkers = useMemo(() => spreadCoincidentMarkers(rawAtlasMarkers), [rawAtlasMarkers]);
+  const spreadMarkers = useMemo(() => spreadCoincidentMarkers(entryMarkers), [entryMarkers]);
   const atlasMarkers = useMemo(() => clusterMarkers(spreadMarkers, atlasZoom), [spreadMarkers, atlasZoom]);
+
+  const selectedMarkerIndex = useMemo(() => {
+    if (!selectedAtlasEntry) return undefined;
+    return atlasMarkers.findIndex(m => m.label === selectedAtlasEntry.place);
+  }, [selectedAtlasEntry, atlasMarkers]);
+
+  // Poll visible bounds + zoom when atlas is expanded
+  useEffect(() => {
+    if (!atlasExpanded) {
+      setVisibleEntryCount(null);
+      return;
+    }
+    let cancelled = false;
+    const poll = async () => {
+      const [bounds, zoom] = await Promise.all([
+        atlasMapRef.current?.getVisibleBounds(),
+        atlasMapRef.current?.getZoom(),
+      ]);
+      if (cancelled) return;
+      if (zoom != null) setAtlasZoom(zoom);
+      if (bounds) {
+        const { ne, sw } = bounds;
+        const count = geoEntries.filter(e =>
+          e.lon! >= sw[0] && e.lon! <= ne[0] && e.lat! >= sw[1] && e.lat! <= ne[1]
+        ).length;
+        setVisibleEntryCount(count);
+      }
+    };
+    poll();
+    const interval = setInterval(poll, 500);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [atlasExpanded, geoEntries]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -199,7 +251,9 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      <View style={{ flex: 1 }} onLayout={(e: LayoutChangeEvent) => setContentAreaHeight(e.nativeEvent.layout.height)}>
       <ScrollView
+        scrollEnabled={!atlasExpanded}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={async () => {
             setRefreshing(true);
@@ -213,7 +267,7 @@ export default function HomeScreen() {
         }
       >
         {/* Global / Following toggle */}
-        <View style={styles.feedToggleWrap}>
+        {!atlasExpanded && <View style={styles.feedToggleWrap}>
           <HCard>
             <View style={styles.feedToggle}>
               <Pressable
@@ -257,12 +311,40 @@ export default function HomeScreen() {
               </Pressable>
             </View>
           </HCard>
-        </View>
+        </View>}
+
+        {/* Followed explorers horizontal strip */}
+        {!atlasExpanded && feedTab === 1 && followExplorers.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.followStrip}
+            contentContainerStyle={styles.followStripContent}
+          >
+            {followExplorers.map((explorer) => (
+              <Pressable
+                key={explorer.username}
+                style={styles.followStripItem}
+                onPress={() => router.push(`/explorer/${explorer.username}`)}
+              >
+                <Avatar
+                  size={40}
+                  name={explorer.username}
+                  imageUrl={explorer.picture}
+                  pro={explorer.creator}
+                />
+                <Text style={[styles.followStripName, { color: colors.text }]} numberOfLines={1}>
+                  {explorer.username}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Explorer Atlas */}
-        <View style={styles.atlasWrap}>
-          <View style={[styles.atlasCard, { borderWidth: borders.thick, borderColor: colors.border }]}>
-            <View style={[styles.atlasMap, { height: atlasExpanded ? 400 : 200 }]}>
+        <View style={[styles.atlasWrap, atlasExpanded && { paddingHorizontal: 0, paddingTop: 0, height: contentAreaHeight }]}>
+          <View style={[styles.atlasCard, !atlasExpanded && { borderWidth: borders.thick, borderColor: colors.border }, atlasExpanded && { flex: 1 }]}>
+            <View style={[styles.atlasMap, atlasExpanded ? { flex: 1 } : { height: 200 }]}>
               {MapComponent && (
                 <MapComponent
                   ref={atlasMapRef}
@@ -270,7 +352,9 @@ export default function HomeScreen() {
                   center={[-98, 40]}
                   zoom={1.5}
                   waypoints={atlasMarkers}
+                  routeCoords={previewRoute}
                   interactive={atlasExpanded}
+                  selectedIndex={selectedMarkerIndex}
                   onZoomChange={setAtlasZoom}
                   onWaypointPress={atlasExpanded ? (i) => {
                     const marker = atlasMarkers[i];
@@ -282,76 +366,24 @@ export default function HomeScreen() {
                       atlasMapRef.current?.fitBounds(marker.clusterCoords);
                       return;
                     }
-                    if (atlasTab === 0) {
-                      const explorer = geoExplorers.find(e => e.username === marker.label);
-                      if (!explorer) return;
-                      setSelectedExplorer(explorer);
-                      setSelectedAtlasEntry(null);
-                    } else {
-                      const entry = geoEntries.find(e => e.place === marker.label);
-                      if (!entry) return;
-                      setSelectedAtlasEntry(entry);
-                      setSelectedExplorer(null);
-                    }
+                    const entry = geoEntries.find(e => e.place === marker.label);
+                    if (!entry) return;
+                    setSelectedAtlasEntry(entry);
                   } : undefined}
                 />
-              )}
-              {/* Explorer popup */}
-              {selectedExplorer && atlasExpanded && (
-                <View style={[styles.popupWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                  <View style={styles.popupHeader}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-                      <Avatar size={32} name={selectedExplorer.username} imageUrl={selectedExplorer.picture} pro={selectedExplorer.creator} />
-                      <View style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={[styles.popupTitle, { color: colors.text }]} numberOfLines={1}>
-                          {selectedExplorer.username}
-                        </Text>
-                        {selectedExplorer.name && (
-                          <Text style={[styles.popupPlace, { color: colors.textSecondary, marginTop: 1 }]} numberOfLines={1}>
-                            {selectedExplorer.name}
-                          </Text>
-                        )}
-                      </View>
-                    </View>
-                    <TouchableOpacity onPress={() => setSelectedExplorer(null)} hitSlop={8}>
-                      <Text style={[styles.popupClose, { color: colors.textTertiary }]}>✕</Text>
-                    </TouchableOpacity>
-                  </View>
-                  {(() => {
-                    const st = getExplorerStatus(selectedExplorer.recentExpeditions ?? [], selectedExplorer.activeExpeditionOffGrid);
-                    const cfg = explorerStatusConfig[st];
-                    return (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
-                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: cfg.color }} />
-                        <Text style={{ fontSize: 10, fontWeight: '700', letterSpacing: 0.8, color: cfg.color, fontFamily: mono }}>{cfg.label}</Text>
-                      </View>
-                    );
-                  })()}
-                  {selectedExplorer.activeExpeditionLocation && (
-                    <>
-                      <Text style={[styles.popupPlace, { color: colors.textSecondary, marginTop: 2 }]} numberOfLines={1}>
-                        {selectedExplorer.activeExpeditionLocation.expeditionTitle}
-                      </Text>
-                      <Text style={[styles.popupDate, { color: colors.textTertiary }]}>
-                        {selectedExplorer.activeExpeditionLocation.name}
-                      </Text>
-                    </>
-                  )}
-                  <TouchableOpacity
-                    style={styles.popupBtn}
-                    onPress={() => { setSelectedExplorer(null); router.push(`/explorer/${selectedExplorer.username}`); }}
-                  >
-                    <Text style={styles.popupBtnText}>VIEW JOURNAL</Text>
-                  </TouchableOpacity>
-                </View>
               )}
               {/* Entry popup */}
               {selectedAtlasEntry && atlasExpanded && (
                 <View style={[styles.popupWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
                   <View style={styles.popupHeader}>
-                    <Text style={[styles.popupTitle, { color: colors.text }]} numberOfLines={1}>
-                      {selectedAtlasEntry.title}
-                    </Text>
+                    <View style={{ flex: 1, minWidth: 0 }}>
+                      <Text style={[styles.popupTitle, { color: colors.text }]} numberOfLines={1}>
+                        {selectedAtlasEntry.title}
+                      </Text>
+                      <Text style={[styles.popupAuthor, { color: brandColors.copper }]} numberOfLines={1}>
+                        {selectedAtlasEntry.author?.username}
+                      </Text>
+                    </View>
                     <TouchableOpacity onPress={() => setSelectedAtlasEntry(null)} hitSlop={8}>
                       <Text style={[styles.popupClose, { color: colors.textTertiary }]}>✕</Text>
                     </TouchableOpacity>
@@ -366,12 +398,22 @@ export default function HomeScreen() {
                       {new Date(selectedAtlasEntry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                     </Text>
                   )}
-                  <TouchableOpacity
-                    style={styles.popupBtn}
-                    onPress={() => { setSelectedAtlasEntry(null); router.push(`/entry/${selectedAtlasEntry.id}`); }}
-                  >
-                    <Text style={styles.popupBtnText}>VIEW ENTRY</Text>
-                  </TouchableOpacity>
+                  <View style={styles.popupBtnRow}>
+                    <TouchableOpacity
+                      style={styles.popupBtn}
+                      onPress={() => { setSelectedAtlasEntry(null); router.push(`/entry/${selectedAtlasEntry.id}`); }}
+                    >
+                      <Text style={styles.popupBtnText}>VIEW ENTRY</Text>
+                    </TouchableOpacity>
+                    {selectedAtlasEntry.author?.username && (
+                      <TouchableOpacity
+                        style={[styles.popupBtn, { backgroundColor: brandColors.blue }]}
+                        onPress={() => { setSelectedAtlasEntry(null); router.push(`/explorer/${selectedAtlasEntry.author.username}`); }}
+                      >
+                        <Text style={styles.popupBtnText}>VIEW JOURNAL</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               )}
               <View style={styles.atlasOverlay} pointerEvents="box-none">
@@ -386,7 +428,7 @@ export default function HomeScreen() {
                   </Pressable>
                   <Pressable
                     style={styles.atlasExpandBtn}
-                    onPress={() => { setAtlasExpanded(v => !v); setSelectedExplorer(null); setSelectedAtlasEntry(null); }}
+                    onPress={() => { setAtlasExpanded(v => !v); setSelectedAtlasEntry(null); }}
                   >
                     <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" strokeWidth={2}>
                       <Path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
@@ -395,44 +437,34 @@ export default function HomeScreen() {
                   </Pressable>
                 </View>
               </View>
+              {/* Route preview expedition title */}
+              {previewExpedition && previewRoute && (
+                <Pressable
+                  style={styles.routePreviewBar}
+                  onPress={() => { setSelectedAtlasEntry(null); router.push(`/expedition/${previewExpedition.id}`); }}
+                >
+                  <Text style={styles.routePreviewLabel}>EXPEDITION</Text>
+                  <Text style={styles.routePreviewDivider}>|</Text>
+                  <Text style={styles.routePreviewTitle} numberOfLines={1}>{previewExpedition.title}</Text>
+                </Pressable>
+              )}
             </View>
-            {/* Toggle bar */}
+            {/* Entry count bar (always visible) */}
             <View style={[styles.atlasToggleBar, { backgroundColor: brandColors.darkGray, borderTopWidth: borders.thick, borderTopColor: colors.border }]}>
-              <View style={styles.atlasToggleBtnWrap}>
-                {['EXPLORERS', 'ENTRIES'].map((label, i) => (
-                  <Pressable
-                    key={label}
-                    onPress={() => { setAtlasTab(i); setSelectedExplorer(null); setSelectedAtlasEntry(null); }}
-                    style={[
-                      styles.atlasToggleBtn,
-                      {
-                        backgroundColor: atlasTab === i ? 'rgba(172,109,70,0.8)' : 'transparent',
-                        borderColor: atlasTab === i ? 'rgba(172,109,70,0.6)' : 'rgba(255,255,255,0.15)',
-                        borderLeftWidth: i > 0 ? 0 : 1,
-                      },
-                    ]}
-                  >
-                    <Text style={[styles.atlasToggleBtnText, { color: atlasTab === i ? '#fff' : 'rgba(255,255,255,0.4)' }]}>
-                      {label}
-                    </Text>
-                  </Pressable>
-                ))}
+              <Text style={styles.atlasToggleCount}>{visibleEntryCount ?? geoEntries.length} journal entries</Text>
+            </View>
+            {/* Stats (hidden when expanded) */}
+            {!atlasExpanded && (
+              <View style={[styles.atlasStatsRow, { borderTopWidth: borders.thick, borderTopColor: colors.border }]}>
+                <StatsBar
+                  stats={[
+                    { value: String(activeExpeditions), label: 'ACTIVE' },
+                    { value: String(usersData?.results ?? 0), label: 'EXPLORERS' },
+                    { value: String(postsData?.results ?? 0), label: 'ENTRIES' },
+                  ]}
+                />
               </View>
-              <Text style={styles.atlasToggleCount}>
-                {atlasTab === 0
-                  ? `${usersData?.results ?? 0} explorers`
-                  : `${postsData?.results ?? 0} entries`}
-              </Text>
-            </View>
-            <View style={[styles.atlasStatsRow, { borderTopWidth: borders.thick, borderTopColor: colors.border }]}>
-              <StatsBar
-                stats={[
-                  { value: String(activeExpeditions), label: 'ACTIVE' },
-                  { value: String(usersData?.results ?? 0), label: 'EXPLORERS' },
-                  { value: String(postsData?.results ?? 0), label: 'ENTRIES' },
-                ]}
-              />
-            </View>
+            )}
           </View>
         </View>
 
@@ -491,8 +523,8 @@ export default function HomeScreen() {
           })()}
         </View>
 
-        {/* Explorers */}
-        {feedTab === 0 ? (
+        {/* Explorers (global tab only) */}
+        {feedTab === 0 && (
           <>
             <SectionDivider title="EXPLORERS" action="VIEW ALL" onAction={() => router.push('/discover?tab=1')} />
             <View style={styles.sectionContent}>
@@ -505,27 +537,6 @@ export default function HomeScreen() {
                   />
                 ))}
               </View>
-            </View>
-          </>
-        ) : (
-          <>
-            <SectionDivider title="FOLLOWED EXPLORERS" />
-            <View style={styles.sectionContent}>
-              {followExplorers.length === 0 ? (
-                <Text style={[styles.emptyText, { color: colors.textTertiary }]}>
-                  No followed explorers yet
-                </Text>
-              ) : (
-                <View style={styles.explorerGrid}>
-                  {followExplorers.map((explorer) => (
-                    <ExplorerCardMini
-                      key={explorer.username}
-                      explorer={explorer}
-                      onPress={() => router.push(`/explorer/${explorer.username}`)}
-                    />
-                  ))}
-                </View>
-              )}
             </View>
           </>
         )}
@@ -550,6 +561,7 @@ export default function HomeScreen() {
 
         <View style={styles.spacer} />
       </ScrollView>
+      </View>
     </View>
   );
 }
@@ -576,6 +588,43 @@ const styles = StyleSheet.create({
   feedToggleBtn: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12 },
   feedToggleLabel: { fontSize: 12, fontWeight: '700', letterSpacing: 0.6, fontFamily: mono },
   feedToggleCount: { fontSize: 16, fontWeight: '700', fontFamily: mono },
+  // Follow strip
+  followStrip: { flexGrow: 0, marginTop: 10 },
+  followStripContent: { paddingHorizontal: 16, gap: 14 },
+  followStripItem: { alignItems: 'center', width: 56 },
+  followStripName: { fontFamily: mono, fontSize: 10, fontWeight: '600', marginTop: 4, textAlign: 'center' },
+  // Route preview
+  routePreviewBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(172,109,70,0.9)',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  routePreviewLabel: {
+    fontFamily: mono,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    color: 'rgba(255,255,255,0.6)',
+  },
+  routePreviewDivider: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.3)',
+  },
+  routePreviewTitle: {
+    flex: 1,
+    fontFamily: mono,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    color: '#fff',
+  },
   // Atlas
   atlasWrap: { paddingHorizontal: 16, paddingTop: 12 },
   atlasCard: {},
@@ -586,9 +635,6 @@ const styles = StyleSheet.create({
   atlasExpandBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.1)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', paddingVertical: 3, paddingHorizontal: 8 },
   atlasExpandText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.6, color: 'rgba(255,255,255,0.5)', fontFamily: mono },
   atlasToggleBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5, paddingHorizontal: 14 },
-  atlasToggleBtnWrap: { flexDirection: 'row' },
-  atlasToggleBtn: { paddingVertical: 3, paddingHorizontal: 10, borderWidth: 1 },
-  atlasToggleBtnText: { fontFamily: mono, fontSize: 11, fontWeight: '700', letterSpacing: 0.6 },
   atlasToggleCount: { fontFamily: mono, fontSize: 11, fontWeight: '600', color: 'rgba(255,255,255,0.4)' },
   atlasStatsRow: {},
   // Popups
@@ -598,7 +644,9 @@ const styles = StyleSheet.create({
   popupClose: { fontSize: 14, fontWeight: '600' },
   popupPlace: { fontFamily: mono, fontSize: 12, marginTop: 2 },
   popupDate: { fontFamily: mono, fontSize: 11, marginTop: 2 },
-  popupBtn: { marginTop: 8, backgroundColor: brandColors.copper, paddingVertical: 10, alignItems: 'center' },
+  popupAuthor: { fontFamily: mono, fontSize: 11, fontWeight: '600', marginTop: 2 },
+  popupBtnRow: { flexDirection: 'row', gap: 8, marginTop: 8 },
+  popupBtn: { flex: 1, backgroundColor: brandColors.copper, paddingVertical: 10, alignItems: 'center' },
   popupBtnText: { fontFamily: mono, fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.6 },
   // Sections
   sectionContent: { paddingHorizontal: 16 },

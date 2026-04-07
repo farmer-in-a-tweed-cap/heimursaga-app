@@ -226,7 +226,7 @@ export function ExplorersPage() {
   const transformedExplorers = useMemo(() => apiExplorers.map(exp => ({
     id: exp.username,
     username: exp.username,
-    accountType: (exp.creator ? 'explorer-pro' : 'explorer') as 'explorer-pro' | 'explorer',
+    accountType: (exp.isGuide ? 'expedition-guide' : exp.creator ? 'explorer-pro' : 'explorer') as 'expedition-guide' | 'explorer-pro' | 'explorer',
     journalName: exp.name || '',
     bio: exp.bio || '',
     location: exp.locationLives || exp.locationFrom || '',

@@ -6,6 +6,7 @@ import { PrismaModule } from '@/modules/prisma';
 import { EmbargoLiftCronService } from './embargo-lift-cron.service';
 import { FollowerNotificationListener } from './follower-notification.listener';
 import { NotificationService } from './notification.service';
+import { PushService } from './push.service';
 
 @Module({
   imports: [ConfigModule, PrismaModule],
@@ -14,6 +15,7 @@ import { NotificationService } from './notification.service';
     NotificationService,
     FollowerNotificationListener,
     EmbargoLiftCronService,
+    PushService,
   ],
   exports: [NotificationService],
 })

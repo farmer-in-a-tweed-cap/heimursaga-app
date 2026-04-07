@@ -78,6 +78,7 @@ export class AuthService {
           email: true,
           is_email_verified: true,
           is_premium: true,
+          is_guide: true,
           is_stripe_account_connected: true,
           created_at: true,
           profile: {
@@ -98,6 +99,7 @@ export class AuthService {
         username,
         is_email_verified: isEmailVerified,
         is_premium: isPremium,
+        is_guide: isGuide,
         created_at: createdAt,
       } = user;
       const { picture } = user?.profile || {};
@@ -135,12 +137,13 @@ export class AuthService {
         });
       }
 
-      // Check for an active or planned expedition owned by this user
+      // Check for an active or planned expedition owned by this user (exclude blueprints)
       const currentExpedition = await this.prisma.expedition.findFirst({
         where: {
           author_id: userId,
           status: { in: ['active', 'planned'] },
           deleted_at: null,
+          is_blueprint: { not: true },
         },
         select: { id: true, public_id: true, title: true, status: true },
         orderBy: { status: 'asc' }, // 'active' sorts before 'planned'
@@ -156,6 +159,7 @@ export class AuthService {
         picture: getStaticMediaUrl(picture),
         isEmailVerified,
         isPremium,
+        isGuide: isGuide ?? false,
         stripeAccountConnected: isStripeAccountConnected,
         createdAt,
         activeExpedition: currentExpedition
@@ -260,6 +264,7 @@ export class AuthService {
           admin: true,
           is_email_verified: true,
           is_premium: true,
+          is_guide: true,
           profile: {
             select: {
               picture: true,
@@ -340,6 +345,7 @@ export class AuthService {
           : undefined,
         isEmailVerified: user.is_email_verified,
         isPremium: user.is_premium,
+        isGuide: user.is_guide ?? false,
         stripeAccountConnected: stripeConnected,
       };
 
@@ -451,6 +457,7 @@ export class AuthService {
           email: true,
           is_email_verified: true,
           is_premium: true,
+          is_guide: true,
           profile: {
             select: {
               picture: true,
@@ -503,6 +510,7 @@ export class AuthService {
           : undefined,
         isEmailVerified: user.is_email_verified,
         isPremium: user.is_premium,
+        isGuide: user.is_guide ?? false,
         stripeAccountConnected: stripeConnected,
       };
     } catch (e) {
@@ -574,22 +582,82 @@ export class AuthService {
           AppErrorCode.USERNAME_ALREADY_IN_USE,
         );
 
-      // create a user
-      await this.prisma.explorer.create({
-        data: {
-          email,
-          username,
-          role: UserRole.USER,
-          password,
-          profile: {
-            create: { picture: '' },
+      // validate invite code if provided (early check for fast UX feedback)
+      const isGuideSignup = !!payload.inviteCode;
+      if (isGuideSignup) {
+        const inviteCode = await this.prisma.inviteCode.findUnique({
+          where: { code: payload.inviteCode!.trim() },
+        });
+        if (!inviteCode) {
+          throw new ServiceBadRequestException('Invalid invite code');
+        }
+        if (inviteCode.used_by !== null) {
+          throw new ServiceBadRequestException(
+            'This invite code has already been used',
+          );
+        }
+        if (inviteCode.expires_at && inviteCode.expires_at < new Date()) {
+          throw new ServiceBadRequestException('This invite code has expired');
+        }
+      }
+
+      // create a user (guide signup uses transaction to atomically consume invite code)
+      if (isGuideSignup) {
+        await this.prisma.$transaction(async (tx) => {
+          // Re-validate inside transaction to prevent race conditions
+          const code = await tx.inviteCode.findUnique({
+            where: { code: payload.inviteCode!.trim() },
+          });
+          if (!code || code.used_by !== null) {
+            throw new ServiceBadRequestException(
+              'Invite code is invalid or has already been used',
+            );
+          }
+          if (code.expires_at && code.expires_at < new Date()) {
+            throw new ServiceBadRequestException(
+              'This invite code has expired',
+            );
+          }
+
+          const user = await tx.explorer.create({
+            data: {
+              email,
+              username,
+              role: UserRole.CREATOR,
+              is_guide: true,
+              password,
+              profile: {
+                create: { picture: '' },
+              },
+            },
+            select: { id: true, email: true },
+          });
+
+          await tx.inviteCode.update({
+            where: { code: payload.inviteCode!.trim(), used_by: null },
+            data: {
+              used_by: user.id,
+              used_at: new Date(),
+            },
+          });
+        });
+      } else {
+        await this.prisma.explorer.create({
+          data: {
+            email,
+            username,
+            role: UserRole.USER,
+            password,
+            profile: {
+              create: { picture: '' },
+            },
           },
-        },
-        select: {
-          id: true,
-          email: true,
-        },
-      });
+          select: {
+            id: true,
+            email: true,
+          },
+        });
+      }
 
       // trigger the sign up event
       this.eventService.trigger<IEventSignupComplete>({
@@ -1223,5 +1291,30 @@ export class AuthService {
       if (e.status) throw e;
       throw new ServiceInternalException();
     }
+  }
+
+  async registerPushToken(
+    userId: number,
+    token: string,
+    platform: string,
+  ): Promise<void> {
+    await this.prisma.deviceToken.upsert({
+      where: {
+        explorer_id_token: { explorer_id: userId, token },
+      },
+      update: { platform, active: true, updated_at: new Date() },
+      create: {
+        explorer_id: userId,
+        token,
+        platform,
+      },
+    });
+  }
+
+  async removePushToken(userId: number, token: string): Promise<void> {
+    await this.prisma.deviceToken.updateMany({
+      where: { explorer_id: userId, token },
+      data: { active: false },
+    });
   }
 }

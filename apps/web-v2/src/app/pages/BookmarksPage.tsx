@@ -21,6 +21,7 @@ interface BookmarkedExpedition {
   endDate?: string;
   coverPhoto?: string;
   region?: string;
+  locationName?: string;
   goal?: number;
   raised?: number;
   sponsorsCount?: number;
@@ -43,6 +44,7 @@ interface BookmarkedExplorer {
   locationFrom?: string;
   locationLives?: string;
   isPremium?: boolean;
+  isGuide?: boolean;
   entriesCount?: number;
   expeditionsCount?: number;
   followersCount?: number;
@@ -294,6 +296,7 @@ export function BookmarksPage() {
                 imageUrl={expedition.coverPhoto || ''}
                 location=""
                 region={expedition.region || ''}
+                locationName={expedition.locationName || ''}
                 startDate={expedition.startDate}
                 status={(expedition.status as 'active' | 'completed' | 'planned' | 'paused') || 'active'}
                 daysElapsed={calculateDaysElapsed(expedition.startDate, expedition.endDate, expedition.status)}
@@ -324,7 +327,7 @@ export function BookmarksPage() {
                 journalName={explorer.name || explorer.username}
                 avatarUrl={explorer.picture || ''}
                 location={explorer.locationLives || explorer.locationFrom || ''}
-                accountType={explorer.isPremium ? 'explorer-pro' : 'explorer'}
+                accountType={explorer.isGuide ? 'expedition-guide' : explorer.isPremium ? 'explorer-pro' : 'explorer'}
                 activeExpeditions={explorer.expeditionsCount || 0}
                 totalEntries={explorer.entriesCount || 0}
                 onClick={() => router.push(`/journal/${explorer.username}`)}

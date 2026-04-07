@@ -104,8 +104,27 @@ export class SponsorService {
       const sponsorshipType =
         payload.sponsorshipType === SponsorshipType.SUBSCRIPTION
           ? SponsorshipType.SUBSCRIPTION
-          : SponsorshipType.ONE_TIME_PAYMENT;
+          : payload.sponsorshipType === SponsorshipType.TIP
+            ? SponsorshipType.TIP
+            : SponsorshipType.ONE_TIME_PAYMENT;
       const currency = CurrencyCode.USD;
+
+      // Server-side amount validation for tips
+      if (sponsorshipType === SponsorshipType.TIP) {
+        const MIN_TIP_AMOUNT = 2; // $2 minimum
+        const MAX_TIP_AMOUNT = 500; // $500 maximum
+
+        if (!oneTimePaymentAmount || oneTimePaymentAmount < MIN_TIP_AMOUNT) {
+          throw new ServiceBadRequestException(
+            `Tip must be at least $${MIN_TIP_AMOUNT}`,
+          );
+        }
+        if (oneTimePaymentAmount > MAX_TIP_AMOUNT) {
+          throw new ServiceBadRequestException(
+            `Tip cannot exceed $${MAX_TIP_AMOUNT}`,
+          );
+        }
+      }
 
       // Server-side amount validation for one-time payments
       if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
@@ -127,9 +146,10 @@ export class SponsorService {
         }
       }
 
-      // get a sponsorship tier
-      const sponsorshipTier =
-        await this.prisma.sponsorshipTier.findFirstOrThrow({
+      // get a sponsorship tier (not required for tips)
+      let sponsorshipTier: { id: number } | null = null;
+      if (sponsorshipType !== SponsorshipType.TIP) {
+        sponsorshipTier = await this.prisma.sponsorshipTier.findFirstOrThrow({
           where: {
             public_id: sponsorshipTierId,
           },
@@ -137,6 +157,7 @@ export class SponsorService {
             id: true,
           },
         });
+      }
 
       // get a user
       const user = await this.prisma.explorer.findFirstOrThrow({
@@ -157,13 +178,21 @@ export class SponsorService {
           stripe_customer_id: true,
           username: true,
           role: true,
+          is_guide: true,
         },
       });
 
-      // Verify creator has Explorer Pro status (required to receive sponsorships)
-      if (creator.role !== UserRole.CREATOR) {
+      // Verify creator has Explorer Pro status or is a guide (required to receive payments)
+      if (creator.role !== UserRole.CREATOR && !creator.is_guide) {
         throw new ServiceBadRequestException(
           'This explorer is not eligible to receive sponsorships',
+        );
+      }
+
+      // Tips can only be sent to guide accounts
+      if (sponsorshipType === SponsorshipType.TIP && !creator.is_guide) {
+        throw new ServiceBadRequestException(
+          'Tips can only be sent to expedition guides',
         );
       }
 
@@ -267,9 +296,12 @@ export class SponsorService {
         );
       }
 
-      // One-time payments: create checkout in DB first, then call Stripe outside
+      // One-time payments and tips: create checkout in DB first, then call Stripe outside
       // the transaction to avoid holding a DB transaction open during external API calls
-      if (sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT) {
+      if (
+        sponsorshipType === SponsorshipType.ONE_TIME_PAYMENT ||
+        sponsorshipType === SponsorshipType.TIP
+      ) {
         const applicationFeeAmount = decimalToInteger(
           calculateFee({
             amount: oneTimePaymentAmount,
@@ -286,7 +318,7 @@ export class SponsorService {
             status: CheckoutStatus.PENDING,
             transaction_type: PaymentTransactionType.SPONSORSHIP,
             sponsorship_type: sponsorshipType,
-            sponsorship_tier_id: sponsorshipTier.id,
+            sponsorship_tier_id: sponsorshipTier?.id ?? null,
             message,
             total: amount,
             explorer_id: user.id,
@@ -484,7 +516,7 @@ export class SponsorService {
               status: CheckoutStatus.PENDING,
               transaction_type: PaymentTransactionType.SPONSORSHIP,
               sponsorship_type: sponsorshipType,
-              sponsorship_tier_id: sponsorshipTier.id,
+              sponsorship_tier_id: sponsorshipTier?.id ?? null,
               message,
               total: amount,
               explorer_id: user.id,

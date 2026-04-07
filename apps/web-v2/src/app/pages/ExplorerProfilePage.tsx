@@ -292,7 +292,7 @@ export function ExplorerProfilePage() {
     id: username || '1',
     name: profile.username,
     fullName: profile.username, // API doesn't have display name
-    accountType: (profile.creator ? 'explorer-pro' : 'explorer') as 'explorer-pro' | 'explorer',
+    accountType: (profile.isGuide ? 'expedition-guide' : profile.creator ? 'explorer-pro' : 'explorer') as 'expedition-guide' | 'explorer-pro' | 'explorer',
     journalName: profile.name || profile.username,
     tagline: '', // Not in API
     bio: profile.bio || '',
@@ -379,7 +379,7 @@ export function ExplorerProfilePage() {
     recentFollowers: followers.slice(0, 4).map(f => ({
       id: f.username,
       name: f.username,
-      accountType: (f.creator ? 'explorer-pro' : 'explorer') as 'explorer-pro' | 'explorer',
+      accountType: (f.isGuide ? 'expedition-guide' : f.creator ? 'explorer-pro' : 'explorer') as 'expedition-guide' | 'explorer-pro' | 'explorer',
       avatarUrl: f.picture || '',
       mutualFollow: f.followed || false,
       followedSince: '',
@@ -424,6 +424,16 @@ export function ExplorerProfilePage() {
         waypointsCount: e.waypointsCount || 0,
         totalDistanceKm: e.totalDistanceKm || 0,
         region: e.region || '',
+        locationName: e.locationName || '',
+        isBlueprint: e.isBlueprint,
+        mode: e.mode,
+        adoptionsCount: e.adoptionsCount ?? 0,
+        averageRating: e.averageRating,
+        ratingsCount: e.ratingsCount ?? 0,
+        elevationMinM: e.elevationMinM,
+        elevationMaxM: e.elevationMaxM,
+        estimatedDurationH: e.estimatedDurationH,
+        waypoints: e.waypoints,
       })),
 
     completedExpeditions: expeditions
@@ -515,8 +525,8 @@ export function ExplorerProfilePage() {
             <div className="absolute inset-0 bg-gradient-to-b from-[#202020]/70 via-[#202020]/60 to-[#202020]/90" />
           )}
           
-          {/* Explorer Status Banner - Top Border */}
-          {(() => {
+          {/* Explorer Status Banner - Top Border (hidden for guides) */}
+          {explorer.accountType !== 'expedition-guide' && (() => {
             // Use all expeditions (not just active) so PLANNING status can be detected
             const status = getExplorerStatus(explorer.recentExpeditions, profile?.activeExpeditionOffGrid);
             const currentExpedition = getCurrentExpeditionInfo(explorer.recentExpeditions);
@@ -578,11 +588,11 @@ export function ExplorerProfilePage() {
             <div className="flex items-start gap-3 md:gap-6 w-full">
               {/* Large Avatar */}
               <div className="flex-shrink-0 mt-2 flex flex-col items-center">
-                <div className={`w-20 h-20 md:w-40 md:h-40 border-2 md:border-4 ${explorer.accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020]`}>
+                <div className={`w-20 h-20 md:w-40 md:h-40 border-2 md:border-4 ${explorer.accountType === 'expedition-guide' ? 'border-[#598636]' : explorer.accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#202020]`}>
                   <ExplorerAvatar username={explorer.name} src={explorer.avatarUrl} size={160} className="w-full h-full" />
                 </div>
-                <span className="mt-1.5 md:mt-2 px-2 py-0.5 md:px-3 md:py-1 bg-[#ac6d46] text-white text-[10px] md:text-xs font-bold rounded-full whitespace-nowrap">
-                  {explorer.accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
+                <span className={`mt-1.5 md:mt-2 px-2 py-0.5 md:px-3 md:py-1 ${explorer.accountType === 'expedition-guide' ? 'bg-[#598636]' : 'bg-[#ac6d46]'} text-white text-[10px] md:text-xs font-bold rounded-full whitespace-nowrap`}>
+                  {explorer.accountType === 'expedition-guide' ? 'EXPEDITION GUIDE' : explorer.accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
                 </span>
               </div>
 
@@ -745,35 +755,54 @@ export function ExplorerProfilePage() {
         </div>
 
         {/* Stats Bar */}
-        <div className={`grid ${profile.creator ? 'grid-cols-3 md:grid-cols-6' : 'grid-cols-3 md:grid-cols-5'} border-t-2 border-b-2 border-[#202020] dark:border-[#616161]`}>
-          <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-            <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">{explorer.stats.totalExpeditions}</div>
-            <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Expeditions</div>
-          </div>
-          <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-            <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.totalEntries}</div>
-            <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Entries</div>
-          </div>
-          {/* Sponsors stat - only show for Explorer Pro accounts */}
-          {profile.creator && (
-            <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-              <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">{explorer.stats.totalSponsors}</div>
-              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Sponsors</div>
+        {profile.isGuide ? (
+          <div className="grid grid-cols-3 border-t-2 border-b-2 border-[#202020] dark:border-[#616161]">
+            <div className="p-2 md:p-4 border-r border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
+              <div className="text-lg md:text-2xl font-medium text-[#598636]">{explorer.stats.totalExpeditions}</div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Blueprints</div>
             </div>
-          )}
-          <div className="p-2 md:p-4 border-r border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-            <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.followers}</div>
-            <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Followers</div>
+            <div className="p-2 md:p-4 border-r border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
+              <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">
+                {expeditions.reduce((sum, e) => sum + (e.adoptionsCount ?? 0), 0)}
+              </div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Adoptions</div>
+            </div>
+            <div className="p-2 md:p-4 flex flex-col items-center justify-center">
+              <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.followers}</div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Followers</div>
+            </div>
           </div>
-          <div className="p-2 md:p-4 border-r border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
-            <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.countriesVisited}</div>
-            <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Countries</div>
+        ) : (
+          <div className={`grid ${profile.creator ? 'grid-cols-3 md:grid-cols-6' : 'grid-cols-3 md:grid-cols-5'} border-t-2 border-b-2 border-[#202020] dark:border-[#616161]`}>
+            <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
+              <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">{explorer.stats.totalExpeditions}</div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Expeditions</div>
+            </div>
+            <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
+              <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.totalEntries}</div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Entries</div>
+            </div>
+            {/* Sponsors stat - only show for Explorer Pro accounts */}
+            {profile.creator && (
+              <div className="p-2 md:p-4 border-r border-b md:border-b-0 border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
+                <div className="text-lg md:text-2xl font-medium text-[#ac6d46]">{explorer.stats.totalSponsors}</div>
+                <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Sponsors</div>
+              </div>
+            )}
+            <div className="p-2 md:p-4 border-r border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
+              <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.followers}</div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Followers</div>
+            </div>
+            <div className="p-2 md:p-4 border-r border-[#b5bcc4] dark:border-[#3a3a3a] flex flex-col items-center justify-center">
+              <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{explorer.stats.countriesVisited}</div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Countries</div>
+            </div>
+            <div className="p-2 md:p-4 flex flex-col items-center justify-center">
+              <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{passportData.continents.length}</div>
+              <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Continents</div>
+            </div>
           </div>
-          <div className="p-2 md:p-4 flex flex-col items-center justify-center">
-            <div className="text-lg md:text-2xl font-medium dark:text-[#e5e5e5]">{passportData.continents.length}</div>
-            <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Continents</div>
-          </div>
-        </div>
+        )}
 
         {/* Action Bar */}
         <div className="p-3 md:p-4 flex gap-1.5 md:gap-3 flex-nowrap overflow-x-auto items-center">
@@ -781,10 +810,10 @@ export function ExplorerProfilePage() {
           {isOwnProfile && (
             <>
               <Link
-                href="/select-expedition"
-                className="px-2 py-1.5 md:px-3 md:py-2 bg-[#ac6d46] text-white hover:bg-[#8a5738] transition-all text-xs md:text-sm font-bold font-mono flex items-center min-h-[36px] md:min-h-[44px] whitespace-nowrap flex-shrink-0"
+                href={profile.isGuide ? '/expedition-builder' : '/select-expedition'}
+                className={`px-2 py-1.5 md:px-3 md:py-2 ${profile.isGuide ? 'bg-[#598636] hover:bg-[#476b2b]' : 'bg-[#ac6d46] hover:bg-[#8a5738]'} text-white transition-all text-xs md:text-sm font-bold font-mono flex items-center min-h-[36px] md:min-h-[44px] whitespace-nowrap flex-shrink-0`}
               >
-                LOG JOURNAL ENTRY
+                {profile.isGuide ? 'BUILD BLUEPRINT' : 'LOG JOURNAL ENTRY'}
               </Link>
               <Link
                 href="/edit-profile"
@@ -868,7 +897,8 @@ export function ExplorerProfilePage() {
         )}
       </div>
 
-      {/* Map of All Expeditions */}
+      {/* Map of All Expeditions — hidden for guide profiles */}
+      {!profile.isGuide && (
       <div className="mb-4 md:mb-6">
         {entriesForMap.length === 0 && expeditionsForMap.length === 0 ? (
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
@@ -922,15 +952,16 @@ export function ExplorerProfilePage() {
           />
         )}
       </div>
+      )}
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {/* Left Column - Main Content */}
         <div className="lg:col-span-2 space-y-4 md:space-y-6">
-          {/* Recent Expeditions */}
+          {/* Recent Expeditions / Blueprints */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4 md:p-6">
             <h3 className="text-xs md:text-sm font-bold mb-3 md:mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-              RECENT EXPEDITIONS
+              {profile.isGuide ? 'EXPEDITION BLUEPRINTS' : 'RECENT EXPEDITIONS'}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               {explorer.recentExpeditions.length > 0 ? (
@@ -944,6 +975,7 @@ export function ExplorerProfilePage() {
                     imageUrl={expedition.coverImage || ''}
                     location={expedition.currentLocation || ''}
                     region={expedition.region}
+                    locationName={expedition.locationName}
                     coordinates=""
                     startDate={expedition.startDate}
                     endDate={expedition.endDate || null}
@@ -965,11 +997,23 @@ export function ExplorerProfilePage() {
                     stripeConnected={profile.stripeAccountConnected}
                     isBookmarked={bookmarkedExpeditions.has(expedition.id)}
                     onBookmark={() => handleBookmarkExpedition(expedition.id)}
+                    isBlueprint={expedition.isBlueprint}
+                    mode={expedition.mode}
+                    adoptionsCount={expedition.adoptionsCount ?? 0}
+                    averageRating={expedition.averageRating}
+                    ratingsCount={expedition.ratingsCount ?? 0}
+                    elevationMinM={expedition.elevationMinM}
+                    elevationMaxM={expedition.elevationMaxM}
+                    estimatedDurationH={expedition.estimatedDurationH}
+                    waypointsCount={expedition.waypointsCount ?? 0}
+                    waypointCoords={(expedition.waypoints || [])
+                      .filter((w: any) => w.lat != null && w.lon != null)
+                      .map((w: any) => ({ lat: w.lat, lng: w.lon }))}
                   />
                 ))
               ) : (
                 <div className="col-span-2 text-center py-8 text-[#616161] dark:text-[#b5bcc4]">
-                  No expeditions yet
+                  {profile.isGuide ? 'No blueprints published yet' : 'No expeditions yet'}
                 </div>
               )}
             </div>
@@ -978,12 +1022,13 @@ export function ExplorerProfilePage() {
                 onClick={() => setExpeditionsLimit(prev => prev + 5)}
                 className="w-full mt-4 py-2 border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#0a0a0a] hover:text-white dark:hover:bg-[#4a4a4a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161] text-sm"
               >
-                LOAD MORE EXPEDITIONS
+                {profile.isGuide ? 'LOAD MORE BLUEPRINTS' : 'LOAD MORE EXPEDITIONS'}
               </button>
             )}
           </div>
 
-          {/* Recent Journal Entries */}
+          {/* Recent Journal Entries — hidden for guide profiles */}
+          {!profile.isGuide && (
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4 md:p-6">
             <h3 className="text-xs md:text-sm font-bold mb-3 md:mb-4 border-b-2 border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
               RECENT JOURNAL ENTRIES
@@ -1026,6 +1071,7 @@ export function ExplorerProfilePage() {
               </button>
             )}
           </div>
+          )}
         </div>
 
         {/* Right Column - Sidebar */}
@@ -1131,7 +1177,8 @@ export function ExplorerProfilePage() {
             </div>
           )}
 
-          {/* Passport / Collection Stats */}
+          {/* Passport / Collection Stats — hidden for guide profiles */}
+          {!profile.isGuide && (
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
             <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
               PASSPORT
@@ -1184,11 +1231,12 @@ export function ExplorerProfilePage() {
               )}
             </div>
           </div>
+          )}
 
-          {/* Explorer Network */}
+          {/* Explorer / Guide Network */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
             <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-              EXPLORER NETWORK
+              {profile.isGuide ? 'GUIDE NETWORK' : 'EXPLORER NETWORK'}
             </h3>
             
             {/* Recent Followers */}
@@ -1203,7 +1251,7 @@ export function ExplorerProfilePage() {
                     onClick={() => router.push(`/journal/${follower.id}`)}
                     className="w-full flex items-center gap-2 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a] border border-[#b5bcc4] dark:border-[#3a3a3a] hover:border-[#4676ac] dark:hover:border-[#4676ac] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] group"
                   >
-                    <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border ${follower.accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'}`}>
+                    <div className={`w-8 h-8 flex-shrink-0 overflow-hidden border ${follower.accountType === 'expedition-guide' ? 'border-[#598636]' : follower.accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#b5bcc4] dark:border-[#616161]'}`}>
                       <Image
                         src={follower.avatarUrl}
                         alt={follower.name}
@@ -1251,57 +1299,91 @@ export function ExplorerProfilePage() {
 
           {/* Detailed Statistics */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">DETAILED STATISTICS</h3>
+            <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
+              {profile.isGuide ? 'GUIDE STATISTICS' : 'DETAILED STATISTICS'}
+            </h3>
             <div className="space-y-3 text-xs">
               <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Total Expeditions</span>
+                <span className="text-[#616161] dark:text-[#b5bcc4]">{profile.isGuide ? 'Total Blueprints' : 'Total Expeditions'}</span>
                 <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalExpeditions}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Completed</span>
-                <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.completedExpeditions}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Photos Uploaded</span>
-                <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalPhotos.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Videos Uploaded</span>
-                <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalVideo}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#616161] dark:text-[#b5bcc4]">Total Views</span>
-                <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalViews.toLocaleString()}</span>
-              </div>
-              {/* Sponsorship stats - only show for Explorer Pro accounts */}
-              {profile.creator && (
-                <div className="flex justify-between border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
-                  <span className="text-[#616161] dark:text-[#b5bcc4]">All-Time Sponsors</span>
-                  <span className="font-bold text-[#ac6d46]">{explorer.stats.totalSponsors}</span>
-                </div>
+              {profile.isGuide ? (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">Published</span>
+                    <span className="font-bold dark:text-[#e5e5e5]">
+                      {expeditions.filter(e => e.status === 'published').length}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">Total Adoptions</span>
+                    <span className="font-bold text-[#ac6d46]">
+                      {expeditions.reduce((sum, e) => sum + (e.adoptionsCount ?? 0), 0)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">Avg. Rating</span>
+                    <span className="font-bold dark:text-[#e5e5e5]">
+                      {(() => {
+                        const rated = expeditions.filter(e => e.averageRating != null && e.ratingsCount && e.ratingsCount > 0);
+                        if (rated.length === 0) return '—';
+                        const avg = rated.reduce((sum, e) => sum + (e.averageRating ?? 0), 0) / rated.length;
+                        return avg.toFixed(1);
+                      })()}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">Completed</span>
+                    <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.completedExpeditions}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">Photos Uploaded</span>
+                    <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalPhotos.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">Videos Uploaded</span>
+                    <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalVideo}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#616161] dark:text-[#b5bcc4]">Total Views</span>
+                    <span className="font-bold dark:text-[#e5e5e5]">{explorer.stats.totalViews.toLocaleString()}</span>
+                  </div>
+                  {/* Sponsorship stats - only show for Explorer Pro accounts */}
+                  {profile.creator && (
+                    <div className="flex justify-between border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-2">
+                      <span className="text-[#616161] dark:text-[#b5bcc4]">All-Time Sponsors</span>
+                      <span className="font-bold text-[#ac6d46]">{explorer.stats.totalSponsors}</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
 
-          {/* Completed Expeditions */}
-          <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
-            <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
-              COMPLETED EXPEDITIONS ({explorer.completedExpeditions.length})
-            </h3>
-            <div className="space-y-2">
-              {explorer.completedExpeditions.map((expedition) => (
-                <div key={expedition.id} className="text-xs border border-[#b5bcc4] dark:border-[#3a3a3a] p-2">
-                  <div className="font-serif font-bold mb-1 dark:text-[#e5e5e5]">{expedition.title}</div>
-                  <div className="text-[#616161] dark:text-[#b5bcc4] font-mono space-y-1">
-                    <div>Completed: {expedition.completedDate}</div>
-                    <div>Duration: {expedition.duration} days</div>
-                    <div>Entries: {expedition.entries}</div>
-                    <div className="text-[#ac6d46]">Raised: ${expedition.totalRaised.toLocaleString()}</div>
+          {/* Completed Expeditions - hide for guides */}
+          {!profile.isGuide && (
+            <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
+              <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
+                COMPLETED EXPEDITIONS ({explorer.completedExpeditions.length})
+              </h3>
+              <div className="space-y-2">
+                {explorer.completedExpeditions.map((expedition) => (
+                  <div key={expedition.id} className="text-xs border border-[#b5bcc4] dark:border-[#3a3a3a] p-2">
+                    <div className="font-serif font-bold mb-1 dark:text-[#e5e5e5]">{expedition.title}</div>
+                    <div className="text-[#616161] dark:text-[#b5bcc4] font-mono space-y-1">
+                      <div>Completed: {expedition.completedDate}</div>
+                      <div>Duration: {expedition.duration} days</div>
+                      <div>Entries: {expedition.entries}</div>
+                      <div className="text-[#ac6d46]">Raised: ${expedition.totalRaised.toLocaleString()}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* System Information */}
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
@@ -1309,8 +1391,8 @@ export function ExplorerProfilePage() {
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Account Type</span>
-                <span className="font-bold dark:text-[#e5e5e5]">
-                  {explorer.accountType === 'explorer-pro' ? 'Explorer Pro' : 'Explorer'}
+                <span className={`font-bold ${explorer.accountType === 'expedition-guide' ? 'text-[#598636]' : 'dark:text-[#e5e5e5]'}`}>
+                  {explorer.accountType === 'expedition-guide' ? 'Expedition Guide' : explorer.accountType === 'explorer-pro' ? 'Explorer Pro' : 'Explorer'}
                 </span>
               </div>
               <div className="flex justify-between">

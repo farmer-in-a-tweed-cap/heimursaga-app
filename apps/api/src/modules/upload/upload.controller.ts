@@ -6,12 +6,11 @@ import {
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
-
-import { Session } from '@/common/decorators';
 import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { MediaUploadContext } from '@repo/types';
 
+import { Session } from '@/common/decorators';
 import { FileInterceptor } from '@/common/interceptors';
 import { ISession } from '@/common/interfaces';
 
@@ -27,7 +26,11 @@ export class UploadController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 10, ttl: 60000 }, medium: { limit: 10, ttl: 60000 }, long: { limit: 10, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 10, ttl: 60000 },
+    medium: { limit: 10, ttl: 60000 },
+    long: { limit: 10, ttl: 60000 },
+  })
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
@@ -52,7 +55,11 @@ export class UploadController {
 
   @Post('audio')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 5, ttl: 60000 },
+    medium: { limit: 5, ttl: 60000 },
+    long: { limit: 5, ttl: 60000 },
+  })
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {

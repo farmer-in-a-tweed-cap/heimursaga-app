@@ -69,6 +69,15 @@ export class SignupDto implements ISignupPayload {
   @IsOptional()
   recaptchaToken?: string;
 
+  @ApiProperty({
+    required: false,
+    description: 'Invite code for Guide access',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(40)
+  inviteCode?: string;
+
   // @ApiProperty({ required: true })
   // @IsString()
   // @IsNotEmpty()

@@ -7,7 +7,7 @@ interface ExplorerCardLandscapeProps {
   journalName: string;
   avatarUrl: string;
   location: string;
-  accountType: "explorer" | "explorer-pro";
+  accountType: "explorer" | "explorer-pro" | "expedition-guide";
   activeExpeditions: number;
   totalEntries: number;
   onClick?: () => void;
@@ -33,16 +33,16 @@ export function ExplorerCardLandscape({
       {/* Full-width header banner */}
       <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] bg-[#b5bcc4] dark:bg-[#3a3a3a] px-3 py-1.5">
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 ${accountType === 'explorer-pro' ? 'bg-[#ac6d46]' : 'bg-[#4676ac]'}`} />
+          <div className={`h-2 w-2 ${accountType === 'expedition-guide' ? 'bg-[#598636]' : accountType === 'explorer-pro' ? 'bg-[#ac6d46]' : 'bg-[#4676ac]'}`} />
           <span className="text-xs font-mono font-semibold tracking-wide text-[#202020] dark:text-[#e5e5e5]">
-            {accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
+            {accountType === 'expedition-guide' ? 'EXPEDITION GUIDE' : accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
           </span>
         </div>
       </div>
 
       <div className="flex">
         {/* Avatar */}
-        <div className={`w-32 h-32 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] ${accountType === 'explorer-pro' ? 'border-l-4 border-l-[#ac6d46]' : ''} bg-[#b5bcc4] overflow-hidden`}>
+        <div className={`w-32 h-32 flex-shrink-0 border-r-2 border-[#202020] dark:border-[#616161] ${accountType === 'expedition-guide' ? 'border-l-4 border-l-[#598636]' : accountType === 'explorer-pro' ? 'border-l-4 border-l-[#ac6d46]' : ''} bg-[#b5bcc4] overflow-hidden`}>
           <ExplorerAvatar username={username} src={avatarUrl} size={128} className="w-full h-full" />
         </div>
 

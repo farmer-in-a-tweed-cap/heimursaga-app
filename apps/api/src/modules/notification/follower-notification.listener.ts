@@ -139,6 +139,7 @@ export class FollowerNotificationListener {
     expeditionPublicId: string;
     creatorId: number;
     expeditionTitle?: string;
+    isBlueprint?: boolean;
   }) {
     try {
       const followers = await this.prisma.explorerFollow.findMany({
@@ -155,6 +156,10 @@ export class FollowerNotificationListener {
         },
       });
 
+      const notificationContext = data.isBlueprint
+        ? UserNotificationContext.NEW_BLUEPRINT
+        : UserNotificationContext.NEW_EXPEDITION;
+
       for (const follow of followers) {
         const prefs =
           (follow.follower?.profile?.notification_preferences as Record<
@@ -166,7 +171,7 @@ export class FollowerNotificationListener {
         this.eventService.trigger<IUserNotificationCreatePayload>({
           event: EVENTS.NOTIFICATION_CREATE,
           data: {
-            context: UserNotificationContext.NEW_EXPEDITION,
+            context: notificationContext,
             userId: follow.follower_id,
             mentionUserId: data.creatorId,
             expeditionPublicId: data.expeditionPublicId,

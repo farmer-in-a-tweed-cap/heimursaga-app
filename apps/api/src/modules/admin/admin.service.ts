@@ -5,10 +5,13 @@ import {
   IAdminEntryListResponse,
   IAdminExpeditionListResponse,
   IAdminExplorerListResponse,
+  IAdminInviteCodeCreateResponse,
+  IAdminInviteCodeListResponse,
   IAdminStats,
 } from '@repo/types';
 
 import { dateformat } from '@/lib/date-format';
+import { generator } from '@/lib/generator';
 import { getStaticMediaUrl } from '@/lib/upload';
 
 import {
@@ -288,6 +291,7 @@ export class AdminService {
             role: true,
             admin: true,
             blocked: true,
+            is_guide: true,
             created_at: true,
             profile: { select: { picture: true } },
           },
@@ -304,6 +308,7 @@ export class AdminService {
           role: e.role,
           admin: e.admin,
           blocked: e.blocked,
+          isGuide: e.is_guide ?? false,
           createdAt: e.created_at,
           picture: e.profile?.picture
             ? getStaticMediaUrl(e.profile.picture)
@@ -463,5 +468,209 @@ export class AdminService {
       if (e instanceof ServiceException) throw e;
       throw new ServiceInternalException();
     }
+  }
+
+  async getInviteCodes(
+    session: ISession,
+    query: { limit?: number; offset?: number },
+  ): Promise<IAdminInviteCodeListResponse> {
+    try {
+      await this.assertAdmin(session);
+
+      const limit = Math.min(query.limit || DEFAULT_PER_PAGE, MAX_PER_PAGE);
+      const offset = query.offset || 0;
+
+      const [total, codes] = await Promise.all([
+        this.prisma.inviteCode.count(),
+        this.prisma.inviteCode.findMany({
+          select: {
+            id: true,
+            code: true,
+            label: true,
+            used_at: true,
+            expires_at: true,
+            created_at: true,
+            creator: { select: { username: true } },
+            redeemer: { select: { username: true } },
+          },
+          take: limit,
+          skip: offset,
+          orderBy: { created_at: 'desc' },
+        }),
+      ]);
+
+      const now = new Date();
+
+      return {
+        data: codes.map((c) => {
+          let status: 'available' | 'used' | 'expired' = 'available';
+          if (c.used_at) {
+            status = 'used';
+          } else if (c.expires_at && c.expires_at < now) {
+            status = 'expired';
+          }
+
+          return {
+            id: c.id,
+            code: c.code,
+            label: c.label ?? undefined,
+            createdBy: c.creator.username,
+            usedBy: c.redeemer?.username,
+            usedAt: c.used_at?.toISOString(),
+            expiresAt: c.expires_at?.toISOString(),
+            createdAt: c.created_at.toISOString(),
+            status,
+          };
+        }),
+        total,
+      };
+    } catch (e) {
+      this.logger.error(e);
+      if (e instanceof ServiceException) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async createInviteCodes(
+    session: ISession,
+    payload: { label?: string; expiresAt?: string; count?: number },
+  ): Promise<IAdminInviteCodeCreateResponse> {
+    try {
+      await this.assertAdmin(session);
+
+      const count = Math.min(payload.count || 1, 50);
+      const expiresAt = payload.expiresAt
+        ? new Date(payload.expiresAt)
+        : undefined;
+
+      const codes = Array.from({ length: count }, () =>
+        generator.publicId({ prefix: 'gc' }),
+      );
+
+      await this.prisma.inviteCode.createMany({
+        data: codes.map((code) => ({
+          code,
+          label: payload.label || null,
+          created_by: session.userId,
+          expires_at: expiresAt,
+        })),
+      });
+
+      this.logger.log(
+        `[AUDIT] Admin ${session.userId} created ${count} invite code(s)`,
+      );
+
+      return { codes };
+    } catch (e) {
+      this.logger.error(e);
+      if (e instanceof ServiceException) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async revokeInviteCode(session: ISession, id: number): Promise<void> {
+    try {
+      await this.assertAdmin(session);
+
+      const code = await this.prisma.inviteCode.findUnique({
+        where: { id },
+        select: { id: true, code: true, used_by: true },
+      });
+
+      if (!code) {
+        throw new ServiceNotFoundException('Invite code not found');
+      }
+
+      if (code.used_by !== null) {
+        throw new ServiceBadRequestException(
+          'Cannot revoke a code that has already been used',
+        );
+      }
+
+      await this.prisma.inviteCode.delete({ where: { id } });
+
+      this.logger.log(
+        `[AUDIT] Admin ${session.userId} revoked invite code ${code.code}`,
+      );
+    } catch (e) {
+      this.logger.error(e);
+      if (e instanceof ServiceException) throw e;
+      throw new ServiceInternalException();
+    }
+  }
+
+  async backfillExpeditionLocations(
+    session: ISession,
+  ): Promise<{ updated: number; failed: number; skipped: number }> {
+    await this.assertAdmin(session);
+
+    const { reverseGeocodeLocation } = await import('@/lib/geocoding');
+
+    // Find all expeditions without location data that have at least one waypoint
+    const expeditions = await this.prisma.expedition.findMany({
+      where: {
+        location_name: null,
+        deleted_at: null,
+        waypoints: { some: {} },
+      },
+      select: {
+        id: true,
+        public_id: true,
+        waypoints: {
+          select: {
+            waypoint: {
+              select: { lat: true, lon: true },
+            },
+          },
+          orderBy: { sequence: 'asc' },
+          take: 1,
+        },
+      },
+    });
+
+    let updated = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    for (const exp of expeditions) {
+      const firstWp = exp.waypoints[0]?.waypoint;
+      if (!firstWp?.lat || !firstWp?.lon) {
+        skipped++;
+        continue;
+      }
+
+      try {
+        const geo = await reverseGeocodeLocation(firstWp.lat, firstWp.lon);
+        if (!geo) {
+          skipped++;
+          continue;
+        }
+
+        await this.prisma.expedition.update({
+          where: { id: exp.id },
+          data: {
+            location_name: geo.locationName,
+            country_code: geo.countryCode,
+            country_name: geo.countryName,
+            state_province: geo.stateProvince,
+          },
+        });
+        updated++;
+
+        // Rate limit: Mapbox free tier allows 600 req/min
+        await new Promise((r) => setTimeout(r, 150));
+      } catch (e) {
+        this.logger.error(
+          `Failed to geocode expedition ${exp.public_id}: ${e}`,
+        );
+        failed++;
+      }
+    }
+
+    this.logger.log(
+      `[AUDIT] Admin ${session.userId} backfilled locations: ${updated} updated, ${failed} failed, ${skipped} skipped`,
+    );
+
+    return { updated, failed, skipped };
   }
 }

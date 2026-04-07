@@ -17,6 +17,7 @@ import { Public, Session } from '@/common/decorators';
 import { ISession } from '@/common/interfaces';
 
 import {
+  BlueprintReviewCreateDto,
   ExpeditionCancelDto,
   ExpeditionCompleteDto,
   ExpeditionCreateDto,
@@ -80,6 +81,22 @@ export class ExpeditionController {
     return await this.expeditionService.syncExpeditionWaypoints({
       query: { id: param.trip_id },
       payload: body,
+      session,
+    });
+  }
+
+  @Public()
+  @Get('blueprints')
+  @HttpCode(HttpStatus.OK)
+  async getBlueprints(
+    @Session() session: ISession,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('mode') mode?: string,
+    @Query('region') region?: string,
+  ) {
+    return await this.expeditionService.getBlueprints({
+      query: { page, limit, mode, region },
       session,
     });
   }
@@ -226,6 +243,59 @@ export class ExpeditionController {
   ) {
     return await this.expeditionService.bookmark({
       query: { publicId: param.trip_id },
+      session,
+    });
+  }
+
+  @Post(':trip_id/adopt')
+  @HttpCode(HttpStatus.OK)
+  async adoptBlueprint(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+  ) {
+    return await this.expeditionService.adoptBlueprint({
+      query: { id: param.trip_id },
+      session,
+    });
+  }
+
+  @Public()
+  @Get(':trip_id/reviews')
+  @HttpCode(HttpStatus.OK)
+  async getBlueprintReviews(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return await this.expeditionService.getBlueprintReviews({
+      query: { id: param.trip_id, page, limit },
+      session,
+    });
+  }
+
+  @Post(':trip_id/reviews')
+  @HttpCode(HttpStatus.OK)
+  async createBlueprintReview(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+    @Body() body: BlueprintReviewCreateDto,
+  ) {
+    return await this.expeditionService.createBlueprintReview({
+      query: { id: param.trip_id },
+      payload: body,
+      session,
+    });
+  }
+
+  @Delete(':trip_id/reviews')
+  @HttpCode(HttpStatus.OK)
+  async deleteBlueprintReview(
+    @Session() session: ISession,
+    @Param() param: ExpeditionParamDto,
+  ) {
+    return await this.expeditionService.deleteBlueprintReview({
+      query: { id: param.trip_id },
       session,
     });
   }

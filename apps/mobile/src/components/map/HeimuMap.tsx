@@ -71,11 +71,15 @@ export interface HeimuMapProps {
   onWaypointPress?: (index: number) => void;
   /** Called with the current zoom level when the camera changes */
   onZoomChange?: (zoom: number) => void;
+  /** Index of the selected waypoint to highlight */
+  selectedIndex?: number;
 }
 
 export interface HeimuMapRef {
   flyTo: (coords: [number, number], zoom?: number) => void;
   fitBounds: (coords: [number, number][], padding?: number) => void;
+  getVisibleBounds: () => Promise<{ ne: [number, number]; sw: [number, number] } | null>;
+  getZoom: () => Promise<number | null>;
 }
 
 // ─── Zoom-sensitive marker clustering ────────────────────────────────────────
@@ -250,11 +254,13 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
   onMapPress,
   onWaypointPress,
   onZoomChange,
+  selectedIndex,
 }, ref) {
   const { mode } = useTheme();
   const [useFallbackStyle, setUseFallbackStyle] = useState(false);
   const [tokenReady, setTokenReady] = useState(_tokenReady);
   const cameraRef = useRef<MapboxGL.Camera>(null);
+  const mapViewRef = useRef<MapboxGL.MapView>(null);
   useImperativeHandle(ref, () => ({
     flyTo: (coords: [number, number], zoomLevel?: number) => {
       cameraRef.current?.setCamera({
@@ -283,6 +289,22 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
         },
         animationDuration: 1000,
       });
+    },
+    getVisibleBounds: async () => {
+      try {
+        const bounds = await mapViewRef.current?.getVisibleBounds();
+        if (!bounds) return null;
+        return { ne: bounds[0] as [number, number], sw: bounds[1] as [number, number] };
+      } catch {
+        return null;
+      }
+    },
+    getZoom: async () => {
+      try {
+        return await mapViewRef.current?.getZoom() ?? null;
+      } catch {
+        return null;
+      }
     },
   }));
 
@@ -371,6 +393,20 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
     };
   }, [waypoints]);
 
+  // ── Selected marker highlight GeoJSON ───────────────────────────────────────
+  const highlightGeoJSON = useMemo<GeoJSON.FeatureCollection>(() => {
+    if (selectedIndex == null || !waypoints?.[selectedIndex]) return EMPTY_POINTS;
+    const wp = waypoints[selectedIndex];
+    return {
+      type: 'FeatureCollection',
+      features: [{
+        type: 'Feature' as const,
+        geometry: { type: 'Point' as const, coordinates: wp.coordinates },
+        properties: { radius: MARKER_RADIUS[wp.type] + 6 },
+      }],
+    };
+  }, [selectedIndex, waypoints]);
+
   // ── Waypoint press handler ─────────────────────────────────────────────────
   const handleWaypointPress = useCallback(
     (event: any) => {
@@ -383,7 +419,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
     [onWaypointPress],
   );
 
-  // ── Zoom change handler (skip initial camera settling) ─────────────────────
+  // ── Zoom/bounds change handler ──────────────────────────────────────────────
   const mountTimeRef = useRef(Date.now());
   const handleCameraChanged = useCallback(
     (event: any) => {
@@ -414,6 +450,7 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
   return (
     <View style={[styles.container, style]}>
       <MapboxGL.MapView
+        ref={mapViewRef}
         style={styles.map}
         styleURL={styleURL}
         scrollEnabled={interactive}
@@ -450,6 +487,21 @@ const HeimuMap = forwardRef<HeimuMapRef, HeimuMapProps>(function HeimuMap({
               lineWidth: 3,
               lineCap: 'round',
               lineJoin: 'round',
+            }}
+          />
+        </MapboxGL.ShapeSource>
+
+        {/* ── Selected marker highlight ring ──────── */}
+        <MapboxGL.ShapeSource id="heimu-highlight-source" shape={highlightGeoJSON}>
+          <MapboxGL.CircleLayer
+            id="heimu-highlight-ring"
+            style={{
+              circleRadius: ['get', 'radius'],
+              circleColor: brandColors.copper,
+              circleOpacity: 0.25,
+              circleStrokeWidth: 2,
+              circleStrokeColor: '#ffffff',
+              circleStrokeOpacity: 0.8,
             }}
           />
         </MapboxGL.ShapeSource>

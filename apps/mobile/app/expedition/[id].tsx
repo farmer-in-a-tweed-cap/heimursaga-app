@@ -17,7 +17,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTheme } from '@/theme/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useApi } from '@/hooks/useApi';
-import { api, ApiError, bookmarksApi } from '@/services/api';
+import { api, ApiError, bookmarksApi, explorerApi } from '@/services/api';
 import { MAPBOX_TOKEN } from '@/services/mapConfig';
 import { colors as brandColors, mono, heading, borders } from '@/theme/tokens';
 import { fmtAmount } from '@/utils/formatAmount';
@@ -108,6 +108,7 @@ interface ExpeditionDetail {
   sponsors?: ExpeditionSponsor[];
   waypoints?: ExpeditionWaypoint[];
   bookmarked?: boolean;
+  followingAuthor?: boolean;
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
@@ -125,6 +126,8 @@ export default function ExpeditionDetailScreen() {
   const [activeTab, setActiveTab] = useState(0);
   const [bookmarked, setBookmarked] = useState(false);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [followed, setFollowed] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
   const [mapExpanded, setMapExpanded] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<ApiEntry | null>(null);
 
@@ -173,7 +176,8 @@ export default function ExpeditionDetailScreen() {
 
   useEffect(() => {
     if (expedition?.bookmarked != null) setBookmarked(expedition.bookmarked);
-  }, [expedition?.bookmarked]);
+    if (expedition?.followingAuthor != null) setFollowed(expedition.followingAuthor);
+  }, [expedition?.bookmarked, expedition?.followingAuthor]);
 
   const handleShare = () => {
     Share.share({ url: `https://heimursaga.com/expedition/${id}` });
@@ -193,6 +197,30 @@ export default function ExpeditionDetailScreen() {
       setBookmarked(prev => !prev);
     } finally {
       setBookmarkLoading(false);
+    }
+  };
+
+  const handleFollow = async () => {
+    if (!isAuthenticated) {
+      router.push('/(auth)/login');
+      return;
+    }
+    const username = expedition?.author?.username;
+    if (followLoading || !username) return;
+    setFollowLoading(true);
+    const wasFollowed = followed;
+    setFollowed(!wasFollowed);
+    try {
+      if (wasFollowed) {
+        await explorerApi.unfollow(username);
+      } else {
+        await explorerApi.follow(username);
+      }
+    } catch (err: any) {
+      setFollowed(wasFollowed);
+      Alert.alert('Error', err.message ?? 'Failed to update follow');
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -623,7 +651,7 @@ export default function ExpeditionDetailScreen() {
                 )}
                 <TouchableOpacity
                   style={styles.popupBtn}
-                  onPress={() => { setSelectedEntry(null); router.push(`/entry/${selectedEntry.id}`); }}
+                  onPress={() => { setSelectedEntry(null); router.replace(`/entry/${selectedEntry.id}`); }}
                 >
                   <Text style={styles.popupBtnText}>VIEW ENTRY</Text>
                 </TouchableOpacity>
@@ -764,7 +792,7 @@ export default function ExpeditionDetailScreen() {
             {/* Explorer info */}
             {expedition.author && (
               <Pressable
-                onPress={() => router.push(`/explorer/${expedition.author!.username}`)}
+                onPress={() => router.replace(`/explorer/${expedition.author!.username}`)}
                 style={styles.explorerRow}
               >
                 <Avatar size={32} name={expedition.author.username} imageUrl={expedition.author.picture} pro={expedition.author.creator} />
@@ -773,7 +801,7 @@ export default function ExpeditionDetailScreen() {
                     {expedition.author.username}
                   </Text>
                   {expedition.description && (
-                    <Text style={styles.explorerBio} numberOfLines={2}>
+                    <Text style={styles.explorerBio}>
                       {expedition.description}
                     </Text>
                   )}
@@ -818,15 +846,42 @@ export default function ExpeditionDetailScreen() {
 
         {/* Action bar */}
         <View style={[styles.actionBar, { borderBottomColor: colors.border, backgroundColor: colors.card }]}>
-          <Pressable
-            style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}
-            onPress={() => isOwner
-              ? router.navigate({ pathname: '/(tabs)/create', params: { expeditionId: id } })
-              : router.push(`/sponsor/${id}`)
-            }
-          >
-            <Text style={[styles.actionText, { color: brandColors.copper }]}>{isOwner ? 'LOG ENTRY' : 'SPONSOR'}</Text>
-          </Pressable>
+          {isOwner ? (
+            <Pressable
+              style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}
+              onPress={() => router.navigate({ pathname: '/(tabs)/create', params: { expeditionId: id } })}
+            >
+              <Text style={[styles.actionText, { color: brandColors.copper }]}>LOG ENTRY</Text>
+            </Pressable>
+          ) : expedition.author?.stripeAccountConnected ? (
+            <>
+              <Pressable
+                style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin, opacity: followLoading ? 0.5 : 1 }]}
+                onPress={handleFollow}
+                disabled={followLoading}
+              >
+                <Text style={[styles.actionText, { color: followed ? brandColors.blue : brandColors.copper }]}>
+                  {followed ? 'FOLLOWING' : 'FOLLOW'}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin }]}
+                onPress={() => router.push(`/sponsor/${id}`)}
+              >
+                <Text style={[styles.actionText, { color: brandColors.copper }]}>SPONSOR</Text>
+              </Pressable>
+            </>
+          ) : (
+            <Pressable
+              style={[styles.actionBtn, { borderRightWidth: 1, borderRightColor: colors.borderThin, opacity: followLoading ? 0.5 : 1 }]}
+              onPress={handleFollow}
+              disabled={followLoading}
+            >
+              <Text style={[styles.actionText, { color: followed ? brandColors.blue : brandColors.copper }]}>
+                {followed ? 'FOLLOWING' : 'FOLLOW'}
+              </Text>
+            </Pressable>
+          )}
           {isOwner && !isCancelled && (
             <Pressable style={styles.iconBtn} onPress={() => router.push(`/expedition/edit/${id}`)}>
               <Svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke={colors.textTertiary} strokeWidth={2}>
@@ -908,12 +963,14 @@ export default function ExpeditionDetailScreen() {
                 <Text style={[styles.notesLockedDesc, { color: colors.textSecondary }]}>
                   Behind-the-scenes updates from {expedition.author?.name || expedition.author?.username || 'the explorer'} during this expedition.
                 </Text>
+                {expedition.author?.stripeAccountConnected && (
                 <TouchableOpacity
                   style={styles.notesLockedBtn}
                   onPress={() => router.push(`/sponsor/${id}`)}
                 >
                   <Text style={styles.notesLockedBtnText}>SPONSOR TO UNLOCK</Text>
                 </TouchableOpacity>
+                )}
               </View>
             ) : (
               /* Unlocked state */
@@ -1181,7 +1238,7 @@ export default function ExpeditionDetailScreen() {
                 <Pressable
                   key={sponsor.id}
                   style={[styles.sponsorCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-                  onPress={sponsor.user ? () => router.push(`/explorer/${sponsor.user!.username}`) : undefined}
+                  onPress={sponsor.user ? () => router.replace(`/explorer/${sponsor.user!.username}`) : undefined}
                 >
                   <Avatar
                     size={36}

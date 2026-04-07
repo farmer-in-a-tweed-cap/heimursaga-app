@@ -28,6 +28,7 @@ model Explorer {
   stripe_account_id           String?               @db.VarChar(40)
   admin                       Boolean               @default(false)
   blocked                     Boolean?              @default(false)
+  is_guide                    Boolean?              @default(false)
   resting_since               DateTime?
   sponsored_checkouts         Checkout[]            @relation("sponsored_checkouts")
   explorer_checkouts          Checkout[]            @relation("explorer_checkouts")
@@ -64,11 +65,32 @@ model Explorer {
   expedition_note_replies     ExpeditionNoteReply[] @relation("explorer_expedition_note_replies")
   voice_notes                 ExpeditionVoiceNote[] @relation("explorer_voice_notes")
   entry_views                 EntryView[]           @relation("explorer_views")
+  device_tokens               DeviceToken[]
+  invite_codes_created        InviteCode[]          @relation("invite_codes_created")
+  invite_codes_redeemed       InviteCode[]          @relation("invite_codes_redeemed")
+  blueprint_reviews           BlueprintReview[]
 
   @@index([stripe_customer_id])
   @@index([stripe_account_id])
   @@index([resting_since])
   @@map("users")
+}
+
+model InviteCode {
+  id         Int       @id @default(autoincrement())
+  code       String    @unique @db.VarChar(40)
+  label      String?   @db.VarChar(100)
+  created_by Int
+  used_by    Int?
+  used_at    DateTime?
+  expires_at DateTime?
+  created_at DateTime  @default(now())
+  creator    Explorer  @relation("invite_codes_created", fields: [created_by], references: [id])
+  redeemer   Explorer? @relation("invite_codes_redeemed", fields: [used_by], references: [id])
+
+  @@index([code])
+  @@index([created_by])
+  @@map("invite_codes")
 }
 
 model ExplorerSession {
@@ -364,8 +386,8 @@ model Waypoint {
 model Expedition {
   id             Int                  @id @default(autoincrement())
   public_id      String               @unique @db.VarChar(14)
-  title          String               @db.VarChar(200)
-  description    String?
+  title          String               @db.VarChar(100)
+  description    String?              @db.VarChar(500)
   public         Boolean?             @default(true)
   visibility     String?              @default("public") @db.VarChar(10) // 'public', 'off-grid', 'private'
   author_id      Int
@@ -380,12 +402,20 @@ model Expedition {
   cover_image    String?              @db.VarChar(250)
   category       String?              @db.VarChar(50) // hiking, cycling, sailing, etc.
   region         String?              @db.VarChar(100) // Geographic region, e.g. "Pacific Northwest", "Alps"
+  location_name  String?              @db.VarChar(200) // Human-readable location, e.g. "Yosemite Valley, California, USA"
+  country_code   String?              @db.VarChar(2)   // ISO 3166-1 alpha-2 country code
+  country_name   String?              @db.VarChar(100)  // Full country name
+  state_province String?              @db.VarChar(100)  // Admin level 1 (state/province/region)
   tags           String?              // JSON array of tags, e.g. ["wilderness", "solo", "winter"]
   is_round_trip  Boolean?             @default(false) // Route returns to starting point
   route_mode     String?              @db.VarChar(20) // straight, walking, cycling, driving, mixed
   route_geometry        String?              @db.Text        // JSON-encoded [[lng,lat],...] from Mapbox Directions API
   route_leg_modes       String?              @db.Text        // JSON-encoded per-leg route modes for mixed routes
   route_distance_km     Float?               // Total route distance in km (stored by expedition builder)
+  elevation_min_m       Float?               // Lowest elevation on route in meters
+  elevation_max_m       Float?               // Highest elevation on route in meters
+  elevation_gain_m      Float?               // Total cumulative ascent in meters
+  estimated_duration_h  Float?               // Estimated route duration in hours
   route_obstacles       String?              @db.Text        // JSON-encoded waterway obstacles [{lat,lon,type,name}]
   current_location_type       String?              @db.VarChar(10) // 'waypoint' or 'entry'
   current_location_id         String?              @db.VarChar(20) // waypoint ID or entry public_id
@@ -398,6 +428,13 @@ model Expedition {
   sponsors_count  Int?                 @default(0)
   entries_count   Int?                 @default(0)
   bookmarks_count Int?                 @default(0)
+  is_blueprint    Boolean?             @default(false)
+  blueprint_id    Int?
+  is_route_locked Boolean?             @default(false)
+  mode            String?              @db.VarChar(20) // hike, paddle, bike, sail, drive, mixed
+  adoptions_count Int?                 @default(0)
+  average_rating  Float?
+  ratings_count   Int?                 @default(0)
   waypoints       ExpeditionWaypoint[] @relation("expedition_waypoints")
   entries         Entry[]
   bookmarks       ExpeditionBookmark[] @relation("expedition_bookmarks")
@@ -405,12 +442,18 @@ model Expedition {
   voice_notes     ExpeditionVoiceNote[] @relation("expedition_voice_notes")
   author          Explorer             @relation(fields: [author_id], references: [id], onDelete: Cascade)
   flags           Flag[]               @relation("expedition_flags")
+  source_blueprint Expedition?         @relation("blueprint_adoptions", fields: [blueprint_id], references: [id], onDelete: SetNull)
+  adoptions       Expedition[]         @relation("blueprint_adoptions")
+  reviews         BlueprintReview[]    @relation("blueprint_reviews")
 
   @@index([public_id])
   @@index([author_id])
   @@index([status, deleted_at])
   @@index([public, deleted_at])
   @@index([visibility, deleted_at])
+  @@index([is_blueprint, deleted_at])
+  @@index([blueprint_id])
+  @@index([mode])
   @@map("trips")
 }
 
@@ -443,6 +486,25 @@ model ExpeditionVoiceNote {
 
   @@index([expedition_id, created_at(sort: Desc)])
   @@map("expedition_voice_notes")
+}
+
+model BlueprintReview {
+  id           Int        @id @default(autoincrement())
+  public_id    String     @unique @db.VarChar(14)
+  blueprint_id Int
+  explorer_id  Int        @map("user_id")
+  rating       Int        // 1-5
+  text         String?    @db.VarChar(2000)
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @updatedAt
+  deleted_at   DateTime?
+  blueprint    Expedition @relation("blueprint_reviews", fields: [blueprint_id], references: [id], onDelete: Cascade)
+  explorer     Explorer   @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
+
+  @@unique([blueprint_id, explorer_id])
+  @@index([blueprint_id])
+  @@index([explorer_id])
+  @@map("blueprint_reviews")
 }
 
 model ExpeditionNoteReply {
@@ -683,6 +745,21 @@ model ExplorerNotification {
 
   @@index([explorer_id])
   @@map("user_notifications")
+}
+
+model DeviceToken {
+  id           Int       @id @default(autoincrement())
+  explorer_id  Int       @map("user_id")
+  token        String    @db.VarChar(200)
+  platform     String    @db.VarChar(10) // ios, android
+  active       Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  explorer     Explorer  @relation(fields: [explorer_id], references: [id], onDelete: Cascade)
+
+  @@unique([explorer_id, token])
+  @@index([explorer_id])
+  @@map("device_tokens")
 }
 
 model Message {

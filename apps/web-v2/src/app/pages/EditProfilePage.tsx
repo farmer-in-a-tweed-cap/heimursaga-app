@@ -287,7 +287,7 @@ export function EditProfilePage() {
       <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] mb-6">
         <div className="bg-[#202020] dark:bg-[#2a2a2a] text-white px-4 lg:px-6 py-2 text-xs font-mono">
           <div className="flex flex-wrap items-center gap-4 lg:gap-6">
-            <div>ACCOUNT: {user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}</div>
+            <div>ACCOUNT: {user.isGuide ? 'EXPEDITION GUIDE' : user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}</div>
             <div>EMAIL: {user.isEmailVerified ? '✓ VERIFIED' : '✗ UNVERIFIED'}</div>
             {isDirty && <div className="text-[#ac6d46]">● UNSAVED CHANGES</div>}
             {saveStatus === 'saving' && (
@@ -390,7 +390,7 @@ export function EditProfilePage() {
 
                 {/* Current Avatar or Preview */}
                 <div className="flex items-start gap-4 mb-3">
-                  <div className={`w-32 h-32 border-2 ${user?.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden`}>
+                  <div className={`w-32 h-32 border-2 ${user?.isGuide ? 'border-[#598636]' : user?.role === 'creator' ? 'border-[#ac6d46]' : 'border-[#616161] dark:border-[#3a3a3a]'} overflow-hidden`}>
                     {avatarPreview ? (
                       <NextImage src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" width={128} height={128} />
                     ) : (

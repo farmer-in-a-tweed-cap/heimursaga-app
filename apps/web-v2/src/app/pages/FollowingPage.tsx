@@ -261,7 +261,7 @@ export function FollowingPage() {
                   onClick={() => router.push(`/journal/${follow.username}`)}
                   className="flex-1 px-3 py-2 border border-[#202020] dark:border-[#616161] text-xs font-bold text-[#202020] dark:text-[#e5e5e5] hover:bg-[#4676ac] hover:border-[#4676ac] hover:text-white transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]"
                 >
-                  VIEW JOURNAL
+                  {follow.isGuide ? 'VIEW PORTFOLIO' : 'VIEW JOURNAL'}
                 </button>
                 {isOwnProfile && (
                   <button

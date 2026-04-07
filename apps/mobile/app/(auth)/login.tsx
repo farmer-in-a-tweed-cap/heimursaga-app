@@ -53,8 +53,10 @@ export default function LoginScreen() {
   // Register fields
   const [regEmail, setRegEmail] = useState('');
   const [regUsername, setRegUsername] = useState('');
+  const [regInviteCode, setRegInviteCode] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
+  const regInviteRef = useRef<TextInput>(null);
 
   const handleLogin = useCallback(async () => {
     Keyboard.dismiss();
@@ -93,7 +95,7 @@ export default function LoginScreen() {
     }
     setSubmitting(true);
     try {
-      await register(regEmail, regUsername, regPassword);
+      await register(regEmail, regUsername, regPassword, regInviteCode.trim() || undefined);
     } catch (err: any) {
       const msg = err instanceof ApiError ? err.message : 'Something went wrong. Please try again.';
       Alert.alert('Registration Failed', msg);
@@ -247,6 +249,17 @@ export default function LoginScreen() {
                 placeholder="Choose a username"
                 value={regUsername}
                 onChangeText={setRegUsername}
+                autoCapitalize="none"
+                returnKeyType="next"
+                onSubmitEditing={() => regInviteRef.current?.focus()}
+                blurOnSubmit={false}
+              />
+              <HTextField
+                ref={regInviteRef}
+                label="INVITE CODE (OPTIONAL)"
+                placeholder="Enter invite code if you have one"
+                value={regInviteCode}
+                onChangeText={setRegInviteCode}
                 autoCapitalize="none"
                 returnKeyType="next"
                 onSubmitEditing={() => regPasswordRef.current?.focus()}

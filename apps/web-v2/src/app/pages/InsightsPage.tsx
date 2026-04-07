@@ -42,7 +42,7 @@ import {
   explorerApi,
   PostInsight,
   BalanceResponse,
-  Expedition,
+  ExplorerExpedition,
   SponsorshipsResponse,
 } from '@/app/services/api';
 
@@ -54,7 +54,7 @@ interface DashboardData {
   activeSponsors: number;
   balance: BalanceResponse | null;
   entryInsights: PostInsight[];
-  expeditions: Expedition[];
+  expeditions: ExplorerExpedition[];
   sponsorships: SponsorshipsResponse | null;
 }
 
@@ -160,7 +160,7 @@ function EntryRow({
 }
 
 // Expedition card
-function ExpeditionCard({ expedition }: { expedition: Expedition }) {
+function ExpeditionCard({ expedition }: { expedition: ExplorerExpedition }) {
   const statusColors: Record<string, string> = {
     planning: 'bg-[#616161]',
     active: 'bg-[#4676ac]',

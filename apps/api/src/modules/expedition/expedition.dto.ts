@@ -12,6 +12,7 @@ import {
   IsDate,
   IsDateString,
   IsIn,
+  IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -32,14 +33,14 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   @SanitizeText()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(200)
+  @MaxLength(100)
   title: string;
 
   @ApiProperty({ required: false })
   @SanitizeContent()
   @IsString()
   @IsOptional()
-  @MaxLength(5000)
+  @MaxLength(500)
   description?: string;
 
   @ApiProperty({ required: false })
@@ -101,6 +102,30 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   @IsOptional()
   region?: string;
 
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @MaxLength(200)
+  locationName?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @MaxLength(2)
+  countryCode?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  countryName?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  stateProvince?: string;
+
   @ApiProperty({ required: false, type: [String] })
   @IsOptional()
   tags?: string[];
@@ -133,12 +158,35 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsArray()
-  routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
+  routeObstacles?: {
+    lat: number;
+    lon: number;
+    type: string;
+    name: string | null;
+  }[];
 
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
   earlyAccessEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @Min(0)
+  @Max(99999)
+  @IsOptional()
+  estimatedDurationH?: number;
+
+  @ApiProperty({ required: false })
+  @IsBoolean()
+  @IsOptional()
+  isBlueprint?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsIn(['hike', 'paddle', 'bike', 'sail', 'drive', 'mixed'])
+  @IsOptional()
+  mode?: string;
 }
 
 export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
@@ -146,7 +194,7 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @SanitizeText()
   @IsString()
   @IsNotEmpty()
-  @MaxLength(200)
+  @MaxLength(100)
   title: string;
 
   @ApiProperty({ required: false })
@@ -163,7 +211,7 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @SanitizeContent()
   @IsString()
   @IsOptional()
-  @MaxLength(5000)
+  @MaxLength(500)
   description?: string;
 
   @ApiProperty({ required: false })
@@ -215,6 +263,30 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @IsOptional()
   region?: string;
 
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @MaxLength(200)
+  locationName?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @MaxLength(2)
+  countryCode?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  countryName?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  stateProvince?: string;
+
   @ApiProperty({ required: false, type: [String] })
   @IsOptional()
   tags?: string[];
@@ -247,12 +319,30 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsArray()
-  routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
+  routeObstacles?: {
+    lat: number;
+    lon: number;
+    type: string;
+    name: string | null;
+  }[];
 
   @ApiProperty({ required: false })
   @IsBoolean()
   @IsOptional()
   earlyAccessEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @Min(0)
+  @Max(99999)
+  @IsOptional()
+  estimatedDurationH?: number;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsIn(['hike', 'paddle', 'bike', 'sail', 'drive', 'mixed'])
+  @IsOptional()
+  mode?: string;
 }
 
 export class ExpeditionCompleteDto {
@@ -431,4 +521,19 @@ export class WaypointSyncDto {
   @ValidateNested({ each: true })
   @Type(() => WaypointSyncItemDto)
   waypoints: WaypointSyncItemDto[];
+}
+
+export class BlueprintReviewCreateDto {
+  @ApiProperty({ required: true })
+  @IsInt()
+  @Min(1)
+  @Max(5)
+  rating: number;
+
+  @ApiProperty({ required: false })
+  @SanitizeContent()
+  @IsString()
+  @IsOptional()
+  @MaxLength(2000)
+  text?: string;
 }

@@ -28,6 +28,7 @@ interface User {
   picture?: string;
   is_pro?: boolean;
   isPremium?: boolean;
+  isGuide?: boolean;
   stripeAccountConnected?: boolean;
   created_at?: string;
 }
@@ -42,7 +43,7 @@ interface AuthContextValue {
   hasStoredSession: boolean;
   login: (usernameOrEmail: string, password: string) => Promise<void>;
   loginWithBiometric: () => Promise<void>;
-  register: (email: string, username: string, password: string) => Promise<void>;
+  register: (email: string, username: string, password: string, inviteCode?: string) => Promise<void>;
   logout: () => Promise<void>;
   setBiometricEnabled: (enabled: boolean) => Promise<void>;
   /** Re-fetch the current user from API (e.g. after upgrading to Pro) */
@@ -52,7 +53,13 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserRaw] = useState<User | null>(null);
+  const setUser = (u: User | null) => {
+    if (u) {
+      u.is_pro = u.is_pro || u.isPremium || false;
+    }
+    setUserRaw(u);
+  };
   const [loading, setLoading] = useState(true);
   const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
@@ -139,8 +146,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (email: string, username: string, password: string) => {
-      await api.post('/auth/register', { email, username, password }, { noAuth: true });
+    async (email: string, username: string, password: string, inviteCode?: string) => {
+      await api.post('/auth/signup', { email, username, password, inviteCode }, { noAuth: true });
       await login(username, password);
       analytics.track('signup', { method: 'email' });
     },

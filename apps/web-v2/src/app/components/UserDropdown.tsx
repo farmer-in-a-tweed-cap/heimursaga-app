@@ -35,7 +35,7 @@ export function UserDropdown() {
             <div className="font-bold text-sm mb-1">{user.username}</div>
             <div className="text-xs text-[#b5bcc4] mb-2">{user.email}</div>
             <div className="text-xs font-mono text-[#b5bcc4]">
-              {user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}
+              {user.isGuide ? 'EXPEDITION GUIDE' : user.role === 'creator' ? 'EXPLORER PRO' : 'EXPLORER'}
             </div>
           </div>
 

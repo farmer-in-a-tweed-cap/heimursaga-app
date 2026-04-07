@@ -82,9 +82,12 @@ export class ExplorerService {
         Math.max(1, parseInt(query.limit, 10) || 20),
       );
 
-      // Always exclude blocked explorers from public listings
+      // Always exclude blocked and guide explorers from public listings
       // (admin dashboard has its own endpoint that shows blocked users)
-      let where: Prisma.ExplorerWhereInput = { blocked: false };
+      let where: Prisma.ExplorerWhereInput = {
+        blocked: false,
+        is_guide: { not: true },
+      };
 
       // Filter to followed explorers
       if (context === 'following') {
@@ -112,6 +115,7 @@ export class ExplorerService {
         username: true,
         blocked: true,
         role: true,
+        is_guide: true,
         profile: {
           select: {
             name: true,
@@ -225,6 +229,7 @@ export class ExplorerService {
           id,
           username,
           role,
+          is_guide,
           profile,
           blocked,
           entries_count,
@@ -282,6 +287,7 @@ export class ExplorerService {
             postsCount: (_count as any)?.entries ?? entries_count ?? 0,
             memberDate: created_at,
             creator: role === UserRole.CREATOR,
+            isGuide: is_guide ?? false,
             activeExpeditionOffGrid,
             // Include followed status for authenticated users (exclude self)
             followed:
@@ -382,6 +388,7 @@ export class ExplorerService {
           id: true,
           username: true,
           role: true,
+          is_guide: true,
           is_stripe_account_connected: true,
           followers_count: true,
           following_count: true,
@@ -529,6 +536,7 @@ export class ExplorerService {
           : false,
         you: explorerId ? explorerId === explorer.id : false,
         creator: explorer.role === UserRole.CREATOR,
+        isGuide: explorer.is_guide ?? false,
         stripeAccountConnected: explorer.is_stripe_account_connected,
         locationFrom:
           (explorer.profile?.location_visibility || 'hidden') !== 'hidden'
@@ -752,6 +760,7 @@ export class ExplorerService {
             id: true,
             username: true,
             role: true,
+            is_guide: true,
             profile: {
               select: { name: true, picture: true },
             },
@@ -846,6 +855,7 @@ export class ExplorerService {
                       ? getStaticMediaUrl(author?.profile.picture)
                       : '',
                     creator: author.role === UserRole.CREATOR,
+                    isGuide: author.is_guide ?? false,
                   }
                 : undefined,
               liked: explorerId ? likes.length > 0 : false,
@@ -970,6 +980,7 @@ export class ExplorerService {
               id: true,
               username: true,
               role: true,
+              is_guide: true,
               profile: {
                 select: {
                   name: true,
@@ -991,12 +1002,13 @@ export class ExplorerService {
 
       const response: IUserFollowersQueryResponse = {
         data: data.map(
-          ({ follower: { role, username, profile, followers } }) => ({
+          ({ follower: { role, is_guide, username, profile, followers } }) => ({
             username,
             name: profile.name,
             picture: profile.picture ? getStaticMediaUrl(profile?.picture) : '',
             bio: profile.bio,
             creator: role === UserRole.CREATOR,
+            isGuide: is_guide ?? false,
             // Mutual = profile owner follows this follower back
             followed: (followers?.length || 0) > 0,
           }),
@@ -1043,6 +1055,7 @@ export class ExplorerService {
               id: true,
               username: true,
               role: true,
+              is_guide: true,
               profile: {
                 select: {
                   name: true,
@@ -1064,12 +1077,13 @@ export class ExplorerService {
 
       const response: IUserFollowingQueryResponse = {
         data: data.map(
-          ({ followee: { role, username, profile, following } }) => ({
+          ({ followee: { role, is_guide, username, profile, following } }) => ({
             username,
             name: profile.name,
             picture: profile.picture ? getStaticMediaUrl(profile.picture) : '',
             bio: profile.bio,
             creator: role === UserRole.CREATOR,
+            isGuide: is_guide ?? false,
             // Mutual = this followee also follows the profile owner back
             followed: (following?.length || 0) > 0,
           }),
@@ -1730,6 +1744,7 @@ export class SessionExplorerService {
               id: true,
               username: true,
               is_premium: true,
+              is_guide: true,
               profile: {
                 select: {
                   name: true,
@@ -1777,6 +1792,7 @@ export class SessionExplorerService {
           locationFrom: bookmarked_explorer.profile?.location_from,
           locationLives: bookmarked_explorer.profile?.location_lives,
           isPremium: bookmarked_explorer.is_premium,
+          isGuide: bookmarked_explorer.is_guide ?? false,
           entriesCount: bookmarked_explorer._count.entries,
           expeditionsCount: bookmarked_explorer._count.expeditions,
           followersCount: bookmarked_explorer._count.followers,

@@ -16,7 +16,7 @@ export default function ExplorerExpeditionsScreen() {
   const { data, loading } = useApi<{ data: Expedition[] }>(
     username ? `/users/${username}/trips` : null,
   );
-  const expeditions = data?.data ?? [];
+  const expeditions = (data?.data ?? []).filter(e => e.status !== 'cancelled');
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

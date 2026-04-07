@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBoolean,
+  IsDateString,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -41,6 +42,26 @@ export class AdminExplorerQueryDto extends AdminPaginationDto {
   @Type(() => Boolean)
   @IsBoolean()
   blocked?: boolean;
+}
+
+export class AdminCreateInviteCodeDto {
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  label?: string;
+
+  @ApiProperty({ required: false })
+  @IsDateString()
+  @IsOptional()
+  expiresAt?: string;
+
+  @ApiProperty({ required: false, default: 1 })
+  @Type(() => Number)
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(50)
+  count?: number;
 }
 
 export class AdminRefundDto {

@@ -41,6 +41,7 @@ interface ContentTabsProps {
   routeMode?: string;
   routeLegModes?: string[];
   isRoundTrip?: boolean;
+  isBlueprint?: boolean;
 }
 
 export function ContentTabs({
@@ -70,6 +71,7 @@ export function ContentTabs({
   routeMode,
   routeLegModes,
   isRoundTrip,
+  isBlueprint,
 }: ContentTabsProps) {
   const { formatDistance } = useDistanceUnit();
   // 'asc' = earliest first (route order), 'desc' = latest first
@@ -81,17 +83,19 @@ export function ContentTabs({
     <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">
       {/* Tab Navigation */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] flex">
-        <button
-          onClick={() => onSelectView('entries')}
-          className={`flex-1 py-3 text-sm font-bold ${
-            selectedView === 'entries'
-              ? 'bg-[#4676ac] text-white'
-              : 'bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#4676ac]'
-          } transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]`}
-        >
-          JOURNAL ENTRIES ({expedition.totalEntries})
-        </button>
-        {expedition.explorerIsPro && expedition.privacy !== 'private' && (
+        {!isBlueprint && (
+          <button
+            onClick={() => onSelectView('entries')}
+            className={`flex-1 py-3 text-sm font-bold ${
+              selectedView === 'entries'
+                ? 'bg-[#4676ac] text-white'
+                : 'bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#4676ac]'
+            } transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac]`}
+          >
+            JOURNAL ENTRIES ({expedition.totalEntries})
+          </button>
+        )}
+        {!isBlueprint && expedition.explorerIsPro && expedition.privacy !== 'private' && (
           <button
             onClick={() => onSelectView('notes')}
             className={`flex-1 py-3 text-sm font-bold ${
@@ -109,12 +113,12 @@ export function ContentTabs({
             selectedView === 'waypoints'
               ? 'bg-[#4676ac] text-white'
               : 'bg-[#616161] dark:bg-[#3a3a3a] text-white hover:bg-[#4676ac]'
-          } transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] border-l-2 border-[#202020] dark:border-[#616161]`}
+          } transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#4676ac] ${!isBlueprint ? 'border-l-2 border-[#202020] dark:border-[#616161]' : ''}`}
         >
           ROUTE
         </button>
         {/* Sponsors tab - only show if sponsorships enabled */}
-        {showSponsorshipSection && (
+        {!isBlueprint && showSponsorshipSection && (
           <button
             onClick={() => onSelectView('sponsors')}
             className={`flex-1 py-3 text-sm font-bold ${

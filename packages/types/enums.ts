@@ -64,6 +64,7 @@ export enum UserNotificationContext {
   NEW_ENTRY = 'new_entry',
   NEW_ENTRY_EARLY_ACCESS = 'new_entry_early_access',
   NEW_EXPEDITION = 'new_expedition',
+  NEW_BLUEPRINT = 'new_blueprint',
 }
 
 // Alias for new naming convention
@@ -89,6 +90,7 @@ export enum SponsorshipType {
   ONE_TIME_PAYMENT = 'one_time_payment',
   SUBSCRIPTION = 'subscription',
   QUICK_SPONSOR = 'quick_sponsor',
+  TIP = 'tip',
 }
 
 export enum SponsorshipBillingPeriod {

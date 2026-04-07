@@ -38,9 +38,13 @@ export function ExpeditionQuickEntryPage() {
   const [endDate, setEndDate] = useState('');
   const [expectedDuration, setExpectedDuration] = useState('');
   const [currentLocation, setCurrentLocation] = useState('');
+  const [expeditionMode, setExpeditionMode] = useState('');
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(null);
   const [coverPhotoUrl, setCoverPhotoUrl] = useState<string | null>(null);
   const [uploadingCover, setUploadingCover] = useState(false);
+
+  // Blueprint origin tracking — locks region and mode
+  const [isFromBlueprint, setIsFromBlueprint] = useState(false);
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -116,7 +120,11 @@ export function ExpeditionQuickEntryPage() {
         if (expAny.notesAccessThreshold && Number(expAny.notesAccessThreshold) > 0) {
           setNotesAccessThreshold(String(expAny.notesAccessThreshold));
         }
+        setExpeditionMode(exp.mode || '');
         setEntriesCount(exp.entriesCount || 0);
+        if (exp.blueprintId) {
+          setIsFromBlueprint(true);
+        }
       } catch {
         setSubmitError('Failed to load expedition data');
       } finally {
@@ -258,7 +266,8 @@ export function ExpeditionQuickEntryPage() {
         notesAccessThreshold: notesVisibility === 'sponsor' && notesAccessThreshold ? Number(notesAccessThreshold) : 0,
         notesVisibility,
         coverImage: coverPhotoUrl || undefined,
-        ...(isEditMode ? {} : { status }),
+        mode: expeditionMode || undefined,
+        status,
       };
 
       if (isEditMode && expeditionId) {
@@ -417,7 +426,7 @@ export function ExpeditionQuickEntryPage() {
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  maxLength={200}
+                  maxLength={100}
                   className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                   placeholder="e.g., Cycling the Silk Road"
                 />
@@ -431,38 +440,52 @@ export function ExpeditionQuickEntryPage() {
                 <div>
                   <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
                     EXPEDITION REGION <span className="text-[#ac6d46]">*</span>
+                    {isFromBlueprint && <Lock className="inline h-3 w-3 ml-1 text-[#616161]" />}
                   </label>
-                  <select
-                    value=""
-                    onChange={(e) => {
-                      if (e.target.value && !regions.includes(e.target.value)) {
-                        setRegions(prev => [...prev, e.target.value]);
-                      }
-                    }}
-                    className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                  >
-                    <option value="">{regions.length > 0 ? '+ Add another region' : '-- Select region --'}</option>
-                    {GEO_REGION_GROUPS.map(group => (
-                      <optgroup key={group.label} label={group.label}>
-                        {group.regions.filter(r => !regions.includes(r)).map(r => (
-                          <option key={r} value={r}>{r}</option>
+                  {isFromBlueprint ? (
+                    <>
+                      <div className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] text-sm bg-[#f5f5f5] dark:bg-[#1a1a1a] dark:text-[#e5e5e5] cursor-not-allowed">
+                        {regions.join(', ') || '—'}
+                      </div>
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                        Locked — inherited from blueprint
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <select
+                        value=""
+                        onChange={(e) => {
+                          if (e.target.value && !regions.includes(e.target.value)) {
+                            setRegions(prev => [...prev, e.target.value]);
+                          }
+                        }}
+                        className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                      >
+                        <option value="">{regions.length > 0 ? '+ Add another region' : '-- Select region --'}</option>
+                        {GEO_REGION_GROUPS.map(group => (
+                          <optgroup key={group.label} label={group.label}>
+                            {group.regions.filter(r => !regions.includes(r)).map(r => (
+                              <option key={r} value={r}>{r}</option>
+                            ))}
+                          </optgroup>
                         ))}
-                      </optgroup>
-                    ))}
-                  </select>
-                  {regions.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      {regions.map(r => (
-                        <span key={r} className="inline-flex items-center gap-1 px-2 py-1 bg-[#ac6d46] text-white text-xs font-bold">
-                          {r}
-                          <button type="button" onClick={() => setRegions(prev => prev.filter(v => v !== r))} className="hover:text-white/70">×</button>
-                        </span>
-                      ))}
-                    </div>
+                      </select>
+                      {regions.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {regions.map(r => (
+                            <span key={r} className="inline-flex items-center gap-1 px-2 py-1 bg-[#ac6d46] text-white text-xs font-bold">
+                              {r}
+                              <button type="button" onClick={() => setRegions(prev => prev.filter(v => v !== r))} className="hover:text-white/70">×</button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                        UN geographic sub-region • Select multiple for cross-region expeditions
+                      </div>
+                    </>
                   )}
-                  <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                    UN geographic sub-region • Select multiple for cross-region expeditions
-                  </div>
                 </div>
 
                 <div>
@@ -484,6 +507,38 @@ export function ExpeditionQuickEntryPage() {
                     <option>Other</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Mode */}
+              <div>
+                <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
+                  MODE
+                  {isFromBlueprint && <Lock className="inline h-3 w-3 ml-1 text-[#616161]" />}
+                </label>
+                {isFromBlueprint ? (
+                  <>
+                    <div className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] text-sm bg-[#f5f5f5] dark:bg-[#1a1a1a] dark:text-[#e5e5e5] cursor-not-allowed capitalize">
+                      {expeditionMode || '—'}
+                    </div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
+                      Locked — inherited from blueprint
+                    </div>
+                  </>
+                ) : (
+                  <select
+                    value={expeditionMode}
+                    onChange={(e) => setExpeditionMode(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                  >
+                    <option value="">Select mode...</option>
+                    <option value="hike">Hike</option>
+                    <option value="paddle">Paddle</option>
+                    <option value="bike">Bike</option>
+                    <option value="sail">Sail</option>
+                    <option value="drive">Drive</option>
+                    <option value="mixed">Mixed</option>
+                  </select>
+                )}
               </div>
 
               {/* Start Date and Status */}
@@ -578,10 +633,11 @@ export function ExpeditionQuickEntryPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                   rows={6}
+                  maxLength={500}
                   placeholder="Describe your expedition, goals, and what you plan to document..."
                 />
                 <div className={`text-xs mt-1 font-mono ${description.trim().length < 100 ? 'text-[#ac6d46]' : 'text-[#616161] dark:text-[#b5bcc4]'}`}>
-                  {description.length} / 1000 characters {description.trim().length < 100 && `(${100 - description.trim().length} more needed)`}
+                  {description.length} / 500 characters {description.trim().length < 100 && `(${100 - description.trim().length} more needed)`}
                 </div>
               </div>
 
@@ -922,7 +978,8 @@ export function ExpeditionQuickEntryPage() {
             </div>
           </div>
 
-          {/* Need More Control? (Pro Only) */}
+          {/* Need More Control? (Pro Only) — hidden for blueprint-originated expeditions */}
+          {!isFromBlueprint && (
           <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
             <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
               NEED MORE CONTROL?
@@ -949,6 +1006,7 @@ export function ExpeditionQuickEntryPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* Danger Zone - Edit Mode Only, No Entries */}
           {isEditMode && (

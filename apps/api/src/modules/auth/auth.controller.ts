@@ -50,7 +50,11 @@ export class AuthController {
   @Public()
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 5, ttl: 60000 },
+    medium: { limit: 5, ttl: 60000 },
+    long: { limit: 5, ttl: 60000 },
+  })
   async login(
     @Req() req: IRequest,
     @Res() res: IResponse,
@@ -70,7 +74,11 @@ export class AuthController {
   @Public()
   @Post('signup')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 2, ttl: 300000 }, medium: { limit: 2, ttl: 300000 }, long: { limit: 2, ttl: 300000 } })
+  @Throttle({
+    short: { limit: 2, ttl: 300000 },
+    medium: { limit: 2, ttl: 300000 },
+    long: { limit: 2, ttl: 300000 },
+  })
   @UseGuards(BotDetectionGuard)
   async signup(
     @Req() req: IRequest,
@@ -102,7 +110,11 @@ export class AuthController {
   @Public()
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 3, ttl: 300000 }, medium: { limit: 3, ttl: 300000 }, long: { limit: 3, ttl: 300000 } })
+  @Throttle({
+    short: { limit: 3, ttl: 300000 },
+    medium: { limit: 3, ttl: 300000 },
+    long: { limit: 3, ttl: 300000 },
+  })
   async resetPassword(@Body() body: PasswordResetDto) {
     return this.authService.resetPassword(body);
   }
@@ -110,7 +122,11 @@ export class AuthController {
   @Public()
   @Post('change-password')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 3, ttl: 300000 }, medium: { limit: 3, ttl: 300000 }, long: { limit: 3, ttl: 300000 } })
+  @Throttle({
+    short: { limit: 3, ttl: 300000 },
+    medium: { limit: 3, ttl: 300000 },
+    long: { limit: 3, ttl: 300000 },
+  })
   async updatePassword(@Body() body: PasswordUpdateDto) {
     return this.authService.updatePassword(body);
   }
@@ -119,7 +135,11 @@ export class AuthController {
   @Public()
   @Post('mobile/login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 5, ttl: 60000 },
+    medium: { limit: 5, ttl: 60000 },
+    long: { limit: 5, ttl: 60000 },
+  })
   async mobileLogin(
     @Req() req: IRequest,
     @Body() body: LoginDto,
@@ -140,7 +160,11 @@ export class AuthController {
   @Public()
   @Get('mobile/user')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 30, ttl: 60000 }, medium: { limit: 30, ttl: 60000 }, long: { limit: 30, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 30, ttl: 60000 },
+    medium: { limit: 30, ttl: 60000 },
+    long: { limit: 30, ttl: 60000 },
+  })
   async getMobileUser(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -160,7 +184,11 @@ export class AuthController {
   @Public()
   @Post('mobile/refresh')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 10, ttl: 60000 }, medium: { limit: 10, ttl: 60000 }, long: { limit: 10, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 10, ttl: 60000 },
+    medium: { limit: 10, ttl: 60000 },
+    long: { limit: 10, ttl: 60000 },
+  })
   async mobileRefresh(@Body() body: MobileRefreshDto) {
     const result = await this.authService.mobileRefresh(body.refreshToken);
 
@@ -173,7 +201,11 @@ export class AuthController {
   @Public()
   @Get('mobile/bookmarks')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 30, ttl: 60000 }, medium: { limit: 30, ttl: 60000 }, long: { limit: 30, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 30, ttl: 60000 },
+    medium: { limit: 30, ttl: 60000 },
+    long: { limit: 30, ttl: 60000 },
+  })
   async getMobileBookmarks(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -202,7 +234,11 @@ export class AuthController {
   @Public()
   @Get('mobile/notifications')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 30, ttl: 60000 }, medium: { limit: 30, ttl: 60000 }, long: { limit: 30, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 30, ttl: 60000 },
+    medium: { limit: 30, ttl: 60000 },
+    long: { limit: 30, ttl: 60000 },
+  })
   async getMobileNotifications(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -236,7 +272,11 @@ export class AuthController {
   @Public()
   @Post('mobile/notifications/mark-read')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 10, ttl: 60000 }, medium: { limit: 10, ttl: 60000 }, long: { limit: 10, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 10, ttl: 60000 },
+    medium: { limit: 10, ttl: 60000 },
+    long: { limit: 10, ttl: 60000 },
+  })
   async markMobileNotificationsAsRead(
     @Headers('authorization') authHeader?: string,
   ) {
@@ -271,7 +311,11 @@ export class AuthController {
   @Public()
   @Get('mobile/badge-count')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 30, ttl: 60000 }, medium: { limit: 30, ttl: 60000 }, long: { limit: 30, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 30, ttl: 60000 },
+    medium: { limit: 30, ttl: 60000 },
+    long: { limit: 30, ttl: 60000 },
+  })
   async getMobileBadgeCount(@Headers('authorization') authHeader?: string) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException(
@@ -303,9 +347,85 @@ export class AuthController {
   }
 
   @Public()
+  @Post('mobile/push-token')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 10, ttl: 60000 },
+    medium: { limit: 10, ttl: 60000 },
+    long: { limit: 10, ttl: 60000 },
+  })
+  async registerPushToken(
+    @Headers('authorization') authHeader: string,
+    @Body() body: { token: string; platform: string },
+  ) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException(
+        'Authorization header missing or invalid',
+      );
+    }
+    const jwt = authHeader.substring(7);
+    const tokenData = await this.authService.verifyToken(jwt);
+    if (!tokenData) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+    if (
+      !body.token ||
+      typeof body.token !== 'string' ||
+      body.token.length > 250
+    ) {
+      return { success: false, message: 'Valid token is required' };
+    }
+    if (!body.platform || !['ios', 'android'].includes(body.platform)) {
+      return { success: false, message: 'Platform must be ios or android' };
+    }
+
+    await this.authService.registerPushToken(
+      tokenData.userId,
+      body.token,
+      body.platform,
+    );
+
+    return { success: true };
+  }
+
+  @Public()
+  @Post('mobile/push-token/remove')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 10, ttl: 60000 },
+    medium: { limit: 10, ttl: 60000 },
+    long: { limit: 10, ttl: 60000 },
+  })
+  async removePushToken(
+    @Headers('authorization') authHeader: string,
+    @Body() body: { token: string },
+  ) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException(
+        'Authorization header missing or invalid',
+      );
+    }
+    const jwt = authHeader.substring(7);
+    const tokenData = await this.authService.verifyToken(jwt);
+    if (!tokenData) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    if (body.token) {
+      await this.authService.removePushToken(tokenData.userId, body.token);
+    }
+
+    return { success: true };
+  }
+
+  @Public()
   @Get('tokens/:token')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 10, ttl: 60000 }, medium: { limit: 10, ttl: 60000 }, long: { limit: 10, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 10, ttl: 60000 },
+    medium: { limit: 10, ttl: 60000 },
+    long: { limit: 10, ttl: 60000 },
+  })
   async validateToken(@Param('token') token: string) {
     return this.authService.validateToken(token);
   }
@@ -313,7 +433,11 @@ export class AuthController {
   @Public()
   @Post('send-email-verification')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 3, ttl: 300000 }, medium: { limit: 3, ttl: 300000 }, long: { limit: 3, ttl: 300000 } })
+  @Throttle({
+    short: { limit: 3, ttl: 300000 },
+    medium: { limit: 3, ttl: 300000 },
+    long: { limit: 3, ttl: 300000 },
+  })
   async sendEmailVerification(@Body() body: SendEmailVerificationDto) {
     return this.authService.sendEmailVerification(body.email);
   }
@@ -321,14 +445,22 @@ export class AuthController {
   @Public()
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 5, ttl: 60000 }, medium: { limit: 5, ttl: 60000 }, long: { limit: 5, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 5, ttl: 60000 },
+    medium: { limit: 5, ttl: 60000 },
+    long: { limit: 5, ttl: 60000 },
+  })
   async verifyEmail(@Body() body: VerifyEmailDto) {
     return this.authService.verifyEmail(body.token);
   }
 
   @Post('resend-email-verification')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ short: { limit: 2, ttl: 300000 }, medium: { limit: 2, ttl: 300000 }, long: { limit: 2, ttl: 300000 } })
+  @Throttle({
+    short: { limit: 2, ttl: 300000 },
+    medium: { limit: 2, ttl: 300000 },
+    long: { limit: 2, ttl: 300000 },
+  })
   async resendEmailVerification(@Session() session: ISession) {
     return this.authService.resendEmailVerification(session);
   }

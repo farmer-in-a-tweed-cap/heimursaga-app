@@ -47,6 +47,7 @@ export interface ISessionUser {
   // name: string;
   isEmailVerified: boolean;
   isPremium: boolean;
+  isGuide?: boolean;
   stripeAccountConnected?: boolean;
   createdAt?: Date;
   activeExpedition?: { id: number; publicId: string; title: string; status?: 'active' | 'planned' } | null;
@@ -74,6 +75,7 @@ export interface ISignupPayload {
   username: string;
   password: string;
   recaptchaToken?: string;
+  inviteCode?: string;
   // name: string;
 }
 
@@ -931,6 +933,10 @@ export interface ITripDetail {
   coverImage?: string;
   category?: string;
   region?: string;
+  locationName?: string;
+  countryCode?: string;
+  countryName?: string;
+  stateProvince?: string;
   tags?: string[];
   isRoundTrip?: boolean;
   routeMode?: string;
@@ -938,6 +944,10 @@ export interface ITripDetail {
   routeDistanceKm?: number;
   routeLegModes?: string[];
   routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
+  elevationMinM?: number;
+  elevationMaxM?: number;
+  elevationGainM?: number;
+  estimatedDurationH?: number;
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
@@ -978,11 +988,24 @@ export interface ITripDetail {
     name?: string;
     picture?: string;
     creator?: boolean;
+    isGuide?: boolean;
     stripeAccountConnected?: boolean;
   };
   cancelledAt?: Date;
   cancellationReason?: string;
   isOwner?: boolean;
+  isBlueprint?: boolean;
+  blueprintId?: string;
+  isRouteLocked?: boolean;
+  mode?: string;
+  adoptionsCount?: number;
+  averageRating?: number;
+  ratingsCount?: number;
+  sourceBlueprint?: {
+    id: string;
+    title: string;
+    author?: { username: string; name?: string; picture?: string; stripeAccountConnected?: boolean };
+  };
   bookmarked?: boolean;
   followingAuthor?: boolean;
   sponsors?: {
@@ -1032,6 +1055,10 @@ export interface ITripCreatePayload {
   earlyAccessEnabled?: boolean;
   category?: string;
   region?: string;
+  locationName?: string;
+  countryCode?: string;
+  countryName?: string;
+  stateProvince?: string;
   tags?: string[];
   isRoundTrip?: boolean;
   routeMode?: string;
@@ -1039,6 +1066,26 @@ export interface ITripCreatePayload {
   routeDistanceKm?: number;
   routeLegModes?: string[];
   routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
+  estimatedDurationH?: number;
+  isBlueprint?: boolean;
+  mode?: string;
+}
+
+export interface IBlueprintReviewDetail {
+  id: string;
+  rating: number;
+  text?: string;
+  createdAt?: Date;
+  explorer?: { username: string; name?: string; picture?: string };
+}
+
+export interface IBlueprintReviewCreatePayload {
+  rating: number;
+  text?: string;
+}
+
+export interface IBlueprintAdoptResponse {
+  expeditionId: string;
 }
 
 export interface ITripCreateResponse {
@@ -1060,6 +1107,10 @@ export interface ITripUpdatePayload {
   earlyAccessEnabled?: boolean;
   category?: string;
   region?: string;
+  locationName?: string;
+  countryCode?: string;
+  countryName?: string;
+  stateProvince?: string;
   tags?: string[];
   isRoundTrip?: boolean;
   routeMode?: string;
@@ -1067,6 +1118,7 @@ export interface ITripUpdatePayload {
   routeDistanceKm?: number;
   routeLegModes?: string[];
   routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
+  estimatedDurationH?: number;
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';
@@ -1273,6 +1325,7 @@ export interface IAdminExplorerListItem {
   role: string;
   admin: boolean;
   blocked: boolean;
+  isGuide?: boolean;
   createdAt: Date;
   picture?: string;
 }
@@ -1280,4 +1333,32 @@ export interface IAdminExplorerListItem {
 export interface IAdminExplorerListResponse {
   data: IAdminExplorerListItem[];
   total: number;
+}
+
+// Admin invite codes
+export interface IAdminInviteCode {
+  id: number;
+  code: string;
+  label?: string;
+  createdBy: string;
+  usedBy?: string;
+  usedAt?: string;
+  expiresAt?: string;
+  createdAt: string;
+  status: 'available' | 'used' | 'expired';
+}
+
+export interface IAdminInviteCodeListResponse {
+  data: IAdminInviteCode[];
+  total: number;
+}
+
+export interface IAdminInviteCodeCreatePayload {
+  label?: string;
+  expiresAt?: string;
+  count?: number;
+}
+
+export interface IAdminInviteCodeCreateResponse {
+  codes: string[];
 }

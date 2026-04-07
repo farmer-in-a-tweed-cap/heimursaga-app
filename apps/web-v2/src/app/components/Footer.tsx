@@ -78,6 +78,7 @@ export function Footer() {
               <li><Link href="/documentation" className="text-[#b5bcc4] hover:text-[#ac6d46]">Platform Documentation</Link></li>
 
               <li><Link href="/sponsorship-guide" className="text-[#b5bcc4] hover:text-[#ac6d46]">Sponsorship Guide</Link></li>
+              <li><Link href="/guide-program" className="text-[#b5bcc4] hover:text-[#ac6d46]">Expedition Guide Program</Link></li>
               <li><Link href="/legal/terms" target="_blank" className="text-[#b5bcc4] hover:text-[#ac6d46]">Terms of Service</Link></li>
               <li><Link href="/legal/privacy" target="_blank" className="text-[#b5bcc4] hover:text-[#ac6d46]">Privacy Policy</Link></li>
               <li><Link href="/contact" className="text-[#b5bcc4] hover:text-[#4676ac]">Contact & Support</Link></li>

@@ -340,7 +340,10 @@ export class UploadService {
         const originalBuffer = await Promise.race([
           sharpInstance.toBuffer(),
           new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Image processing timeout')), timeoutMs),
+            setTimeout(
+              () => reject(new Error('Image processing timeout')),
+              timeoutMs,
+            ),
           ),
         ]);
 
@@ -380,7 +383,10 @@ export class UploadService {
           thumbnailBuffer = await Promise.race([
             thumbnailSharp.toBuffer(),
             new Promise<never>((_, reject) =>
-              setTimeout(() => reject(new Error('Thumbnail processing timeout')), timeoutMs),
+              setTimeout(
+                () => reject(new Error('Thumbnail processing timeout')),
+                timeoutMs,
+              ),
             ),
           ]);
         }
@@ -535,7 +541,9 @@ export class UploadService {
       const bucket = UPLOAD_BUCKETS.AUDIO;
       const path = `${bucket}/${key}`;
 
-      this.logger.debug(`Uploading audio: ${key}, mime=${baseMime}, size=${file.buffer.length}`);
+      this.logger.debug(
+        `Uploading audio: ${key}, mime=${baseMime}, size=${file.buffer.length}`,
+      );
 
       await this.s3.send(
         new PutObjectCommand({
@@ -548,7 +556,9 @@ export class UploadService {
 
       return { audioUrl: getStaticMediaUrl(path) };
     } catch (e) {
-      this.logger.error(`Audio upload error: ${e?.message || JSON.stringify(e)} | stack: ${e?.stack || 'none'}`);
+      this.logger.error(
+        `Audio upload error: ${e?.message || JSON.stringify(e)} | stack: ${e?.stack || 'none'}`,
+      );
       if (
         e instanceof ServiceBadRequestException ||
         e instanceof ServiceForbiddenException

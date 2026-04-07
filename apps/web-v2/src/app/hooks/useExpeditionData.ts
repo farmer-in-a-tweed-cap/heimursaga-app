@@ -151,6 +151,7 @@ export function useExpeditionData(
       status: (api.status || 'active') as 'active' | 'planned' | 'completed' | 'cancelled',
       category: api.category || '',
       region: api.region || '',
+      locationName: api.locationName || undefined,
       description: api.description || '',
       startDate: api.startDate || '',
       estimatedEndDate: api.endDate || '',

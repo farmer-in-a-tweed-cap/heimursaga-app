@@ -28,7 +28,7 @@ export default function DiscoverScreen() {
   const { data: usersData, refetch: refetchUsers } = useApi<{ data: ExplorerProfile[] }>('/users');
   const { data: postsData, refetch: refetchPosts } = useApi<{ data: Entry[] }>('/posts');
 
-  const allExpeditions = tripsData?.data ?? [];
+  const allExpeditions = (tripsData?.data ?? []).filter(e => e.status !== 'cancelled');
   const allExplorers = usersData?.data ?? [];
   const allEntries = postsData?.data ?? [];
 

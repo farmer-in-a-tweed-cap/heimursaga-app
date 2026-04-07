@@ -14,7 +14,7 @@ import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { usePageOwner } from '@/app/context/PageOwnerContext';
 import { UpdateLocationModal } from '@/app/components/UpdateLocationModal';
 import { ExpeditionManagementModal } from '@/app/components/ExpeditionManagementModal';
-import { expeditionApi, explorerApi, sponsorshipApi, type ExplorerProfile, type SponsorshipTierFull } from '@/app/services/api';
+import { expeditionApi, explorerApi, sponsorshipApi, type ExplorerProfile, type SponsorshipTierFull, type BlueprintReview } from '@/app/services/api';
 import { ReportModal } from '@/app/components/ReportModal';
 import { formatDate } from '@/app/utils/dateFormat';
 import { formatCoords } from '@/app/utils/formatCoords';
@@ -88,6 +88,27 @@ export function ExpeditionDetailPage() {
     return () => setIsOwnContent(false);
   }, [isOwner, setIsOwnContent]);
 
+  // Adopt blueprint handler
+  const handleAdoptBlueprint = async () => {
+    if (!isAuthenticated) {
+      router.push(`/auth?redirect=${encodeURIComponent(`/expedition/${expeditionId}`)}`);
+      return;
+    }
+    try {
+      const result = await expeditionApi.adopt(expeditionId);
+      router.push(`/expedition-builder/${result.expeditionId}`);
+    } catch {
+      // Error handled by API layer
+    }
+  };
+
+  // Default to route tab for blueprints
+  useEffect(() => {
+    if (apiExpedition?.isBlueprint) {
+      setSelectedView('waypoints');
+    }
+  }, [apiExpedition?.isBlueprint]);
+
   // Derived data hooks
   const { sponsors, fundingStats } = useExpeditionSponsors(apiExpedition);
   const { weatherCondition, weatherLocalTime } = useWeatherConditions(apiExpedition, expeditionId);
@@ -109,6 +130,16 @@ export function ExpeditionDetailPage() {
       .then(res => setMonthlyTiers((res.data || []).filter(t => t.type === 'MONTHLY')))
       .catch(() => {});
   }, [expedition?.explorerId]);
+
+  // Blueprint reviews
+  const [blueprintReviews, setBlueprintReviews] = useState<BlueprintReview[]>([]);
+  useEffect(() => {
+    if (apiExpedition?.isBlueprint && expeditionId) {
+      expeditionApi.getReviews(expeditionId, { limit: 50 })
+        .then(res => setBlueprintReviews(res.data || []))
+        .catch(() => {});
+    }
+  }, [apiExpedition?.isBlueprint, expeditionId]);
 
   // Total raised = one-time sponsorships + recurring committed during expedition lifetime
   const totalRaised = (expedition?.raised || 0) + fundingStats.totalRecurringToDate;
@@ -1173,6 +1204,7 @@ export function ExpeditionDetailPage() {
           }}
           explorerProfile={explorerProfile}
           onReport={() => setReportOpen(true)}
+          onAdopt={apiExpedition?.isBlueprint ? handleAdoptBlueprint : undefined}
         />
         {/* Mobile description - shown below banner since banner has limited space */}
         {expedition.description && (
@@ -1248,6 +1280,7 @@ export function ExpeditionDetailPage() {
             routeMode={apiExpedition?.routeMode}
             routeLegModes={apiExpedition?.routeLegModes}
             isRoundTrip={apiExpedition?.isRoundTrip}
+            isBlueprint={apiExpedition?.isBlueprint}
           />
         </div>
 
@@ -1271,6 +1304,11 @@ export function ExpeditionDetailPage() {
           sponsors={sponsors}
           onSponsorUpdate={handleSponsorUpdate}
           monthlyTiers={monthlyTiers}
+          isRouteLocked={apiExpedition?.isRouteLocked}
+          isBlueprint={apiExpedition?.isBlueprint}
+          reviews={blueprintReviews}
+          averageRating={apiExpedition?.averageRating}
+          ratingsCount={apiExpedition?.ratingsCount}
         />
       </div>
 
@@ -1304,8 +1342,10 @@ export function ExpeditionDetailPage() {
           journalEntries: expedition.totalEntries,
           totalFunding: totalRaised,
           backers: expedition.sponsors,
+          isRouteLocked: apiExpedition?.isRouteLocked,
         }}
         isPro={isPro}
+        sourceBlueprint={apiExpedition?.sourceBlueprint || undefined}
         onComplete={handleComplete}
         onCancel={async (reason) => {
           await expeditionApi.cancel(expedition.id, reason);

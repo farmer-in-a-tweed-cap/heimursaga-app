@@ -7,7 +7,7 @@ interface ExplorerCardPortraitProps {
   journalName: string;
   avatarUrl: string;
   location: string;
-  accountType: "explorer" | "explorer-pro";
+  accountType: "explorer" | "explorer-pro" | "expedition-guide";
   activeExpeditions: number;
   totalEntries: number;
   onClick?: () => void;
@@ -31,9 +31,9 @@ export function ExplorerCardPortrait({
       {/* Header */}
       <div className="flex items-center justify-between border-b-2 border-[#202020] dark:border-[#616161] bg-[#b5bcc4] dark:bg-[#3a3a3a] px-3 py-2">
         <div className="flex items-center gap-2">
-          <div className={`h-2 w-2 ${accountType === 'explorer-pro' ? 'bg-[#ac6d46]' : 'bg-[#4676ac]'}`} />
+          <div className={`h-2 w-2 ${accountType === 'expedition-guide' ? 'bg-[#598636]' : accountType === 'explorer-pro' ? 'bg-[#ac6d46]' : 'bg-[#4676ac]'}`} />
           <span className="text-xs font-mono font-semibold tracking-wide text-[#202020] dark:text-[#e5e5e5]">
-            {accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
+            {accountType === 'expedition-guide' ? 'EXPEDITION GUIDE' : accountType === 'explorer-pro' ? 'EXPLORER PRO' : 'EXPLORER'}
           </span>
         </div>
       </div>
@@ -41,7 +41,7 @@ export function ExplorerCardPortrait({
       {/* Avatar */}
       <div className="border-b-2 border-[#202020] dark:border-[#616161] bg-white dark:bg-[#202020] pt-7 px-3 pb-7">
         <div className="flex flex-col items-center">
-          <div className={`w-32 h-32 border-2 ${accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#b5bcc4]`}>
+          <div className={`w-32 h-32 border-2 ${accountType === 'expedition-guide' ? 'border-[#598636]' : accountType === 'explorer-pro' ? 'border-[#ac6d46]' : 'border-[#616161]'} overflow-hidden bg-[#b5bcc4]`}>
             <ExplorerAvatar username={username} src={avatarUrl} size={128} className="w-full h-full" />
           </div>
         </div>
@@ -51,6 +51,11 @@ export function ExplorerCardPortrait({
       <div className="border-b-2 border-[#202020] bg-[#f5f5f5] dark:border-[#616161] px-3 py-3 dark:bg-[#2a2a2a]">
         <div className="flex items-center gap-2 mb-1">
           <h3 className="font-bold text-sm dark:text-[#e5e5e5] truncate">{username}</h3>
+          {accountType === 'expedition-guide' && (
+            <span className="px-2 py-0.5 bg-[#598636] text-white text-xs font-bold rounded-full whitespace-nowrap">
+              EXPEDITION GUIDE
+            </span>
+          )}
           {accountType === 'explorer-pro' && (
             <span className="px-2 py-0.5 bg-[#ac6d46] text-white text-xs font-bold rounded-full whitespace-nowrap">
               EXPLORER PRO

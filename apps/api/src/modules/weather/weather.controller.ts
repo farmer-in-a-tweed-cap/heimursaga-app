@@ -34,7 +34,11 @@ export class WeatherController {
 
   @Get('region')
   @Public()
-  @Throttle({ short: { limit: 10, ttl: 60000 }, medium: { limit: 10, ttl: 60000 }, long: { limit: 10, ttl: 60000 } })
+  @Throttle({
+    short: { limit: 10, ttl: 60000 },
+    medium: { limit: 10, ttl: 60000 },
+    long: { limit: 10, ttl: 60000 },
+  })
   @HttpCode(HttpStatus.OK)
   async getRegionReport(@Query('q') query: string) {
     if (!query || !query.trim()) {

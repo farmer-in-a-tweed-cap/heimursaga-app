@@ -185,7 +185,7 @@ export default function EntryDetailScreen() {
             {entry.author && (
             <TouchableOpacity
               style={styles.heroAuthor}
-              onPress={() => router.push(`/explorer/${entry.author.username}`)}
+              onPress={() => router.replace(`/explorer/${entry.author.username}`)}
             >
               <Avatar size={20} name={entry.author.username} imageUrl={entry.author.picture} pro={entry.author.creator} />
               <Text style={styles.heroAuthorText}>
@@ -496,7 +496,7 @@ export default function EntryDetailScreen() {
                 <TouchableOpacity
                   key={sibling.id}
                   style={{ flex: 1 }}
-                  onPress={() => router.push(`/entry/${sibling.id}`)}
+                  onPress={() => router.replace(`/entry/${sibling.id}`)}
                 >
                   <HCard style={{ flex: 1 }}>
                     <View style={styles.relatedCardBody}>
@@ -559,7 +559,7 @@ export default function EntryDetailScreen() {
 
                 <TouchableOpacity
                   style={styles.expContextBtn}
-                  onPress={() => router.push(`/expedition/${entry.trip!.id}`)}
+                  onPress={() => router.replace(`/expedition/${entry.trip!.id}`)}
                 >
                   <Text style={styles.expContextBtnText}>VIEW EXPEDITION</Text>
                 </TouchableOpacity>

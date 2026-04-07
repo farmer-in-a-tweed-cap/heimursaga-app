@@ -3,6 +3,7 @@ import { ExplorerRole } from '@repo/types';
 import { ONE_TIME_TIER_SLOTS } from '@repo/types/sponsorship-tiers';
 
 import { integerToDecimal } from '@/lib/formatter';
+
 import {
   ServiceBadRequestException,
   ServiceForbiddenException,
@@ -57,7 +58,13 @@ export class ExpeditionVoiceNoteService {
 
       const expedition = await this.prisma.expedition.findFirst({
         where: { public_id: expeditionId, deleted_at: null },
-        select: { id: true, public_id: true, author_id: true, status: true, visibility: true },
+        select: {
+          id: true,
+          public_id: true,
+          author_id: true,
+          status: true,
+          visibility: true,
+        },
       });
 
       if (!expedition)
