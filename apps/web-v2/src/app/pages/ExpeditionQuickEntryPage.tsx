@@ -509,10 +509,10 @@ export function ExpeditionQuickEntryPage() {
                 </div>
               </div>
 
-              {/* Mode */}
+              {/* Type */}
               <div>
                 <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">
-                  MODE
+                  TYPE
                   {isFromBlueprint && <Lock className="inline h-3 w-3 ml-1 text-[#616161]" />}
                 </label>
                 {isFromBlueprint ? (
@@ -530,7 +530,7 @@ export function ExpeditionQuickEntryPage() {
                     onChange={(e) => setExpeditionMode(e.target.value)}
                     className="w-full px-4 py-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-sm dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
                   >
-                    <option value="">Select mode...</option>
+                    <option value="">Select type...</option>
                     <option value="hike">Hike</option>
                     <option value="paddle">Paddle</option>
                     <option value="bike">Bike</option>

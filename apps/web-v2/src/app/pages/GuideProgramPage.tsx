@@ -119,7 +119,7 @@ export function GuideProgramPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#598636] mt-1">&bull;</span>
-                  <span><strong>Mode of travel</strong>&mdash;hike, paddle, bike, sail, drive, or mixed</span>
+                  <span><strong>Activity type</strong>&mdash;hike, paddle, bike, sail, drive, or mixed</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#598636] mt-1">&bull;</span>
@@ -172,7 +172,7 @@ export function GuideProgramPage() {
                 <div className="flex items-start gap-3 text-sm text-[#202020] dark:text-[#e5e5e5]">
                   <span className="text-[#598636] font-bold font-mono min-w-[20px]">1.</span>
                   <span><strong>Build the route</strong>&mdash;place waypoints on the map, define the path between
-                  them, and select the mode of travel for each leg</span>
+                  them, and select the route mode for each leg</span>
                 </div>
                 <div className="flex items-start gap-3 text-sm text-[#202020] dark:text-[#e5e5e5]">
                   <span className="text-[#598636] font-bold font-mono min-w-[20px]">2.</span>
@@ -181,7 +181,7 @@ export function GuideProgramPage() {
                 </div>
                 <div className="flex items-start gap-3 text-sm text-[#202020] dark:text-[#e5e5e5]">
                   <span className="text-[#598636] font-bold font-mono min-w-[20px]">3.</span>
-                  <span><strong>Select mode</strong>&mdash;choose the expedition mode (hike, paddle, bike, sail,
+                  <span><strong>Set activity type</strong>&mdash;classify the expedition (hike, paddle, bike, sail,
                   drive, or mixed) so explorers can filter and find the right type of adventure</span>
                 </div>
                 <div className="flex items-start gap-3 text-sm text-[#202020] dark:text-[#e5e5e5]">
@@ -227,7 +227,7 @@ export function GuideProgramPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">&bull;</span>
-                  <span>Mode of travel for each route leg</span>
+                  <span>Route mode for each leg (walking, trail, cycling, etc.)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] mt-1">&bull;</span>

@@ -3784,10 +3784,10 @@ export function ExpeditionBuilderPage() {
             </p>
           </div>
 
-          {/* Mode selector - shown for all users */}
+          {/* Type selector - shown for all users */}
           <div>
             <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
-              MODE
+              TYPE
               {canCreateBlueprints && <span className="text-[#ac6d46] ml-1">*REQUIRED</span>}
               {!canCreateBlueprints && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>}
             </label>
@@ -3796,7 +3796,7 @@ export function ExpeditionBuilderPage() {
               onChange={(e) => setExpeditionMode(e.target.value)}
               className="w-full px-3 py-2.5 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#ac6d46] outline-none text-sm dark:text-[#e5e5e5]"
             >
-              <option value="">Select mode...</option>
+              <option value="">Select type...</option>
               <option value="hike">Hike</option>
               <option value="paddle">Paddle</option>
               <option value="bike">Bike</option>

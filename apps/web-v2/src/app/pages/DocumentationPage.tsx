@@ -326,7 +326,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span>Mode of travel for each route leg</span>
+                  <span>Route mode for each leg (walking, trail, cycling, etc.)</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
@@ -364,7 +364,7 @@ export function DocumentationPage() {
             <div>
               <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Route Locking</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-                The route on a launched expedition is locked&mdash;waypoints, route geometry, and travel modes
+                The route on a launched expedition is locked&mdash;waypoints, route geometry, and route modes
                 cannot be changed. This preserves the integrity of the guide&apos;s curated route. You
                 experience the expedition as the guide designed it, while still having full control over your
                 own timeline, journal, and storytelling.
