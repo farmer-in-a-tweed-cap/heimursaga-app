@@ -7,7 +7,7 @@ import { MapPin, X } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
-import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
+import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 import { buildMergedRouteCoords } from '@/app/utils/routeSnapping';
 import { createPOIGeocoder, retrievePOI } from '@/app/utils/poiGeocoder';
 import { toast } from 'sonner';
@@ -108,7 +108,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
   useEffect(() => { currentLocationSourceRef.current = currentLocationSource; }, [currentLocationSource]);
   useEffect(() => { currentLocationIdRef.current = currentLocationId; }, [currentLocationId]);
   const { theme } = useTheme();
-  const { mapLayer } = useMapLayer();
+  const { mapLayer, nauticalOverlay } = useMapLayer();
 
   // Delay map initialization to ensure container is rendered
   useEffect(() => {
@@ -245,6 +245,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
     // Resize map after it loads and render expedition context
     map.on('load', () => {
       map.resize();
+      applyNauticalOverlay(map, nauticalOverlay);
 
       // Read expedition data from refs so that asynchronously-loaded expedition
       // data (which arrives after this closure was created) is used correctly.
@@ -572,7 +573,7 @@ export function LocationMap({ initialLat, initialLng, onLocationSelect, onClose,
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, theme, mapLayer]);
+  }, [mapReady, theme, mapLayer, nauticalOverlay]);
 
   // Update route source from outside the map effect (e.g. getCurrentLocation button)
   const updateRouteSource = (markerLng: number, markerLat: number) => {

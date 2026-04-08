@@ -6,7 +6,7 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
-import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
+import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
 import { X, ChevronLeft, Globe } from 'lucide-react';
 import {
@@ -83,7 +83,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
   const [sourceCluster, setSourceCluster] = useState<EntryCluster<JournalEntry> | null>(null);
   const [popupPosition, setPopupPosition] = useState<'bottom-left' | 'bottom-right'>('bottom-left');
   const { theme } = useTheme();
-  const { mapLayer } = useMapLayer();
+  const { mapLayer, nauticalOverlay } = useMapLayer();
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -160,6 +160,8 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
 
     // Wait for map to load
     map.on('load', () => {
+      applyNauticalOverlay(map, nauticalOverlay);
+
       if (mapMode === 'expedition') {
         expeditions.forEach((expedition) => {
           const expeditionId = expedition.id;
@@ -467,7 +469,7 @@ export function ExplorerExpeditionsMap({ expeditions, allEntries = [], explorerN
       setClickedCluster(null);
       map.remove();
     };
-  }, [expeditions, allEntries, mapMode, theme, mapLayer]);
+  }, [expeditions, allEntries, mapMode, theme, mapLayer, nauticalOverlay]);
 
   return (
     <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161]">{/* Map Header with Mode Toggle */}

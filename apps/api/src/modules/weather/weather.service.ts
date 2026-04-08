@@ -1011,4 +1011,83 @@ export class WeatherService {
       return null;
     }
   }
+
+  // ── Marine weather (Open-Meteo Marine API — free, no key) ──
+
+  private marineCache = new Map<
+    string,
+    { data: MarineConditions; timestamp: number }
+  >();
+  private static readonly MARINE_CACHE_TTL_MS = 20 * 60 * 1000; // 20 minutes
+
+  async getMarineConditions(
+    lat: number,
+    lon: number,
+  ): Promise<MarineConditions | null> {
+    // Round to 0.1° for cache key
+    const key = `${Math.round(lat * 10) / 10},${Math.round(lon * 10) / 10}`;
+    const cached = this.marineCache.get(key);
+    if (
+      cached &&
+      Date.now() - cached.timestamp < WeatherService.MARINE_CACHE_TTL_MS
+    ) {
+      return cached.data;
+    }
+
+    try {
+      const params = [
+        'wave_height',
+        'wave_direction',
+        'wave_period',
+        'swell_wave_height',
+        'swell_wave_direction',
+        'swell_wave_period',
+        'ocean_current_velocity',
+        'ocean_current_direction',
+      ].join(',');
+      const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lon}&current=${params}`;
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        this.logger.warn(
+          `Open-Meteo Marine API error: ${response.status} ${response.statusText}`,
+        );
+        return null;
+      }
+
+      const json = await response.json();
+      const c = json?.current;
+      if (!c) return null;
+
+      const data: MarineConditions = {
+        waveHeight: c.wave_height ?? 0,
+        waveDirection: c.wave_direction ?? 0,
+        wavePeriod: c.wave_period ?? 0,
+        swellHeight: c.swell_wave_height ?? 0,
+        swellDirection: c.swell_wave_direction ?? 0,
+        swellPeriod: c.swell_wave_period ?? 0,
+        oceanCurrentVelocity: c.ocean_current_velocity ?? 0,
+        oceanCurrentDirection: c.ocean_current_direction ?? 0,
+        cachedAt: new Date().toISOString(),
+      };
+
+      this.marineCache.set(key, { data, timestamp: Date.now() });
+      return data;
+    } catch (err) {
+      this.logger.warn(`Open-Meteo Marine API fetch error: ${err.message}`);
+      return null;
+    }
+  }
+}
+
+export interface MarineConditions {
+  waveHeight: number;
+  waveDirection: number;
+  wavePeriod: number;
+  swellHeight: number;
+  swellDirection: number;
+  swellPeriod: number;
+  oceanCurrentVelocity: number;
+  oceanCurrentDirection: number;
+  cachedAt: string;
 }

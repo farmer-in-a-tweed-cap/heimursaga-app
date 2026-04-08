@@ -26,7 +26,8 @@ export function StatsBar({
   const isBlueprint = apiExpedition?.isBlueprint === true;
   const elevMin = apiExpedition?.elevationMinM;
   const elevMax = apiExpedition?.elevationMaxM;
-  const hasElevation = elevMin != null && elevMax != null;
+  const isSail = apiExpedition?.mode === 'sail';
+  const hasElevation = elevMin != null && elevMax != null && !isSail;
   const hasDuration = apiExpedition?.estimatedDurationH != null;
 
   // Count visible columns for responsive grid
@@ -86,16 +87,19 @@ export function StatsBar({
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Entries</div>
         </div>
       )}
-      <div className={`p-2 md:p-4 ${hasElevation ? 'border-r-2' : ''} border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center`}>
+      <div className={`p-2 md:p-4 ${hasElevation || hasDuration ? 'border-r-2' : ''} border-b-2 md:border-b-0 border-[#202020] dark:border-[#616161] flex flex-col items-center justify-center`}>
         <div className="text-xl md:text-2xl font-medium text-[#4676ac]">{formatDistance(totalRouteDistance, 1)}</div>
         <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
           {(() => {
             const mode = apiExpedition?.routeMode;
+            const expeditionType = apiExpedition?.mode;
             const modeLabels: Record<string, string> = {
               walking: 'Walking', cycling: 'Cycling', driving: 'Driving',
               trail: 'Trail', waterway: 'Waterway', mixed: 'Mixed', straight: 'Straight Line',
+              passage: 'Passage',
             };
-            const modeLabel = modeLabels[mode || ''] || 'Haversine';
+            let modeLabel = modeLabels[mode || ''] || 'Haversine';
+            if (expeditionType === 'sail' && (mode === 'straight' || !mode)) modeLabel = 'Passage';
             const tripLabel = apiExpedition?.isRoundTrip ? 'Round Trip' : 'One Way';
             return `${modeLabel} \u2022 ${tripLabel}`;
           })()}

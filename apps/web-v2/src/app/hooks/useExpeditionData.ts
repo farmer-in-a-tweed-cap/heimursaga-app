@@ -173,6 +173,12 @@ export function useExpeditionData(
       commentsEnabled: true,
       imageUrl: api.coverImage || '',
       earlyAccessEnabled: (api as any).earlyAccessEnabled ?? false,
+      mode: api.mode || undefined,
+      vesselName: api.vesselName || undefined,
+      vesselType: api.vesselType || undefined,
+      vesselLengthM: api.vesselLengthM ?? undefined,
+      vesselDraftM: api.vesselDraftM ?? undefined,
+      vesselCrewSize: api.vesselCrewSize ?? undefined,
     };
   }, [apiExpedition, expeditionId]);
 

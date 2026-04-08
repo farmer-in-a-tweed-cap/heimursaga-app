@@ -12,7 +12,10 @@ import { IUserNotificationCreatePayload } from './notification.interface';
 const expo = new Expo();
 
 /** Map notification context to a human-readable push title + body. */
-function buildPushContent(payload: IUserNotificationCreatePayload): {
+function buildPushContent(
+  payload: IUserNotificationCreatePayload,
+  actorName?: string,
+): {
   title: string;
   body: string;
 } {
@@ -22,7 +25,9 @@ function buildPushContent(payload: IUserNotificationCreatePayload): {
     case UserNotificationContext.FOLLOW:
       return {
         title: 'New Follower',
-        body: 'Someone started following your journal.',
+        body: actorName
+          ? `${actorName} started following your journal.`
+          : 'Someone started following your journal.',
       };
     case UserNotificationContext.SPONSORSHIP:
     case UserNotificationContext.QUICK_SPONSOR: {
@@ -193,7 +198,17 @@ export class PushService {
 
     if (tokens.length === 0) return;
 
-    const { title, body } = buildPushContent(payload);
+    // Look up actor username for personalized push copy
+    let actorName: string | undefined;
+    if (payload.mentionUserId) {
+      const actor = await this.prisma.explorer.findUnique({
+        where: { id: payload.mentionUserId },
+        select: { username: true },
+      });
+      actorName = actor?.username ?? undefined;
+    }
+
+    const { title, body } = buildPushContent(payload, actorName);
     const deepLink = buildDeepLink(payload);
 
     const messages: ExpoPushMessage[] = [];

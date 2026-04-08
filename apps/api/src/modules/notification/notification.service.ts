@@ -99,6 +99,6 @@ export class NotificationService {
 
   @OnEvent(EVENTS.NOTIFICATION_CREATE)
   async onCreate(payload: IUserNotificationCreatePayload): Promise<void> {
-    this.create({ query: {}, payload });
+    await this.create({ query: {}, payload });
   }
 }

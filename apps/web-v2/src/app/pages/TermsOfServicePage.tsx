@@ -25,7 +25,7 @@ export function TermsOfServicePage() {
             1. Introduction
           </h2>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
-            Welcome to Heimursaga. These Terms and Conditions ("Terms") govern your use of our web application 
+            Welcome to Heimursaga. These Terms of Service ("Terms") govern your use of our web application 
             and related services (collectively, the "Service").
           </p>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mt-4">
@@ -73,7 +73,7 @@ export function TermsOfServicePage() {
             </li>
             <li className="flex items-start gap-2">
               <span className="text-[#ac6d46] mt-1">•</span>
-              <span><strong>Explorer Pro ($7/month):</strong> All Explorer features plus the ability to receive sponsorships for your expeditions.</span>
+              <span><strong>Explorer Pro ($5/month):</strong> All Explorer features plus the ability to receive sponsorships for your expeditions.</span>
             </li>
           </ul>
 
@@ -314,7 +314,7 @@ export function TermsOfServicePage() {
 
           <h3 className="font-bold mb-2 text-[#202020] dark:text-white">8.2 Explorer Pro Subscriptions</h3>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
-            Explorer Pro subscriptions are billed monthly at $12 USD through Stripe. Subscriptions automatically 
+            Explorer Pro subscriptions are billed monthly at $5 USD through Stripe. Subscriptions automatically 
             renew unless cancelled before the next billing date. Cancellations take effect at the end of the 
             current billing period. We do not provide refunds for partial months.
           </p>
@@ -397,13 +397,13 @@ export function TermsOfServicePage() {
           </h2>
           
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
-            If you have any questions about these Terms and Conditions, please contact us at:
+            If you have any questions about these Terms of Service, please contact us at:
           </p>
           <div className="bg-[#f5f5f5] dark:bg-[#2a2a2a] border-l-4 border-[#ac6d46] p-4 text-sm font-mono">
             <div className="text-[#202020] dark:text-[#e5e5e5]">Email: admin@heimursaga.com</div>
           </div>
           <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed mt-4">
-            These Terms and Conditions are effective as of January 16, 2026 and apply to all users of the Heimursaga Service.
+            These Terms of Service are effective as of January 16, 2026, and apply to all users of the Heimursaga Service.
           </p>
         </section>
       </div>

@@ -10,7 +10,7 @@ import { DatePicker } from '@/app/components/DatePicker';
 import { ConfirmationModal } from '@/app/components/ConfirmationModal';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
-import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
+import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
 import { CurrentLocationSelector } from '@/app/components/CurrentLocationSelector';
@@ -31,7 +31,10 @@ import 'mapbox-gl/dist/mapbox-gl.css';
 import MapboxGeocoder from '@mapbox/mapbox-gl-geocoder';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 
-type RouteMode = 'straight' | 'walking' | 'cycling' | 'driving' | 'trail' | 'waterway';
+type RouteMode = 'straight' | 'passage' | 'walking' | 'cycling' | 'driving' | 'trail' | 'waterway';
+
+/** Returns true for route modes that don't need a directions API fetch (point-to-point straight lines). */
+const isStraightLike = (mode: string) => mode === 'straight' || mode === 'passage';
 type WaterwayProfile = 'paddle' | 'motor';
 
 /** Split a continuous route geometry at waypoint locations to get per-leg coordinate arrays. */
@@ -175,8 +178,10 @@ function stitchLegCoords(legs: { coords: number[][] }[]): number[][] {
 export function ExpeditionBuilderPage() {
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
-  const { mapLayer } = useMapLayer();
-  const { formatDistance } = useDistanceUnit();
+  const { mapLayer, nauticalOverlay } = useMapLayer();
+  const nauticalOverlayRef = useRef(nauticalOverlay);
+  nauticalOverlayRef.current = nauticalOverlay;
+  const { formatDistance, unit } = useDistanceUnit();
   const { isPro, isGuide, canCreateBlueprints } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
@@ -295,6 +300,12 @@ export function ExpeditionBuilderPage() {
   const [durationManuallyEdited, setDurationManuallyEdited] = useState(false);
 
   const [expeditionMode, setExpeditionMode] = useState<string>('');
+  const [vesselName, setVesselName] = useState('');
+  const [vesselType, setVesselType] = useState('');
+  const [vesselLengthM, setVesselLengthM] = useState('');
+  const [vesselDraftM, setVesselDraftM] = useState('');
+  const [vesselCrewSize, setVesselCrewSize] = useState('');
+  const [passageSpeedKn, setPassageSpeedKn] = useState('6');
   const [sponsorshipsEnabled, setSponsorshipsEnabled] = useState(false);
   const [sponsorshipGoal, setSponsorshipGoal] = useState<number | ''>('');
   const [notesAccessThreshold, setNotesAccessThreshold] = useState<number | ''>('');
@@ -382,69 +393,157 @@ export function ExpeditionBuilderPage() {
       { signal: controller.signal },
     ).then(r => r.json()).catch(() => null);
 
-    Promise.all([tilequeryPromise, pointPromise, areaPromise, mapboxPromise]).then(([tileData, pointData, areaData, mapboxData]) => {
-      if (!mapboxData?.features?.length) return;
-      const feature = mapboxData.features[0];
+    Promise.all([tilequeryPromise, pointPromise, areaPromise, mapboxPromise]).then(async ([tileData, pointData, areaData, mapboxData]) => {
+      // Standard land-based flow
+      if (mapboxData?.features?.length) {
+        const feature = mapboxData.features[0];
 
-      let cc = '';
-      let cn = '';
-      let sp = '';
+        let cc = '';
+        let cn = '';
+        let sp = '';
 
-      if (feature.place_type?.includes('country')) {
-        cc = (feature.properties?.short_code || '').toUpperCase();
-        cn = feature.text || '';
-      }
-      if (feature.context) {
-        for (const ctx of feature.context) {
-          if (ctx.id?.startsWith('country.')) {
-            cc = (ctx.short_code || '').toUpperCase();
-            cn = ctx.text || '';
-          } else if (ctx.id?.startsWith('region.')) {
-            sp = ctx.text || '';
+        if (feature.place_type?.includes('country')) {
+          cc = (feature.properties?.short_code || '').toUpperCase();
+          cn = feature.text || '';
+        }
+        if (feature.context) {
+          for (const ctx of feature.context) {
+            if (ctx.id?.startsWith('country.')) {
+              cc = (ctx.short_code || '').toUpperCase();
+              cn = ctx.text || '';
+            } else if (ctx.id?.startsWith('region.')) {
+              sp = ctx.text || '';
+            }
           }
         }
-      }
 
-      setCountryCode(cc);
-      setCountryName(cn);
-      setStateProvince(sp);
+        setCountryCode(cc);
+        setCountryName(cn);
+        setStateProvince(sp);
 
-      // Tilequery: pick the closest named natural feature at the point
-      let atPoint: { name: string; type: string } | null = null;
-      if (tileData?.features?.length) {
-        let bestDist = Infinity;
-        for (const f of tileData.features) {
-          const props = f.properties || {};
-          const name = props.name || props.name_en;
-          if (!name) continue;
-          const dist = props.tilequery?.distance ?? 999;
-          if (dist > 100) continue;
-          if (dist < bestDist) {
-            atPoint = { name, type: props.class || 'natural' };
-            bestDist = dist;
+        // Tilequery: pick the closest named natural feature at the point
+        let atPoint: { name: string; type: string } | null = null;
+        if (tileData?.features?.length) {
+          let bestDist = Infinity;
+          for (const f of tileData.features) {
+            const props = f.properties || {};
+            const name = props.name || props.name_en;
+            if (!name) continue;
+            const dist = props.tilequery?.distance ?? 999;
+            if (dist > 100) continue;
+            if (dist < bestDist) {
+              atPoint = { name, type: props.class || 'natural' };
+              bestDist = dist;
+            }
           }
         }
+
+        const searchPoint = pointData ? pickBest(pointData.features || [], POINT_RULES) : null;
+        const area = areaData ? pickBest(areaData.features || [], AREA_RULES) : null;
+
+        // Tilequery result (feature the waypoint is ON) takes precedence
+        const point = atPoint || searchPoint;
+
+        const parts: string[] = [];
+        if (point) parts.push(point.name);
+        if (area && area.name !== point?.name) parts.push(area.name);
+
+        if (parts.length > 0) {
+          if (sp) parts.push(sp);
+          if (cn) parts.push(cn);
+          setLocationName(parts.join(', '));
+        } else {
+          setLocationName(feature.place_name || '');
+        }
+        setLocationAutoFilled(true);
+        lastGeocodedCoords.current = coordKey;
+        return;
       }
 
-      const searchPoint = pointData ? pickBest(pointData.features || [], POINT_RULES) : null;
-      const area = areaData ? pickBest(areaData.features || [], AREA_RULES) : null;
+      // Open water fallback — no admin context from Mapbox geocoding
+      // Confirm point is in water, then match against known water bodies
+      try {
+        const waterCheckRes = await fetch(
+          `https://api.mapbox.com/v4/mapbox.mapbox-streets-v8/tilequery/${lng},${lat}.json?radius=0&layers=water&limit=1&access_token=${MAPBOX_TOKEN}`,
+          { signal: controller.signal },
+        );
+        const waterCheckData = waterCheckRes.ok ? await waterCheckRes.json() : null;
+        if (!waterCheckData?.features?.length) return; // not in water
 
-      // Tilequery result (feature the waypoint is ON) takes precedence
-      const point = atPoint || searchPoint;
+        // Known water body bounding boxes (specific → general)
+        const WATER_BODIES: { name: string; bounds: [number, number, number, number] }[] = [
+          { name: 'Gulf of Maine', bounds: [-71, 42, -65, 45.5] },
+          { name: 'Chesapeake Bay', bounds: [-77, 36.5, -75.5, 39.5] },
+          { name: 'Gulf of Mexico', bounds: [-98, 18, -80, 31] },
+          { name: 'Gulf of California', bounds: [-115, 22, -107, 32] },
+          { name: 'Puget Sound', bounds: [-123.5, 47, -122, 49] },
+          { name: 'Gulf of St. Lawrence', bounds: [-67, 45.5, -56, 52] },
+          { name: 'Hudson Bay', bounds: [-95, 51, -75, 63.5] },
+          { name: 'Caribbean Sea', bounds: [-88, 9, -59, 22] },
+          { name: 'English Channel', bounds: [-6, 48.5, 2, 51.5] },
+          { name: 'Irish Sea', bounds: [-7, 51, -3, 55] },
+          { name: 'North Sea', bounds: [-4, 51, 10, 62] },
+          { name: 'Baltic Sea', bounds: [10, 53, 30, 66] },
+          { name: 'Bay of Biscay', bounds: [-10, 43, -1, 48.5] },
+          { name: 'Adriatic Sea', bounds: [12, 39.5, 20, 45.8] },
+          { name: 'Aegean Sea', bounds: [22, 35, 28, 41] },
+          { name: 'Tyrrhenian Sea', bounds: [9, 37.5, 16.5, 43.5] },
+          { name: 'Mediterranean Sea', bounds: [-6, 30, 36.5, 46] },
+          { name: 'Black Sea', bounds: [27, 40.5, 42, 47] },
+          { name: 'Red Sea', bounds: [32, 12.5, 44, 30] },
+          { name: 'Persian Gulf', bounds: [47, 23, 57, 31] },
+          { name: 'Arabian Sea', bounds: [51, 5, 77, 25] },
+          { name: 'Bay of Bengal', bounds: [77, 5, 100, 23] },
+          { name: 'South China Sea', bounds: [100, 0, 121, 23] },
+          { name: 'Sea of Japan', bounds: [127, 33, 142, 52] },
+          { name: 'Coral Sea', bounds: [142, -26, 175, -10] },
+          { name: 'Tasman Sea', bounds: [147, -47, 175, -28] },
+          { name: 'Norwegian Sea', bounds: [-10, 62, 20, 72] },
+          { name: 'North Atlantic Ocean', bounds: [-80, 0, 0, 72] },
+          { name: 'South Atlantic Ocean', bounds: [-70, -60, 20, 0] },
+          { name: 'North Pacific Ocean', bounds: [100, 0, -80, 65] },
+          { name: 'South Pacific Ocean', bounds: [140, -60, -70, 0] },
+          { name: 'Indian Ocean', bounds: [20, -60, 147, 30] },
+          { name: 'Southern Ocean', bounds: [-180, -90, 180, -60] },
+          { name: 'Arctic Ocean', bounds: [-180, 72, 180, 90] },
+        ];
 
-      const parts: string[] = [];
-      if (point) parts.push(point.name);
-      if (area && area.name !== point?.name) parts.push(area.name);
+        let waterBodyName: string | null = null;
+        for (const wb of WATER_BODIES) {
+          const [minLon, minLat, maxLon, maxLat] = wb.bounds;
+          if (minLon <= maxLon) {
+            if (lng >= minLon && lng <= maxLon && lat >= minLat && lat <= maxLat) { waterBodyName = wb.name; break; }
+          } else {
+            if ((lng >= minLon || lng <= maxLon) && lat >= minLat && lat <= maxLat) { waterBodyName = wb.name; break; }
+          }
+        }
 
-      if (parts.length > 0) {
-        if (sp) parts.push(sp);
-        if (cn) parts.push(cn);
-        setLocationName(parts.join(', '));
-      } else {
-        setLocationName(feature.place_name || '');
+        // Try to find nearest country for context
+        const countryRes = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=country&limit=1&access_token=${MAPBOX_TOKEN}`,
+          { signal: controller.signal },
+        );
+        const countryData = countryRes.ok ? await countryRes.json() : null;
+        const nearCountry = countryData?.features?.[0];
+        const cc = nearCountry ? (nearCountry.properties?.short_code || '').toUpperCase() : '';
+        const cn = nearCountry?.text || '';
+
+        setCountryCode(cc);
+        setCountryName(cn);
+        setStateProvince('');
+
+        if (waterBodyName) {
+          const parts = [waterBodyName];
+          if (cn) parts.push(cn);
+          setLocationName(parts.join(', '));
+        } else {
+          setLocationName(cn ? `Open water, ${cn}` : 'Open water');
+        }
+        setLocationAutoFilled(true);
+        lastGeocodedCoords.current = coordKey;
+      } catch {
+        // Silently fail — location just won't auto-detect
       }
-      setLocationAutoFilled(true);
-      lastGeocodedCoords.current = coordKey;
     });
 
     return () => controller.abort();
@@ -467,6 +566,19 @@ export function ExpeditionBuilderPage() {
     if (distKm <= 0) return;
 
     const controller = new AbortController();
+    const mode = expeditionMode || routeMode || 'hike';
+    const sailSpeedKmh = parseFloat(passageSpeedKn) > 0 ? parseFloat(passageSpeedKn) / 0.539957 : 14.8;
+
+    // Sail/paddle: skip elevation fetch — use distance-only calculation
+    if (mode === 'sail' || mode === 'paddle') {
+      const speed = mode === 'sail' ? sailSpeedKmh : 5;
+      const hours = distKm / speed;
+      if (hours > 0) {
+        setEstimatedDurationH(String(Math.round(hours * 10) / 10));
+        setDurationAutoFilled(true);
+      }
+      return;
+    }
 
     const lats = waypoints.map(w => w.coordinates.lat).join(',');
     const lons = waypoints.map(w => w.coordinates.lng).join(',');
@@ -487,12 +599,9 @@ export function ExpeditionBuilderPage() {
           }
         }
 
-        const mode = expeditionMode || routeMode || 'hike';
         const speeds: Record<string, { base: number; ascentPenalty: number }> = {
           hike: { base: 4.5, ascentPenalty: 1.67 },
-          paddle: { base: 5, ascentPenalty: 0 },
           bike: { base: 15, ascentPenalty: 3.33 },
-          sail: { base: 8, ascentPenalty: 0 },
           drive: { base: 50, ascentPenalty: 0 },
           mixed: { base: 4.5, ascentPenalty: 1.67 },
           walking: { base: 4.5, ascentPenalty: 1.67 },
@@ -514,9 +623,8 @@ export function ExpeditionBuilderPage() {
       .catch(() => {
         // Fallback: distance-only calculation if elevation fetch fails
         if (durationManuallyEdited) return;
-        const mode = expeditionMode || routeMode || 'hike';
         const baseSpeeds: Record<string, number> = {
-          hike: 4.5, paddle: 5, bike: 15, sail: 8, drive: 50, mixed: 4.5,
+          hike: 4.5, bike: 15, drive: 50, mixed: 4.5,
           walking: 4.5, trail: 4, cycling: 15, driving: 50, waterway: 5,
         };
         const hours = distKm / (baseSpeeds[mode] || 4.5);
@@ -528,6 +636,21 @@ export function ExpeditionBuilderPage() {
 
     return () => controller.abort();
   }, [waypoints, expeditionMode, routeMode, durationManuallyEdited]);
+
+  // Auto-select default route mode based on expedition type
+  useEffect(() => {
+    const defaultModes: Record<string, RouteMode> = {
+      sail: 'passage',
+      paddle: 'waterway',
+      hike: 'trail',
+      bike: 'cycling',
+      drive: 'driving',
+    };
+    const target = defaultModes[expeditionMode];
+    if (target && routeMode !== target) {
+      setRouteMode(target);
+    }
+  }, [expeditionMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Entries loaded from expedition (read-only context in builder)
   const [expeditionEntries, setExpeditionEntries] = useState<Array<{
@@ -633,6 +756,9 @@ export function ExpeditionBuilderPage() {
     if (!estimatedDurationH || Number(estimatedDurationH) <= 0) {
       errors.push('Travel time is required');
     }
+    if (!expeditionMode) {
+      errors.push('Expedition type is required');
+    }
     // Blueprints require at least 2 waypoints
     if (canCreateBlueprints && waypoints.length < 2) {
       errors.push('Blueprints require at least 2 waypoints');
@@ -667,14 +793,19 @@ export function ExpeditionBuilderPage() {
         countryCode: countryCode || undefined,
         countryName: countryName || undefined,
         stateProvince: stateProvince || undefined,
-        routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return m !== 'straight' ? m : null; })(),
-        routeGeometry: perLegModes.some(m => m !== 'straight') && directionsGeometry ? directionsGeometry : null,
+        routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return !isStraightLike(m) ? m : (m === 'passage' ? 'passage' : null); })(),
+        routeGeometry: perLegModes.some(m => !isStraightLike(m)) && directionsGeometry ? directionsGeometry : null,
         routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
         routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
         routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
         isBlueprint: canCreateBlueprints ? true : undefined,
         mode: expeditionMode || undefined,
+        vesselName: vesselName || undefined,
+        vesselType: vesselType || undefined,
+        vesselLengthM: vesselLengthM ? parseFloat(vesselLengthM) : undefined,
+        vesselDraftM: vesselDraftM ? parseFloat(vesselDraftM) : undefined,
+        vesselCrewSize: vesselCrewSize ? parseInt(vesselCrewSize) : undefined,
         estimatedDurationH: estimatedDurationH ? Number(estimatedDurationH) : undefined,
       };
 
@@ -777,14 +908,19 @@ export function ExpeditionBuilderPage() {
         countryCode: countryCode || undefined,
         countryName: countryName || undefined,
         stateProvince: stateProvince || undefined,
-        routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return m !== 'straight' ? m : null; })(),
-        routeGeometry: perLegModes.some(m => m !== 'straight') && directionsGeometry ? directionsGeometry : null,
+        routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return !isStraightLike(m) ? m : (m === 'passage' ? 'passage' : null); })(),
+        routeGeometry: perLegModes.some(m => !isStraightLike(m)) && directionsGeometry ? directionsGeometry : null,
         routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
         routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
         routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
         tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
         isBlueprint: true,
         mode: expeditionMode || undefined,
+        vesselName: vesselName || undefined,
+        vesselType: vesselType || undefined,
+        vesselLengthM: vesselLengthM ? parseFloat(vesselLengthM) : undefined,
+        vesselDraftM: vesselDraftM ? parseFloat(vesselDraftM) : undefined,
+        vesselCrewSize: vesselCrewSize ? parseInt(vesselCrewSize) : undefined,
         estimatedDurationH: estimatedDurationH ? Number(estimatedDurationH) : undefined,
       };
 
@@ -994,7 +1130,7 @@ export function ExpeditionBuilderPage() {
     mode: RouteMode,
     signal?: AbortSignal,
   ): Promise<{ coords: [number, number][]; distance: number; duration: number; obstacles?: RouteObstacle[] }> => {
-    if (mode === 'straight') {
+    if (isStraightLike(mode)) {
       const dist = haversineFromLatLng(from, to);
       return { coords: [[from.lng, from.lat], [to.lng, to.lat]], distance: dist, duration: 0 };
     }
@@ -1069,7 +1205,7 @@ export function ExpeditionBuilderPage() {
         // Reuse cached result if endpoints + mode haven't changed
         if (cache[i] && cache[i].key === key) {
           legResults.push(cache[i]);
-        } else if (modes[i] === 'straight') {
+        } else if (isStraightLike(modes[i])) {
           legResults.push(await fetchSingleLegRoute(from, to, 'straight'));
         } else {
           if (!fetchedAny) { fetchedAny = true; setDirectionsLoading(true); }
@@ -1552,6 +1688,13 @@ export function ExpeditionBuilderPage() {
           setExpeditionMode(expedition.mode);
         }
 
+        // Load vessel profile
+        if (expedition.vesselName) setVesselName(expedition.vesselName);
+        if (expedition.vesselType) setVesselType(expedition.vesselType);
+        if (expedition.vesselLengthM != null) setVesselLengthM(String(expedition.vesselLengthM));
+        if (expedition.vesselDraftM != null) setVesselDraftM(String(expedition.vesselDraftM));
+        if (expedition.vesselCrewSize != null) setVesselCrewSize(String(expedition.vesselCrewSize));
+
         // Set cover photo from API (already full URL)
         if (expedition.coverImage) {
           setCoverPhotoPreview(expedition.coverImage);
@@ -1579,12 +1722,12 @@ export function ExpeditionBuilderPage() {
         }
 
         // Restore route mode from saved expedition
-        if (expedition.routeMode && expedition.routeMode !== 'straight') {
+        if (expedition.routeMode && !isStraightLike(expedition.routeMode)) {
           if (expedition.routeMode === 'mixed' && (expedition as any).routeLegModes) {
             // Mixed mode — restore per-leg modes and set the first non-straight mode as base
             const legModes = (expedition as any).routeLegModes as RouteMode[];
             setPerLegModesAndRef(legModes);
-            const firstNonStraight = legModes.find(m => m !== 'straight') || 'walking';
+            const firstNonStraight = legModes.find(m => !isStraightLike(m)) || 'walking';
             setRouteMode(firstNonStraight);
           } else {
             setRouteMode(expedition.routeMode as RouteMode);
@@ -1669,7 +1812,7 @@ export function ExpeditionBuilderPage() {
           const restoredModes = perLegModesRef.current;
           const modeStr = restoredModes.length > 0
             ? restoredModes.join(',')
-            : (expedition.routeMode && expedition.routeMode !== 'straight' ? expedition.routeMode : 'straight');
+            : (expedition.routeMode && !isStraightLike(expedition.routeMode) ? expedition.routeMode : (expedition.routeMode === 'passage' ? 'passage' : 'straight'));
           lastDirectionsCoordsRef.current = transformedWaypoints
             .map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
             + `::${modeStr}::${!!expedition.isRoundTrip}::${waterwayProfileRef.current}`;
@@ -1736,6 +1879,11 @@ export function ExpeditionBuilderPage() {
     });
     if (draft.tags?.length) setTags(draft.tags.join(', '));
     if ((draft as any).mode) setExpeditionMode((draft as any).mode);
+    if ((draft as any).vesselName) setVesselName((draft as any).vesselName);
+    if ((draft as any).vesselType) setVesselType((draft as any).vesselType);
+    if ((draft as any).vesselLengthM != null) setVesselLengthM(String((draft as any).vesselLengthM));
+    if ((draft as any).vesselDraftM != null) setVesselDraftM(String((draft as any).vesselDraftM));
+    if ((draft as any).vesselCrewSize != null) setVesselCrewSize(String((draft as any).vesselCrewSize));
     if (draft.locationName) {
       setLocationName(draft.locationName);
       setLocationAutoFilled(true);
@@ -1759,11 +1907,11 @@ export function ExpeditionBuilderPage() {
     if (draft.notesVisibility) setNotesVisibility(draft.notesVisibility);
     if (draft.earlyAccessEnabled) setEarlyAccessEnabled(true);
     if (draft.isRoundTrip) setIsRoundTrip(true);
-    if (draft.routeMode && draft.routeMode !== 'straight') {
+    if (draft.routeMode && !isStraightLike(draft.routeMode)) {
       if (draft.routeMode === 'mixed' && draft.routeLegModes) {
         const legModes = draft.routeLegModes as RouteMode[];
         setPerLegModesAndRef(legModes);
-        const firstNonStraight = legModes.find((m: string) => m !== 'straight') || 'walking';
+        const firstNonStraight = legModes.find((m: string) => !isStraightLike(m)) || 'walking';
         setRouteMode(firstNonStraight as RouteMode);
       } else {
         setRouteMode(draft.routeMode as RouteMode);
@@ -1808,7 +1956,7 @@ export function ExpeditionBuilderPage() {
       const restoredModes = perLegModesRef.current;
       const modeStr = restoredModes.length > 0
         ? restoredModes.join(',')
-        : (draft.routeMode && draft.routeMode !== 'straight' ? draft.routeMode : 'straight');
+        : (draft.routeMode && !isStraightLike(draft.routeMode) ? draft.routeMode : (draft.routeMode === 'passage' ? 'passage' : 'straight'));
       lastDirectionsCoordsRef.current = transformed
         .map(w => `${w.coordinates.lat},${w.coordinates.lng}`).join('|')
         + `::${modeStr}::${!!draft.isRoundTrip}::${waterwayProfileRef.current}`;
@@ -1878,14 +2026,19 @@ export function ExpeditionBuilderPage() {
           countryCode: countryCode || undefined,
           countryName: countryName || undefined,
           stateProvince: stateProvince || undefined,
-          routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return m !== 'straight' ? m : null; })(),
-          routeGeometry: perLegModes.some(m => m !== 'straight') && directionsGeometry ? directionsGeometry : null,
+          routeMode: (() => { const u = new Set(perLegModes); if (u.size > 1) return 'mixed'; const m = perLegModes[0] || routeMode; return !isStraightLike(m) ? m : (m === 'passage' ? 'passage' : null); })(),
+          routeGeometry: perLegModes.some(m => !isStraightLike(m)) && directionsGeometry ? directionsGeometry : null,
           routeLegModes: new Set(perLegModes).size > 1 ? perLegModes : undefined,
           routeDistanceKm: totalDistance > 0 ? Math.round(totalDistance * 10) / 10 : undefined,
           routeObstacles: waterwayObstacles.length > 0 ? waterwayObstacles : null,
           tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
           isBlueprint: canCreateBlueprints ? true : undefined,
           mode: expeditionMode || undefined,
+          vesselName: vesselName || undefined,
+          vesselType: vesselType || undefined,
+          vesselLengthM: vesselLengthM ? parseFloat(vesselLengthM) : undefined,
+          vesselDraftM: vesselDraftM ? parseFloat(vesselDraftM) : undefined,
+          vesselCrewSize: vesselCrewSize ? parseInt(vesselCrewSize) : undefined,
           estimatedDurationH: estimatedDurationH ? Number(estimatedDurationH) : undefined,
         };
 
@@ -2141,6 +2294,7 @@ export function ExpeditionBuilderPage() {
       // Set map loaded when style is loaded
       newMap.on('load', () => {
         setMapLoaded(true);
+        applyNauticalOverlay(newMap, nauticalOverlayRef.current);
 
         // Enable POI labels so businesses/establishments are visible
         const style = newMap.getStyle();
@@ -2248,12 +2402,19 @@ export function ExpeditionBuilderPage() {
             }
           }
         }
+        applyNauticalOverlay(m, nauticalOverlayRef.current);
       }
     });
 
     return () => { isMounted = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, mapLayer]);
+
+  // Dynamically toggle nautical overlay
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+    applyNauticalOverlay(map.current, nauticalOverlay);
+  }, [nauticalOverlay, mapLoaded]);
 
   // Hide instructions overlay when map moves
   useEffect(() => {
@@ -2307,7 +2468,7 @@ export function ExpeditionBuilderPage() {
     }
     const existing = perLegModesRef.current;
     if (existing.length !== numLegs) {
-      const defaultMode = (routeMode !== 'straight' ? routeMode : 'straight') as RouteMode;
+      const defaultMode = (!isStraightLike(routeMode) ? routeMode : routeMode) as RouteMode;
       const existingGeoms = perLegGeomsRef.current;
       if (numLegs > existing.length) {
         // Leg added (waypoint added or round trip toggled on) — preserve existing, append new
@@ -2333,8 +2494,8 @@ export function ExpeditionBuilderPage() {
     if (!mapLoaded) return;
 
     // Reset directions state when all legs are straight or too few waypoints
-    const hasNonStraightLeg = perLegModesRef.current.some(m => m !== 'straight');
-    if ((routeMode === 'straight' && !hasNonStraightLeg) || waypoints.length < 2) {
+    const hasNonStraightLeg = perLegModesRef.current.some(m => !isStraightLike(m));
+    if ((isStraightLike(routeMode) && !hasNonStraightLeg) || waypoints.length < 2) {
       lastDirectionsCoordsRef.current = '';
       setDirectionsGeometry(null);
       setDirectionsLegDistances(null);
@@ -2622,8 +2783,8 @@ export function ExpeditionBuilderPage() {
 
       // Build route coordinates from routeItems order (matches sidebar)
       const hasWaypointRoute = waypoints.length > 1;
-      const hasAnyNonStraightLeg = perLegModes.some(m => m !== 'straight');
-      const useDirections = hasWaypointRoute && (routeMode !== 'straight' || hasAnyNonStraightLeg) && directionsGeometry && directionsGeometry.length > 0;
+      const hasAnyNonStraightLeg = perLegModes.some(m => !isStraightLike(m));
+      const useDirections = hasWaypointRoute && (!isStraightLike(routeMode) || hasAnyNonStraightLeg) && directionsGeometry && directionsGeometry.length > 0;
 
       let routeCoordinates: number[][] | null = null;
 
@@ -3116,7 +3277,7 @@ export function ExpeditionBuilderPage() {
 
   // Route search helpers
   const getRouteCoordinates = useCallback((): number[][] => {
-    if (perLegModes.some(m => m !== 'straight') && directionsGeometry && directionsGeometry.length > 0) {
+    if (perLegModes.some(m => !isStraightLike(m)) && directionsGeometry && directionsGeometry.length > 0) {
       return directionsGeometry;
     }
     return waypoints.map(w => [w.coordinates.lng, w.coordinates.lat]);
@@ -3201,7 +3362,7 @@ export function ExpeditionBuilderPage() {
 
   const handleRouteSearch = useCallback(async (categoryId: string) => {
     if (waypoints.length < 2) return;
-    if (perLegModes.some(m => m !== 'straight') && directionsLoading) return;
+    if (perLegModes.some(m => !isStraightLike(m)) && directionsLoading) return;
     setActiveCategory(categoryId);
     setRouteSearchLoading(true);
     setRouteSearchResults([]);
@@ -3429,7 +3590,7 @@ export function ExpeditionBuilderPage() {
   })();
 
   // Derived values
-  const hasNonStraightLeg = perLegModes.some(m => m !== 'straight');
+  const hasNonStraightLeg = perLegModes.some((m: string) => !isStraightLike(m));
   const startRouteItemId = routeItems.length > 0 ? routeItems[0].id : null;
   const endRouteItemId = routeItems.length > 1 && !isRoundTrip ? routeItems[routeItems.length - 1].id : null;
 
@@ -3621,7 +3782,7 @@ export function ExpeditionBuilderPage() {
               <div className="text-xl md:text-2xl font-medium text-[#4676ac]">{formatDistance(totalDistance, 1)}</div>
               <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Total Distance</div>
             </div>
-            {totalTravelTime > 0 && perLegModes.some(m => m !== 'straight') && (
+            {totalTravelTime > 0 && perLegModes.some(m => !isStraightLike(m)) && (
               <div className="text-center">
                 <div className="text-xl md:text-2xl font-medium text-[#616161] dark:text-[#e5e5e5]">{formatTravelTime(totalTravelTime)}</div>
                 <div className="text-xs md:text-xs text-[#616161] dark:text-[#b5bcc4]">Travel Time</div>
@@ -3788,8 +3949,7 @@ export function ExpeditionBuilderPage() {
           <div>
             <label className="block text-xs font-medium mb-2 dark:text-[#e5e5e5]">
               TYPE
-              {canCreateBlueprints && <span className="text-[#ac6d46] ml-1">*REQUIRED</span>}
-              {!canCreateBlueprints && <span className="text-[#616161] dark:text-[#b5bcc4] ml-1">(Optional)</span>}
+              <span className="text-[#ac6d46] ml-1">*REQUIRED</span>
             </label>
             <select
               value={expeditionMode}
@@ -3805,6 +3965,97 @@ export function ExpeditionBuilderPage() {
               <option value="mixed">Mixed</option>
             </select>
           </div>
+
+          {/* Vessel & Passage — shown for sail/paddle expeditions, spans full width */}
+          {(expeditionMode === 'sail' || expeditionMode === 'paddle') && (
+            <div className="md:col-span-2 border-2 border-[#4676ac] p-4 space-y-4">
+              <div className="text-xs font-bold dark:text-[#e5e5e5]">VESSEL & PASSAGE</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">VESSEL NAME</label>
+                  <input
+                    type="text"
+                    value={vesselName}
+                    onChange={(e) => setVesselName(e.target.value)}
+                    placeholder="e.g. SV Wanderer"
+                    maxLength={100}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#4676ac] outline-none text-sm dark:text-[#e5e5e5]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">VESSEL TYPE</label>
+                  <select
+                    value={vesselType}
+                    onChange={(e) => setVesselType(e.target.value)}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#4676ac] outline-none text-sm dark:text-[#e5e5e5]"
+                  >
+                    <option value="">Select...</option>
+                    <option value="monohull">Monohull</option>
+                    <option value="catamaran">Catamaran</option>
+                    <option value="trimaran">Trimaran</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">LENGTH (m)</label>
+                  <input
+                    type="number"
+                    value={vesselLengthM}
+                    onChange={(e) => setVesselLengthM(e.target.value)}
+                    step="0.1"
+                    min={0}
+                    max={500}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#4676ac] outline-none text-sm dark:text-[#e5e5e5]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">DRAFT (m)</label>
+                  <input
+                    type="number"
+                    value={vesselDraftM}
+                    onChange={(e) => setVesselDraftM(e.target.value)}
+                    step="0.1"
+                    min={0}
+                    max={50}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#4676ac] outline-none text-sm dark:text-[#e5e5e5]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">CREW SIZE</label>
+                  <input
+                    type="number"
+                    value={vesselCrewSize}
+                    onChange={(e) => setVesselCrewSize(e.target.value)}
+                    min={1}
+                    max={999}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#4676ac] outline-none text-sm dark:text-[#e5e5e5]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 dark:text-[#e5e5e5]">
+                    AVG SPEED ({unit === 'nm' ? 'kn' : unit === 'km' ? 'km/h' : 'mph'})
+                  </label>
+                  <input
+                    type="number"
+                    value={passageSpeedKn}
+                    onChange={(e) => {
+                      setPassageSpeedKn(e.target.value);
+                      setDurationManuallyEdited(false);
+                    }}
+                    step="0.5"
+                    min={0.5}
+                    max={50}
+                    className="w-full px-3 py-2 bg-white dark:bg-[#2a2a2a] border-2 border-[#b5bcc4] dark:border-[#616161] focus:border-[#4676ac] outline-none text-sm dark:text-[#e5e5e5]"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                Average speed is used to estimate passage time. Default: 6 kn for sailing.
+              </p>
+            </div>
+          )}
 
           {/* Start Date - hidden for guide/blueprint accounts */}
           {!canCreateBlueprints && (
@@ -3880,13 +4131,13 @@ export function ExpeditionBuilderPage() {
                           strokeDasharray={style.dash ? style.dash.join(' ') : 'none'} />
                       </svg>
                       <span className="text-[10px] font-semibold" style={{ color: style.color }}>{style.label}</span>
-                      {mode !== 'straight' && !isPro && <Lock size={8} className="text-[#ac6d46]" />}
+                      {!isStraightLike(mode) && !isPro && <Lock size={8} className="text-[#ac6d46]" />}
                     </div>
                   ))}
                 </div>
               </div>
               <div className="text-[10px] text-[#616161] dark:text-[#b5bcc4] mt-1">
-                Defaults to straight line — select a route leg in the sidebar to edit
+                Default route mode is set by expedition type — select a route leg in the sidebar to change
               </div>
             </div>
           </div>
@@ -3956,7 +4207,7 @@ export function ExpeditionBuilderPage() {
                 >
                   <Locate size={20} />
                 </button>
-                {perLegModes.some(m => m !== 'straight') && (
+                {perLegModes.some(m => !isStraightLike(m)) && (
                   <button
                     onClick={() => {
                       legCacheRef.current = [];
@@ -4350,7 +4601,7 @@ export function ExpeditionBuilderPage() {
                   {totalDistance > 0 && (
                     <div className="text-[10px] text-[#4676ac] font-mono">
                       {formatDistance(totalDistance, 1)} total
-                      {totalTravelTime > 0 && perLegModes.some(m => m !== 'straight') && (
+                      {totalTravelTime > 0 && perLegModes.some(m => !isStraightLike(m)) && (
                         <> • {formatTravelTime(totalTravelTime)}</>
                       )}
                     </div>
@@ -4405,12 +4656,12 @@ export function ExpeditionBuilderPage() {
                           <button
                             key={cat.id}
                             onClick={() => handleRouteSearch(cat.id)}
-                            disabled={routeSearchLoading || (perLegModes.some(m => m !== 'straight') && directionsLoading)}
+                            disabled={routeSearchLoading || (perLegModes.some(m => !isStraightLike(m)) && directionsLoading)}
                             className={`px-2.5 py-1 text-[10px] font-bold border transition-all ${
                               activeCategory === cat.id
                                 ? 'bg-[#4676ac] text-white border-[#4676ac]'
                                 : 'bg-white dark:bg-[#2a2a2a] text-[#202020] dark:text-[#e5e5e5] border-[#b5bcc4] dark:border-[#616161] hover:border-[#4676ac] hover:text-[#4676ac]'
-                            } ${routeSearchLoading || (perLegModes.some(m => m !== 'straight') && directionsLoading) ? 'opacity-50 cursor-wait' : ''}`}
+                            } ${routeSearchLoading || (perLegModes.some(m => !isStraightLike(m)) && directionsLoading) ? 'opacity-50 cursor-wait' : ''}`}
                           >
                             {cat.name}
                           </button>
@@ -4681,7 +4932,7 @@ export function ExpeditionBuilderPage() {
                                           {cumDist > 0 && <> · {formatDistance(cumDist, 1)} total</>}
                                         </span>
                                       )}
-                                      {directionsLoading && legMode !== 'straight' && (
+                                      {directionsLoading && !isStraightLike(legMode) && (
                                         <div className="flex items-center gap-1 ml-auto">
                                           <Loader2 size={10} className="animate-spin text-[#ac6d46]" />
                                           {directionsProgress && legMode === 'waterway' && (
@@ -4698,10 +4949,10 @@ export function ExpeditionBuilderPage() {
                                         LEG {legIdx + 1} ROUTE TYPE
                                       </div>
                                       <div className="grid grid-cols-3 gap-1.5">
-                                        {(['straight', 'walking', 'cycling', 'driving', 'trail', 'waterway'] as RouteMode[]).map(mode => {
+                                        {(['straight', 'passage', 'walking', 'cycling', 'driving', 'trail', 'waterway'] as RouteMode[]).map(mode => {
                                           const mStyle = ROUTE_MODE_STYLES[mode];
                                           const isActive = legMode === mode;
-                                          const disabled = mode !== 'straight' && !isPro;
+                                          const disabled = !isStraightLike(mode) && !isPro;
                                           return (
                                             <button
                                               key={mode}
@@ -4722,7 +4973,7 @@ export function ExpeditionBuilderPage() {
                                                 color: isActive ? 'white' : mStyle.color,
                                               }}
                                             >
-                                              {mode === 'straight' ? 'Line' : mStyle.label}
+                                              {isStraightLike(mode) ? (mode === 'passage' ? 'Passage' : 'Line') : mStyle.label}
                                               {disabled && <Lock size={8} className="inline ml-0.5 -mt-0.5" />}
                                             </button>
                                           );
@@ -5369,7 +5620,7 @@ export function ExpeditionBuilderPage() {
 
         <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#616161] flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="text-xs text-[#616161] dark:text-[#b5bcc4] font-mono">
-            {canCreateBlueprints ? 'Expedition builder • Blueprint mode' : 'Expedition builder v1.0'} • Route: {(() => { const u = new Set(perLegModes); if (u.size > 1) return `Mixed (${u.size} modes)`; const m = perLegModes[0] || 'straight'; return m === 'straight' ? 'Straight-line' : m === 'trail' ? 'Trail' : m === 'waterway' ? `Waterway (${waterwayProfile})` : m.charAt(0).toUpperCase() + m.slice(1); })()} • {waypoints.length} waypoints defined
+            {canCreateBlueprints ? 'Expedition builder • Blueprint mode' : 'Expedition builder v1.0'} • Route: {(() => { const u = new Set(perLegModes); if (u.size > 1) return `Mixed (${u.size} modes)`; const m = perLegModes[0] || 'straight'; return m === 'straight' ? 'Straight-line' : m === 'passage' ? 'Passage' : m === 'trail' ? 'Trail' : m === 'waterway' ? `Waterway (${waterwayProfile})` : m.charAt(0).toUpperCase() + m.slice(1); })()} • {waypoints.length} waypoints defined
           </div>
           {!canCreateBlueprints && (
           <Link

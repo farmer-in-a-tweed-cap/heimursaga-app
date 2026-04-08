@@ -84,12 +84,32 @@ function sanitizeEntryMetadata(
       ['elevationGain', 'number'],
       ['duration', 'number'],
       ['avgSpeed', 'number'],
+      ['waveHeight', 'number'],
+      ['waterTemperature', 'number'],
+      ['heading', 'number'],
+      ['currentSpeed', 'number'],
     ];
 
     for (const [key] of fields) {
       const val = toNumber(metadata[key]);
       if (val !== undefined) result[key] = val;
     }
+
+    // Marine string fields
+    const seaState = truncateStr(metadata.seaState, 50);
+    if (seaState !== undefined) result.seaState = seaState;
+
+    const tidalState = truncateStr(metadata.tidalState, 20);
+    if (
+      tidalState !== undefined &&
+      ['high', 'low', 'flooding', 'ebbing', 'slack'].includes(tidalState)
+    ) {
+      result.tidalState = tidalState;
+    }
+
+    const sailConfiguration = truncateStr(metadata.sailConfiguration, 200);
+    if (sailConfiguration !== undefined)
+      result.sailConfiguration = sailConfiguration;
   }
   // photo has no extra metadata
 

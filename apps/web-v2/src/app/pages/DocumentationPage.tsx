@@ -240,6 +240,22 @@ export function DocumentationPage() {
                   <span className="text-[#ac6d46]">•</span>
                   <span>Stats bar: days active, amount raised, sponsors, waypoints, entries, distance</span>
                 </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Expedition type: Hike, Paddle, Bike, Sail, Drive, or Mixed</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Optional vessel profile for sail/paddle expeditions (vessel name, type, length, draft, crew size)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Passage planning with configurable average speed for sailing travel time estimates</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span>Marine weather conditions (wave height, swell, ocean current) displayed for sail/paddle expeditions</span>
+                </li>
               </ul>
             </div>
             <div>
@@ -432,7 +448,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span><strong>Data Log</strong> (Pro): Structured data entries (temperature, humidity, wind, elevation, etc.)</span>
+                  <span><strong>Data Log</strong> (Pro): Structured data entries (temperature, humidity, wind, elevation, etc.). Sail/paddle expeditions can also log marine data: wave height, water temperature, sea state, tidal state, heading, current speed, and sail configuration</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
@@ -801,7 +817,7 @@ export function DocumentationPage() {
                   <Image src="/assets/badges/Circumnavigator.svg" alt="Circumnavigator" className="w-12 h-12 object-contain" width={48} height={48} />
                   <span className="font-bold text-[#ac6d46]">Circumnavigator</span>
                   <span className="text-[#202020] dark:text-[#e5e5e5]">Round-the-world journey</span>
-                  <span className="text-[#616161] dark:text-[#b5bcc4]">Complete an expedition spanning all major longitude zones (Americas, Europe/Africa, Asia/Pacific, Pacific/Americas)</span>
+                  <span className="text-[#616161] dark:text-[#b5bcc4]">Complete an expedition spanning all four major longitude zones</span>
                 </div>
               </div>
             </div>
@@ -931,7 +947,7 @@ export function DocumentationPage() {
                 </div>
                 <div className="flex items-center gap-3 p-2 bg-[#f5f5f5] dark:bg-[#2a2a2a]">
                   <span className="text-[#ac6d46] font-bold w-32">PRIVATE</span>
-                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible only to you. All entries locked to private. Expedition notes and sponsorships are completely disabled. Cannot be changed after creation.</span>
+                  <span className="text-[#202020] dark:text-[#e5e5e5]">Visible only to you. All entries locked to private. Expedition Notes and sponsorships are completely disabled. Cannot be changed after creation.</span>
                 </div>
               </div>
               <p className="text-sm text-[#616161] dark:text-[#b5bcc4] mt-2">
@@ -1021,11 +1037,15 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span><strong>Units:</strong> Metric or imperial for distances/temperatures</span>
+                  <span><strong>Units:</strong> Metric, imperial, or nautical (nautical miles and knots) for distances, speeds, and temperatures</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
                   <span><strong>Satellite Map:</strong> Toggle satellite imagery on expedition maps</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-[#ac6d46]">•</span>
+                  <span><strong>Nautical Chart Overlay:</strong> Toggle OpenSeaMap navigational aids, depths, and harbor markers on all maps</span>
                 </li>
               </ul>
             </div>
@@ -1063,7 +1083,7 @@ export function DocumentationPage() {
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>
-                  <span>GDPR compliant data handling</span>
+                  <span>GDPR-compliant data handling</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46]">•</span>

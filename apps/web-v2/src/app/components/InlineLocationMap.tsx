@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useTheme } from '@/app/context/ThemeContext';
-import { useMapLayer, getMapStyle } from '@/app/context/MapLayerContext';
+import { useMapLayer, getMapStyle, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
 
@@ -23,7 +23,7 @@ export function InlineLocationMap({ lat, lng, className = '' }: InlineLocationMa
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const { theme } = useTheme();
-  const { mapLayer } = useMapLayer();
+  const { mapLayer, nauticalOverlay } = useMapLayer();
   const [mapReady, setMapReady] = useState(false);
 
   // Delay map initialization to ensure container is rendered
@@ -51,6 +51,7 @@ export function InlineLocationMap({ lat, lng, className = '' }: InlineLocationMa
 
     map.on('load', () => {
       map.resize();
+      applyNauticalOverlay(map, nauticalOverlay);
     });
 
     // Suppress non-critical Mapbox warnings
@@ -86,7 +87,7 @@ export function InlineLocationMap({ lat, lng, className = '' }: InlineLocationMa
       map.remove();
       mapRef.current = null;
     };
-  }, [mapReady, lat, lng, theme, mapLayer]);
+  }, [mapReady, lat, lng, theme, mapLayer, nauticalOverlay]);
 
   if (!MAPBOX_TOKEN) {
     return (

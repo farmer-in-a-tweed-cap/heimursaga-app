@@ -443,6 +443,11 @@ export interface ExplorerExpedition {
   blueprintId?: string;
   isRouteLocked?: boolean;
   mode?: string;
+  vesselName?: string;
+  vesselType?: string;
+  vesselLengthM?: number;
+  vesselDraftM?: number;
+  vesselCrewSize?: number;
   adoptionsCount?: number;
   averageRating?: number;
   ratingsCount?: number;
@@ -829,6 +834,11 @@ export interface Expedition {
   blueprintId?: string;
   isRouteLocked?: boolean;
   mode?: string;
+  vesselName?: string;
+  vesselType?: string;
+  vesselLengthM?: number;
+  vesselDraftM?: number;
+  vesselCrewSize?: number;
   adoptionsCount?: number;
   averageRating?: number;
   ratingsCount?: number;
@@ -864,6 +874,23 @@ export interface ExpeditionCreatePayload {
   estimatedDurationH?: number;
   isBlueprint?: boolean;
   mode?: string;
+  vesselName?: string;
+  vesselType?: string;
+  vesselLengthM?: number;
+  vesselDraftM?: number;
+  vesselCrewSize?: number;
+}
+
+export interface MarineConditions {
+  waveHeight: number;
+  waveDirection: number;
+  wavePeriod: number;
+  swellHeight: number;
+  swellDirection: number;
+  swellPeriod: number;
+  oceanCurrentVelocity: number;
+  oceanCurrentDirection: number;
+  cachedAt: string;
 }
 
 export interface BlueprintReview {
@@ -2500,6 +2527,8 @@ export const weatherApi = {
     api.get<ActivityPulseResponse>('/weather/stats'),
   getRegionReport: (query: string) =>
     api.get<RegionReportResponse>(`/weather/region?q=${encodeURIComponent(query)}`),
+  getMarineConditions: (lat: number, lon: number) =>
+    api.get<MarineConditions | null>(`/weather/marine?lat=${lat}&lon=${lon}`),
 };
 
 export interface ContactFormPayload {

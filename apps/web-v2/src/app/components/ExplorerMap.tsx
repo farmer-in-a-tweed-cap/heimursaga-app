@@ -9,7 +9,7 @@ import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { MapPin, User, X, Maximize2, Minimize2, Bookmark, UserPlus, UserCheck, BookmarkCheck, Loader2, ChevronLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/app/context/ThemeContext';
-import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
+import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 import { createPOIGeocoder } from '@/app/utils/poiGeocoder';
 import { useAuth } from '@/app/context/AuthContext';
 import { entryApi, explorerApi, expeditionApi } from '@/app/services/api';
@@ -130,7 +130,9 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
   const [previewExpedition, setPreviewExpedition] = useState<{ title: string; id: string } | null>(null);
   const previewMarkersRef = useRef<mapboxgl.Marker[]>([]);
   const { theme } = useTheme();
-  const { mapLayer } = useMapLayer();
+  const { mapLayer, nauticalOverlay } = useMapLayer();
+  const nauticalOverlayRef = useRef(nauticalOverlay);
+  nauticalOverlayRef.current = nauticalOverlay;
   const { isAuthenticated, user } = useAuth();
   const router = useRouter();
 
@@ -358,6 +360,14 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     map.on('moveend', updateGeocoderProximity);
     map.on('load', updateGeocoderProximity);
 
+    // Apply nautical overlay on initial load and re-apply after style changes
+    map.on('load', () => {
+      applyNauticalOverlay(map, nauticalOverlayRef.current);
+    });
+    map.on('style.load', () => {
+      applyNauticalOverlay(map, nauticalOverlayRef.current);
+    });
+
     const navControl = new mapboxgl.NavigationControl({ showCompass: false });
     map.addControl(navControl, 'top-right');
     navControlRef.current = navControl;
@@ -406,6 +416,12 @@ export function ExplorerMap({ context }: ExplorerMapProps = {}) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Dynamically toggle nautical overlay
+  useEffect(() => {
+    if (!mapRef.current) return;
+    applyNauticalOverlay(mapRef.current, nauticalOverlay);
+  }, [nauticalOverlay]);
 
   // Attach moveend/zoomend listeners — re-attaches when updateVisibleItems changes
   // so the callback always has the current mapMode and data

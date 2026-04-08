@@ -78,6 +78,12 @@ export type TransformedExpedition = {
   commentsEnabled: boolean;
   imageUrl: string;
   earlyAccessEnabled?: boolean;
+  mode?: string;
+  vesselName?: string;
+  vesselType?: string;
+  vesselLengthM?: number;
+  vesselDraftM?: number;
+  vesselCrewSize?: number;
 };
 
 export type CurrentLocationData = {

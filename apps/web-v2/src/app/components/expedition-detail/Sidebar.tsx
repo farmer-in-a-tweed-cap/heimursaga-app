@@ -5,8 +5,11 @@ import { Star } from 'lucide-react';
 import { formatCurrency } from '@/app/utils/formatCurrency';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { ExplorerAvatar } from '@/app/components/ExplorerAvatar';
+import { useState, useEffect } from 'react';
+import { Anchor } from 'lucide-react';
 import type { TransformedExpedition, WaypointType, FundingStats, SponsorWithTotal } from '@/app/components/expedition-detail/types';
-import type { ExpeditionCondition, BlueprintReview } from '@/app/services/api';
+import type { ExpeditionCondition, BlueprintReview, MarineConditions } from '@/app/services/api';
+import { weatherApi } from '@/app/services/api';
 import { getPerksForSlot, getTierLabel } from '@repo/types/sponsorship-tiers';
 import type { SponsorshipTierFull } from '@/app/services/api';
 
@@ -46,13 +49,13 @@ function WeatherCard({
   formatDistance: (km: number, decimals?: number) => string;
 }) {
   const { unit } = useDistanceUnit();
-  const useMetric = unit === 'km';
+  const useMetric = unit === 'km' || unit === 'nm'; // nautical uses Celsius
 
   const temp = useMetric ? condition.tempC : condition.tempF;
   const feelsLike = useMetric ? condition.feelsLikeC : condition.feelsLikeF;
   const tempUnit = useMetric ? '°C' : '°F';
-  const wind = useMetric ? condition.windKph : condition.windMph;
-  const windUnit = useMetric ? 'km/h' : 'mph';
+  const wind = unit === 'nm' ? condition.windKph * 0.539957 : unit === 'km' ? condition.windKph : condition.windMph;
+  const windUnit = unit === 'nm' ? 'kn' : unit === 'km' ? 'km/h' : 'mph';
   const iconUrl = condition.conditionIcon.startsWith('//')
     ? `https:${condition.conditionIcon}`
     : condition.conditionIcon;
@@ -90,6 +93,85 @@ function WeatherCard({
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Timezone:</span> {condition.timezone}</div>
           <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Updated:</span> {condition.lastUpdated}</div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function VesselCard({ expedition }: { expedition: TransformedExpedition }) {
+  const { unit } = useDistanceUnit();
+  const formatLength = (m: number) => {
+    if (unit === 'mi') return `${(m * 3.28084).toFixed(1)} ft`;
+    return `${m.toFixed(1)} m`;
+  };
+  const typeLabel: Record<string, string> = {
+    monohull: 'Monohull',
+    catamaran: 'Catamaran',
+    trimaran: 'Trimaran',
+    other: 'Other',
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
+      <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5] flex items-center gap-2">
+        <Anchor size={14} />
+        VESSEL
+      </h3>
+      <div className="text-xs font-mono space-y-1 text-[#616161] dark:text-[#b5bcc4]">
+        <div className="text-sm font-bold text-[#202020] dark:text-[#e5e5e5] mb-2">{expedition.vesselName}</div>
+        {expedition.vesselType && (
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Type:</span> {typeLabel[expedition.vesselType] || expedition.vesselType}</div>
+        )}
+        {expedition.vesselLengthM != null && (
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">LOA:</span> {formatLength(expedition.vesselLengthM)}</div>
+        )}
+        {expedition.vesselDraftM != null && (
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Draft:</span> {formatLength(expedition.vesselDraftM)}</div>
+        )}
+        {expedition.vesselCrewSize != null && (
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Crew:</span> {expedition.vesselCrewSize}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MarineWeatherCard({ lat, lon }: { lat: number; lon: number }) {
+  const [marine, setMarine] = useState<MarineConditions | null>(null);
+  const { unit } = useDistanceUnit();
+
+  useEffect(() => {
+    weatherApi.getMarineConditions(lat, lon).then(setMarine).catch(() => {});
+  }, [lat, lon]);
+
+  if (!marine) return null;
+
+  const formatDir = (deg: number) => {
+    const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    return dirs[Math.round(deg / 45) % 8];
+  };
+  const speedLabel = unit === 'nm' ? 'kn' : unit === 'km' ? 'km/h' : 'mph';
+  const currentSpeed = unit === 'nm'
+    ? (marine.oceanCurrentVelocity * 1.94384).toFixed(1) // m/s to knots
+    : unit === 'km'
+      ? (marine.oceanCurrentVelocity * 3.6).toFixed(1)
+      : (marine.oceanCurrentVelocity * 2.23694).toFixed(1);
+
+  return (
+    <div className="bg-white dark:bg-[#202020] border-2 border-[#202020] dark:border-[#616161] p-4">
+      <h3 className="text-xs font-bold mb-3 border-b border-[#202020] dark:border-[#616161] pb-2 dark:text-[#e5e5e5]">
+        MARINE CONDITIONS
+      </h3>
+      <div className="text-xs font-mono space-y-1 text-[#616161] dark:text-[#b5bcc4]">
+        {marine.waveHeight > 0 && (
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Waves:</span> {marine.waveHeight.toFixed(1)} m / {marine.wavePeriod.toFixed(0)}s {formatDir(marine.waveDirection)}</div>
+        )}
+        {marine.swellHeight > 0 && (
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Swell:</span> {marine.swellHeight.toFixed(1)} m / {marine.swellPeriod.toFixed(0)}s {formatDir(marine.swellDirection)}</div>
+        )}
+        {marine.oceanCurrentVelocity > 0 && (
+          <div><span className="text-[#202020] dark:text-[#e5e5e5] font-bold">Current:</span> {currentSpeed} {speedLabel} {formatDir(marine.oceanCurrentDirection)}</div>
+        )}
       </div>
     </div>
   );
@@ -205,6 +287,11 @@ export function Sidebar({
         </div>
       </div>
 
+      {/* Vessel Details */}
+      {expedition.vesselName && (
+        <VesselCard expedition={expedition} />
+      )}
+
       {/* Current Weather Conditions — active expeditions with weather data */}
       {weatherCondition && (
         <WeatherCard
@@ -212,6 +299,11 @@ export function Sidebar({
           localTime={weatherLocalTime}
           formatDistance={formatDistance}
         />
+      )}
+
+      {/* Marine Conditions — for sail/paddle expeditions */}
+      {(expedition.mode === 'sail' || expedition.mode === 'paddle') && weatherCondition && (
+        <MarineWeatherCard lat={weatherCondition.lat} lon={weatherCondition.lon} />
       )}
 
       {/* Funding Breakdown - only show if sponsorships enabled */}

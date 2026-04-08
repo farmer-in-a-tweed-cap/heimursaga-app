@@ -7,7 +7,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useAuth } from '@/app/context/AuthContext';
 import { useTheme } from '@/app/context/ThemeContext';
-import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
+import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 import { ROUTE_MODE_STYLES, drawPerLegRouteLines } from '@/app/utils/mapRouteDrawing';
 import { useDistanceUnit } from '@/app/context/DistanceUnitContext';
 import { useProFeatures } from '@/app/hooks/useProFeatures';
@@ -47,7 +47,7 @@ export function ExpeditionDetailPage() {
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
   const { theme } = useTheme();
-  const { mapLayer } = useMapLayer();
+  const { mapLayer, nauticalOverlay, setNauticalOverlay } = useMapLayer();
   const { formatDistance } = useDistanceUnit();
   const { isPro } = useProFeatures();
   const { setIsOwnContent } = usePageOwner();
@@ -325,6 +325,8 @@ export function ExpeditionDetailPage() {
     });
 
     map.on('load', () => {
+      applyNauticalOverlay(map, nauticalOverlay);
+
       // Route lines — fallback merges waypoints + entries by geographic proximity
       const hasDirectionsRoute = apiExpedition?.routeGeometry && apiExpedition.routeGeometry.length > 0;
       const routeStyle = ROUTE_MODE_STYLES[apiExpedition?.routeMode || ''] || ROUTE_MODE_STYLES.straight;
@@ -618,7 +620,7 @@ export function ExpeditionDetailPage() {
       map.remove();
       bannerMapRef.current = null;
     };
-  }, [theme, mapLayer, waypoints, journalEntries, apiExpedition, debriefRoute]);
+  }, [theme, mapLayer, nauticalOverlay, waypoints, journalEntries, apiExpedition, debriefRoute]);
 
   // Phase 1: When modal opens, wait for browser paint then signal ready
   useEffect(() => {
@@ -688,6 +690,7 @@ export function ExpeditionDetailPage() {
     // Wait for map to load
     map.on('load', () => {
       map.resize();
+      applyNauticalOverlay(map, nauticalOverlay);
 
       const hasDirectionsRoute = apiExpedition?.routeGeometry && apiExpedition.routeGeometry.length > 0;
       const routeStyle2 = ROUTE_MODE_STYLES[apiExpedition?.routeMode || ''] || ROUTE_MODE_STYLES.straight;
@@ -1122,7 +1125,7 @@ export function ExpeditionDetailPage() {
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modalMapReady, theme, mapLayer, waypoints, journalEntries, apiExpedition]);
+  }, [modalMapReady, theme, mapLayer, nauticalOverlay, waypoints, journalEntries, apiExpedition]);
 
   // Handle pendingFlyTo when modal is already open (clicking different waypoints)
   useEffect(() => {

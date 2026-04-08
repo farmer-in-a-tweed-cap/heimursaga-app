@@ -8,7 +8,10 @@ export function EnvoyMarketingPage() {
       {/* Print-specific styles */}
       <style>{`
         @media print {
-          header, footer, nav, .no-print { display: none !important; }
+          header, footer, nav, .no-print, aside { display: none !important; }
+          body * { visibility: hidden; }
+          .print-page, .print-page * { visibility: visible; }
+          .print-page { position: absolute; left: 0; top: 0; width: 100%; }
           body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-page { padding: 0 !important; max-width: 100% !important; }
           .print-cover-header { margin-left: -0.7in !important; margin-right: -0.7in !important; padding-left: 0.7in !important; padding-right: 0.7in !important; }
@@ -176,7 +179,7 @@ export function EnvoyMarketingPage() {
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-3 tracking-[0.06em]">CONTENT REQUIREMENTS</h3>
             <p className="text-xs text-[#202020] dark:text-[#e5e5e5] leading-relaxed mb-4">
               The Envoy Program is a commitment to active, consistent use of Heimursaga. These are the minimum
-              expectations &mdash; most envoys will naturally exceed them.
+              expectations &mdash; most Envoys will naturally exceed them.
             </p>
             <div className="grid grid-cols-2 gap-x-8 gap-y-4">
               <div className="border-l-3 pl-4" style={{ borderLeftWidth: 3, borderLeftColor: '#4676ac' }}>
@@ -258,9 +261,10 @@ export function EnvoyMarketingPage() {
               <div className="flex items-start gap-2"><span className="text-[#ac6d46] shrink-0">&#9654;</span> <span>Log journal entries with photos, locations, and narrative text</span></div>
               <div className="flex items-start gap-2"><span className="text-[#ac6d46] shrink-0">&#9654;</span> <span>Receive sponsorships from followers &mdash; one-time and recurring</span></div>
               <div className="flex items-start gap-2"><span className="text-[#ac6d46] shrink-0">&#9654;</span> <span>Set funding goals per expedition with live progress tracking</span></div>
-              <div className="flex items-start gap-2"><span className="text-[#ac6d46] shrink-0">&#9654;</span> <span>Use the expedition builder with six route modes, elevation data, and travel time estimation</span></div>
+              <div className="flex items-start gap-2"><span className="text-[#ac6d46] shrink-0">&#9654;</span> <span>Use the expedition builder with six route modes, elevation data, passage planning, and travel time estimation</span></div>
               <div className="flex items-start gap-2"><span className="text-[#ac6d46] shrink-0">&#9654;</span> <span>Track your position on the Explorer Atlas &mdash; a global map of active explorers</span></div>
               <div className="flex items-start gap-2"><span className="text-[#ac6d46] shrink-0">&#9654;</span> <span>Build a public profile and journal that showcases all your expeditions and entries</span></div>
+              <div className="flex items-start gap-2"><span className="text-[#ac6d46] shrink-0">&#9654;</span> <span>Sailor-ready: vessel profiles, nautical chart overlay, marine weather, and nautical units (nm/kn)</span></div>
               <div className="flex items-start gap-2"><span className="text-[#ac6d46] shrink-0">&#9654;</span> <span>Connect with other explorers through follows, bookmarks, and the discover feed</span></div>
             </div>
           </div>
@@ -273,6 +277,13 @@ export function EnvoyMarketingPage() {
               cycling, driving, waterway, and straight line), per-leg mode switching, elevation-aware travel time
               calculation, satellite/vector map toggle, and along-route POI search. It includes a purpose-built
               waterway routing engine for paddle expeditions with obstacle detection (dams, locks, rapids).
+            </p>
+            <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed mb-3">
+              For sailors: set your expedition type to Sail and the builder adds vessel profile fields (name, type,
+              LOA, draft, crew size), configurable average speed for passage time estimates, and automatic
+              straight-line routing for ocean waypoints. Toggle the OpenSeaMap nautical chart overlay on any map
+              to see navigational aids, depth contours, and harbor markers. Live marine weather &mdash; wave height,
+              swell, and ocean current data &mdash; is displayed on the expedition sidebar.
             </p>
             <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
               Routes are planned visually on the map and stored with full geometry, making your expedition page

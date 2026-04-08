@@ -67,6 +67,16 @@ export function EditEntryPage() {
   const [dlElevationGain, setDlElevationGain] = useState('');
   const [dlDuration, setDlDuration] = useState('');
   const [dlAvgSpeed, setDlAvgSpeed] = useState('');
+
+  // Marine data-log metadata state
+  const [dlWaveHeight, setDlWaveHeight] = useState('');
+  const [dlSeaState, setDlSeaState] = useState('');
+  const [dlWaterTemp, setDlWaterTemp] = useState('');
+  const [dlTidalState, setDlTidalState] = useState('');
+  const [dlHeading, setDlHeading] = useState('');
+  const [dlCurrentSpeed, setDlCurrentSpeed] = useState('');
+  const [dlSailConfig, setDlSailConfig] = useState('');
+
   const [entryTitle, setEntryTitle] = useState('');
   const [locationName, setLocationName] = useState('');
   const [entryDate, setEntryDate] = useState('');
@@ -290,6 +300,13 @@ export function EditEntryPage() {
             if (meta.elevationGain) setDlElevationGain(meta.elevationGain);
             if (meta.duration) setDlDuration(meta.duration);
             if (meta.avgSpeed) setDlAvgSpeed(meta.avgSpeed);
+            if (meta.waveHeight != null) setDlWaveHeight(String(meta.waveHeight));
+            if (meta.seaState) setDlSeaState(String(meta.seaState));
+            if (meta.waterTemperature != null) setDlWaterTemp(String(meta.waterTemperature));
+            if (meta.tidalState) setDlTidalState(String(meta.tidalState));
+            if (meta.heading != null) setDlHeading(String(meta.heading));
+            if (meta.currentSpeed != null) setDlCurrentSpeed(String(meta.currentSpeed));
+            if (meta.sailConfiguration) setDlSailConfig(String(meta.sailConfiguration));
           }
         }
 
@@ -355,6 +372,10 @@ export function EditEntryPage() {
   // Get expedition info from API entry
   const expedition = apiEntry?.trip || apiEntry?.expedition;
 
+  // Derive marine mode from expedition or full expedition data
+  const isSailMode = (fullExpedition?.mode === 'sail' || fullExpedition?.mode === 'paddle') ||
+    ((expedition as any)?.mode === 'sail' || (expedition as any)?.mode === 'paddle');
+
   // Detect if entry is linked to a waypoint (coordinates should be locked)
   const isLinkedToWaypoint = useMemo(() => {
     if (!fullExpedition?.waypoints || !apiEntry?.id) return false;
@@ -383,6 +404,13 @@ export function EditEntryPage() {
         ...(dlElevationGain ? { elevationGain: parseFloat(dlElevationGain) } : {}),
         ...(dlDuration ? { duration: parseFloat(dlDuration) } : {}),
         ...(dlAvgSpeed ? { avgSpeed: parseFloat(dlAvgSpeed) } : {}),
+        ...(dlWaveHeight ? { waveHeight: parseFloat(dlWaveHeight) } : {}),
+        ...(dlSeaState ? { seaState: dlSeaState } : {}),
+        ...(dlWaterTemp ? { waterTemperature: parseFloat(dlWaterTemp) } : {}),
+        ...(dlTidalState ? { tidalState: dlTidalState } : {}),
+        ...(dlHeading ? { heading: parseFloat(dlHeading) } : {}),
+        ...(dlCurrentSpeed ? { currentSpeed: parseFloat(dlCurrentSpeed) } : {}),
+        ...(dlSailConfig ? { sailConfiguration: dlSailConfig } : {}),
       }} : {}),
       uploads: uploadedMedia.map(m => m.id),
       uploadCaptions: Object.fromEntries(
@@ -399,7 +427,7 @@ export function EditEntryPage() {
       visibility,
       commentsEnabled,
     };
-  }, [entryTitle, standardContent, photoContent, videoContent, videoUrl, dataContent, locationName, coordinates, entryDate, entryTime, entryType, uploadedMedia, mediaMetadata, coverPhotoId, visibility, commentsEnabled, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
+  }, [entryTitle, standardContent, photoContent, videoContent, videoUrl, dataContent, locationName, coordinates, entryDate, entryTime, entryType, uploadedMedia, mediaMetadata, coverPhotoId, visibility, commentsEnabled, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed, dlWaveHeight, dlSeaState, dlWaterTemp, dlTidalState, dlHeading, dlCurrentSpeed, dlSailConfig]);
 
   // Auto-save function
   const performAutoSave = useCallback(async () => {
@@ -408,7 +436,7 @@ export function EditEntryPage() {
     const content = standardContent || photoContent || videoContent || dataContent;
     const mediaIds = uploadedMedia.map(m => m.id).join(',');
     const captionsStr = JSON.stringify(mediaMetadata);
-    const dataLogStr = `${dlTemperature}|${dlHumidity}|${dlWindSpeed}|${dlPressure}|${dlDistanceCovered}|${dlElevationGain}|${dlDuration}|${dlAvgSpeed}`;
+    const dataLogStr = `${dlTemperature}|${dlHumidity}|${dlWindSpeed}|${dlPressure}|${dlDistanceCovered}|${dlElevationGain}|${dlDuration}|${dlAvgSpeed}|${dlWaveHeight}|${dlSeaState}|${dlWaterTemp}|${dlTidalState}|${dlHeading}|${dlCurrentSpeed}|${dlSailConfig}`;
     const contentSignature = `${entryTitle}|${content}|${locationName}|${coordinates?.lat}|${coordinates?.lng}|${entryType}|${videoUrl}|${mediaIds}|${captionsStr}|${coverPhotoId}|${dataLogStr}|${visibility}`;
 
     // Skip if no changes
@@ -428,7 +456,7 @@ export function EditEntryPage() {
       setIsAutoSaving(false);
       isAutoSavingRef.current = false;
     }
-  }, [entryId, apiEntry, entryTitle, standardContent, photoContent, videoContent, videoUrl, dataContent, locationName, coordinates, buildSavePayload, uploadedMedia, mediaMetadata, coverPhotoId, entryType, visibility, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
+  }, [entryId, apiEntry, entryTitle, standardContent, photoContent, videoContent, videoUrl, dataContent, locationName, coordinates, buildSavePayload, uploadedMedia, mediaMetadata, coverPhotoId, entryType, visibility, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed, dlWaveHeight, dlSeaState, dlWaterTemp, dlTidalState, dlHeading, dlCurrentSpeed, dlSailConfig]);
 
   // Auto-save interval (every 30 seconds)
   useEffect(() => {
@@ -1346,6 +1374,60 @@ Remember: Your sponsors and followers are reading this to understand your journe
                       </div>
                     </div>
                   </div>
+
+                  {isSailMode && (
+                    <div className="border-2 border-[#4676ac] p-4 dark:bg-[#2a2a2a]">
+                      <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">MARINE DATA:</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Wave Height (m)</label>
+                          <input type="number" step="0.1" min={0} className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" placeholder="e.g., 1.5" value={dlWaveHeight} onChange={(e) => setDlWaveHeight(e.target.value)} />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Water Temp (°C)</label>
+                          <input type="number" step="0.1" className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" placeholder="e.g., 18.0" value={dlWaterTemp} onChange={(e) => setDlWaterTemp(e.target.value)} />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Sea State</label>
+                          <select className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" value={dlSeaState} onChange={(e) => setDlSeaState(e.target.value)}>
+                            <option value="">Select...</option>
+                            <option value="Calm (glassy)">Calm (glassy)</option>
+                            <option value="Calm (rippled)">Calm (rippled)</option>
+                            <option value="Smooth">Smooth</option>
+                            <option value="Slight">Slight</option>
+                            <option value="Moderate">Moderate</option>
+                            <option value="Rough">Rough</option>
+                            <option value="Very rough">Very rough</option>
+                            <option value="High">High</option>
+                            <option value="Very high">Very high</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Tidal State</label>
+                          <select className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" value={dlTidalState} onChange={(e) => setDlTidalState(e.target.value)}>
+                            <option value="">Select...</option>
+                            <option value="high">High</option>
+                            <option value="low">Low</option>
+                            <option value="flooding">Flooding</option>
+                            <option value="ebbing">Ebbing</option>
+                            <option value="slack">Slack</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Heading (°)</label>
+                          <input type="number" min={0} max={360} className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" placeholder="e.g., 225" value={dlHeading} onChange={(e) => setDlHeading(e.target.value)} />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Current (kn)</label>
+                          <input type="number" step="0.1" min={0} className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" placeholder="e.g., 2.5" value={dlCurrentSpeed} onChange={(e) => setDlCurrentSpeed(e.target.value)} />
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Sail Configuration</label>
+                        <input type="text" maxLength={200} className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" placeholder="e.g., Main + Genoa" value={dlSailConfig} onChange={(e) => setDlSailConfig(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">

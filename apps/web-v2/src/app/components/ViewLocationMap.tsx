@@ -5,7 +5,7 @@ import mapboxgl from 'mapbox-gl';
 import { X, MapPin } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useTheme } from '@/app/context/ThemeContext';
-import { useMapLayer, getMapStyle } from '@/app/context/MapLayerContext';
+import { useMapLayer, getMapStyle, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 
 // Mapbox configuration - token loaded from environment variable
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || '';
@@ -28,7 +28,7 @@ export function ViewLocationMap({ lat, lng, locationName, elevation, onClose }: 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const { theme } = useTheme();
-  const { mapLayer } = useMapLayer();
+  const { mapLayer, nauticalOverlay } = useMapLayer();
   const [mapReady, setMapReady] = useState(false);
 
   // Delay map initialization to ensure container is rendered
@@ -57,6 +57,7 @@ export function ViewLocationMap({ lat, lng, locationName, elevation, onClose }: 
     // Resize map after it loads
     map.on('load', () => {
       map.resize();
+      applyNauticalOverlay(map, nauticalOverlay);
     });
 
     // Add error handler - suppress style evaluation warnings
@@ -115,7 +116,7 @@ export function ViewLocationMap({ lat, lng, locationName, elevation, onClose }: 
       map.remove();
       mapRef.current = null;
     };
-  }, [mapReady, lat, lng, locationName, elevation, theme, mapLayer]);
+  }, [mapReady, lat, lng, locationName, elevation, theme, mapLayer, nauticalOverlay]);
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">

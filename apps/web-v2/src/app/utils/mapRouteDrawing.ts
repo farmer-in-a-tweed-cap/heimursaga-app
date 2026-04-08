@@ -6,6 +6,7 @@ import mapboxgl from 'mapbox-gl';
 
 export const ROUTE_MODE_STYLES: Record<string, { color: string; label: string; dash: number[] | null; width: number }> = {
   straight: { color: '#999999', label: 'Straight Line', dash: [2, 2], width: 3 },
+  passage:  { color: '#89b4d4', label: 'Passage', dash: [6, 3], width: 4 },
   walking:  { color: '#4676ac', label: 'Walking', dash: null, width: 4 },
   cycling:  { color: '#9b59b6', label: 'Cycling', dash: null, width: 4 },
   driving:  { color: '#d35400', label: 'Driving', dash: null, width: 4 },

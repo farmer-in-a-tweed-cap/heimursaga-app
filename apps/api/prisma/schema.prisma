@@ -432,6 +432,11 @@ model Expedition {
   blueprint_id    Int?
   is_route_locked Boolean?             @default(false)
   mode            String?              @db.VarChar(20) // hike, paddle, bike, sail, drive, mixed
+  vessel_name     String?              @db.VarChar(100)
+  vessel_type     String?              @db.VarChar(20) // monohull, catamaran, trimaran, other
+  vessel_length_m Float?
+  vessel_draft_m  Float?
+  vessel_crew_size Int?
   adoptions_count Int?                 @default(0)
   average_rating  Float?
   ratings_count   Int?                 @default(0)

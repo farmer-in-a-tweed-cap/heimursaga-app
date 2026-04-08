@@ -1,6 +1,7 @@
 'use client';
 
-import { X, Maximize2, ChevronLeft, ChevronRight, Bookmark, BookmarkCheck, Loader2 } from 'lucide-react';
+import { X, Maximize2, ChevronLeft, ChevronRight, Bookmark, BookmarkCheck, Loader2, Anchor } from 'lucide-react';
+import { useMapLayer } from '@/app/context/MapLayerContext';
 import { ClusterTimelinePopup } from '@/app/components/ClusterTimelinePopup';
 import type { DebriefStop, JournalEntryType, TransformedExpedition, CurrentLocationData } from '@/app/components/expedition-detail/types';
 import type { EntryCluster, PopupPosition, ClusteredMarkersResult } from '@/app/utils/mapClustering';
@@ -77,6 +78,8 @@ export function MapModal({
   onBookmarkEntry,
   clusteredRef,
 }: MapModalProps) {
+  const { nauticalOverlay, setNauticalOverlay } = useMapLayer();
+
   if (!isOpen) return null;
 
   return (
@@ -112,6 +115,13 @@ export function MapModal({
                   DEBRIEF MODE
                 </button>
               )}
+              <button
+                onClick={() => setNauticalOverlay(!nauticalOverlay)}
+                className={`px-3 py-1.5 text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-1.5 ${nauticalOverlay ? 'bg-[#4676ac] hover:bg-[#3a6599] text-white' : 'bg-[#202020] hover:bg-[#333] text-white'}`}
+                title={nauticalOverlay ? 'Hide nautical chart' : 'Show nautical chart'}
+              >
+                <Anchor size={14} />
+              </button>
               <button
                 onClick={onClose}
                 className="px-4 py-2 bg-[#202020] hover:bg-[#333] text-white text-xs font-bold transition-all active:scale-[0.98] flex items-center gap-2"

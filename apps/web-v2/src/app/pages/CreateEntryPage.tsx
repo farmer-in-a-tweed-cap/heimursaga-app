@@ -84,6 +84,15 @@ export function CreateEntryPage() {
   const [dlDuration, setDlDuration] = useState('');
   const [dlAvgSpeed, setDlAvgSpeed] = useState('');
 
+  // Marine data-log metadata state
+  const [dlWaveHeight, setDlWaveHeight] = useState('');
+  const [dlSeaState, setDlSeaState] = useState('');
+  const [dlWaterTemp, setDlWaterTemp] = useState('');
+  const [dlTidalState, setDlTidalState] = useState('');
+  const [dlHeading, setDlHeading] = useState('');
+  const [dlCurrentSpeed, setDlCurrentSpeed] = useState('');
+  const [dlSailConfig, setDlSailConfig] = useState('');
+
   // API state
   const [expedition, setExpedition] = useState<Expedition | null>(null);
   const [expeditionLoading, setExpeditionLoading] = useState(!isStandalone);
@@ -91,6 +100,9 @@ export function CreateEntryPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPlanningModal, setShowPlanningModal] = useState(false);
   const pendingSubmitRef = useRef<React.FormEvent | null>(null);
+
+  // Derive marine mode from expedition
+  const isSailMode = expedition?.mode === 'sail' || expedition?.mode === 'paddle';
 
   // Date range for the date picker
   // Standalone entries: no min, max = today
@@ -327,10 +339,17 @@ export function CreateEntryPage() {
       if (dlElevationGain) meta.elevationGain = parseFloat(dlElevationGain);
       if (dlDuration) meta.duration = parseFloat(dlDuration);
       if (dlAvgSpeed) meta.avgSpeed = parseFloat(dlAvgSpeed);
+      if (dlWaveHeight) meta.waveHeight = parseFloat(dlWaveHeight);
+      if (dlSeaState) meta.seaState = dlSeaState;
+      if (dlWaterTemp) meta.waterTemperature = parseFloat(dlWaterTemp);
+      if (dlTidalState) meta.tidalState = dlTidalState;
+      if (dlHeading) meta.heading = parseFloat(dlHeading);
+      if (dlCurrentSpeed) meta.currentSpeed = parseFloat(dlCurrentSpeed);
+      if (dlSailConfig) meta.sailConfiguration = dlSailConfig;
       return Object.keys(meta).length > 0 ? meta : undefined;
     }
     return undefined;
-  }, [entryType, videoUrl, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed]);
+  }, [entryType, videoUrl, dlTemperature, dlHumidity, dlWindSpeed, dlPressure, dlDistanceCovered, dlElevationGain, dlDuration, dlAvgSpeed, dlWaveHeight, dlSeaState, dlWaterTemp, dlTidalState, dlHeading, dlCurrentSpeed, dlSailConfig]);
 
   // Build payload for saving
   const buildSavePayload = useCallback((isDraft: boolean) => {
@@ -1868,6 +1887,60 @@ Individual photo captions can be added after upload.`}
                       </div>
                     </div>
                   </div>
+
+                  {isSailMode && (
+                    <div className="border-2 border-[#4676ac] p-4 dark:bg-[#2a2a2a]">
+                      <div className="text-xs font-bold mb-3 dark:text-[#e5e5e5]">MARINE DATA:</div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Wave Height (m)</label>
+                          <input type="number" step="0.1" min={0} className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" placeholder="e.g., 1.5" value={dlWaveHeight} onChange={(e) => setDlWaveHeight(e.target.value)} />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Water Temp (°C)</label>
+                          <input type="number" step="0.1" className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" placeholder="e.g., 18.0" value={dlWaterTemp} onChange={(e) => setDlWaterTemp(e.target.value)} />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Sea State</label>
+                          <select className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" value={dlSeaState} onChange={(e) => setDlSeaState(e.target.value)}>
+                            <option value="">Select...</option>
+                            <option value="Calm (glassy)">Calm (glassy)</option>
+                            <option value="Calm (rippled)">Calm (rippled)</option>
+                            <option value="Smooth">Smooth</option>
+                            <option value="Slight">Slight</option>
+                            <option value="Moderate">Moderate</option>
+                            <option value="Rough">Rough</option>
+                            <option value="Very rough">Very rough</option>
+                            <option value="High">High</option>
+                            <option value="Very high">Very high</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Tidal State</label>
+                          <select className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" value={dlTidalState} onChange={(e) => setDlTidalState(e.target.value)}>
+                            <option value="">Select...</option>
+                            <option value="high">High</option>
+                            <option value="low">Low</option>
+                            <option value="flooding">Flooding</option>
+                            <option value="ebbing">Ebbing</option>
+                            <option value="slack">Slack</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Heading (°)</label>
+                          <input type="number" min={0} max={360} className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" placeholder="e.g., 225" value={dlHeading} onChange={(e) => setDlHeading(e.target.value)} />
+                        </div>
+                        <div>
+                          <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Current (kn)</label>
+                          <input type="number" step="0.1" min={0} className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" placeholder="e.g., 2.5" value={dlCurrentSpeed} onChange={(e) => setDlCurrentSpeed(e.target.value)} />
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-xs mb-2 text-[#616161] dark:text-[#b5bcc4]">Sail Configuration</label>
+                        <input type="text" maxLength={200} className="w-full px-3 py-2 border border-[#b5bcc4] dark:border-[#3a3a3a] focus:border-[#ac6d46] outline-none text-xs font-mono dark:bg-[#202020] dark:text-[#e5e5e5]" placeholder="e.g., Main + Genoa" value={dlSailConfig} onChange={(e) => setDlSailConfig(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                     <label className="block text-xs font-medium mb-2 text-[#202020] dark:text-[#e5e5e5]">

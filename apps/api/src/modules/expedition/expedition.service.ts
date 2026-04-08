@@ -506,6 +506,11 @@ export class ExpeditionService {
                 : undefined,
               isBlueprint: (expedition as any).is_blueprint === true,
               mode: (expedition as any).mode || undefined,
+              vesselName: (expedition as any).vessel_name || undefined,
+              vesselType: (expedition as any).vessel_type || undefined,
+              vesselLengthM: (expedition as any).vessel_length_m ?? undefined,
+              vesselDraftM: (expedition as any).vessel_draft_m ?? undefined,
+              vesselCrewSize: (expedition as any).vessel_crew_size ?? undefined,
               adoptionsCount: (expedition as any).adoptions_count ?? 0,
               averageRating: (expedition as any).average_rating ?? undefined,
               ratingsCount: (expedition as any).ratings_count ?? 0,
@@ -793,6 +798,11 @@ export class ExpeditionService {
               'public') as 'public' | 'sponsors' | 'private',
             isBlueprint: (row as any).is_blueprint || false,
             mode: (row as any).mode || undefined,
+            vesselName: (row as any).vessel_name || undefined,
+            vesselType: (row as any).vessel_type || undefined,
+            vesselLengthM: (row as any).vessel_length_m ?? undefined,
+            vesselDraftM: (row as any).vessel_draft_m ?? undefined,
+            vesselCrewSize: (row as any).vessel_crew_size ?? undefined,
             adoptionsCount: (row as any).adoptions_count ?? 0,
             averageRating: (row as any).average_rating ?? undefined,
             ratingsCount: (row as any).ratings_count ?? 0,
@@ -898,6 +908,11 @@ export class ExpeditionService {
             blueprint_id: true,
             is_route_locked: true,
             mode: true,
+            vessel_name: true,
+            vessel_type: true,
+            vessel_length_m: true,
+            vessel_draft_m: true,
+            vessel_crew_size: true,
             adoptions_count: true,
             average_rating: true,
             ratings_count: true,
@@ -1319,6 +1334,11 @@ export class ExpeditionService {
         blueprintId: source_blueprint?.public_id || undefined,
         isRouteLocked: is_route_locked || false,
         mode: mode || undefined,
+        vesselName: (expedition as any).vessel_name || undefined,
+        vesselType: (expedition as any).vessel_type || undefined,
+        vesselLengthM: (expedition as any).vessel_length_m ?? undefined,
+        vesselDraftM: (expedition as any).vessel_draft_m ?? undefined,
+        vesselCrewSize: (expedition as any).vessel_crew_size ?? undefined,
         adoptionsCount: adoptions_count ?? 0,
         averageRating: average_rating ?? undefined,
         ratingsCount: ratings_count ?? 0,
@@ -1676,7 +1696,15 @@ export class ExpeditionService {
             ? 'public'
             : payload.visibility ||
               (payload.public === false ? 'private' : 'public'),
-          status: isBlueprint ? 'draft' : payload.status ?? 'planned',
+          status: (() => {
+            if (isBlueprint || payload.status === 'draft') return 'draft';
+            const now = new Date();
+            const start = payload.startDate ? new Date(payload.startDate) : null;
+            const end = payload.endDate ? new Date(payload.endDate) : null;
+            if (start && end && end <= now) return 'completed';
+            if (start && start <= now) return 'active';
+            return 'planned';
+          })(),
           start_date: isBlueprint
             ? null
             : payload.startDate
@@ -1723,6 +1751,11 @@ export class ExpeditionService {
             : payload.earlyAccessEnabled ?? false,
           is_blueprint: isBlueprint,
           mode: (payload as any).mode || null,
+          vessel_name: (payload as any).vesselName || null,
+          vessel_type: (payload as any).vesselType || null,
+          vessel_length_m: (payload as any).vesselLengthM ?? null,
+          vessel_draft_m: (payload as any).vesselDraftM ?? null,
+          vessel_crew_size: (payload as any).vesselCrewSize ?? null,
           estimated_duration_h: (payload as any).estimatedDurationH ?? null,
           author_id: explorerId,
         },
@@ -1911,40 +1944,37 @@ export class ExpeditionService {
       if (startDate !== undefined) {
         if (startDate) {
           const newStartDate = new Date(startDate);
-          // Skip validation if the date hasn't actually changed
+          // Skip if the date hasn't actually changed (compare date-only)
           const dateChanged =
             !expedition.start_date ||
             newStartDate.toISOString().split('T')[0] !==
               expedition.start_date.toISOString().split('T')[0];
-          // Only planned expeditions can have their start date changed
-          if (
-            dateChanged &&
-            expedition.start_date &&
-            expedition.status !== 'planned' &&
-            expedition.status !== 'draft'
-          ) {
-            throw new ServiceBadRequestException(
-              'Start date can only be changed for planned expeditions',
-            );
-          }
-          // If expedition already has a start_date, enforce ±30 day limit
-          if (
-            dateChanged &&
-            expedition.start_date &&
-            expedition.status !== 'draft'
-          ) {
-            const diffMs = Math.abs(
-              newStartDate.getTime() - expedition.start_date.getTime(),
-            );
-            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-            if (diffDays > 30) {
+          if (dateChanged) {
+            // Only planned expeditions can have their start date changed
+            if (
+              expedition.start_date &&
+              expedition.status !== 'planned' &&
+              expedition.status !== 'draft'
+            ) {
               throw new ServiceBadRequestException(
-                'Start date can only be changed within 30 days of the original date',
+                'Start date can only be changed for planned expeditions',
               );
             }
+            // If expedition already has a start_date, enforce ±30 day limit
+            if (expedition.start_date && expedition.status !== 'draft') {
+              const diffMs = Math.abs(
+                newStartDate.getTime() - expedition.start_date.getTime(),
+              );
+              const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+              if (diffDays > 30) {
+                throw new ServiceBadRequestException(
+                  'Start date can only be changed within 30 days of the original date',
+                );
+              }
+            }
+            updateData.start_date = newStartDate;
           }
-          updateData.start_date = newStartDate;
-        } else {
+        } else if (expedition.start_date) {
           updateData.start_date = null;
         }
       }
@@ -2035,6 +2065,21 @@ export class ExpeditionService {
       }
       if ((payload as any).estimatedDurationH !== undefined) {
         updateData.estimated_duration_h = (payload as any).estimatedDurationH ?? null;
+      }
+      if ((payload as any).vesselName !== undefined) {
+        updateData.vessel_name = (payload as any).vesselName || null;
+      }
+      if ((payload as any).vesselType !== undefined) {
+        updateData.vessel_type = (payload as any).vesselType || null;
+      }
+      if ((payload as any).vesselLengthM !== undefined) {
+        updateData.vessel_length_m = (payload as any).vesselLengthM ?? null;
+      }
+      if ((payload as any).vesselDraftM !== undefined) {
+        updateData.vessel_draft_m = (payload as any).vesselDraftM ?? null;
+      }
+      if ((payload as any).vesselCrewSize !== undefined) {
+        updateData.vessel_crew_size = (payload as any).vesselCrewSize ?? null;
       }
       await this.prisma.expedition.update({
         where: { id: expedition.id },
@@ -2898,6 +2943,11 @@ export class ExpeditionService {
           isBlueprint: (d as any).is_blueprint || false,
           isRouteLocked: (d as any).is_route_locked || false,
           mode: (d as any).mode || undefined,
+          vesselName: (d as any).vessel_name || undefined,
+          vesselType: (d as any).vessel_type || undefined,
+          vesselLengthM: (d as any).vessel_length_m ?? undefined,
+          vesselDraftM: (d as any).vessel_draft_m ?? undefined,
+          vesselCrewSize: (d as any).vessel_crew_size ?? undefined,
           updatedAt: d.updated_at,
           waypoints: d.waypoints.map(({ sequence, waypoint }) => ({
             id: waypoint.id,
@@ -3298,6 +3348,11 @@ export class ExpeditionService {
             estimated_duration_h: true,
             is_blueprint: true,
             mode: true,
+            vessel_name: true,
+            vessel_type: true,
+            vessel_length_m: true,
+            vessel_draft_m: true,
+            vessel_crew_size: true,
             adoptions_count: true,
             average_rating: true,
             ratings_count: true,
@@ -3379,6 +3434,11 @@ export class ExpeditionService {
             waypoints: [],
             isBlueprint: true,
             mode: row.mode || undefined,
+            vesselName: (row as any).vessel_name || undefined,
+            vesselType: (row as any).vessel_type || undefined,
+            vesselLengthM: (row as any).vessel_length_m ?? undefined,
+            vesselDraftM: (row as any).vessel_draft_m ?? undefined,
+            vesselCrewSize: (row as any).vessel_crew_size ?? undefined,
             adoptionsCount: row.adoptions_count ?? 0,
             averageRating: row.average_rating ?? undefined,
             ratingsCount: row.ratings_count ?? 0,
@@ -3469,6 +3529,11 @@ export class ExpeditionService {
             elevation_gain_m: true,
             route_obstacles: true,
             mode: true,
+            vessel_name: true,
+            vessel_type: true,
+            vessel_length_m: true,
+            vessel_draft_m: true,
+            vessel_crew_size: true,
             waypoints: {
               where: { waypoint: { deleted_at: null } },
               orderBy: { sequence: 'asc' },
@@ -3524,6 +3589,11 @@ export class ExpeditionService {
               elevation_gain_m: blueprint.elevation_gain_m,
               route_obstacles: blueprint.route_obstacles,
               mode: blueprint.mode,
+              vessel_name: blueprint.vessel_name,
+              vessel_type: blueprint.vessel_type,
+              vessel_length_m: blueprint.vessel_length_m,
+              vessel_draft_m: blueprint.vessel_draft_m,
+              vessel_crew_size: blueprint.vessel_crew_size,
               author_id: explorerId,
               blueprint_id: blueprint.id,
               is_route_locked: true,

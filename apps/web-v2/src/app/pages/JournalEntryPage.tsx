@@ -671,6 +671,57 @@ export function JournalEntryPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Marine Data */}
+                {(entry.metadata.waveHeight != null || entry.metadata.waterTemperature != null || entry.metadata.seaState != null || entry.metadata.tidalState != null || entry.metadata.heading != null || entry.metadata.currentSpeed != null || entry.metadata.sailConfiguration != null) && (
+                  <div className="border-t border-[#b5bcc4] dark:border-[#3a3a3a] pt-4">
+                    <div className="text-xs font-bold mb-3 text-[#4676ac]">MARINE DATA</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {entry.metadata.waveHeight != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Wave Height</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.waveHeight} m</div>
+                        </div>
+                      )}
+                      {entry.metadata.waterTemperature != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Water Temp</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.waterTemperature}°C</div>
+                        </div>
+                      )}
+                      {entry.metadata.seaState != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Sea State</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.seaState)}</div>
+                        </div>
+                      )}
+                      {entry.metadata.tidalState != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Tidal State</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono capitalize">{String(entry.metadata.tidalState)}</div>
+                        </div>
+                      )}
+                      {entry.metadata.heading != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Heading</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.heading}°</div>
+                        </div>
+                      )}
+                      {entry.metadata.currentSpeed != null && (
+                        <div>
+                          <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Current</div>
+                          <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{entry.metadata.currentSpeed} kn</div>
+                        </div>
+                      )}
+                    </div>
+                    {entry.metadata.sailConfiguration != null && (
+                      <div className="mt-2">
+                        <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">Sail Configuration</div>
+                        <div className="font-bold text-sm dark:text-[#e5e5e5] font-mono">{String(entry.metadata.sailConfiguration)}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

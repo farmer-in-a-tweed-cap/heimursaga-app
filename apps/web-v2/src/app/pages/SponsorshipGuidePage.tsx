@@ -589,7 +589,7 @@ export function SponsorshipGuidePage() {
             </div>
 
             <div>
-              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Sponsor Multiple Amounts</h3>
+              <h3 className="font-bold mb-2 text-[#202020] dark:text-white">Sponsor at Any Level</h3>
               <p className="text-sm text-[#202020] dark:text-[#e5e5e5] leading-relaxed">
                 You don't have to make large contributions. Even small sponsorships add up and show meaningful support. 
                 Consider sponsoring multiple explorers with smaller amounts rather than putting everything into one 

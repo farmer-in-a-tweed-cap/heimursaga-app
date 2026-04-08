@@ -11,7 +11,7 @@ import { ImageWithFallback } from "@/app/components/figma/ImageWithFallback";
 import { useAuth } from "@/app/context/AuthContext";
 import { useDistanceUnit } from "@/app/context/DistanceUnitContext";
 import { useTheme } from "@/app/context/ThemeContext";
-import { useMapLayer, getMapStyle, getLineCasingColor } from "@/app/context/MapLayerContext";
+import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from "@/app/context/MapLayerContext";
 import { formatDate } from "@/app/utils/dateFormat";
 import { formatDuration } from "@/app/utils/formatDuration";
 
@@ -134,7 +134,7 @@ export function ExpeditionCard({
   const { isAuthenticated, user } = useAuth();
   const { unit: distanceUnit, distanceLabel } = useDistanceUnit();
   const { theme } = useTheme();
-  const { mapLayer } = useMapLayer();
+  const { mapLayer, nauticalOverlay } = useMapLayer();
   const router = useRouter();
 
   const MODE_LABELS: Record<string, string> = {
@@ -173,6 +173,7 @@ export function ExpeditionCard({
     });
 
     map.on('load', () => {
+      applyNauticalOverlay(map, nauticalOverlay);
       const casingColor = getLineCasingColor(mapLayer, theme);
       const routeCoordinates = waypointCoords.map(c => [c.lng, c.lat] as [number, number]);
 
@@ -257,7 +258,7 @@ export function ExpeditionCard({
       map.remove();
       blueprintMapInstanceRef.current = null;
     };
-  }, [isBlueprint, waypointCoords, theme, mapLayer]);
+  }, [isBlueprint, waypointCoords, theme, mapLayer, nauticalOverlay]);
 
   // Helper to get current location from waypoints/entries
   const getCurrentLocation = () => {

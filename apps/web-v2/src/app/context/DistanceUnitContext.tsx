@@ -2,9 +2,10 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
-type DistanceUnit = 'km' | 'mi';
+type DistanceUnit = 'km' | 'mi' | 'nm';
 
 const KM_TO_MI = 0.621371;
+const KM_TO_NM = 0.539957;
 
 interface DistanceUnitContextType {
   unit: DistanceUnit;
@@ -21,7 +22,7 @@ export function DistanceUnitProvider({ children }: { children: ReactNode }) {
   const [unit, setUnitState] = useState<DistanceUnit>(() => {
     if (typeof window === 'undefined') return 'mi';
     const saved = localStorage.getItem('heimursaga-distance-unit');
-    if (saved === 'km' || saved === 'mi') return saved;
+    if (saved === 'km' || saved === 'mi' || saved === 'nm') return saved;
     return 'mi';
   });
 
@@ -34,6 +35,9 @@ export function DistanceUnitProvider({ children }: { children: ReactNode }) {
   };
 
   const formatDistance = useCallback((km: number, decimals: number = 1): string => {
+    if (unit === 'nm') {
+      return `${(km * KM_TO_NM).toFixed(decimals)} nm`;
+    }
     if (unit === 'mi') {
       return `${(km * KM_TO_MI).toFixed(decimals)} mi`;
     }
@@ -41,14 +45,17 @@ export function DistanceUnitProvider({ children }: { children: ReactNode }) {
   }, [unit]);
 
   const formatSpeed = useCallback((kmh: number): string => {
+    if (unit === 'nm') {
+      return `${(kmh * KM_TO_NM).toFixed(1)} kn`;
+    }
     if (unit === 'mi') {
       return `${(kmh * KM_TO_MI).toFixed(1)} mph`;
     }
     return `${kmh.toFixed(1)} km/h`;
   }, [unit]);
 
-  const distanceLabel = unit === 'mi' ? 'mi' : 'km';
-  const speedLabel = unit === 'mi' ? 'mph' : 'km/h';
+  const distanceLabel = unit === 'nm' ? 'nm' : unit === 'mi' ? 'mi' : 'km';
+  const speedLabel = unit === 'nm' ? 'kn' : unit === 'mi' ? 'mph' : 'km/h';
 
   return (
     <DistanceUnitContext.Provider value={{ unit, setUnit, formatDistance, formatSpeed, distanceLabel, speedLabel }}>

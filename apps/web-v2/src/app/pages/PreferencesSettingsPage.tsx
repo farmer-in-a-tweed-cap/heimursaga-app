@@ -12,7 +12,7 @@ import { useRouter, usePathname } from 'next/navigation';
 export function PreferencesSettingsPage() {
   const { theme, themeSetting, setTheme } = useTheme();
   const { unit: distanceUnit, setUnit: setDistanceUnit } = useDistanceUnit();
-  const { mapLayer, setMapLayer } = useMapLayer();
+  const { mapLayer, setMapLayer, nauticalOverlay, setNauticalOverlay } = useMapLayer();
   const { isAuthenticated } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -158,6 +158,22 @@ export function PreferencesSettingsPage() {
                     </div>
                   </div>
                 </label>
+                <label className="flex items-start gap-3 p-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98]">
+                  <input
+                    type="radio"
+                    name="distanceUnit"
+                    value="nm"
+                    checked={distanceUnit === 'nm'}
+                    onChange={() => { setDistanceUnit('nm'); toast.success('Distance units updated'); }}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">Nautical (nm, kn)</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      Nautical miles and knots
+                    </div>
+                  </div>
+                </label>
               </div>
             </div>
           </div>
@@ -203,6 +219,22 @@ export function PreferencesSettingsPage() {
                   </div>
                 </label>
               </div>
+              <div className="mt-4 pt-4 border-t border-[#b5bcc4] dark:border-[#3a3a3a]">
+                <label className="flex items-start gap-3 p-3 border-2 border-[#b5bcc4] dark:border-[#3a3a3a] cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98]">
+                  <input
+                    type="checkbox"
+                    checked={nauticalOverlay}
+                    onChange={() => { setNauticalOverlay(!nauticalOverlay); toast.success(nauticalOverlay ? 'Nautical overlay disabled' : 'Nautical overlay enabled'); }}
+                    className="mt-1"
+                  />
+                  <div className="flex-1">
+                    <div className="font-bold text-sm mb-1 dark:text-[#e5e5e5]">Nautical Chart Overlay</div>
+                    <div className="text-xs text-[#616161] dark:text-[#b5bcc4]">
+                      OpenSeaMap navigational aids, depths, and harbors overlaid on any base map
+                    </div>
+                  </div>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -228,13 +260,19 @@ export function PreferencesSettingsPage() {
               <div className="flex justify-between items-center border-t border-[#b5bcc4] dark:border-[#616161] pt-3">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Distance:</span>
                 <span className="font-bold dark:text-[#e5e5e5]">
-                  {distanceUnit === 'km' ? 'METRIC (KM)' : 'IMPERIAL (MI)'}
+                  {distanceUnit === 'nm' ? 'NAUTICAL (NM)' : distanceUnit === 'km' ? 'METRIC (KM)' : 'IMPERIAL (MI)'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Map Layer:</span>
                 <span className="font-bold dark:text-[#e5e5e5]">
                   {mapLayer === 'heimursaga' ? 'HEIMURSAGA' : 'SATELLITE'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-[#616161] dark:text-[#b5bcc4]">Nautical:</span>
+                <span className="font-bold dark:text-[#e5e5e5]">
+                  {nauticalOverlay ? 'ON' : 'OFF'}
                 </span>
               </div>
               <div className="flex justify-between items-center border-t border-[#b5bcc4] dark:border-[#616161] pt-3">

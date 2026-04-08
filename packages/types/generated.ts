@@ -998,6 +998,11 @@ export interface ITripDetail {
   blueprintId?: string;
   isRouteLocked?: boolean;
   mode?: string;
+  vesselName?: string;
+  vesselType?: string;
+  vesselLengthM?: number;
+  vesselDraftM?: number;
+  vesselCrewSize?: number;
   adoptionsCount?: number;
   averageRating?: number;
   ratingsCount?: number;
@@ -1069,6 +1074,11 @@ export interface ITripCreatePayload {
   estimatedDurationH?: number;
   isBlueprint?: boolean;
   mode?: string;
+  vesselName?: string;
+  vesselType?: string;
+  vesselLengthM?: number;
+  vesselDraftM?: number;
+  vesselCrewSize?: number;
 }
 
 export interface IBlueprintReviewDetail {
@@ -1119,6 +1129,12 @@ export interface ITripUpdatePayload {
   routeLegModes?: string[];
   routeObstacles?: { lat: number; lon: number; type: string; name: string | null }[];
   estimatedDurationH?: number;
+  mode?: string;
+  vesselName?: string;
+  vesselType?: string;
+  vesselLengthM?: number;
+  vesselDraftM?: number;
+  vesselCrewSize?: number;
   currentLocationSource?: 'waypoint' | 'entry';
   currentLocationId?: string;
   currentLocationVisibility?: 'public' | 'sponsors' | 'private';

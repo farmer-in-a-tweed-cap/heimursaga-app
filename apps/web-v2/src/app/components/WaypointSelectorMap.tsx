@@ -7,7 +7,7 @@ import { Navigation, X } from 'lucide-react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import '@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css';
 import { useTheme } from '@/app/context/ThemeContext';
-import { useMapLayer, getMapStyle, getLineCasingColor } from '@/app/context/MapLayerContext';
+import { useMapLayer, getMapStyle, getLineCasingColor, applyNauticalOverlay } from '@/app/context/MapLayerContext';
 import { projectToSegment } from '@/app/utils/routeSnapping';
 import { createPOIGeocoder, retrievePOI } from '@/app/utils/poiGeocoder';
 
@@ -166,7 +166,7 @@ export function WaypointSelectorMap({
   onClose,
 }: WaypointSelectorMapProps) {
   const { theme } = useTheme();
-  const { mapLayer } = useMapLayer();
+  const { mapLayer, nauticalOverlay } = useMapLayer();
 
   const [mapReady, setMapReady] = useState(false);
   const [pendingWaypoint, setPendingWaypoint] = useState<PendingNewWaypoint | null>(null);
@@ -257,6 +257,7 @@ export function WaypointSelectorMap({
 
     map.on('load', () => {
       map.resize();
+      applyNauticalOverlay(map, nauticalOverlay);
 
       // -----------------------------------------------------------------------
       // Build route line coordinates
@@ -529,7 +530,7 @@ export function WaypointSelectorMap({
     // mapReady, theme, mapLayer are the only stable dependencies that should
     // trigger a full re-initialisation (prop data is read from refs).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapReady, theme, mapLayer]);
+  }, [mapReady, theme, mapLayer, nauticalOverlay]);
 
   // ---------------------------------------------------------------------------
   // Handlers

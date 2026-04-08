@@ -281,7 +281,7 @@ export function CompareSubstackPage() {
                 <ul className="space-y-3 text-sm text-[#202020] dark:text-[#e5e5e5]">
                   <li className="flex items-start gap-2">
                     <Mail className="w-4 h-4 text-[#616161] mt-0.5 flex-shrink-0" />
-                    <span><strong>Email-first distribution</strong> — every post lands in your subscriber's inbox. The most reliable way to reach people without fighting algorithms.</span>
+                    <span><strong>Email-first distribution</strong> — every post lands in your subscribers' inboxes. The most reliable way to reach people without fighting algorithms.</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Users className="w-4 h-4 text-[#616161] mt-0.5 flex-shrink-0" />

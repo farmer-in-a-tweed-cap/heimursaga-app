@@ -50,4 +50,31 @@ export class WeatherController {
     }
     return await this.weatherService.getRegionReport(trimmed);
   }
+
+  @Get('marine')
+  @Public()
+  @Throttle({
+    short: { limit: 10, ttl: 60000 },
+    medium: { limit: 10, ttl: 60000 },
+    long: { limit: 10, ttl: 60000 },
+  })
+  @HttpCode(HttpStatus.OK)
+  async getMarineConditions(
+    @Query('lat') lat: string,
+    @Query('lon') lon: string,
+  ) {
+    const latNum = parseFloat(lat);
+    const lonNum = parseFloat(lon);
+    if (
+      !isFinite(latNum) ||
+      !isFinite(lonNum) ||
+      latNum < -90 ||
+      latNum > 90 ||
+      lonNum < -180 ||
+      lonNum > 180
+    ) {
+      throw new BadRequestException('Invalid coordinates');
+    }
+    return await this.weatherService.getMarineConditions(latNum, lonNum);
+  }
 }

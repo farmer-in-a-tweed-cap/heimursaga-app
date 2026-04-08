@@ -248,7 +248,7 @@ export function ContactPage() {
                     placeholder="Provide as much detail as possible..."
                   />
                   <p className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">
-                    Include relevant details, screenshots descriptions, error messages, or specific examples
+                    Include relevant details, screenshot descriptions, error messages, or specific examples
                   </p>
                 </div>
 

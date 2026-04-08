@@ -187,6 +187,39 @@ export class ExpeditionCreateDto implements IExpeditionCreatePayload {
   @IsIn(['hike', 'paddle', 'bike', 'sail', 'drive', 'mixed'])
   @IsOptional()
   mode?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  vesselName?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsIn(['monohull', 'catamaran', 'trimaran', 'other'])
+  @IsOptional()
+  vesselType?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @Min(0)
+  @Max(500)
+  @IsOptional()
+  vesselLengthM?: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @Min(0)
+  @Max(50)
+  @IsOptional()
+  vesselDraftM?: number;
+
+  @ApiProperty({ required: false })
+  @IsInt()
+  @Min(1)
+  @Max(999)
+  @IsOptional()
+  vesselCrewSize?: number;
 }
 
 export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
@@ -343,6 +376,39 @@ export class ExpeditionUpdateDto implements IExpeditionUpdatePayload {
   @IsIn(['hike', 'paddle', 'bike', 'sail', 'drive', 'mixed'])
   @IsOptional()
   mode?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  vesselName?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsIn(['monohull', 'catamaran', 'trimaran', 'other'])
+  @IsOptional()
+  vesselType?: string;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @Min(0)
+  @Max(500)
+  @IsOptional()
+  vesselLengthM?: number;
+
+  @ApiProperty({ required: false })
+  @IsNumber()
+  @Min(0)
+  @Max(50)
+  @IsOptional()
+  vesselDraftM?: number;
+
+  @ApiProperty({ required: false })
+  @IsInt()
+  @Min(1)
+  @Max(999)
+  @IsOptional()
+  vesselCrewSize?: number;
 }
 
 export class ExpeditionCompleteDto {
