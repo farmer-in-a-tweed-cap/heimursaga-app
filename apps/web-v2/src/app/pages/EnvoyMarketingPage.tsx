@@ -46,7 +46,7 @@ export function EnvoyMarketingPage() {
               The Envoy Program
             </h1>
             <p className="text-base text-[#616161] dark:text-[#b5bcc4] leading-relaxed max-w-[700px]" style={{ fontFamily: 'Lora, serif' }}>
-              A hand-picked cohort of 5&ndash;10 explorers, sponsored by Heimursaga to use the platform as their
+              A hand-picked cohort of explorers, sponsored by Heimursaga to use the platform as their
               primary medium for expedition documentation and fundraising during the platform&apos;s founding year.
             </p>
           </div>
@@ -69,7 +69,7 @@ export function EnvoyMarketingPage() {
           <div className="mb-6 avoid-break">
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-1.5 tracking-[0.06em]">WHAT IS THE ENVOY PROGRAM?</h3>
             <p className="text-xs text-[#616161] dark:text-[#b5bcc4] leading-relaxed">
-              The Envoy Program is Heimursaga&apos;s founding explorer initiative. We are selecting 5&ndash;10
+              The Envoy Program is Heimursaga&apos;s founding explorer initiative. We are selecting a small number of
               exceptional explorers to become the first active voices on the platform. Envoys receive a 12-month
               recurring sponsorship directly from Heimursaga and, in return, commit to using the platform as their
               primary tool for documenting expeditions and raising support. Envoys are not influencers or brand
@@ -85,7 +85,7 @@ export function EnvoyMarketingPage() {
               <ul className="space-y-2 text-xs text-[#202020] dark:text-[#e5e5e5]">
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] shrink-0">&#9654;</span>
-                  <span><strong>$100/month recurring sponsorship</strong> for 12 months, paid through the platform&apos;s own sponsorship system</span>
+                  <span><strong>$50/month recurring sponsorship</strong> for 12 months, paid through the platform&apos;s own sponsorship system</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#ac6d46] shrink-0">&#9654;</span>
@@ -155,13 +155,13 @@ export function EnvoyMarketingPage() {
             <div className="grid grid-cols-3 gap-4">
               <div className="border-2 border-[#ac6d46] p-4 text-center">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-2 tracking-[0.1em]">MONTHLY SPONSORSHIP</div>
-                <div className="text-xl font-bold text-[#ac6d46]">$100</div>
+                <div className="text-xl font-bold text-[#ac6d46]">$50</div>
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">recurring, 12 months</div>
               </div>
               <div className="border-2 border-[#ac6d46] p-4 text-center">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-2 tracking-[0.1em]">TOTAL PROGRAM VALUE</div>
-                <div className="text-xl font-bold text-[#202020] dark:text-white">$1,500</div>
-                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">$1,200 stipend + $250 Starlink Mini + $50 Explorer Pro</div>
+                <div className="text-xl font-bold text-[#202020] dark:text-white">$900</div>
+                <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mt-1">$600 stipend + $250 Starlink Mini + $50 Explorer Pro</div>
               </div>
               <div className="border-2 border-[#ac6d46] p-4 text-center">
                 <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-2 tracking-[0.1em]">ADDITIONAL EARNINGS</div>
@@ -341,7 +341,7 @@ export function EnvoyMarketingPage() {
             <h3 className="text-sm font-bold text-[#202020] dark:text-white mb-4 tracking-[0.06em]">PROGRAM TIMELINE</h3>
             <div className="grid grid-cols-4 gap-4">
               {[
-                { step: '01', title: 'Selection', desc: 'We review candidates and extend invitations to 5\u201310 explorers based on fit and expedition plans.' },
+                { step: '01', title: 'Selection', desc: 'We review candidates and extend invitations to explorers based on fit and expedition plans.' },
                 { step: '02', title: 'Onboarding', desc: 'Create your account, connect Stripe, set up your first expedition, and meet the founding team.' },
                 { step: '03', title: 'Active Program', desc: '12 months of sponsored exploration. Document your journeys, build your audience, and raise funds.' },
                 { step: '04', title: 'Continuation', desc: 'After the program, your account, content, audience, and sponsorship relationships are yours to keep.' },
