@@ -1317,4 +1317,184 @@ export class AuthService {
       data: { active: false },
     });
   }
+
+  async deleteAccount(userId: number): Promise<void> {
+    try {
+      const user = await this.prisma.explorer.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          stripe_customer_id: true,
+          stripe_account_id: true,
+        },
+      });
+
+      if (!user) {
+        throw new ServiceNotFoundException('User not found');
+      }
+
+      this.logger.log(`[DELETE_ACCOUNT] Starting account deletion for user ${userId} (${user.username})`);
+
+      // Cancel active Stripe subscriptions (Explorer Pro)
+      if (user.stripe_customer_id) {
+        try {
+          const subscriptions = await this.stripeService.subscriptions.list({
+            customer: user.stripe_customer_id,
+            status: 'active',
+          });
+          for (const sub of subscriptions.data) {
+            await this.stripeService.subscriptions.cancel(sub.id);
+            this.logger.log(`[DELETE_ACCOUNT] Cancelled Stripe subscription ${sub.id}`);
+          }
+        } catch (e) {
+          this.logger.error(`[DELETE_ACCOUNT] Error cancelling subscriptions: ${e.message}`);
+        }
+      }
+
+      // Cancel active sponsorships the user has given
+      const givenSponsorships = await this.prisma.sponsorship.findMany({
+        where: { sponsor_id: userId, status: 'active', stripe_subscription_id: { not: null } },
+        select: { id: true, stripe_subscription_id: true },
+      });
+      for (const sp of givenSponsorships) {
+        try {
+          if (sp.stripe_subscription_id) {
+            await this.stripeService.subscriptions.cancel(sp.stripe_subscription_id);
+          }
+          await this.prisma.sponsorship.update({
+            where: { id: sp.id },
+            data: { status: 'cancelled' },
+          });
+        } catch (e) {
+          this.logger.error(`[DELETE_ACCOUNT] Error cancelling given sponsorship ${sp.id}: ${e.message}`);
+        }
+      }
+
+      // Cancel active sponsorships the user is receiving (so sponsors stop being charged)
+      const receivedSponsorships = await this.prisma.sponsorship.findMany({
+        where: { sponsored_explorer_id: userId, status: 'active', stripe_subscription_id: { not: null } },
+        select: { id: true, stripe_subscription_id: true },
+      });
+      for (const sp of receivedSponsorships) {
+        try {
+          if (sp.stripe_subscription_id) {
+            await this.stripeService.subscriptions.cancel(sp.stripe_subscription_id);
+          }
+          await this.prisma.sponsorship.update({
+            where: { id: sp.id },
+            data: { status: 'cancelled' },
+          });
+        } catch (e) {
+          this.logger.error(`[DELETE_ACCOUNT] Error cancelling received sponsorship ${sp.id}: ${e.message}`);
+        }
+      }
+
+      // Deactivate Stripe Connect account
+      if (user.stripe_account_id) {
+        try {
+          // Reject the account to prevent further payouts and deactivate it
+          await this.stripeService.accounts.del(user.stripe_account_id);
+          this.logger.log(`[DELETE_ACCOUNT] Deleted Stripe Connect account ${user.stripe_account_id}`);
+        } catch (e) {
+          this.logger.error(`[DELETE_ACCOUNT] Error deleting Stripe Connect account: ${e.message}`);
+        }
+      }
+
+      // Anonymize the user record
+      const deletedEmail = `deleted_${userId}@deleted.heimursaga.com`;
+      const deletedUsername = `deleted_${userId}`;
+
+      await this.prisma.$transaction(async (tx) => {
+        // Anonymize explorer
+        await tx.explorer.update({
+          where: { id: userId },
+          data: {
+            email: deletedEmail,
+            username: deletedUsername,
+            password: 'DELETED',
+            blocked: true,
+            is_premium: false,
+            role: UserRole.USER,
+            stripe_customer_id: null,
+            stripe_account_id: null,
+            is_stripe_account_connected: false,
+          },
+        });
+
+        // Clear profile
+        await tx.explorerProfile.updateMany({
+          where: { explorer_id: userId },
+          data: {
+            name: 'Deleted Explorer',
+            bio: null,
+            picture: null,
+            cover_photo: null,
+            location_from: null,
+            location_lives: null,
+            location_from_lat: null,
+            location_from_lon: null,
+            location_lives_lat: null,
+            location_lives_lon: null,
+            website: null,
+            twitter: null,
+            instagram: null,
+            youtube: null,
+            portfolio: null,
+            sponsors_fund: null,
+            sponsors_fund_expedition_id: null,
+            sponsors_fund_type: null,
+          },
+        });
+
+        // Delete user-generated content (cascades to comments, likes, bookmarks, media, views, flags)
+        await tx.entry.deleteMany({ where: { author_id: userId } });
+        await tx.expedition.deleteMany({ where: { author_id: userId } });
+        await tx.waypoint.deleteMany({ where: { author_id: userId } });
+        await tx.upload.deleteMany({ where: { explorer_id: userId } });
+
+        // Delete social data
+        await tx.explorerFollow.deleteMany({ where: { OR: [{ follower_id: userId }, { followee_id: userId }] } });
+        await tx.explorerBookmark.deleteMany({ where: { OR: [{ explorer_id: userId }, { bookmarked_explorer_id: userId }] } });
+        await tx.explorerNotification.deleteMany({ where: { OR: [{ explorer_id: userId }, { mention_explorer_id: userId }] } });
+        await tx.comment.deleteMany({ where: { author_id: userId } });
+        await tx.expeditionNote.deleteMany({ where: { author_id: userId } });
+        await tx.expeditionNoteReply.deleteMany({ where: { author_id: userId } });
+        await tx.expeditionVoiceNote.deleteMany({ where: { author_id: userId } });
+        await tx.blueprintReview.deleteMany({ where: { explorer_id: userId } });
+        await tx.entryLike.deleteMany({ where: { explorer_id: userId } });
+        await tx.entryBookmark.deleteMany({ where: { explorer_id: userId } });
+        await tx.expeditionBookmark.deleteMany({ where: { explorer_id: userId } });
+        await tx.entryView.deleteMany({ where: { viewer_id: userId } });
+        await tx.message.deleteMany({ where: { OR: [{ sender_id: userId }, { recipient_id: userId }] } });
+        await tx.flag.deleteMany({ where: { OR: [{ reporter_id: userId }, { flagged_explorer_id: userId }] } });
+        await tx.explorerPlan.deleteMany({ where: { explorer_id: userId } });
+        await tx.explorerSubscription.deleteMany({ where: { explorer_id: userId } });
+
+        // Disable sponsorship tiers
+        await tx.sponsorshipTier.updateMany({
+          where: { explorer_id: userId },
+          data: { is_available: false, deleted_at: new Date() },
+        });
+
+        // Deactivate device tokens
+        await tx.deviceToken.updateMany({
+          where: { explorer_id: userId },
+          data: { active: false },
+        });
+
+        // Expire all sessions
+        await tx.explorerSession.deleteMany({
+          where: { explorer_id: userId },
+        });
+      });
+
+      this.logger.log(`[DELETE_ACCOUNT] Account deletion complete for user ${userId}`);
+    } catch (e) {
+      this.logger.error(`[DELETE_ACCOUNT] Error: ${e.message}`);
+      if (e.status) throw e;
+      throw new ServiceInternalException();
+    }
+  }
 }
