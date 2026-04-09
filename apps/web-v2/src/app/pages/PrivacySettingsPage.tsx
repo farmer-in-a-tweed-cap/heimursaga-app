@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Lock, Shield, Monitor } from 'lucide-react';
+import { Lock, Shield, Monitor, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SettingsLayout } from '@/app/components/SettingsLayout';
-import { useAuth } from '@/app/context/AuthContext';
+import { useAuth, useProFeatures } from '@/app/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { authApi, explorerApi } from '@/app/services/api';
 
@@ -37,7 +37,8 @@ function parseUserAgent(ua?: string): string {
 }
 
 export function PrivacySettingsPage() {
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
+  const { isPro } = useProFeatures();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -45,6 +46,8 @@ export function PrivacySettingsPage() {
   const [sessionsLoading, setSessionsLoading] = useState(true);
   const [resetStatus, setResetStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [revokeStatus, setRevokeStatus] = useState<'idle' | 'revoking' | 'done'>('idle');
+  const [deleteStep, setDeleteStep] = useState<'idle' | 'confirm' | 'deleting'>('idle');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const loadSessions = useCallback(async () => {
     try {
@@ -100,6 +103,20 @@ export function PrivacySettingsPage() {
       setRevokeStatus('idle');
       toast.error('Failed to revoke sessions');
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteStep('deleting');
+    try {
+      await authApi.deleteAccount();
+    } catch {
+      setDeleteStep('confirm');
+      toast.error('Failed to delete account');
+      return;
+    }
+    // Session is already destroyed server-side, just clear local state
+    logout().catch(() => {});
+    router.push('/');
   };
 
   if (!isAuthenticated) {
@@ -271,6 +288,64 @@ export function PrivacySettingsPage() {
               )}
             </div>
           </div>
+
+          {/* Delete Account */}
+          <div className="bg-white dark:bg-[#202020] border-2 border-[#994040]">
+            <div className="bg-[#994040] text-white px-4 py-3 font-bold text-sm flex items-center gap-2">
+              <Trash2 className="w-4 h-4" />
+              DELETE ACCOUNT
+            </div>
+            <div className="p-4 lg:p-6">
+              <div className="text-xs text-[#616161] dark:text-[#b5bcc4] mb-4">
+                Permanently delete your account and all associated data. This action cannot be undone.
+              </div>
+
+              {deleteStep === 'idle' && (
+                <button
+                  onClick={() => setDeleteStep('confirm')}
+                  className="px-4 py-2 text-xs font-bold border-2 border-[#994040] text-[#994040] hover:bg-[#994040]/10 transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040]"
+                >
+                  DELETE ACCOUNT
+                </button>
+              )}
+
+              {deleteStep === 'confirm' && (
+                <div className="space-y-3">
+                  <div className="text-xs font-bold text-[#994040]">
+                    Type DELETE to confirm account deletion:
+                  </div>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    placeholder="DELETE"
+                    className="w-full px-3 py-2 border-2 border-[#994040] text-sm bg-white dark:bg-[#2a2a2a] dark:text-[#e5e5e5] focus:outline-none focus:ring-2 focus:ring-[#994040]"
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setDeleteStep('idle'); setDeleteConfirmText(''); }}
+                      className="px-4 py-2 text-xs font-bold border-2 border-[#202020] dark:border-[#616161] dark:text-[#e5e5e5] hover:bg-[#f5f5f5] dark:hover:bg-[#2a2a2a] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#616161]"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      disabled={deleteConfirmText !== 'DELETE'}
+                      className="px-4 py-2 text-xs font-bold bg-[#994040] text-white hover:bg-[#7a3333] transition-all active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none focus-visible:ring-[#994040] disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      PERMANENTLY DELETE
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {deleteStep === 'deleting' && (
+                <div className="text-xs font-bold text-[#994040]">
+                  Deleting account...
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Sidebar */}
@@ -301,8 +376,8 @@ export function PrivacySettingsPage() {
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-[#616161] dark:text-[#b5bcc4]">Account:</span>
-                <span className="font-bold dark:text-[#e5e5e5]">
-                  {user?.isPremium ? 'EXPLORER PRO' : 'FREE'}
+                <span className={`font-bold ${isPro ? 'text-[#598636]' : ''} dark:text-[#e5e5e5]`}>
+                  {isPro ? 'EXPLORER PRO' : 'EXPLORER'}
                 </span>
               </div>
             </div>

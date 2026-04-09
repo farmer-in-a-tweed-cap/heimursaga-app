@@ -134,15 +134,11 @@ export default function BillingScreen() {
             <View style={styles.planRow}>
               <Text style={[styles.sectionLabel, { color: colors.textTertiary }]}>CURRENT PLAN</Text>
               <Text style={[styles.planValue, { color: colors.text }]}>
-                {user.is_pro ? 'Explorer Pro' : 'Free'}
+                {user.is_pro ? 'Explorer Pro' : 'Explorer'}
               </Text>
-              {user.is_pro ? (
-                <Text style={styles.proBadge}>ACTIVE</Text>
-              ) : (
-                <HButton variant="copper" small onPress={() => router.push('/upgrade')}>
-                  UPGRADE TO PRO
-                </HButton>
-              )}
+              <Text style={user.is_pro ? styles.proBadge : [styles.proBadge, { color: colors.textTertiary }]}>
+                {user.is_pro ? 'ACTIVE' : 'STANDARD'}
+              </Text>
             </View>
           </HCard>
 

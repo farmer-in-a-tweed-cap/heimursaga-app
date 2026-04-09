@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Headers,
   HttpCode,
@@ -415,6 +416,43 @@ export class AuthController {
       await this.authService.removePushToken(tokenData.userId, body.token);
     }
 
+    return { success: true };
+  }
+
+  @Public()
+  @Delete('mobile/account')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 3, ttl: 300000 },
+    medium: { limit: 3, ttl: 300000 },
+    long: { limit: 3, ttl: 300000 },
+  })
+  async deleteMobileAccount(@Headers('authorization') authHeader: string) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new UnauthorizedException(
+        'Authorization header missing or invalid',
+      );
+    }
+    const jwt = authHeader.substring(7);
+    const tokenData = await this.authService.verifyToken(jwt);
+    if (!tokenData) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    await this.authService.deleteAccount(tokenData.userId);
+
+    return { success: true };
+  }
+
+  @Delete('account')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({
+    short: { limit: 3, ttl: 300000 },
+    medium: { limit: 3, ttl: 300000 },
+    long: { limit: 3, ttl: 300000 },
+  })
+  async deleteAccount(@Session() session: ISession) {
+    await this.authService.deleteAccount(session.userId);
     return { success: true };
   }
 

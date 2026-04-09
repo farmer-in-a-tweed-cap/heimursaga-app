@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'heimursaga.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+      },
     ],
   },
   async headers() {
@@ -47,7 +51,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com https://api.mapbox.com https://www.google.com https://www.gstatic.com https://us-assets.i.posthog.com https://static.cloudflareinsights.com",
               "style-src 'self' 'unsafe-inline' https://api.mapbox.com",
-              "img-src 'self' data: blob: https://*.amazonaws.com https://api.mapbox.com https://heimursaga.com",
+              "img-src 'self' data: blob: https://*.amazonaws.com https://api.mapbox.com https://heimursaga.com https://api.dicebear.com",
               "font-src 'self'",
               "connect-src 'self' https://*.heimursaga.com https://api.stripe.com https://api.mapbox.com https://*.amazonaws.com https://events.mapbox.com https://us.i.posthog.com https://us-assets.i.posthog.com https://static.cloudflareinsights.com",
               "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://www.google.com https://www.youtube.com https://player.vimeo.com",

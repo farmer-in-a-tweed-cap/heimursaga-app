@@ -146,7 +146,7 @@ export function useAuth() {
 }
 
 // Helper hook for checking pro features
-// Explorer Pro is determined by role === 'creator'
+// Explorer Pro is determined by role === 'creator' (set by Stripe subscription webhooks)
 export function useProFeatures() {
   const { user } = useAuth();
   const isPro = user?.role === 'creator';

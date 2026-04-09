@@ -76,10 +76,6 @@ export default function SettingsScreen() {
       value: dark ? 'Dark theme' : 'Light theme',
       onPress: () => router.push('/settings/preferences'),
     },
-    {
-      label: 'Notifications',
-      onPress: () => router.push('/settings/notifications'),
-    },
     ...(biometricAvailable ? [{
       label: 'Biometric Lock',
       value: biometricEnabled ? 'Enabled' : 'Disabled',
@@ -92,7 +88,7 @@ export default function SettingsScreen() {
     },
     {
       label: 'Billing',
-      value: savedCard ? `${savedCard.label} •••• ${savedCard.last4}` : user.is_pro ? 'Explorer Pro' : 'Free',
+      value: savedCard ? `${savedCard.label} •••• ${savedCard.last4}` : user.is_pro ? 'Explorer Pro' : 'Explorer',
       onPress: () => router.push('/settings/billing'),
     },
   ];

@@ -283,6 +283,12 @@ export const authApi = {
     api.post<void>('/auth/verify-email', { token }),
 
   /**
+   * Delete current user's account (requires auth)
+   */
+  deleteAccount: () =>
+    api.delete<{ success: boolean }>('/auth/account'),
+
+  /**
    * Resend email verification (requires auth)
    */
   resendEmailVerification: () =>
